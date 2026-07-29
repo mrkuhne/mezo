@@ -1,16 +1,17 @@
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useRitualDay, useTodayScenario } from '@/data/hooks'
 import { ritualWindowState } from '@/features/ritual/logic/ritualWindow'
-import { cn } from '@/shared/lib/cn'
+import { ItemCard } from '@/shared/ui/ItemCard'
 import { localDateString } from '@/shared/lib/dates'
 
 /**
- * Today's Napzárás entry point ("Teendők ma" zone, R3 mezo-ilsj) — the evening-window nudge
- * into the full `/ritual` flow. Three states derived from `useRitualDay` + `ritualWindowState`
- * (Task 1): **waiting** before the window opens, **open** once it does (glow CTA), **done**
- * once the day is closed. The `?ritual=` scenario param (`useTodayScenario`) WINS over the
- * derived state — the same `?day=` demo-affordance precedent (survives real mode by design, so
- * QA/demo can force any state without waiting for the clock).
+ * Today's Napzárás entry point — the evening-window nudge into the full `/ritual` flow,
+ * dressed in the shared `ItemCard` language (mezo-j7u4). Three states derived from
+ * `useRitualDay` + `ritualWindowState`: **waiting** before the window opens, **open** once it
+ * does (CTA), **done** once the day is closed. The `?ritual=` scenario param
+ * (`useTodayScenario`) WINS over the derived state — the same `?day=` demo-affordance
+ * precedent (survives real mode by design, so QA/demo can force any state without waiting
+ * for the clock).
  *
  * `now` defaults to `new Date()` (the `GreetingHeader` test-override precedent) so the derived
  * branch stays testable with a fixed clock.
@@ -18,37 +19,43 @@ import { localDateString } from '@/shared/lib/dates'
 export function RitualCard({ now = new Date() }: { now?: Date }) {
   const { data: ritualDay } = useRitualDay(localDateString())
   const { ritual } = useTodayScenario()
+  const navigate = useNavigate()
 
   const derived = ritualDay.closed ? 'done' : ritualWindowState(now, ritualDay.window)
   const state = ritual ?? derived
 
   if (state === 'done') {
     return (
-      <div className="ritcard-done">
-        <span aria-hidden="true">🌙</span> Napzárás kész <span aria-hidden="true">✓</span>
-      </div>
+      <ItemCard tone="mind" emoji="🌙" tag="NAPZÁRÁS" title="Napzárás kész"
+        facts={[]} logged loggedSummary="Kész" />
     )
   }
 
   const isOpen = state === 'open'
   const { opensAt, prepStartsAt, bedTime } = ritualDay.window
 
+  // Soft gate (ADR 0010 spirit): the waiting card only LOOKS inactive — it offers no CTA
+  // rather than a dead one (the `ItemRow` doctrine), and a direct /ritual visit is never
+  // blocked. THIS CARD IS THE ONLY IN-APP ROUTE IN from Today: `FaceEvening` filters the
+  // `ritual:day` row out of the TodoCard precisely because this hero owns the act with a
+  // stronger, window-aware affordance — so outside the window the only way in is the URL
+  // (an accepted trade, ADR 0014). The prose line below carries the framing: WHY now (open)
+  // or WHEN instead (waiting); the pills stay scannable.
   return (
-    // Soft gate (ADR 0010 spirit): a direct /ritual visit is always allowed — the waiting
-    // card's CTA only looks disabled, it stays a real Link and never locks the route.
-    <Link to="/ritual" className={cn('ritcard', !isOpen && 'waiting')}>
-      <div className="ritcard-ttl">
-        <span className="ritcard-moon" aria-hidden="true">{isOpen ? '🌙' : '🌘'}</span>
-        Napzárás
-      </div>
-      <div className="ritcard-sub">
+    <ItemCard
+      tone="mind" emoji="🌙" tag="NAPZÁRÁS" time={opensAt}
+      title="Zárjuk le a napot"
+      facts={['5 felvonás', `villanyoltás ${bedTime}`]}
+      logged={false}
+      stateLabel={isOpen ? 'MOST' : 'Még vár'}
+      ctaLabel={isOpen ? 'Zárjuk le a napot ✨' : undefined}
+      onLog={isOpen ? () => navigate('/ritual') : undefined}
+    >
+      <div className="todaycard-note">
         {isOpen
           ? `A nap kész. Zárd le, mielőtt az alvás-előkészítés indul (${prepStartsAt}).`
           : `${opensAt}-kor nyílik — villanyoltás ${bedTime}.`}
       </div>
-      <span className="ritcard-cta">
-        {isOpen ? 'Zárjuk le a napot ✨' : `Még vár · ${opensAt}`}
-      </span>
-    </Link>
+    </ItemCard>
   )
 }

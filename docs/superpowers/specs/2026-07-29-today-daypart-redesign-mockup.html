@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="hu" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Mai screen — 3 irány</title>
+<style>
+/* Standalone archive copy: the token + font values are inlined here so this file renders
+   without the Vite dev server. The live/editable copy linked frontend/src/styles/{fonts,prototype}.css. */
+:root {
+  --canvas:#FBF6EF; --surface:#FFFFFF; --warm:#F4EBDF; --line:#EFE5D8;
+  --ink:#2B2118; --sub:#8A7A6A; --faint:#A5978A;
+  --coral:#FF6B4A; --coral-deep:#C4622F; --amber:#FFB347; --amber-deep:#B45309;
+  --sage:#7FA48A; --sage-deep:#5F7A52; --lav:#9B8FC4; --lav-deep:#7A6DA8;
+  --rose:#E27A8B; --sky:#6FA7D8;
+  --cta-g1:#FF7A55; --cta-g2:#FF5B36;
+  --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
+  --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
+  --np-ease-ios: cubic-bezier(.32,.72,0,1);
+  --ff-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  --ff-body: "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
+}
+</style>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #E8E1D8; font-family: var(--ff-body); padding: 28px 20px 60px; }
+  .lab { font-family: var(--ff-display); font-size: 19px; font-weight: 800; color: #2B2118; }
+  .lab small { display: block; font-family: var(--ff-body); font-size: 11.5px; font-weight: 700; color: #7d6f61; margin-top: 3px; line-height: 1.45; letter-spacing: 0; text-transform: none; }
+  .rowwrap { display: flex; gap: 22px; align-items: flex-start; }
+  .col { width: 440px; flex: none; }
+  .colhead { margin-bottom: 10px; min-height: 76px; }
+  .scr { width: 440px; background: var(--canvas); border-radius: 26px; overflow: hidden; box-shadow: 0 20px 50px rgba(43,33,24,.16); padding-bottom: 26px; position: relative; }
+  .sky2 { position: absolute; inset: 0 0 auto 0; height: 300px; background: linear-gradient(180deg, rgba(255,179,71,.18), transparent); pointer-events: none; }
+  .z { position: relative; }
+
+  /* ---------- shared mock chrome ---------- */
+  .ah { display: flex; align-items: center; gap: 11px; padding: 14px 20px 10px; }
+  .ah .av { width: 46px; height: 46px; border-radius: 50%; background: var(--warm); display: grid; place-items: center; font-family: var(--ff-display); font-weight: 800; color: var(--lav-deep); font-size: 17px; border: 2.5px solid var(--coral); position: relative; }
+  .ah .av i { position: absolute; bottom: -4px; right: -4px; width: 19px; height: 19px; border-radius: 50%; background: var(--lav-deep); color: #fff; font-size: 9.5px; font-style: normal; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--canvas); }
+  .ah .n1 { font-family: var(--ff-display); font-size: 15.5px; font-weight: 800; color: var(--ink); }
+  .ah .n2 { font-size: 9.5px; font-weight: 800; color: var(--lav-deep); letter-spacing: .5px; text-transform: uppercase; margin-top: 1px; }
+  .ah .cs { margin-left: auto; display: flex; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--sub); align-items: center; }
+  .ah .sp { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: grid; place-items: center; font-size: 14px; }
+
+  .gr { padding: 4px 22px 10px; }
+  .gr .d { font-size: 10.5px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--coral-deep); }
+  .gr h1 { font-family: var(--ff-display); font-size: 27px; font-weight: 800; letter-spacing: -.6px; color: var(--ink); line-height: 1.14; margin-top: 4px; }
+  .gr h1 em { font-style: normal; color: var(--coral); }
+  .gr.sm h1 { font-size: 21px; }
+
+  .zl { display: flex; align-items: center; gap: 9px; padding: 16px 22px 8px; }
+  .zl span { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
+  .zl i { flex: 1; height: 1px; background: var(--line); }
+
+  /* ---------- THE UNIFIED ITEM CARD (from Train .todaycard) ---------- */
+  .mit { --a: var(--coral); --w: rgba(255,107,74,.10);
+    background: linear-gradient(150deg, var(--w), var(--surface) 74%);
+    border-radius: 24px; padding: 15px 16px 16px; margin: 0 22px 11px; box-shadow: var(--np-shadow-row); }
+  .mit.gym  { --a: var(--coral-deep); --w: rgba(255,107,74,.12); }
+  .mit.fuel { --a: var(--amber-deep); --w: rgba(255,179,71,.16); }
+  .mit.mind { --a: var(--lav-deep);   --w: rgba(155,143,196,.14); }
+  .mit.body { --a: var(--sage-deep);  --w: rgba(127,164,138,.14); }
+  .mit.done { --a: var(--sage-deep);  --w: rgba(127,164,138,.13); }
+  .mit-top { display: flex; align-items: flex-start; gap: 11px; }
+  .mit-ic { flex: none; width: 44px; height: 44px; border-radius: 15px; background: var(--surface); box-shadow: var(--np-shadow-row); display: grid; place-items: center; font-size: 20px; }
+  .mit.done .mit-ic { background: var(--sage-deep); color: #fff; }
+  .mit-hd { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+  .tt { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--a); background: rgba(255,255,255,.82); }
+  .mit-tm { font-size: 12.5px; font-weight: 800; color: var(--a); font-variant-numeric: tabular-nums; }
+  .mit-ti { flex-basis: 100%; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; line-height: 1.14; color: var(--ink); }
+  .mit-st { flex: none; border-radius: 999px; padding: 4px 10px; font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--a); background: var(--surface); }
+  .mit-pl { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+  .mp { border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: var(--sub); background: rgba(255,255,255,.72); font-variant-numeric: tabular-nums; }
+  .mit-cta { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 13px; border-radius: 16px; font-size: 12.5px; font-weight: 800; color: var(--a); background: var(--surface); border: 1px solid color-mix(in srgb, var(--a) 24%, transparent); }
+  .mit-cta.solid { background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border: 0; box-shadow: 0 8px 20px rgba(255,91,54,.30); font-size: 14px; padding: 15px; }
+  .mit-bar { height: 5px; border-radius: 999px; background: rgba(255,255,255,.7); margin-top: 12px; overflow: hidden; }
+  .mit-bar i { display: block; height: 100%; border-radius: 999px; background: var(--a); }
+  .mit-nx { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 11px 12px; border-radius: 15px; background: rgba(255,255,255,.78); }
+  .mit-nx b { font-size: 13px; font-weight: 800; color: var(--ink); }
+  .mit-nx s { display: block; text-decoration: none; font-size: 10.5px; font-weight: 700; color: var(--sub); margin-top: 1px; }
+  .mit-nx .go { margin-left: auto; border-radius: 12px; padding: 9px 14px; font-size: 11.5px; font-weight: 800; color: #fff; background: var(--a); }
+  .db { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: rgba(127,164,138,.16); }
+  .db i { width: 28px; height: 28px; border-radius: 50%; background: var(--sage-deep); color: #fff; display: grid; place-items: center; font-size: 14px; font-style: normal; }
+  .db b { font-size: 12px; font-weight: 800; color: var(--sage-deep); }
+  .db s { display: block; text-decoration: none; font-size: 10.5px; font-weight: 700; color: var(--sub); margin-top: 1px; }
+
+  /* compact row variant of the same language */
+  .mrow { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-radius: 18px; background: var(--surface); box-shadow: var(--np-shadow-row); margin: 0 22px 8px; --a: var(--coral); }
+  .mrow.gym { --a: var(--coral-deep); } .mrow.fuel { --a: var(--amber-deep); }
+  .mrow.mind { --a: var(--lav-deep); } .mrow.body { --a: var(--sage-deep); }
+  .mrow .ic { width: 34px; height: 34px; border-radius: 12px; background: color-mix(in srgb, var(--a) 13%, var(--surface)); display: grid; place-items: center; font-size: 15px; flex: none; }
+  .mrow .tx { flex: 1; min-width: 0; }
+  .mrow .t1 { font-size: 13.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
+  .mrow .t2 { font-size: 10.5px; font-weight: 700; color: var(--sub); margin-top: 2px; }
+  .mrow .tm { font-size: 11.5px; font-weight: 800; color: var(--a); font-variant-numeric: tabular-nums; flex: none; }
+  .mrow .act { flex: none; border-radius: 11px; padding: 8px 12px; font-size: 11px; font-weight: 800; color: var(--a); background: color-mix(in srgb, var(--a) 11%, var(--surface)); }
+  .mrow.is-done { background: transparent; box-shadow: none; }
+  .mrow.is-done .t1 { color: var(--sub); }
+  .mrow.is-done .ic { background: var(--sage-deep); color: #fff; }
+
+  .fold { margin: 4px 22px 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px dashed var(--line); display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--sub); }
+  .fold .cnt { margin-left: auto; color: var(--sage-deep); }
+
+  /* daypart pills (concept C) */
+  .dp { display: flex; gap: 8px; padding: 6px 22px 12px; }
+  .dpi { flex: 1; border-radius: 16px; padding: 10px 6px 9px; text-align: center; background: var(--surface); box-shadow: var(--np-shadow-row); border: 1.5px solid transparent; }
+  .dpi .e { font-size: 15px; display: block; }
+  .dpi .l { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-top: 3px; display: block; }
+  .dpi .s { font-size: 9.5px; font-weight: 800; color: var(--sage-deep); margin-top: 2px; display: block; }
+  .dpi.on { background: var(--ink); border-color: var(--ink); }
+  .dpi.on .l { color: rgba(255,255,255,.72); } .dpi.on .s { color: rgba(255,255,255,.82); }
+  .dpi.dim { opacity: .55; }
+
+  /* day-header card (concept B) */
+  .dh { margin: 2px 22px 12px; padding: 14px 16px 12px; border-radius: 24px; background: var(--surface); box-shadow: var(--np-shadow-row); }
+  .dh .arcw { margin: -4px 0 2px; }
+  .dh .sum { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+  .dh .sc { border-radius: 999px; padding: 6px 11px; font-size: 11px; font-weight: 800; background: var(--warm); color: var(--sub); }
+  .dh .sc b { color: var(--ink); }
+
+  /* grouped todo card (concept B) */
+  .tdc { margin: 0 22px 12px; padding: 14px 16px 8px; border-radius: 24px; background: var(--surface); box-shadow: var(--np-shadow-row); }
+  .tdc .hd { display: flex; align-items: center; margin-bottom: 9px; }
+  .tdc .hd b { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .tdc .hd s { margin-left: auto; text-decoration: none; font-size: 11px; font-weight: 800; color: var(--sub); }
+  .tdc .pbar { height: 5px; border-radius: 999px; background: var(--warm); overflow: hidden; margin-bottom: 12px; }
+  .tdc .pbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--coral), var(--amber)); }
+  .grp { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin: 10px 0 6px; }
+  .ir { display: flex; align-items: center; gap: 10px; padding: 8px 0; --a: var(--coral); }
+  .ir.mind { --a: var(--lav-deep); } .ir.body { --a: var(--sage-deep); } .ir.fuel { --a: var(--amber-deep); }
+  .ir .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; border: 2px solid color-mix(in srgb, var(--a) 45%, transparent); display: grid; place-items: center; }
+  .ir .dot i { width: 7px; height: 7px; border-radius: 50%; background: var(--a); font-style: normal; }
+  .ir.ok .dot { background: var(--sage-deep); border-color: var(--sage-deep); color: #fff; font-size: 12px; font-weight: 800; }
+  .ir .t { flex: 1; font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .ir.ok .t { color: var(--faint); }
+  .ir .xp { font-size: 10.5px; font-weight: 800; color: var(--sage-deep); }
+  .ir .cta2 { border-radius: 11px; padding: 7px 11px; font-size: 10.5px; font-weight: 800; color: var(--a); background: color-mix(in srgb, var(--a) 12%, var(--surface)); }
+
+  .beats2 { display: flex; gap: 7px; padding: 0 22px 12px; }
+  .b2 { flex: 1; border-radius: 15px; padding: 9px 0; text-align: center; background: var(--surface); box-shadow: var(--np-shadow-row); }
+  .b2 .t { font-size: 10px; font-weight: 800; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .b2 .v { font-family: var(--ff-display); font-size: 15px; font-weight: 800; color: var(--ink); margin-top: 2px; }
+  .b2.ok { background: rgba(127,164,138,.16); box-shadow: none; } .b2.ok .v { color: var(--sage-deep); }
+  .b2.now { border: 2px solid var(--coral); } .b2.now .v { font-size: 10.5px; color: var(--coral); font-family: var(--ff-body); }
+  .b2.wait { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); } .b2.wait .v { color: var(--faint); }
+
+  .oneline { margin: 0 22px 11px; padding: 12px 14px; border-radius: 18px; background: var(--surface); box-shadow: var(--np-shadow-row); display: flex; gap: 9px; align-items: center; }
+  .oneline .sp { font-size: 13px; } .oneline .tx { flex: 1; font-size: 12px; color: var(--sub); line-height: 1.45; }
+  .oneline .tx b { color: var(--ink); font-weight: 800; }
+  .oneline .more { font-size: 11px; font-weight: 800; color: var(--coral-deep); flex: none; }
+
+  .stats2 { display: flex; gap: 9px; padding: 0 22px 12px; }
+  .st2 { flex: 1; border-radius: 18px; background: var(--surface); box-shadow: var(--np-shadow-row); padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+  .st2 .rg { width: 30px; height: 30px; border-radius: 50%; flex: none; border: 3.5px solid var(--warm); border-top-color: var(--lav); transform: rotate(35deg); }
+  .st2 .l { font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .st2 .v { font-family: var(--ff-display); font-size: 15px; font-weight: 800; color: var(--ink); }
+
+  .creedchip { margin: 0 22px 12px; padding: 10px 13px; border-radius: 16px; background: rgba(155,143,196,.11); display: flex; gap: 9px; align-items: center; }
+  .creedchip .st { color: var(--lav-deep); font-size: 13px; }
+  .creedchip .tx { flex: 1; font-size: 11.5px; font-style: italic; color: var(--lav-deep); line-height: 1.4; }
+  .creedchip .n { font-size: 10px; font-weight: 800; color: var(--lav-deep); background: rgba(255,255,255,.7); border-radius: 999px; padding: 4px 8px; }
+
+  .tb { position: sticky; bottom: 0; margin: 18px 18px 0; border-radius: 26px; background: rgba(255,255,255,.86); backdrop-filter: blur(14px); box-shadow: 0 -2px 22px rgba(43,33,24,.09); display: flex; align-items: center; justify-content: space-around; padding: 11px 6px 9px; }
+  .tb b { font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); display: block; text-align: center; }
+  .tb b.on { color: var(--coral); }
+  .tb .fab { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--cta-g1), var(--amber)); box-shadow: 0 8px 20px rgba(255,91,54,.4); display: grid; place-items: center; color: #fff; font-size: 24px; margin-top: -22px; }
+
+  .arcsvg { width: 100%; height: 74px; display: block; }
+  .arclb { display: flex; justify-content: space-between; padding: 0 6px; font-size: 9.5px; font-weight: 800; color: var(--faint); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<div class="rowwrap">
+
+<!-- ══════════════════════════ A ══════════════════════════ -->
+<div class="col">
+  <div class="colhead"><div class="lab">A · Akció-konzol<small>„Mi a következő dolgom?" — egy MOST hero + kompakt „később ma" lista. A briefing / arc / stats / fuel-timeline lekerül a Mai-ról.</small></div></div>
+  <div class="scr"><div class="sky2"></div><div class="z">
+
+    <div class="ah"><div class="av">D<i>12</i></div><div><div class="n1">Daniel</div><div class="n2">A fegyelmezett</div></div><div class="cs">🔥6 ⚡1/3 🌑240</div><div class="sp">✨</div></div>
+    <div class="gr sm"><div class="d">Csütörtök · Máj 22 · Reta D3 · 09:12</div><h1>Szép reggelt, Daniel.</h1></div>
+
+    <div class="zl"><span>Most</span><i></i></div>
+    <div class="mit body">
+      <div class="mit-top">
+        <span class="mit-ic">🌅</span>
+        <div class="mit-hd"><span class="tt">Reggeli rutin</span><span class="mit-st">Folyamatban</span><div class="mit-ti">3 / 8 megvan</div></div>
+      </div>
+      <div class="mit-bar"><i style="width:37%"></i></div>
+      <div class="mit-nx"><div><b>50 fekvőtámasz</b><s>napfény után · +10 XP</s></div><span class="go">Pipa</span></div>
+      <div class="mit-pl"><span class="mp">Reggeli videó</span><span class="mp">Gombakávé</span><span class="mp">+3 lépés</span></div>
+    </div>
+
+    <div class="zl"><span>Később ma</span><i></i></div>
+    <div class="mrow mind"><span class="ic">💗</span><div class="tx"><div class="t1">Check-in</div><div class="t2">Hogy vagy? · 2/4 megvan</div></div><span class="tm">14:00</span></div>
+    <div class="mrow gym"><span class="ic">🏋️</span><div class="tx"><div class="t1">Pull Day</div><div class="t2">Gym · MAV · 5 gyakorlat · ~78 perc</div></div><span class="tm">17:00</span></div>
+    <div class="mrow fuel"><span class="ic">🍶</span><div class="tx"><div class="t1">Esti stack</div><div class="t2">Fuel · 3 tétel</div></div><span class="tm">21:15</span></div>
+    <div class="mrow mind"><span class="ic">🌙</span><div class="tx"><div class="t1">Napzárás</div><div class="t2">Villanyoltás 22:30</div></div><span class="tm">21:15</span></div>
+    <div class="mrow"><span class="ic">📖</span><div class="tx"><div class="t1">Olvass 10 percet</div><div class="t2">Küldetés · +15 XP</div></div><span class="act">Naplózz</span></div>
+
+    <div class="fold">✓ Kész ma <span class="cnt">4 tétel · +40 XP</span> <span style="color:var(--faint)">⌄</span></div>
+    <div class="fold" style="border-style:solid;border-color:var(--line)">📊 A napod · briefing, ív, jelek <span class="cnt" style="color:var(--sub)">›</span></div>
+
+    <div class="tb"><b class="on">Ma</b><b>Edzés</b><span class="fab">+</span><b>Fuel</b><b>Én</b></div>
+  </div></div>
+</div>
+
+<!-- ══════════════════════════ B ══════════════════════════ -->
+<div class="col">
+  <div class="colhead"><div class="lab">B · Műszerfal<small>„Hogy áll a napom?" — minden marad, de 4 fegyelmezett zónában, egységes kártyanyelven. A 3 teendő-kártya (küldetés + rutin + napzárás) EGY kártyába olvad.</small></div></div>
+  <div class="scr"><div class="sky2"></div><div class="z">
+
+    <div class="ah"><div class="av">D<i>12</i></div><div><div class="n1">Daniel</div><div class="n2">A fegyelmezett</div></div><div class="cs">🔥6 ⚡1/3 🌑240</div><div class="sp">✨</div></div>
+    <div class="gr"><div class="d">Csütörtök · Máj 22 · Reta D3</div><h1>Szép reggelt — <em>induljunk.</em></h1></div>
+
+    <div class="creedchip"><span class="st">✦</span><span class="tx">„Minden döntésem a célom felé visz — szándékkal élek."</span><span class="n">2 fókusz</span></div>
+
+    <div class="dh">
+      <div class="arcw">
+        <svg class="arcsvg" viewBox="0 0 364 96"><path d="M 20 88 Q 182 -22 344 88" fill="none" stroke="#EFE5D8" stroke-width="4" stroke-linecap="round"/><path d="M 20 88 Q 182 -22 344 88" fill="none" stroke="#FF6B4A" stroke-width="4" stroke-linecap="round" stroke-dasharray="120 400"/><circle cx="66" cy="56" r="6" fill="#7FA48A"/><circle cx="128" cy="34" r="6" fill="#7FA48A"/><circle cx="182" cy="26" r="6.5" fill="#FF6B4A"/><circle cx="248" cy="38" r="6" fill="#fff" stroke="#EFE5D8" stroke-width="2.5"/><circle cx="300" cy="60" r="6" fill="#fff" stroke="#9B8FC4" stroke-width="2.5"/><circle cx="106" cy="42" r="8" fill="#FFB347"/></svg>
+        <div class="arclb"><span>06:30</span><span>10:00</span><span>14:00</span><span>17:00</span><span>21:00</span></div>
+      </div>
+      <div class="sum"><span class="sc"><b>3/8</b> rutin</span><span class="sc"><b>1/3</b> küldetés</span><span class="sc"><b>2/4</b> check-in</span><span class="sc">edzés <b>17:00</b></span></div>
+    </div>
+
+    <div class="zl"><span>Teendők ma</span><i></i></div>
+    <div class="tdc">
+      <div class="hd"><b>⚡ 6 / 14 kész</b><s>+48 XP ›</s></div>
+      <div class="pbar"><i style="width:43%"></i></div>
+      <div class="grp">Reggeli rutin · 3/8</div>
+      <div class="ir body ok"><span class="dot">✓</span><span class="t">Ébredés időben</span><span class="xp">+10</span></div>
+      <div class="ir body ok"><span class="dot">✓</span><span class="t">Reggeli napfény</span><span class="xp">+10</span></div>
+      <div class="ir body"><span class="dot"><i></i></span><span class="t">50 fekvőtámasz</span><span class="cta2">Pipa</span></div>
+      <div class="ir body"><span class="dot"><i></i></span><span class="t">Gombakávé</span><span class="cta2">Pipa</span></div>
+      <div class="grp">Napi küldetések · 1/3</div>
+      <div class="ir ok"><span class="dot">✓</span><span class="t">Reggeli súlymérés</span><span class="xp">+15</span></div>
+      <div class="ir mind"><span class="dot"><i></i></span><span class="t">Olvass ma legalább 10 percet</span><span class="cta2">Naplózz</span></div>
+      <div class="grp">Este</div>
+      <div class="ir mind"><span class="dot"><i></i></span><span class="t">Napzárás · 21:15-kor nyílik</span><span class="cta2">Még vár</span></div>
+    </div>
+
+    <div class="zl"><span>A napod</span><i></i></div>
+    <div class="mit gym">
+      <div class="mit-top"><span class="mit-ic">🏋️</span><div class="mit-hd"><span class="tt">Gym · MAV</span><span class="mit-tm">17:00</span><span class="mit-st">Tervezett</span><div class="mit-ti">Pull Day</div></div></div>
+      <div class="mit-pl"><span class="mp">5 gyakorlat</span><span class="mp">22 szett</span><span class="mp">~78 perc</span></div>
+      <button class="mit-cta solid">Indítsuk →</button>
+    </div>
+    <div class="mit fuel">
+      <div class="mit-top"><span class="mit-ic">🍶</span><div class="mit-hd"><span class="tt">Fuel</span><span class="mit-tm">18:11</span><span class="mit-st">Most</span><div class="mit-ti">Túró · áfonya · méz</div></div></div>
+      <div class="mit-pl"><span class="mp">quick</span><span class="mp">21:15 esti stack</span><span class="mp">21:45 vacsora</span></div>
+      <button class="mit-cta">+ Logold</button>
+    </div>
+    <div class="oneline"><span class="sp">✨</span><span class="tx"><b>Reggeli briefing</b> — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat…</span><span class="more">bővebben</span></div>
+
+    <div class="zl"><span>Jelek</span><i></i></div>
+    <div class="beats2"><div class="b2 ok"><div class="t">06:30</div><div class="v">7</div></div><div class="b2 ok"><div class="t">10:00</div><div class="v">8</div></div><div class="b2 now"><div class="t">14:00</div><div class="v">koppints</div></div><div class="b2 wait"><div class="t">20:00</div><div class="v">·</div></div></div>
+    <div class="stats2"><div class="st2"><span class="rg"></span><div><div class="l">Alvás</div><div class="v">7.2h</div></div></div><div class="st2"><span class="rg" style="border-top-color:var(--sage)"></span><div><div class="l">Súly</div><div class="v">78.6</div></div></div><div class="st2"><span class="rg"></span><div><div class="l">HRV</div><div class="v">64</div></div></div></div>
+
+    <div class="tb"><b class="on">Ma</b><b>Edzés</b><span class="fab">+</span><b>Fuel</b><b>Én</b></div>
+  </div></div>
+</div>
+
+<!-- ══════════════════════════ C reggel ══════════════════════════ -->
+<div class="col">
+  <div class="colhead"><div class="lab">C · Napszak-vezérelt <span style="color:var(--coral-deep)">(reggel)</span><small>Ugyanaz a screen 3 arca. Felül napszak-pillek (mint a Train DayStrip): a mostani automatikusan aktív, de átkoppinthatsz. Minden arc ≈1 képernyő.</small></div></div>
+  <div class="scr"><div class="sky2"></div><div class="z">
+
+    <div class="ah"><div class="av">D<i>12</i></div><div><div class="n1">Daniel</div><div class="n2">A fegyelmezett</div></div><div class="cs">🔥6 ⚡1/3 🌑240</div><div class="sp">✨</div></div>
+    <div class="gr sm"><div class="d">Csütörtök · Máj 22 · Reta D3</div><h1>Szép reggelt, Daniel.</h1></div>
+
+    <div class="dp">
+      <div class="dpi on"><span class="e">🌅</span><span class="l">Reggel</span><span class="s">3/8</span></div>
+      <div class="dpi dim"><span class="e">☀️</span><span class="l">Nap</span><span class="s" style="color:var(--faint)">2 tétel</span></div>
+      <div class="dpi dim"><span class="e">🌙</span><span class="l">Este</span><span class="s" style="color:var(--faint)">4 tétel</span></div>
+    </div>
+
+    <div class="mit body">
+      <div class="mit-top"><span class="mit-ic">🌅</span><div class="mit-hd"><span class="tt">Reggeli rutin</span><span class="mit-st">3 / 8</span><div class="mit-ti">Indul a lánc</div></div></div>
+      <div class="mit-bar"><i style="width:37%"></i></div>
+      <div class="mit-nx"><div><b>50 fekvőtámasz</b><s>napfény után · +10 XP</s></div><span class="go">Pipa</span></div>
+      <div class="mit-pl"><span class="mp">Reggeli videó</span><span class="mp">Gombakávé</span><span class="mp">Fehérjés reggeli</span><span class="mp">+2</span></div>
+    </div>
+
+    <div class="mit mind">
+      <div class="mit-top"><span class="mit-ic">✨</span><div class="mit-hd"><span class="tt">Mezo · reggeli briefing</span><div class="mit-ti" style="font-size:15px;font-family:var(--ff-body);font-weight:600;line-height:1.5">Week 3, Day 4 — érzed a tempót. Tegnap a Lat Pulldownnál pronated griffel jobban ült a váll, ma a Pull Day-en ugyanígy menjünk.</div></div></div>
+      <div class="mit-pl"><span class="mp">alvás 7.2h</span><span class="mp">súly 78.6</span><span class="mp">Reta D3</span></div>
+    </div>
+
+    <div class="creedchip"><span class="st">✦</span><span class="tx">„Minden döntésem a célom felé visz — szándékkal élek."</span><span class="n">+ Fókusz</span></div>
+
+    <div class="zl"><span>Ma még vár rád</span><i></i></div>
+    <div class="mrow gym"><span class="ic">🏋️</span><div class="tx"><div class="t1">Pull Day</div><div class="t2">Gym · MAV · ~78 perc</div></div><span class="tm">17:00</span></div>
+    <div class="mrow mind"><span class="ic">💗</span><div class="tx"><div class="t1">Check-in</div><div class="t2">2/4 megvan</div></div><span class="tm">14:00</span></div>
+    <div class="mrow"><span class="ic">📖</span><div class="tx"><div class="t1">Olvass 10 percet</div><div class="t2">Küldetés · +15 XP</div></div><span class="act">Naplózz</span></div>
+
+    <div class="tb"><b class="on">Ma</b><b>Edzés</b><span class="fab">+</span><b>Fuel</b><b>Én</b></div>
+  </div></div>
+</div>
+
+<!-- ══════════════════════════ C este ══════════════════════════ -->
+<div class="col">
+  <div class="colhead"><div class="lab">C · Napszak-vezérelt <span style="color:var(--lav-deep)">(este, 21:05)</span><small>Ugyanaz a kód, más arc: a hero a napzárás, a reggeli dolgok összecsuklanak a „Reggel" pill mögé. Semmi elavult CTA.</small></div></div>
+  <div class="scr" style="background:#F6F1EC"><div class="sky2" style="background:linear-gradient(180deg, rgba(155,143,196,.20), transparent)"></div><div class="z">
+
+    <div class="ah"><div class="av">D<i>12</i></div><div><div class="n1">Daniel</div><div class="n2">A fegyelmezett</div></div><div class="cs">🔥6 ⚡2/3 🌑255</div><div class="sp">✨</div></div>
+    <div class="gr sm"><div class="d">Csütörtök · Máj 22 · Reta D3 · 21:05</div><h1>Szép estét — <em>zárjuk a napot.</em></h1></div>
+
+    <div class="dp">
+      <div class="dpi dim"><span class="e">🌅</span><span class="l">Reggel</span><span class="s">6/8 ✓</span></div>
+      <div class="dpi dim"><span class="e">☀️</span><span class="l">Nap</span><span class="s">2/2 ✓</span></div>
+      <div class="dpi on"><span class="e">🌙</span><span class="l">Este</span><span class="s">1/4</span></div>
+    </div>
+
+    <div class="mit mind">
+      <div class="mit-top"><span class="mit-ic">🌙</span><div class="mit-hd"><span class="tt">Napzárás</span><span class="mit-tm">21:15</span><span class="mit-st">Mindjárt</span><div class="mit-ti">Zárjuk le a napot</div></div></div>
+      <div class="mit-pl"><span class="mp">5 felvonás</span><span class="mp">~6 perc</span><span class="mp">villanyoltás 22:30</span></div>
+      <button class="mit-cta solid" style="background:linear-gradient(135deg,#9B8FC4,#7A6DA8);box-shadow:0 8px 20px rgba(122,109,168,.32)">Zárjuk le a napot ✨</button>
+    </div>
+
+    <div class="mit" style="--a:var(--lav-deep);--w:rgba(155,143,196,.10)">
+      <div class="mit-top"><span class="mit-ic">🕯️</span><div class="mit-hd"><span class="tt">Esti leállás</span><span class="mit-st">🛏️ még 1h25</span><div class="mit-ti">Kapcsolj le</div></div></div>
+      <div class="mit-pl"><span class="mp">📵 képernyők le</span><span class="mp">🔶 meleg fény</span><span class="mp">❄️ 18 °C</span></div>
+      <div class="mit-nx"><div><b>Wind-down, képernyő le</b><s>napzárás után · +5 XP</s></div><span class="go">Pipa</span></div>
+    </div>
+
+    <div class="mrow mind"><span class="ic">🍶</span><div class="tx"><div class="t1">Esti stack</div><div class="t2">Fuel · 3 tétel</div></div><span class="act">Logold</span></div>
+    <div class="mrow mind"><span class="ic">💗</span><div class="tx"><div class="t1">Esti check-in</div><div class="t2">Az utolsó a mai 4-ből</div></div><span class="act">Koppints</span></div>
+
+    <div class="zl"><span>Ahogy a nap telt</span><i></i></div>
+    <div class="mit done" style="margin-bottom:11px">
+      <div class="mit-top"><span class="mit-ic">✓</span><div class="mit-hd"><span class="tt">Pull Day</span><span class="mit-tm">17:00</span><div class="mit-ti">Kész · 22 szett</div></div></div>
+      <div class="db"><i>✓</i><div><b>+180 XP · PR: Chest Row 107.5 × 8</b><s>Megnézem az összegzést</s></div></div>
+    </div>
+    <div class="stats2"><div class="st2"><span class="rg"></span><div><div class="l">Alvás</div><div class="v">7.2h</div></div></div><div class="st2"><span class="rg" style="border-top-color:var(--sage)"></span><div><div class="l">Súly</div><div class="v">78.6</div></div></div><div class="st2"><span class="rg" style="border-top-color:var(--coral)"></span><div><div class="l">XP ma</div><div class="v">+248</div></div></div></div>
+
+    <div class="tb"><b class="on">Ma</b><b>Edzés</b><span class="fab">+</span><b>Fuel</b><b>Én</b></div>
+  </div></div>
+</div>
+
+</div>
+</body>
+</html>

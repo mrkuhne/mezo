@@ -1,4 +1,4 @@
-import { buildArcPoints, arcProgress, pointXY } from '@/features/today/logic/dayArc'
+import { buildArcPoints, pointXY } from '@/features/today/logic/dayArc'
 import type { CheckinSlot } from '@/data/types'
 
 const slot = (time: string, state: CheckinSlot['state']): CheckinSlot =>
@@ -25,12 +25,8 @@ test('buildArcPoints omits the workout point when there is no workout today', ()
   expect(pts.map(p => p.kind)).toEqual(['checkin-done', 'sleep'])
 })
 
-test('arcProgress maps the 04:00–24:00 day window to 0..1', () => {
-  expect(arcProgress(new Date('2026-07-13T04:00:00'))).toBeCloseTo(0, 2)
-  expect(arcProgress(new Date('2026-07-13T14:00:00'))).toBeCloseTo(0.5, 2)
-  expect(arcProgress(new Date('2026-07-13T23:59:00'))).toBeCloseTo(1, 1)
-  expect(arcProgress(new Date('2026-07-13T02:00:00'))).toBe(1) // after midnight = day over
-})
+// `arcProgress` (the sun-dot cursor) was dropped with DayArc.tsx in mezo-1khu — the only
+// export the surviving consumer (features/ritual DayStoryStep) does not use.
 
 test('pointXY follows the arc geometry (endpoints and apex)', () => {
   expect(pointXY(0)).toEqual({ x: 22, y: 100 })
