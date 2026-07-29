@@ -3,6 +3,19 @@ import { usePushSubscription } from '@/data/hooks'
 import { PushInstallGate } from '@/features/me/components/PushInstallGate'
 import { Toggle } from '@/shared/ui/Toggle'
 import { CtaPrimary } from '@/shared/ui/Cta'
+import type { PushErrorCode } from '@/data/types'
+
+/** Honest, per-cause copy for a failed opt-in — a toggle that silently snaps back tells the
+ *  user nothing and leaves nothing to diagnose. `vapid-missing` is called out separately
+ *  because it is a BUILD misconfiguration (the exact state a fresh deploy hits), so the line
+ *  has to point at the app rather than invite a pointless retry. */
+const PUSH_ERROR_COPY: Record<PushErrorCode, string> = {
+  'vapid-missing':
+    'Ez a build nem kapott push-kulcsot, így az értesítések nem kapcsolhatók be. Ez alkalmazásoldali hiba — nem a te eszközöddel van gond.',
+  'register-failed':
+    'Az eszköz feliratkozott, de a szerver nem vette nyilvántartásba. Próbáld újra kicsit később.',
+  failed: 'Az értesítések beállítása nem sikerült. Próbáld újra.',
+}
 
 /** Me → Értesítések (bd mezo-h4wp.6.1). N1 owns the master push opt-in + the iOS install
  *  gate + a test-push action; N2 adds the category list, N3 the volume-preview header.
@@ -75,6 +88,14 @@ export function NotificationsPage() {
               disabled={push.busy || push.permission === 'denied'}
             />
           </div>
+          {/* The whole point of the hook's `error`: without this line a failed subscribe is a
+              toggle that flips back to off with the status line still reading „Nincs
+              engedélyezve" — indistinguishable from a tap that never registered. */}
+          {push.error && (
+            <p className="text-error" style={{ fontSize: 11, marginTop: 10 }} role="alert">
+              {PUSH_ERROR_COPY[push.error]}
+            </p>
+          )}
         </div>
 
         {push.enabled && (

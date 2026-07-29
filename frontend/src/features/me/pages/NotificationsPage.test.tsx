@@ -23,6 +23,7 @@ function push(overrides: Partial<PushSubscriptionState> = {}): PushSubscriptionS
     permission: 'default',
     enabled: false,
     busy: false,
+    error: null,
     subscribe: vi.fn().mockResolvedValue(true),
     unsubscribe: vi.fn().mockResolvedValue(undefined),
     sendTest: vi.fn().mockResolvedValue({ attempted: 1, sent: 1 }),
@@ -137,6 +138,33 @@ describe('NotificationsPage', () => {
     hooks.usePushSubscription.mockReturnValue(p)
     renderPage()
     expect(screen.getByRole('button', { name: 'Teszt értesítés küldése' })).toBeDisabled()
+  })
+
+  it('a vapid-missing error names the build misconfiguration rather than blaming the device', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: false, error: 'vapid-missing' }))
+    renderPage()
+    // The exact state a fresh deploy hits — the copy must not invite a pointless retry.
+    expect(screen.getByRole('alert')).toHaveTextContent(/push-kulcsot/i)
+    expect(screen.getByRole('alert')).toHaveTextContent(/alkalmazásoldali hiba/i)
+  })
+
+  it('a register-failed error is reported instead of the toggle silently snapping back', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: false, error: 'register-failed' }))
+    renderPage()
+    expect(screen.getByRole('alert')).toHaveTextContent(/a szerver nem vette nyilvántartásba/i)
+    // ...and the honest status line still says it is off, so the two never contradict each other.
+    expect(screen.getByText('Nincs engedélyezve')).toBeInTheDocument()
+  })
+
+  it('a generic failure gets the generic line, and no error at all renders no alert', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ error: 'failed' }))
+    const { unmount } = renderPage()
+    expect(screen.getByRole('alert')).toHaveTextContent('Az értesítések beállítása nem sikerült. Próbáld újra.')
+    unmount()
+
+    hooks.usePushSubscription.mockReturnValue(push({ error: null }))
+    renderPage()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('shows the send result after a successful test push', async () => {

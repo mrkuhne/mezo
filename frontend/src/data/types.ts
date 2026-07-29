@@ -1001,12 +1001,23 @@ export interface Achievements {
 // ── Push notifications (N1 delivery spine, mezo-h4wp) ────────────────────────
 // The browser IS the source of truth for `enabled` (a live PushSubscription on this
 // device), never the server — usePushSubscription() is deliberately not a useDualQuery.
+/** Why the last push action failed — a reportable code the page maps to Hungarian copy.
+ *  - `vapid-missing`: the bundle was built without `VITE_VAPID_PUBLIC`, so
+ *    `pushManager.subscribe()` would reject with `InvalidAccessError` on a zero-length
+ *    `applicationServerKey`. A BUILD misconfiguration, not something the user can fix.
+ *  - `register-failed`: the browser subscribed but the backend did not record the device —
+ *    the split state where the toggle would otherwise read „engedélyezve" while every push
+ *    reports `0 próbálkozás`.
+ *  - `failed`: anything else (the browser refused, the service worker never became ready). */
+export type PushErrorCode = 'vapid-missing' | 'register-failed' | 'failed'
+
 export interface PushSubscriptionState {
   supported: boolean       // 'serviceWorker' in navigator && 'PushManager' in window
   standalone: boolean      // display-mode: standalone (iOS gate)
   permission: NotificationPermission
   enabled: boolean         // a live PushSubscription exists on this device
   busy: boolean
+  error: PushErrorCode | null   // last failure, so the UI never snaps back silently
   subscribe: () => Promise<boolean>
   unsubscribe: () => Promise<void>
   sendTest: () => Promise<{ attempted: number; sent: number }>

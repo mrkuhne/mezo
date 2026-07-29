@@ -3,7 +3,7 @@ import { isMockMode } from '@/data/_client/mode'
 import type { components } from '@/data/_client/api.gen'
 import { notificationApi } from '@/data/notification/notificationApi'
 import { mockPushState } from '@/data/notification/notificationMock'
-import type { PushSubscriptionState } from '@/data/types'
+import type { PushErrorCode, PushSubscriptionState } from '@/data/types'
 
 type SubscriptionRequest = components['schemas']['PushSubscriptionRequest']
 
@@ -62,13 +62,28 @@ export function usePushSubscription(): PushSubscriptionState {
   )
   const [enabled, setEnabled] = useState(mock ? mockPushState.enabled : false)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<PushErrorCode | null>(null)
 
   useEffect(() => {
     if (mock || !supported) return
+    let cancelled = false
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setEnabled(!!sub))
+      .then((sub) => {
+        if (cancelled) return undefined
+        setEnabled(!!sub)
+        if (!sub) return undefined
+        // SELF-HEAL. The browser is the source of truth for `enabled`, so a browser
+        // subscription with no server row reports „engedélyezve" forever while /test answers
+        // `0 próbálkozás`. That split state happens two ways: a register() that failed after a
+        // successful subscribe(), and a 404/410 prune that soft-deleted the row under us.
+        // POST /subscription is an idempotent upsert, so re-registering is safe and repairs both.
+        return notificationApi.register(toSubscriptionRequest(sub)).catch(() => {
+          if (!cancelled) setError('register-failed')
+        })
+      })
       .catch(() => {})
+    return () => { cancelled = true }
   }, [mock, supported])
 
   const subscribe = useCallback(async (): Promise<boolean> => {
@@ -76,9 +91,20 @@ export function usePushSubscription(): PushSubscriptionState {
     if (mock) {
       mockPushState.enabled = true
       setEnabled(true)
+      setError(null)
       return true
     }
+    // Guarded BEFORE any browser call: a blank VITE_VAPID_PUBLIC (the state a fresh deploy hits
+    // if the build step never received it) decodes to a zero-length applicationServerKey and
+    // pushManager.subscribe() rejects with InvalidAccessError. Reported as a distinct, honest
+    // reason rather than spent as an opaque generic failure.
+    const vapidPublic: string | undefined = import.meta.env.VITE_VAPID_PUBLIC
+    if (!vapidPublic) {
+      setError('vapid-missing')
+      return false
+    }
     setBusy(true)
+    setError(null)
     try {
       const perm = await Notification.requestPermission()
       setPermission(perm)
@@ -86,11 +112,26 @@ export function usePushSubscription(): PushSubscriptionState {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC ?? ''),
+        applicationServerKey: urlB64ToUint8Array(vapidPublic),
       })
-      await notificationApi.register(toSubscriptionRequest(sub))
+      try {
+        await notificationApi.register(toSubscriptionRequest(sub))
+      } catch {
+        // The browser subscription is live but the server has no row. Deliberately NOT rolled
+        // back: the mount-effect self-heal above re-registers it on the next visit, whereas an
+        // unsubscribe() here would throw away a perfectly good subscription. Reported so the
+        // user sees WHY the toggle did not stick instead of watching it snap back in silence.
+        setError('register-failed')
+        return false
+      }
       setEnabled(true)
       return true
+    } catch {
+      // Notification.requestPermission / serviceWorker.ready / pushManager.subscribe rejecting.
+      // Caught here because NotificationsPage's onClick is an un-awaited async handler — an
+      // escaping rejection becomes an unhandled rejection with nothing shown anywhere.
+      setError('failed')
+      return false
     } finally {
       setBusy(false)
     }
@@ -101,9 +142,11 @@ export function usePushSubscription(): PushSubscriptionState {
     if (mock) {
       mockPushState.enabled = false
       setEnabled(false)
+      setError(null)
       return
     }
     setBusy(true)
+    setError(null)
     try {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.getSubscription()
@@ -112,6 +155,8 @@ export function usePushSubscription(): PushSubscriptionState {
         await sub.unsubscribe()
       }
       setEnabled(false)
+    } catch {
+      setError('failed')
     } finally {
       setBusy(false)
     }
@@ -122,5 +167,5 @@ export function usePushSubscription(): PushSubscriptionState {
     return notificationApi.test()
   }, [mock])
 
-  return { supported, standalone, permission, enabled, busy, subscribe, unsubscribe, sendTest }
+  return { supported, standalone, permission, enabled, busy, error, subscribe, unsubscribe, sendTest }
 }
