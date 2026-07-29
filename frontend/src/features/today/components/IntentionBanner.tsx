@@ -51,29 +51,48 @@ export function IntentionBanner({ variant }: { variant: 'chip' | 'reflect' }) {
   return (
     <>
       <div className="creedchip">
-        <span className="creedchip-st" aria-hidden="true">✦</span>
-        {data.creed ? (
-          // The creed itself is the edit affordance — CreedSheet has no other entry point,
-          // so the retired `szerkeszt` button's job (and its label) moved onto the text.
-          <button type="button" className="creedchip-tx" aria-label="Vezérelv szerkesztése"
-            onClick={() => setCreedOpen(true)}>
-            „{data.creed}"
-          </button>
-        ) : (
-          <span className="creedchip-tx" style={{ fontStyle: 'normal' }}>
-            Fogalmazd meg az irányt, ami a döntéseidet vezeti — egy mondat, amire minden nap ránézel.
-          </span>
+        <div className="creedchip-hd">
+          <span className="creedchip-st" aria-hidden="true">✦</span>
+          {data.creed ? (
+            // The creed itself is the edit affordance — CreedSheet has no other entry point,
+            // so the retired `szerkeszt` button's job (and its label) moved onto the text.
+            <button type="button" className="creedchip-tx" aria-label="Vezérelv szerkesztése"
+              onClick={() => setCreedOpen(true)}>
+              „{data.creed}"
+            </button>
+          ) : (
+            <span className="creedchip-tx" style={{ fontStyle: 'normal' }}>
+              Fogalmazd meg az irányt, ami a döntéseidet vezeti — egy mondat, amire minden nap ránézel.
+            </span>
+          )}
+          {data.foci.length > 0 && (
+            <span className="creedchip-cnt">{data.foci.length} / {data.focusCap}</span>
+          )}
+          {!data.creed ? (
+            <button type="button" className="creedchip-go" onClick={() => setCreedOpen(true)}>
+              + Vezérelv megírása
+            </button>
+          ) : data.foci.length < data.focusCap ? (
+            <button type="button" className="creedchip-go" aria-label="Fókusz hozzáadása"
+              onClick={() => setFocusOpen(true)}>
+              + Mai fókusz
+            </button>
+          ) : null /* at the daily cap — no dead control (the ItemRow doctrine) */}
+        </div>
+
+        {/* The day's stated intentions — WITHOUT this the add-a-focus path is write-only
+            (mezo-j7u4 fix round 2). Rendered whenever foci exist, even creed-less ones
+            (RoutineCard's IntentionSheet can produce those), so no focus is ever invisible. */}
+        {data.foci.length > 0 && (
+          <div className="creedchip-foci">
+            {data.foci.map((f) => (
+              <div key={f.id} className="creedchip-fx">
+                <span className="creedchip-fx-mark" aria-hidden="true">◆</span>
+                <span>{f.text}</span>
+              </div>
+            ))}
+          </div>
         )}
-        {!data.creed ? (
-          <button type="button" className="creedchip-go" onClick={() => setCreedOpen(true)}>
-            + Vezérelv megírása
-          </button>
-        ) : data.foci.length < data.focusCap ? (
-          <button type="button" className="creedchip-go" aria-label="Fókusz hozzáadása"
-            onClick={() => setFocusOpen(true)}>
-            + Mai fókusz
-          </button>
-        ) : null /* at the daily cap — no dead control (the ItemRow doctrine) */}
       </div>
 
       {focusOpen && <IntentionSheet creed={data.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}

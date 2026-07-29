@@ -21,16 +21,16 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 
 // Mock goal: bed 23:15 / wake 06:45 (data/me/sleepGoal.ts) ->
 // dim 21:45-22:15 · winddown 22:15-23:15 · night 23:15-06:15.
-const renderBanner = () =>
-  render(
-    <QueryWrapper>
-      <LevelUpProvider>
-        <MemoryRouter>
-          <WindDownBanner />
-        </MemoryRouter>
-      </LevelUpProvider>
-    </QueryWrapper>,
-  )
+const tree = () => (
+  <QueryWrapper>
+    <LevelUpProvider>
+      <MemoryRouter>
+        <WindDownBanner />
+      </MemoryRouter>
+    </LevelUpProvider>
+  </QueryWrapper>
+)
+const renderBanner = () => render(tree())
 
 const setClock = (iso: string) => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -105,6 +105,25 @@ describe('WindDownBanner', () => {
     expect(pipa()).toBeNull()
     // the habit row retires once ticked — the done line speaks for it
     expect(screen.queryByText('Wind-down, képernyő le')).toBeNull()
+  })
+
+  test('an in-flight check withdraws the Pipa pill, so a second press cannot double-submit', () => {
+    setClock('2026-07-24T22:30:00')
+    const check = vi.fn().mockResolvedValue([])
+    const actions = (pending: boolean) => ({
+      check, uncheck: vi.fn(), pending, consumeLevelUps: vi.fn(),
+    })
+    hooks.useHabitActions.mockReturnValue(actions(false))
+    const { rerender } = renderBanner()
+
+    fireEvent.click(pipa()!)
+    expect(check).toHaveBeenCalledTimes(1)
+
+    // the mutation is now in flight — this is the re-render React Query triggers
+    hooks.useHabitActions.mockReturnValue(actions(true))
+    rerender(tree())
+    expect(pipa()).toBeNull()          // no live control to press again
+    expect(check).toHaveBeenCalledTimes(1)
   })
 
   test('a level-up from the wind_down check reaches the LevelUp overlay', async () => {
