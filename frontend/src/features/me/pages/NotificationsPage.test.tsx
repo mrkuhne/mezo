@@ -226,6 +226,21 @@ describe('NotificationsPage', () => {
     hooks.usePushSubscription.mockReturnValue(push({ enabled: false, permission: 'default' }))
     renderPage()
     expect(await screen.findByText('Napi terhelés')).toBeInTheDocument()
-    expect(screen.getByText(/\/ nap$/)).toBeInTheDocument()
+    // Anchored to digits-then-"/ nap" so it never also matches the fuel_slot row's derived
+    // sub-line ("{count} slot / nap"), which lands on the SAME "/ nap" substring.
+    expect(screen.getByText(/^\d+ \/ nap$/)).toBeInTheDocument()
+  })
+
+  // Fix round 1 (mezo-h4wp.6.3 review): the category rows show LIVE per-day sub-lines derived
+  // from the same anchors the preview header uses, not just the static meta description.
+  it('derives live sub-lines for rows backed by data the page already has', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    await screen.findByText('Mezo megszólal')
+    // ritual's opensAt / lights_out's bedTime come straight from the mock ritual day + sleep goal
+    // (see test/msw + mock seeds) — asserting the STATIC fallback text is absent proves the row
+    // is showing something derived, not the generic copy.
+    expect(screen.queryByText('A napzárás-ablak nyílásakor')).not.toBeInTheDocument()
+    expect(screen.queryByText('Az esti alvás-horgonynál')).not.toBeInTheDocument()
   })
 })

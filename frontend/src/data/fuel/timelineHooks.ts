@@ -14,7 +14,6 @@
 
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString, currentWeekOf } from '@/shared/lib/dates'
-import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import { getScoredMeal } from '@/data/fuel/fuel'
 import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { useRecipes } from '@/data/fuel/recipeHooks'
@@ -25,44 +24,22 @@ import { useBiometricProfile } from '@/data/me/biometricHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
-import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
-import { buildDayPlan, deriveDailyBudget, type PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
-import { sportOf, SPORT_TITLES } from '@/features/train/logic/sportKinds'
+import { buildDayPlan, deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
 import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
-import { buildProtocol, type ProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { buildProtocol, deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
-import type { RunningBlockResponse } from '@/data/train/runningApi'
-import type { FuelSlot, GymSchedule, SportSchedule } from '@/data/types'
+import type { FuelSlot } from '@/data/types'
 
 // Fixed mock "now" (spec D6) — deterministic demo + tests.
 export const MOCK_NOW_HHMM = '13:30'
 
-// The pre-workout supplement stack lands T-40min before the first training block (spec §5).
-const PRE_WORKOUT_STACK_LEAD_MIN = 40
-
-/** Today's real training blocks (gym / sport / run), in derivation order. Each surface reuses the
- *  same today-derivation the Train views use so the planner and Train agree on "what's today". */
-export function deriveBlocks(
-  gymSchedule: GymSchedule | null,
-  sport: { schedule: SportSchedule | null },
-  activeRunningBlock: RunningBlockResponse | null,
-): PlannerBlock[] {
-  const blocks: PlannerBlock[] = []
-  // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
-  const gym = gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
-  if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
-  // Sport: today's session from the recurring weekly schedule. The label carries the session's
-  // sport identity (volleyball|cross|trx) so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
-  const vb = sport.schedule?.volleyball.sessions.find(s => s.today && s.time)
-  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
-  // Run: today's prescribed session in the active block's current week (needs a plan time).
-  // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
-  const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
-  if (run?.timeOfDay) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
-  return blocks
-}
+// `deriveBlocks` now lives in `features/fuel/logic/buildProtocol.ts` (moved so the notification
+// schedule writer + settings preview can reuse it, and so `deriveProtocolAnchors` there is the
+// ONE place `PRE_WORKOUT_STACK_LEAD_MIN` is applied) — re-exported here so existing imports
+// from this module (`data/fuel/timelineHooks`) keep working unchanged.
+export { deriveBlocks }
 
 /** The ACTIVE goal's prescription segment for the CURRENT goal-week — the day's budget source.
  *  Current week uses the same day-span math the running/meso blocks use (`currentWeekOf`) over the
@@ -106,7 +83,6 @@ export function useFuelTimeline(date: string = localDateString()) {
   const mealsPerDay = settings.mealsPerDay
 
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
-  const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
 
   // Dynamic energy inputs (mezo-1oy5 / mezo-eujg): current weigh-in drives the MET activity burn +
   // the BMR floor; BMR×neat is the lifestyle maintenance and the segment's explicit
@@ -122,13 +98,10 @@ export function useFuelTimeline(date: string = localDateString()) {
   })
 
   // Protocol slots (P2 selection-only): the goal's selection, else all non-medication stash items;
-  // anchor the slot times to the real day (wake, first-block − 40min, bedtime).
+  // anchor the slot times to the real day via the CANONICAL deriveProtocolAnchors (wake,
+  // first-block − 40min, bedtime) — never re-derived inline here.
   const selection = selectedIds ?? stash.filter(s => s.type !== 'medication').map(s => s.id)
-  const anchors: ProtocolAnchors = {
-    wake,
-    preWorkout: firstBlock ? toHHmm(toMin(firstBlock.time) - PRE_WORKOUT_STACK_LEAD_MIN) : undefined,
-    bedtime: bed,
-  }
+  const anchors = deriveProtocolAnchors(gymSchedule, sport, activeRunningBlock, wake, bed)
   const protocolSlots = buildProtocol(selection, stash, anchors).slots
 
   // `nowHHmm` is injected (buildDayPlan stays clock-free/deterministic). Mock pins a fixed now

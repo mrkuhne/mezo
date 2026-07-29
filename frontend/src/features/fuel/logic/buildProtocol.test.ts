@@ -1,6 +1,6 @@
-import { buildProtocol } from '@/features/fuel/logic/buildProtocol'
+import { buildProtocol, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import { supplementsStash } from '@/data/fuel/fuel'
-import type { SupplementStashItem } from '@/data/types'
+import type { GymSchedule, SupplementStashItem } from '@/data/types'
 
 test('builds a timed protocol from selected stash items', () => {
   const selected = supplementsStash.filter(s => s.type !== 'medication').map(s => s.id)
@@ -102,4 +102,45 @@ test('no anchors: every hardcoded mock time is preserved', () => {
   expect(byKind(built, 'pre-workout')?.time).toBe('06:50')
   expect(byKind(built, 'fat-bound')?.time).toBe('12:30')
   expect(byKind(built, 'evening')?.time).toBe('21:00')
+})
+
+// --- deriveProtocolAnchors — the CANONICAL preWorkout derivation (fix round 1, mezo-h4wp.6.3) ---
+// Pinning the bug the review caught: without this, both the notification schedule writer and
+// the settings preview called buildProtocol with only {wake, bedtime}, so the pre-workout/
+// pre-snack slots silently used the wake+60 REST-DAY fallback on every training day, hours off
+// the real gym time. deriveProtocolAnchors is the one place `preWorkout` is derived from the
+// day's training blocks — useFuelTimeline, the notification writer, and the settings preview
+// must all go through it rather than re-deriving the same minute independently.
+describe('deriveProtocolAnchors', () => {
+  const gymToday: GymSchedule = {
+    weeklyTimes: [
+      { day: 'Szerda', active: true, today: true, time: '17:00', duration: 75, type: 'Láb nap' },
+    ],
+  }
+  const noSport = { schedule: null }
+
+  test('with a gym schedule present, preWorkout anchors to gym time minus 40 minutes — never wake + 60', () => {
+    const anchors = deriveProtocolAnchors(gymToday, noSport, null, '06:30', '22:30')
+    expect(anchors.preWorkout).toBe('16:20')
+    expect(anchors.wake).toBe('06:30')
+    expect(anchors.bedtime).toBe('22:30')
+  })
+
+  test('feeding the derived anchors into buildProtocol lands the pre-workout slot at the gym-anchored time', () => {
+    const sel = realStash.map(s => s.id)
+    const anchors = deriveProtocolAnchors(gymToday, noSport, null, '06:30', '22:30')
+    const built = buildProtocol(sel, realStash, anchors)
+    expect(byKind(built, 'pre-workout')?.time).toBe('16:20')
+    // The bug this pins: without a derived preWorkout, buildProtocol's rest-day fallback
+    // (wake + 60) would have put this slot at 07:30 — hours away from the real 17:00 gym time.
+    expect(byKind(built, 'pre-workout')?.time).not.toBe('07:30')
+  })
+
+  test('with no training scheduled today, preWorkout is undefined — buildProtocol applies its own documented rest-day fallback', () => {
+    const anchors = deriveProtocolAnchors(null, noSport, null, '07:00', '23:00')
+    expect(anchors.preWorkout).toBeUndefined()
+    const sel = realStash.map(s => s.id)
+    const built = buildProtocol(sel, realStash, anchors)
+    expect(byKind(built, 'pre-workout')?.time).toBe('08:00') // wake + 60 — buildProtocol's own, intentional fallback
+  })
 })

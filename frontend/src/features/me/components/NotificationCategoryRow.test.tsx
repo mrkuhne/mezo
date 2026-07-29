@@ -46,4 +46,17 @@ describe('NotificationCategoryRow', () => {
     await userEvent.click(toggle)
     expect(onToggle).not.toHaveBeenCalled()
   })
+
+  // Fix round 1 (mezo-h4wp.6.3 review): the row must show a page-derived live sub-line when the
+  // page has one, and fall back to the static NOTIFICATION_CATEGORY_META description otherwise.
+  it('shows the caller-supplied derived subLine instead of the static meta description', () => {
+    render(<NotificationCategoryRow pref={pref()} onToggle={() => {}} subLine="ma 17:00 · Láb nap" />)
+    expect(screen.getByText('ma 17:00 · Láb nap')).toBeInTheDocument()
+    expect(screen.queryByText('A mai edzés kezdete előtt')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the static meta description when no subLine is supplied', () => {
+    render(<NotificationCategoryRow pref={pref()} onToggle={() => {}} />)
+    expect(screen.getByText('A mai edzés kezdete előtt')).toBeInTheDocument()
+  })
 })

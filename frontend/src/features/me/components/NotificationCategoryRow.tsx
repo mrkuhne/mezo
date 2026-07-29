@@ -6,15 +6,22 @@ interface NotificationCategoryRowProps {
   pref: NotificationPrefView
   onToggle: () => void
   disabled?: boolean
+  /** A live, per-day sub-line derived by the page from the anchors it already has (gym time,
+   *  ritual window, bed anchor, medication cycle day, …) — e.g. "ma 17:00 · Láb nap" instead of
+   *  the generic "A mai edzés kezdete előtt". Omit (or pass the same static text) when the page
+   *  genuinely has no live datum for this row; falls back to `NOTIFICATION_CATEGORY_META`'s
+   *  static description, which stays the honest fallback, never a fabricated value. */
+  subLine?: string
 }
 
 /**
  * One settings-list row for a push-notification category (mockup direction C, §2 "A ·
  * Kategória-lista"). Presentational only — no `@/data/*Hooks`/`@/data/hooks` import: label,
- * emoji, description and lead-chip visibility all come from `NOTIFICATION_CATEGORY_META`
- * (data/types.ts), so this file never hardcodes Hungarian copy. bd mezo-h4wp.6.2.
+ * emoji and lead-chip visibility come from `NOTIFICATION_CATEGORY_META` (data/types.ts), so
+ * this file never hardcodes Hungarian copy; the sub-line is either the caller-supplied derived
+ * `subLine` or that same meta's static description. bd mezo-h4wp.6.2/.3.
  */
-export function NotificationCategoryRow({ pref, onToggle, disabled = false }: NotificationCategoryRowProps) {
+export function NotificationCategoryRow({ pref, onToggle, disabled = false, subLine }: NotificationCategoryRowProps) {
   const meta = NOTIFICATION_CATEGORY_META[pref.category]
   return (
     <div className="row gap-sm" style={{ padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
@@ -46,7 +53,7 @@ export function NotificationCategoryRow({ pref, onToggle, disabled = false }: No
           {meta.label}
         </span>
         <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-          {meta.description}
+          {subLine ?? meta.description}
         </span>
       </div>
       {meta.showLeadChip && pref.enabled && (

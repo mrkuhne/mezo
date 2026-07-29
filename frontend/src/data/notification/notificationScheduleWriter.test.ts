@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildScheduleEntries, useScheduleSnapshotWriter } from '@/data/notification/notificationScheduleWriter'
 import { isMockMode } from '@/data/_client/mode'
-import type { CheckinSlot, ProtocolSlotData, SupplementStashItem } from '@/data/types'
+import type { CheckinSlot, GymSchedule, ProtocolSlotData, SupplementStashItem } from '@/data/types'
 
 const CHECKINS: Pick<CheckinSlot, 'time'>[] = [
   { time: '06:30' }, { time: '10:00' }, { time: '14:00' }, { time: '20:00' },
@@ -78,6 +78,8 @@ const hooks = vi.hoisted(() => ({
   useStack: vi.fn(),
   useProtocol: vi.fn(),
   useSleepGoal: vi.fn(),
+  useTrain: vi.fn(),
+  useRunning: vi.fn(),
 }))
 vi.mock('@/data/fuel/stackHooks', () => ({
   useStack: hooks.useStack,
@@ -85,6 +87,12 @@ vi.mock('@/data/fuel/stackHooks', () => ({
 }))
 vi.mock('@/data/me/sleepHooks', () => ({
   useSleepGoal: hooks.useSleepGoal,
+}))
+vi.mock('@/data/train/trainHooks', () => ({
+  useTrain: hooks.useTrain,
+}))
+vi.mock('@/data/train/runningHooks', () => ({
+  useRunning: hooks.useRunning,
 }))
 
 const putSchedule = vi.hoisted(() => vi.fn())
@@ -97,20 +105,34 @@ const STASH: SupplementStashItem[] = [
     id: 'kreatin-1', name: 'Kreatin monohidrát', brand: 'Test', type: 'supplement', category: 'test',
     dose: '5g', form: 'por', stock: 30, stockUnit: 'adag', protocol: 'daily', timing: 'wake', taken: false,
   },
+  // AAKG matches buildProtocol's pre-workout basket (find('aakg')) — without an item in that
+  // basket, buildProtocol never emits a 'pre-workout' slot at all, so the gym-anchored-time
+  // pinning tests below need this to have anything to assert on.
+  {
+    id: 'aakg-1', name: 'AAKG · L-Arginine', brand: 'Test', type: 'supplement', category: 'test',
+    dose: '3g', form: 'por', stock: 30, stockUnit: 'adag', protocol: 'daily', timing: 'pre-workout', taken: false,
+  },
 ]
+
+const GYM_TODAY: GymSchedule = {
+  weeklyTimes: [{ day: 'Szerda', active: true, today: true, time: '17:00', duration: 75, type: 'Láb nap' }],
+}
 
 function stubHooks(opts: {
   selectedIds?: string[] | null
   sleepGoalPending?: boolean
   wakeTime?: string
   bedTime?: string
+  gymSchedule?: GymSchedule | null
 } = {}) {
   hooks.useStack.mockReturnValue({ stash: STASH })
-  hooks.useProtocol.mockReturnValue({ protocol: {}, selectedIds: opts.selectedIds ?? ['kreatin-1'] })
+  hooks.useProtocol.mockReturnValue({ protocol: {}, selectedIds: opts.selectedIds ?? ['kreatin-1', 'aakg-1'] })
   hooks.useSleepGoal.mockReturnValue({
     goal: { wakeTime: opts.wakeTime ?? '06:30', bedTime: opts.bedTime ?? '22:30' },
     isPending: opts.sleepGoalPending ?? false,
   })
+  hooks.useTrain.mockReturnValue({ gymSchedule: opts.gymSchedule ?? null, sport: { schedule: null } })
+  hooks.useRunning.mockReturnValue({ activeRunningBlock: null })
 }
 
 afterEach(() => {
@@ -119,6 +141,8 @@ afterEach(() => {
   hooks.useStack.mockReset()
   hooks.useProtocol.mockReset()
   hooks.useSleepGoal.mockReset()
+  hooks.useTrain.mockReset()
+  hooks.useRunning.mockReset()
 })
 
 describe('useScheduleSnapshotWriter', () => {
@@ -168,5 +192,34 @@ describe('useScheduleSnapshotWriter', () => {
     await waitFor(() => expect(putSchedule).toHaveBeenCalledTimes(1))
     await new Promise((r) => setTimeout(r, 0))
     expect(putSchedule).toHaveBeenCalledTimes(1)
+  })
+
+  // Fix round 1 (mezo-h4wp.6.3 review): pins the real bug — without deriveProtocolAnchors, the
+  // writer called buildProtocol with only {wake, bedtime}, so the persisted fuel_slot pre-workout
+  // time silently used the wake+60 rest-day fallback on every training day.
+  it('real mode: with a gym scheduled today, the persisted pre-workout fuel_slot time is anchored to the gym time, not wake + 60', async () => {
+    if (isMockMode()) return
+    stubHooks({ gymSchedule: GYM_TODAY, wakeTime: '06:30' })
+    putSchedule.mockResolvedValue(undefined)
+    renderHook(() => useScheduleSnapshotWriter())
+    await waitFor(() => expect(putSchedule).toHaveBeenCalledTimes(1))
+
+    const { entries } = putSchedule.mock.calls[0][0]
+    const preWorkout = entries.find((e: { time: string }) => e.time === '16:20')
+    expect(preWorkout).toBeDefined() // 17:00 gym − 40min — the canonical deriveProtocolAnchors offset
+    expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(false) // the wake+60 bug this pins
+  })
+
+  it('real mode: with no training scheduled today, the fuel_slot pre-workout time falls back exactly as buildProtocol intends', async () => {
+    if (isMockMode()) return
+    stubHooks({ gymSchedule: null, wakeTime: '06:30' })
+    putSchedule.mockResolvedValue(undefined)
+    renderHook(() => useScheduleSnapshotWriter())
+    await waitFor(() => expect(putSchedule).toHaveBeenCalledTimes(1))
+
+    const { entries } = putSchedule.mock.calls[0][0]
+    // No gym today → deriveProtocolAnchors leaves preWorkout undefined → buildProtocol's own
+    // documented rest-day fallback (wake + 60) applies, honestly, not a bug.
+    expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(true)
   })
 })

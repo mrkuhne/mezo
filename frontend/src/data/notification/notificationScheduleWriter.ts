@@ -4,7 +4,9 @@ import { notificationApi } from '@/data/notification/notificationApi'
 import { initialCheckins } from '@/data/today/checkins'
 import { useStack, useProtocol } from '@/data/fuel/stackHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
-import { buildProtocol, type ProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { useTrain } from '@/data/train/trainHooks'
+import { useRunning } from '@/data/train/runningHooks'
+import { buildProtocol, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import type { components } from '@/data/_client/api.gen'
 import type { CheckinSlot, ProtocolSlotData } from '@/data/types'
 
@@ -82,11 +84,19 @@ export function buildScheduleEntries(
  * Real mode only — mock mode must never reach the network. Waits for `useSleepGoal()`'s
  * `isPending` to clear before writing: firing on the very first render would snapshot the
  * pre-resolve ghost wake/bed anchors (and possibly an empty stash) as if they were real,
- * which is a worse snapshot than waiting a beat. `useStack`/`useProtocol` don't expose their
- * own pending flag, so there is a narrow window where the fuel/stack slots could still reflect
- * their ghost if that particular fetch is slower than the sleep-goal one — an accepted,
- * documented gap (the design spec already frames FE-snapshot staleness as "degrades
- * gracefully"), not a silent one.
+ * which is a worse snapshot than waiting a beat. `useStack`/`useProtocol`/`useTrain`/
+ * `useRunning` don't expose their own pending flag, so there is a narrow window where the
+ * fuel/stack slots (including the gym-derived pre-workout time) could still reflect a ghost
+ * if one of those fetches is slower than the sleep-goal one — an accepted, documented gap
+ * (the design spec already frames FE-snapshot staleness as "degrades gracefully"), not a
+ * silent one.
+ *
+ * The `preWorkout` anchor is derived via the CANONICAL `deriveProtocolAnchors` (same function
+ * `useFuelTimeline`/the settings preview use) — this is deliberate: a second, independent
+ * derivation of "40 minutes before the first training block" is exactly the drift this design
+ * was shaped to avoid (fix round 1, mezo-h4wp.6.3 review). Without it, every persisted
+ * `fuel_slot` row would silently fall back to `wake + 60min` on every training day, hours off
+ * the real pre-workout time.
  *
  * `categories` is DERIVED from the entries actually built — never a separately maintained
  * list — so it is structurally impossible for the payload to name a category some entry
@@ -101,6 +111,8 @@ export function useScheduleSnapshotWriter(): void {
   const { stash } = useStack()
   const { selectedIds } = useProtocol()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
+  const { gymSchedule, sport } = useTrain()
+  const { activeRunningBlock } = useRunning()
   const written = useRef(false)
 
   useEffect(() => {
@@ -108,7 +120,7 @@ export function useScheduleSnapshotWriter(): void {
     written.current = true
 
     const selection = selectedIds ?? stash.filter((s) => s.type !== 'medication').map((s) => s.id)
-    const anchors: ProtocolAnchors = { wake: sleepGoal.wakeTime, bedtime: sleepGoal.bedTime }
+    const anchors = deriveProtocolAnchors(gymSchedule, sport, activeRunningBlock, sleepGoal.wakeTime, sleepGoal.bedTime)
     const protocolSlots = buildProtocol(selection, stash, anchors).slots
     const entries = buildScheduleEntries(initialCheckins, protocolSlots)
     if (entries.length === 0) return
