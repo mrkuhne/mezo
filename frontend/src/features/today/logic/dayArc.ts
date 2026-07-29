@@ -4,7 +4,7 @@ import type { CheckinSlot } from '@/data/types'
     along the quadratic Bézier M 22 100 Q 182 -28 342 100 (viewBox 364×112).
  *
  *  This module OUTLIVED its original component: `DayArc.tsx` was deleted from Today by the
- *  daypart-faces re-composition (mezo-j7u4, ADR 0011 — `DayFaceStrip`'s per-pill counters
+ *  daypart-faces re-composition (mezo-j7u4, ADR 0014 — `DayFaceStrip`'s per-pill counters
  *  are the day-progress indicator now), but the Napzárás „A napod íve" act still reprises
  *  the same arc, so `features/ritual/components/DayStoryStep.tsx:2` imports
  *  `buildArcPoints`/`pointXY` from here. Do NOT delete this file with its namesake.
