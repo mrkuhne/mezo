@@ -1480,6 +1480,22 @@ button.itemrow { cursor: pointer; }
 .dfs-pill.sel .dfs-c { color: color-mix(in srgb, var(--surface) 82%, transparent); }
 .dfs-pill.sel.now { box-shadow: 0 0 0 2px var(--coral); }
 
+/* ===== TodoCard — the merged actionable card of a face (mezo-j7u4) ===== */
+.tdc { margin: 0 24px 12px; padding: 14px 6px 8px; border-radius: 24px; background: var(--surface);
+  box-shadow: var(--np-shadow-row); }
+.tdc-hd { display: flex; align-items: center; padding: 0 10px; margin-bottom: 9px; }
+.tdc-hd-l { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.tdc-hd-r { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
+  font-variant-numeric: tabular-nums; }
+.tdc-bar { height: 5px; border-radius: 999px; background: var(--warm); overflow: hidden; margin: 0 10px 12px; }
+.tdc-bar i { display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--coral), var(--amber)); }
+.tdc-grp { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--faint); margin: 10px 10px 6px; }
+/* Inside the card the rows lose the standalone row's outer margin + shadow. */
+.tdc .itemrow { margin: 0 4px 4px; box-shadow: none; background: transparent; padding: 9px; }
+.tdc .itemrow.is-done { background: transparent; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
