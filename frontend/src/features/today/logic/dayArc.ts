@@ -1,7 +1,15 @@
 import type { CheckinSlot } from '@/data/types'
 
 /** Napív geometry+data (spec §3.4). The day window is 04:00–24:00 mapped to t∈[0,1]
-    along the quadratic Bézier M 22 100 Q 182 -28 342 100 (viewBox 364×112). */
+    along the quadratic Bézier M 22 100 Q 182 -28 342 100 (viewBox 364×112).
+ *
+ *  This module OUTLIVED its original component: `DayArc.tsx` was deleted from Today by the
+ *  daypart-faces re-composition (mezo-j7u4, ADR 0011 — `DayFaceStrip`'s per-pill counters
+ *  are the day-progress indicator now), but the Napzárás „A napod íve" act still reprises
+ *  the same arc, so `features/ritual/components/DayStoryStep.tsx:2` imports
+ *  `buildArcPoints`/`pointXY` from here. Do NOT delete this file with its namesake.
+ *  `arcProgress` (the sun-dot position) went with the component in mezo-1khu — that was the
+ *  only export DayStoryStep does not use (it draws the whole arc, no progress cursor). */
 export type ArcPoint = {
   t: number
   kind: 'checkin-done' | 'checkin-now' | 'checkin-pending' | 'workout' | 'sleep'
@@ -30,12 +38,6 @@ export function buildArcPoints(input: { checkins: CheckinSlot[]; workoutTime: st
   if (input.workoutTime) pts.push({ t: tOf(input.workoutTime), kind: 'workout', label: input.workoutTime })
   pts.push({ t: tOf(SLEEP_LABEL), kind: 'sleep', label: SLEEP_LABEL })
   return pts.sort((a, b) => a.t - b.t)
-}
-
-export function arcProgress(now: Date): number {
-  const mins = now.getHours() * 60 + now.getMinutes()
-  if (mins < DAY_START) return 1
-  return Math.min((mins - DAY_START) / (DAY_END - DAY_START), 1)
 }
 
 /** Quadratic Bézier point at t for P0(22,100) C(182,-28) P2(342,100). */
