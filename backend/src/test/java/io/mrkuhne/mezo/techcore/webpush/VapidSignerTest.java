@@ -28,7 +28,7 @@ class VapidSignerTest {
             .encodeToString(VapidSigner.encodePrivateKey((ECPrivateKey) kp.getPrivate()));
 
         VapidSigner signer = new VapidSigner(
-            new WebPushProperties("mailto:a@b.c", pub, priv, 3600));
+            new WebPushProperties("mailto:a@b.c", pub, priv, 3600, 5000));
 
         String header = signer.authorizationHeader("https://web.push.apple.com", Instant.parse("2026-07-29T06:00:00Z"));
 

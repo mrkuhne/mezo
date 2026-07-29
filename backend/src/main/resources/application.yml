@@ -632,6 +632,9 @@ mezo:
     public-key: ${VAPID_PUBLIC:dummy-vapid-public}
     private-key: ${VAPID_PRIVATE:dummy-vapid-private}
     default-ttl-seconds: 3600
+    # Connect + read timeout for the outbound push POST (WebPushClient) — a hung push service
+    # must not hold a caller's thread (N2's per-minute dispatch job).
+    timeout-ms: 5000
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:

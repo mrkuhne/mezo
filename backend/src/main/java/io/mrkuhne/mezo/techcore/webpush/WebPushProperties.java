@@ -13,6 +13,8 @@ import org.springframework.validation.annotation.Validated;
  * @param subject VAPID `sub` claim — a mailto: or https: contact for the push service operator
  * @param publicKey  VAPID public key, base64url, uncompressed P-256 point (65 bytes, 0x04-prefixed)
  * @param privateKey VAPID private key, base64url, 32-byte P-256 scalar
+ * @param timeoutMs connect + read timeout for the outbound push POST ({@link WebPushClient}) — a
+ *     hung push service must not hold a caller's thread
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.webpush")
@@ -20,4 +22,5 @@ public record WebPushProperties(
     @NotBlank String subject,
     @NotBlank String publicKey,
     @NotBlank String privateKey,
-    @Min(0) @Max(2419200) int defaultTtlSeconds) {}
+    @Min(0) @Max(2419200) int defaultTtlSeconds,
+    @Min(100) @Max(30_000) int timeoutMs) {}

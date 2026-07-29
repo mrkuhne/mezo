@@ -120,7 +120,7 @@ class VapidSignerCodecTest {
         // A missing VAPID_PRIVATE must fail loudly on the first send, not sign a well-formed but
         // useless token that every push service silently rejects with 401.
         VapidSigner signer = new VapidSigner(
-            new WebPushProperties("mailto:a@b.c", "dummy-vapid-public", "dummy-vapid-private", 3600));
+            new WebPushProperties("mailto:a@b.c", "dummy-vapid-public", "dummy-vapid-private", 3600, 5000));
 
         assertRejected(() -> signer.authorizationHeader("https://web.push.apple.com", NOW));
     }
@@ -207,7 +207,8 @@ class VapidSignerCodecTest {
             "mailto:a@b.c",
             encoder.encodeToString(VapidSigner.encodePublicKey((ECPublicKey) keyPair.getPublic())),
             encoder.encodeToString(VapidSigner.encodePrivateKey((ECPrivateKey) keyPair.getPrivate())),
-            3600));
+            3600,
+            5000));
     }
 
     private static KeyPair generateKeypair() {
