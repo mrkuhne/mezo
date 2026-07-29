@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { buildTodayItems, itemsForFace, openCountByFace } from '@/features/today/logic/todayItems'
-import type { DailyQuest, HabitItem } from '@/data/types'
+import type { CheckinSlot, DailyQuest, FuelSlot, HabitItem, RitualDay } from '@/data/types'
 
 const GOAL = { wakeTime: '06:30', bedTime: '22:30' }
 
@@ -119,5 +119,69 @@ describe('itemsForFace / openCountByFace', () => {
   test('day-wide open items are counted on every face', () => {
     const items = buildTodayItems({ ...EMPTY, quests: [quest()], habits: [habit()] })
     expect(openCountByFace(items)).toEqual({ reggel: 2, nap: 1, este: 1 })
+  })
+})
+
+const slot = (time: string, state: CheckinSlot['state']): CheckinSlot =>
+  ({ time, state, values: null, note: null })
+
+describe('buildTodayItems — check-ins', () => {
+  test('each slot lands on the face its clock time belongs to', () => {
+    const items = buildTodayItems({
+      ...EMPTY,
+      checkins: [slot('06:30', 'done'), slot('10:00', 'now'), slot('14:00', 'pending'), slot('20:00', 'pending')],
+    })
+    const byTime = Object.fromEntries(items.map(i => [i.time, i.face]))
+    expect(byTime).toEqual({ '06:30': 'reggel', '10:00': 'reggel', '14:00': 'nap', '20:00': 'este' })
+  })
+
+  test('the slot index survives onto the action so the sheet can be opened', () => {
+    const items = buildTodayItems({ ...EMPTY, checkins: [slot('06:30', 'done'), slot('14:00', 'now')] })
+    const nap = items.find(i => i.time === '14:00')
+    expect(nap?.action).toEqual({ kind: 'checkin', slotIdx: 1, label: 'Koppints' })
+  })
+
+  test('a done slot is done and a skipped slot is missed', () => {
+    const items = buildTodayItems({ ...EMPTY, checkins: [slot('06:30', 'done'), slot('10:00', 'skipped')] })
+    expect(items.map(i => i.status)).toEqual(['done', 'missed'])
+  })
+})
+
+describe('buildTodayItems — fuel slots', () => {
+  const fuel = (time: string, state: FuelSlot['state'], label: string): FuelSlot =>
+    ({ time, kind: 'meal', label, state })
+
+  test('slots bucket by their own clock time and carry the meal name when present', () => {
+    const items = buildTodayItems({
+      ...EMPTY,
+      fuelSlots: [fuel('08:00', 'done', 'Reggeli'), fuel('21:15', 'pending', 'Esti stack')],
+    })
+    expect(items.find(i => i.time === '08:00')).toMatchObject({ face: 'reggel', status: 'done', group: 'Fuel' })
+    expect(items.find(i => i.time === '21:15')).toMatchObject({ face: 'este', status: 'open' })
+  })
+
+  test('a missed fuel slot is missed, not open', () => {
+    const items = buildTodayItems({ ...EMPTY, fuelSlots: [fuel('13:00', 'missed', 'Ebéd')] })
+    expect(items[0].status).toBe('missed')
+  })
+})
+
+describe('buildTodayItems — ritual', () => {
+  const RITUAL: RitualDay = {
+    date: '2026-05-21', closed: false, closedAt: null,
+    window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+  }
+
+  test('an unclosed ritual is an open evening item anchored to opensAt', () => {
+    const items = buildTodayItems({ ...EMPTY, ritual: RITUAL })
+    expect(items[0]).toMatchObject({
+      source: 'ritual', face: 'este', status: 'open', time: '21:15', group: 'Napzárás',
+    })
+    expect(items[0].action).toEqual({ kind: 'nav', to: '/ritual', label: 'Zárjuk le' })
+  })
+
+  test('a closed ritual is done', () => {
+    const items = buildTodayItems({ ...EMPTY, ritual: { ...RITUAL, closed: true, closedAt: '2026-05-21T21:40:00Z' } })
+    expect(items[0].status).toBe('done')
   })
 })

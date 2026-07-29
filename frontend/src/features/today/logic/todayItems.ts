@@ -81,6 +81,8 @@ const DEDUP_PAIRS: Record<string, string> = {
 
 const QUEST_STATUS: Record<string, ItemStatus> = { offered: 'open', completed: 'done', expired: 'missed' }
 const HABIT_STATUS: Record<string, ItemStatus> = { pending: 'open', done: 'done', missed: 'missed' }
+const CHECKIN_STATUS: Record<string, ItemStatus> = { done: 'done', skipped: 'missed', now: 'open', pending: 'open' }
+const FUEL_STATUS: Record<string, ItemStatus> = { done: 'done', missed: 'missed', now: 'open', pending: 'open' }
 
 const CHAIN_GROUP = { MORNING: 'Reggeli rutin', EVENING: 'Esti rutin' } as const
 const CHAIN_FACE: Record<'MORNING' | 'EVENING', DayFace> = { MORNING: 'reggel', EVENING: 'este' }
@@ -143,6 +145,58 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       xp: q.xp,
       group: 'Napi küldetések',
       action: { kind: 'quest', quest: q, label: 'Naplózz' },
+    })
+  }
+
+  // ── check-ins: one row per canonical slot, bucketed by its own clock time. The
+  //    array index is carried onto the action — CheckInSheet is opened by index.
+  input.checkins.forEach((c, slotIdx) => {
+    items.push({
+      id: `checkin:${c.time}`,
+      source: 'checkin',
+      face: faceOf(c.time, input.goal),
+      status: CHECKIN_STATUS[c.state] ?? 'open',
+      tone: 'mind', emoji: '💗', tag: 'CHECK-IN',
+      title: 'Hogy vagy?',
+      subtitle: c.time,
+      time: c.time,
+      xp: null,
+      group: 'Check-in',
+      action: { kind: 'checkin', slotIdx, label: 'Koppints' },
+    })
+  })
+
+  // ── fuel: the day's plan slots, each on its own face.
+  for (const f of input.fuelSlots) {
+    items.push({
+      id: `fuel:${f.time}`,
+      source: 'fuel',
+      face: faceOf(f.time, input.goal),
+      status: FUEL_STATUS[f.state] ?? 'open',
+      tone: 'fuel', emoji: '🍶', tag: 'FUEL',
+      title: f.mealName || f.label,
+      subtitle: f.mealName ? f.label : null,
+      time: f.time,
+      xp: null,
+      group: 'Fuel',
+      action: { kind: 'nav', to: '/fuel', label: 'Logold' },
+    })
+  }
+
+  // ── ritual: the evening close, anchored to its own window opening.
+  if (input.ritual) {
+    items.push({
+      id: 'ritual:day',
+      source: 'ritual',
+      face: 'este',
+      status: input.ritual.closed ? 'done' : 'open',
+      tone: 'mind', emoji: '🌙', tag: 'NAPZÁRÁS',
+      title: 'Napzárás',
+      subtitle: `villanyoltás ${input.ritual.window.bedTime}`,
+      time: input.ritual.window.opensAt,
+      xp: null,
+      group: 'Napzárás',
+      action: { kind: 'nav', to: '/ritual', label: 'Zárjuk le' },
     })
   }
 
