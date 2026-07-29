@@ -265,10 +265,11 @@ mezo:
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:
         enabled: true
-      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron); N1 adds no
-      # @Scheduled bean at all — this switch only exists so N2 can gate it. Must stay false here.
+      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron) — resolves
+      # every user's due notifications and sends them; off = the NotificationDispatchJob bean
+      # does not exist.
       notification-dispatch-job:
-        enabled: false
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -654,6 +655,11 @@ mezo:
     # How much of an already-generated prose row (briefing/heartbeat/weekly/memoir) AnchorResolver
     # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
     prose-excerpt-chars: 160
+    # N2 per-minute dispatch job (NotificationDispatchJob) schedule — every minute, on the minute.
+    dispatch-cron: "0 * * * * *"
+    # DueEvaluator's firing window width in minutes — a half-open [0, catch-up-minutes) so one
+    # missed cron minute still delivers; the push_log dedup (not this) prevents a double-send.
+    catch-up-minutes: 2
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:

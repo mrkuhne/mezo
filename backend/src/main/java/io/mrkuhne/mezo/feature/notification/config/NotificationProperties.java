@@ -18,10 +18,17 @@ import org.springframework.validation.annotation.Validated;
  * @param proseExcerptChars how much of an already-generated prose row (briefing/heartbeat/weekly/
  *     memoir) {@code AnchorResolver} excerpts into a push body — cut at a word boundary, never a
  *     new LLM call on the push path (spec §6)
+ * @param dispatchCron N2's per-minute {@code NotificationDispatchJob} schedule
+ * @param catchUpMinutes width (minutes) of {@code DueEvaluator}'s firing window — a half-open
+ *     {@code [0, catchUpMinutes)} on {@code anchorMinute - leadMinutes - nowMinute}, so a single
+ *     missed cron minute still delivers the notification without double-sending (the push_log
+ *     dedup, not this window, is what prevents a double-send)
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.notification")
 public record NotificationProperties(
         @Min(20) @Max(2000) int bodyMaxChars,
         @NotBlank @Pattern(regexp = "([01]\\d|2[0-3]):[0-5]\\d") String medicationTime,
-        @Min(20) @Max(2000) int proseExcerptChars) {}
+        @Min(20) @Max(2000) int proseExcerptChars,
+        @NotBlank String dispatchCron,
+        @Min(1) @Max(60) int catchUpMinutes) {}
