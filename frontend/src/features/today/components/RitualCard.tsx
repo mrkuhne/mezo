@@ -32,11 +32,12 @@ export function RitualCard({ now = new Date() }: { now?: Date }) {
   }
 
   const isOpen = state === 'open'
-  const { opensAt, bedTime } = ritualDay.window
+  const { opensAt, prepStartsAt, bedTime } = ritualDay.window
 
   // Soft gate (ADR 0010 spirit): the waiting card only LOOKS inactive — it offers no CTA
   // rather than a dead one (the `ItemRow` doctrine), and a direct /ritual visit is never
-  // blocked. The route stays reachable from the TodoCard's ritual row.
+  // blocked. The route stays reachable from the TodoCard's ritual row. The prose line below
+  // carries that framing: WHY now (open) or WHEN instead (waiting); the pills stay scannable.
   return (
     <ItemCard
       tone="mind" emoji="🌙" tag="NAPZÁRÁS" time={opensAt}
@@ -46,6 +47,12 @@ export function RitualCard({ now = new Date() }: { now?: Date }) {
       stateLabel={isOpen ? 'MOST' : 'Még vár'}
       ctaLabel={isOpen ? 'Zárjuk le a napot ✨' : undefined}
       onLog={isOpen ? () => navigate('/ritual') : undefined}
-    />
+    >
+      <div className="todaycard-note">
+        {isOpen
+          ? `A nap kész. Zárd le, mielőtt az alvás-előkészítés indul (${prepStartsAt}).`
+          : `${opensAt}-kor nyílik — villanyoltás ${bedTime}.`}
+      </div>
+    </ItemCard>
   )
 }

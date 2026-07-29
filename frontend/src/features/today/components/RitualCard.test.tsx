@@ -56,6 +56,10 @@ describe('RitualCard', () => {
       expect(screen.getByText('MOST')).toBeInTheDocument()
       expect(screen.queryByText('Még vár')).not.toBeInTheDocument()
       expect(cta()).toBeInTheDocument()
+      // the prose line carries the WHY-now framing (mezo-j7u4 fix round 1)
+      expect(
+        screen.getByText(`A nap kész. Zárd le, mielőtt az alvás-előkészítés indul (${WINDOW.prepStartsAt}).`),
+      ).toBeInTheDocument()
     })
 
     test('?ritual=waiting wins over a late `now` that would derive "open" — muted, no CTA', () => {
@@ -63,7 +67,12 @@ describe('RitualCard', () => {
       expect(screen.getByText('Még vár')).toBeInTheDocument()
       expect(screen.queryByText('MOST')).not.toBeInTheDocument()
       expect(cta()).toBeNull()
-      // the window facts still tell the whole story
+      // the waiting prose says WHEN instead — the soft-gate framing (mezo-j7u4 fix round 1)
+      expect(
+        screen.getByText(`${WINDOW.opensAt}-kor nyílik — villanyoltás ${WINDOW.bedTime}.`),
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/alvás-előkészítés/)).toBeNull()
+      // the window facts stay scannable alongside it
       expect(screen.getByText(WINDOW.opensAt)).toBeInTheDocument()
       expect(screen.getByText(`villanyoltás ${WINDOW.bedTime}`)).toBeInTheDocument()
     })

@@ -1425,6 +1425,21 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--surface); }
 .todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
 .todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--surface); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
+/* --- Emitted by ItemCard *children*, not by ItemCard itself (mezo-j7u4) --------------------
+   The card language's prose slots: `-note` is the sentence that carries the WHY / provenance
+   (RitualCard's window framing, WindDownBanner's Walker citation), `-tip*` the explanatory
+   advice lines, `-rows` nests shared `ItemRow`s inside the card (the `.tdc .itemrow` idiom).
+   No existing rule covers standalone card prose — `.itemrow-t2`, `.donebar-detail` and
+   `.fhc-next-tx s` are all structural children of other primitives. */
+.todaycard-note { margin-top: 11px; font: 500 12px/1.55 var(--ff-body); color: var(--sub); }
+.todaycard-note b { color: var(--sage-deep); font-weight: 700; }
+.todaycard-tips { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
+.todaycard-tip { display: flex; align-items: center; gap: 10px; font: 500 12.5px/1.45 var(--ff-body); color: var(--sub); }
+.todaycard-tip b { color: var(--ink); font-weight: 700; }
+.todaycard-tip-ic { flex: none; width: 30px; height: 30px; border-radius: 10px; background: var(--surface);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+.todaycard-rows { margin-top: 10px; }
+.todaycard-rows .itemrow { margin: 0; padding: 8px 4px; background: transparent; box-shadow: none; }
 
 /* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
 .donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: var(--wash-sage); border: 0; font-family: inherit; text-align: left; cursor: inherit; }

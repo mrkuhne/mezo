@@ -6,22 +6,22 @@ import {
   fmtMinsToBed, minsToBed, windDownPhase,
 } from '@/features/today/logic/windDown'
 import { ItemCard } from '@/shared/ui/ItemCard'
+import { ItemRow } from '@/shared/ui/ItemRow'
 import { localDateString } from '@/shared/lib/dates'
 
 const TICK_MS = 30_000
-
-/** The phase tips, flattened to plain `.metapill` strings (mezo-j7u4). */
-const DIM_TIPS = ['💡 30 lux alá', '🔶 Meleg, sárga fény', '❄️ Hűtsd a szobát ~18 °C']
-const WINDDOWN_TIPS = ['📵 Képernyők le', '🕯️ Fények tompítva']
 
 /**
  * The Today evening/night band (slice C-éj, spec D2/D3): dim -> winddown -> night entry,
  * all derived from the sleep anchor. Carries the wind_down MANUAL habit's check in the
  * winddown phase — same ['habitDay', date] cache as RoutineCard, so the two stay in sync.
  *
- * dim/winddown wear the shared `ItemCard` (mezo-j7u4); the **night** row keeps its own
- * `.wdb-night` markup on purpose — it is a literal-dark night-layer surface (NightPage's
- * palette), not part of the light card language.
+ * dim/winddown wear the shared `ItemCard` (mezo-j7u4) and keep their full prose in its
+ * `children` slot: the advice lines with their explanatory halves, the Walker provenance
+ * line, and the habit's own row (title + anchor cue + XP) as a shared `ItemRow`. The
+ * **night** row keeps its own `.wdb-night` markup on purpose — it is a literal-dark
+ * night-layer surface (NightPage's palette, also worn by SleepPage), not part of the light
+ * card language.
  */
 export function WindDownBanner() {
   const date = localDateString()
@@ -63,8 +63,8 @@ export function WindDownBanner() {
   // own anchor ("screens off") has not come due yet, exactly as before the re-dress.
   const dim = phase === 'dim'
   const done = !dim && windDownHabit?.status === 'done'
-  // `!pending` replaces the old `disabled={pending}` guard: ItemCard's CTA has no disabled
-  // state, so an in-flight check withdraws the CTA instead of dimming it (no double submit).
+  // `!pending` replaces the old `disabled={pending}` guard: `ItemRow`'s action pill has no
+  // disabled state, so an in-flight check withdraws the pill instead of dimming it.
   const checkable = !dim && !!windDownHabit && windDownHabit.status !== 'done' && !pending
 
   return (
@@ -74,11 +74,46 @@ export function WindDownBanner() {
       tag="ESTI LEÁLLÁS"
       title={dim ? 'Tompítsd a fényeket' : 'Kapcsolj le'}
       stateLabel={pill}
-      facts={dim ? DIM_TIPS : WINDDOWN_TIPS}
+      facts={[]}
       logged={done}
       loggedSummary="Leállás megvolt"
-      ctaLabel={checkable ? 'Pipa' : undefined}
-      onLog={checkable ? doCheck : undefined}
-    />
+      loggedDetail="már csak az ágy van hátra"
+    >
+      <div className="todaycard-tips">
+        {dim ? (
+          <>
+            <div className="todaycard-tip"><span className="todaycard-tip-ic" aria-hidden="true">💡</span><span><b>30 lux alá</b> — félhomály, nem sötét</span></div>
+            <div className="todaycard-tip"><span className="todaycard-tip-ic" aria-hidden="true">🔶</span><span><b>Meleg, sárga fény</b> — hideg-fehér le</span></div>
+            <div className="todaycard-tip"><span className="todaycard-tip-ic" aria-hidden="true">❄️</span><span><b>Hűtsd a szobát</b> — 18 °C felé</span></div>
+          </>
+        ) : (
+          <>
+            <div className="todaycard-tip"><span className="todaycard-tip-ic" aria-hidden="true">📵</span><span><b>Képernyők le</b> — az agy hadd unatkozzon</span></div>
+            <div className="todaycard-tip"><span className="todaycard-tip-ic" aria-hidden="true">🕯️</span><span><b>Fények tompítva</b> maradnak</span></div>
+          </>
+        )}
+      </div>
+
+      {dim && (
+        <div className="todaycard-note">A tompított, meleg este <b>+18% REM</b>-et ad — Walker mérése.</div>
+      )}
+
+      {/* The habit keeps its own identity — title, anchor cue and reward — as a shared row
+          (the FaceHeroCard precedent for a habit's `+N XP` inside a row subtitle). Once done
+          the DoneBar carries the closing line instead. */}
+      {!dim && windDownHabit && !done && (
+        <div className="todaycard-rows">
+          <ItemRow
+            tone="mind"
+            emoji="🌙"
+            title={windDownHabit.title}
+            subtitle={[windDownHabit.anchorCopy, windDownHabit.xp ? `+${windDownHabit.xp} XP` : null]
+              .filter(Boolean).join(' · ')}
+            actionLabel={checkable ? 'Pipa' : undefined}
+            onAction={checkable ? doCheck : undefined}
+          />
+        </div>
+      )}
+    </ItemCard>
   )
 }

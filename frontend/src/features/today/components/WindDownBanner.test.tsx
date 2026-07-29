@@ -57,34 +57,54 @@ describe('WindDownBanner', () => {
     expect(container.querySelector('.wdb-night')).toBeNull()
   })
 
-  test('dim phase: title, three tips, countdown pill — and no habit CTA yet', () => {
+  test('dim phase: title, three FULL tips, the Walker evidence line, countdown — and no habit CTA yet', () => {
     setClock('2026-07-24T22:00:00')
     const { container } = renderBanner()
     expect(screen.getByRole('heading', { name: 'Tompítsd a fényeket' })).toBeInTheDocument()
-    expect(container.querySelectorAll('.metapill')).toHaveLength(3)
+    expect(container.querySelectorAll('.todaycard-tip')).toHaveLength(3)
+    // each tip keeps BOTH halves: the number/instruction AND what it means
     expect(screen.getByText(/30 lux alá/)).toBeInTheDocument()
-    expect(screen.getByText(/18 °C/)).toBeInTheDocument()
+    expect(screen.getByText(/félhomály, nem sötét/)).toBeInTheDocument()
+    expect(screen.getByText(/Meleg, sárga fény/)).toBeInTheDocument()
+    expect(screen.getByText(/hideg-fehér le/)).toBeInTheDocument()
+    expect(screen.getByText(/Hűtsd a szobát/)).toBeInTheDocument()
+    expect(screen.getByText(/18 °C felé/)).toBeInTheDocument()
+    // the provenance that justifies the advice (mezo-j7u4 fix round 1)
+    expect(screen.getByText(/\+18% REM/)).toBeInTheDocument()
+    expect(screen.getByText(/Walker mérése/)).toBeInTheDocument()
     expect(screen.getByText(/még 1 ó 15 p/)).toBeInTheDocument()
     // the wind_down habit's own window has not opened yet — nothing to tick here
     expect(pipa()).toBeNull()
   })
 
-  test('winddown phase: Kapcsolj le + the wind_down habit CTA', () => {
+  test('winddown phase: Kapcsolj le, both FULL tips, and the habit row with its title, anchor cue and XP', () => {
     setClock('2026-07-24T22:30:00')
     const { container } = renderBanner()
     expect(screen.getByRole('heading', { name: 'Kapcsolj le' })).toBeInTheDocument()
-    expect(container.querySelectorAll('.metapill')).toHaveLength(2)
+    expect(container.querySelectorAll('.todaycard-tip')).toHaveLength(2)
     expect(screen.getByText(/Képernyők le/)).toBeInTheDocument()
+    expect(screen.getByText(/az agy hadd unatkozzon/)).toBeInTheDocument()
+    expect(screen.getByText(/Fények tompítva/)).toBeInTheDocument()
+    expect(screen.getByText(/maradnak/)).toBeInTheDocument()
+    // the habit keeps its identity, its anchor cue and its reward (mezo-j7u4 fix round 1)
+    expect(screen.getByText('Wind-down, képernyő le')).toBeInTheDocument()
+    expect(screen.getByText(/napzárás után/)).toBeInTheDocument()
+    expect(screen.getByText(/\+5 XP/)).toBeInTheDocument()
     expect(screen.getByText(/még 45 p/)).toBeInTheDocument()
     expect(pipa()).toBeInTheDocument()
+    // the dim-only evidence line does not leak into the winddown phase
+    expect(screen.queryByText(/Walker mérése/)).toBeNull()
   })
 
-  test('Pipa checks the habit and flips to the done state', async () => {
+  test('Pipa checks the habit and flips to the full done line', async () => {
     setClock('2026-07-24T22:30:00')
     renderBanner()
     fireEvent.click(pipa()!)
     expect(await screen.findByText(/Leállás megvolt/)).toBeInTheDocument()
+    expect(screen.getByText(/már csak az ágy van hátra/)).toBeInTheDocument()
     expect(pipa()).toBeNull()
+    // the habit row retires once ticked — the done line speaks for it
+    expect(screen.queryByText('Wind-down, képernyő le')).toBeNull()
   })
 
   test('a level-up from the wind_down check reaches the LevelUp overlay', async () => {
