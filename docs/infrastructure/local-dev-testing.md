@@ -41,6 +41,29 @@ The **frontend** vitest suite has none of this (no Docker, light JVM-less runtim
   ```
   Foreground focused runs complete; long **background full-suite** runs are the ones that get killed.
 
+### The frontend dual-mode gate: which mode am I actually in? (mezo-h4wp.6.3)
+
+`isMockMode()` (`frontend/src/data/_client/mode.ts`) is `import.meta.env.VITE_USE_MOCK !== 'false'`
+— **anything other than the literal string `false`, including UNSET, means MOCK mode.** What makes a
+bare `pnpm test` run in real mode is not a default but the **gitignored `frontend/.env`**
+(`VITE_USE_MOCK=false`), which Vite loads into `import.meta.env` for vitest too.
+
+Consequences, each of which has already burned us:
+
+- **A `git worktree` / fresh clone has no `.env`** → its `pnpm test` silently runs **mock mode**.
+  Comparing a branch (main checkout, real mode) against `origin/main` (a scratch worktree, mock
+  mode) compares two *different modes* and manufactures phantom "merge regressions". When you
+  bisect or A/B across checkouts, **always pass the mode explicitly**:
+  `VITE_USE_MOCK=false pnpm test` / `VITE_USE_MOCK=true pnpm test`.
+- **CI checkouts have no `.env` either.** `ci.yml`'s `test-frontend` step used to run bare
+  `pnpm test` for its "real mode" leg, so it was running **mock mode twice** and the real-mode half
+  of the CLAUDE.md gate was vacuous. Both legs now set `VITE_USE_MOCK` explicitly — keep it that
+  way, and never "simplify" the `false` leg back to a bare `pnpm test`.
+- **Real mode has no synchronous first frame.** `useDualQuery` only seeds `initialData` in mock
+  mode; in real mode the first render is `isPending` with the `realEmpty` ghost. Any test that
+  renders a page gated on a pending read (e.g. Today's `sleepGoalPending` skeleton) must use
+  `findBy*`, not `getBy*` — a `getBy*` there passes in mock mode and fails in real mode.
+
 ## Visual regression gate (two-platform Playwright goldens)
 
 The frontend has a **self-baselined visual harness** at `frontend/tests/visual/` (`visual.spec.ts` +

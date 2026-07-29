@@ -10,12 +10,16 @@ function renderApp(path = '/') {
   return render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
 }
 
-test('redirects / to Today', () => {
+test('redirects / to Today', async () => {
   renderApp('/')
   // The daypart strip is Today's face-INDEPENDENT landmark (mezo-j7u4) — the briefing
   // this used to look for now lives on the morning face only, so it would make this
   // routing smoke test wall-clock dependent.
-  expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeInTheDocument()
+  // findBy, not getBy: Today's face selection is gated on the sleep anchor, so in REAL
+  // mode TodayPage renders TodaySkeleton until `useSleepGoal()` resolves (TodayPage's
+  // `sleepGoalPending` guard). Mock mode seeds the goal synchronously via `initialData`,
+  // so a getBy would only ever have passed there — this keeps the smoke test mode-agnostic.
+  expect(await screen.findByRole('tablist', { name: 'Napszakok' })).toBeInTheDocument()
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
