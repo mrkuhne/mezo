@@ -19,7 +19,7 @@ public interface SupplementIntakeRepository extends JpaRepository<SupplementInta
 
     Optional<SupplementIntakeEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
-    /** Intakes since a date for the companion get_protocol_adherence tool (V0.5) — plain finder. */
+    /** Intakes since a date for the companion get_protocol (scope=adherence) tool (V0.5) — plain finder. */
     List<SupplementIntakeEntity> findByCreatedByAndDeletedFalseAndTakenDateGreaterThanEqualOrderByTakenDateAscTakenAtAsc(
         UUID createdBy, LocalDate from);
 }

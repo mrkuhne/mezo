@@ -14,3 +14,12 @@ test('fires onToggle when clicked', async () => {
   await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
   expect(onToggle).toHaveBeenCalledTimes(1)
 })
+
+test('disabled: carries the disabled attribute and does not fire onToggle when clicked', async () => {
+  const onToggle = vi.fn()
+  render(<Toggle on={false} onToggle={onToggle} ariaLabel="Téma váltás" disabled />)
+  const btn = screen.getByRole('switch', { name: 'Téma váltás' })
+  expect(btn).toBeDisabled()
+  await userEvent.click(btn)
+  expect(onToggle).not.toHaveBeenCalled()
+})

@@ -127,4 +127,11 @@ public class FeaturesConfiguration {
     /** Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
      *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
     public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";
+
+    /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
+    public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
+
+    /** Per-minute push dispatch job (N2; schedule: mezo.notification.dispatch-cron) — techcore cron zone. */
+    public static final String NOTIFICATION_DISPATCH_JOB_SWITCH =
+            "mezo.techcore.cron.notification-dispatch-job.enabled";
 }

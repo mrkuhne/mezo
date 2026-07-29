@@ -66,3 +66,9 @@ playwright-report/
 # Manual git worktrees for independent sessions (never commit)
 .worktrees/
 issues.jsonl
+
+# Frontend visual-parity harness shots + ad-hoc QA scratch (not part of the backend history; mezo-xixu cleanup)
+frontend/tests/parity/
+/p7-*.png
+/p7-*.yml
+/vr-qa-*.jpeg

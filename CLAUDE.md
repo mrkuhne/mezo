@@ -133,6 +133,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 | `integration_test_framework.md` | any integration test or test infrastructure — extend `AbstractIntegrationTest` (service-level) / `ApiIntegrationTest` (HTTP-level: verb helpers, `ownerAuthHeaders()`, SystemMessage asserts), data via `*Populator` factories, **new domain table → `ResetDatabase` TRUNCATE list, new aggregate → new populator** |
 | `configuration_conventions.md` | any configurable value or feature toggle — everything in `application.yml` under the `mezo:` root (switches: `mezo.feature.<name>.enabled` + `FeaturesConfiguration` constants + `@ConditionalOnProperty`; values: `@Validated` `*Properties` records), **never `@Value`**, no hardcoded tunables |
 | `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models, frontend types from `src/data/_client/api.gen.ts` (`satisfies` on request bodies); never hand-write boundary DTOs |
+| `companion_tool_conventions.md` | any `@Tool` in `feature/companion/tools/` — narrow responsibility, enumerated `scope`/param values, an explicit `Használd, amikor …` trigger clause, describe ONLY what is rendered (no overclaim); keep the system prompt's `[Eszköz-útmutató]` routing hint (`ChatService.SYSTEM_PROMPT`) in sync |
 
 ### Project-specific adaptations (these override the generic references where noted)
 

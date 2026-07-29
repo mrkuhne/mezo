@@ -77,31 +77,31 @@ class CompanionLlmFakeIT extends AbstractIntegrationTest {
 
     @Test
     void testComplete_shouldExecuteScriptedToolAndEchoResult_whenSentinelPresent() {
-        String out = companionLlm.complete("SYS", "kérdés [fake-tool:get_sleep {\"days\":3}]",
-            List.of(stubTool("get_sleep")),
+        String out = companionLlm.complete("SYS", "kérdés [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]",
+            List.of(stubTool("get_recovery")),
             Map.of(ToolContexts.USER_ID, UUID.randomUUID(), ToolContexts.AUDIT, new ToolCallAudit(6, 10)));
 
         assertThat(out)
             .contains("system=[SYS]")
-            .contains("tool:get_sleep=[ALVAS-OK args={\"days\":3}]");
+            .contains("tool:get_recovery=[ALVAS-OK args={\"scope\":\"sleep\",\"days\":3}]");
     }
 
     @Test
     void testStream_shouldEmitToolResultChunk_whenSentinelPresent() {
-        List<String> chunks = companionLlm.stream("SYS", "[fake-tool:get_sleep]",
-                List.of(stubTool("get_sleep")),
+        List<String> chunks = companionLlm.stream("SYS", "[fake-tool:get_recovery {\"scope\":\"sleep\"}]",
+                List.of(stubTool("get_recovery")),
                 Map.of(ToolContexts.USER_ID, UUID.randomUUID(), ToolContexts.AUDIT, new ToolCallAudit(6, 10)))
             .collectList()
             .block();
 
-        assertThat(chunks).last().asString().isEqualTo(" tool:get_sleep=[ALVAS-OK args={}]");
+        assertThat(chunks).last().asString().isEqualTo(" tool:get_recovery=[ALVAS-OK args={\"scope\":\"sleep\"}]");
     }
 
     @Test
     void testComplete_shouldEchoUnknown_whenSentinelNamesMissingTool() {
-        String out = companionLlm.complete("SYS", "[fake-tool:get_reta_cycle]", List.of(), Map.of());
+        String out = companionLlm.complete("SYS", "[fake-tool:get_medication]", List.of(), Map.of());
 
-        assertThat(out).contains("tool:get_reta_cycle=[UNKNOWN]");
+        assertThat(out).contains("tool:get_medication=[UNKNOWN]");
     }
 
     @Test

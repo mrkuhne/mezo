@@ -13,4 +13,5 @@ export const ME_TABS: MeTab[] = [
   { id: 'sleep', to: '/me/sleep', label: 'Alvás' },
   { id: 'people', to: '/me/people', label: 'Emberek' },
   { id: 'knowledge', to: '/me/knowledge', label: 'Tudás' },
+  { id: 'notifications', to: '/me/ertesitesek', label: 'Értesítés' },
 ]

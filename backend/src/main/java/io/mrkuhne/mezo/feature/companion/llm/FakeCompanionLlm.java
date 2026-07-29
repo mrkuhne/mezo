@@ -48,7 +48,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted verdicts (V1.3): answer with non-JSON — exercises the fail-open path. */
     public static final String VERDICT_BROKEN = "[fake-verdict-broken]";
 
-    /** Scripted tool execution: {@code [fake-tool:get_sleep {"days":3}]} runs the real callback. */
+    /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
     /** Scripted extraction (V1.2): {@code [fake-facts:<json-array>]} is returned verbatim to extraction calls. */

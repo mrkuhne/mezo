@@ -80,7 +80,7 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
     /**
      * The owner's COMPLETED gym workout instances within [from, to] —
      * {@link #findDoneInstanceDates} returning the entities instead of dates (companion
-     * get_recent_workouts + Insights listWorkouts). Same completed-only semantics.
+     * get_training_log scope=gym + Insights listWorkouts). Same completed-only semantics.
      */
     @Query("""
         SELECT s FROM WorkoutSessionEntity s

@@ -24,9 +24,10 @@ class CompanionToolRegistryIT extends AbstractIntegrationTest {
         assertThat(callbacks).allSatisfy(cb -> assertThat(cb).isInstanceOf(RecordingToolCallback.class));
         assertThat(callbacks).extracting(cb -> cb.getToolDefinition().name())
                 .containsExactlyInAnyOrder(
-                        "get_recent_workouts", "get_sport_sessions", "get_weight_trend", "get_recent_meals",
-                        "get_sleep", "get_protocol_adherence", "get_goal_progress", "get_reta_cycle",
-                        "find_similar_past_days");
+                        "get_training_log", "get_training_plan", "get_exercise_records", "get_weight_trend",
+                        "get_fuel_log", "get_recovery", "get_protocol", "get_goal",
+                        "get_medication", "find_similar_past_days", "get_recipes", "get_pantry", "get_growth",
+                        "get_daily_practice", "get_insights");
     }
 
     @Test

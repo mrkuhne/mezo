@@ -11,6 +11,9 @@ import { QueryWrapper } from '@/test/queryWrapper'
 // tap-to-log wiring we override useFuelTimeline with a crafted plan. Every OTHER hook the page
 // pulls from @/data/hooks stays real (mock mode) via the importOriginal spread; when
 // `hoisted.plan` is unset the real useFuelTimeline runs, so this override is inert elsewhere.
+// The page also reads wake/bed/nowHHmm/blocks/weightKg/energyBreakdown (mezo-rrtj, zone + hero
+// composition) — fixed, sensible values here since neither test cares about zone/hero placement,
+// only the tap-to-log wiring on the slot row itself.
 const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -18,7 +21,17 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     ...actual,
     useFuelTimeline: () =>
       hoisted.plan
-        ? { plan: hoisted.plan, budget: { kcal: 2400, p: 180, c: 240, f: 73, energy: hoisted.plan.energy }, getScoredMeal: () => null }
+        ? {
+            plan: hoisted.plan,
+            budget: { kcal: 2400, p: 180, c: 240, f: 73, energy: hoisted.plan.energy },
+            blocks: [],
+            weightKg: 82,
+            energyBreakdown: null,
+            wake: '06:45',
+            bed: '23:00',
+            nowHHmm: '13:30',
+            getScoredMeal: () => null,
+          }
         : actual.useFuelTimeline(),
   }
 })
