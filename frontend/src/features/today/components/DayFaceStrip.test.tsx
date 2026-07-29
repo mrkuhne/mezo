@@ -36,4 +36,20 @@ describe('DayFaceStrip', () => {
     screen.getAllByRole('tab')[2].click()
     expect(onSelect).toHaveBeenCalledWith('este')
   })
+
+  test('a face with no open items and no done items reads as nothing to do', () => {
+    render(<DayFaceStrip selected="reggel" current="reggel" counts={{ reggel: 0, nap: 0, este: 4 }}
+      doneCounts={{ reggel: 0, nap: 0, este: 0 }} onSelect={() => {}} />)
+    expect(screen.getByRole('tab', { name: 'Reggel · most · nincs teendő' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Nap · nincs teendő' })).toBeInTheDocument()
+  })
+
+  test('the now class marks the current face, distinct from selected', () => {
+    const { container } = render(<DayFaceStrip selected="reggel" current="nap" counts={COUNTS} doneCounts={DONE} onSelect={() => {}} />)
+    const buttons = container.querySelectorAll('.dfs-pill')
+    expect(buttons[0]).toHaveClass('sel')
+    expect(buttons[0]).not.toHaveClass('now')
+    expect(buttons[1]).toHaveClass('now')
+    expect(buttons[1]).not.toHaveClass('sel')
+  })
 })
