@@ -997,3 +997,17 @@ export interface Achievements {
   badges: GrowthBadge[]
   perks: PerkUnlock[]
 }
+
+// ── Push notifications (N1 delivery spine, mezo-h4wp) ────────────────────────
+// The browser IS the source of truth for `enabled` (a live PushSubscription on this
+// device), never the server — usePushSubscription() is deliberately not a useDualQuery.
+export interface PushSubscriptionState {
+  supported: boolean       // 'serviceWorker' in navigator && 'PushManager' in window
+  standalone: boolean      // display-mode: standalone (iOS gate)
+  permission: NotificationPermission
+  enabled: boolean         // a live PushSubscription exists on this device
+  busy: boolean
+  subscribe: () => Promise<boolean>
+  unsubscribe: () => Promise<void>
+  sendTest: () => Promise<{ attempted: number; sent: number }>
+}
