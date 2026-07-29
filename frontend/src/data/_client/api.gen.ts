@@ -2124,6 +2124,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification/pref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-category notification preferences, code defaults filled in (Notification) */
+        get: operations["getNotificationPrefs"];
+        /** Upsert one or more category preferences (Notification) */
+        put: operations["putNotificationPrefs"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the FE-owned recurring schedule for the given categories (Notification) */
+        put: operations["putNotificationSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4551,6 +4586,35 @@ export interface components {
             attempted: number;
             /** @example 1 */
             sent: number;
+        };
+        NotificationPref: {
+            /** @example gym */
+            category: string;
+            enabled: boolean;
+            leadMinutes: number;
+        };
+        NotificationPrefListResponse: {
+            prefs: components["schemas"]["NotificationPref"][];
+        };
+        NotificationPrefListRequest: {
+            prefs: components["schemas"]["NotificationPref"][];
+        };
+        NotificationScheduleEntry: {
+            /** @description ISO 1=Mon..7=Sun; null = every day */
+            weekday?: number | null;
+            /** @example 14:00 */
+            time: string;
+            category: string;
+            title: string;
+            body?: string | null;
+            deeplink: string;
+            /** @example buildProtocol */
+            source: string;
+        };
+        NotificationScheduleRequest: {
+            /** @description The categories this payload REPLACES — a category listed with no entries is cleared */
+            categories: string[];
+            entries: components["schemas"]["NotificationScheduleEntry"][];
         };
     };
     responses: never;
@@ -10619,6 +10683,115 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PushTestResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getNotificationPrefs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All 11 categories, always complete — a category with no stored row reports its code default */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPrefListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putNotificationPrefs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPrefListRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_ERROR or NOTIFICATION_UNKNOWN_CATEGORY */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putNotificationSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Replaced */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_ERROR or NOTIFICATION_UNKNOWN_CATEGORY */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
