@@ -198,6 +198,10 @@ mezo:
     # Napzárás closing ritual (bd mezo-hvmx) — sleep-anchored evening close; off ⇒ /api/ritual 404s.
     ritual:
       enabled: true
+    # Push notifications (bd mezo-h4wp.6) — subscription registration + fan-out; off ⇒ no
+    # notification beans exist and /api/notification/* 404s.
+    notification:
+      enabled: true
     # Sleep goal + day-anchor (mezo-dbsr): first-class sleep goal owns the day's wake/bed anchor.
     sleep-goal:
       enabled: true
@@ -261,6 +265,10 @@ mezo:
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:
         enabled: true
+      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron); N1 adds no
+      # @Scheduled bean at all — this switch only exists so N2 can gate it. Must stay false here.
+      notification-dispatch-job:
+        enabled: false
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -635,6 +643,11 @@ mezo:
     # Connect + read timeout for the outbound push POST (WebPushClient) — a hung push service
     # must not hold a caller's thread (N2's per-minute dispatch job).
     timeout-ms: 5000
+  # Push notification content tunables (bd mezo-h4wp.6.1). Binds onto NotificationProperties;
+  # N2 extends the same record rather than inventing a second one.
+  notification:
+    # Notification body is truncated to this many chars before it is encrypted + sent.
+    body-max-chars: 300
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:
