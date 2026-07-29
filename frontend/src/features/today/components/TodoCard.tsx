@@ -70,6 +70,7 @@ export function TodoCard({
               time={it.time}
               actionLabel={it.action?.label}
               onAction={it.action ? () => onAct(it) : undefined}
+              linkUrl={it.linkUrl}
             />
           ))}
         </div>

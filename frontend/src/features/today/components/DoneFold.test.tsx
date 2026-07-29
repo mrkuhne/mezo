@@ -5,7 +5,7 @@ import type { TodayItem } from '@/features/today/logic/todayItems'
 
 const done = (id: string, title: string): TodayItem => ({
   id, source: 'habit', face: 'reggel', status: 'done', tone: 'body', emoji: '🌅', tag: 'R',
-  title, subtitle: null, time: null, xp: 10, group: 'Reggeli rutin', action: null,
+  title, subtitle: null, time: null, xp: 10, group: 'Reggeli rutin', action: null, linkUrl: null,
 })
 
 describe('DoneFold', () => {

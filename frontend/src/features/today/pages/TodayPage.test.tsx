@@ -134,6 +134,45 @@ describe('TodayPage — composition', () => {
     expect(screen.getByText('Ma még vár rád')).toBeInTheDocument()
   })
 
+  test('EVERY pending morning-chain step is actionable, not just the promoted one', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday()
+    // seed: pushups (promoted) · videó · gombakávé · edzés · fehérjés reggeli
+    const promoted = container.querySelector('.fhc-next-tx b')?.textContent
+    expect(promoted).toBe('50 fekvőtámasz')
+    const group = [...container.querySelectorAll('.tdc-grp')]
+      .find((g) => g.textContent?.startsWith('Reggeli rutin'))!
+    const rows = [...group.parentElement!.querySelectorAll('.itemrow')]
+    // the promoted step is NOT repeated as a row, and every other step has its own control
+    expect(rows.map((r) => r.querySelector('.itemrow-t1')?.textContent)).not.toContain(promoted)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const r of rows) {
+      expect(within(r as HTMLElement).getByRole('button')).toBeInTheDocument()
+    }
+  })
+
+  test('a middle chain step can be ticked without touching the ones before it', async () => {
+    clockAt('09:12')
+    const { container } = renderToday()
+    // „Gombakávé" is step 6 — two steps behind the promoted one. Before this round it was an
+    // inert metapill, so a skipped step could never be logged.
+    const row = screen.getByText('Gombakávé').closest('.itemrow') as HTMLElement
+    fireEvent.click(within(row).getByRole('button', { name: 'Logolás' }))
+    expect(screen.getByTestId('loc').textContent).toBe('/fuel/stack')
+    expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('50 fekvőtámasz')
+  })
+
+  test("the chain's linked content is reachable from its row", () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    renderToday()
+    const link = screen.getByRole('link', { name: 'Reggeli videó megnyitása' })
+    expect(link).toHaveAttribute('href', expect.stringContaining('facebook.com'))
+    expect(link).toHaveAttribute('target', '_blank')
+    // …and its own Pipa action survives beside it
+    const row = link.closest('.itemrow') as HTMLElement
+    expect(within(row).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+  })
+
   test('the evening face names Napzárás exactly once — the hero owns it, the row is gone', () => {
     clockAt('21:05')
     renderToday()
@@ -196,7 +235,8 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
     clockAt('09:12')
     const { container } = renderToday()
     expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('50 fekvőtámasz')
-    fireEvent.click(screen.getByRole('button', { name: 'Pipa' }))
+    // The hero's own CTA — the chain rows below now carry their own `Pipa` pills too.
+    fireEvent.click(container.querySelector('.fhc-next-go') as HTMLElement)
     await waitFor(() =>
       expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('Reggeli videó'))
   })

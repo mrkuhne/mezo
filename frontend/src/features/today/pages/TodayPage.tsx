@@ -191,13 +191,15 @@ export function TodayPage() {
     }
   }
 
-  const morningChain = habits.filter((h) => h.chain === 'MORNING')
-  const chainItems = open.filter((i) => i.source === 'habit' && i.face === 'reggel')
+  const chainProgress = (which: 'MORNING' | 'EVENING') => {
+    const steps = habits.filter((h) => h.chain === which)
+    return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
+  }
+  // Only the chain's FIRST open step is promoted into the hero; the rest stay ordinary
+  // TodoCard rows so every pending step is actionable, in order or out of it.
   const chain = {
-    done: morningChain.filter((h) => h.status === 'done').length,
-    total: morningChain.length,
-    next: chainItems[0] ?? null,
-    rest: chainItems.slice(1).map((i) => i.title),
+    ...chainProgress('MORNING'),
+    next: open.find((i) => i.source === 'habit' && i.face === 'reggel') ?? null,
   }
   const later = items.filter((i) => i.face !== selected && i.face !== 'all' && i.status === 'open')
 
@@ -261,8 +263,8 @@ export function TodayPage() {
       )}
       {selected === 'este' && (
         <FaceEvening
-          open={open} done={done} doneXp={doneXp} dayXp={dayXp} note={companionNote}
-          growth={growth} fuelNote={fuelNote} onAct={act}
+          open={open} done={done} doneXp={doneXp} dayXp={dayXp} chain={chainProgress('EVENING')}
+          note={companionNote} growth={growth} fuelNote={fuelNote} onAct={act}
         />
       )}
 

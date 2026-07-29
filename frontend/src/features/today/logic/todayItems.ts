@@ -47,6 +47,9 @@ export interface TodayItem {
   /** Group heading inside `TodoCard`. */
   group: string
   action: ItemAction | null
+  /** The item's own external content (a habit's `linkUrl` — e.g. the daily video). Rendered
+   *  as `ItemRow`'s trailing link, ALONGSIDE the action, never instead of it. */
+  linkUrl: string | null
 }
 
 /** A train session already shaped for `ItemCard` by the caller (TodayPage reads
@@ -105,7 +108,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       status: s.logged ? 'done' : 'open',
       tone: s.tone, emoji: s.emoji, tag: s.tag, title: s.title,
       subtitle: s.facts.filter(Boolean).join(' · ') || null,
-      time: s.time, xp: null, group: 'Edzés', action: null,
+      time: s.time, xp: null, group: 'Edzés', action: null, linkUrl: null,
     })
   }
   const hasSession = sessions.length > 0
@@ -130,6 +133,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       xp: h.xp + (twin?.xp ?? 0),
       group: CHAIN_GROUP[h.chain],
       action: { kind: 'habit', habit: h, label: h.mode === 'MANUAL' ? 'Pipa' : 'Logolás' },
+      linkUrl: h.linkUrl ?? null,
     })
   }
 
@@ -148,7 +152,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       time: null,
       xp: q.xp,
       group: 'Napi küldetések',
-      action: { kind: 'quest', quest: q, label: 'Naplózz' },
+      action: { kind: 'quest', quest: q, label: 'Naplózz' }, linkUrl: null,
     })
   }
 
@@ -166,7 +170,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       time: c.time,
       xp: null,
       group: 'Check-in',
-      action: { kind: 'checkin', slotIdx, label: 'Koppints' },
+      action: { kind: 'checkin', slotIdx, label: 'Koppints' }, linkUrl: null,
     })
   })
 
@@ -183,7 +187,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       time: f.time,
       xp: null,
       group: 'Fuel',
-      action: { kind: 'nav', to: '/fuel', label: 'Logold' },
+      action: { kind: 'nav', to: '/fuel', label: 'Logold' }, linkUrl: null,
     })
   }
 
@@ -200,7 +204,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       time: input.ritual.window.opensAt,
       xp: null,
       group: 'Napzárás',
-      action: { kind: 'nav', to: '/ritual', label: 'Zárjuk le' },
+      action: { kind: 'nav', to: '/ritual', label: 'Zárjuk le' }, linkUrl: null,
     })
   }
 

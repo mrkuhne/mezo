@@ -18,6 +18,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { gymLevelUpMock } from '@/data/progression/progressionMock'
 import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import type { LevelUpResult } from '@/data/train/trainApi'
 import type { HabitItem, VolleyballSession } from '@/data/types'
 
@@ -185,6 +186,45 @@ describe('TodayPage — consume-once level-ups', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(consumeHabitLevelUps).not.toHaveBeenCalled()
     expect(consumeQuestLevelUps).not.toHaveBeenCalled()
+  })
+})
+
+describe('TodayPage — the chain-completion celebration', () => {
+  const chain = (which: 'MORNING' | 'EVENING', allDone: boolean): HabitItem[] => [
+    habit({ key: 'a', chain: which, title: 'A', mode: 'MANUAL', status: 'done', position: 1 }),
+    habit({
+      key: 'b', chain: which, title: 'B', mode: 'MANUAL',
+      status: allDone ? 'done' : 'pending', position: 2,
+    }),
+  ]
+
+  test('the morning face toasts once when its chain completes', () => {
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+    setup({ habits: chain('MORNING', true) })
+    const { rerender } = renderToday('/today?dp=reggel')
+    // A re-render of an already-complete chain stays silent (the wasComplete edge).
+    rerender(<div />)
+    off()
+    expect(seen).toEqual([{ kind: 'success', text: '🌅 Tökéletes reggel' }])
+  })
+
+  test('the evening face toasts once when its chain completes', () => {
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+    setup({ habits: chain('EVENING', true) })
+    renderToday('/today?dp=este')
+    off()
+    expect(seen).toEqual([{ kind: 'success', text: '🌙 Tökéletes este' }])
+  })
+
+  test('an incomplete chain never celebrates', () => {
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+    setup({ habits: chain('MORNING', false) })
+    renderToday('/today?dp=reggel')
+    off()
+    expect(seen).toEqual([])
   })
 })
 

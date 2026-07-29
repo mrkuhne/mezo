@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { ItemRow } from '@/shared/ui/ItemRow'
 
@@ -38,5 +38,38 @@ describe('ItemRow', () => {
     render(<ItemRow tone="gym" emoji="🏋️" title="Pull Day" time="17:00" onAction={onAction} ariaLabel="Pull Day megnyitása" />)
     screen.getByRole('button', { name: 'Pull Day megnyitása' }).click()
     expect(onAction).toHaveBeenCalledOnce()
+  })
+
+  test('a linkUrl exposes a new-tab link to that URL', () => {
+    render(<ItemRow tone="body" emoji="🌅" title="Reggeli videó" linkUrl="https://example.test/video" />)
+    const link = screen.getByRole('link', { name: 'Reggeli videó megnyitása' })
+    expect(link).toHaveAttribute('href', 'https://example.test/video')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'))
+  })
+
+  test('a row without a linkUrl exposes no link', () => {
+    render(<ItemRow tone="body" emoji="🌅" title="Reggeli napfény" actionLabel="Pipa" onAction={vi.fn()} />)
+    expect(screen.queryByRole('link')).toBeNull()
+  })
+
+  test('the link and the action pill coexist — neither swallows the other', () => {
+    const onAction = vi.fn()
+    render(
+      <ItemRow tone="body" emoji="🌅" title="Reggeli videó" actionLabel="Pipa" onAction={onAction}
+        linkUrl="https://example.test/video" />,
+    )
+    expect(screen.getByRole('link', { name: 'Reggeli videó megnyitása' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Pipa' }))
+    expect(onAction).toHaveBeenCalledOnce()
+  })
+
+  test('a link-bearing row is never the whole-row button — no <a> nested in a <button>', () => {
+    const { container } = render(
+      <ItemRow tone="body" emoji="🌅" title="Reggeli videó" onAction={vi.fn()} ariaLabel="x"
+        linkUrl="https://example.test/video" />,
+    )
+    expect(container.querySelector('button a')).toBeNull()
+    expect(container.querySelector('div.itemrow')).toBeTruthy()
   })
 })

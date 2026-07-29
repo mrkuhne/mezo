@@ -13,6 +13,7 @@ import type { Briefing } from '@/data/types'
 import type { DayFace } from '@/features/today/logic/dayFace'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
+import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 
 export function FaceMorning({
   open, done, doneXp, chain, briefing, briefingDemo, briefingFacts, later, growth, fuelNote,
@@ -21,7 +22,7 @@ export function FaceMorning({
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
-  chain: { done: number; total: number; next: TodayItem | null; rest: string[] }
+  chain: { done: number; total: number; next: TodayItem | null }
   briefing: Briefing
   briefingDemo?: boolean
   briefingFacts: string[]
@@ -34,13 +35,17 @@ export function FaceMorning({
   onAct: (item: TodayItem) => void
   onFace: (face: DayFace) => void
 }) {
-  const todo = open.filter((i) => i.source !== 'habit' || i.face !== 'reggel')
+  // Each chain step appears EXACTLY ONCE and is actionable: the hero promotes `next`, and
+  // steps 2..n stay in the TodoCard under „Reggeli rutin" — so a skipped middle step can
+  // still be ticked (the retired RoutineCard let any pending row be checked).
+  const todo = open.filter((i) => i.id !== chain.next?.id)
+  useChainCelebration(chain.total > 0 && chain.done === chain.total, '🌅 Tökéletes reggel')
   return (
     <>
       <FaceHeroCard
         tone="body" emoji="🌅" tag="REGGELI RUTIN"
         title={chain.next ? 'Indul a lánc' : 'Megvan a reggeled'}
-        done={chain.done} total={chain.total} next={chain.next} rest={chain.rest} onAct={onAct}
+        done={chain.done} total={chain.total} next={chain.next} onAct={onAct}
       />
       <BriefingCard briefing={briefing} demo={briefingDemo} facts={briefingFacts} />
       <IntentionBanner variant="chip" />

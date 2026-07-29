@@ -6,7 +6,7 @@ import type { TodayItem } from '@/features/today/logic/todayItems'
 const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   id: 'habit:a', source: 'habit', face: 'reggel', status: 'open', tone: 'body', emoji: '🌅',
   tag: 'REGGELI RUTIN', title: 'Reggeli napfény', subtitle: 'ébredés után', time: null, xp: 5,
-  group: 'Reggeli rutin', action: { kind: 'nav', to: '/x', label: 'Pipa' }, ...over,
+  group: 'Reggeli rutin', action: { kind: 'nav', to: '/x', label: 'Pipa' }, linkUrl: null, ...over,
 })
 
 describe('TodoCard', () => {

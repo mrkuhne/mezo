@@ -1,14 +1,17 @@
 // ============================================================
 // Mezo · FaceHeroCard — a face's chain hero (mezo-j7u4): the shared `ItemCard`
 // carrying a progress bar and the chain's NEXT step promoted into its own row
-// with that step's action. The remaining steps stay as quiet `.metapill`s, so
-// the card answers „mi a következő" without hiding what comes after.
+// with that step's action (and its external link, if it has one).
+// The remaining steps are NOT repeated here: they render as ordinary, ACTIONABLE
+// rows in the face's `TodoCard` under their chain's group, so a skipped middle
+// step can still be ticked. The `rest` metapills this card used to carry were the
+// read-only half of that pair, and became duplication once the rows appeared.
 // ============================================================
 import { ItemCard, type ItemTone } from '@/shared/ui/ItemCard'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
 export function FaceHeroCard({
-  tone, emoji, tag, title, done, total, next, rest, onAct,
+  tone, emoji, tag, title, done, total, next, onAct,
 }: {
   tone: ItemTone
   emoji: string
@@ -18,8 +21,6 @@ export function FaceHeroCard({
   total: number
   /** The chain's first open step, promoted; null when the chain is finished. */
   next: TodayItem | null
-  /** Titles of the steps after `next`. */
-  rest: string[]
   onAct: (item: TodayItem) => void
 }) {
   const pct = total === 0 ? 0 : (done / total) * 100
@@ -27,7 +28,7 @@ export function FaceHeroCard({
     <ItemCard
       tone={tone} emoji={emoji} tag={tag} title={title}
       stateLabel={`${done} / ${total}`}
-      facts={rest}
+      facts={[]}
       logged={false}
     >
       <div className="fhc-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
@@ -37,6 +38,17 @@ export function FaceHeroCard({
             <b>{next.title}</b>
             <s>{[next.subtitle, next.xp ? `+${next.xp} XP` : null].filter(Boolean).join(' · ')}</s>
           </span>
+          {next.linkUrl && (
+            <a
+              className="fhc-next-link np-press"
+              href={next.linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${next.title} megnyitása`}
+            >
+              ↗
+            </a>
+          )}
           {next.action && (
             <button type="button" className="fhc-next-go np-press" onClick={() => onAct(next)}>
               {next.action.label}

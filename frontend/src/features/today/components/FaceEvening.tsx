@@ -15,6 +15,7 @@ import { ItemRow } from '@/shared/ui/ItemRow'
 import type { CompanionNote } from '@/data/types'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
+import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 
 /** The two rows the `RitualCard` hero above the list already owns — showing either of
  *  them again is the exact duplication this redesign exists to remove. The `evening_ritual`
@@ -24,13 +25,17 @@ import type { TodayItem } from '@/features/today/logic/todayItems'
 const OWNED_BY_RITUAL_HERO = new Set(['habit:evening_ritual'])
 
 export function FaceEvening({
-  open, done, doneXp, dayXp, note, growth, fuelNote, onAct,
+  open, done, doneXp, dayXp, chain, note, growth, fuelNote, onAct,
 }: {
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
   /** Total XP earned today across every source — the retrospective's headline. */
   dayXp: number
+  /** Evening-chain progress — this face owns it, so it fires its completion toast.
+   *  Unlike the morning face there is no chain hero: every evening step already renders
+   *  as an actionable `TodoCard` row, so nothing needs promoting or de-duplicating. */
+  chain: { done: number; total: number }
   note: CompanionNote | null
   /** Quest summary + the route into quest management (TodoCard's header). */
   growth?: GrowthTodaySummary | null
@@ -39,6 +44,7 @@ export function FaceEvening({
   onAct: (item: TodayItem) => void
 }) {
   const todo = open.filter((i) => i.source !== 'ritual' && !OWNED_BY_RITUAL_HERO.has(i.id))
+  useChainCelebration(chain.total > 0 && chain.done === chain.total, '🌙 Tökéletes este')
   return (
     <>
       <WindDownBanner />
