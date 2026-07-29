@@ -44,3 +44,4 @@ export { useGamification, useTitles, useGamificationActions, useGamificationDay 
 export { useRitualDay, useRitualActions } from '@/data/ritual/ritualHooks'
 export { useDayRecap } from '@/data/ritual/recapHooks'
 export { usePushSubscription } from '@/data/notification/notificationHooks'
+export { useNotificationPrefs } from '@/data/notification/notificationPrefHooks'

@@ -3,6 +3,9 @@ import type { components } from '@/data/_client/api.gen'
 
 type SubscriptionRequest = components['schemas']['PushSubscriptionRequest']
 type TestResponse = components['schemas']['PushTestResponse']
+type NotificationPref = components['schemas']['NotificationPref']
+type NotificationPrefListResponse = components['schemas']['NotificationPrefListResponse']
+type NotificationPrefListRequest = components['schemas']['NotificationPrefListRequest']
 
 export const notificationApi = {
   register: (body: SubscriptionRequest) =>
@@ -15,4 +18,12 @@ export const notificationApi = {
       method: 'DELETE',
     }),
   test: () => apiFetch<TestResponse>('/api/notification/test', { method: 'POST' }),
+  /** All 11 categories, always — a stored row wins, a missing one reports the code default. */
+  prefs: () => apiFetch<NotificationPrefListResponse>('/api/notification/pref'),
+  /** Per-category upsert (never a full replace) — safe to send just the one changed category. */
+  putPrefs: (prefs: NotificationPref[]) =>
+    apiFetch<void>('/api/notification/pref', {
+      method: 'PUT',
+      body: JSON.stringify({ prefs } satisfies NotificationPrefListRequest),
+    }),
 }
