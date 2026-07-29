@@ -19,6 +19,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -35,6 +37,12 @@ import org.springframework.stereotype.Component;
  * <p>The static key codecs are also the project's single P-256 key encoding: uncompressed
  * {@code 0x04 ‖ X(32) ‖ Y(32)} points and 32-byte scalars, matching what the browser's
  * {@code PushSubscription} hands us and what RFC 8291 encryption consumes.
+ *
+ * <p><b>Failure mapping.</b> Anything rooted in server configuration or in our own signature
+ * encoding raises {@code WEBPUSH_SIGN_FAILED} (500); {@code WEBPUSH_KEY_INVALID} (400) is reserved
+ * for key material that genuinely arrived from a client (a subscription's {@code p256dh}). Key
+ * validation is deliberately strict: a misconfigured {@code VAPID_PRIVATE} must fail loudly on the
+ * first send rather than produce a well-formed-but-useless token that 401s forever in silence.
  */
 @Component
 @RequiredArgsConstructor
@@ -53,6 +61,13 @@ public class VapidSigner {
     /** RFC 8292 caps `exp` at 24h ahead; 12h leaves room for clock skew on both ends. */
     private static final Duration TOKEN_TTL = Duration.ofHours(12);
 
+    /**
+     * A push endpoint origin: scheme + host + optional port, nothing else. The value is spliced
+     * into a signed JWT's `aud`, so it is <b>validated</b> rather than escaped — a quote in it
+     * could otherwise inject a second `sub` claim ahead of the real one.
+     */
+    private static final Pattern PUSH_ORIGIN = Pattern.compile("^https?://[A-Za-z0-9.\\-]+(:\\d+)?$");
+
     private static final Base64.Encoder B64URL = Base64.getUrlEncoder().withoutPadding();
     private static final Base64.Decoder B64URL_DECODER = Base64.getUrlDecoder();
 
@@ -67,6 +82,9 @@ public class VapidSigner {
      * @return {@code vapid t=<jwt>, k=<publicKeyBase64Url>}
      */
     public String authorizationHeader(String pushOrigin, Instant now) {
+        if (!PUSH_ORIGIN.matcher(pushOrigin).matches()) {
+            throw signFailed();
+        }
         String claims = "{\"aud\":\"" + pushOrigin
             + "\",\"exp\":" + now.plus(TOKEN_TTL).getEpochSecond()
             + ",\"sub\":\"" + properties.subject() + "\"}";
@@ -94,36 +112,51 @@ public class VapidSigner {
         ECPoint point = key.getW();
         byte[] encoded = new byte[1 + 2 * FIELD_LEN];
         encoded[0] = UNCOMPRESSED_POINT_TAG;
-        writeFieldElement(point.getAffineX().toByteArray(), encoded, 1);
-        writeFieldElement(point.getAffineY().toByteArray(), encoded, 1 + FIELD_LEN);
+        writeFieldElement(point.getAffineX().toByteArray(), encoded, 1, VapidSigner::signFailed);
+        writeFieldElement(point.getAffineY().toByteArray(), encoded, 1 + FIELD_LEN, VapidSigner::signFailed);
         return encoded;
     }
 
     /** Encodes a P-256 private key as its raw 32-byte big-endian scalar. */
     public static byte[] encodePrivateKey(ECPrivateKey key) {
         byte[] encoded = new byte[FIELD_LEN];
-        writeFieldElement(key.getS().toByteArray(), encoded, 0);
+        writeFieldElement(key.getS().toByteArray(), encoded, 0, VapidSigner::signFailed);
         return encoded;
     }
 
-    /** Rebuilds a P-256 private key from its raw big-endian scalar. */
+    /**
+     * Rebuilds a P-256 private key from its raw big-endian scalar. The scalar is server
+     * configuration, so every rejection here is a 500: the width must be exactly 32 bytes and the
+     * value must be a usable private key ({@code 0 < s < n}). Without those checks a missing
+     * {@code VAPID_PRIVATE} would decode to some short garbage scalar and happily sign a token that
+     * every push service rejects with 401 — a silent, self-inflicted outage.
+     */
     public static ECPrivateKey decodePrivateKey(byte[] scalar) {
+        if (scalar.length != FIELD_LEN) {
+            throw signFailed();
+        }
+        BigInteger s = new BigInteger(1, scalar);
         try {
+            ECParameterSpec parameters = p256Parameters();
+            if (s.signum() == 0 || s.compareTo(parameters.getOrder()) >= 0) {
+                throw signFailed();
+            }
             return (ECPrivateKey) KeyFactory.getInstance("EC")
-                .generatePrivate(new ECPrivateKeySpec(new BigInteger(1, scalar), p256Parameters()));
+                .generatePrivate(new ECPrivateKeySpec(s, parameters));
         } catch (GeneralSecurityException e) {
-            throw keyInvalid();
+            throw signFailed();
         }
     }
 
-    /** Rebuilds a P-256 private key from its base64url-encoded raw scalar. */
+    /** Rebuilds a P-256 private key from its base64url-encoded raw scalar (server config → 500). */
     public static ECPrivateKey decodePrivateKey(String base64UrlScalar) {
-        return decodePrivateKey(decodeBase64Url(base64UrlScalar));
+        return decodePrivateKey(decodeBase64Url(base64UrlScalar, VapidSigner::signFailed));
     }
 
     /**
      * Rebuilds a P-256 public key from a 65-byte uncompressed point — the form both the VAPID
-     * public key and a browser subscription's {@code p256dh} arrive in.
+     * public key and a browser subscription's {@code p256dh} arrive in. Client-supplied material,
+     * so a malformed point is a 400.
      */
     public static ECPublicKey decodePublicKey(byte[] uncompressedPoint) {
         if (uncompressedPoint.length != 1 + 2 * FIELD_LEN
@@ -141,9 +174,9 @@ public class VapidSigner {
         }
     }
 
-    /** Rebuilds a P-256 public key from a base64url-encoded uncompressed point. */
+    /** Rebuilds a P-256 public key from a base64url-encoded uncompressed point (client → 400). */
     public static ECPublicKey decodePublicKey(String base64UrlPoint) {
-        return decodePublicKey(decodeBase64Url(base64UrlPoint));
+        return decodePublicKey(decodeBase64Url(base64UrlPoint, VapidSigner::keyInvalid));
     }
 
     // === DER <-> JOSE signature conversion ======================================================
@@ -210,7 +243,9 @@ public class VapidSigner {
         if (length == 0 || valueStart + length > der.length) {
             throw signFailed();
         }
-        writeFieldElement(Arrays.copyOfRange(der, valueStart, valueStart + length), target, targetOffset);
+        writeFieldElement(
+            Arrays.copyOfRange(der, valueStart, valueStart + length), target, targetOffset,
+            VapidSigner::signFailed);
         return valueStart + length;
     }
 
@@ -232,13 +267,17 @@ public class VapidSigner {
     /**
      * Writes a big-endian magnitude into {@code target} as a fixed 32-byte, left-zero-padded field
      * element — stripping the leading sign byte that {@code BigInteger.toByteArray()} and DER
-     * INTEGERs may carry, and left-padding values shorter than 32 bytes.
+     * INTEGERs may carry, and left-padding values shorter than 32 bytes. Every field element in
+     * this class routes through here, hence the caller-supplied error: an over-wide DER INTEGER is
+     * our own signature encoding failing (500), not a bad client key.
      */
-    private static void writeFieldElement(byte[] magnitude, byte[] target, int targetOffset) {
+    private static void writeFieldElement(
+        byte[] magnitude, byte[] target, int targetOffset,
+        Supplier<SystemRuntimeErrorException> onTooWide) {
         int start = stripLeadingZeros(magnitude);
         int length = magnitude.length - start;
         if (length > FIELD_LEN) {
-            throw keyInvalid();
+            throw onTooWide.get();
         }
         System.arraycopy(magnitude, start, target, targetOffset + FIELD_LEN - length, length);
     }
@@ -263,19 +302,21 @@ public class VapidSigner {
         return B64URL.encodeToString(json.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static byte[] decodeBase64Url(String value) {
+    private static byte[] decodeBase64Url(String value, Supplier<SystemRuntimeErrorException> onInvalid) {
         try {
             return B64URL_DECODER.decode(value);
         } catch (IllegalArgumentException e) {
-            throw keyInvalid();
+            throw onInvalid.get();
         }
     }
 
+    /** Client-supplied key material was malformed (a subscription's `p256dh`). */
     private static SystemRuntimeErrorException keyInvalid() {
         return new SystemRuntimeErrorException(
             SystemMessage.error("WEBPUSH_KEY_INVALID").build(), HttpStatus.BAD_REQUEST);
     }
 
+    /** Server configuration or our own signature encoding failed. */
     private static SystemRuntimeErrorException signFailed() {
         return new SystemRuntimeErrorException(
             SystemMessage.error("WEBPUSH_SIGN_FAILED").build(), HttpStatus.INTERNAL_SERVER_ERROR);
