@@ -25,7 +25,7 @@ import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 const OWNED_BY_RITUAL_HERO = new Set(['habit:evening_ritual'])
 
 export function FaceEvening({
-  open, done, doneXp, dayXp, chain, note, growth, fuelNote, onAct,
+  open, done, doneXp, dayXp, chain, note, growth, fuelNote, habitPending, onAct,
 }: {
   open: TodayItem[]
   done: TodayItem[]
@@ -41,6 +41,8 @@ export function FaceEvening({
   growth?: GrowthTodaySummary | null
   /** The fuel plan's companion line — only shown when this face has fuel rows. */
   fuelNote?: { time: string; text: string } | null
+  /** A habit write is in flight — withdraws habit controls on this face. */
+  habitPending?: boolean
   onAct: (item: TodayItem) => void
 }) {
   const todo = open.filter((i) => i.source !== 'ritual' && !OWNED_BY_RITUAL_HERO.has(i.id))
@@ -52,7 +54,7 @@ export function FaceEvening({
       <TodoCard
         items={todo} doneCount={done.length} xp={doneXp} growth={growth}
         note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
-        onAct={onAct}
+        habitPending={habitPending} onAct={onAct}
       />
       <IntentionBanner variant="reflect" />
       {note && <CompanionNoteCard note={note} />}

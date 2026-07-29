@@ -64,12 +64,34 @@ describe('ItemRow', () => {
     expect(onAction).toHaveBeenCalledOnce()
   })
 
-  test('a link-bearing row is never the whole-row button — no <a> nested in a <button>', () => {
+  test('a link-bearing whole-row button keeps BOTH: the action fires and the <a> is not nested', () => {
+    const onAction = vi.fn()
     const { container } = render(
-      <ItemRow tone="body" emoji="🌅" title="Reggeli videó" onAction={vi.fn()} ariaLabel="x"
+      <ItemRow tone="body" emoji="🌅" title="Reggeli videó" onAction={onAction} ariaLabel="Videó megnyitása"
         linkUrl="https://example.test/video" />,
     )
+    // the <a> must never sit inside the row's own <button> (invalid + click-conflicting)…
     expect(container.querySelector('button a')).toBeNull()
-    expect(container.querySelector('div.itemrow')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Reggeli videó megnyitása' })).toBeInTheDocument()
+    // …and the action is NOT silently dropped: the hit area is an inner button
+    fireEvent.click(screen.getByRole('button', { name: 'Videó megnyitása' }))
+    expect(onAction).toHaveBeenCalledOnce()
+  })
+
+  test('disabled withdraws the action pill to inert copy — nothing stays clickable', () => {
+    const onAction = vi.fn()
+    render(<ItemRow tone="body" emoji="🌅" title="Napfény" actionLabel="Pipa" onAction={onAction} disabled />)
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByText('Pipa')).toBeInTheDocument() // the label stays — no layout jump
+  })
+
+  test('disabled also withdraws the whole-row button shape', () => {
+    render(<ItemRow tone="gym" emoji="🏋️" title="Pull Day" onAction={vi.fn()} ariaLabel="Pull Day megnyitása" disabled />)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  test('disabled never touches a row that has no action', () => {
+    const { container } = render(<ItemRow tone="body" emoji="🌅" title="Napfény" time="07:00" disabled />)
+    expect(container.querySelector('.itemrow-tm')?.textContent).toBe('07:00')
   })
 })

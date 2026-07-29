@@ -20,7 +20,7 @@ import { gymLevelUpMock } from '@/data/progression/progressionMock'
 import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
 import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import type { LevelUpResult } from '@/data/train/trainApi'
-import type { HabitItem, VolleyballSession } from '@/data/types'
+import type { CheckinSlot, DailyQuest, HabitItem, VolleyballSession } from '@/data/types'
 
 const mocks = vi.hoisted(() => ({
   useHabitDay: vi.fn(),
@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   useDailyQuests: vi.fn(),
   useQuestActions: vi.fn(),
   useToday: vi.fn(),
+  useCheckins: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const orig = await importOriginal<typeof import('@/data/hooks')>()
@@ -38,6 +39,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useDailyQuests: mocks.useDailyQuests,
     useQuestActions: mocks.useQuestActions,
     useToday: mocks.useToday,
+    useCheckins: mocks.useCheckins,
   }
 })
 
@@ -97,17 +99,27 @@ let check: ReturnType<typeof vi.fn>
 let consumeHabitLevelUps: ReturnType<typeof vi.fn>
 let consumeQuestLevelUps: ReturnType<typeof vi.fn>
 
-function setup({ habits = ALL_KINDS, habitLevelUps = [] as LevelUpResult[], questLevelUps = [] as LevelUpResult[] } = {}) {
+const DEFAULT_CHECKINS: CheckinSlot[] = [{ time: '14:00', state: 'now', values: null, note: null }]
+
+function setup({
+  habits = ALL_KINDS,
+  habitLevelUps = [] as LevelUpResult[],
+  questLevelUps = [] as LevelUpResult[],
+  quests = [] as DailyQuest[],
+  checkins = DEFAULT_CHECKINS,
+  pending = false,
+} = {}) {
   check = vi.fn().mockResolvedValue(undefined)
   consumeHabitLevelUps = vi.fn()
   consumeQuestLevelUps = vi.fn()
   mocks.useHabitDay.mockReturnValue({ habits, levelUps: habitLevelUps, mode: 'mock' })
   mocks.useHabitActions.mockReturnValue({
-    check, uncheck: vi.fn(), pending: false, consumeLevelUps: consumeHabitLevelUps,
+    check, uncheck: vi.fn(), pending, consumeLevelUps: consumeHabitLevelUps,
   })
   mocks.useDailyQuests.mockReturnValue({
-    quests: [], levelUps: questLevelUps, rerollsLeft: 1, date: '2026-05-21', mode: 'mock',
+    quests, levelUps: questLevelUps, rerollsLeft: 1, date: '2026-05-21', mode: 'mock',
   })
+  mocks.useCheckins.mockReturnValue({ checkins, saveCheckIn: vi.fn() })
   mocks.useQuestActions.mockReturnValue({
     reroll: vi.fn(), pending: false, consumeLevelUps: consumeQuestLevelUps,
   })
@@ -186,6 +198,76 @@ describe('TodayPage — consume-once level-ups', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(consumeHabitLevelUps).not.toHaveBeenCalled()
     expect(consumeQuestLevelUps).not.toHaveBeenCalled()
+  })
+})
+
+describe('TodayPage — no quest row is a dead control either', () => {
+  const quest = (over: Partial<DailyQuest>): DailyQuest => ({
+    id: 'q', questDate: '2026-05-21', slot: 'GROWTH', skillKey: 'mindset',
+    title: 'Q', why: 'w', targetLabel: 't', metric: 'water_target', xp: 20,
+    status: 'offered', completionMode: 'DERIVED', ...over,
+  })
+  const slot = (time: string, state: CheckinSlot['state']): CheckinSlot =>
+    ({ time, state, values: null, note: null })
+
+  test('an unmapped metric renders NO button — the production growth_intention case', () => {
+    // quest-catalog.json ships `growth_intention` with metric `intention_focus_set` on
+    // dayTypes ["ANY"]; questAction.ts has no mapping for it, so its `Naplózz` pill used to
+    // do nothing every single day the rotation offered it.
+    setup({ quests: [quest({ id: 'gi', title: 'Fogalmazd meg a mai szándékod', metric: 'intention_focus_set' })] })
+    renderToday()
+    const row = rowOf('Fogalmazd meg a mai szándékod')
+    expect(within(row).queryByRole('button')).toBeNull()
+  })
+
+  test('a mapped metric keeps its button and performs the log', () => {
+    setup({ quests: [quest({ id: 'w', title: 'Igyál vizet', metric: 'water_target' })] })
+    renderToday()
+    expect(within(rowOf('Igyál vizet')).getByRole('button', { name: 'Naplózz' })).toBeInTheDocument()
+  })
+
+  test('a check-in quest renders NO button once every slot is done or skipped', () => {
+    setup({
+      quests: [quest({ id: 'c', title: 'Töltsd ki a check-int', metric: 'checkin_full' })],
+      checkins: [slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'done'), slot('20:00', 'skipped')],
+    })
+    renderToday()
+    expect(within(rowOf('Töltsd ki a check-int')).queryByRole('button')).toBeNull()
+  })
+
+  test('a check-in quest keeps its button while a slot is still open', () => {
+    setup({
+      quests: [quest({ id: 'c', title: 'Töltsd ki a check-int', metric: 'checkin_full' })],
+      checkins: [slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'done'), slot('20:00', 'pending')],
+    })
+    renderToday()
+    fireEvent.click(within(rowOf('Töltsd ki a check-int')).getByRole('button', { name: 'Naplózz' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+})
+
+describe('TodayPage — an in-flight habit write withdraws its controls', () => {
+  test('a pending check withdraws the chain rows AND the hero CTA', () => {
+    setup({ habits: ALL_KINDS, pending: true })
+    const { container } = renderToday('/today?dp=este')
+    // the labels stay as inert copy — no clickable control survives
+    expect(within(rowOf('MANUAL lánc')).queryByRole('button')).toBeNull()
+    expect(within(rowOf('MANUAL lánc')).getByText('Pipa')).toBeInTheDocument()
+    expect(container.querySelector('.itemrow-act.is-inert')).toBeTruthy()
+  })
+
+  test('the morning hero CTA is withdrawn while a check is in flight', () => {
+    setup({ habits: [habit({ key: 'morning_sunlight', chain: 'MORNING', title: 'Napfény', mode: 'MANUAL' })], pending: true })
+    const { container } = renderToday('/today?dp=reggel')
+    expect(container.querySelector('.fhc-next-go.is-inert')?.textContent).toBe('Pipa')
+    expect(container.querySelector('button.fhc-next-go')).toBeNull()
+  })
+
+  test('with no write in flight the controls are live', () => {
+    setup({ habits: ALL_KINDS })
+    renderToday('/today?dp=este')
+    fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button', { name: 'Pipa' }))
+    expect(check).toHaveBeenCalledWith('caffeine_cutoff')
   })
 })
 

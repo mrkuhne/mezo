@@ -15,7 +15,7 @@ import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
 export function TodoCard({
-  items, doneCount, xp, growth, note, onAct,
+  items, doneCount, xp, growth, note, habitPending, onAct,
 }: {
   /** The face's OPEN items — done ones live in `DoneFold`. */
   items: TodayItem[]
@@ -26,6 +26,9 @@ export function TodoCard({
   growth?: GrowthTodaySummary | null
   /** Companion line for the plan the rows belong to (`{time} · {text}`). */
   note?: { time: string; text: string } | null
+  /** A habit write is in flight — withdraws the pills of habit rows ONLY (the guard belongs
+   *  to `useHabitActions`; a quest or fuel row must stay tappable meanwhile). */
+  habitPending?: boolean
   onAct: (item: TodayItem) => void
 }) {
   if (items.length === 0) return null
@@ -71,6 +74,7 @@ export function TodoCard({
               actionLabel={it.action?.label}
               onAction={it.action ? () => onAct(it) : undefined}
               linkUrl={it.linkUrl}
+              disabled={habitPending && it.action?.kind === 'habit'}
             />
           ))}
         </div>

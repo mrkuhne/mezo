@@ -183,7 +183,12 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       status: FUEL_STATUS[f.state] ?? 'open',
       tone: 'fuel', emoji: '🍶', tag: 'FUEL',
       title: f.mealName || f.label,
-      subtitle: f.mealName ? f.label : null,
+      // The live slot keeps the retired timeline's `MOST` marker. `FUEL_STATUS` folds `now`
+      // into `open`, so without this the active slot is indistinguishable from a later one.
+      // Carried in the row's own copy rather than as a new `ItemStatus` — `now` is a
+      // presentation nuance of an OPEN item, not a completion state.
+      subtitle: [f.state === 'now' ? 'MOST' : null, f.mealName ? f.label : null]
+        .filter(Boolean).join(' · ') || null,
       time: f.time,
       xp: null,
       group: 'Fuel',

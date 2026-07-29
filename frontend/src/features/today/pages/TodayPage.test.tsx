@@ -219,6 +219,50 @@ describe('TodayPage — composition', () => {
   })
 })
 
+describe('TodayPage — no face renders a control that does nothing', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
+
+  /**
+   * The class-level guard, driven off the REAL quest/habit/fuel/check-in fixtures rather than a
+   * hand-picked case: on every face, tap every control the face renders and assert that each one
+   * did something observable — navigated, opened a sheet, or fired a write. A pill that leaves
+   * the URL unchanged, opens nothing and writes nothing is the defect this asserts against.
+   */
+  test.each(['reggel', 'nap', 'este'])('every control on the %s face does something', async (face) => {
+    clockAt('09:12')
+    const { container, unmount } = renderToday(`/today?dp=${face}`)
+    const controls = [...container.querySelectorAll('.tdc .itemrow, .fhc-next')]
+      .flatMap((row) => [...row.querySelectorAll('button')]
+        .map((btn) => ({ btn, title: row.querySelector('.itemrow-t1, .fhc-next-tx b')?.textContent })))
+    expect(controls.length).toBeGreaterThan(0)
+    unmount()
+
+    for (const { title } of controls) {
+      // Fresh mount per control: a served action changes the tree, which would invalidate
+      // the node handles collected above.
+      const one = renderToday(`/today?dp=${face}`)
+      const row = [...one.container.querySelectorAll('.tdc .itemrow, .fhc-next')]
+        .find((r) => r.querySelector('.itemrow-t1, .fhc-next-tx b')?.textContent === title)!
+      const btn = row.querySelector('button')!
+      const before = one.container.innerHTML
+      fireEvent.click(btn)
+      // `waitFor` covers the async ones too: a MANUAL habit's check resolves through a
+      // mutation, so its evidence is the re-render that follows the cache patch.
+      await waitFor(() => {
+        const navigated = screen.getByTestId('loc').textContent !== `/today?dp=${face}`
+        const sheetOpened = document.querySelector('[role="dialog"]') !== null
+        const treeChanged = one.container.innerHTML !== before
+        expect(
+          navigated || sheetOpened || treeChanged,
+          `„${title}" renders a control that does nothing on the ${face} face`,
+        ).toBe(true)
+      })
+      one.unmount()
+    }
+  })
+})
+
 describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })

@@ -8,11 +8,20 @@
 // Every source is normalized by todayItems.ts, so this file only wires hooks to
 // faces and dispatches row actions; it holds no per-domain branching.
 //
-// This page is also the sheet host the retired cards were: `act()` covers EVERY
+// This page is also the sheet host the retired cards were: `act()` serves every
 // habitAction kind (the four sheet-bearing ones came from RoutineCard) and every
-// questAction kind, so no row can offer a control that does nothing — the
-// ItemRow doctrine. It likewise carries the consume-once level-up dance that
-// TodayQuestsCard and RoutineCard each used to run.
+// questAction kind it can reach a surface for.
+//
+// The ItemRow doctrine — "no control that does nothing" — is NOT guaranteed by
+// `act()` alone: `buildTodayItems` labels every habit and every offered quest, so
+// the guarantee is enforced one step earlier, in the `items` useMemo, which STRIPS
+// the action from any row this screen cannot serve (see `servableAction` below).
+// `act()`'s own early returns are therefore belt-and-braces, not the guard. Any
+// future action kind must be handled in BOTH places or the row will show a pill
+// that does nothing.
+//
+// It likewise carries the consume-once level-up dance that TodayQuestsCard and
+// RoutineCard each used to run.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -49,6 +58,29 @@ import type { DailyQuest, MealSlot } from '@/data/types'
 
 const isFace = (v: string | null): v is Face => v !== null && (DAY_FACES as readonly string[]).includes(v)
 
+/**
+ * Can THIS screen actually serve the item's action? The ItemRow doctrine's enforcement point:
+ * `buildTodayItems` labels every habit and every offered quest, but three families have no
+ * surface here, and a labelled row with nowhere to go is a dead button.
+ *  • habit → `habitAction` is `'none'`: a pending DERIVED habit with no log surface of its own
+ *    (`bed_on_time`, which TOMORROW's sleep log decides).
+ *  • quest → `questAction` is `null`: a metric with no Today surface. This is live production
+ *    data, not a hypothetical — the quest catalogue ships `growth_intention`
+ *    (`metric: intention_focus_set`, `dayTypes: ["ANY"]`), which questAction.ts does not map.
+ *  • quest → a `checkin` CTA on a day where every slot is already done or skipped, so
+ *    `act()` has no index to open (the retired TodayQuestsCard guarded exactly this with
+ *    `showCta = action !== null && (kind !== 'checkin' || onCheckIn !== undefined)`).
+ */
+function servableAction(item: TodayItem, hasOpenCheckin: boolean): boolean {
+  const a = item.action
+  if (!a) return false
+  if (a.kind === 'habit') return habitAction(a.habit).kind !== 'none'
+  if (a.kind !== 'quest') return true
+  const qa = questAction(a.quest)
+  if (!qa) return false
+  return qa.kind !== 'checkin' || hasOpenCheckin
+}
+
 export function TodayPage() {
   const date = localDateString()
   const scenario = useTodayScenario()
@@ -62,7 +94,7 @@ export function TodayPage() {
   const { consumeLevelUps: consumeQuestLevelUps } = useQuestActions(date)
   const { data: activities } = useActivities(date)
   const { habits, levelUps: habitLevelUps } = useHabitDay(date)
-  const { check, consumeLevelUps: consumeHabitLevelUps } = useHabitActions(date)
+  const { check, pending: habitPending, consumeLevelUps: consumeHabitLevelUps } = useHabitActions(date)
   const { data: ritualDay } = useRitualDay(date)
   const { visible: fuelSlots, nextStack } = useFuelPreview()
   const { logWater } = useWaterActions(date)
@@ -118,16 +150,17 @@ export function TodayPage() {
         }] : []),
       ],
     })
-    // The ItemRow doctrine: a row carries a control ONLY when `act` can serve it. A pending
-    // DERIVED habit with no log surface of its own (habitAction → 'none', e.g. `bed_on_time`,
-    // which TOMORROW's sleep log decides) keeps its row and loses its pill instead of inviting
-    // a tap that does nothing — and picks up `habitHint`'s explainer so a button-less row
-    // reads as "this ticks by itself", not as broken (the retired RoutineCard's `.hab-note`).
+    // The ItemRow doctrine, enforced for EVERY source in one place: a row keeps its action
+    // only when this screen can serve it (`servableAction`), otherwise the row survives and
+    // the pill goes — never a control that does nothing. A stripped habit also picks up
+    // `habitHint`'s explainer, so a button-less row reads as "this ticks by itself" rather
+    // than as broken (the retired RoutineCard's quiet hint line).
     // Done HERE, not in todayItems.ts — the normalizer's action data is right; it is this
-    // screen's dispatcher that decides what it can serve.
+    // screen that decides what it can serve.
+    const hasOpenCheckin = checkins.some((c) => c.state === 'now' || c.state === 'pending')
     return built.map((i) => {
-      if (i.action?.kind !== 'habit' || habitAction(i.action.habit).kind !== 'none') return i
-      const hint = habitHint(i.action.habit)
+      if (servableAction(i, hasOpenCheckin)) return i
+      const hint = i.action?.kind === 'habit' ? habitHint(i.action.habit) : null
       return { ...i, action: null, subtitle: hint ?? i.subtitle }
     })
   }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, workout, workoutTime, prediction, sportToday])
@@ -249,7 +282,8 @@ export function TodayPage() {
           briefing={briefing ?? resolveBriefing(scenario.dayState)}
           briefingDemo={briefingDemo}
           briefingFacts={stats.map((s) => `${s.label} ${s.value}${s.unit ?? ''}`)}
-          later={later} growth={growth} fuelNote={fuelNote} onAct={act} onFace={selectFace}
+          later={later} growth={growth} fuelNote={fuelNote} habitPending={habitPending}
+          onAct={act} onFace={selectFace}
         />
       )}
       {selected === 'nap' && (
@@ -258,13 +292,13 @@ export function TodayPage() {
           heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
           heroNote={sportToday ? volleyballNote : null}
           later={later.filter((i) => i.face === 'este')} growth={growth} fuelNote={fuelNote}
-          onAct={act} onFace={selectFace} onCustom={() => setCustomOpen(true)}
+          habitPending={habitPending} onAct={act} onFace={selectFace} onCustom={() => setCustomOpen(true)}
         />
       )}
       {selected === 'este' && (
         <FaceEvening
           open={open} done={done} doneXp={doneXp} dayXp={dayXp} chain={chainProgress('EVENING')}
-          note={companionNote} growth={growth} fuelNote={fuelNote} onAct={act}
+          note={companionNote} growth={growth} fuelNote={fuelNote} habitPending={habitPending} onAct={act}
         />
       )}
 

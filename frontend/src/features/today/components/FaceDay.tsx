@@ -23,7 +23,7 @@ export interface DayHero {
 
 export function FaceDay({
   open, done, doneXp, hero, heroWarn, heroNote, note, later, growth, fuelNote,
-  onAct, onFace, onCustom,
+  habitPending, onAct, onFace, onCustom,
 }: {
   open: TodayItem[]
   done: TodayItem[]
@@ -40,6 +40,8 @@ export function FaceDay({
   growth?: GrowthTodaySummary | null
   /** The fuel plan's companion line — only shown when this face has fuel rows. */
   fuelNote?: { time: string; text: string } | null
+  /** A habit write is in flight — withdraws habit controls on this face. */
+  habitPending?: boolean
   onAct: (item: TodayItem) => void
   onFace: (face: DayFace) => void
   onCustom: () => void
@@ -63,7 +65,7 @@ export function FaceDay({
       <TodoCard
         items={todo} doneCount={done.length} xp={doneXp} growth={growth}
         note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
-        onAct={onAct}
+        habitPending={habitPending} onAct={onAct}
       />
       {note && <CompanionNoteCard note={note} />}
       {later.length > 0 && (

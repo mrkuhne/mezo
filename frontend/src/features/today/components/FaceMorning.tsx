@@ -17,7 +17,7 @@ import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 
 export function FaceMorning({
   open, done, doneXp, chain, briefing, briefingDemo, briefingFacts, later, growth, fuelNote,
-  onAct, onFace,
+  habitPending, onAct, onFace,
 }: {
   open: TodayItem[]
   done: TodayItem[]
@@ -32,6 +32,8 @@ export function FaceMorning({
   growth?: GrowthTodaySummary | null
   /** The fuel plan's companion line — only shown when this face has fuel rows. */
   fuelNote?: { time: string; text: string } | null
+  /** A habit write is in flight — withdraws habit controls on this face. */
+  habitPending?: boolean
   onAct: (item: TodayItem) => void
   onFace: (face: DayFace) => void
 }) {
@@ -45,14 +47,14 @@ export function FaceMorning({
       <FaceHeroCard
         tone="body" emoji="🌅" tag="REGGELI RUTIN"
         title={chain.next ? 'Indul a lánc' : 'Megvan a reggeled'}
-        done={chain.done} total={chain.total} next={chain.next} onAct={onAct}
+        done={chain.done} total={chain.total} next={chain.next} disabled={habitPending} onAct={onAct}
       />
       <BriefingCard briefing={briefing} demo={briefingDemo} facts={briefingFacts} />
       <IntentionBanner variant="chip" />
       <TodoCard
         items={todo} doneCount={done.length} xp={doneXp} growth={growth}
         note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
-        onAct={onAct}
+        habitPending={habitPending} onAct={onAct}
       />
       {later.length > 0 && (
         <>

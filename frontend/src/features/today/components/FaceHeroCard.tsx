@@ -11,7 +11,7 @@ import { ItemCard, type ItemTone } from '@/shared/ui/ItemCard'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
 export function FaceHeroCard({
-  tone, emoji, tag, title, done, total, next, onAct,
+  tone, emoji, tag, title, done, total, next, disabled, onAct,
 }: {
   tone: ItemTone
   emoji: string
@@ -21,6 +21,8 @@ export function FaceHeroCard({
   total: number
   /** The chain's first open step, promoted; null when the chain is finished. */
   next: TodayItem | null
+  /** An in-flight write — withdraws the CTA so a double-tap cannot fire twice (ItemRow's rule). */
+  disabled?: boolean
   onAct: (item: TodayItem) => void
 }) {
   const pct = total === 0 ? 0 : (done / total) * 100
@@ -50,9 +52,13 @@ export function FaceHeroCard({
             </a>
           )}
           {next.action && (
-            <button type="button" className="fhc-next-go np-press" onClick={() => onAct(next)}>
-              {next.action.label}
-            </button>
+            disabled ? (
+              <span className="fhc-next-go is-inert">{next.action.label}</span>
+            ) : (
+              <button type="button" className="fhc-next-go np-press" onClick={() => onAct(next)}>
+                {next.action.label}
+              </button>
+            )
           )}
         </div>
       )}

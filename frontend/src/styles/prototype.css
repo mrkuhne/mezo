@@ -1226,11 +1226,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .warmstrip { color: #E8B36B; }
 .np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
 .np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
-.alt-btn { width: 52px; height: 52px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--sub); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-/* ===== Napív secondary event row (VolleyballCard — RÖPI) ===== */
-.np-eventrow { background: var(--surface); border-radius: 18px; padding: 12px 16px; box-shadow: var(--np-shadow-row); }
-.np-eventrow-head { display: flex; align-items: center; gap: 8px; }
+/* `.np-eventrow*` retired with `VolleyballCard`, `.alt-btn` with `WorkoutTeaser`'s
+   details button (mezo-j7u4): the day face's sport hero is the shared `.todaycard`. */
 
 /* ===== Napív briefing collapse (BriefingCard, spec §Task 5) ===== */
 .brief { display: flex; gap: 10px; background: var(--warm); border-radius: 20px; padding: 13px 15px; margin-top: 12px; }
@@ -1247,7 +1245,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    own the split, and a within-face section line is `.zoneline` (mezo-j7u4). `.scard`
    went with `QuickStat`/`QuickStatsRow` — the day's numbers are the briefing's
    `.metapill` facts now. */
-.snap { display: flex; gap: 9px; }
 
 /* ===== Napív S4 — train-type accent tokens (mockup stag/lic palette) ===== */
 :root {
@@ -1439,6 +1436,11 @@ button.donebar { cursor: pointer; }
   font-family: inherit; cursor: pointer; color: var(--ir-a); border: 0;
   background: color-mix(in srgb, var(--ir-a) 11%, var(--surface)); }
 .itemrow-act.is-inert { cursor: default; color: var(--faint); background: var(--warm); }
+/* Whole-row-button shape with a link: the hit area is an INNER button so the <a> is its
+   sibling, never its descendant. */
+.itemrow-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px;
+  background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit;
+  text-align: left; cursor: pointer; }
 /* The item's own external content — sits NEXT TO the action pill, never instead of it. */
 .itemrow-link { flex: none; width: 30px; height: 30px; border-radius: 11px; display: inline-flex;
   align-items: center; justify-content: center; text-decoration: none; font-size: 13px;
@@ -1503,6 +1505,8 @@ button.itemrow { cursor: pointer; }
   align-items: center; justify-content: center; text-decoration: none; font-size: 13px;
   font-weight: 800; color: var(--tc-accent); background: rgba(255,255,255,.72); }
 :root[data-theme="dark"] .fhc-next-link { background: rgba(255,255,255,.10); }
+/* in-flight write: the CTA is withdrawn to inert copy, never left clickable (ItemRow's rule) */
+.fhc-next-go.is-inert { background: var(--warm); color: var(--faint); cursor: default; }
 
 /* ===== DoneFold (mezo-j7u4) ===== */
 .donefold { margin: 4px 24px 12px; }
@@ -1803,61 +1807,12 @@ button.itemrow { cursor: pointer; }
 .subnav-dd .dd-item.on { color: var(--subnav-accent, var(--coral-deep)); }
 .subnav-dd .dd-sep { border-top: 1px solid var(--line); margin: 4px 0; }
 
-/* ===== Habit routine — RoutineCard (Today) + Growth "Rutin" tab (mezo-sfsw) =====
-   Signature: a continuous vertical thread linking each habit into a chain, making the
-   habit-stacking psychology literal. Nodes carry today's status; the current habit pulses. */
-.hab-chain { position: relative; margin-top: 6px; }
-.hab-chain::before {
-  content: ""; position: absolute; left: 13px; top: 26px; bottom: 26px;
-  width: 2px; background: var(--warm); z-index: 0;
-}
-.hab-row {
-  position: relative; display: grid; grid-template-columns: 27px 1fr auto;
-  align-items: center; gap: 4px; padding: 10px 0; min-height: 54px;
-  width: 100%; text-align: left; background: none; border: none;
-  font-family: var(--ff-body); color: var(--ink);
-  border-radius: 12px; transition: background .14s ease;
-}
-button.hab-row { cursor: pointer; }
-button.hab-row:active { background: var(--surface-glass); }
-.hab-row.now { background: var(--wash-lav); padding: 10px 8px; margin: 2px 0; }
-.hab-row.missed { opacity: .5; }
-.hab-node {
-  position: relative; z-index: 2; width: 14px; height: 14px; border-radius: 50%;
-  justify-self: center; border: 2px solid var(--faint); background: var(--surface-1);
-}
-.hab-node.done { background: var(--sage); border-color: var(--sage); box-shadow: 0 0 0 3px var(--wash-sage); }
-.hab-node.now { background: var(--lav); border-color: var(--lav); box-shadow: 0 0 0 4px var(--wash-lav); }
-@media (prefers-reduced-motion: no-preference) {
-  .hab-node.now { animation: hab-pulse 2s ease-in-out infinite; }
-}
-@keyframes hab-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px var(--wash-lav); }
-  50% { box-shadow: 0 0 0 6px var(--wash-lav); }
-}
-.hab-main { min-width: 0; padding-left: 4px; }
-.hab-anchor { font: 600 10px/1.2 var(--ff-body); color: var(--text-quaternary); margin-bottom: 2px; }
-.hab-title { font: 600 14px/1.3 var(--ff-body); color: var(--ink); }
-a.hab-link { color: var(--lav-deep); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
-a.hab-link:hover { opacity: 0.85; }
-.hab-row.done .hab-title { color: var(--sub); }
-/* passive-row explainer (why a no-CTA derived row ticks by itself) */
-.hab-note { font: 500 10px/1.3 var(--ff-body); font-style: italic; color: var(--text-quaternary); margin-top: 2px; }
-.hab-right { display: flex; align-items: center; gap: 8px; justify-self: end; padding-left: 6px; }
-
-/* XP as a quiet tinted pill — a garnish (ADR 0010), coloured by state */
-.hab-xp {
-  padding: 3px 9px; border-radius: 999px; font: 700 10.5px/1 var(--ff-mono);
-  background: var(--warm); color: var(--text-quaternary); white-space: nowrap; letter-spacing: -.02em;
-}
-.hab-row.now .hab-xp { background: var(--surface-1); color: var(--lav-deep); }
-/* done → a single sage "✓ +N" pill */
-.hab-earned {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 9px; border-radius: 999px; font: 700 10.5px/1 var(--ff-mono);
-  background: var(--wash-sage); color: var(--sage-deep); white-space: nowrap; letter-spacing: -.02em;
-}
-.hab-earned svg { width: 11px; height: 11px; }
+/* ===== Habit routine =====
+   The `.hab-chain`/`.hab-row`/`.hab-node`/`.hab-main`/`.hab-anchor`/`.hab-title`/`.hab-link`/
+   `.hab-note`/`.hab-right`/`.hab-xp`/`.hab-earned` thread and its `hab-pulse` keyframes
+   retired with `RoutineCard` (mezo-j7u4) — a habit is an `.itemrow` in its face's TodoCard
+   now. `.hab-act` below survives (CreedSheet/IntentionSheet wear it); `.hab-g*`/`.hab-s*`
+   below belong to Growth's "Rutin" tab (RoutinesTab). */
 
 /* current-habit primary action — gradient pill, soft glow, press feedback + icon */
 .hab-act {
@@ -1873,22 +1828,10 @@ a.hab-link:hover { opacity: 0.85; }
 .hab-act:active { transform: scale(.94); box-shadow: 0 1px 3px color-mix(in srgb, var(--lav-deep) 34%, transparent); }
 .hab-act:disabled { opacity: .55; cursor: default; box-shadow: none; }
 
-.hab-chev { color: var(--faint); display: inline-flex; padding: 2px; }
-.hab-chev svg { width: 15px; height: 15px; }
 
-/* Afternoon summary toggle — collapsed by default, taps open the morning chain for
-   retroactive logging (mezo-km27). The chevron rotates down when expanded. */
-.rt-toggle {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  background: none; border: none; padding: 0; cursor: pointer;
-  font-family: var(--ff-body); color: var(--ink); text-align: left;
-}
-.rt-toggle .rt-label { flex: 1; font: 600 13px/1.3 var(--ff-body); }
-.rt-toggle .rt-eve { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
-.rt-chev { color: var(--faint); display: inline-flex; transition: transform .16s ease; }
-.rt-chev svg { width: 16px; height: 16px; }
-.rt-chev.open { transform: rotate(90deg); }
-@media (prefers-reduced-motion: reduce) { .rt-chev { transition: none; } }
+/* The `.rt-toggle`/`.rt-label`/`.rt-eve`/`.rt-chev` afternoon summary retired with
+   `RoutineCard` (mezo-j7u4): retroactive logging needs no toggle now — every pending chain
+   step is directly tappable on its face. */
 
 /* Growth "Rutin" tab — 28-day strength rows (title + % on top, bar as an underline) */
 .hab-gstat { flex: 1; background: var(--warm); border-radius: 14px; padding: 12px 14px; }
@@ -2111,8 +2054,8 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 
 /* Loops act (act 3): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
    once a row closes, and the single "Minden hurok zárva" beat once nothing is left open. The
-   glow is a static wash + inset ring (no pulse) — the `.hab-row.now` / RoutineCard
-   first-pending idiom, not the animated `.hab-node.now` dot pulse. */
+   glow is a static wash + inset ring (no pulse) — the retired RoutineCard's first-pending
+   idiom, not an animated pulsing dot. */
 .rz-loops-sub { font-family: var(--ff-body); font-size: 11.5px; font-weight: 500;
   color: rgba(245,239,230,.5); margin: 6px 4px 14px; }
 .rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 12px;

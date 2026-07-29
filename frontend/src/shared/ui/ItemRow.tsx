@@ -8,13 +8,18 @@
 // An `actionLabel` without `onAction` renders as inert copy (e.g. „Még vár"),
 // never a dead button. Domain-free: presentation props only.
 //
-// `linkUrl` adds a FOURTH, orthogonal affordance: a small trailing `↗` link to the
-// item's own external content, rendered NEXT TO the action rather than instead of it
-// (the retired RoutineCard showed a habit's video link and its `Pipa` side by side).
-// A link opts the row out of the whole-row-button shape on purpose — an `<a>` must
-// never nest inside a `<button>` (invalid + click-conflicting, the same reason
-// RoutineCard gave link-bearing rows their own layout) — so pair a `linkUrl` with an
-// `actionLabel` when the row also needs to act.
+// Two orthogonal modifiers sit on top of those shapes:
+//   • `linkUrl` — a small trailing `↗` to the item's own external content, rendered
+//     NEXT TO the action, never instead of it (the retired RoutineCard showed a
+//     habit's video link and its `Pipa` side by side). The link is never nested
+//     INSIDE the row's own <button> (invalid + click-conflicting, the same reason
+//     RoutineCard gave link-bearing rows their own layout): in the whole-row-button
+//     shape the hit area becomes an inner button and the link its sibling, so the
+//     action is never silently dropped.
+//   • `disabled` — an in-flight write. The control is WITHDRAWN rather than dimmed
+//     (the WindDownBanner pattern): a labelled action falls back to its own inert
+//     copy, an unlabelled one leaves a plain row. Nothing stays clickable, so a
+//     double-tap cannot fire a second mutation.
 // ============================================================
 import { cn } from '@/shared/lib/cn'
 import type { ItemTone } from '@/shared/ui/ItemCard'
@@ -33,42 +38,59 @@ export interface ItemRowProps {
   ariaLabel?: string
   /** External content to open in a new tab; renders the trailing `↗` link. */
   linkUrl?: string | null
+  /** An in-flight write — withdraws every interactive control on the row. */
+  disabled?: boolean
 }
 
 export function ItemRow({
-  tone, emoji, title, subtitle, time, actionLabel, onAction, done, ariaLabel, linkUrl,
+  tone, emoji, title, subtitle, time, actionLabel, onAction, done, ariaLabel, linkUrl, disabled,
 }: ItemRowProps) {
-  const pill = Boolean(actionLabel && onAction)
-  const rowIsButton = Boolean(onAction) && !pill && !linkUrl
-  const body = (
+  const live = Boolean(onAction) && !disabled
+  const pill = Boolean(actionLabel) && live
+  const rowIsButton = live && !pill
+
+  const core = (
     <>
       <span className="itemrow-ic" aria-hidden="true">{done ? '✓' : emoji}</span>
       <span className="itemrow-tx">
         <span className="itemrow-t1">{title}</span>
         {subtitle ? <span className="itemrow-t2">{subtitle}</span> : null}
       </span>
-      {linkUrl ? (
-        <a
-          className="itemrow-link np-press"
-          href={linkUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${title} megnyitása`}
-        >
-          ↗
-        </a>
-      ) : null}
-      {pill ? (
-        <button type="button" className="itemrow-act np-press" onClick={onAction}>{actionLabel}</button>
-      ) : actionLabel ? (
-        <span className="itemrow-act is-inert">{actionLabel}</span>
-      ) : time ? (
-        <span className="itemrow-tm">{time}</span>
-      ) : null}
     </>
   )
+  const link = linkUrl ? (
+    <a
+      className="itemrow-link np-press"
+      href={linkUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${title} megnyitása`}
+    >
+      ↗
+    </a>
+  ) : null
+  const trailing = pill ? (
+    <button type="button" className="itemrow-act np-press" onClick={onAction}>{actionLabel}</button>
+  ) : actionLabel ? (
+    <span className="itemrow-act is-inert">{actionLabel}</span>
+  ) : time ? (
+    <span className="itemrow-tm">{time}</span>
+  ) : null
+
   const cls = cn('itemrow', `itemrow-${tone}`, done && 'is-done')
-  return rowIsButton
-    ? <button type="button" className={cn(cls, 'np-press')} onClick={onAction} aria-label={ariaLabel}>{body}</button>
-    : <div className={cls}>{body}</div>
+  if (rowIsButton) {
+    return link ? (
+      <div className={cls}>
+        <button type="button" className="itemrow-hit np-press" onClick={onAction} aria-label={ariaLabel}>
+          {core}{trailing}
+        </button>
+        {link}
+      </div>
+    ) : (
+      <button type="button" className={cn(cls, 'np-press')} onClick={onAction} aria-label={ariaLabel}>
+        {core}{trailing}
+      </button>
+    )
+  }
+  return <div className={cls}>{core}{link}{trailing}</div>
 }

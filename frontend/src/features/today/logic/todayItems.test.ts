@@ -164,6 +164,25 @@ describe('buildTodayItems — fuel slots', () => {
     const items = buildTodayItems({ ...EMPTY, fuelSlots: [fuel('13:00', 'missed', 'Ebéd')] })
     expect(items[0].status).toBe('missed')
   })
+
+  test('the LIVE slot is marked MOST — `now` folds into `open`, so the copy carries it', () => {
+    const items = buildTodayItems({
+      ...EMPTY,
+      fuelSlots: [fuel('13:00', 'now', 'Ebéd'), fuel('16:00', 'pending', 'Uzsonna')],
+    })
+    const [live, later] = items
+    expect(live.status).toBe('open')
+    expect(live.subtitle).toBe('MOST')
+    expect(later.subtitle).toBeNull()
+  })
+
+  test('MOST joins the meal name rather than replacing it', () => {
+    const items = buildTodayItems({
+      ...EMPTY,
+      fuelSlots: [{ time: '13:00', kind: 'meal', label: 'Ebéd', state: 'now', mealName: 'Csirke rizzsel' }],
+    })
+    expect(items[0]).toMatchObject({ title: 'Csirke rizzsel', subtitle: 'MOST · Ebéd' })
+  })
 })
 
 describe('buildTodayItems — ritual', () => {
