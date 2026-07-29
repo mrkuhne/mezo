@@ -1533,21 +1533,40 @@ button.itemrow { cursor: pointer; }
    `--i`-driven (task-11-brief.md's original `.faceswap > *` used `calc(var(--i, 0) * 70ms)`,
    but no face component sets `--i`, so every child would resolve to a 0ms delay and there
    would be no stagger at all — the brief's `.progress-mrow`/`.np-anim` precedent DOES thread
-   `--i` from inline styles; the Today faces never adopted that, so nth-child fills the gap). */
+   `--i` from inline styles; the Today faces never adopted that, so nth-child fills the gap).
+   The modifier selectors ([data-dir=…], :nth-child(N)) are wrapped in `:where()` so they
+   contribute ZERO specificity beyond the base `.faceswap` class (fix round 1, mezo-1khu):
+   without it they land at (0,2,0) versus the reduced-motion override's (0,1,0), and the
+   override only wins the two longhands (animation-duration, animation-fill-mode) it shares
+   a selector with — `animation-name`/`animation-delay` keep coming from these higher-
+   specificity rules even under `prefers-reduced-motion: reduce`. `:where()` keeps every
+   .faceswap-family selector tied at (0,1,0), so the LATER (reduce-block) declaration wins
+   on every longhand via normal source-order tie-break — a structural guarantee, not a
+   specificity race that the next added selector could silently re-break. */
 .faceswap > * { opacity: 0; animation-duration: .5s; animation-timing-function: var(--np-ease-ios);
   animation-fill-mode: forwards; }
-.faceswap[data-dir="fwd"] > * { animation-name: face-in-fwd; }
-.faceswap[data-dir="back"] > * { animation-name: face-in-back; }
+.faceswap:where([data-dir="fwd"]) > * { animation-name: face-in-fwd; }
+.faceswap:where([data-dir="back"]) > * { animation-name: face-in-back; }
 @keyframes face-in-fwd  { from { opacity: 0; transform: translate(-14px, 10px); } to { opacity: 1; transform: none; } }
 @keyframes face-in-back { from { opacity: 0; transform: translate( 14px, 10px); } to { opacity: 1; transform: none; } }
-.faceswap > *:nth-child(1) { animation-delay: 0ms; }
-.faceswap > *:nth-child(2) { animation-delay: 70ms; }
-.faceswap > *:nth-child(3) { animation-delay: 140ms; }
-.faceswap > *:nth-child(4) { animation-delay: 210ms; }
-.faceswap > *:nth-child(5) { animation-delay: 280ms; }
-.faceswap > *:nth-child(6) { animation-delay: 350ms; }
-.faceswap > *:nth-child(7) { animation-delay: 420ms; }
-.faceswap > *:nth-child(8) { animation-delay: 490ms; }
+/* Fix round 1 (mezo-1khu): the ladder used to stop at :nth-child(8), so any face with MORE
+   than 8 top-level children (measured: Reggel renders 18, Nap renders 13 — the `later`
+   preview list at TodayPage.tsx flattens uncapped into direct `.faceswap` siblings, so these
+   are the common case, not an edge case) left every child past the 8th at the base rule's
+   implicit 0ms delay — popping in ahead of its (supposedly later) neighbours. `:nth-child(n+8)`
+   is an open-ended match (8th, 9th, 10th, … to infinity), so it now covers every remaining
+   child with ONE shared delay instead of leaving them unstaggered — no child renders without
+   a delay rule, and the tail is capped rather than growing per additional child. Worst case
+   (any child at position ≥8): 490ms delay + 500ms duration = 990ms until its own entrance
+   finishes, regardless of how many children follow it. */
+.faceswap > *:where(:nth-child(1)) { animation-delay: 0ms; }
+.faceswap > *:where(:nth-child(2)) { animation-delay: 70ms; }
+.faceswap > *:where(:nth-child(3)) { animation-delay: 140ms; }
+.faceswap > *:where(:nth-child(4)) { animation-delay: 210ms; }
+.faceswap > *:where(:nth-child(5)) { animation-delay: 280ms; }
+.faceswap > *:where(:nth-child(6)) { animation-delay: 350ms; }
+.faceswap > *:where(:nth-child(7)) { animation-delay: 420ms; }
+.faceswap > *:where(:nth-child(n+8)) { animation-delay: 490ms; }
 
 /* TodoCard's / FaceHeroCard's progress bars — a dedicated transform keyframe, NOT the shared
    `progress-mbar-grow` the brief named: that keyframe animates `width` toward a `--w` custom
