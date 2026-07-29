@@ -1239,6 +1239,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .typetag-run { background: var(--wash-run); color: var(--tag-run); }
 .typetag-cross { background: var(--wash-cross); color: var(--tag-cross); }
 .typetag-trx { background: var(--wash-trx); color: var(--tag-trx); }
+.typetag-body { background: var(--wash-sage); color: var(--sage-deep); }
+.typetag-mind { background: var(--wash-lav); color: var(--lav-deep); }
+.typetag-fuel { background: var(--wash-amber); color: var(--amber-deep); }
 .np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
 .np-hero-meta b { color: var(--ink); font-weight: 700; }
 .warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
@@ -1409,6 +1412,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .todaycard-cross { --tc-accent: var(--tag-cross); --tc-wash: var(--wash-cross); }
 .todaycard-trx { --tc-accent: var(--tag-trx); --tc-wash: var(--wash-trx); }
 .todaycard-run { --tc-accent: var(--tag-run); --tc-wash: var(--wash-run); }
+.todaycard-body { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
+.todaycard-mind { --tc-accent: var(--lav-deep);  --tc-wash: var(--wash-lav); }
+.todaycard-fuel { --tc-accent: var(--amber-deep); --tc-wash: var(--wash-amber); }
 .todaycard.logged { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
 .todaycard-top { display: flex; align-items: flex-start; gap: 11px; }
 .todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: 15px; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
