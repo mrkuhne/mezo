@@ -282,14 +282,23 @@ public class AnchorResolver {
                         "Mezo · a heted története", excerptProse(memoir.getBody()), URL_INSIGHTS_MEMOIR));
     }
 
-    /** Excerpts already-generated prose to {@code prose-excerpt-chars}, cut at a word boundary.
-     *  Reuses {@link PushSender#truncateBody(String, int)}'s surrogate-safe cut (same package)
-     *  rather than a second raw {@code substring} — a lone surrogate turns into "?" on the wire. */
     private String excerptProse(String text) {
+        return excerptProse(text, notificationProperties.proseExcerptChars());
+    }
+
+    /** Excerpts already-generated prose to {@code maxChars}, cut at a word boundary. Reuses
+     *  {@link PushSender#truncateBody(String, int)}'s surrogate-safe cut (same package) rather
+     *  than a second raw {@code substring} — a lone surrogate turns into "?" on the wire.
+     *
+     *  <p>Package-private (not private) and takes {@code maxChars} explicitly, rather than
+     *  reading {@code notificationProperties} itself, so {@code AnchorResolverExcerptTest} can
+     *  exercise the word-boundary + surrogate-safety contract as a plain unit test — no Spring
+     *  context or 12-collaborator constructor needed for what is otherwise a pure function. */
+    static String excerptProse(String text, int maxChars) {
         if (text == null) {
             return null;
         }
-        String surrogateSafe = PushSender.truncateBody(text, notificationProperties.proseExcerptChars());
+        String surrogateSafe = PushSender.truncateBody(text, maxChars);
         if (surrogateSafe == null || surrogateSafe.length() == text.length()) {
             return surrogateSafe; // untouched — already within the limit
         }
