@@ -12,7 +12,10 @@ function renderApp(path = '/') {
 
 test('redirects / to Today', () => {
   renderApp('/')
-  expect(screen.getByText(/briefing/i)).toBeInTheDocument()
+  // The daypart strip is Today's face-INDEPENDENT landmark (mezo-j7u4) — the briefing
+  // this used to look for now lives on the morning face only, so it would make this
+  // routing smoke test wall-clock dependent.
+  expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeInTheDocument()
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')

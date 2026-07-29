@@ -1192,20 +1192,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .sky, .phone-screen { transition: none; }
 }
 
-/* ===== Napív day-arc (Today signature, spec §3.4) ===== */
-.dayarc { margin: 4px 24px 2px; }
-.arc-base { stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
-.arc-progress { stroke-width: 5; stroke-linecap: round; }
-.arc-dot { transform-box: fill-box; transform-origin: center; }
-.arc-checkin-done { fill: var(--sage); }
-.arc-checkin-now { fill: var(--surface); stroke: var(--coral); stroke-width: 2.5; }
-.arc-checkin-pending { fill: var(--surface); stroke: var(--faint); stroke-width: 2.5; }
-.arc-workout { fill: var(--surface); stroke: var(--coral); stroke-width: 2.5; }
-.arc-sleep { fill: var(--surface); stroke: var(--lav); stroke-width: 2.5; }
-.arc-sun { fill: var(--coral); filter: drop-shadow(0 0 8px rgba(255, 150, 60, .7)); }
-[data-day="este"] .arc-sun { fill: var(--lav); filter: drop-shadow(0 0 8px rgba(155, 143, 196, .8)); }
-.arclbl { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 700; padding: 0 18px; margin-top: -4px; }
-.arclbl b { color: var(--coral-deep); }
+/* The `.dayarc`/`.arc-*`/`.arclbl` day-arc family retired with the daypart faces
+   (mezo-j7u4) — the DayFaceStrip pill counters carry the day-progress job now. The
+   Bézier itself lives on in `logic/dayArc.ts`, redrawn by the Napzárás recap under
+   the dark-canvas `.rz-arc-*` rules below. */
 
 /* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
 .greet { padding: 8px 24px 0; }
@@ -1217,11 +1207,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 [data-day="reggel"] .greet h1 em { color: var(--amber); }
 [data-day="este"] .greet h1 em { color: var(--lav-deep); }
 
-/* ===== Napív Today hero ===== */
-.np-hero { position: relative; background: var(--surface); border-radius: 26px; padding: 18px; box-shadow: var(--np-shadow-card); overflow: hidden; margin: 10px 24px 0; }
-.np-hero::after { content: ''; position: absolute; top: -52px; right: -52px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, rgba(255,107,74,.13), transparent 68%); }
-.np-hero-eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--coral-deep); letter-spacing: .5px; text-transform: uppercase; }
-.np-hero-eyebrow .dotp { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 4px rgba(255,107,74,.16); }
+/* ===== Napív Today hero =====
+   `.np-hero*` retired with `WorkoutTeaser` (mezo-j7u4): the day face's hero is the
+   shared `.todaycard` now. The type tags + CTA rules below stay — they are the shared
+   card language's, worn across Today, Train and Fuel. */
 .h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
 .h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
 .typetag { display: inline-block; border-radius: 999px; padding: 5px 11px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
@@ -1233,8 +1222,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .typetag-body { background: var(--wash-sage); color: var(--sage-deep); }
 .typetag-mind { background: var(--wash-lav); color: var(--lav-deep); }
 .typetag-fuel { background: var(--wash-amber); color: var(--amber-deep); }
-.np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
-.np-hero-meta b { color: var(--ink); font-weight: 700; }
 .warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
 :root[data-theme="dark"] .warmstrip { color: #E8B36B; }
 .np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
@@ -1250,29 +1237,17 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .brief-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
 .brief-more { border: 0; background: none; cursor: pointer; font: inherit; color: var(--coral-deep); font-weight: 800; white-space: nowrap; font-size: 12px; align-self: flex-end; }
 
-/* ===== Napív heartbeat beats + "Ma eddig" mini-rings (spec §Task 6) ===== */
-.beats { display: flex; gap: 8px; }
-.beat { flex: 1; border: 0; cursor: pointer; font: inherit; border-radius: 16px; padding: 9px 0 8px; text-align: center; background: var(--warm); color: var(--faint); }
-.beat .t { font-size: 10.5px; font-weight: 800; }
-.beat .v { font-size: 16px; font-weight: 800; margin-top: 1px; font-family: var(--ff-display); }
-.beat.done { background: var(--wash-sage); color: var(--sage-deep); }
-.beat.now { background: var(--surface); color: var(--coral-deep); box-shadow: 0 0 0 2px var(--coral), 0 6px 14px rgba(255,107,74,.22); position: relative; }
-.beat.now .v { font-size: 11px; font-weight: 800; padding-top: 4px; }
-.beat.now::after { content: ''; position: absolute; inset: -2px; border-radius: 16px; box-shadow: 0 0 0 2px var(--coral); opacity: 0; animation: beatpulse 2.4s ease-out infinite; }
-@keyframes beatpulse { 0% { opacity: .7; transform: scale(1); } 70% { opacity: 0; transform: scale(1.1); } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .beat.now::after { animation: none; } }
+/* The `.beats`/`.beat*` heartbeat strip retired with `CheckInStrip` (mezo-j7u4) — the
+   check-in slots are ordinary `.itemrow`s inside their face's TodoCard now. */
 .secthead-np { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 6px 9px; }
 .secthead-np h3 { font-size: 14.5px; font-weight: 800; color: var(--ink); }
 .secthead-np span { font-size: 12px; color: var(--faint); font-weight: 700; }
 
-/* Today zone boundary (action-first re-composition, mezo-gj2y) */
-.zonediv { display: flex; align-items: center; gap: 10px; margin: 22px 6px 4px; }
-.zonediv span { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
-.zonediv::after { content: ''; flex: 1; height: 1px; background: var(--warm); }
+/* The `.zonediv` zone boundary (mezo-gj2y) retired with the two-zone Today: the faces
+   own the split, and a within-face section line is `.zoneline` (mezo-j7u4). `.scard`
+   went with `QuickStat`/`QuickStatsRow` — the day's numbers are the briefing's
+   `.metapill` facts now. */
 .snap { display: flex; gap: 9px; }
-.scard { flex: 1; background: var(--surface); border-radius: 18px; padding: 11px; box-shadow: var(--np-shadow-row); display: flex; align-items: center; gap: 8px; }
-.scard .l { font-size: 9.5px; color: var(--faint); font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
-.scard .n { font-size: 14px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; font-variant-numeric: tabular-nums; color: var(--ink); }
 
 /* ===== Napív S4 — train-type accent tokens (mockup stag/lic palette) ===== */
 :root {
@@ -1923,78 +1898,9 @@ a.hab-link:hover { opacity: 0.85; }
 .hab-sbar { height: 7px; border-radius: 999px; background: var(--warm); overflow: hidden; margin-top: 7px; margin-left: 23px; }
 .hab-sbar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lav), #B7A8E0); }
 
-/* ===== Napi küldetések — Today quest card (mezo-vj0b) =====
-   Per-domain colour-coded quest rows. A row's hue is set inline via two custom props
-   --q-accent / --q-text (BODY→coral, FUELBIO→amber, GROWTH→lav; completed→sage,
-   expired→faint); every surface below derives from those, so a row themes from two values. */
-.quests-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding-bottom: 9px;
-}
-.quests-progress {
-  height: 5px; border-radius: 999px; overflow: hidden; margin-bottom: 12px;
-  background: color-mix(in srgb, var(--faint) 20%, transparent);
-}
-.quests-progress > i {
-  display: block; height: 100%; border-radius: inherit;
-  background: linear-gradient(90deg, var(--coral-deep), var(--amber));
-  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--coral) 55%, transparent);
-  transition: width .55s cubic-bezier(.4, 0, .2, 1);
-}
-.quest-row {
-  display: flex; align-items: center; gap: 11px;
-  padding: 9px 11px; margin-bottom: 7px;
-  border-radius: 15px;
-  background: color-mix(in srgb, var(--q-accent) 7%, var(--surface-1));
-  border: 1px solid color-mix(in srgb, var(--q-accent) 22%, transparent);
-}
-.quest-row:last-child { margin-bottom: 0; }
-.quest-row.is-expired { opacity: .55; }
-
-.quest-disc {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800; line-height: 1;
-  color: var(--q-text);
-  background: color-mix(in srgb, var(--q-accent) 15%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--q-accent) 42%, transparent);
-}
-.quest-disc.is-done {
-  color: #fff; background: var(--q-accent); border-color: var(--q-accent);
-  box-shadow: 0 3px 9px -3px var(--q-accent);
-}
-.quest-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--q-accent); }
-
-.quest-title {
-  flex: 1; min-width: 0;
-  font-size: 13px; font-weight: 600; line-height: 1.35;
-  color: var(--text-primary);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.quest-row.is-expired .quest-title { color: var(--text-secondary); }
-
-.quest-xp, .quest-cta {
-  flex-shrink: 0; white-space: nowrap;
-  border-radius: 999px; font-family: var(--ff-body);
-  color: var(--q-text);
-}
-.quest-xp {
-  padding: 6px 11px; font-size: 11px; font-weight: 800; letter-spacing: .01em;
-  background: color-mix(in srgb, var(--q-accent) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--q-accent) 32%, transparent);
-}
-.quest-cta {
-  padding: 7px 13px; font-size: 11px; font-weight: 700; cursor: pointer;
-  background: color-mix(in srgb, var(--q-accent) 13%, transparent);
-  border: 1px solid color-mix(in srgb, var(--q-accent) 40%, transparent);
-  transition: filter .12s ease, transform .12s ease;
-}
-.quest-cta:hover { filter: brightness(.96); }
-.quest-cta:active { transform: scale(.96); }
-
-@media (prefers-reduced-motion: reduce) {
-  .quests-progress > i, .quest-cta { transition: none; }
-}
+/* The `.quest*`/`.quests-*` card family (mezo-vj0b) retired with `TodayQuestsCard`
+   (mezo-j7u4): a quest is an `.itemrow` inside its face's TodoCard now, and Growth's
+   own `DailyQuestsCard` never wore these rules. */
 
 /* ===== Daily intention (mezo-a686) =====
    The full-card `.intent*` banner retired with the daypart faces (mezo-j7u4): the creed became
