@@ -166,6 +166,15 @@ third-party library — see [ADR 0014](../decisions/0014-own-webpush-implementat
 | `GET`/`PUT` | `/api/notification/pref` | N2 | not built |
 | `PUT` | `/api/notification/schedule` | N3 | not built |
 
+**Known and accepted: the unsubscribe endpoint travels in a query string.** A push endpoint is a
+**capability URL** (§9 — whoever holds one can put notifications on the owner's lock screen), and
+query strings are the part of a URL most likely to end up in an access log, a proxy trace or a
+browser history entry. Realized exposure is low today (HTTPS end to end, single user, and no
+component in this repo logs request URLs), so it was **deliberately left as-is in N1** rather than
+taken as a contract change on the way out the door. **Planned for N2**, when the contract is next
+touched anyway: move the endpoint into a `DELETE` request body (or a `POST .../unsubscribe`), which
+is the same one-line change on both sides once `pref`/`schedule` are being added.
+
 ## 5. Integrations
 
 - **Proactive** ([`proactive.md`](proactive.md)) — the intended consumer: N2's `DueEvaluator` will
@@ -188,12 +197,31 @@ import { usePushSubscription } from '@/data/hooks'
 
 function Example() {
   const push = usePushSubscription()
-  // push: { supported, standalone, permission, enabled, busy, subscribe, unsubscribe, sendTest }
+  // push: { supported, standalone, permission, enabled, busy, error, subscribe, unsubscribe, sendTest }
 
   if (!push.supported || !push.standalone) return <PushInstallGate />
   // ... render a toggle bound to push.enabled / push.subscribe / push.unsubscribe
+  // ... AND render push.error — a consumer that ignores it reintroduces the silent-snap-back bug
 }
 ```
+
+**`error: PushErrorCode | null` is not optional garnish — render it.** `subscribe()` resolves
+`false` on every failure, so a page that only watches `enabled` shows a toggle flipping back to off
+with the status line still reading „Nincs engedélyezve", i.e. exactly what a tap that never
+registered looks like. The three codes (`data/types.ts`) map to distinct copy in
+`NotificationsPage`'s `PUSH_ERROR_COPY`:
+
+| code | means | why it is separate |
+|---|---|---|
+| `vapid-missing` | the bundle was built without `VITE_VAPID_PUBLIC` | a **build** misconfiguration — the state a fresh deploy hits; retrying is pointless, so the copy says so. Guarded *before* any browser call, so no permission prompt is spent and `pushManager.subscribe()` is never handed the zero-length `applicationServerKey` that makes it reject with `InvalidAccessError`. |
+| `register-failed` | the browser subscribed, the backend did not record it | the split state that would otherwise report „iPhone · engedélyezve" forever while `/test` answers `0 próbálkozás`. Deliberately **not** rolled back — the mount effect self-heals it (below). |
+| `failed` | anything else on the browser side | generic, retryable |
+
+**Mount-time self-heal.** When `getSubscription()` finds an existing browser subscription, the hook
+**re-`register()`s it** rather than only trusting it. `POST /api/notification/subscription` is an
+idempotent upsert, so this is free, and it repairs both ways the browser and the server can drift
+apart: a `register()` that failed after a successful `subscribe()`, and a row a 404/410 prune
+soft-deleted. Mock mode still short-circuits before any of it.
 
 `usePushSubscription()` (`frontend/src/data/notification/notificationHooks.ts`) is deliberately
 **not** a `useDualQuery` — the source of truth for `enabled` is the **browser**
@@ -237,27 +265,46 @@ never call `techcore/webpush` classes directly with hand-assembled endpoints —
   `WEBPUSH_ENCRYPT_FAILED`/500 split). Mutation-tested (6 deliberate bugs, each caught by ≥3 tests).
 - `VapidSignerTest` (the brief's JWT round-trip) + `VapidSignerCodecTest` (the 25-combo DER/JOSE
   matrix, mutation-tested).
-- `WebPushClientIT` (15 tests, WireMock) — 201/404/410/413/429 mapping, timeout enforcement (a
+- `WebPushClientIT` (16 tests, WireMock) — 201/404/410/413/429 mapping, timeout enforcement (a
   200ms client against a 3s-delayed stub returns `FAILED` in <2s), the oversized-payload
-  short-circuit to `TOO_LARGE` before any wire call, and the capability-URL log-scrub test
+  short-circuit to `TOO_LARGE` before any wire call, the capability-URL log-scrub test
   (`testSend_shouldNotLeakTheEndpointInLogs_whenTransportFails`, a Logback `ListAppender`
-  assertion).
+  assertion), and **both sides of the prune boundary** — a `WEBPUSH_KEY_INVALID` cause yields `GONE`,
+  a `WEBPUSH_SIGN_FAILED` cause yields `FAILED` (§9; getting the second one wrong empties the device
+  table).
+- `WebPushPropertiesTest` — the `subject` `mailto:`/`https:` pattern, and that a blank VAPID key
+  normalises to the yml placeholder (so the context still boots) while still raising
+  `WEBPUSH_SIGN_FAILED` on the first send.
+- `PushSenderTruncationTest` — the surrogate-pair boundary of `PushSender.truncateBody` (a plain
+  unit test: it is a pure function, nothing about it needs a context).
 - `PushSubscriptionRepositoryIT`, `PushSubscriptionServiceIT` (upsert, soft-delete-is-genuinely-
-  soft via a raw JDBC count, no-op unregister), `PushSenderIT` (fan-out survives every device
-  failing), `NotificationApiIT` (HTTP-level: register/re-register-refreshes/unregister/test-push
-  honest counts). Data via `support/populator/NotificationPopulator.java`; `push_subscription`
-  joined `ResetDatabase`'s TRUNCATE list.
+  soft via a raw JDBC count, no-op unregister, **and the lockout invariant: re-registering the same
+  endpoint after a soft delete must succeed** — the partial unique index is what makes turning push
+  back on possible at all), `PushSenderIT` (fan-out survives every device failing; prunes only the
+  device with unusable key material), `NotificationApiIT` (HTTP-level:
+  register/re-register-refreshes/unregister/test-push honest counts). Data via
+  `support/populator/NotificationPopulator.java` — which now carries **real** RFC 8291 §5 key
+  material (`VALID_P256DH`/`VALID_AUTH`) plus a `MALFORMED_P256DH`, because fake-but-plausible keys
+  now prune the fixture device (§9). Send-path fixtures use `http://localhost:1` rather than a fake
+  DNS name so a CI resolver that blackholes unknown hosts cannot make each send burn the full 5 s
+  connect timeout.
 - Commands: `cd backend && ./mvnw clean test -Dtest='*WebPush*,VapidSigner*,Aes128Gcm*,Notification*,PushSub*,PushSender*'`.
 
 **Frontend (Vitest + RTL + MSW, both modes):**
-- `data/notification/notificationHooks.test.tsx` (6 tests) — unsupported-in-jsdom in both modes,
+- `data/notification/notificationHooks.test.tsx` (10 tests) — unsupported-in-jsdom in both modes,
   `subscribe()` resolves `false` when unsupported, mock mode never reports a live subscription,
   denied permission never throws, the `toJSON().keys` flattening (the "classic bug" — sending the
   nested shape instead of the flat wire body), mock mode never touches
-  `Notification`/`serviceWorker`/`PushManager` even on a capable browser.
-- `features/me/pages/NotificationsPage.test.tsx` (10 tests) — the install-gate vs. toggle branch,
+  `Notification`/`serviceWorker`/`PushManager` even on a capable browser, plus the three failure
+  paths §6 describes: the blank-`VITE_VAPID_PUBLIC` guard (no `subscribe()` attempt at all), a
+  failing `register()` after a successful browser subscribe (surfaced, never reported as enabled),
+  and the mount-time re-register self-heal. Real-mode tests `vi.stubEnv('VITE_VAPID_PUBLIC', …)` —
+  `.env` ships it blank on purpose, so without the stub they would exercise the guard instead of the
+  flow they claim to test.
+- `features/me/pages/NotificationsPage.test.tsx` (13 tests) — the install-gate vs. toggle branch,
   denied/busy states render a genuinely `disabled` switch (not just visually), the test-push
-  button's visibility/disabled rules.
+  button's visibility/disabled rules, and one test per error code (the `vapid-missing` line must
+  name the build, not blame the device).
 - `shared/ui/Toggle.test.tsx` — the `disabled` prop added for this page (default `false`, every
   other call site unaffected).
 - Commands: `cd frontend && pnpm test` and `VITE_USE_MOCK=true pnpm test` (both must stay green) +
@@ -304,8 +351,44 @@ never call `techcore/webpush` classes directly with hand-assembled endpoints —
   an `ECPublicKey` from coordinates that fail the curve equation (`VapidSigner.decodePublicKey` is
   **not** a curve-membership validator); the actual RFC 8291 §7-mandated rejection happens inside
   `KeyAgreement.doPhase` in `Aes128GcmEncryptor`, mapped to the client-facing `WEBPUSH_KEY_INVALID`.
-- **`GONE` (404/410) soft-deletes the device**, `THROTTLED`/`TOO_LARGE`/`FAILED` do not prune
-  anything — a transient failure must not silently unregister a device that will recover.
+- **`GONE` soft-deletes the device**, `THROTTLED`/`TOO_LARGE`/`FAILED` do not prune anything — a
+  transient failure must not silently unregister a device that will recover. `GONE` is reached two
+  ways: an HTTP **404/410** from the push service, and — since a fix round — a **thrown
+  `WEBPUSH_KEY_INVALID`**, which is the one exception cause that is both permanent *and* the
+  device's own fault. Register-time validation of `p256dh`/`auth` is only `minLength:1`, so without
+  that mapping a malformed key row could never deliver and could never be removed; N2's per-minute
+  job would warn-log it forever. **The boundary is load-bearing and easy to get catastrophically
+  wrong:** `WEBPUSH_SIGN_FAILED`/`WEBPUSH_ENCRYPT_FAILED` must stay `FAILED`, because they are *our*
+  misconfiguration and fire for **every** device at once — the `dummy-vapid-private` default raises
+  `WEBPUSH_SIGN_FAILED`, so pruning on it would wipe the whole `push_subscription` table on the
+  first push after a deploy that forgot the secret. `WebPushClient.resultFor` switches on the
+  `SystemMessage` **code**, never on `HttpStatus` (no status reaches `GlobalExceptionHandler` on this
+  outbound path). Both directions are pinned:
+  `WebPushClientIT.testSend_shouldReturnGone_whenSubscriptionKeyMaterialIsMalformed` and
+  `…_shouldReturnFailed_whenOurOwnVapidKeyIsMisconfigured`, plus
+  `PushSenderIT.testSendToAllDevices_shouldPruneOnlyTheDeviceWithUnusableKeyMaterial_whenKeysAreMalformed`.
+  A consequence worth knowing when writing tests: fixture subscriptions now need **real** key
+  material (`NotificationPopulator.VALID_P256DH`/`VALID_AUTH`, the RFC 8291 §5 vector), or the
+  fixture device prunes itself and a "send failed" test quietly becomes a "device deleted" test.
+- **`VITE_VAPID_PUBLIC` is baked in at frontend BUILD time.** The public half becomes
+  `pushManager.subscribe()`'s `applicationServerKey`, so sealing the keypair into the cluster does
+  **not** reach the browser — the value must be present in the `build-frontend` job's `env:` block
+  in `.github/workflows/deploy.yml` (repo variable, alongside `VITE_OWNER_*`). Blank ⇒ a zero-length
+  key ⇒ every `subscribe()` rejects with `InvalidAccessError`. The hook now refuses to call
+  `subscribe()` at all in that state and reports `vapid-missing` instead (§6), so the failure is at
+  least legible; the fix is still a rebuild with the variable set.
+- **A blank VAPID env value must not take the application down.** `${VAPID_PRIVATE:dummy-vapid-private}`
+  substitutes its default only when the variable is **absent**; a present-but-empty value (an easy
+  SealedSecret slip) binds as `""`, trips `@NotBlank` and aborts **context startup for the whole
+  app** — every unrelated feature with it, even with notifications switched off. `WebPushProperties`'
+  compact constructor therefore normalises a blank `public-key`/`private-key` to the same
+  `dummy-vapid-*` placeholder the yml default uses, so an empty value behaves exactly like a missing
+  one. This is not tolerance: the placeholder is not a valid P-256 scalar, so the loud failure simply
+  moves from "no application" to "the send that needed the key" (`WEBPUSH_SIGN_FAILED` → `FAILED`,
+  pruning nothing). `@NotBlank` still guards a genuinely `null` binding. `subject` gained
+  `@Pattern("^(mailto:|https://).+")` — RFC 8292 §2.1 allows only those two forms, and since the
+  value is spliced unescaped into the signed JWT claims, validating it is also what makes that
+  splice safe. Pinned by `WebPushPropertiesTest`.
 - **Switches** (`configuration_conventions.md` three-switch idiom):
   `mezo.feature.notification.enabled` (**true**) gates the whole `/api/notification/*` surface (off
   ⇒ no beans ⇒ 404). `mezo.techcore.cron.notification-dispatch-job.enabled` (**false**) is the
@@ -329,7 +412,11 @@ never call `techcore/webpush` classes directly with hand-assembled endpoints —
 - **Payload budget**: push bodies must stay under the payload ceiling implied by
   `Aes128GcmEncryptor`'s 4096-byte record size (4079 plaintext bytes max); `PushSender` truncates
   the notification body to `mezo.notification.body-max-chars` (300) before encrypting, well under
-  that ceiling.
+  that ceiling. The truncation is **surrogate-safe** (`PushSender.truncateBody`): cutting between the
+  two halves of an emoji leaves a lone surrogate, which UTF-8 encoding turns into a stray `?` on the
+  lock screen, so the boundary backs off one UTF-16 unit rather than splitting a pair. Inert in N1
+  (the only body is a fixed literal), live the moment N2 generates bodies —
+  `PushSenderTruncationTest` pins both sides of the boundary.
 - **iOS constraint** (spec §13, `me.md` §2): Apple only grants Web Push to home-screen-installed
   PWAs, and even then does not guarantee prompt delivery — the in-app surface stays the source of
   truth; push is a channel, never push-only.
@@ -362,14 +449,14 @@ are recorded here so the first category that writes notification copy has no exc
 
 **Backend — `techcore/webpush` (the protocol, zero new dependencies)**
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/webpush/{WebPushProperties,VapidSigner,Aes128GcmEncryptor,WebPushClient,WebPushResult,WebPushSubscriptionKeys}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/techcore/webpush/{VapidSignerTest,VapidSignerCodecTest,Aes128GcmEncryptorTest,WebPushClientIT,TestWebPush}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/techcore/webpush/{VapidSignerTest,VapidSignerCodecTest,Aes128GcmEncryptorTest,WebPushClientIT,WebPushPropertiesTest,TestWebPush}.java`
 
 **Backend — `feature/notification`**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/{config/NotificationProperties,entity/PushSubscriptionEntity,repository/PushSubscriptionRepository,service/PushSubscriptionService,service/PushSender,controller/NotificationController}.java`
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql`, registered in `1.0.0/1.0.0_master.yml`
 - `backend/src/main/resources/messages.properties` — `WEBPUSH_KEY_INVALID`/`WEBPUSH_SIGN_FAILED`/`WEBPUSH_ENCRYPT_FAILED`
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_SWITCH`, `NOTIFICATION_DISPATCH_JOB_SWITCH`
-- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{PushSubscriptionRepositoryIT,PushSubscriptionServiceIT,PushSenderIT,NotificationApiIT}.java`; `support/populator/NotificationPopulator.java`; `support/ResetDatabase.java` (`push_subscription` in the TRUNCATE list)
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{PushSubscriptionRepositoryIT,PushSubscriptionServiceIT,PushSenderIT,NotificationApiIT}.java`, `feature/notification/service/PushSenderTruncationTest.java`; `support/populator/NotificationPopulator.java`; `support/ResetDatabase.java` (`push_subscription` in the TRUNCATE list)
 
 **API contract**
 - `api/feature/notification/notification.yml` → registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `frontend/src/data/_client/api.gen.ts` + generated `io.mrkuhne.mezo.api.controller.NotificationApi` / `io.mrkuhne.mezo.api.dto.{PushSubscriptionRequest,PushTestResponse}`
@@ -377,11 +464,11 @@ are recorded here so the first category that writes notification copy has no exc
 **Frontend — service worker + PWA build**
 - `frontend/public/push-sw.js` — `push` + `notificationclick` handlers
 - `frontend/vite.config.ts` — `workbox.importScripts: ['push-sw.js']` (the `generateSW` strategy kept)
-- `frontend/.env.example` — `VITE_VAPID_PUBLIC`
+- `frontend/.env.example` — `VITE_VAPID_PUBLIC` (blank by default); `.github/workflows/deploy.yml` — the same variable in the `build-frontend` job's `env:` block, without which the deployed bundle can never subscribe (§9)
 
 **Frontend — data layer**
 - `frontend/src/data/notification/{notificationApi,notificationMock,notificationHooks}.ts` — `usePushSubscription()`, re-exported from `frontend/src/data/hooks.ts`
-- `frontend/src/data/types.ts` — `PushSubscriptionState`
+- `frontend/src/data/types.ts` — `PushSubscriptionState`, `PushErrorCode`
 
 **Frontend — Me surface (documented from Me's side in [`me.md`](me.md) §2/§10)**
 - `frontend/src/features/me/pages/NotificationsPage.tsx` (route `/me/ertesitesek`)

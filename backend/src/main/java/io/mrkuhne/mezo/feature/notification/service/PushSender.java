@@ -71,14 +71,35 @@ public class PushSender {
     /** {"title":…,"body":…,"url":…} via the injected ObjectMapper — never string concatenation,
      *  the title/body carry Hungarian text with accents and possibly quotes. */
     private String payload(String title, String body, String url) {
-        String truncatedBody = body != null && body.length() > properties.bodyMaxChars()
-                ? body.substring(0, properties.bodyMaxChars())
-                : body;
+        String truncatedBody = truncateBody(body, properties.bodyMaxChars());
         var fields = new LinkedHashMap<String, String>();
         fields.put("title", title);
         fields.put("body", truncatedBody);
         fields.put("url", url);
         return objectMapper.writeValueAsString(fields);
+    }
+
+    /**
+     * Truncates to at most {@code maxChars} UTF-16 units <b>without splitting a surrogate pair</b>.
+     *
+     * <p>A plain {@code substring(0, max)} that lands between the two halves of an emoji leaves a
+     * lone surrogate, which is not a valid code point: the UTF-8 encoding of the payload turns it
+     * into {@code ?}, so the user sees a stray question mark at the end of the notification. Inert
+     * in N1 (the only body is a fixed literal), live in N2 where bodies are generated text —
+     * and exactly the kind of defect that is invisible until it is on someone's lock screen.
+     *
+     * <p>Backing off one unit (rather than counting code points) keeps the property's meaning
+     * intact: the result is still at most {@code maxChars} chars, just never a broken one.
+     *
+     * <p>Package-private so {@code PushSenderTruncationTest} can drive the boundary directly — it
+     * is a pure function of its two arguments, with no reachable state to misuse.
+     */
+    static String truncateBody(String body, int maxChars) {
+        if (body == null || body.length() <= maxChars) {
+            return body;
+        }
+        int end = Character.isHighSurrogate(body.charAt(maxChars - 1)) ? maxChars - 1 : maxChars;
+        return body.substring(0, end);
     }
 
     /** First {@value #ENDPOINT_LOG_PREFIX_LEN} chars only — an endpoint is a capability URL. */

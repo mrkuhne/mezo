@@ -146,7 +146,11 @@ public class Aes128GcmEncryptor {
      * @param recordSize the RFC 8188 {@code rs} field; at least 18
      * @return the complete {@code Content-Encoding: aes128gcm} request body
      */
-    public byte[] encrypt(
+    // Package-private on purpose: it is a TEST SEAM, not API. It trusts the caller to pass a
+    // matching sender key pair (mismatched halves silently emit a body no browser can decrypt),
+    // and the only legitimate callers are the production overload above and
+    // Aes128GcmEncryptorTest, which sits in this package.
+    byte[] encrypt(
         byte[] uaPublicKey,
         byte[] authSecret,
         byte[] plaintext,
