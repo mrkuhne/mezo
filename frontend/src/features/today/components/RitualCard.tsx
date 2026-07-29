@@ -36,8 +36,11 @@ export function RitualCard({ now = new Date() }: { now?: Date }) {
 
   // Soft gate (ADR 0010 spirit): the waiting card only LOOKS inactive — it offers no CTA
   // rather than a dead one (the `ItemRow` doctrine), and a direct /ritual visit is never
-  // blocked. The route stays reachable from the TodoCard's ritual row. The prose line below
-  // carries that framing: WHY now (open) or WHEN instead (waiting); the pills stay scannable.
+  // blocked. THIS CARD IS THE ONLY IN-APP ROUTE IN from Today: `FaceEvening` filters the
+  // `ritual:day` row out of the TodoCard precisely because this hero owns the act with a
+  // stronger, window-aware affordance — so outside the window the only way in is the URL
+  // (an accepted trade, ADR 0014). The prose line below carries the framing: WHY now (open)
+  // or WHEN instead (waiting); the pills stay scannable.
   return (
     <ItemCard
       tone="mind" emoji="🌙" tag="NAPZÁRÁS" time={opensAt}
