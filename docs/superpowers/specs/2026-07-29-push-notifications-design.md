@@ -173,7 +173,7 @@ Replacement is **per category**: soft-delete the category's live rows + insert t
 | 5 | `lights_out` | `sleep_goal.anchor_time` | `RitualService` `bedTime` (`:71`) | **ON** |
 | 6 | `weekly` | Monday, wake anchor | `weekly_suggestion` row exists | **ON** |
 | 7 | `memoir` | Sunday 19:00 | `memoir` row exists | **ON** |
-| 8 | `wind_down` | ritual `prepStartsAt` (bed − 60) | `RitualService` (`:73`) | OFF |
+| 8 | `wind_down` | ritual `prepStartsAt` (bed − `mezo.ritual.prep-lead-min`, **45**) | `RitualService` (`:73`) | OFF |
 | 9 | `midday` | 12:30 | `heartbeat_note` midday row | OFF |
 | 10 | `checkin` | 4× daily | FE snapshot (`data/today/checkins.ts`) | OFF |
 | 11 | `fuel_slot` | 6 slots/day | FE snapshot (`buildProtocol`) | OFF |
@@ -216,7 +216,9 @@ Following the proactive three-switch idiom (`configuration_conventions.md`):
 - `mezo.feature.notification.enabled` — the whole feature; off ⇒ no beans ⇒ `/api/notification/*` 404s.
 - `mezo.techcore.cron.notification-dispatch-job.enabled` — the dispatcher bean alone (so the API can live without sending, which is exactly what the N1 spike needs).
 
-Values live under the `mezo:` root in `application.yml`: `mezo.notification.dispatch-cron` (`0 * * * * *`), `catch-up-minutes` (2), `default-lead.gym` (30), `default-lead.wind-down` (60), `medication-time` (`08:00`), `default-wake` (`07:00`), `body-max-chars` (300), `prose-excerpt-chars` (160). No hardcoded tunables.
+Values live under the `mezo:` root in `application.yml`: `mezo.notification.dispatch-cron` (`0 * * * * *`), `catch-up-minutes` (2), `default-gym-lead-min` (30), `medication-time` (`08:00`), `default-wake` (`07:00`), `body-max-chars` (300), `prose-excerpt-chars` (160). No hardcoded tunables.
+
+The `ritual` / `wind_down` / `lights_out` anchors carry **no notification-side lead** — their offsets already live in `mezo.ritual.lead-min` (75) / `prep-lead-min` (45) and are read through `RitualService`. Duplicating them under `mezo.notification` would create a second source of truth for the same minute.
 
 ---
 
