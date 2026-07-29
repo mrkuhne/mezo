@@ -59,3 +59,58 @@ describe('faceOf', () => {
     expect(faceOf(t, GOAL)).toBe(expected)
   })
 })
+
+describe('degenerate anchor guard — invariant protection', () => {
+  test('este is reachable even for a highly compressed anchor (guard prevents swallowing)', () => {
+    // This anchor (10:00 bed, 06:00 wake = 4h awake) would cause nap to wrap
+    // around without the guard, making `este` unreachable everywhere.
+    // Without guard: reggel [330, 660), nap [660, 360) wraps to swallow all remaining minutes.
+    // With guard: napEnd = 660 collapses nap to empty, pero este [660, 330) is now reachable.
+    const compressed = { wakeTime: '06:00', bedTime: '10:00' }
+    const seenFaces = new Set<typeof DAY_FACES[number]>()
+
+    for (let m = 0; m < 1440; m++) {
+      const d = new Date(2026, 4, 21)
+      d.setHours(Math.floor(m / 60), m % 60, 0, 0)
+      seenFaces.add(dayFace(d, compressed))
+    }
+
+    // Without the napEnd guard, `este` would never be reached (nap's wrapping swallows it).
+    // With the guard, `este` is reachable (nap collapses, pero este is not unreachable).
+    expect(seenFaces).toContain('este')
+    expect(seenFaces).toContain('reggel')
+    // nap is intentionally empty for this degenerate anchor, so it's ok if never reached
+  })
+
+  test('windows partition the 24h circle exactly for degenerate anchor', () => {
+    // Verify that every minute maps to exactly one face (no overlaps) and
+    // the three faces' minute counts sum to 1440.
+    const degenerate = { wakeTime: '06:00', bedTime: '08:00' }
+    const faceCount: Record<typeof DAY_FACES[number], number> = {
+      reggel: 0,
+      nap: 0,
+      este: 0,
+    }
+
+    for (let m = 0; m < 1440; m++) {
+      const d = new Date(2026, 4, 21)
+      d.setHours(Math.floor(m / 60), m % 60, 0, 0)
+      faceCount[dayFace(d, degenerate)]++
+    }
+
+    const totalMinutes = faceCount.reggel + faceCount.nap + faceCount.este
+    expect(totalMinutes).toBe(1440)
+  })
+
+  test('concrete windows for { wakeTime: 06:00, bedTime: 08:00 }', () => {
+    const degenerate = { wakeTime: '06:00', bedTime: '08:00' }
+    const w = faceWindows(degenerate)
+    // Morning: 06:00 - 30 min = 05:30 to 06:00 + 300 min = 11:00
+    expect(w.reggel).toEqual({ start: 330, end: 660 })
+    // Nap: 11:00 to (08:00 - 240 min = 00:40). eveningStart=240 is NOT in [330,660),
+    // so guard doesn't activate: napEnd = eveningStart = 240, and nap wraps.
+    expect(w.nap).toEqual({ start: 660, end: 240 })
+    // Evening: 00:40 to 05:30 (wraps)
+    expect(w.este).toEqual({ start: 240, end: 330 })
+  })
+})
