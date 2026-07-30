@@ -161,7 +161,7 @@ public class LlmLogEntity {
     @Column(nullable = false)
     private boolean truncated;
 
-    /** Size of the stored payload (post-truncation) — the retention/growth signal. */
+    /** True PRE-truncation total payload size in bytes (spec §5) — recorded even when {@link #truncated} is set. */
     @Column(name = "payload_bytes", nullable = false)
     private int payloadBytes;
 
