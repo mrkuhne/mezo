@@ -41,7 +41,10 @@ public class ToolCallAudit {
      * listener — this is a progress hook, not an event bus — and deliberately fail-safe: the audit
      * is the authoritative record of the turn and must survive a broken listener.
      */
-    private Consumer<ToolCallsEnvelope.ToolCall> listener;
+    // volatile: registered on the subscribing (request) thread via onCall, but invoked from
+    // whatever thread Reactor executes the tool call on (mezo-280) — a plain field is not
+    // guaranteed to be visible across that handoff.
+    private volatile Consumer<ToolCallsEnvelope.ToolCall> listener;
 
     public void onCall(Consumer<ToolCallsEnvelope.ToolCall> listener) {
         this.listener = listener;

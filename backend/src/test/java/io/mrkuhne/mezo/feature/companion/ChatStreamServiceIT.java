@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamError;
+import io.mrkuhne.mezo.api.dto.StreamToolCall;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
@@ -138,5 +139,45 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> chatStreamService.streamMessage(
                 userId, UUID.randomUUID(), request("x")))
                 .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testStreamMessage_shouldEmitToolEventBeforeDone_whenScriptedToolRuns() {
+        UUID userId = databasePopulator.populateUser("stream-tool-event@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"))
+                .collectList().block();
+
+        // the live 'tool' event carries the SAME pre-baked label as the done row's chip, so the FE
+        // renders a live chip and a final chip through one component
+        List<ServerSentEvent<Object>> toolEvents = events.stream()
+                .filter(e -> "tool".equals(e.event())).toList();
+        assertThat(toolEvents).singleElement().satisfies(e -> {
+            StreamToolCall data = (StreamToolCall) e.data();
+            assertThat(data.getName()).isEqualTo("get_recovery(scope=sleep, days=3)");
+            assertThat(data.getType()).isEqualTo("read");
+        });
+        // progress arrives before the terminal event, never after it
+        assertThat(events.indexOf(toolEvents.getFirst())).isLessThan(events.size() - 1);
+        assertThat(events.getLast().event()).isEqualTo("done");
+        assertThat(((MessageResponse) events.getLast().data()).getTools())
+                .extracting(MessageTool::getName).containsExactly("get_recovery(scope=sleep, days=3)");
+    }
+
+    @Test
+    void testStreamMessage_shouldEmitNoToolEvents_whenTurnRunsNoTools() {
+        UUID userId = databasePopulator.populateUser("stream-no-tool-event@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(), request("mi a mai terv?"))
+                .collectList().block();
+
+        assertThat(events).noneMatch(e -> "tool".equals(e.event()));
+        assertThat(events.getLast().event()).isEqualTo("done");
     }
 }
