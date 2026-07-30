@@ -181,6 +181,16 @@ export const handlers = [
       savingsHuf30d: null,
     }),
   ),
+  // LLM usage summary (mezo-h3gb) — day/week/month rollups over the audit log.
+  // Honest zeros are a valid contract answer, so the default is a populated
+  // triple; the null-cost case is exercised via server.use() in AiUsageCard's test.
+  http.get(`${API_BASE}/api/llm-usage/summary`, () =>
+    HttpResponse.json({
+      day: { callCount: 9, costUsd: 0.03, currency: 'USD' },
+      week: { callCount: 61, costUsd: 0.24, currency: 'USD' },
+      month: { callCount: 240, costUsd: 0.95, currency: 'USD' },
+    }),
+  ),
   // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
   // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
   // Tests override with server.use() for specific field-mapping/mutation assertions.

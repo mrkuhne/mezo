@@ -2159,6 +2159,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/llm-usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** LLM call count + cost for today / this week / this month (LlmUsage) */
+        get: operations["getLlmUsageSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4615,6 +4632,25 @@ export interface components {
             /** @description The categories this payload REPLACES — a category listed with no entries is cleared */
             categories: string[];
             entries: components["schemas"]["NotificationScheduleEntry"][];
+        };
+        LlmUsageSummaryResponse: {
+            day: components["schemas"]["LlmUsagePeriod"];
+            week: components["schemas"]["LlmUsagePeriod"];
+            month: components["schemas"]["LlmUsagePeriod"];
+        };
+        LlmUsagePeriod: {
+            /**
+             * Format: int64
+             * @description number of LLM calls in the period (all statuses)
+             */
+            callCount: number;
+            /**
+             * Format: double
+             * @description summed cost_usd of priced rows; null-cost rows (unpriced/no-usage/error) are excluded, so this is an estimate
+             */
+            costUsd?: number | null;
+            /** @example USD */
+            currency: string;
         };
     };
     responses: never;
@@ -10801,6 +10837,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getLlmUsageSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Day/week/month rollups over llm_log_history (honest zeros before any logged call) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LlmUsageSummaryResponse"];
                 };
             };
         };

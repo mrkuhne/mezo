@@ -29,4 +29,5 @@ inputs:
   - inputFile: ../feature/ritual/ritual.yml
   - inputFile: ../feature/gamification/gamification.yml
   - inputFile: ../feature/notification/notification.yml
+  - inputFile: ../feature/llm-usage/llm-usage.yml
 output: ../openapi.yml

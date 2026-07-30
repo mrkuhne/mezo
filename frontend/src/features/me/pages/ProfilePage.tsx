@@ -4,6 +4,7 @@ import { MeBioRow } from '@/features/me/components/MeBioRow'
 import { GoalMiniCard } from '@/features/me/components/GoalMiniCard'
 import { BiometricCard } from '@/features/me/components/BiometricCard'
 import { GrowthSummaryCard } from '@/features/me/components/GrowthSummaryCard'
+import { AiUsageCard } from '@/features/me/components/AiUsageCard'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 
 export function ProfilePage() {
@@ -19,13 +20,16 @@ export function ProfilePage() {
           moved to the dedicated /me/growth page; the three profile radar/level
           cards were consolidated into GrowthSummaryCard, whose whole surface opens
           that page (mezo-rmhr). GoalMiniCard renders null without an active goal;
-          both GrowthSummaryCard/BiometricCard ghost before any XP/profile. */}
+          both GrowthSummaryCard/BiometricCard ghost before any XP/profile.
+          AiUsageCard (mezo-h3gb) closes the column with the LLM audit-log
+          day/week/month rollups; it reads its own dual-mode hook. */}
       <div style={{ padding: '8px 24px 24px' }}>
         <div className="col gap-md">
           <MeBioRow />
           <GoalMiniCard />
           <BiometricCard profile={biometric} onEdit={() => setSheet('biometric')} />
           <GrowthSummaryCard profile={progression} />
+          <AiUsageCard />
         </div>
       </div>
 
