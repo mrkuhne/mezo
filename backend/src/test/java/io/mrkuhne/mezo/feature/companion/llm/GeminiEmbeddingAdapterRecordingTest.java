@@ -39,11 +39,17 @@ import org.junit.jupiter.api.Test;
  */
 class GeminiEmbeddingAdapterRecordingTest {
 
-    private static final String EMBED_MODEL = "gemini-embedding-001";
+    /**
+     * Deliberately NOT the real {@code gemini-embedding-001} default: the model must be proven to
+     * come from {@link CompanionProperties}, and a value that matched the shipped default would let
+     * a hardcoded model in the adapter pass green.
+     */
+    private static final String EMBED_MODEL = "test-embed-model-001";
 
     private final CapturingRecorder recorder = new CapturingRecorder();
     private final LlmCallContextHolder contextHolder = new LlmCallContextHolder();
     private final AtomicReference<EmbedContentConfig> lastConfig = new AtomicReference<>();
+    private final AtomicReference<String> lastModel = new AtomicReference<>();
 
     @Test
     void testEmbedDocuments_shouldRecordEmbedDocSuccess_whenTheProviderReportsBillableChars() {
@@ -74,6 +80,10 @@ class GeminiEmbeddingAdapterRecordingTest {
         assertThat(record.errorClass()).isNull();
         assertThat(record.context()).isEqualTo(LlmCallContext.UNKNOWN);
 
+        // what actually went ON THE WIRE — the configured model, not a hardcoded one, and the same
+        // string the row reports
+        assertThat(lastModel.get()).isEqualTo(companionProperties().embedding().model());
+        assertThat(lastModel.get()).isEqualTo(record.requestedModel()).isEqualTo(record.servedModel());
         assertThat(lastConfig.get().taskType()).contains(GeminiEmbeddingAdapter.TASK_DOCUMENT);
         assertThat(lastConfig.get().outputDimensionality()).contains(EmbeddingPort.DIMENSIONS);
     }
@@ -88,6 +98,7 @@ class GeminiEmbeddingAdapterRecordingTest {
         assertThat(record.callKind()).isEqualTo(CallKind.EMBED_QUERY);
         assertThat(record.embed().inputCount()).isEqualTo(1);
         assertThat(record.embed().billableChars()).isEqualTo(7);
+        assertThat(lastModel.get()).isEqualTo(companionProperties().embedding().model());
         assertThat(lastConfig.get().taskType()).contains(GeminiEmbeddingAdapter.TASK_QUERY);
     }
 
@@ -188,11 +199,12 @@ class GeminiEmbeddingAdapterRecordingTest {
 
     // ── fixtures ────────────────────────────────────────────────────────────────
 
-    /** Stands in for the one SDK hop; everything else runs for real. */
+    /** Stands in for the one SDK hop, capturing what would have gone on the wire; the rest runs for real. */
     private GeminiEmbeddingAdapter adapter(Function<List<String>, EmbedContentResponse> provider) {
         return new GeminiEmbeddingAdapter(null, companionProperties(), recorder, contextHolder) {
             @Override
-            EmbedContentResponse callEmbedContent(List<String> texts, EmbedContentConfig config) {
+            EmbedContentResponse callEmbedContent(String model, List<String> texts, EmbedContentConfig config) {
+                lastModel.set(model);
                 lastConfig.set(config);
                 return provider.apply(texts);
             }

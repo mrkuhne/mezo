@@ -33,8 +33,11 @@ import org.hibernate.type.SqlTypes;
  * ({@code on delete set null}).
  *
  * <p>Most columns are nullable on purpose: each {@link CallKind} fills its own block (generation
- * tokens vs. embedding counters vs. image counters), and an ERROR row carries neither usage nor
- * cost — honestly empty beats zeroed.
+ * tokens vs. embedding counters vs. image counters). On an ERROR row, provider-reported usage and
+ * cost are absent (null) — honestly empty beats zeroed — but REQUEST-side counters (image counts,
+ * embedding batch size and dimensions) DO survive, because they are facts of the attempt rather than
+ * something the provider had to answer. Usage/cost aggregates must therefore filter
+ * {@code status = 'SUCCESS'}.
  */
 @Getter
 @Setter

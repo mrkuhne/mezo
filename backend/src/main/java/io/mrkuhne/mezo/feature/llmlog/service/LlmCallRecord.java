@@ -13,7 +13,10 @@ import lombok.Builder;
  *
  * <p>The usage blocks are mutually exclusive by {@link CallKind}: a generation call fills
  * {@link #tokens}, an embedding call fills {@link #embed}, a vision call adds the image counters.
- * An ERROR record legitimately carries none of them.
+ * On an ERROR record, PROVIDER-reported usage and cost are absent (null) — {@link #tokens} and the
+ * billable char count in particular — but REQUEST-side counters (image counts, embedding batch size
+ * and dimensions) DO survive, because they are facts of the attempt, not something the provider had
+ * to answer. Usage/cost aggregates must therefore filter {@code status = SUCCESS}.
  */
 @Builder
 public record LlmCallRecord(

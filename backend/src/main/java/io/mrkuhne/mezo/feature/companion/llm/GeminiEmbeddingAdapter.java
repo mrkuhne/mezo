@@ -81,7 +81,7 @@ public class GeminiEmbeddingAdapter implements EmbeddingPort {
         long startedAt = System.nanoTime();
         LlmCallContext context = llmCallContextHolder.get();
         try {
-            EmbedContentResponse response = callEmbedContent(texts, config);
+            EmbedContentResponse response = callEmbedContent(embedModel(), texts, config);
             // Validation is INSIDE the timed block on purpose: a malformed response is a failed call
             // from the caller's side, and the log must agree with what the caller experienced.
             List<float[]> vectors = toVectors(response, texts.size());
@@ -99,9 +99,13 @@ public class GeminiEmbeddingAdapter implements EmbeddingPort {
      * The single provider hop, isolated from the audit + validation logic wrapped around it. The
      * SDK's {@code Client.models} is a {@code public final} field on a {@code final} class, so this
      * method is also the only seam a test can stand in for the network at.
+     *
+     * <p>Zero logic on purpose — every argument, {@code model} included, is resolved by the caller,
+     * so what goes ON THE WIRE is observable to a test instead of being recomputed here where no
+     * test can see it.
      */
-    EmbedContentResponse callEmbedContent(List<String> texts, EmbedContentConfig config) {
-        return googleGenAiClient.models.embedContent(embedModel(), texts, config);
+    EmbedContentResponse callEmbedContent(String model, List<String> texts, EmbedContentConfig config) {
+        return googleGenAiClient.models.embedContent(model, texts, config);
     }
 
     /** Pure mapping: what the provider reported → the audit record. */
