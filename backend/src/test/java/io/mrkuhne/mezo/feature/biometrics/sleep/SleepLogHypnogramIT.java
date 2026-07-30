@@ -13,9 +13,15 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
+/**
+ * sleep_log jsonb hypnogram envelope round-trip (mezo-fk9a). Deliberately NOT
+ * {@code @Transactional} — matching {@code ActivityLogEntityIT}: a shared test-level session
+ * would let Hibernate's first-level cache hand back the very instance {@code log()} just
+ * persisted, so the read assertions would pass even with the jsonb read path broken. Without
+ * it, {@code log()} commits and {@code list()} genuinely rehydrates from the ResultSet.
+ * Cleanup comes from {@code ResetDatabase} in {@code AbstractIntegrationTest}.
+ */
 class SleepLogHypnogramIT extends AbstractIntegrationTest {
 
     @Autowired
