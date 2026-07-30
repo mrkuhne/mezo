@@ -86,6 +86,12 @@ spec:
             # precedent) rather than relying on the application.yml default.
             - name: MEZO_FEATURE_PROACTIVE_ENABLED
               value: "true"
+            # LLM call audit log (mezo-2zyu): every Gemini call lands in llm_log_history with
+            # its token/cost breakdown and its caller attribution (feature/operation/entity).
+            # Default-off in application.yml — deliberately switched ON only where the real
+            # adapter runs, so local/test runs never accumulate audit rows.
+            - name: MEZO_FEATURE_LLM_LOG_ENABLED
+              value: "true"
           # startupProbe gives Spring Boot + Liquibase time to come up before
           # liveness/readiness start judging it. /actuator/health is exposed.
           startupProbe:

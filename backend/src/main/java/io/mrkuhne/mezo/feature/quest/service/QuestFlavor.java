@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.quest.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -45,6 +47,7 @@ public class QuestFlavor {
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final DailyQuestRepository repository;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     private record Copy(String title, String why) {}
 
@@ -64,7 +67,9 @@ public class QuestFlavor {
         }
         String raw;
         try {
-            raw = companionLlm.complete(FLAVOR_PROMPT, input.toString());
+            raw = llmCallContextHolder.runWith(
+                new LlmCallContext("quest_flavor", "rewrite", null, null),
+                () -> companionLlm.complete(FLAVOR_PROMPT, input.toString()));
         } catch (Exception e) {
             log.warn("Quest flavor rewrite failed, keeping catalog copy: {}", e.getMessage());
             return;

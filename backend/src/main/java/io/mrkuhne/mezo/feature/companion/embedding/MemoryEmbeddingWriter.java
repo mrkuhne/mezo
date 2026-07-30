@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,7 @@ public class MemoryEmbeddingWriter {
     private final MemoryEmbeddingRepository memoryEmbeddingRepository;
     private final AiMessageRepository aiMessageRepository;
     private final CompanionProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /**
      * Embeds a generated daily summary (kind={@code daily_summary}, ref = the summary row).
@@ -112,7 +115,9 @@ public class MemoryEmbeddingWriter {
             return;
         }
         String capped = cap(content);
-        float[] vector = embeddingPort.embedDocuments(List.of(capped)).getFirst();
+        float[] vector = llmCallContextHolder.runWith(
+                new LlmCallContext("embed_memory", "document", kind, refId),
+                () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
         MemoryEmbeddingEntity entity = new MemoryEmbeddingEntity();
         entity.setCreatedBy(createdBy);
         entity.setKind(kind);

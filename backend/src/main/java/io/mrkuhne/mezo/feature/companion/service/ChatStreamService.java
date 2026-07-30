@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.companion.advisor.AdvisedAnswer;
 import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,7 @@ public class ChatStreamService {
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
     private final CompanionToolRegistry toolRegistry;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     public Flux<ServerSentEvent<Object>> streamMessage(
             UUID userId, UUID conversationId, SendMessageRequest request) {
@@ -56,8 +59,12 @@ public class ChatStreamService {
         ToolCallAudit audit = toolRegistry.newTurnAudit();
 
         StringBuilder answer = new StringBuilder();
-        return companionLlm.stream(turn.systemPrompt(), turn.userContent(),
-                        toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit))
+        // mezo-2zyu: the adapter reads the holder EAGERLY (before the Flux is returned), so tagging
+        // the stream() call itself is enough — the deferred pipeline carries the closed-over context.
+        return llmCallContextHolder.runWith(
+                        new LlmCallContext("companion_chat", "stream", "conversation", conversationId),
+                        () -> companionLlm.stream(turn.systemPrompt(), turn.userContent(),
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)))
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
                         StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())

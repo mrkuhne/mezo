@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -53,6 +55,7 @@ public class WeeklySuggestionGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final GrowthDigestBlock growthDigestBlock;
 
     /** Generates (or returns the existing) suggestion for one ISO-Monday week; null = honest absence. */
@@ -68,7 +71,9 @@ public class WeeklySuggestionGenerator {
             log.debug("No prior-week summaries for {} before {} — no suggestion", userId, weekStart);
             return null;
         }
-        String prose = companionLlm.completeSmart(PROMPT, payload);
+        String prose = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_weekly", "generate", null, null),
+                () -> companionLlm.completeSmart(PROMPT, payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Blank weekly-suggestion answer for {} week {} — no row", userId, weekStart);
             return null;

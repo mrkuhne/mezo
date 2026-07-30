@@ -12,12 +12,13 @@ import org.junit.jupiter.api.Test;
 /**
  * Pure prompt-assembly test (no Spring, no LLM): the role must reach the model. Lives in the
  * service package (the {@code MealCoachPromptTest} precedent) because {@code userMessage} is
- * package-private for exactly this test; constructing with {@code (null, null)} is safe because
- * {@code userMessage} touches neither the LLM port nor the ObjectMapper.
+ * package-private for exactly this test; constructing with all-null collaborators is safe because
+ * {@code userMessage} touches neither the LLM port, the ObjectMapper nor the call-context holder.
  */
 class RecipeBreakdownProseServiceTest {
 
-    private final RecipeBreakdownProseService service = new RecipeBreakdownProseService(null, null);
+    private final RecipeBreakdownProseService service =
+        new RecipeBreakdownProseService(null, null, null);
 
     private RecipeEntity recipe(MealRole role) {
         RecipeEntity e = new RecipeEntity();

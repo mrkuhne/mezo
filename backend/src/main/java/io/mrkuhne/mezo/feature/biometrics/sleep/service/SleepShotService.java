@@ -4,6 +4,8 @@ import io.mrkuhne.mezo.api.dto.SleepShotDraftResponse;
 import io.mrkuhne.mezo.feature.biometrics.sleep.config.SleepShotProperties;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepShotDraftValidator.Extracted;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepShotDraftValidator.Score;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -43,10 +45,14 @@ public class SleepShotService {
     private final SleepShotDraftValidator validator;
     private final SleepShotProperties props;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     public SleepShotDraftResponse extract(UUID userId, MultipartFile photo) {
         Photo p = validated(photo);
-        String answer = requireAvailable().complete(SYSTEM_PROMPT, "", p.bytes(), p.mime());
+        SleepShotLlm port = requireAvailable();
+        String answer = llmCallContextHolder.runWith(
+            new LlmCallContext("sleep_shot", "extract", null, null),
+            () -> port.complete(SYSTEM_PROMPT, "", p.bytes(), p.mime()));
         Extracted e = normalize(parse(answer));
         Score score = validator.score(e, props.confidenceThreshold());
         log.info("Sleep screenshot draft for {}: confidence={} needsReview={}",

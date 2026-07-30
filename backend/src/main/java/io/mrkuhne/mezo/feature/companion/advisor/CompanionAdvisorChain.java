@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.advisor;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ public class CompanionAdvisorChain {
     private final ClinicalOutputCheck clinicalOutputCheck;
     private final TurnVerdictCheck turnVerdictCheck;
     private final CompanionProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** Sync path: first attempt + review in one call. */
     public AdvisedAnswer complete(String systemPrompt, String userMessage,
@@ -49,8 +52,12 @@ public class CompanionAdvisorChain {
         int retries = 0;
         while (!violations.isEmpty() && retries < properties.advisors().maxRetries()) {
             retries++;
-            answer = companionLlm.complete(
-                    systemPrompt + AdvisorRetry.block(violations), userMessage, tools, toolContext);
+            // mezo-2zyu: the corrective round is the ADVISOR's cost, not the turn's — and in the
+            // streamed path it runs deferred, where the caller's context is already gone.
+            String retryPrompt = systemPrompt + AdvisorRetry.block(violations);
+            answer = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_advisor", "retry", null, null),
+                    () -> companionLlm.complete(retryPrompt, userMessage, tools, toolContext));
             violations = runChecks(systemPrompt, userMessage, answer, audit);
         }
         boolean degraded = !violations.isEmpty();

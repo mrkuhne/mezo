@@ -15,6 +15,8 @@ import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -64,6 +66,7 @@ public class ChatService {
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt, String userContent) {}
@@ -127,16 +130,22 @@ public class ChatService {
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer;
         boolean degraded = false;
+        // mezo-2zyu: the whole turn runs under the chat context — the advisor chain's own calls
+        // rebind their own (companion_advisor) context, so only the primary round is billed here.
+        LlmCallContext turnContext =
+                new LlmCallContext("companion_chat", "send", "conversation", conversationId);
         CompanionAdvisorChain chain = advisorChain.getIfAvailable();
         if (chain != null) {
             // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
-            AdvisedAnswer advised = chain.complete(systemPrompt, request.getContent(),
-                    toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit);
+            AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
+                    () -> chain.complete(systemPrompt, request.getContent(),
+                            toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
             answer = advised.answer();
             degraded = advised.degraded();
         } else {
-            answer = companionLlm.complete(systemPrompt, request.getContent(),
-                    toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit));
+            answer = llmCallContextHolder.runWith(turnContext,
+                    () -> companionLlm.complete(systemPrompt, request.getContent(),
+                            toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);

@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +56,7 @@ public class FactExtractionService {
     private final LearnedFactRepository learnedFactRepository;
     private final CompanionProperties properties;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** One extracted item as the LLM returns it. */
     record ExtractedFact(String fact, String category) {}
@@ -64,7 +67,9 @@ public class FactExtractionService {
         String transcript = "Daniel: " + userContent + "\nMezo: " + assistantContent;
         String raw;
         try {
-            raw = companionLlm.complete(EXTRACTION_PROMPT, transcript);
+            raw = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_fact_extract", "extract", null, null),
+                    () -> companionLlm.complete(EXTRACTION_PROMPT, transcript));
         } catch (Exception e) {
             log.warn("Fact extraction LLM call failed for user {}", userId, e);
             return 0;

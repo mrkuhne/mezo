@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.pantry.service;
 
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -58,6 +60,7 @@ public class ScrapeExtractionService {
 
     private final ObjectProvider<ScrapeLlm> llm;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /**
      * Returns the LLM port, or fails with a clean 503 when the companion switch is off (no adapter
@@ -74,7 +77,10 @@ public class ScrapeExtractionService {
     }
 
     public ExtractedDraft extract(String pageText) {
-        String answer = requireAvailable().complete(SYSTEM_PROMPT, pageText);
+        ScrapeLlm port = requireAvailable();
+        String answer = llmCallContextHolder.runWith(
+            new LlmCallContext("pantry_scrape", "extract", null, null),
+            () -> port.complete(SYSTEM_PROMPT, pageText));
         try {
             String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
             return objectMapper.readValue(json, ExtractedDraft.class);

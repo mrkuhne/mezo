@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
@@ -54,6 +56,7 @@ public class HeartbeatGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final ProactiveProperties properties;
 
     @Transactional
@@ -69,7 +72,9 @@ public class HeartbeatGenerator {
             log.debug("No narrative memory for user {} — no heartbeat for {}", userId, day);
             return null;
         }
-        String prose = companionLlm.complete(PROMPT, payload);
+        String prose = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_heartbeat", "generate", null, null),
+                () -> companionLlm.complete(PROMPT, payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Unusable heartbeat answer for user {} day {} window {}", userId, day, windowKey);
             return null;
