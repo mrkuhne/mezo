@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
  * threading it through every port signature (mezo-2zyu). Thread-bound: the adapter reads it on the
  * SAME thread that made the call, before the record is handed to the async writer.
  *
- * <p>Always prefer {@link #runWith} — it guarantees the {@link #clear()} that keeps a pooled request
- * thread from leaking one feature's context into the next call.
+ * <p>Always prefer {@link #runWith} — it guarantees the unbind that keeps a pooled request thread
+ * from leaking one feature's context into the next call.
  */
 @Component
 public class LlmCallContextHolder {
@@ -30,13 +30,27 @@ public class LlmCallContextHolder {
         CONTEXT.remove();
     }
 
-    /** Runs {@code body} with {@code context} bound to this thread, clearing it even on failure. */
+    /**
+     * Runs {@code body} with {@code context} bound to this thread, restoring the PREVIOUS binding on
+     * the way out (even on failure).
+     *
+     * <p>Save+restore, not blanket clear: a nested {@code runWith} (an outer tagged operation calling
+     * into an inner one on the same thread) would otherwise unbind the outer context when the inner
+     * returns, and every subsequent call in the outer scope would silently record under the wrong
+     * feature. Restoring null degrades to a clear, so the top-level scope still leaves the pooled
+     * thread clean.
+     */
     public <T> T runWith(LlmCallContext context, Supplier<T> body) {
+        LlmCallContext previous = CONTEXT.get();
         set(context);
         try {
             return body.get();
         } finally {
-            clear();
+            if (previous != null) {
+                set(previous);
+            } else {
+                clear();
+            }
         }
     }
 }

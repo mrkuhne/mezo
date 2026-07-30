@@ -589,18 +589,22 @@ but it is documented here because both recording adapters live in `feature/compa
   `image_bytes_total`, `image_mime` — never the bytes), and cost (`pricing_snapshot jsonb`,
   `cost_usd numeric(12,6)`). Indexes: `created_at`, `(feature, created_at)`,
   `(served_model, created_at)` — the pruning axis + the two cost-report axes.
+- **`pricing_snapshot` keys are camelCase**, not snake_case like the rest of the schema — it is the
+  `PricingSnapshot` record serialised verbatim, so query it as
+  `pricing_snapshot->>'inputPerMillion'` (also `sourceModel`, `currency`, `outputPerMillion`,
+  `thinkingPerMillion`, `cachedPerMillion`, `embedPerMillionChars`, `pricedOn`).
 - **INSERT-only — the one table with NO `is_deleted`** ([ADR 0014](../decisions/0014-llm-call-audit-log.md)):
   `LlmLogEntity` deliberately does **not** extend `OwnedEntity` (that superclass mandates the
   soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable; they leave
   only via retention pruning (a hard `DELETE`, not built yet).
 - **Reading it:** usage/cost aggregates **must filter `status = 'SUCCESS'`** — an ERROR row carries no
   provider-reported usage or cost, but its request-side counters (image counts, embedding batch size
-  + dimensions) do survive. A null `cost_usd` means *unpriced/unknown*, never *free* — and the mirror
-  caveat: **a `cost_usd` of `0.00` is not proof of a free call either**. On a generation row an
-  absent-usage response against a PRICED model currently derives 0.00 (each missing token count
-  contributes zero) instead of null, until **bd mezo-xyud** lands. Because
-  `created_by` is null on cron/`@Async` threads, a read side must NOT apply the usual
-  `created_by = currentUser` ownership filter (it would hide exactly the invisible cron volume).
+  + dimensions) do survive. A null `cost_usd` means *unpriced/unknown*, never *free*: an unpriced
+  served model (also `log.warn`ed), an absent usage block and an unknown embedding char count all
+  record null rather than a fabricated `0`. Because `created_by` is null on cron/`@Async` threads
+  (and on `CHAT_STREAM` rows, whose terminal signal may run off the request thread), a read side must
+  NOT apply the usual `created_by = currentUser` ownership filter (it would hide exactly the
+  invisible cron and streaming volume).
 
 ### Entities
 

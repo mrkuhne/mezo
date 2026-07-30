@@ -95,4 +95,53 @@ class LlmLogWriterIT extends AbstractIntegrationTest {
         assertThat(row.getPricingSnapshot()).isNull();
         assertThat(row.getCostUsd()).isNull();
     }
+
+    /**
+     * Cost honesty on the generation path (bd mezo-xyud): a PRICED model plus NO usage block must
+     * still record {@code cost_usd = null}. Summing four missing counts into {@code 0.000000} would
+     * make an unknown-cost call indistinguishable from a genuinely free one — the exact thing the
+     * unknown-⇒-null rule forbids. The snapshot itself is still frozen: the price WAS known.
+     */
+    @Test
+    void testPersist_shouldRecordNullCost_whenPricedModelReportsNoUsage() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT)
+            .requestedModel("gemini-2.5-flash").servedModel("gemini-2.5-flash")
+            .status(CallStatus.SUCCESS).latencyMs(42)
+            .tokens(null)
+            .context(new LlmCallContext("companion_chat", "chat_turn", null, null))
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.parse("2026-07-28T10:00:00Z")));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.getPricingSnapshot()).isNotNull();
+        assertThat(row.getPricingSnapshot().sourceModel()).isEqualTo("gemini-2.5-flash");
+        assertThat(row.getPromptTokens()).isNull();
+        assertThat(row.getCostUsd()).isNull();
+    }
+
+    /**
+     * The model-aliasing scenario that motivated the feature: the provider serves a model that is not
+     * in {@code mezo.llm-log.pricing.models}. The row must still land (audit logging never fails a
+     * call), with an honest null snapshot and null cost — and the writer WARNs so the gap is visible.
+     */
+    @Test
+    void testPersist_shouldRecordNullSnapshotAndCost_whenServedModelIsUnpriced() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT)
+            .requestedModel("gemini-2.5-flash").servedModel("gemini-2.5-flash-preview-09-2025")
+            .status(CallStatus.SUCCESS).latencyMs(7)
+            .tokens(new TokenUsage(100, 20, 0, 0, 120))
+            .context(new LlmCallContext("companion_chat", "chat_turn", null, null))
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.parse("2026-07-28T10:00:00Z")));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.getServedModel()).isEqualTo("gemini-2.5-flash-preview-09-2025");
+        assertThat(row.getPromptTokens()).isEqualTo(100);
+        assertThat(row.getPricingSnapshot()).isNull();
+        assertThat(row.getCostUsd()).isNull();
+    }
 }

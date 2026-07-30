@@ -139,15 +139,30 @@ public class LlmLogWriter {
      * {@code cachedContentTokenCount} is a SUBSET of {@code promptTokenCount}: billing the full
      * prompt at the input rate AND the cached slice again at the cached rate would overcharge it
      * twice. So the NET prompt is what gets billed at the input rate.
+     *
+     * <p><b>Unknown ⇒ null, never a fabricated {@code 0}.</b> A zero cost is indistinguishable from a
+     * genuinely free call, so an absent usage block leaves {@code cost_usd} null even on a PRICED
+     * model (mirroring the embedding branch's billable-char guard) — {@code perMillion} would
+     * otherwise sum four missing counts into {@code 0.000000}. An unpriced served model is a visible
+     * operational gap (a new or aliased model missing from {@code mezo.llm-log.pricing.models}), so
+     * it is WARNed rather than silently nulled.
      */
     private void applyCost(LlmLogEntity entity, LlmCallRecord record, Instant startedAt) {
         Instant when = startedAt != null ? startedAt : Instant.now();
         PricingSnapshot snapshot =
             llmPricingService.snapshot(record.servedModel(), when.atZone(ZoneOffset.UTC).toLocalDate());
         entity.setPricingSnapshot(snapshot);
+        if (snapshot == null && record.servedModel() != null) {
+            log.warn("llm_log: no pricing configured for served model {} — cost recorded as unknown (null). "
+                + "Add it to mezo.llm-log.pricing.models.", record.servedModel());
+        }
 
         if (record.callKind() == CallKind.EMBED_DOC || record.callKind() == CallKind.EMBED_QUERY) {
             entity.setCostUsd(llmPricingService.computeEmbeddingCost(snapshot, entity.getEmbedBillableChars()));
+            return;
+        }
+        if (!hasGenerationUsage(record.tokens())) {
+            entity.setCostUsd(null);
             return;
         }
         Integer cached = entity.getCachedTokens();
@@ -156,6 +171,15 @@ public class LlmLogWriter {
             : entity.getPromptTokens() - (cached == null ? 0 : cached);
         entity.setCostUsd(llmPricingService.computeGenerationCost(
             snapshot, netPrompt, entity.getCandidatesTokens(), entity.getThoughtsTokens(), cached));
+    }
+
+    /** True only if the provider reported at least one BILLABLE counter — {@code total} alone is not one. */
+    private static boolean hasGenerationUsage(TokenUsage tokens) {
+        return tokens != null
+            && (tokens.prompt() != null
+                || tokens.candidates() != null
+                || tokens.thoughts() != null
+                || tokens.cached() != null);
     }
 
     private static String featureOf(LlmCallEvent event) {

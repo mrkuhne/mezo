@@ -84,14 +84,15 @@ cost was derived from.
      `cost_usd` from THAT snapshot, never from the live config — so a rate change never rewrites
      history and every past cost stays reproducible.
    - **The rule: unknown ⇒ null cost, never a fabricated `0`** — a zero is indistinguishable from a
-     genuinely free call, so "unpriced/unknown" must stay visibly so. It holds today for an **unpriced
-     model** (a null snapshot ⇒ null cost) and for **embeddings** (a null billable-char count ⇒ null
-     cost), and `GeminiUsageExtractor` upholds it on the reporting side: every absent-usage shape
-     Spring AI can hand us (`EmptyUsage`, a zeroed `GoogleGenAiUsage.from(null)`, a blank model id)
-     is normalised to `null`, not `0`. It does **not** yet hold end-to-end on the generation path:
-     when a PRICED snapshot meets an all-null token block, `LlmPricingService#perMillion` treats each
-     missing count as zero and the row lands with `cost_usd = 0.000000` instead of null — tracked as
-     **bd mezo-xyud**, to be fixed so the rule holds everywhere.
+     genuinely free call, so "unpriced/unknown" must stay visibly so. It holds **end-to-end**: an
+     **unpriced model** (a null snapshot ⇒ null cost, plus a `log.warn` naming the served model, so a
+     new or aliased model surfaces as an operational gap instead of silently nulling every cost), an
+     **absent usage block** (no reported prompt/candidates/thoughts/cached ⇒ null cost even on a
+     PRICED model — `LlmLogWriter#applyCost` guards before `computeGenerationCost`, since summing four
+     missing counts would otherwise land `0.000000`), and **embeddings** (a null billable-char count ⇒
+     null cost). `GeminiUsageExtractor` upholds the same rule on the reporting side: every absent-usage
+     shape Spring AI can hand us (`EmptyUsage`, a zeroed `GoogleGenAiUsage.from(null)`, a blank model
+     id) is normalised to `null`, not `0`.
 7. **The ERROR-row rule.** An ERROR row carries **no provider-reported usage and no cost** — the
    provider never answered. But **request-side** counters survive (image count/bytes/mime, embedding
    batch size and dimensions): those are facts of the attempt, not something the provider had to
@@ -109,14 +110,16 @@ cost was derived from.
   day — the three indexes (`created_at`, `(feature, created_at)`, `(served_model, created_at)`) are
   exactly those three axes plus pruning.
 - **Aggregates carry two mandatory rules**, both consequences of honesty above: filter
-  `status = 'SUCCESS'` for usage/cost, and treat a null `cost_usd` as *unknown*, not free. Until
-  **bd mezo-xyud** lands, the mirror caveat also applies: a `cost_usd` of `0.00` on a generation row
-  is not proof of a free call — an absent-usage response on a priced model reads 0.00 today.
+  `status = 'SUCCESS'` for usage/cost, and treat a null `cost_usd` as *unknown*, not free.
 - **`created_by` is null on `@Async`/cron threads** — there is no security-context propagation and
   `LlmActorResolver` deliberately returns null rather than throwing (audit logging must never be the
-  thing that fails a call). Acceptable in a single-user app, but it means **the eventual read side
-  must NOT apply the usual `created_by = currentUser` ownership filter**, or it would hide exactly
-  the invisible cron volume that motivated the feature.
+  thing that fails a call). **`CHAT_STREAM` rows fall in the same class**: the record is emitted from
+  the stream's terminal signal (`doOnComplete`/`doOnError`), which Reactor may run on a scheduler
+  thread rather than the originating request thread, so the resolver finds an empty
+  `SecurityContextHolder` and the row lands with `created_by = NULL`. Acceptable in a single-user app,
+  but it means **the eventual read side must NOT apply the usual `created_by = currentUser` ownership
+  filter**, or it would hide exactly the invisible cron and streaming volume that motivated the
+  feature.
 - **Recording is now an adapter responsibility.** Every new call path added to `GeminiCompanionLlm`
   or `GeminiEmbeddingAdapter` must emit a record, and a second provider adapter would have to
   re-implement it. That is the price of seeing the provider metadata at all; the decorator

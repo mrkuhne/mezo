@@ -7,7 +7,10 @@
 -- nullable with ON DELETE SET NULL so removing a user never takes the cost history with them.
 --
 -- Most columns are nullable because each call_kind fills its own block (generation tokens vs.
--- embedding counters vs. image counters) and an ERROR row carries neither usage nor cost.
+-- embedding counters vs. image counters). On an ERROR row the PROVIDER-reported usage and the cost
+-- are absent (null) — the provider never answered — but REQUEST-side counters DO survive (image
+-- count/bytes/mime, embedding batch size and dimensions), because those are facts of the attempt.
+-- Consequently every usage/cost aggregate must filter status = 'SUCCESS'.
 
 create table llm_log_history (
     id                   uuid        not null default gen_random_uuid(),
