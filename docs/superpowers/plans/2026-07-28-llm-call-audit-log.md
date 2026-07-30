@@ -146,6 +146,11 @@ public class LlmPricingService {
             p.embedPerMillionChars(), on);
     }
 
+    /**
+     * Per-category cost. {@code prompt} MUST already exclude {@code cached}
+     * (pass {@code promptTokenCount - cachedContentTokenCount}) — Gemini reports cached as a
+     * SUBSET of prompt, so billing prompt-full + cached-rate would 5x-overcharge the cached slice.
+     */
     public BigDecimal computeGenerationCost(PricingSnapshot s, Integer prompt, Integer candidates,
                                             Integer thoughts, Integer cached) {
         if (s == null) {
@@ -634,8 +639,15 @@ public class LlmLogWriter {
         if (r.callKind() == CallKind.EMBED_DOC || r.callKind() == CallKind.EMBED_QUERY) {
             e.setCostUsd(pricing.computeEmbeddingCost(snap, e.getEmbedBillableChars()));
         } else {
+            // Storage keeps the RAW provider counts (promptTokens INCLUDES cached — physically honest).
+            // But cachedContentTokenCount is a SUBSET of promptTokenCount, so billing must NOT charge it
+            // at the full input rate AND again at the cached rate. Bill the NET prompt (prompt - cached)
+            // at input rate + cached at the cached rate. (Task-1 review, Important #1.)
+            Integer cached = e.getCachedTokens();
+            Integer netPrompt = e.getPromptTokens() == null ? null
+                : e.getPromptTokens() - (cached == null ? 0 : cached);
             e.setCostUsd(pricing.computeGenerationCost(snap,
-                e.getPromptTokens(), e.getCandidatesTokens(), e.getThoughtsTokens(), e.getCachedTokens()));
+                netPrompt, e.getCandidatesTokens(), e.getThoughtsTokens(), cached));
         }
     }
     // applyTokens/applyEmbed/applyImages: null-safe field copies.
