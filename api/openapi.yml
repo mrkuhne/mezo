@@ -828,6 +828,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/medals:
+    get:
+      tags:
+        - Train
+      operationId: getMedals
+      summary: 'The owner''s full medal history, newest first (derived from logged sets)'
+      responses:
+        '200':
+          description: Medals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedalListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/sport-sessions:
     get:
       tags:
@@ -6165,6 +6184,82 @@ components:
             5
           items:
             $ref: '#/components/schemas/RecordSetRef'
+    Medal:
+      type: object
+      required:
+        - type
+        - tier
+        - exerciseName
+        - date
+        - value
+        - unit
+      properties:
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - REPS_AT_WEIGHT
+            - E1RM
+            - SESSION_VOLUME
+            - TARGET_HIT
+        tier:
+          type: string
+          enum:
+            - RECORD
+            - TARGET
+        exerciseName:
+          type: string
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        muscle:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        workoutSessionId:
+          type: string
+          format: uuid
+          nullable: true
+        setIndex:
+          type: integer
+          nullable: true
+        value:
+          type: number
+          description: >-
+            kg for WEIGHT/E1RM/SESSION_VOLUME, reps for
+            REPS_AT_WEIGHT/TARGET_HIT
+        unit:
+          type: string
+          enum:
+            - KG
+            - REPS
+        weightKg:
+          type: number
+          nullable: true
+          description: the achieving set's load
+        reps:
+          type: integer
+          nullable: true
+        previousValue:
+          type: number
+          nullable: true
+          description: what was beaten; always null for TARGET_HIT
+        previousDate:
+          type: string
+          format: date
+          nullable: true
+    MedalListResponse:
+      type: object
+      required:
+        - medals
+      properties:
+        medals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Medal'
     WorkoutTodayResponse:
       type: object
       description: >-
@@ -6408,6 +6503,11 @@ components:
             $ref: '#/components/schemas/ExerciseSetResponse'
         levelUp:
           $ref: '#/components/schemas/LevelUpResult'
+        medals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Medal'
+          description: 'Medals earned across the session, including SESSION_VOLUME'
     WorkoutSummaryResponse:
       type: object
       required:
@@ -6675,6 +6775,11 @@ components:
           enum:
             - warmup
             - working
+        medals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Medal'
+          description: Medals this set earned (empty when none)
     WorkoutStartRequest:
       type: object
       required:
@@ -6724,6 +6829,22 @@ components:
           type: string
           pattern: ^(warmup|working)$
           description: warmup|working — defaults to working server-side when omitted
+        targetWeightKg:
+          type: number
+          minimum: 0
+          maximum: 999
+          nullable: true
+          description: >-
+            The Progresszió-prescribed load for this set, snapshotted at log
+            time
+        targetReps:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: >-
+            The Progresszió-prescribed reps for this set, snapshotted at log
+            time
     WorkoutSkipRequest:
       type: object
       required:
