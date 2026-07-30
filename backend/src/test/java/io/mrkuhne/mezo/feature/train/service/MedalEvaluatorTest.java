@@ -39,6 +39,8 @@ class MedalEvaluatorTest {
         assertThat(kinds(awards)).containsExactlyInAnyOrder(MedalKind.WEIGHT, MedalKind.E1RM);
         assertThat(awards.stream().filter(a -> a.kind() == MedalKind.WEIGHT).findFirst().orElseThrow()
             .previousValue()).isEqualByComparingTo("100");
+        assertThat(awards.stream().filter(a -> a.kind() == MedalKind.E1RM).findFirst().orElseThrow()
+            .previousValue()).isEqualByComparingTo("126.7");
     }
 
     @Test
@@ -47,6 +49,8 @@ class MedalEvaluatorTest {
         assertThat(kinds(awards)).contains(MedalKind.REPS_AT_WEIGHT);
         assertThat(awards.stream().filter(a -> a.kind() == MedalKind.REPS_AT_WEIGHT).findFirst()
             .orElseThrow().previousValue()).isEqualByComparingTo("8");
+        assertThat(awards.stream().filter(a -> a.kind() == MedalKind.REPS_AT_WEIGHT).findFirst()
+            .orElseThrow().value()).isEqualByComparingTo("9");
     }
 
     @Test
@@ -77,6 +81,12 @@ class MedalEvaluatorTest {
     @Test
     void testForSet_shouldNotAwardTargetHit_whenTheRepsFallShort() {
         assertThat(MedalEvaluator.forSet(set("100", 7, "100", 8), List.of(prior("100", 8))))
+            .noneMatch(a -> a.kind() == MedalKind.TARGET_HIT);
+    }
+
+    @Test
+    void testForSet_shouldNotAwardTargetHit_whenTheLoadFallsShort() {
+        assertThat(MedalEvaluator.forSet(set("97.5", 10, "100", 8), List.of(prior("100", 8))))
             .noneMatch(a -> a.kind() == MedalKind.TARGET_HIT);
     }
 
