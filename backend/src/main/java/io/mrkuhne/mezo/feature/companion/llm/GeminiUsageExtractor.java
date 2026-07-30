@@ -3,23 +3,34 @@ package io.mrkuhne.mezo.feature.companion.llm;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import io.mrkuhne.mezo.feature.llmlog.service.TokenUsage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.stereotype.Component;
 
 /**
  * The ONE place that reads Gemini's response metadata (mezo-2zyu) — a pure mapper, so the adapter
  * stays about calling and the audit log stays about recording.
  *
- * <p>Spring AI's portable {@link Usage} carries only prompt/completion/total; the thinking and
- * cached counts exist solely on the provider-native payload, which is why the Google type is
- * unwrapped here and NOWHERE else.
+ * <p>Spring AI's portable {@link Usage} carries only prompt/completion/total. The thinking and
+ * cached counts live on the Google-specific {@link GoogleGenAiUsage} (typed getters — the shape the
+ * real adapter returns) or, failing that, on the raw provider payload reachable through
+ * {@link Usage#getNativeUsage()}. Both are unwrapped here and NOWHERE else.
  *
- * <p><b>Never invents a number.</b> Spring AI's defaults are lies for our purposes — an absent usage
- * block arrives as {@link EmptyUsage} (0/0) and an absent model as {@code ""}. Both are normalised to
- * {@code null} so a row can honestly say "the provider reported nothing" instead of "it reported
- * zero" (see {@link TokenUsage}).
+ * <p><b>Never invents a number.</b> Every "absent" shape Spring AI can hand us is normalised to
+ * {@code null} rather than {@code 0}, because a zero cost is indistinguishable from a genuinely free
+ * call: an absent model arrives as {@code ""}, and an absent usage block arrives either as the
+ * generic {@code EmptyUsage} or — on the real Google adapter — as {@code GoogleGenAiUsage.from(null)},
+ * i.e. a fully-populated {@code 0/0/0}. Hence the all-zero guard rather than a type check: if prompt,
+ * candidates AND total are all null-or-0, nothing was reported (a real generation always has
+ * prompt &gt; 0; Spring AI's own {@code UsageCalculator.isEmpty} uses the same total==0 heuristic).
+ *
+ * <p><b>Known limitation — tool rounds (bd mezo-58ig).</b> When Spring AI executes one or more tool
+ * rounds it aggregates usage itself: {@code UsageCalculator.getCumulativeUsage} returns a plain
+ * {@code DefaultUsage} with {@code nativeUsage = null}, so neither branch below can see the Google
+ * fields and thoughts/cached record as {@code null} — honestly "unknown", never a fabricated 0.
+ * prompt/candidates/total stay correct (they are the cumulative sums). Capturing the per-round
+ * breakdown would need an observation-level hook, which is out of scope for v1.
  */
 @Component
 public class GeminiUsageExtractor {
@@ -46,17 +57,33 @@ public class GeminiUsageExtractor {
     }
 
     private static TokenUsage tokens(Usage usage) {
-        if (usage == null || usage instanceof EmptyUsage) {
+        if (usage == null) {
             return null;
         }
+        Integer prompt = usage.getPromptTokens();
+        Integer candidates = usage.getCompletionTokens();
+        Integer total = usage.getTotalTokens();
+        if (nothingReported(prompt) && nothingReported(candidates) && nothingReported(total)) {
+            return null;
+        }
+
         Integer thoughts = null;
         Integer cached = null;
-        if (usage.getNativeUsage() instanceof GenerateContentResponseUsageMetadata google) {
-            thoughts = google.thoughtsTokenCount().orElse(null);
-            cached = google.cachedContentTokenCount().orElse(null);
+        if (usage instanceof GoogleGenAiUsage google) {
+            // The real adapter's shape on a single-round call — a legitimate 0 (thinking off, nothing
+            // cached) is kept AS 0; only a wholly absent usage block (above) becomes null.
+            thoughts = google.getThoughtsTokenCount();
+            cached = google.getCachedContentTokenCount();
+        } else if (usage.getNativeUsage() instanceof GenerateContentResponseUsageMetadata nativeUsage) {
+            thoughts = nativeUsage.thoughtsTokenCount().orElse(null);
+            cached = nativeUsage.cachedContentTokenCount().orElse(null);
         }
-        return new TokenUsage(
-            usage.getPromptTokens(), usage.getCompletionTokens(), thoughts, cached, usage.getTotalTokens());
+        return new TokenUsage(prompt, candidates, thoughts, cached, total);
+    }
+
+    /** Null and 0 are the same statement here: "the provider told us nothing about this counter". */
+    private static boolean nothingReported(Integer count) {
+        return count == null || count == 0;
     }
 
     private static String serviceTier(ChatResponseMetadata metadata) {
