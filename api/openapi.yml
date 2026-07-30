@@ -84,6 +84,10 @@ tags:
     description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
   - name: Gamification
     description: 'User progression system — XP, levels, coins, titles, and daily streaks'
+  - name: LlmUsage
+    description: >-
+      Read-only rollups of the llm_log_history audit table (mezo-2zyu) — LLM
+      call count + cost per calendar period
 paths:
   /api/auth/login:
     post:
@@ -5083,6 +5087,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/llm-usage/summary:
+    get:
+      tags:
+        - LlmUsage
+      operationId: getLlmUsageSummary
+      summary: LLM call count + cost for today / this week / this month (LlmUsage)
+      responses:
+        '200':
+          description: >-
+            Day/week/month rollups over llm_log_history (honest zeros before any
+            logged call)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LlmUsageSummaryResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -11375,3 +11394,36 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NotificationScheduleEntry'
+    LlmUsageSummaryResponse:
+      type: object
+      required:
+        - day
+        - week
+        - month
+      properties:
+        day:
+          $ref: '#/components/schemas/LlmUsagePeriod'
+        week:
+          $ref: '#/components/schemas/LlmUsagePeriod'
+        month:
+          $ref: '#/components/schemas/LlmUsagePeriod'
+    LlmUsagePeriod:
+      type: object
+      required:
+        - callCount
+        - currency
+      properties:
+        callCount:
+          type: integer
+          format: int64
+          description: number of LLM calls in the period (all statuses)
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            summed cost_usd of priced rows; null-cost rows
+            (unpriced/no-usage/error) are excluded, so this is an estimate
+        currency:
+          type: string
+          example: USD

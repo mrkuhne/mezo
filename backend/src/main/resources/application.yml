@@ -278,6 +278,9 @@ mezo:
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
     max-payload-chars: 64000
+    # Calendar zone the /api/llm-usage/summary day/week/month rollups are cut on — "today" is the
+    # user's day, not the server's UTC day (a 23:30 CET call must land in today, not tomorrow)
+    report-zone: Europe/Budapest
     # The async audit writer's pool — deliberately small; logging must never starve the request path
     executor:
       core-size: 1
