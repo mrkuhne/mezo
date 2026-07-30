@@ -116,10 +116,23 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **11th tool — `get_recipes` (recipes, mezo-xixu)**, on `FuelTools`: read-only over
   `RecipeService.list` (`@Transactional(readOnly=true)`) — a single strong `filter` match renders
   full detail off the SAME `.list` response, no separate `.get` call. No/blank `filter` → a
-  compact list (name, category, whole-recipe kcal/protein, mezo-fit score); with `filter` →
-  case-insensitive substring match against slot/category/tag/starred/fitsFor (deliberately NOT
-  the recipe name), and a single strong match renders the full detail (all 4 macros + fit score +
-  ingredient lines) instead of the list. Capped at 5 rendered/audited recipes either way.
+  compact list (name, category, whole-recipe kcal/protein, mezo-fit score); with `filter` → a
+  **scored free-text match** (mezo-sxe): the filter is folded (lowercase + NFD accent-strip) and
+  split into tokens (1-char tokens dropped), each token weighted by the axis it hits — name (4) >
+  ingredient name (3) > slot/category/role/tag/fitsFor/starred (2). Recipes hitting EVERY token
+  win outright; only if none does do partial matches stand in, so a noisy filter still answers
+  instead of falling through to `nincs adat`. The **best** scorer (strictly ahead of the runner-up,
+  or the only one) renders the full detail (all 4 macros + fit score + ingredient lines); a tie
+  renders the list. Capped at 5 rendered/audited recipes either way.
+
+  Before mezo-sxe the filter matched slot/category/tag/starred/fitsFor only — the recipe **name**
+  was deliberately excluded, citing a `spec §R1` that does not exist anywhere in `docs/` or its
+  git history. So asking for a recipe by name (the most natural way to ask) always answered
+  `nincs adat`, ingredient names went unused despite riding in the same response, and a two-word
+  needle was matched as one substring, so `"smoothie collagen"` could never find
+  `"Collagen Smoothie"`. The `starred` axis also matched bidirectionally
+  (`keyword.contains(needle)`), making any short needle — `"cs"`, `"a"` — return every starred
+  recipe; it now answers only to a whole token.
 - **12th tool — `get_pantry` (pantry, mezo-xixu)**, also on `FuelTools`: read-only over
   `PantryService.getPantry` (splits into `ingredients`/food and `stash`/supplement+stim+med).
   `kind ∈ {food, supplement, stim, med}` (default: all kinds) lists each item's name + stock
@@ -838,7 +851,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
 | `get_medication(scope)` (mezo-xixu, merged from `get_reta_cycle`) | scope=reta (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no reta-specific naming) | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
-| `get_recipes(filter)` (mezo-xixu) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
+| `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
 | `get_growth(scope)` (mezo-xixu) | scope=skills (default): `ProgressionService.getProfile` (ungated) → account level/XP/streak from `GamificationService.getProfile` (`GAMIFICATION_SWITCH`-gated, `ObjectProvider`) + every skill with real progress (athletic/muscle/life); scope=week: `GrowthWeekService.growthWeek` (ungated) → closed quests, LIFE XP, activities, savings for the current ISO week; scope=achievements: `AchievementService.achievements` (ungated) → all 9 derive-on-read badges + persisted perk unlocks; scope=titles: `GamificationService.getProfile` → equipped + owned titles | `Growth`/`skills` or `week-{weekStart}` or `achievements` or `titles` |
 | `get_daily_practice(date)` (mezo-xixu) | `TodayQuestSource.todayStats` (port, read-only) → quest completed/total for the date; `HabitService.summary` (always "as of today", no `date` param) → perfect-chain-day counts + any habit with real 28-day signal; `IntentionService.getDay` → creed/foci/reflection for the date; `RitualService.getDay` → napzárás closed/open for the date; `TodayActivitySource.activitiesForDay` (2nd companion-owned port, impl `activity/service/DailyActivityAdapter`) → logged activities (text + XP), capped at 5. Active challenges NOT composed (`ProactiveChallengeService.getChallenges` write-transactional; a direct repository read would open a new companion→proactive cycle) | `Practice`/date |

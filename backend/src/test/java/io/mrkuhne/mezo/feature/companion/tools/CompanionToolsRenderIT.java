@@ -923,6 +923,76 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetRecipes_shouldMatchRecipeName_whenFilterIsTheName() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId()); // "Túrós tál"
+
+        // The name was deliberately excluded from the filter before mezo-sxe, so asking for a
+        // recipe BY NAME — the most natural way to ask — always returned "nincs adat".
+        assertThat(fuelTools.getRecipes("túrós tál", ctx(owner)))
+                .startsWith("Túrós tál (breakfast):").contains("Összetevők: ");
+    }
+
+    @Test
+    void testGetRecipes_shouldMatchTokensInAnyOrderAndWithoutAccents_whenFilterIsMultiWord() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId()); // "Túrós tál"
+        recipePopulator.createRecipe(owner, item.getId(), "Collagen Smoothie", "snack",
+                List.of("turmix"), false);
+
+        // The reported chat's exact miss: a two-word needle was matched as ONE substring, so
+        // "smoothie collagen" could never find "Collagen Smoothie". Tokens now match in any order,
+        // and accent-folding means the Hungarian name is findable without diacritics.
+        assertThat(fuelTools.getRecipes("smoothie collagen", ctx(owner)))
+                .startsWith("Collagen Smoothie (snack):");
+        assertThat(fuelTools.getRecipes("turos tal", ctx(owner)))
+                .startsWith("Túrós tál (breakfast):");
+    }
+
+    @Test
+    void testGetRecipes_shouldMatchIngredientName_whenFilterNamesAnIngredient() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId()); // ingredients: Méz, Túró
+        recipePopulator.createRecipe(owner, item.getId(), "Collagen Smoothie", "snack",
+                List.of("turmix"), false); // ingredients: Banán, Zabpehely
+
+        // "mit főzzek mézzel" — the ingredient names ride in the same RecipeResponse the tool
+        // already holds, so they are matchable without a single extra read.
+        assertThat(fuelTools.getRecipes("méz", ctx(owner)))
+                .startsWith("Túrós tál (breakfast):");
+    }
+
+    @Test
+    void testGetRecipes_shouldNotMatchEveryStarredRecipe_whenFilterIsAShortToken() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId(), "Collagen Smoothie", "snack",
+                List.of("turmix"), true); // starred
+
+        // Regression: the starred branch used to match BIDIRECTIONALLY (needle.contains(keyword)
+        // || keyword.contains(needle)), so any short needle that is a substring of
+        // "csillagos"/"kedvenc"/"starred" returned every starred recipe.
+        assertThat(fuelTools.getRecipes("cs", ctx(owner)))
+                .isEqualTo("Receptek — \"cs\": nincs adat");
+        // the intended keyword still works — a whole token, not a fragment
+        assertThat(fuelTools.getRecipes("kedvenc", ctx(owner)))
+                .startsWith("Collagen Smoothie (snack):");
+    }
+
+    @Test
+    void testGetRecipes_shouldRenderNincsAdat_whenFilterMatchesNothing() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId());
+
+        assertThat(fuelTools.getRecipes("pizza", ctx(owner)))
+                .isEqualTo("Receptek — \"pizza\": nincs adat");
+    }
+
+    @Test
     void testGetPantry_shouldListFoodItemWithStockAndExpiry_whenKindFood() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate expires = LocalDate.now().plusDays(5);
