@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -161,11 +162,37 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
             assertThat(data.getName()).isEqualTo("get_recovery(scope=sleep, days=3)");
             assertThat(data.getType()).isEqualTo("read");
         });
-        // progress arrives before the terminal event, never after it
-        assertThat(events.indexOf(toolEvents.getFirst())).isLessThan(events.size() - 1);
+        // The premise of mezo-280: the chip appears WHILE the answer streams. Pinning the tool frame
+        // ahead of the LAST delta — not merely ahead of 'done' — is what rules out the very
+        // behaviour this feature exists to kill: buffering every tool event and flushing the lot
+        // immediately before the terminal row.
+        int lastDeltaIndex = IntStream.range(0, events.size())
+                .filter(i -> "delta".equals(events.get(i).event()))
+                .max().orElseThrow();
+        assertThat(events.indexOf(toolEvents.getFirst())).isLessThan(lastDeltaIndex);
         assertThat(events.getLast().event()).isEqualTo("done");
         assertThat(((MessageResponse) events.getLast().data()).getTools())
                 .extracting(MessageTool::getName).containsExactly("get_recovery(scope=sleep, days=3)");
+    }
+
+    @Test
+    void testStreamMessage_shouldEmitBareToolNameWithoutParentheses_whenToolRunsWithoutArgs() {
+        UUID userId = databasePopulator.populateUser("stream-tool-noargs@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("aludtam eleget? [fake-tool:get_recovery]"))
+                .collectList().block();
+
+        // no JSON argument object -> compactArgs("{}") == "" -> the label is the BARE tool name
+        assertThat(events).filteredOn(e -> "tool".equals(e.event()))
+                .singleElement()
+                .satisfies(e -> assertThat(((StreamToolCall) e.data()).getName()).isEqualTo("get_recovery"));
+        // and the done row's chip takes the same branch — the live and final labels stay twins
+        assertThat(((MessageResponse) events.getLast().data()).getTools())
+                .extracting(MessageTool::getName).containsExactly("get_recovery");
     }
 
     @Test

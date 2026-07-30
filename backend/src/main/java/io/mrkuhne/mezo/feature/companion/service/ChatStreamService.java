@@ -73,6 +73,8 @@ public class ChatStreamService {
         // Registered BEFORE companionLlm.stream(...) is called for exactly that reason.
         audit.onCall(call -> toolSink.tryEmitNext(toolEvent(call)));
 
+        // mezo-2zyu: the adapter reads the holder EAGERLY (before the Flux is returned), so tagging
+        // the stream() call itself is enough — the deferred pipeline carries the closed-over context.
         Flux<ServerSentEvent<Object>> deltas = llmCallContextHolder.runWith(
                         new LlmCallContext("companion_chat", "stream", "conversation", conversationId),
                         () -> companionLlm.stream(turn.systemPrompt(), turn.userContent(),
