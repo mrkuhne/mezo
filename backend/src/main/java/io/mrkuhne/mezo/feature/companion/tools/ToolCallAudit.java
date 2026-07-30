@@ -6,6 +6,9 @@ import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.function.Consumer;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Per-turn tool audit collector (V0.5). One instance per chat turn, carried to the tools inside
@@ -13,6 +16,7 @@ import java.util.List;
  * decorator records every call, the tools add their data refs. Spring AI executes a turn's tool
  * calls sequentially, so no synchronization is needed.
  */
+@Slf4j
 public class ToolCallAudit {
 
     public static final String TYPE_READ = "read";
@@ -31,8 +35,28 @@ public class ToolCallAudit {
         return calls.size() >= maxCalls;
     }
 
+    /**
+     * Optional per-turn progress listener (mezo-280). The streamed path registers one to turn each
+     * recorded call into a live SSE 'tool' event; the sync path registers none. Kept to a single
+     * listener — this is a progress hook, not an event bus — and deliberately fail-safe: the audit
+     * is the authoritative record of the turn and must survive a broken listener.
+     */
+    private Consumer<ToolCallsEnvelope.ToolCall> listener;
+
+    public void onCall(Consumer<ToolCallsEnvelope.ToolCall> listener) {
+        this.listener = listener;
+    }
+
     public void recordCall(String name, String args) {
-        calls.add(new ToolCallsEnvelope.ToolCall(TYPE_READ, name, args));
+        ToolCallsEnvelope.ToolCall call = new ToolCallsEnvelope.ToolCall(TYPE_READ, name, args);
+        calls.add(call);
+        if (listener != null) {
+            try {
+                listener.accept(call);
+            } catch (RuntimeException e) {
+                log.warn("Companion tool-call listener failed for {}", name, e);
+            }
+        }
     }
 
     /** Deduped (LinkedHashSet) and capped — the first {@code maxRefs} distinct refs win. */
