@@ -1400,9 +1400,14 @@ export function computeRecipeMacrosWithOverrides(
   const sum = lines.reduce<Macros>(
     (acc, line, i) => {
       const ing = ingredients.find(x => x.id === line.refId)
-      if (!ing) return acc
-      const amount = overrides[i] ?? line.amount
-      const c = lineContribution(amount, ing.per, ing.macros)
+      // No resolvable live source (e.g. the pantry row was deleted): an UNTOUCHED line keeps the
+      // server-computed contribution it already carries, so the preview stays as accurate as it is
+      // today; an OVERRIDDEN one contributes 0 rather than inventing a rate we cannot know.
+      const c = ing
+        ? lineContribution(overrides[i] ?? line.amount, ing.per, ing.macros)
+        : (overrides[i] !== undefined
+            ? { kcal: 0, p: 0, c: 0, f: 0 }
+            : (line.contribution ?? { kcal: 0, p: 0, c: 0, f: 0 }))
       return { kcal: acc.kcal + c.kcal, p: acc.p + c.p, c: acc.c + c.c, f: acc.f + c.f }
     },
     { kcal: 0, p: 0, c: 0, f: 0 },
@@ -1515,7 +1520,18 @@ describe('RecipeOverrideRow', () => {
   it('ignores an unparseable entry and keeps the current amount', () => {
     const { onChange } = row()
     fireEvent.click(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i }))
-    fireEvent.blur(screen.getByRole('textbox', { name: /banán mennyiség/i }),)
+    const input = screen.getByRole('textbox', { name: /banán mennyiség/i })
+    fireEvent.change(input, { target: { value: 'kb. egy' } })
+    fireEvent.blur(input)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('ignores a negative entry', () => {
+    const { onChange } = row()
+    fireEvent.click(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i }))
+    const input = screen.getByRole('textbox', { name: /banán mennyiség/i })
+    fireEvent.change(input, { target: { value: '-2' } })
+    fireEvent.blur(input)
     expect(onChange).not.toHaveBeenCalled()
   })
 
