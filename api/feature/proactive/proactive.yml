@@ -460,7 +460,7 @@ components:
         id: { type: string, format: uuid }
         exerciseId: { type: string, format: uuid }
         exercise: { type: string, description: The target exercise's name }
-        type: { type: string, description: 'PR | Depth | Volume' }
+        type: { type: string, description: 'PR | Depth | Volume | overload' }
         typeLabel: { type: string, description: HU display label derived from type }
         status: { type: string, description: 'proposed | accepted | dismissed | hit | miss | inconclusive' }
         target: { type: string, description: Code-derived display string of the structured target }

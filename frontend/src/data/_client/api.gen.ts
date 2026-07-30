@@ -2089,6 +2089,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register (idempotent) this device's Web Push subscription (Notification) */
+        post: operations["registerPushSubscription"];
+        /** Remove this device's subscription (Notification) */
+        delete: operations["unregisterPushSubscription"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a fixed test notification to every registered device (Notification) */
+        post: operations["sendTestPush"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/pref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-category notification preferences, code defaults filled in (Notification) */
+        get: operations["getNotificationPrefs"];
+        /** Upsert one or more category preferences (Notification) */
+        put: operations["putNotificationPrefs"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the FE-owned recurring schedule for the given categories (Notification) */
+        put: operations["putNotificationSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4182,7 +4252,7 @@ export interface components {
             exerciseId: string;
             /** @description The target exercise's name */
             exercise: string;
-            /** @description PR | Depth | Volume */
+            /** @description PR | Depth | Volume | overload */
             type: string;
             /** @description HU display label derived from type */
             typeLabel: string;
@@ -4501,6 +4571,50 @@ export interface components {
             coinTotal: number;
             streakDays: number;
             streakAlive: boolean;
+        };
+        PushSubscriptionRequest: {
+            /** @example https://web.push.apple.com/QF... */
+            endpoint: string;
+            /** @description subscription public key, base64url */
+            p256dh: string;
+            /** @description subscription auth secret, base64url */
+            auth: string;
+            userAgent?: string | null;
+        };
+        PushTestResponse: {
+            /** @example 1 */
+            attempted: number;
+            /** @example 1 */
+            sent: number;
+        };
+        NotificationPref: {
+            /** @example gym */
+            category: string;
+            enabled: boolean;
+            leadMinutes: number;
+        };
+        NotificationPrefListResponse: {
+            prefs: components["schemas"]["NotificationPref"][];
+        };
+        NotificationPrefListRequest: {
+            prefs: components["schemas"]["NotificationPref"][];
+        };
+        NotificationScheduleEntry: {
+            /** @description ISO 1=Mon..7=Sun; null = every day */
+            weekday?: number | null;
+            /** @example 14:00 */
+            time: string;
+            category: string;
+            title: string;
+            body?: string | null;
+            deeplink: string;
+            /** @example buildProtocol */
+            source: string;
+        };
+        NotificationScheduleRequest: {
+            /** @description The categories this payload REPLACES — a category listed with no entries is cleared */
+            categories: string[];
+            entries: components["schemas"]["NotificationScheduleEntry"][];
         };
     };
     responses: never;
@@ -10475,6 +10589,213 @@ export interface operations {
             };
             /** @description GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_SAVER_LIMIT */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    registerPushSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Registered; repeating the same endpoint is a no-op */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_ERROR */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unregisterPushSubscription: {
+        parameters: {
+            query: {
+                endpoint: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed; unknown endpoint is also 204 (idempotent) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    sendTestPush: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description How many devices were attempted and how many accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushTestResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getNotificationPrefs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All 11 categories, always complete — a category with no stored row reports its code default */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPrefListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putNotificationPrefs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPrefListRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_ERROR or NOTIFICATION_UNKNOWN_CATEGORY */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putNotificationSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Replaced */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_ERROR or NOTIFICATION_UNKNOWN_CATEGORY */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

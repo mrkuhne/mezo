@@ -4937,6 +4937,152 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/subscription:
+    post:
+      tags:
+        - Notification
+      operationId: registerPushSubscription
+      summary: Register (idempotent) this device's Web Push subscription (Notification)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscriptionRequest'
+      responses:
+        '204':
+          description: Registered; repeating the same endpoint is a no-op
+        '400':
+          description: VALIDATION_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Notification
+      operationId: unregisterPushSubscription
+      summary: Remove this device's subscription (Notification)
+      parameters:
+        - name: endpoint
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 1000
+      responses:
+        '204':
+          description: Removed; unknown endpoint is also 204 (idempotent)
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/test:
+    post:
+      tags:
+        - Notification
+      operationId: sendTestPush
+      summary: Send a fixed test notification to every registered device (Notification)
+      responses:
+        '200':
+          description: How many devices were attempted and how many accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushTestResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/pref:
+    get:
+      tags:
+        - Notification
+      operationId: getNotificationPrefs
+      summary: >-
+        Per-category notification preferences, code defaults filled in
+        (Notification)
+      responses:
+        '200':
+          description: >-
+            All 11 categories, always complete — a category with no stored row
+            reports its code default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPrefListResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Notification
+      operationId: putNotificationPrefs
+      summary: Upsert one or more category preferences (Notification)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPrefListRequest'
+      responses:
+        '204':
+          description: Stored
+        '400':
+          description: VALIDATION_ERROR or NOTIFICATION_UNKNOWN_CATEGORY
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/schedule:
+    put:
+      tags:
+        - Notification
+      operationId: putNotificationSchedule
+      summary: >-
+        Replace the FE-owned recurring schedule for the given categories
+        (Notification)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationScheduleRequest'
+      responses:
+        '204':
+          description: Replaced
+        '400':
+          description: VALIDATION_ERROR or NOTIFICATION_UNKNOWN_CATEGORY
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -10380,7 +10526,7 @@ components:
           description: The target exercise's name
         type:
           type: string
-          description: PR | Depth | Volume
+          description: PR | Depth | Volume | overload
         typeLabel:
           type: string
           description: HU display label derived from type
@@ -11093,3 +11239,139 @@ components:
           type: integer
         streakAlive:
           type: boolean
+    PushSubscriptionRequest:
+      type: object
+      required:
+        - endpoint
+        - p256dh
+        - auth
+      properties:
+        endpoint:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: 'https://web.push.apple.com/QF...'
+        p256dh:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: 'subscription public key, base64url'
+        auth:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: 'subscription auth secret, base64url'
+        userAgent:
+          type: string
+          maxLength: 300
+          nullable: true
+    PushTestResponse:
+      type: object
+      required:
+        - attempted
+        - sent
+      properties:
+        attempted:
+          type: integer
+          example: 1
+        sent:
+          type: integer
+          example: 1
+    NotificationPref:
+      type: object
+      required:
+        - category
+        - enabled
+        - leadMinutes
+      properties:
+        category:
+          type: string
+          minLength: 1
+          maxLength: 24
+          example: gym
+        enabled:
+          type: boolean
+        leadMinutes:
+          type: integer
+          minimum: 0
+          maximum: 240
+    NotificationPrefListResponse:
+      type: object
+      required:
+        - prefs
+      properties:
+        prefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationPref'
+    NotificationPrefListRequest:
+      type: object
+      required:
+        - prefs
+      properties:
+        prefs:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/NotificationPref'
+    NotificationScheduleEntry:
+      type: object
+      required:
+        - time
+        - category
+        - title
+        - deeplink
+        - source
+      properties:
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          nullable: true
+          description: ISO 1=Mon..7=Sun; null = every day
+        time:
+          type: string
+          minLength: 5
+          maxLength: 5
+          example: '14:00'
+        category:
+          type: string
+          minLength: 1
+          maxLength: 24
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 300
+          nullable: true
+        deeplink:
+          type: string
+          minLength: 1
+          maxLength: 200
+        source:
+          type: string
+          minLength: 1
+          maxLength: 24
+          example: buildProtocol
+    NotificationScheduleRequest:
+      type: object
+      required:
+        - categories
+        - entries
+      properties:
+        categories:
+          type: array
+          minItems: 1
+          description: >-
+            The categories this payload REPLACES — a category listed with no
+            entries is cleared
+          items:
+            type: string
+            minLength: 1
+            maxLength: 24
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationScheduleEntry'

@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-07-24
+updated: 2026-07-29
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -14,7 +14,7 @@ related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 
 # Intention — Daily Creed, Foci & Evening Reflection
 
-> A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced as the **`IntentionBanner`** at the top of Today (`/today`, under `GreetingHeader`), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
+> A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced on Today (`/today`) as a one-line **creed chip** on the morning/day faces and an **evening reflection block** on the Este face (both `IntentionBanner`, since `mezo-j7u4` split into two explicit variants), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
 
 ## 1. Summary
 
@@ -24,30 +24,40 @@ related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 - up to **3 daily foci** — concrete one-line intentions for *this* day (the prominent, display-font lines);
 - a **holistic evening reflection** — one `yes|partial|no` answer over the whole day.
 
-It lives in its **own `feature/intention` domain** (not piggybacked on the activity log or `goal.identityFrame`) so the home-screen reads are deterministic and cleanly testable. It surfaces on three seams: the **`IntentionBanner`** on Today, two **DERIVED** habits in the existing chains (`daily_intention` MORNING / `intention_reflect` EVENING), and a **DERIVED** `growth_intention` GROWTH quest. Crucially it adds **no new progression source** — every XP amount rides the existing **HABIT** + **QUEST** completion tails ([habit.md](habit.md), [growth.md](growth.md)); the intention endpoints award nothing themselves. Only the **first** focus of the day earns the reward (habit + quest + XP); extra foci are free (no XP farming — ADR 0010). The LIFE skill is **`mindset` (Szemlélet)**.
+It lives in its **own `feature/intention` domain** (not piggybacked on the activity log or `goal.identityFrame`) so the home-screen reads are deterministic and cleanly testable. It surfaces on three seams: the **`IntentionBanner`** on Today (two variants), two **DERIVED** habits in the existing chains (`daily_intention` MORNING / `intention_reflect` EVENING), and a **DERIVED** `growth_intention` GROWTH quest. Crucially it adds **no new progression source** — every XP amount rides the existing **HABIT** + **QUEST** completion tails ([habit.md](habit.md), [growth.md](growth.md)); the intention endpoints award nothing themselves. Only the **first** focus of the day earns the reward (habit + quest + XP); extra foci are free (no XP farming — ADR 0010). The LIFE skill is **`mindset` (Szemlélet)**.
 
-Status per layer: **backend** ✅ (`feature/intention` — 3 tables, `IntentionService`, `IntentionController`, `IntentionProperties`, switch-gated), **FE real** ✅ (`IntentionBanner` + sheets over the real endpoints), **FE mock** ✅ (deterministic seed: a creed + 2 foci + no reflection; first-focus mock also moves the account XP total). Design decisions are spec §2 **D1–D6**.
+Status per layer: **backend** ✅ (`feature/intention` — 3 tables, `IntentionService`, `IntentionController`, `IntentionProperties`, switch-gated), **FE real** ✅ (both `IntentionBanner` variants + the sheets over the real endpoints), **FE mock** ✅ (deterministic seed: a creed + 2 foci + no reflection; first-focus mock also moves the account XP total). Design decisions are spec §2 **D1–D6**.
 
 ## 2. User-facing behavior
 
 Intention has no page of its own — it is exercised through three surfaces:
 
-### `IntentionBanner` on Today (`features/today/components/IntentionBanner.tsx`)
-Mounted directly **under `GreetingHeader`, above `DayArc`** (`TodayPage.tsx:54`). Signature look: a `✦` mark + `VEZÉRELV` eyebrow. **Five states** (`daypartNow()`-aware):
+### `IntentionBanner` on Today — two variants (`features/today/components/IntentionBanner.tsx`)
 
-1. **No creed** — the eyebrow + a prompt ("Fogalmazd meg az irányt…") + a `+ Vezérelv megírása` CTA (opens `CreedSheet`).
-2. **Creed, no focus** — the creed in quiet italics (`„…"`) + a `szerkeszt` button, a divider, then `Mi ma a fókuszod?` + a `+ Mai fókusz` CTA (opens `IntentionSheet`).
-3. **Foci set** — a `Ma szándékaim {n} / {cap}` eyebrow, the foci as `◆`-marked display-font lines, and a `+ Fókusz` ghost button until the cap; at the cap it shows the hint „Elérted a napi {cap} fókuszt — a kevesebb néha több."
-4. **Evening (reflect row)** — in the `este` daypart, with foci present, a `Szándékkal élted a napot?` question + three inline buttons **`Igen` / `Részben` / `Nem`** (write `reflect(value)` directly — no sheet).
-5. **Reflected** — once answered, the row collapses to `✓ {label} — a mai szándékodra reflektáltál.`
+Since the daypart-faces re-composition (`mezo-j7u4`, [ADR 0014](../decisions/0014-today-daypart-faces.md)) the component takes an explicit **`variant: 'chip' | 'reflect'`** prop and **the daypart decision moved OUT of it into the caller** — the face that mounts it. The full-card `.intent*` banner is gone (its CSS retired); the day half became a compact `.creedchip`, the evening half kept the `.reflect*` block. The five states survive, redistributed:
 
-**Honest ghost:** renders `null` when the day is still unresolved (real mode before data / switch off) — `isPending && no foci && no creed` (`IntentionBanner.tsx:19`). The evening eyebrow reads „Ma szándékaim voltak" (past tense) vs the daytime „Ma szándékaim".
+**`variant="chip"` — the creed chip** (mounted by `FaceMorning.tsx:53` and `FaceDay.tsx:64`, i.e. the 🌅 Reggel and ☀️ Nap faces). One `.creedchip` row: a `✦` mark, the creed in quiet italics, a `{n} / {cap}` counter, and one CTA:
+1. **No creed** — the prompt + a CTA opening `CreedSheet`.
+2. **Creed, no focus** — the creed + `+ Mai fókusz` (opens `IntentionSheet`).
+3. **Foci set** — the counter plus **one `◆`-marked `.creedchip-fx` row per live focus** underneath the chip, and `+ Mai fókusz` until the cap. **This row list is load-bearing, not decoration:** without it the feature is write-only — you add a focus, save, and it appears nowhere on Today. (It was: the first cut of the chip dropped the foci, and mutating `onSave` to a no-op left all 202 `features/today` tests green. Caught in review, fixed, now covered.)
+   The **creed text itself is the `CreedSheet` opener** (`button.creedchip-tx`, a button stripped back to plain text) — the retired banner's separate `szerkeszt` affordance. Without it `CreedSheet`/`setCreed` would be **unreachable app-wide**, since the chip is the creed's only surface.
+   The foci rows are deliberately **local markup, not `ItemRow`s**: a focus is one line of the user's own prose with no icon, subtitle or action, so `ItemRow`'s contract would force a 34 px emoji shield, bold the prose as a title and leave both trailing slots empty. (Contrast the habit rows, where `ItemRow` mapped 1:1 — the judgement is about when *not* to reuse a primitive.)
 
-### Two DERIVED habits in `RoutineCard` ([habit.md](habit.md))
+**`variant="reflect"` — the evening reflection** (mounted by `FaceEvening.tsx:59`, the 🌙 Este face, below the `TodoCard`). A `.reflect` block:
+4. **Reflect row** — `Szándékkal élted a napot?` + three inline buttons **`Igen` / `Részben` / `Nem`** (write `reflect(value)` directly — no sheet).
+5. **Reflected** — once answered, collapses to `✓ {label} — a mai szándékodra reflektáltál.`
+
+The reflect variant **ghosts when there is nothing to reflect on** (no creed, or no foci) — a stricter guard than the chip's, and its own: the evening face mounts it unconditionally, so the check has to live in the component.
+
+**Honest ghost (both variants):** renders `null` when the day is still unresolved (real mode before data / switch off) — `isPending && no foci && no creed` (`IntentionBanner.tsx:26`).
+
+**Note on the timing seam:** which variant a user sees is now decided by the **sleep-anchored face model** (`features/today/logic/dayFace.ts`, off `useSleepGoal()`'s wake/bed) rather than by `daypartNow()`'s fixed 4–11 / 12–17 / 18–3 bands. A consequence of „act-anywhere": selecting the **Este** pill at 16:00 shows the reflection, and selecting **Reggel** at 22:00 shows the chip — deliberate, and the same retroactive affordance every other Today row gained.
+
+### Two DERIVED habits in the chains ([habit.md](habit.md))
 - **`daily_intention`** (MORNING, position 7, „Napi szándék", anchor „reggeli rutin után", xp 10) — its `Logolás` button opens `IntentionSheet` (add a focus). The habit completes **derived** off `intention_focus_set` (today has ≥ 1 focus), never self-claimed.
 - **`intention_reflect`** (EVENING, position 3, „Szándékkal éltem?", anchor „konyhazárás után", xp 5) — its button opens a tiny `ReflectSheet` (the 3 choices), completing derived off `intention_reflected` (today's reflection is set).
 
-Both map to the `mindset` LIFE skill. The CTA kinds are `intention-sheet` / `intention-reflect` in `features/today/logic/habitAction.ts` (the `sleep-sheet`/`meal-sheet` precedent — the sheet is the honest log surface, the habit stays DERIVED).
+Both map to the `mindset` LIFE skill. The CTA kinds are `intention-sheet` / `intention-reflect` in `features/today/logic/habitAction.ts` (the `sleep-sheet`/`meal-sheet` precedent — the sheet is the honest log surface, the habit stays DERIVED); since `mezo-j7u4` both are **dispatched by `TodayPage`'s `act()`** (`TodayPage.tsx:243-244`) from the habit's row on its own daypart face, rather than by the retired `RoutineCard`.
 
 ### One DERIVED `growth_intention` quest ([growth.md](growth.md))
 A GROWTH-slot daily quest („Fogalmazd meg a mai szándékod", xp 20, `metric: intention_focus_set`) that completes derived on the same focus signal via `QuestEvaluator`.
@@ -55,7 +65,7 @@ A GROWTH-slot daily quest („Fogalmazd meg a mai szándékod", xp 20, `metric: 
 ## 3. Architecture & data flow
 
 ```
-IntentionBanner (Today) / RoutineCard (habit CTAs)
+IntentionBanner chip+reflect (Today faces) / TodayPage act() (habit CTAs)
   → useIntentionDay(date) / useIntentionActions(date)   (@/data/hooks)
       mock: mockIntentionDay seed (+ awardGamificationEvent on the FIRST focus only)
       real: intentionApi → GET /api/intention/day/{date}
@@ -110,10 +120,10 @@ Errors go through `SystemRuntimeErrorException` + `SystemMessage` (codes in `bac
 
 All inbound edges are **pure reads** — habit/quest depend on intention; intention depends on neither (`feature_slices_are_cycle_free` holds).
 
-- **← Habit** (`HabitEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` + `DailyIntentionRepository` directly (plain JPA beans, always present — the `MealItemRepository` cross-feature-read precedent) and gains two metrics, both in `INTRADAY_METRICS`: **`intention_focus_set`** (today's live focus count ≥ 1) and **`intention_reflected`** (today's `daily_intention.reflection` non-null). The `daily_intention` / `intention_reflect` catalog habits complete derived off these. RoutineCard opens `IntentionSheet` / `ReflectSheet`. Contract: the two metric signals + the `mindset` LIFE skill. See [habit.md §3/§5](habit.md).
+- **← Habit** (`HabitEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` + `DailyIntentionRepository` directly (plain JPA beans, always present — the `MealItemRepository` cross-feature-read precedent) and gains two metrics, both in `INTRADAY_METRICS`: **`intention_focus_set`** (today's live focus count ≥ 1) and **`intention_reflected`** (today's `daily_intention.reflection` non-null). The `daily_intention` / `intention_reflect` catalog habits complete derived off these. `TodayPage`'s `act()` opens `IntentionSheet` / `ReflectSheet` from the habit's row. Contract: the two metric signals + the `mindset` LIFE skill. See [habit.md §3/§5](habit.md).
 - **← Quest** (`QuestEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` and gains the **`intention_focus_set`** case for the DERIVED `growth_intention` GROWTH quest. Contract: the focus signal + the `mindset` skill. See [growth.md §4](growth.md).
 - **→ Progression:** **none directly** — intention writes no `level_up_event`; XP lands only through the **HABIT** + **QUEST** award tails already in place (`ProgressionService.applyHabit` / `applyQuest`).
-- **→ Today:** `IntentionBanner` at the top of `/today` reads `useIntentionDay(localDateString())`; no change to the greeting/day-arc data. See [today.md §2](today.md).
+- **→ Today:** both `IntentionBanner` variants read `useIntentionDay(localDateString())` themselves (the component owns its data; the faces pass only `variant`). The chip rides the Reggel + Nap faces, the reflection the Este face. `DayArc` no longer exists to sit above/below. See [today.md §2](today.md).
 - **↔ Account progression / `AppHero` (mock-mode side-effect):** the first-focus mock write calls `awardGamificationEvent({type:'HABIT', xpOverride:10})` so the account XP ledger moves in an offline demo (one more call site of the mock account-XP precedent, [growth.md §2](growth.md)); real mode never calls it (account XP is derived from the profile). Foci 2–3 award nothing in either mode.
 
 ## 6. How to use it (consume)
@@ -129,7 +139,7 @@ await addFocus('Ma jelen leszek minden beszélgetésben')         // 409 INTENTI
 await reflect('partial')                                        // yes | partial | no
 ```
 
-- **Ghost-guard:** render nothing while `isPending && data.foci.length === 0 && !data.creed` (real mode before data / switch off) — the `IntentionBanner` honest ghost.
+- **Ghost-guard:** render nothing while `isPending && data.foci.length === 0 && !data.creed` (real mode before data / switch off) — the `IntentionBanner` honest ghost, shared by both variants; `variant="reflect"` additionally ghosts without a creed **or** without foci.
 - Never import `intentionApi` / `mockIntentionDay` directly — go through `@/data/hooks`.
 - The cap is enforced both server-side (409) and, in mock, by an under-cap check before the optimistic patch; the banner simply hides `+ Fókusz` at the cap.
 
@@ -148,12 +158,12 @@ await reflect('partial')                                        // yes | partial
   - `IntentionDerivedIT` — `intention_focus_set` / `intention_reflected` satisfy the habit metrics after a focus / reflection.
   - `IntentionEntityIT` — owner-scoped soft-delete round-trip.
   - **Sibling counts:** `HabitCatalogIT` / `QuestCatalogIT` cover the +2 habits / +1 quest; `HabitApiIT` + `HabitServiceIT` were updated for the new chain sizes (MORNING **7**, EVENING **5**, catalog **12**) and the perfect-day chain now includes `daily_intention` / `intention_reflect`.
-- **FE** (both modes green): `data/intention/intentionHooks.test.tsx` (dual-mode read; mock cache-patch + first-focus-only `awardGamificationEvent`; real invalidation fan-out) and `features/today/components/IntentionBanner.test.tsx` (the five state branches + daypart reflect row). Sheet/RoutineCard coverage under `features/today`.
+- **FE** (both modes green): `data/intention/intentionHooks.test.tsx` (dual-mode read; mock cache-patch + first-focus-only `awardGamificationEvent`; real invalidation fan-out) and `features/today/components/IntentionBanner.test.tsx` (both variants' state branches + the foci rows the write path depends on). Sheet coverage and the Today-side composition (which face mounts which variant) live under `features/today`.
 - **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test`; `cd backend && ./mvnw clean test -Dtest='Intention*IT,Habit*IT,QuestApiIT,QuestCatalogIT' -DargLine=-Xmx3g`.
 
 ## 9. Decisions, gotchas & deferred
 
-- **Decisions (spec §2 D1–D6):** standing creed + daily foci (D1); morning set + evening reflect mapping onto the two habit chains (D2); own `feature/intention` domain, not the activity log / goal identity (D3); short list, max 3, holistic single reflection, first-focus-earns (D4); **no new progression source** — HABIT + QUEST tails, skill `mindset` (D5); `IntentionBanner` at the top of Today, five states (D6). Tone: ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).
+- **Decisions (spec §2 D1–D6):** standing creed + daily foci (D1); morning set + evening reflect mapping onto the two habit chains (D2); own `feature/intention` domain, not the activity log / goal identity (D3); short list, max 3, holistic single reflection, first-focus-earns (D4); **no new progression source** — HABIT + QUEST tails, skill `mindset` (D5); `IntentionBanner` on Today, five states (D6 — **the placement half was superseded by [ADR 0014](../decisions/0014-today-daypart-faces.md)**: the five states are split across a `chip` variant on the Reggel/Nap faces and a `reflect` variant on the Este face; no state was lost). Tone: ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).
 - **Gotcha — the focus cap is service-only.** `intention_focus` has no DB row-count constraint; the max-3 is enforced in `IntentionService.addFocus` (409) and echoed as `focusCap` in `getDay`. A direct insert would bypass it — intentional (spec §3).
 - **Gotcha — only the FIRST focus earns.** Foci 2–3 are free by design (no XP farming, ADR 0010). In mock mode the account-XP award is gated on `current.foci.length === 0`; real mode simply completes the habit/quest once (idempotent per `habit_day.id` / quest id).
 - **Gotcha — no XP in the intention endpoints.** All XP is derived by the habit/quest evaluators reading the intention repos; the intention writes only invalidate the habit/quest/profile query keys so the FE reflects it.
@@ -167,6 +177,6 @@ await reflect('partial')                                        // yes | partial
 - **Catalog:** `content/habit-catalog.json` (`daily_intention` MORNING/pos7/xp10 + `intention_reflect` EVENING/pos3/xp5) · `content/quest-catalog.json` (`growth_intention` GROWTH/xp20).
 - **Contract:** `api/feature/intention/intention.yml` (tag `Intention`, 5 endpoints, `IntentionDayResponse`/`IntentionCreedResponse`/`IntentionFocusResponse`/`SetCreedRequest`/`AddFocusRequest`/`ReflectRequest`).
 - **FE data:** `frontend/src/data/intention/{intentionApi,intentionMock,intentionHooks}.ts` (+ barrel line in `data/hooks.ts:37`; types `Reflection`/`IntentionFocus`/`IntentionDay` in `data/types.ts`).
-- **FE UI:** `frontend/src/features/today/components/IntentionBanner.tsx` (mounted `TodayPage.tsx:54`) · `features/today/sheets/{IntentionSheet,CreedSheet,ReflectSheet}.tsx` · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds) · `.intent-*`/`.reflect`/`.fx-*` CSS in `prototype.css`.
+- **FE UI:** `frontend/src/features/today/components/IntentionBanner.tsx` (`variant="chip"` mounted by `FaceMorning.tsx:53` + `FaceDay.tsx:64`; `variant="reflect"` by `FaceEvening.tsx:59`) · `features/today/sheets/{IntentionSheet,CreedSheet,ReflectSheet}.tsx` · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds, dispatched by `TodayPage`'s `act()`) · CSS: **`.creedchip*`** (the new chip family) + the surviving `.reflect*` block + `.intent-creed` (still used by `IntentionSheet`'s creed quote) — the rest of `.intent-*` and the `.fx-*` foci list are **deleted** (`mezo-j7u4`), see [`_platform-design-system.md` §3](_platform-design-system.md).
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/intention/{IntentionApiIT,IntentionServiceIT,IntentionDerivedIT,IntentionEntityIT}.java` + `support/populator/IntentionPopulator.java` · `frontend/src/data/intention/intentionHooks.test.tsx` + `frontend/src/features/today/components/IntentionBanner.test.tsx`.
 - **Docs:** spec [`docs/superpowers/specs/2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md) · ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).

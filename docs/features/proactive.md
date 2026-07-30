@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-07-24
+updated: 2026-07-29
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,7 +13,9 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
-related: [companion, today, insights, train, _platform-api-backend]
+  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
+related: [companion, today, insights, train, _platform-api-backend, _platform-notifications]
 ---
 
 # Proactive layer (briefing, weekly prose, heartbeat, predictions) — Feature Documentation
@@ -53,8 +55,11 @@ related: [companion, today, insights, train, _platform-api-backend]
 > a **write path** (`POST /api/proactive/experiment/{id}/decision` L2 accept/dismiss + `POST …/propose`),
 > a deterministic `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a
 > two-cron `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS`
-> ghost). **The proactive epic (`mezo-h4wp`, all 8 slices B1.1→B1.2→W1→W2→H1→P1→P2, plus H2 Web Push
-> deferred) is COMPLETE** — every prose/forecast Insights surface is honest and real.
+> ghost). **The proactive epic (`mezo-h4wp`, all 8 slices B1.1→B1.2→W1→W2→H1→P1→P2) is COMPLETE, and
+> so is `mezo-h4wp.6` (H2 Web Push)** — N1 delivery spine + N2 dispatcher + N3 FE-schedule snapshot
+> all shipped 2026-07-29, and a real push reached Daniel's iPhone from the k3s backend that same day
+> (confirmed). Every prose/forecast Insights surface is honest and real, and it now reaches Daniel's
+> lock screen too — see [`_platform-notifications.md`](_platform-notifications.md).
 
 ## 1. Summary
 
@@ -339,7 +344,9 @@ evaluator**. Design of record:
 [`docs/superpowers/specs/2026-07-07-workout-challenges-design.md`](../superpowers/specs/2026-07-07-workout-challenges-design.md).
 
 - **A seventh owned table** — `challenge` (UUID PK, `created_by`, soft-delete; `template_session_id`
-  + `workout_date` + `exercise_id` = the target, `type` = `PR`/`Depth`/`Volume` (CHECK), `status` =
+  + `workout_date` + `exercise_id` = the target, `type` = `PR`/`Depth`/`Volume`/**`overload`** (CHECK,
+  extended by `202607280641_mezo-gj42` below — the released `202607072100` changeset itself stays
+  untouched), `status` =
   `proposed`/`accepted`/`dismissed`/`hit`/`miss`/`inconclusive` (CHECK), structured targets
   `target_weight_kg?`/`target_reps?`/`target_sets?`/`target_rir?`, **`confidence numeric(4,3)`
   NULLABLE** = „tanulom", typed-jsonb `refs`, `outcome text` + **`outcome_good boolean` NULLABLE**
@@ -385,6 +392,36 @@ evaluator**. Design of record:
   `useChallengeActions()` (`data/train/challengeHooks.ts`); the prep carousel renders the live list,
   „⚔️ Elfogadom" (pre-bxpg: „Vállaljuk") is a real L2 decision, confidence-null reads „tanulom", the `tools` chips are hidden in
   live, and resolved challenges show the outcome chip (✓/◯/◌). Details: [train.md §Active workout](train.md).
+- **Progressive Overload Plan 3 (`mezo-gj42`) — a deterministic fourth type, `overload`, no LLM.**
+  `OverloadChallengeGenerator` (`feature/proactive/service/OverloadChallengeGenerator.java`, same
+  COMPANION+PROACTIVE gate) reads the day's already-computed per-exercise `ProgressionSignal` off
+  `WorkoutService.getToday` (no duplicated deload/intensity logic) and picks the **biggest recommended
+  jump** — the largest `+kg` (weight lever), else the largest meaningful `+rep` (rep lever, ≥1);
+  deload/no-jump/not-today/non-owned-template all resolve to none (honest `[]`). Idempotent per (user,
+  template day, date); persists ONE `type='overload'` row (title `"⚡ Túlterhelés · {exercise}"`, `why`
+  = the engine's HU rationale, `confidence` always null — deterministic, not learned). **Served as a
+  guaranteed +1** — `ProactiveChallengeService.getChallenges` calls it via a SEPARATE
+  `overloadChallengeGenerator.generate(...)`, appended to the LLM `ChallengeGenerator`'s output and
+  INDEPENDENT of `max-per-workout`, so it's never crowded out. **Gotcha — the `isOwnedTemplate`
+  guard:** the generator delegates day-resolution to `getToday`, which **404s** on a non-owned/foreign
+  `templateSessionId` (the LLM generator's grounding gate returns `[]` silently for the same case); a
+  caught exception can't rescue this because `generate` is itself `@Transactional` and joins the
+  ambient tx, so the 404 marks it rollback-only (`UnexpectedRollbackException` on commit).
+  `ProactiveChallengeService.isOwnedTemplate` (a faithful mirror of `WorkoutService.
+  ownedTemplateOrThrow`) checks ownership BEFORE calling, preserving the documented "honest `[]`, never
+  404" contract. **Outcome = a PR mirror** — its own `ChallengeOutcomeEvaluator` case, null-weight
+  tolerant: hit ⇔ a logged set with `reps ≥ targetReps AND (targetWeightKg == null OR weight ≥
+  targetWeightKg)` (the rep-lever case has no weight target); no logged sets ⇒ inconclusive; flows
+  through the SAME accepted-only + completion-gated + `ChallengeJob` backstop path, unchanged.
+  **Display:** `ChallengeDisplay.typeLabel(overload) = "⚡ Túlterhelés"`, target `"{kg} kg × {reps}"`
+  or, weightless, `"{reps} ismétlés"` — renders through the UNCHANGED `ChallengesCarousel`/
+  `ChallengeCard` (FE only added `'overload'` to the `ChallengeType` union + a mock fixture,
+  `ch-overload`). `confidence=null` reuses the existing „tanulom" chip (a known minor copy nuance —
+  deterministic isn't really "still learning" — deliberately not fixed, keeping `ChallengeCard`
+  type-agnostic). **DB:** `ck_challenge_type` extended to `('PR','Depth','Volume','overload')` via
+  `202607280641_mezo-gj42_challenge_overload_type.sql` (drop+recreate). **Type catalog is now PR /
+  Depth / Volume / overload — `Tempo` still deferred** (no logged tempo to honestly evaluate against).
+  Details: [train.md §2](train.md).
 
 **Status per layer:**
 
@@ -407,7 +444,7 @@ evaluator**. Design of record:
 | Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
 | Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); lazy-on-prep `ChallengeGenerator`; deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` outcome-cron backstop (three-switch). |
 | Frontend (ActiveWorkoutPage challenge surface) | 🟢 HBWI | `useChallenges()`/`useChallengeActions()` (`data/train/challengeHooks.ts`); `ActiveWorkoutPage` prep feeds the live list into `ChallengesCarousel`, accepted map + `decide()` from server status in live (local toggle in mock, byte-parity); `ChallengeCard` honest states — „tanulom" on null confidence, tools hidden in live, `hit/miss/inconclusive` outcome chip + line with the accept/skip row hidden. |
-| **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push deferred** (pure delivery infra — see the roadmap). Every prose/forecast Insights + Today surface is honest and real. |
+| **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push is also shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29 — a real push reached Daniel's iPhone; full detail in [`_platform-notifications.md`](_platform-notifications.md)). Every prose/forecast Insights + Today surface is honest and real — and now reaches the lock screen too. |
 
 **Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
@@ -894,7 +931,8 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   session), `workout_date date not null` (scopes a re-used weekly template to one day), `exercise_id
   uuid not null fk→exercise(id)` (the **TEMPLATE** exercise the challenge targets — logged sets FK
   straight back to it, no instance mapping), `exercise_name varchar(120)` (denormalized at generation),
-  `type varchar(10) not null` (CHECK `PR|Depth|Volume`), `status varchar(12) not null default
+  `type varchar(10) not null` (CHECK `PR|Depth|Volume|overload` — extended by the
+  `202607280641_mezo-gj42` migration), `status varchar(12) not null default
   'proposed'` (CHECK `proposed|accepted|dismissed|hit|miss|inconclusive`), `risk varchar(4) default
   'low'` (CHECK `low|mid`, qualitative — not a fabricated number), `title`/`why`/`glory`, the
   **structured targets** `target_weight_kg numeric(6,2)?` / `target_reps int?` / `target_sets int?` /
@@ -1279,9 +1317,13 @@ Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoin
   **write path** (`ProactiveExperimentService.decide` — fetch-owned-or-404 → state-guard 409 →
   mutate, the companion `PatternService` idiom) is the template for any future proactive L2 surface.
   **The `PHASE3_TAB_IDS` set is now empty** — every Insights tab is real.
-- **The proactive epic is COMPLETE (all 8 slices).** The only deferred item is **H2 Web Push** (pure
-  delivery infra — VAPID SealedSecret on k3s + `push_subscription` + the SW push handler; the content
-  it would deliver, the heartbeat/briefing, already exists). New proactive surfaces belong to the
+- **The proactive epic is COMPLETE (all 8 slices), and so is `mezo-h4wp.6` (H2 Web Push).** N1
+  (delivery spine — VAPID + `push_subscription` + the SW push handler), N2 (the per-minute
+  `NotificationDispatchJob` + `notification_pref`/`push_log` + categories 1-9), and N3
+  (`notification_schedule` + the FE preview header + categories 10-11) all shipped 2026-07-29 — the
+  heartbeat/briefing/weekly/memoir prose this epic generates now reaches Daniel's iPhone with the app
+  closed, not only the in-app surfaces. Full design + data model + gotchas:
+  [`_platform-notifications.md`](_platform-notifications.md). New proactive surfaces belong to the
   deferred-signals epic (spec §1: vulnerable/niggle sources, crisis/drift, opportunity scanner,
   anniversaries) — map it companion-style when picked up. Any new surface: add a sibling `*Generator`
   + table + `*.yml` fragment in `feature/proactive/`, gated on the same dual switch; smart-tier
@@ -1641,7 +1683,9 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   (`target`, `typeLabel`) is DERIVED in code (`ChallengeDisplay`). A proposal missing its type's
   required fields (PR: weight+reps · Depth: `targetRir` · Volume: `targetSets`) is **dropped** as
   unevaluatable (the P1 "drop unvalidatable rows" precedent). Type catalog **v1 = PR/Depth/Volume;
-  Tempo deferred** (no tempo is logged, so it can't be honestly evaluated).
+  Tempo deferred** (no tempo is logged, so it can't be honestly evaluated) — extended in Plan 3
+  (`mezo-gj42`) to add `overload` (deterministic, always emits complete weight/rep targets, so no
+  validation-drop needed).
 - **(ff) A NEW set-level `ChallengeOutcomeEvaluator` — NOT the shared `MetricWindowEvaluator`.** A
   challenge is judged from `exercise_set` rows (weight/reps/rir/count), not a daily metric window, so
   the P1/P2 evaluator does not apply. Only `accepted` challenges are ever evaluated; **no logged sets
@@ -1659,10 +1703,12 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   an implicit converter for EVERY String property and corrupt the sibling responses — hence the helpers
   are a separate class.
 
-- **Epic complete — only H2 Web Push deferred.** All eight slices shipped
-  (B1.1→B1.2→W1→W2→H1→P1→P2). **H2 (Web Push)** stays deferred — pure delivery infra (VAPID
-  SealedSecret on k3s, `push_subscription`, the SW push handler); the content it would push (heartbeat,
-  briefing-ready) already exists, so it can slide indefinitely. `PHASE3_TAB_IDS` is now empty. The
+- **Epic complete, and H2 Web Push with it.** All eight slices shipped
+  (B1.1→B1.2→W1→W2→H1→P1→P2), and **H2 (`mezo-h4wp.6`) is no longer deferred** — N1 (delivery spine)
+  + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3 (`notification_schedule` +
+  preview header + categories 10-11) all shipped 2026-07-29, and a real push reached Daniel's iPhone
+  from the k3s backend that same day (confirmed). Full detail:
+  [`_platform-notifications.md`](_platform-notifications.md). `PHASE3_TAB_IDS` is now empty. The
   D′ score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to
   backend config (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
 
@@ -1694,7 +1740,7 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentOutcomeService.java` — **P2** deterministic outcome eval (active window-closed → completed via `MetricWindowEvaluator`; null = inconclusive).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveChallengeService.java` — **HBWI** the challenge read + WRITE path (`getChallenges` = list · lazy generate (`date==today`) · lazy resolve accepted; `decide` with the 404/409 guards; dismissed excluded).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume hit/miss; no logged sets ⇒ inconclusive (`outcome_good null`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume/overload hit/miss (`overload` = the null-weight-tolerant PR mirror); no logged sets ⇒ inconclusive (`outcome_good null`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeJob.java` — **HBWI** single `@Scheduled` outcome-backstop cron (daily 06:25 `runOutcome` → `evaluateDue`, per-user isolation, three-switch-gated `CHALLENGE_JOB_SWITCH`); NO propose cron.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.

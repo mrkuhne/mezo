@@ -22,6 +22,11 @@ export function evaluateChallenge(c: Challenge, logged: LoggedSet[]): ChallengeP
     }
     case 'Volume':
       return c.targetSets != null && logged.length >= c.targetSets ? 'hit' : 'miss'
+    case 'overload':
+      return logged.some(
+        (s) => c.targetReps != null && s.reps >= c.targetReps
+          && (c.targetWeightKg == null || s.weight >= c.targetWeightKg),
+      ) ? 'hit' : 'miss'
     default:
       return 'inconclusive'
   }

@@ -61,6 +61,29 @@ test('today volleyball row shows the "log" chip, or the done chip once logged', 
   expect(screen.queryByText('log')).not.toBeInTheDocument()
 })
 
+// The row's `.stag` used to be a hardcoded `stag-sport`, so a cross/TRX row was
+// painted in the volleyball red while its DayStrip dot was amber/lavender — and
+// `.stag-cross`/`.stag-trx` were dead CSS (mezo-9bbc final review, I1).
+test('a cross / TRX row wears its own modality tone, never the volleyball one', () => {
+  const slot = (sport: string, time: string) =>
+    ({ day: 'Kedd', time, duration: 60, court: '', intensity: 'közepes', role: 'edzés', sport }) as never
+  const { container } = render(
+    <WeeklyDayRow
+      // isToday ⇒ the not-yet-logged `log` chip renders too, so its tone is asserted as well
+      agenda={{ day: 'Kedd', isToday: true, gym: null, sport: [slot('cross', '12:00'), slot('trx', '18:00')], running: [] }}
+      onStartGym={() => {}} onLogSport={() => {}}
+    />,
+  )
+  expect(container.querySelector('.stag-cross')).toHaveTextContent('CROSS')
+  expect(container.querySelector('.stag-trx')).toHaveTextContent('TRX')
+  // no volleyball tone leaks onto either row
+  expect(container.querySelector('.stag-sport')).toBeNull()
+  const logChips = container.querySelectorAll('.log-chip')
+  expect(logChips).toHaveLength(2)
+  expect(logChips[0]).toHaveClass('stag-cross')
+  expect(logChips[1]).toHaveClass('stag-trx')
+})
+
 it('a done gym day is tappable and calls onReviewGym (not onStartGym)', () => {
   const onReviewGym = vi.fn()
   const onStartGym = vi.fn()
@@ -170,4 +193,37 @@ it('renders a completed custom (saját) workout row and opens its review (mezo-w
   expect(container.querySelector('.dayrow.rest')).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button'))
   expect(onReviewCustom).toHaveBeenCalledWith('w9')
+})
+
+// The row reports the tap; the parent decides what it means (mezo-9bbc — Heti's
+// drill-in). A non-today sport/run block used to be structurally inert
+// (`onClick={isToday ? handler : undefined}`); it now fires whenever the parent
+// supplies a handler, regardless of day, so Heti (any day → Mai) and Mai (today
+// only, by how it wires its own handler) both work off the same component.
+it('a non-today sport row is tappable and calls onLogSport (mezo-9bbc)', () => {
+  const onLogSport = vi.fn()
+  const session = { day: 'Kedd', time: '17:00', duration: 90, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés' }
+  render(
+    <WeeklyDayRow
+      agenda={{ day: 'Kedd', isToday: false, gym: null, sport: [session] as never, running: [] }}
+      onStartGym={() => {}}
+      onLogSport={onLogSport}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button'))
+  expect(onLogSport).toHaveBeenCalledWith(session)
+})
+
+it('a non-today run row is tappable and calls onLogRun (mezo-9bbc)', () => {
+  const onLogRun = vi.fn()
+  const run = { key: 'tue-sprint', timeOfDay: '18:00', label: 'Sprint-intervallum', kind: 'sprint', rpeTarget: { min: 9, max: 10 } }
+  render(
+    <WeeklyDayRow
+      agenda={{ day: 'Kedd', isToday: false, gym: null, sport: [], running: [run] as never }}
+      onStartGym={() => {}}
+      onLogRun={onLogRun}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button'))
+  expect(onLogRun).toHaveBeenCalledWith(run)
 })

@@ -88,7 +88,10 @@ export function useHabitActions(date: string) {
           qc.invalidateQueries({ queryKey: ['progressionProfile'] })
         },
   })
-  // NOTE: check() resolves the write's levelUps — the caller (RoutineCard) feeds them to showLevelUp.
+  // NOTE: check() resolves the write's levelUps — the caller feeds them to showLevelUp.
+  // Callers today: TodayPage's `act()` dispatcher (every habit row on all three daypart
+  // faces) and WindDownBanner (the `wind_down` Pipa). RoutineCard, the original caller,
+  // was retired by the daypart-faces re-composition (mezo-j7u4).
 
   const uncheckM = useMutation({
     mutationFn: async (habitKey: string) => {

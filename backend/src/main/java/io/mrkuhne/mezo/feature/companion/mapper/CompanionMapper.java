@@ -107,7 +107,7 @@ public interface CompanionMapper {
                 .build();
     }
 
-    /** Null envelope maps to []; the wire name carries the args — "get_sleep(days=3)" (FE chip style). */
+    /** Null envelope maps to []; the wire name carries the args — "get_recovery(scope=sleep,days=3)" (FE chip style). */
     default List<MessageTool> toTools(ToolCallsEnvelope envelope) {
         if (envelope == null || envelope.calls() == null) {
             return List.of();

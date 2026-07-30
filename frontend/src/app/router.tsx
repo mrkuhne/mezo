@@ -3,6 +3,7 @@ import { AppLayout } from '@/app/AppLayout'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
+import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
@@ -43,6 +44,7 @@ import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
+import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 
 export const routes: RouteObject[] = [
@@ -57,6 +59,7 @@ export const routes: RouteObject[] = [
         element: <TrainSection />,
         children: [
           { index: true, element: <TrainTodayPage /> },
+          { path: 'week', element: <TrainWeekPage /> },
           { path: 'gym', element: <GymPage /> },
           { path: 'sport', element: <SportPage /> },
           { path: 'futas', element: <RunningPage /> },
@@ -115,6 +118,7 @@ export const routes: RouteObject[] = [
           { path: 'sleep', element: <SleepPage /> },
           { path: 'people', element: <PeoplePage /> },
           { path: 'knowledge', element: <KnowledgePage /> },
+          { path: 'ertesitesek', element: <NotificationsPage /> },
         ],
       },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },

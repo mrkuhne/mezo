@@ -38,6 +38,12 @@ test('TrainTodayPage shows the ghost hero with a wizard CTA on an empty backend'
   renderApp('/train')
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
+  // …and it no longer promises a „Heti terv” section: that list moved to the Heti
+  // tab with the rest of the weekly agenda (mezo-9bbc final review, I5).
+  expect(screen.queryByRole('heading', { name: 'Heti terv' })).not.toBeInTheDocument()
+  expect(screen.queryByText(/A heti rended itt jelenik majd meg/i)).not.toBeInTheDocument()
+  // the Saját edzés escape hatch stays
+  expect(screen.getByRole('button', { name: /Saját edzés/i })).toBeInTheDocument()
 })
 
 test('GymPage shows a ghost when there is no active meso', async () => {

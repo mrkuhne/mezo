@@ -67,6 +67,14 @@ argocd/
 - Host hardening: SSH key only, `ufw` (allow 22 from Tailscale, 80/443 public), automatic OS security updates.
 - Secrets live in k8s `Secret` objects (graduate to Sealed Secrets / SOPS before committing any secret to git — never commit plaintext secrets).
 - DB has no public port; only reachable inside the cluster network.
+- **No NetworkPolicy exists today — every pod has unrestricted egress.** Recorded explicitly here
+  because the push-notification backend (`techcore/webpush`, [`_platform-notifications.md`](../features/_platform-notifications.md))
+  depends on it: the backend pod needs outbound HTTPS to the push services themselves —
+  **`*.push.apple.com`** (Apple's Web Push relay, required for iOS home-screen PWAs) and
+  **`fcm.googleapis.com`** (the transport some Web Push subscriptions route through). If a
+  NetworkPolicy is ever introduced, it **must** allowlist this egress explicitly, or push silently
+  stops working with no error surfaced anywhere (a `WebPushClient.send` connection failure just
+  maps to `WebPushResult.FAILED`, logged, and the fan-out moves on).
 
 ## Cost
 
@@ -99,8 +107,8 @@ Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost
 | Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
 | Images | `ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1` (private; pulled with `ghcr-pull` secret) |
 | Owner login | `owner@mezo.local` / `owner` (demodata seed; baked into the frontend build) |
-| Backend timezone | `TZ=Europe/Budapest` on the backend Deployment env (`k8s/backend/deployment.yaml`) — pins the JVM default zone so business-date columns (`level_up_event.occurred_on`, gamification streak/coin rollover) and every `@Scheduled` cron run on Budapest wall-clock, not the eclipse-temurin UTC default. Without it, a 00:00–02:00 log lands on the previous business date (mezo-k0t2) and the crons fire 1–2 h off their intended local time. Matches `k8s/postgres/backup-cronjob.yaml`'s `timeZone`. |
-| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. |
+| Backend timezone | `TZ=Europe/Budapest` on the backend Deployment env (`k8s/backend/deployment.yaml:34`) — pins the JVM default zone so business-date columns (`level_up_event.occurred_on`, gamification streak/coin rollover) and every `@Scheduled` cron run on Budapest wall-clock, not the eclipse-temurin UTC default. Without it, a 00:00–02:00 log lands on the previous business date (mezo-k0t2) and the crons fire 1–2 h off their intended local time. Matches `k8s/postgres/backup-cronjob.yaml`'s `timeZone`. **Now also load-bearing for push-notification timing** ([`_platform-notifications.md`](../features/_platform-notifications.md) §8) — mezo has no per-user `Profile.timezone`, so the (not-yet-built, N2) per-minute notification dispatcher will resolve every anchor (gym start, sleep wind-down, Napzárás window, check-ins) off this same server zone; changing or unsetting `TZ` would silently shift every notification's send time, not just date bucketing. |
+| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. **Same pattern for push notifications:** `VAPID_PUBLIC`/`VAPID_PRIVATE` (the Web Push VAPID keypair — [`_platform-notifications.md`](../features/_platform-notifications.md), [ADR 0014](../decisions/0014-own-webpush-implementation.md)) join the existing `mezo-app` SealedSecret + the backend Deployment env once a real keypair is generated; until then the backend boots on `application.yml`'s `dummy-vapid-public`/`dummy-vapid-private` defaults, which now **fail loudly** on the first real send (`VapidSigner.decodePrivateKey` rejects a malformed scalar) rather than silently minting a well-formed-but-useless token. **DONE 2026-07-29** (`mezo-7kr3`): a real P-256 pair is sealed into `mezo-app` and wired into the backend env; the public half is also the `VITE_VAPID_PUBLIC` repo variable (see the gotcha below). |
 
 Local admin access:
 - `kubectl` from the Mac: `export KUBECONFIG=~/.kube/mezo-k3s.yaml` (context `mezo`, server `https://100.75.51.113:6443` over Tailscale).
@@ -203,6 +211,33 @@ existing `ghcr-pull` secret (unchanged).
 
 **Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
 commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
+
+### Gotcha — a changed `VITE_*` repo variable does NOT trigger a frontend rebuild
+
+`deploy.yml` decides what to build from **tree-hash path detection** (`.github/scripts/compute-release.sh`
+compares each top-level dir's tree object base→HEAD). Every `VITE_*` is **inlined into the bundle at
+build time**, so changing a repo *variable* alters what the bundle must contain while leaving
+`frontend/` byte-identical: the push-triggered run skips `build-frontend`, ArgoCD sees no new image,
+and **the stale bundle stays live — silently, with a green 13-second "success"**.
+
+Found while wiring the VAPID keypair (`mezo-7kr3`): `VITE_VAPID_PUBLIC` was set, the deploy went green,
+and the deployed bundle still carried an empty key — which on a real device surfaces only as
+`pushManager.subscribe()` rejecting with `InvalidAccessError`.
+
+**The escape hatch:** `deploy.yml` has a `workflow_dispatch` with `force_frontend` / `force_backend`,
+OR'd into the `version` job's outputs so every downstream condition keeps reading one pair of flags.
+
+```bash
+gh workflow run deploy.yml -r main -f force_frontend=true
+```
+
+**Use it whenever you change a `VITE_*` repo variable** (`gh variable set …`) — rotating the VAPID
+keypair is the case that will recur. Verify the result rather than trusting the green check:
+
+```bash
+B=$(curl -sk https://<host>/ | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+curl -sk "https://<host>$B" | grep -c '<the expected public key>'   # must print 1
+```
 
 ## Out of scope (future, would each warrant its own ADR/doc)
 
