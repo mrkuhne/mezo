@@ -127,4 +127,8 @@ public class FeaturesConfiguration {
     /** Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
      *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
     public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";
+
+    /** LLM call audit log (bd mezo-2zyu) — off ⇒ the injected LlmCallRecorder is the no-op, so no
+     *  adapter can publish an audit event and no llm_log_history row is ever written. */
+    public static final String LLM_LOG_SWITCH = "mezo.feature.llm-log.enabled";
 }

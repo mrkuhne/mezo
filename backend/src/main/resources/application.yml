@@ -211,6 +211,10 @@ mezo:
     # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
     gamification:
       enabled: true
+    # LLM call audit log (bd mezo-2zyu) — DEFAULT OFF until the adapters are instrumented and the
+    # rollout lands; off ⇒ the no-op recorder is injected, so nothing is ever published or written.
+    llm-log:
+      enabled: false
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
