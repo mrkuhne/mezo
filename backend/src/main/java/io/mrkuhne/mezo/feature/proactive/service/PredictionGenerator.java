@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
@@ -69,6 +71,7 @@ public class PredictionGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
 
@@ -92,7 +95,9 @@ public class PredictionGenerator {
             log.debug("No confirmed patterns for {} — no predictions for week {}", userId, weekStart);
             return List.of();
         }
-        String answer = companionLlm.completeSmart(PROMPT, gather.payload());
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_prediction", "generate", null, null),
+                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
         ParsedPredictions parsed = parse(answer);
         if (parsed == null || parsed.predictions() == null) {
             log.warn("Unusable prediction answer for {} week {} — no rows", userId, weekStart);

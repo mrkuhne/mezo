@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -88,6 +90,7 @@ public class HypothesisPipelineService {
     private final PatternRepository patternRepository;
     private final CompanionProperties properties;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** One hypothesis as the LLM returns it. */
     record Hypothesis(String title, String mechanism, String category) {}
@@ -173,9 +176,11 @@ public class HypothesisPipelineService {
     private List<Hypothesis> propose(UUID userId, String context) {
         String raw;
         try {
-            raw = companionLlm.completeSmart(
-                    String.format(Locale.ROOT, PROPOSE_PROMPT, properties.hypotheses().maxPerRun()),
-                    context);
+            String prompt = String.format(Locale.ROOT, PROPOSE_PROMPT,
+                    properties.hypotheses().maxPerRun());
+            raw = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_hypothesis", "propose", null, null),
+                    () -> companionLlm.completeSmart(prompt, context));
         } catch (Exception e) {
             log.warn("Hypothesis proposal LLM call failed for user {}", userId, e);
             return List.of();
@@ -196,7 +201,9 @@ public class HypothesisPipelineService {
     private Critique critique(String context, Hypothesis hypothesis) {
         String payload = "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
                 + "\n\nKONTEXTUS:\n" + context;
-        String raw = companionLlm.completeSmart(CRITIQUE_PROMPT, payload);
+        String raw = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_hypothesis", "critique", null, null),
+                () -> companionLlm.completeSmart(CRITIQUE_PROMPT, payload));
         Critique parsed = parseObject(raw, new TypeReference<Critique>() {});
         // a broken critique is a ZERO critique — an unjudgeable hypothesis never survives
         return parsed != null ? parsed : new Critique(0.0, 0.0, 0.0, 0.0, null);
@@ -206,7 +213,9 @@ public class HypothesisPipelineService {
         String payload = "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
                 + "\nKRITIKA: " + (critique.reasoning() == null ? "" : critique.reasoning())
                 + "\n\nKONTEXTUS:\n" + context;
-        String raw = companionLlm.completeSmart(REVISE_PROMPT, payload);
+        String raw = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_hypothesis", "revise", null, null),
+                () -> companionLlm.completeSmart(REVISE_PROMPT, payload));
         return parseObject(raw, new TypeReference<Hypothesis>() {});
     }
 

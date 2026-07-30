@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.pantry.service;
 import io.mrkuhne.mezo.api.dto.PantryScrapeResponse;
 import io.mrkuhne.mezo.api.dto.PantryScrapeResult;
 import io.mrkuhne.mezo.api.dto.PantrySource;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.pantry.config.PantryPhotoProperties;
 import io.mrkuhne.mezo.feature.pantry.service.ScrapeExtractionService.ExtractedDraft;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -61,6 +63,7 @@ public class PantryPhotoService {
     private final ScrapeDraftValidator validator;
     private final PantryPhotoProperties props;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     public PantryScrapeResponse extract(MultipartFile photo, MultipartFile photo2) {
         PhotoExtractLlm port = requireAvailable();
@@ -69,7 +72,9 @@ public class PantryPhotoService {
         if (photo2 != null && !photo2.isEmpty()) {
             images.add(toImage(photo2));
         }
-        String answer = port.complete(SYSTEM_PROMPT, "", images);
+        String answer = llmCallContextHolder.runWith(
+            new LlmCallContext("pantry_photo", "extract", null, null),
+            () -> port.complete(SYSTEM_PROMPT, "", images));
         ExtractedDraft d = parse(answer);
         if (d.kcal() == null) {
             return new PantryScrapeResponse(); // honest empty: no legible nutrition facts

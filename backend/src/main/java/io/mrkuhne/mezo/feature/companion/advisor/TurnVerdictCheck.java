@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.advisor;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,7 @@ public class TurnVerdictCheck {
 
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     record TurnVerdict(boolean redundantQuestion, boolean ungroundedClaim, String reason) {}
 
@@ -50,7 +53,9 @@ public class TurnVerdictCheck {
                 + "\n\nMEZO VÁLASZA:\n" + answer;
         String raw;
         try {
-            raw = companionLlm.complete(VERDICT_PROMPT, payload);
+            raw = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_advisor", "verdict_check", null, null),
+                    () -> companionLlm.complete(VERDICT_PROMPT, payload));
         } catch (Exception e) {
             log.warn("Advisor verdict LLM call failed — failing open", e);
             return List.of();

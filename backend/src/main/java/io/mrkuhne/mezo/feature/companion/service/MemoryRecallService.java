@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository.MemoryMatch;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,14 +37,18 @@ public class MemoryRecallService {
     private final EmbeddingPort embeddingPort;
     private final MemoryEmbeddingRepository memoryEmbeddingRepository;
     private final CompanionProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     // No @Transactional: the native-query interface projection is fully materialized (no LAZY
     // traversal), and skipping the tx keeps the connection free during the embed network call.
     public List<RecalledMemory> recallSimilarDays(UUID userId, String query, int k) {
         CompanionProperties.Recall recall = properties.recall();
+        float[] queryVector = llmCallContextHolder.runWith(
+                new LlmCallContext("embed_memory", "query", null, null),
+                () -> embeddingPort.embedQuery(query));
         List<MemoryMatch> candidates = memoryEmbeddingRepository.findNearest(userId,
                 MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                MemoryEmbeddingRepository.toVectorLiteral(embeddingPort.embedQuery(query)),
+                MemoryEmbeddingRepository.toVectorLiteral(queryVector),
                 recall.candidatePool());
         LocalDate today = LocalDate.now();
         return candidates.stream()

@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.activity.service;
 
 import io.mrkuhne.mezo.feature.activity.config.ActivityProperties;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
@@ -42,6 +44,7 @@ public class ActivityClassifier {
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final ActivityProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** One classification as proposed by the model (record mirrors the strict-JSON answer). */
     public record Classification(String skillKey, BigDecimal confidence, Integer xpSuggestion,
@@ -51,7 +54,9 @@ public class ActivityClassifier {
     public Optional<Classification> classify(String text) {
         String raw;
         try {
-            raw = companionLlm.complete(CLASSIFY_PROMPT, text);
+            raw = llmCallContextHolder.runWith(
+                new LlmCallContext("activity_classify", "classify", null, null),
+                () -> companionLlm.complete(CLASSIFY_PROMPT, text));
         } catch (Exception e) {
             log.warn("Activity classification failed, storing uncategorized: {}", e.getMessage());
             return Optional.empty();

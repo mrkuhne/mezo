@@ -33,6 +33,7 @@ import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
+import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
@@ -87,7 +88,7 @@ import org.springframework.context.annotation.Import;
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,
     PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
-    NotificationPopulator.class, ResetDatabase.class})
+    LlmLogPopulator.class, NotificationPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired

@@ -67,7 +67,9 @@ it('renders the sleep-goal card with derived ends and the regularity band', () =
   expect(screen.getByText('23:15')).toBeInTheDocument()          // derived bed
   expect(screen.getAllByText('06:45').length).toBeGreaterThan(0) // fixed wake
   expect(screen.getByText('7.5 ó cél')).toBeInTheDocument()
-  expect(screen.getByText(/a rendszeresség a király/i)).toBeInTheDocument()
+  // The phrase now renders twice — the sleep-goal card's regularity quote (SleepPage.tsx) AND the
+  // "A rendszeresség a király" education card title mounted since mezo-hd8k — so match like '06:45' above.
+  expect(screen.getAllByText(/a rendszeresség a király/i).length).toBeGreaterThan(0)
   expect(screen.getByText('±15p')).toBeInTheDocument()
 })
 

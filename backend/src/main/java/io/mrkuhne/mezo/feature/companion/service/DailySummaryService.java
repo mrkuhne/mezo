@@ -4,6 +4,8 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
@@ -75,6 +77,7 @@ public class DailySummaryService {
     private final MedicationRepository medicationRepository;
     private final MedicationDoseRepository medicationDoseRepository;
     private final MedicationCycleService medicationCycleService;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /**
      * Generates (or returns the existing) summary for one finished day. Returns null for an
@@ -93,7 +96,9 @@ public class DailySummaryService {
             log.debug("No L0 data for {} on {} — no summary", userId, date);
             return null;
         }
-        String narrative = companionLlm.complete(NARRATIVE_PROMPT, digest);
+        String narrative = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_daily_summary", "narrative", null, null),
+                () -> companionLlm.complete(NARRATIVE_PROMPT, digest));
         DailySummaryEntity summary = new DailySummaryEntity();
         summary.setCreatedBy(userId);
         summary.setSummaryDate(date);

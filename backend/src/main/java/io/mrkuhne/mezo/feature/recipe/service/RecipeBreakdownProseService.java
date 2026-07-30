@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.recipe.service;
 
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.Dimension;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.ImproveRow;
@@ -82,6 +84,7 @@ public class RecipeBreakdownProseService {
 
     private final ObjectProvider<RecipeBreakdownLlm> llm;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** Prose-merged envelope + fitsFor, or null when enrichment is unavailable/failed (caller degrades). */
     public Enriched enrich(RecipeEntity recipe, MealBreakdownJson det) {
@@ -90,7 +93,9 @@ public class RecipeBreakdownProseService {
             return null; // companion off — deterministic envelope is served un-enriched
         }
         try {
-            String answer = port.complete(SYSTEM_PROMPT, userMessage(recipe, det));
+            String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("recipe_breakdown", "prose", "recipe", recipe.getId()),
+                () -> port.complete(SYSTEM_PROMPT, userMessage(recipe, det)));
             String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
             ExtractedProse prose = objectMapper.readValue(json, ExtractedProse.class);
             if (prose.summary() == null || prose.summary().isBlank()) {

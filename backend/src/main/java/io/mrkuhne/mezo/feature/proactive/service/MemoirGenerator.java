@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -53,6 +55,7 @@ public class MemoirGenerator {
     private final PatternRepository patternRepository;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final GrowthDigestBlock growthDigestBlock;
 
@@ -74,7 +77,9 @@ public class MemoirGenerator {
             log.debug("No summaries in week {} for {} — no memoir", weekStart, userId);
             return null;
         }
-        String answer = companionLlm.completeSmart(PROMPT, gather.payload());
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_memoir", "generate", null, null),
+                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
         ParsedMemoir parsed = parse(answer);
         if (parsed == null || parsed.title() == null || parsed.title().isBlank()
                 || parsed.body() == null || parsed.body().isBlank()) {

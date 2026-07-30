@@ -128,6 +128,10 @@ public class FeaturesConfiguration {
      *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
     public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";
 
+    /** LLM call audit log (bd mezo-2zyu) — off ⇒ the injected LlmCallRecorder is the no-op, so no
+     *  adapter can publish an audit event and no llm_log_history row is ever written. */
+    public static final String LLM_LOG_SWITCH = "mezo.feature.llm-log.enabled";
+
     /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
     public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
 

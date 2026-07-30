@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
@@ -69,6 +71,7 @@ public class BriefingGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final ProactiveProperties properties;
     private final ObjectMapper objectMapper;
 
@@ -97,7 +100,9 @@ public class BriefingGenerator {
                     userId, properties.briefing().pastDays(), date);
             return null;
         }
-        String answer = companionLlm.complete(PROMPT, gather.payload());
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_briefing", "generate", null, null),
+                () -> companionLlm.complete(PROMPT, gather.payload()));
         ParsedBriefing parsed = parse(answer);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {

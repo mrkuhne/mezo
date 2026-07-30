@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.api.dto.MealCoachVerdict;
 import io.mrkuhne.mezo.api.dto.MealImproveRow;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachStore.LoadedMeal;
 import io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
@@ -94,6 +96,7 @@ public class MealCoachService {
     private final MealScoringProperties scoringProperties;
     private final ObjectProvider<MealCoachLlm> llm;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /**
      * A day's verdicts: everything already cached, plus — when {@code allowGenerate} — ONE batched
@@ -147,8 +150,14 @@ public class MealCoachService {
             if (blocks.isEmpty()) {
                 return List.of();
             }
-            String answer = port.complete(SYSTEM_PROMPT,
-                MealCoachPrompt.userMessage(date, targets, windows, List.copyOf(blocks.values())));
+            String userMessage =
+                MealCoachPrompt.userMessage(date, targets, windows, List.copyOf(blocks.values()));
+            // The subject is a single meal only when exactly one is narrated (an opened score sheet);
+            // a day batch is about the day, so it leaves the entity id honestly empty (mezo-2zyu).
+            UUID subject = blocks.size() == 1 ? blocks.keySet().iterator().next() : null;
+            String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("meal_coach", "verdict", "meal", subject),
+                () -> port.complete(SYSTEM_PROMPT, userMessage));
             String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
             ExtractedAnswer parsed = objectMapper.readValue(json, ExtractedAnswer.class);
             return persist(userId, parsed, blocks.keySet());

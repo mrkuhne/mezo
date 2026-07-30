@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
@@ -69,6 +71,7 @@ public class ExperimentProposalGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
 
@@ -95,7 +98,9 @@ public class ExperimentProposalGenerator {
             log.debug("No confirmed patterns for {} — no experiment proposals", userId);
             return List.of();
         }
-        String answer = companionLlm.completeSmart(PROMPT, gather.payload());
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_experiment", "generate", null, null),
+                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
         ParsedExperiments parsed = parse(answer);
         if (parsed == null || parsed.experiments() == null) {
             log.warn("Unusable experiment proposal answer for {} — no rows", userId);

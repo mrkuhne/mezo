@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.meal.service;
 import io.mrkuhne.mezo.api.dto.MealAiDraftItem;
 import io.mrkuhne.mezo.api.dto.MealAiDraftResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.meal.config.MealAiLogProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
@@ -57,6 +59,7 @@ public class MealAiDraftService {
     private final MealAiLogProperties props;
     private final MealAiDraftValidator validator;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** LLM answer contract — ids as String so a malformed uuid demotes the line, not the call. */
     record ExtractedLine(String pantryItemId, String recipeId, String name, BigDecimal amount,
@@ -92,9 +95,15 @@ public class MealAiDraftService {
 
         String answer;
         if (photo != null && !photo.isEmpty()) {
-            answer = port.complete(systemPrompt, userMessage, readBytes(photo), photo.getContentType());
+            byte[] bytes = readBytes(photo);
+            String mime = photo.getContentType();
+            answer = llmCallContextHolder.runWith(
+                    new LlmCallContext("meal_draft", "photo", null, null),
+                    () -> port.complete(systemPrompt, userMessage, bytes, mime));
         } else {
-            answer = port.complete(systemPrompt, userMessage);
+            answer = llmCallContextHolder.runWith(
+                    new LlmCallContext("meal_draft", "text", null, null),
+                    () -> port.complete(systemPrompt, userMessage));
         }
 
         ExtractedMeal extracted = parse(answer);
