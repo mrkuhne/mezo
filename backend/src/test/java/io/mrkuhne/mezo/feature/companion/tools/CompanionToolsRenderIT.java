@@ -370,6 +370,58 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetTrainingPlan_shouldAppendSportTail_whenSportSlotScheduledForResolvedDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        // slot day_of_week is 0=Hét..6=Vas, so today's weekday always matches — the sport slot is
+        // the ONLY plan this user has (no meso, no running block): a sport evening must never
+        // render as "nincs adat" (mezo-ajp).
+        trainPopulator.createScheduleSlot(owner, today.getDayOfWeek().getValue() - 1, "18:00", 120, "training");
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        assertThat(out).startsWith("Edzésterv (ma, " + today + "):")
+                .contains("gym: pihenőnap; sport: volleyball 18:00 training (120 perc)")
+                .doesNotContain("nincs adat");
+        assertThat(audit.toRefsEnvelope().refs())
+                .contains(new RefsEnvelope.Ref("TrainingPlan", today.toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldRenderGymAndSportTogether_whenBothScheduledForToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "Full Body", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Guggolás", 0);
+        trainPopulator.createScheduleSlot(owner, today.getDayOfWeek().getValue() - 1, "18:00", 120, "training");
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        // the reported chat's exact shape: a Full Body gym day AND an 18:00 sport session — the
+        // model must see both from one call, never only the gym half.
+        assertThat(out).contains("gym: " + todayLabel + ": Guggolás 3×6-8")
+                .contains("sport: volleyball 18:00 training (120 perc)");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldRenderSportOnItsWeekday_whenScopeWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LocalDate sportDay = today.plusDays(2);
+        trainPopulator.createScheduleSlot(owner, sportDay.getDayOfWeek().getValue() - 1, "19:30", 90, "match");
+
+        String out = trainTools.getTrainingPlan("week", null, ctx(owner));
+
+        // the week walk resolves each of the 7 dates on its own weekday — the slot lands on
+        // exactly its day, and the other days stay honest rest days.
+        assertThat(out).startsWith("Edzésterv (" + today + " – " + today.plusDays(6) + "):")
+                .contains(sportDay + ": gym: pihenőnap; sport: volleyball 19:30 match (90 perc)");
+    }
+
+    @Test
     void testGetExerciseRecords_shouldRenderNincsAdat_whenNoLoggedSets() {
         assertThat(trainTools.getExerciseRecords(null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Egyéni csúcsok (PR): nincs adat");

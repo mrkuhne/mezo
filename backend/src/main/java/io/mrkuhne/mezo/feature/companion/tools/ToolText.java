@@ -39,4 +39,24 @@ public final class ToolText {
         }
         return b.toString();
     }
+
+    /**
+     * "sport: {sport} {time} {kind} ({durationMin} perc)" — one scheduled sport slot resolved onto a
+     * date. Shared by {@code TrainTools} (get_training_plan) and {@code ContextSnapshotAssembler}
+     * (Ma:/Holnap:) so the tool and the prompt snapshot can never again disagree about a day's sport
+     * (mezo-ajp). Optional pieces are omitted rather than rendered as "null".
+     */
+    public static String sportLine(String sport, String time, String kind, Integer durationMin) {
+        StringBuilder b = new StringBuilder("sport: ").append(sport);
+        if (time != null) {
+            b.append(' ').append(time);
+        }
+        if (kind != null) {
+            b.append(' ').append(kind);
+        }
+        if (durationMin != null) {
+            b.append(" (").append(durationMin).append(" perc)");
+        }
+        return b.toString();
+    }
 }

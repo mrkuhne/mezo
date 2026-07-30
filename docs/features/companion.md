@@ -99,9 +99,14 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `WorkoutService.getToday`, which auto-closes stale instances/ensures closing exercises) plus the
   active running block's prescribed session for that weekday (`RunningService.listBlocks` +
   `RunningBlockStructure`, week derived from the block's `startDate`, not the stored
-  `currentWeek`); `scope=meso` renders the full active mesocycle (`TrainService.listMesocycles`) —
-  weeks/phases/day-templates. `nincs adat` only when there is neither an active mesocycle nor an
-  active running block at all; a real rest day within an active plan renders `pihenőnap`.
+  `currentWeek`), plus **any recurring sport-schedule slot falling on that weekday**
+  (`SportService.getSchedule`, slot convention `0=Hét..6=Vas`, mezo-ajp); `scope=meso` renders the
+  full active mesocycle (`TrainService.listMesocycles`) — weeks/phases/day-templates. One day
+  renders as `gym: … ; sport: … ; futás: …`, the same three parts in the same order as the
+  snapshot's `Ma:`/`Holnap:` (both build the sport part with `ToolText.sportLine`, so tool and
+  prompt can never disagree about a day's sport). `nincs adat` only when there is neither an active
+  mesocycle, nor an active running block, **nor a sport slot** at all — a volleyball evening is a
+  plan in its own right; a real rest day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
   break a PR" basis, over the read-only `ExerciseRecordService.list` compute-on-read aggregation
   (Epley e1RM = weight×(30+reps)/30). No/blank `exercise` → a top-5 summary ranked by best e1RM;
@@ -549,12 +554,15 @@ from the sleep goal — never the retired goal wake/bed columns; the resolver al
 anchor, so both lines always render, falling back to the config ghost when no sleep goal exists),
 `[Edzés]` (active meso with the week
 DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
-(mezo-xixu, the flagship fix)** — today's gym day + exercises via
-`WorkoutService.findPlannedTemplateForDate` (deliberately never `WorkoutService.getToday`, which is
-write-transactional) or an honest `pihenőnap`, and tomorrow's gym day + exercises PLUS any
-recurring sport-schedule slot on that weekday PLUS the active running block's prescribed session
-for that weekday (best-effort — absent block/week renders nothing, never fabricated); the
-recurring `gym-rend`/`sport-rend` strings + last-N-days gym/sport/run digest stay as TRAILING
+(mezo-xixu, the flagship fix)** — both render through ONE `dayLine` method (mezo-ajp): that day's
+gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
+`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)`, PLUS any
+recurring sport-schedule slot on that weekday, PLUS the active running block's prescribed session
+for that weekday (best-effort — absent block/week renders nothing, never fabricated). They used to
+be two near-identical renderers that had drifted: `Ma:` resolved gym only, so today's sport and run
+were invisible and the model had to re-derive them from the trailing weekly `sport-rend` pattern —
+the very hallucination path this dated resolution exists to remove. The recurring
+`gym-rend`/`sport-rend` strings + last-N-days gym/sport/run digest stay as TRAILING
 background context, no longer the only forward signal), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
 streak, `ProgressionService.getProfile`'s top-3 skills by level with real XP — 0-XP taxonomy
 ghosts filtered out, else `nincs adat` — and `GrowthWeekService.growthWeek`'s weekly LIFE-XP +
@@ -822,7 +830,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | Tool (args) | Source (existing reads) | Ref |
 |---|---|---|
 | `get_training_log(scope, days)` (mezo-xixu, merged from `get_recent_workouts`+`get_sport_sessions`) | scope=gym: `WorkoutSessionRepository.findDoneInstancesBetween` + per-instance sets → date, dayLabel, set count, Σ volume kg; scope=sport/run: sport + run since-date finders → sport/duration/intensity/RPE or run week/rounds | `Workout`/date (≤5) or `Sport`/date (≤3) or `Run`/date (≤3) |
-| `get_training_plan(scope, date)` (mezo-xixu) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
+| `get_training_plan(scope, date)` (mezo-xixu, sport added mezo-ajp) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `SportService.getSchedule` (recurring slots matched on the date's weekday) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
 | `get_fuel_log(range, date, days)` (mezo-xixu, merged from `get_recent_meals`) | range=day: `FuelDayService.getDay` looped per day (from `date`, default today) → kcal/F vs targets, meal count + titles (≤3), plus `WaterLogService.sumForDay` for the anchor day's water vs target; range=week: `FuelDayService.getWeek` (Monday-anchored ISO week containing `date`) → per-day kcal/F/water vs targets | `FuelDay`/date (≤5) |
 | `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
