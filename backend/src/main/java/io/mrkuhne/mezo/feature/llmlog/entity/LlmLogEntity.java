@@ -115,9 +115,15 @@ public class LlmLogEntity {
     // ── usage: generation ────────────────────────────────────────────────────────
 
     /**
-     * Billable prompt tokens. Gemini reports {@code cachedContentTokenCount} as a SUBSET of
-     * {@code promptTokenCount}; the writer stores the cached slice EXCLUDED here (see
-     * {@code LlmPricingService#computeGenerationCost}).
+     * The provider's RAW {@code promptTokenCount} — it INCLUDES {@link #cachedTokens}, because
+     * Gemini reports {@code cachedContentTokenCount} as a SUBSET of it. Stored verbatim so the row
+     * says what the provider said.
+     *
+     * <p>Billing is where the subset is resolved, not storage: {@code LlmLogWriter#applyCost}
+     * subtracts the cached slice and charges {@code prompt - cached} at the input rate plus
+     * {@code cached} at the cached rate (see {@code LlmPricingService#computeGenerationCost}, whose
+     * {@code prompt} argument must already be net). Charging the raw prompt at the input rate AND
+     * the cached slice again would overcharge the cached tokens.
      */
     @Column(name = "prompt_tokens")
     private Integer promptTokens;
