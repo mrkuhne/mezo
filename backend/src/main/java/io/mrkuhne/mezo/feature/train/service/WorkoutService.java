@@ -499,6 +499,8 @@ public class WorkoutService {
         set.setNote(req.getNote());
         set.setKind(req.getKind() != null ? req.getKind() : "working");
         set.setDoneAt(Instant.now());
+        set.setTargetWeightKg(req.getTargetWeightKg());
+        set.setTargetReps(req.getTargetReps());
         return mapper.toSetResponse(exerciseSetRepository.save(set));
     }
 

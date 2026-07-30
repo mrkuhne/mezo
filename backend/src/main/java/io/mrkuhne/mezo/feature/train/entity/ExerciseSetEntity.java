@@ -73,4 +73,12 @@ public class ExerciseSetEntity extends OwnedEntity {
 
     @Column(name = "done_at")
     private Instant doneAt;
+
+    /** The Progresszió-prescribed load for this set, snapshotted at log time (null = none). */
+    @Column(name = "target_weight_kg", precision = 6, scale = 2)
+    private BigDecimal targetWeightKg;
+
+    /** The Progresszió-prescribed reps for this set, snapshotted at log time (null = none). */
+    @Column(name = "target_reps")
+    private Integer targetReps;
 }
