@@ -36,6 +36,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
+import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -59,6 +60,7 @@ public class TrainController implements TrainApi {
     private final GymScheduleService gymScheduleService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
+    private final MedalService medalService;
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
@@ -98,11 +100,9 @@ public class TrainController implements TrainApi {
         return exerciseRecordService.list(currentUserId.get());
     }
 
-    // TODO(mezo-wp6n): contract-only placeholder — a later medal-collection task wires this to
-    // the real medal history (MedalEvaluator + a persistence-backed read), replacing this stub.
     @Override
     public MedalListResponse getMedals() {
-        return MedalListResponse.builder().medals(List.of()).build();
+        return MedalListResponse.builder().medals(medalService.list(currentUserId.get())).build();
     }
 
     @Override
