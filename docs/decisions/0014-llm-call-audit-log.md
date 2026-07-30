@@ -11,7 +11,7 @@ server-side visibility** into which feature, which model, or which entity drove 
 gaps: no **cost attribution** ("which feature/model/day burned how many tokens ≈ how many dollars"),
 no **debug trail** (the exact system+user prompt we sent and the raw answer we got), no **audit**
 (an immutable who/when/what-for-which-entity record). By this point the LLM surface is wide — the
-companion chat (sync + SSE + tool rounds), five consumer-owned ports ([ADR 0012](0012-consumer-owned-llm-ports.md)),
+companion chat (sync + SSE + tool rounds), six consumer-owned ports ([ADR 0012](0012-consumer-owned-llm-ports.md)),
 the embedding pipeline, and a dozen proactive crons that generate invisible volume.
 
 The trigger was a forensic question we could not answer from the app: the code requests
@@ -83,11 +83,15 @@ cost was derived from.
    - Each row **freezes its own price snapshot** from `mezo.llm-log.pricing` at write time and derives
      `cost_usd` from THAT snapshot, never from the live config — so a rate change never rewrites
      history and every past cost stays reproducible.
-   - **An unknown token count or an unpriced model yields a null cost, never a fabricated `0`.** A
-     zero is indistinguishable from a genuinely free call; "unpriced" must stay visibly unpriced.
-     The same rule runs through `GeminiUsageExtractor`: every absent-usage shape Spring AI can hand
-     us (`EmptyUsage`, a zeroed `GoogleGenAiUsage.from(null)`, a blank model id) is normalised to
-     `null`, not `0`.
+   - **The rule: unknown ⇒ null cost, never a fabricated `0`** — a zero is indistinguishable from a
+     genuinely free call, so "unpriced/unknown" must stay visibly so. It holds today for an **unpriced
+     model** (a null snapshot ⇒ null cost) and for **embeddings** (a null billable-char count ⇒ null
+     cost), and `GeminiUsageExtractor` upholds it on the reporting side: every absent-usage shape
+     Spring AI can hand us (`EmptyUsage`, a zeroed `GoogleGenAiUsage.from(null)`, a blank model id)
+     is normalised to `null`, not `0`. It does **not** yet hold end-to-end on the generation path:
+     when a PRICED snapshot meets an all-null token block, `LlmPricingService#perMillion` treats each
+     missing count as zero and the row lands with `cost_usd = 0.000000` instead of null — tracked as
+     **bd mezo-xyud**, to be fixed so the rule holds everywhere.
 7. **The ERROR-row rule.** An ERROR row carries **no provider-reported usage and no cost** — the
    provider never answered. But **request-side** counters survive (image count/bytes/mime, embedding
    batch size and dimensions): those are facts of the attempt, not something the provider had to
@@ -105,7 +109,9 @@ cost was derived from.
   day — the three indexes (`created_at`, `(feature, created_at)`, `(served_model, created_at)`) are
   exactly those three axes plus pruning.
 - **Aggregates carry two mandatory rules**, both consequences of honesty above: filter
-  `status = 'SUCCESS'` for usage/cost, and treat a null `cost_usd` as *unknown*, not free.
+  `status = 'SUCCESS'` for usage/cost, and treat a null `cost_usd` as *unknown*, not free. Until
+  **bd mezo-xyud** lands, the mirror caveat also applies: a `cost_usd` of `0.00` on a generation row
+  is not proof of a free call — an absent-usage response on a priced model reads 0.00 today.
 - **`created_by` is null on `@Async`/cron threads** — there is no security-context propagation and
   `LlmActorResolver` deliberately returns null rather than throwing (audit logging must never be the
   thing that fails a call). Acceptable in a single-user app, but it means **the eventual read side
