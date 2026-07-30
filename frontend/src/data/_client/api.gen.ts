@@ -2200,6 +2200,13 @@ export interface components {
             exceptionTraceId?: string;
         };
         SystemMessageList: components["schemas"]["SystemMessage"][];
+        /** @description Quantised sleep-stage sequence read off the tracker's stage graph (mezo-fk9a). One letter per bucket, chronological, starting at the row's bedtime: D=deep, L=light, R=REM, A=awake. DISPLAY-ONLY — never the source of a ratio statistic; every phase percentage comes from the exact per-phase minute totals. */
+        Hypnogram: {
+            /** @description Minutes per letter (15 today; stored so a finer resolution needs no migration) */
+            bucketMin: number;
+            /** @description One letter per bucket, chronological from bedtime */
+            stages: string;
+        };
         LoginRequest: {
             /**
              * Format: email
@@ -2282,6 +2289,7 @@ export interface components {
             sourceQualityPct?: number;
             /** @description Row provenance; omitted → 'manual' */
             source?: string;
+            hypnogram?: components["schemas"]["Hypnogram"];
         };
         SleepLogResponse: {
             /** Format: uuid */
@@ -2311,6 +2319,7 @@ export interface components {
             sourceQualityPct?: number;
             /** @description Row provenance; omitted → 'manual' */
             source?: string;
+            hypnogram?: components["schemas"]["Hypnogram"];
         };
         SaveCheckInRequest: {
             /** Format: date */
@@ -4507,6 +4516,7 @@ export interface components {
             deepMin?: number;
             /** @description Sleep Cycle's own 0-100 quality */
             sourceQualityPct?: number;
+            hypnogram?: components["schemas"]["Hypnogram"];
             /** @description Deterministic consistency score (validator, never the LLM) */
             confidence: number;
             /** @description confidence <= threshold or a key field missing */

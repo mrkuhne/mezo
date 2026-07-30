@@ -5151,6 +5151,29 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/SystemMessage'
+    Hypnogram:
+      type: object
+      description: >
+        Quantised sleep-stage sequence read off the tracker's stage graph
+        (mezo-fk9a). One letter per bucket, chronological, starting at the row's
+        bedtime: D=deep, L=light, R=REM, A=awake. DISPLAY-ONLY — never the
+        source of a ratio statistic; every phase percentage comes from the exact
+        per-phase minute totals.
+      required:
+        - bucketMin
+        - stages
+      properties:
+        bucketMin:
+          type: integer
+          minimum: 1
+          description: >-
+            Minutes per letter (15 today; stored so a finer resolution needs no
+            migration)
+        stages:
+          type: string
+          pattern: '^[DLRA]+$'
+          maxLength: 200
+          description: 'One letter per bucket, chronological from bedtime'
     LoginRequest:
       type: object
       required:
@@ -5314,6 +5337,8 @@ components:
           type: string
           pattern: ^(manual|screenshot)$
           description: Row provenance; omitted → 'manual'
+        hypnogram:
+          $ref: '#/components/schemas/Hypnogram'
     SleepLogResponse:
       type: object
       required:
@@ -5374,6 +5399,8 @@ components:
           type: string
           pattern: ^(manual|screenshot)$
           description: Row provenance; omitted → 'manual'
+        hypnogram:
+          $ref: '#/components/schemas/Hypnogram'
     SaveCheckInRequest:
       type: object
       required:
@@ -11080,6 +11107,8 @@ components:
           minimum: 0
           maximum: 100
           description: Sleep Cycle's own 0-100 quality
+        hypnogram:
+          $ref: '#/components/schemas/Hypnogram'
         confidence:
           type: number
           minimum: 0
