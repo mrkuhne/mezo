@@ -69,14 +69,30 @@ class RecipeMapperOverrideRollupTest {
     }
 
     @Test
-    void testRollupWithOverrides_shouldRoundPerLineThenSum_whenAmountIsHalved() {
+    void testRollupWithOverrides_shouldScaleTheLine_whenAmountIsHalved() {
         // Túró 125 g -> factor 1.25 -> 137.5/16.25/5/5.625 -> round 138/16/5/6
-        // Méz still 22/3/1/1 -> sum 160/19/6/7. Rounding the SUM instead would give 159 kcal.
+        // Méz still 22/3/1/1 -> sum 160/19/6/7.
         RecipeMacros m = mapper.rollupWithOverrides(recipe(), Map.of(0, new BigDecimal("125")));
 
         assertThat(m.getKcal()).isEqualByComparingTo("160");
         assertThat(m.getP()).isEqualByComparingTo("19");
         assertThat(m.getC()).isEqualByComparingTo("6");
         assertThat(m.getF()).isEqualByComparingTo("7");
+    }
+
+    @Test
+    void testRollupWithOverrides_shouldRoundEachLineBeforeSumming_whenBothLinesRoundDown() {
+        // THE rounding-order guard (mezo-8xy). Both lines at 4 g:
+        //   per line   kcal 110 × 0.04 = 4.4  -> 4  ; p 13.0 × 0.04 = 0.52 -> 1
+        //   round-per-line-then-sum : kcal 4+4  = 8      ; p 1+1  = 2
+        //   sum-then-round-once     : kcal 8.8  -> 9     ; p 1.04 -> 1
+        // The two strategies disagree on BOTH macros here, which is exactly what makes this a
+        // real guard. NOTE the halved-amount case above canNOT do this job: 137.5 + 22.0 = 159.5,
+        // which HALF_UP rounds to 160 either way — it passes under both strategies.
+        RecipeMacros m = mapper.rollupWithOverrides(recipe(),
+            Map.of(0, new BigDecimal("4"), 1, new BigDecimal("4")));
+
+        assertThat(m.getKcal()).isEqualByComparingTo("8");
+        assertThat(m.getP()).isEqualByComparingTo("2");
     }
 }
