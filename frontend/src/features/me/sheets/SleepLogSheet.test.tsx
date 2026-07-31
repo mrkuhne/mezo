@@ -55,11 +55,12 @@ describe('screenshot mode (mezo-66ab)', () => {
     expect(screen.getByLabelText('Ágyban összesen (perc)')).toHaveValue(501)
     expect(screen.getByRole('button', { name: '10', pressed: true })).toBeInTheDocument() // 95% -> 10
     // read-only phase rail (replaces the old "fázisok: éber 52p · …" text strip, mezo-fk9a):
-    // the awake segment still surfaces its minutes; the rail has no slot for sourceQualityPct
-    // (Task 5's PhaseRail design) — that figure is covered instead by the "10" pressed assertion
-    // above (95% -> quality 10) and by the full-payload save test below (sourceQualityPct: 95).
+    // the awake segment still surfaces its minutes...
     expect(screen.getByText('Éber')).toBeInTheDocument()
     expect(screen.getByText('52p')).toBeInTheDocument()
+    // ...and the tracker's own quality score keeps its own caption under the rail, since
+    // PhaseRail has no slot for it.
+    expect(screen.getByText(/Sleep Cycle minőség: 95%/)).toBeInTheDocument()
   })
 
   test('review hero shows the asleep duration that gets saved, not the bed span', async () => {
@@ -102,6 +103,11 @@ describe('screenshot mode (mezo-66ab)', () => {
     const { onSave } = renderSheet()
     await toReview() // switch to Screenshot, upload, land on the review step with a draft set
 
+    // Set a distinctive date while the Dátum input is still on screen (it is shot-mode only).
+    // This is the path discriminator: saveShot() sends this `date` state, whereas save()
+    // stamps today via new Date() and ignores it entirely.
+    fireEvent.change(screen.getByLabelText('Dátum'), { target: { value: '2026-01-15' } })
+
     // flip back to Kézi — this used to silently drop everything the AI just read
     await userEvent.click(screen.getByRole('button', { name: 'Kézi' }))
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
@@ -110,12 +116,13 @@ describe('screenshot mode (mezo-66ab)', () => {
       deepMin: 100, lightMin: 206, remMin: 144, awakeMin: 52,
       sourceQualityPct: 95, source: 'screenshot',
       hypnogram: { bucketMin: 15, stages: 'ALDDLRRLDDLLRRRLDDLLRRLALDDLRRLRRR' },
+      // the extracted ASLEEP duration rides along too — not the 8.3 bed span, which would
+      // contradict phase minutes summing to 7.5h and inflate efficiency (mezo-fk9a)
+      durationH: 7.48,
     }))
-    // ...and it really went through the MANUAL save path, not saveShot. The two paths
-    // compute durationH differently: save() derives it from the bed span (00:42→09:03 = 8.3),
-    // saveShot() persists the extracted asleep duration (7.48, asserted in the test above).
-    // 8.3 is therefore proof the manual branch ran and still carried the phase payload.
-    expect(onSave.mock.calls[0][0].durationH).toBe(8.3)
+    // Proof the MANUAL branch ran: saveShot() would have sent the 2026-01-15 we just typed.
+    expect(onSave.mock.calls[0][0].date).toBe(new Date().toISOString().slice(0, 10))
+    expect(onSave.mock.calls[0][0].date).not.toBe('2026-01-15')
   })
 })
 
