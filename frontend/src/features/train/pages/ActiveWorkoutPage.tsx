@@ -703,7 +703,7 @@ function ActiveWorkoutSession({
   // Both render the WorkoutSummary: 'summary' is the pre-finish closing screen whose
   // "Edzés lezárása ✓" CTA drives finishWorkout; 'complete' is the same layout read-only
   // (set lines) after the finish POST resolves. The real medals earned this session
-  // (mezo-wp6n) drive the summary now — replaces the old hadPR / hadPrFromSignal framing.
+  // (mezo-wp6n) drive the summary now — replaces the old boolean PR-flag framing.
   if (phase === 'summary' || phase === 'complete') {
     const closing = phase === 'summary'
     return (

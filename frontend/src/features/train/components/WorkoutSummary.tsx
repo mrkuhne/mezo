@@ -9,6 +9,7 @@
 import type { LastWeekSet } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { Icon } from '@/shared/ui/Icon'
+import { RECORD_LABEL } from '@/features/train/components/MedalChip'
 
 export interface SummaryExercise {
   id: string
@@ -34,6 +35,24 @@ const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: 
   inconclusive: { glyph: '◌', label: 'nem értékelhető', color: 'var(--text-tertiary)' },
 }
 
+// The two-tier split (mezo-wp6n), mirrored from the live toast/chip: RECORD reads as
+// an achievement (amber, 🏅), TARGET_HIT stays quiet (sage, ✓). MEDAL_TYPE_LABEL reuses
+// MedalChip's RECORD_LABEL table rather than redeclaring the same Hungarian copy a
+// third time, extended with the one label MedalChip never needs (it renders nothing
+// for TARGET tier).
+const MEDAL_TIER_COPY: Record<Medal['tier'], { glyph: string; color: string }> = {
+  RECORD: { glyph: '🏅', color: 'var(--amber-deep)' },
+  TARGET: { glyph: '✓', color: 'var(--sage-deep)' },
+}
+const MEDAL_TYPE_LABEL: Record<string, string> = { ...RECORD_LABEL, TARGET_HIT: 'Cél teljesítve' }
+const MEDAL_UNIT_LABEL: Record<string, string> = { KG: 'kg', REPS: 'rep' }
+
+function medalValueLabel(m: Medal): string {
+  const fmt = (n: number) => n.toLocaleString('hu-HU')
+  if (m.weightKg != null && m.reps != null) return `${fmt(m.weightKg)} kg × ${m.reps}`
+  return `${fmt(m.value)} ${MEDAL_UNIT_LABEL[m.unit] ?? ''}`.trim()
+}
+
 function Stat({ label, val }: { label: string; val: string }) {
   return (
     <div className="flex-1 card" style={{ padding: 14, textAlign: 'center', background: 'var(--surface-1)' }}>
@@ -52,7 +71,7 @@ export function WorkoutSummary({
   mode: 'closing' | 'closed'
   exercises: SummaryExercise[]
   challenges: SummaryChallenge[]
-  // The session's earned medals (mezo-wp6n) — replaces the old hadPR boolean. The
+  // The session's earned medals (mezo-wp6n) — replaces the old boolean PR flag. The
   // medal list block itself is a later addition (Task 9); this component still owns
   // the title-suffix framing.
   medals?: Medal[]
@@ -89,6 +108,35 @@ export function WorkoutSummary({
           <Stat label="Gyakorlat" val={`${doneEx}/${exercises.length}`} />
         </div>
       </div>
+
+      {/* Medálok — the session's earned medals (mezo-wp6n). Sorted RECORD-first so a
+          long run of TARGET_HIT rows (one per on-target working set — a session can
+          legitimately produce 15+) doesn't bury the rare RECORD achievements below the
+          fold; nothing is grouped or truncated, the same as the Gyakorlatonként list
+          below, which already relies on the screen's natural scroll for long sessions. */}
+      {medals.length > 0 && (
+        <div style={{ padding: '0 24px 16px' }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Medálok</div>
+          <div className="col gap-sm">
+            {[...medals]
+              .sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'RECORD' ? -1 : 1))
+              .map((m, i) => {
+                const tierCopy = MEDAL_TIER_COPY[m.tier]
+                const typeLabel = MEDAL_TYPE_LABEL[m.type] ?? m.type
+                return (
+                  <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
+                    <span aria-hidden="true" style={{ color: tierCopy.color, fontSize: 14, width: 20, textAlign: 'center' }}>{tierCopy.glyph}</span>
+                    <span className="col flex-1" style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{m.exerciseName}</span>
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 2 }}>{typeLabel}</span>
+                    </span>
+                    <span className="label-mono" style={{ fontSize: 9, color: tierCopy.color }}>{medalValueLabel(m)}</span>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Kihívások */}
       {challenges.length > 0 && (

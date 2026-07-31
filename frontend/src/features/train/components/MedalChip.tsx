@@ -6,7 +6,9 @@
 // ============================================================
 import type { Medal } from '@/data/train/medalTypes'
 
-const RECORD_LABEL: Record<string, string> = {
+// Exported so other medal-rendering surfaces (WorkoutSummary.tsx) reuse this
+// table instead of declaring a third copy of the same Hungarian labels.
+export const RECORD_LABEL: Record<string, string> = {
   WEIGHT: 'Súly-rekord',
   REPS_AT_WEIGHT: 'Rep-rekord',
   E1RM: '1RM-rekord',
