@@ -420,6 +420,13 @@ export interface LinkedMeso {
 }
 
 // --- Alvás (sleep) ---
+/** Quantised stage sequence from a tracker screenshot (mezo-fk9a) — one letter per
+ *  `bucketMin` minutes from `bedtime`: D=mély, L=könnyű, R=REM, A=éber. DISPLAY-ONLY:
+ *  never the source of a phase ratio (ADR 0015). */
+export interface Hypnogram {
+  bucketMin: number
+  stages: string
+}
 export interface SleepEntry {
   date: string
   bedtime: string
@@ -437,6 +444,7 @@ export interface SleepEntry {
   deepMin?: number | null
   sourceQualityPct?: number | null
   source?: 'manual' | 'screenshot' | null
+  hypnogram?: Hypnogram | null
 }
 /** Phase 2 REST DTO — POST /sleep-log. `durationH` is computed in the sheet from bedtime+wakeup. */
 export interface SleepLogInput {
@@ -447,6 +455,7 @@ export interface SleepLogInput {
   source?: 'manual' | 'screenshot'
   sourceQualityPct?: number
   awakeMin?: number; lightMin?: number; remMin?: number; deepMin?: number
+  hypnogram?: Hypnogram
 }
 
 /** LLM-vision extraction from a Sleep Cycle screenshot (mezo-66ab) — a draft, never persisted as-is. */
@@ -460,6 +469,7 @@ export interface SleepShotDraft {
   remMin: number | null
   deepMin: number | null
   sourceQualityPct: number | null
+  hypnogram: Hypnogram | null
   /** Deterministic consistency score 0..1 (backend validator, never the LLM). */
   confidence: number
   needsReview: boolean

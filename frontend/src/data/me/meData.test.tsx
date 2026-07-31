@@ -34,5 +34,6 @@ test('useWeight returns the log + trends', async () => {
 test('useSleep returns the log and last night', async () => {
   const { result } = renderHook(() => useSleep(), { wrapper: QueryWrapper })
   await waitFor(() => expect(result.current.sleepLog.length).toBe(14))
-  expect(result.current.lastNight.duration).toBe(7.4)
+  // The last seed night became the canonical screenshot night in mezo-fk9a (00:42→09:03, 7.5 h).
+  expect(result.current.lastNight.duration).toBe(7.5)
 })

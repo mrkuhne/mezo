@@ -37,10 +37,10 @@ test('renders the last-night hero', () => {
   renderPage()
   expect(screen.getByRole('heading', { level: 1, name: 'Alvás' })).toBeInTheDocument()
   expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument()
-  // hero duration (48px) renders "7.4" — also appears in the log, so assert it is present at least once
-  expect(screen.getAllByText('7.4').length).toBeGreaterThan(0)
-  // hero quality (32px) renders "7" — collides with other quality values, so assert presence
-  expect(screen.getAllByText('7').length).toBeGreaterThan(0)
+  // hero duration (48px) renders "7.5" — also appears in the log, so assert it is present at least once
+  expect(screen.getAllByText('7.5').length).toBeGreaterThan(0)
+  // hero quality (32px) renders "9" — collides with other quality values, so assert presence
+  expect(screen.getAllByText('9').length).toBeGreaterThan(0)
 })
 
 test('renders the recent log (last 7 nights, newest first)', () => {
@@ -89,8 +89,8 @@ it('opens the SleepGoalSheet from the szerkeszt button', async () => {
 
 it('shows the bed-delta stat on the hero', () => {
   renderPage()
-  // last mock night bed 23:05 vs target 23:15 -> −10p
-  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('−10p')
+  // last mock night bed 00:42 vs target 23:15 -> +87p (wraps past midnight: 42 − 1395 + 1440)
+  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('+87p')
 })
 
 test('renders the night-mode entry row linking to /me/sleep/night', () => {
@@ -119,4 +119,59 @@ test('stat card opens the deck sheet', () => {
   renderPage()
   fireEvent.click(screen.getByText('Miért számít?'))
   expect(screen.getByText('A kutatás számai')).toBeInTheDocument()
+})
+
+it('renders the phase rail and both reference rows for a screenshot night', async () => {
+  renderPage()
+  // "Mély"/"REM" each label FOUR things: the hero's own rail legend item + reference row,
+  // and PhaseAverageCard's rail legend item + reference row (mock seed clears its 3-night
+  // floor) — two PhaseRail+PhaseReferenceRow pairs, not a stray duplicate. "REM" gets a
+  // fifth hit from the phase-stacked SleepChart's own bottom legend (mezo-fk9a task 9);
+  // that legend's other labels are lowercase ("mély"/"könnyű") so they don't collide with
+  // the capitalized "Mély" query.
+  expect((await screen.findAllByText('Mély')).length).toBe(4)
+  expect(screen.getAllByText('REM').length).toBe(5)
+  expect(screen.getAllByText(/ref \d+–\d+%/).length).toBe(4)
+})
+
+it('renders the phase-average card against the real mock seed (8 of 14 nights carry phases)', async () => {
+  renderPage()
+  expect(await screen.findByText('Átlagos összetétel · 8 éjszakából')).toBeInTheDocument()
+})
+
+it('renders the REM-duration card against the real mock seed (3 short / 5 long nights)', async () => {
+  renderPage()
+  // short avg rem (390,408,396min nights -> rem 112,112,110 = 111) vs long avg rem
+  // (438,462,438,468,450min nights -> rem 140,148,138,152,144 = 144) -> delta 33.
+  expect(await screen.findByText(/33 perccel/)).toBeInTheDocument()
+})
+
+test('renders the night-arc heading and card when the last night has a hypnogram', () => {
+  renderPage() // mock lastNight (2026-05-22) carries a hypnogram
+  expect(screen.getByText('Az éjszaka íve')).toBeInTheDocument()
+})
+
+test('omits the night-arc heading when the last night has no hypnogram (no stray heading over nothing)', async () => {
+  // NightArcCard itself returns null without a valid hypnogram, but its Eyebrow heading is a
+  // rendered sibling in SleepPage — this guards against the heading surviving alone.
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/sleep`, () =>
+      HttpResponse.json([
+        { id: 's1', date: '2026-05-30', bedtime: '23:10', wakeup: '06:40', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 0, notes: null },
+        { id: 's2', date: '2026-05-31', bedtime: '23:20', wakeup: '06:50', duration: 7.4, quality: 8, awakenings: 1, mealToSleep: 0, notes: null,
+          inBedMin: 470, awakeMin: 24, lightMin: 204, remMin: 140, deepMin: 100, sourceQualityPct: 85, source: 'screenshot' },
+      ]),
+    ),
+  )
+
+  render(
+    <MemoryRouter>
+      <SleepPage />
+    </MemoryRouter>,
+    { wrapper: makeHookWrapper() },
+  )
+
+  await waitFor(() => expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument())
+  expect(screen.queryByText('Az éjszaka íve')).not.toBeInTheDocument()
 })

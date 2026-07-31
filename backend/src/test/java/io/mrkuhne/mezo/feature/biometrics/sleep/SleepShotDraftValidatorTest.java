@@ -16,7 +16,7 @@ class SleepShotDraftValidatorTest {
 
     private static Extracted canonical() {
         // Daniel's Sleep Cycle example: span 00:42->09:03 = 501 = inBed; phases sum 502 (~inBed); asleep 449.
-        return new Extracted("00:42", "09:03", 449, 501, 52, 206, 144, 100, 95);
+        return new Extracted("00:42", "09:03", 449, 501, 52, 206, 144, 100, 95, null);
     }
 
     @Test
@@ -29,7 +29,7 @@ class SleepShotDraftValidatorTest {
 
     @Test
     void testScore_shouldFailAsleepCheck_whenAsleepExceedsInBed() {
-        Extracted e = new Extracted("00:42", "09:03", 550, 501, 52, 206, 144, 100, 95);
+        Extracted e = new Extracted("00:42", "09:03", 550, 501, 52, 206, 144, 100, 95, null);
 
         Score s = validator.score(e, THRESHOLD);
 
@@ -41,7 +41,7 @@ class SleepShotDraftValidatorTest {
     @Test
     void testScore_shouldNeedReview_whenConfidenceBelowThreshold() {
         // Phases sum way off (200 vs 501) AND span mismatch via bedtime shift -> 2/4 = 0.5 < 0.6.
-        Extracted e = new Extracted("02:00", "09:03", 400, 501, 50, 50, 50, 50, 95);
+        Extracted e = new Extracted("02:00", "09:03", 400, 501, 50, 50, 50, 50, 95, null);
 
         Score s = validator.score(e, THRESHOLD);
 
@@ -54,7 +54,7 @@ class SleepShotDraftValidatorTest {
         // Same 2/4 = 0.50 extraction, but the caller's threshold is exactly 0.50: the boundary-inclusive
         // <= must still force review. All key fields present, so review is driven purely by the threshold
         // comparison — this test fails if <= is ever weakened to <.
-        Extracted e = new Extracted("02:00", "09:03", 400, 501, 50, 50, 50, 50, 95);
+        Extracted e = new Extracted("02:00", "09:03", 400, 501, 50, 50, 50, 50, 95, null);
 
         Score s = validator.score(e, 0.5);
 
@@ -64,7 +64,7 @@ class SleepShotDraftValidatorTest {
 
     @Test
     void testScore_shouldSkipPhaseCheck_whenAnyPhaseMissing() {
-        Extracted e = new Extracted("00:42", "09:03", 449, 501, null, 206, 144, 100, 95);
+        Extracted e = new Extracted("00:42", "09:03", 449, 501, null, 206, 144, 100, 95, null);
 
         Score s = validator.score(e, THRESHOLD);
 
@@ -75,7 +75,7 @@ class SleepShotDraftValidatorTest {
 
     @Test
     void testScore_shouldNeedReview_whenKeyFieldMissing() {
-        Extracted e = new Extracted(null, "09:03", 449, 501, 52, 206, 144, 100, 95);
+        Extracted e = new Extracted(null, "09:03", 449, 501, 52, 206, 144, 100, 95, null);
 
         Score s = validator.score(e, THRESHOLD);
 
@@ -85,7 +85,7 @@ class SleepShotDraftValidatorTest {
     @Test
     void testScore_shouldWrapMidnight_whenSpanCrossesIt() {
         // 23:00 -> 07:21 = 501 min across midnight; inBed 501 -> span check passes.
-        Extracted e = new Extracted("23:00", "07:21", 449, 501, null, null, null, null, null);
+        Extracted e = new Extracted("23:00", "07:21", 449, 501, null, null, null, null, null, null);
 
         Score s = validator.score(e, THRESHOLD);
 
@@ -94,7 +94,7 @@ class SleepShotDraftValidatorTest {
 
     @Test
     void testScore_shouldFailTimeParse_whenNotHHmm() {
-        Extracted e = new Extracted("25:99", "09:03", 449, null, null, null, null, null, null);
+        Extracted e = new Extracted("25:99", "09:03", 449, null, null, null, null, null, null, null);
 
         Score s = validator.score(e, THRESHOLD);
 
@@ -105,7 +105,7 @@ class SleepShotDraftValidatorTest {
 
     @Test
     void testScore_shouldBeZeroConfidenceAndReview_whenNothingExtracted() {
-        Score s = validator.score(new Extracted(null, null, null, null, null, null, null, null, null), THRESHOLD);
+        Score s = validator.score(new Extracted(null, null, null, null, null, null, null, null, null, null), THRESHOLD);
 
         assertThat(s.confidence()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(s.needsReview()).isTrue();

@@ -11,11 +11,17 @@ import {
   REGULARITY_WINDOW_DAYS,
   EFFICIENCY_TARGET_PCT,
 } from '@/features/me/logic/sleepStats'
+import { DEEP_REF, parseHypnogram, phaseBreakdown, phasePct, REM_REF } from '@/features/me/logic/sleepPhases'
+import { PhaseRail } from '@/features/me/components/PhaseRail'
+import { PhaseReferenceRow } from '@/features/me/components/PhaseReferenceRow'
 import { SleepStat } from '@/features/me/components/SleepStat'
 import { SleepLogRow } from '@/features/me/components/SleepLogRow'
 import { SleepChart } from '@/features/me/components/SleepChart'
 import { SleepStatCard } from '@/features/me/components/SleepStatCard'
 import { SleepEscalationCard } from '@/features/me/components/SleepEscalationCard'
+import { NightArcCard } from '@/features/me/components/NightArcCard'
+import { PhaseAverageCard } from '@/features/me/components/PhaseAverageCard'
+import { RemDurationCard } from '@/features/me/components/RemDurationCard'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { SleepGoalSheet } from '@/features/me/sheets/SleepGoalSheet'
 import { SleepStatsSheet } from '@/features/me/sheets/SleepStatsSheet'
@@ -42,6 +48,11 @@ export function SleepPage() {
   const regularity = regularityScore(sleepLog, goal, REGULARITY_WINDOW_DAYS)
   const lastEfficiency = lastNight ? efficiencyPct(lastNight) : null
   const lastBedDelta = lastNight ? bedDeltaMin(lastNight, goal) : null
+  const lastPhases = lastNight ? phaseBreakdown(lastNight) : null
+  // NightArcCard itself returns null without a valid hypnogram, but its Eyebrow heading is a
+  // sibling — guard the whole block on a valid hypnogram too, or the heading strands alone
+  // over nothing.
+  const lastArc = lastNight ? parseHypnogram(lastNight) : null
 
   // Color the (real) quality number good/bad on the same threshold SleepChart
   // uses for "low" nights (quality <= 5) — a presentation heuristic, no mock target.
@@ -216,6 +227,24 @@ export function SleepPage() {
                   )}
                 </div>
 
+                {lastPhases && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
+                    <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+                        Fázisok
+                      </span>
+                      {lastNight.source === 'screenshot' && (
+                        <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--faint)' }}>screenshotból</span>
+                      )}
+                    </div>
+                    <PhaseRail breakdown={lastPhases} height={20} />
+                    <div className="col" style={{ gap: 11, marginTop: 13, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                      <PhaseReferenceRow label="Mély" pct={phasePct(lastPhases, 'deep')} range={DEEP_REF} color="var(--ph-deep)" />
+                      <PhaseReferenceRow label="REM" pct={phasePct(lastPhases, 'rem')} range={REM_REF} color="var(--ph-rem)" />
+                    </div>
+                  </div>
+                )}
+
                 {lastNight.notes && (
                   <p
                     className="text-secondary mt-md"
@@ -227,6 +256,18 @@ export function SleepPage() {
               </div>
             </div>
           </div>
+
+          {lastArc && (
+            <div style={{ padding: '0 24px 16px' }}>
+              <div style={{ marginBottom: 10 }}><Eyebrow>Az éjszaka íve</Eyebrow></div>
+              <NightArcCard entry={lastNight} />
+            </div>
+          )}
+
+          {/* Fixed window (whole-branch review FIX 4) — the 7d/14d chips that used to drive this
+              live in the Trend block BELOW this card; tapping one retitled or removed a card
+              above it. The card's own heading already discloses its N ("...· N éjszakából"). */}
+          <PhaseAverageCard entries={sleepLog} windowDays={14} />
 
           {/* Duration + quality chart */}
           <div style={{ padding: '0 24px 16px' }}>
@@ -249,6 +290,8 @@ export function SleepPage() {
             </div>
             <SleepChart entries={sleepLog} period={period} />
           </div>
+
+          <RemDurationCard entries={sleepLog} />
 
           {/* Recent log */}
           <div style={{ padding: '0 24px 24px' }}>

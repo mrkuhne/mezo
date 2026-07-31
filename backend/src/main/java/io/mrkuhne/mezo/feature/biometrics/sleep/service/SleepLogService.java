@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.biometrics.sleep.service;
 
 import io.mrkuhne.mezo.api.dto.LogSleepRequest;
 import io.mrkuhne.mezo.api.dto.SleepLogResponse;
+import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.mapper.SleepLogMapper;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
@@ -39,6 +40,8 @@ public class SleepLogService {
         e.setRemMin(req.getRemMin());
         e.setDeepMin(req.getDeepMin());
         e.setSourceQualityPct(req.getSourceQualityPct());
+        e.setHypnogram(req.getHypnogram() == null ? null
+            : new SleepHypnogram(req.getHypnogram().getBucketMin(), req.getHypnogram().getStages()));
         if (req.getSource() != null) {
             e.setSource(req.getSource()); // entity default stays "manual" when omitted
         }

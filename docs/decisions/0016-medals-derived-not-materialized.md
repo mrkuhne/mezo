@@ -1,4 +1,4 @@
-# 0015 — Medals are replayed from `exercise_set`, not stored
+# 0016 — Medals are replayed from `exercise_set`, not stored
 
 - **Status:** Accepted
 - **Date:** 2026-07-30
