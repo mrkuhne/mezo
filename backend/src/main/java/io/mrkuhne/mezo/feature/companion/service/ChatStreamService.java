@@ -3,9 +3,11 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamError;
+import io.mrkuhne.mezo.api.dto.StreamToolCall;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisedAnswer;
 import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
+import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -19,15 +21,17 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.util.UUID;
 
 /**
  * The streamed chat turn (V0.4). Orchestrates the two transactional halves of ChatService
  * around the non-transactional LLM stream: prepareTurn (persist user row) → CompanionLlm.stream
- * (each chunk re-emitted as an SSE 'delta') → completeTurn (persist assistant row) as the
- * terminal 'done'. A mid-stream failure becomes a terminal 'error' event and the assistant
- * row is NOT persisted — partial answers never enter the history.
+ * (each chunk re-emitted as an SSE 'delta', each executed tool call re-emitted live as an SSE
+ * 'tool' — mezo-280) → completeTurn (persist assistant row) as the terminal 'done'. A mid-stream
+ * failure becomes a terminal 'error' event and the assistant row is NOT persisted — partial
+ * answers never enter the history.
  *
  * <p>Ownership/validation failures inside prepareTurn throw BEFORE the Flux is returned, so
  * they surface as regular JSON error responses (the FE sends "Accept: text/event-stream,
@@ -42,6 +46,7 @@ public class ChatStreamService {
     static final String EVENT_DELTA = "delta";
     static final String EVENT_DONE = "done";
     static final String EVENT_ERROR = "error";
+    static final String EVENT_TOOL = "tool";
     static final String STREAM_FAILED_CODE = "COMPANION_STREAM_FAILED";
 
     private final ChatService chatService;
@@ -59,15 +64,30 @@ public class ChatStreamService {
         ToolCallAudit audit = toolRegistry.newTurnAudit();
 
         StringBuilder answer = new StringBuilder();
+        // mezo-280: live tool progress. The audit is the one choke point every tool passes through
+        // (RecordingToolCallback), so one listener turns each executed call into an SSE frame the
+        // moment it runs — instead of every chip appearing at once in the terminal 'done' row.
+        // unicast().onBackpressureBuffer() BUFFERS pre-subscription emissions, which matters: some
+        // CompanionLlm implementations run the tool loop while the Flux is being assembled.
+        Sinks.Many<ServerSentEvent<Object>> toolSink = Sinks.many().unicast().onBackpressureBuffer();
+        // Registered BEFORE companionLlm.stream(...) is called for exactly that reason.
+        audit.onCall(call -> toolSink.tryEmitNext(toolEvent(call)));
+
         // mezo-2zyu: the adapter reads the holder EAGERLY (before the Flux is returned), so tagging
         // the stream() call itself is enough — the deferred pipeline carries the closed-over context.
-        return llmCallContextHolder.runWith(
+        Flux<ServerSentEvent<Object>> deltas = llmCallContextHolder.runWith(
                         new LlmCallContext("companion_chat", "stream", "conversation", conversationId),
                         () -> companionLlm.stream(turn.systemPrompt(), turn.userContent(),
                                 toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)))
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
                         StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())
+                // Completing the sink with the deltas ends the merge. Any LATER call (an advisor
+                // corrective round) emits into a terminated sink and is dropped — deliberately:
+                // those calls still reach the client in the authoritative 'done' row.
+                .doFinally(signal -> toolSink.tryEmitComplete());
+
+        return Flux.merge(toolSink.asFlux(), deltas)
                 .concatWith(Mono.fromCallable(() -> {
                     // V1.3: post-hoc review — deltas already delivered attempt-1; the done row is
                     // authoritative (the FE swaps it in), so a corrective retry lands silently here.
@@ -92,5 +112,14 @@ public class ChatStreamService {
                                     StreamError.builder().code(STREAM_FAILED_CODE).build())
                             .event(EVENT_ERROR).build());
                 });
+    }
+
+    /** The live twin of {@code CompanionMapper.toTools}: same pre-baked "name(args)" chip label. */
+    private static ServerSentEvent<Object> toolEvent(ToolCallsEnvelope.ToolCall call) {
+        String label = call.args() == null || call.args().isBlank()
+                ? call.name() : call.name() + "(" + call.args() + ")";
+        return ServerSentEvent.<Object>builder(
+                StreamToolCall.builder().type(call.type()).name(label).build())
+                .event(EVENT_TOOL).build();
     }
 }

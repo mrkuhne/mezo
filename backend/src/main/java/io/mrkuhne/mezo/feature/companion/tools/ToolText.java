@@ -1,6 +1,9 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Shared render helpers for the V0.5 toolsets — the snapshot's num() idiom + arg clamping.
@@ -38,5 +41,53 @@ public final class ToolText {
             b.append('×').append(repMin).append('-').append(repMax);
         }
         return b.toString();
+    }
+
+    /**
+     * "sport: {sport} {time} {kind} ({durationMin} perc)" — one scheduled sport slot resolved onto a
+     * date. Shared by {@code TrainTools} (get_training_plan) and {@code ContextSnapshotAssembler}
+     * (Ma:/Holnap:) so the tool and the prompt snapshot can never again disagree about a day's sport
+     * (mezo-ajp). Optional pieces are omitted rather than rendered as "null".
+     */
+    public static String sportLine(String sport, String time, String kind, Integer durationMin) {
+        StringBuilder b = new StringBuilder("sport: ").append(sport);
+        if (time != null) {
+            b.append(' ').append(time);
+        }
+        if (kind != null) {
+            b.append(' ').append(kind);
+        }
+        if (durationMin != null) {
+            b.append(" (").append(durationMin).append(" perc)");
+        }
+        return b.toString();
+    }
+
+    /**
+     * Lowercase + NFD accent-strip — "Túrós" → "turos", so a Hungarian name is findable without
+     * diacritics (the {@code ClinicalOutputCheck.fold} idiom, promoted here for tool matching).
+     */
+    public static String fold(String text) {
+        return text == null ? ""
+                : Normalizer.normalize(text.toLowerCase(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+    }
+
+    /**
+     * A free-text tool filter split into folded search tokens (mezo-sxe). Single characters are
+     * dropped — a 1-char needle matches nearly everything and is never what the user meant; if
+     * that leaves nothing, the whole folded needle is kept as the single token so a deliberate
+     * short filter still searches for itself rather than silently matching all rows.
+     */
+    public static List<String> searchTokens(String filter) {
+        String folded = fold(filter).trim();
+        List<String> tokens = Arrays.stream(folded.split("[\\s,;]+"))
+                .filter(t -> t.length() > 1)
+                .toList();
+        return tokens.isEmpty() ? (folded.isEmpty() ? List.of() : List.of(folded)) : tokens;
+    }
+
+    /** Folded substring containment — the per-field primitive behind {@link #searchTokens}. */
+    public static boolean containsFolded(String value, String foldedToken) {
+        return value != null && fold(value).contains(foldedToken);
     }
 }

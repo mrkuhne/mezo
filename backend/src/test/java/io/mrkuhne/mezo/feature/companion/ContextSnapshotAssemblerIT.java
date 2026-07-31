@@ -259,6 +259,39 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testTrainBlock_shouldResolveTodayGymAndSport_whenScheduledForTodayWeekday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(todayDow);
+
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "upper", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+
+        String snapshot = assembler.render(owner, today);
+
+        // "Ma:" must carry the same dated resolution as "Holnap:" (mezo-ajp) — the asymmetry was
+        // why today's sport was only inferable from the trailing raw weekly "sport-rend" pattern.
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        assertThat(maSegment).contains(todayLabel).contains("Fekvenyomás 3×6-8")
+            .contains("sport: volleyball 18:00 training (120 perc)");
+    }
+
+    @Test
+    void testTrainBlock_shouldResolveTodayRunSession_whenActiveRunningBlockHasSessionForTodayWeekday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        runningPopulator.createBlockWithSessions(owner, "Sprint blokk", "active", 4, 7);
+
+        String snapshot = assembler.render(owner, today);
+
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        assertThat(maSegment).contains("futás: Sprint-intervallum");
+    }
+
+    @Test
     void testTrainBlock_shouldResolveTomorrowRunSession_whenActiveRunningBlockHasSessionForTomorrowWeekday() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();

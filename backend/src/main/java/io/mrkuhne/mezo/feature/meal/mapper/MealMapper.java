@@ -1,12 +1,14 @@
 package io.mrkuhne.mezo.feature.meal.mapper;
 
 import io.mrkuhne.mezo.api.dto.Macros;
+import io.mrkuhne.mezo.api.dto.MealIngredientOverrideResponse;
 import io.mrkuhne.mezo.api.dto.MealItemResponse;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.MealScore;
 import io.mrkuhne.mezo.feature.nutrition.mapper.BreakdownDtoMapper;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealItemRecipeOverrideJson;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -54,6 +56,8 @@ public interface MealMapper {
             .name(i.getSnapshotName())
             .nova(i.getSnapshotNova() == null ? null : i.getSnapshotNova().intValue())
             .contribution(contribution(i))
+            .ingredientOverrides(i.getRecipeOverrides() == null ? null
+                : i.getRecipeOverrides().stream().map(MealMapper::toOverrideResponse).toList())
             .build();
     }
 
@@ -104,5 +108,17 @@ public interface MealMapper {
     private static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
         BigDecimal v = base == null ? BigDecimal.ZERO : base;
         return v.multiply(factor).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    /** Persisted override envelope → contract response (1:1, already self-describing). */
+    private static MealIngredientOverrideResponse toOverrideResponse(MealItemRecipeOverrideJson o) {
+        return MealIngredientOverrideResponse.builder()
+            .lineOrder(o.lineOrder())
+            .pantryItemId(o.pantryItemId())
+            .name(o.name())
+            .unit(o.unit())
+            .originalAmount(o.originalAmount())
+            .amount(o.amount())
+            .build();
     }
 }

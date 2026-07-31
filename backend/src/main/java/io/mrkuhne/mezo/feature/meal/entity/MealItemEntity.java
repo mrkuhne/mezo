@@ -11,11 +11,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 /**
  * One ordered, polymorphic line of a {@link MealEntity} (FK {@code meal_id},
@@ -100,4 +103,14 @@ public class MealItemEntity extends OwnedEntity {
 
     @Column(name = "snapshot_nova")
     private Short snapshotNova;
+
+    /**
+     * Typed jsonb envelope of the recipe-arm ingredient overrides (mezo-ormb) — only the lines the
+     * user changed. NULL (not an empty list) means "the recipe as written"; the frozen
+     * {@code snapshot*} macros already incorporate whatever is here, so this is the explanation of
+     * the numbers, never their source at read time.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "recipe_overrides", columnDefinition = "jsonb")
+    private List<MealItemRecipeOverrideJson> recipeOverrides;
 }

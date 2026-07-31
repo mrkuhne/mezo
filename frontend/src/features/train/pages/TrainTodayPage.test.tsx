@@ -67,6 +67,25 @@ test('today gym hero renders (the weekly list + load tiles + note now live on He
   expect(screen.getByRole('button', { name: 'Indítsuk →' })).toBeInTheDocument()
 })
 
+// The one-day rework (mezo-9bbc) dropped the unconditional `+ Saját edzés`
+// footer, leaving the CTA only on rest days — a day WITH scheduled sessions had
+// no way to assemble a one-off workout for today (mezo-eahv).
+test('a day with scheduled sessions still offers the Saját edzés CTA', () => {
+  renderView()
+  // mock today (Csü) carries the gym hero — the footer CTA must still be there
+  expect(screen.getByRole('button', { name: 'Indítsuk →' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Saját edzés/ }))
+  expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
+})
+
+test('a non-today selection offers no Saját edzés CTA (today-only entry)', () => {
+  render(
+    <QueryWrapper><MemoryRouter initialEntries={['/train?day=1']}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>,
+  )
+  expect(screen.getByRole('heading', { name: 'Kedd' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Saját edzés/ })).not.toBeInTheDocument()
+})
+
 test('day strip: selecting another day swaps the rendered sessions, no refetch', async () => {
   renderView()
   // mock week: today is Csü (gym Pull Day). Kedd carries volleyball 17:00.

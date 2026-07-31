@@ -14,6 +14,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
@@ -84,17 +85,45 @@ public interface RecipeMapper {
             .build();
     }
 
-    /** Per-line contribution: factor = amount / snapshotPer; round(snapshot.{…} * factor). */
+    /** Per-line contribution at the line's own stored amount. */
     default RecipeContribution contribution(RecipeIngredientEntity l) {
+        return contributionWithAmount(l, l.getAmount());
+    }
+
+    /**
+     * THE per-line macro formula — {@code factor = amount / snapshotPer}; {@code round(snapshot × factor)}
+     * whole-number HALF_UP. Every caller (stored rollup, meal-log override rollup) goes through here so
+     * the arithmetic exists exactly once (mezo-8xy single-round rule).
+     */
+    default RecipeContribution contributionWithAmount(RecipeIngredientEntity l, BigDecimal amount) {
         BigDecimal per = l.getSnapshotPer() == null || l.getSnapshotPer().signum() == 0
             ? BigDecimal.ONE : l.getSnapshotPer();
-        BigDecimal factor = l.getAmount().divide(per, 6, RoundingMode.HALF_UP);
+        BigDecimal effective = amount == null ? BigDecimal.ZERO : amount;
+        BigDecimal factor = effective.divide(per, 6, RoundingMode.HALF_UP);
         return RecipeContribution.builder()
             .kcal(scaled(l.getSnapshotKcal(), factor))
             .p(scaled(l.getSnapshotProteinG(), factor))
             .c(scaled(l.getSnapshotCarbsG(), factor))
             .f(scaled(l.getSnapshotFatG(), factor))
             .build();
+    }
+
+    /**
+     * Whole-recipe rollup with per-line amount substitutions ({@code lineOrder → amount}, mezo-ormb).
+     * An EMPTY map reproduces the stored rollup exactly — that identity is the regression guard for
+     * every un-overridden meal.
+     */
+    default RecipeMacros rollupWithOverrides(RecipeEntity e, Map<Integer, BigDecimal> overrides) {
+        BigDecimal kcal = BigDecimal.ZERO, p = BigDecimal.ZERO, c = BigDecimal.ZERO, f = BigDecimal.ZERO;
+        for (RecipeIngredientEntity l : e.getLines()) {
+            BigDecimal amount = overrides.getOrDefault(l.getLineOrder(), l.getAmount());
+            RecipeContribution x = contributionWithAmount(l, amount);
+            kcal = kcal.add(x.getKcal());
+            p = p.add(x.getP());
+            c = c.add(x.getC());
+            f = f.add(x.getF());
+        }
+        return RecipeMacros.builder().kcal(kcal).p(p).c(c).f(f).build();
     }
 
     /** Whole-recipe macros = Σ line contributions. */
