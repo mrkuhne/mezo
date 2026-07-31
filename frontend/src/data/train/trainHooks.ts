@@ -2,11 +2,13 @@ import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { evaluateMockSetMedals, type MockMedalContext } from '@/data/train/medalEvaluator'
 import {
   trainApi,
   type CatalogExerciseCreateRequest,
   type ExerciseCatalogItem,
   type ExerciseRecordResponse,
+  type ExerciseSetResponse,
   type GymExerciseInput,
   type GymScheduleSlotInput,
   type GymScheduleSlotResponse,
@@ -254,7 +256,14 @@ type TrainData = {
   closeMesocycle: (id: string, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
-  logSet: (workoutId: string, set: SetLogRequest) => void
+  // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
+  // (ActiveWorkoutPage) supplies it because only it knows which exercise/lastWeek is being
+  // logged; real mode ignores it. The response carries `medals` in BOTH modes.
+  logSet: (
+    workoutId: string,
+    set: SetLogRequest,
+    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+  ) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
@@ -378,10 +387,34 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mutationFn: mock ? async () => undefined : (templateSessionId) => trainApi.startWorkout(templateSessionId),
     onSuccess: invalidateToday,
   })
+  // Mock runs the mock medal evaluator; real persists and returns the backend's response.
+  // Both branches carry `medals` so callers never have to branch on mode (mezo-wp6n).
+  // Eligibility mirrors the backend: working sets only (kind defaults to 'working' when
+  // omitted, per the contract), and evaluation is skipped when the caller didn't supply
+  // a MockMedalContext (e.g. existing tests that call logSet without opts).
   const logSetMutation = useMutation({
     mutationFn: mock
-      ? async (_args: { workoutId: string; set: SetLogRequest }) => undefined
-      : (args: { workoutId: string; set: SetLogRequest }) => trainApi.logSet(args.workoutId, args.set),
+      ? async (args: { workoutId: string; set: SetLogRequest; ctx?: MockMedalContext }) => {
+          const isWorking = (args.set.kind ?? 'working') === 'working'
+          const medals = isWorking && args.ctx
+            ? evaluateMockSetMedals({
+                exerciseName: args.ctx.exerciseName,
+                lastWeek: args.ctx.lastWeek,
+                date: args.ctx.date,
+                weightKg: args.set.weightKg,
+                reps: args.set.reps,
+                targetWeightKg: args.set.targetWeightKg ?? null,
+                targetReps: args.set.targetReps ?? null,
+                setIndex: args.set.setIndex,
+              })
+            : []
+          // Only `medals` is synthesised — no `id`/set echo, nothing downstream reads
+          // those fields off a mock logSet response (mirrors the finishMutation /
+          // logSportMutation mock-branch idiom below of casting a partial payload).
+          return { medals } as ExerciseSetResponse
+        }
+      : (args: { workoutId: string; set: SetLogRequest; ctx?: MockMedalContext }) =>
+          trainApi.logSet(args.workoutId, args.set),
     onSuccess: invalidateToday,
   })
   const skipMutation = useMutation({
@@ -523,7 +556,11 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     [startMutation],
   )
   const logSet = useCallback(
-    (workoutId: string, set: SetLogRequest) => logSetMutation.mutate({ workoutId, set }),
+    (
+      workoutId: string,
+      set: SetLogRequest,
+      opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+    ) => logSetMutation.mutate({ workoutId, set, ctx: opts?.ctx }, { onSuccess: (r) => opts?.onSuccess?.(r) }),
     [logSetMutation],
   )
   const skipExercise = useCallback(
