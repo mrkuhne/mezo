@@ -212,6 +212,10 @@ export function TrainTodayPage() {
   // (mezo-9bbc review fix). Falls back to todayIso when the shown day carries no
   // date (defensive only; every real agenda day has one).
   const shownIso = shownDay?.date ?? todayIso
+  // Rest-day card gate — shared with the Saját edzés footer below so exactly one
+  // of the two carries the CTA and it is never duplicated (mezo-eahv).
+  const restDayCard =
+    !shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0 && !(isTodayShown && todaySession?.openWorkout)
   // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
   // (TRX noon + volleyball evening) must flip each slot independently.
   const loggedSportOn = (iso: string, k: SportKind) =>
@@ -479,7 +483,7 @@ export function TrainTodayPage() {
           CTA (the heti rended pointer moved to Heti); a non-today rest day is read-only.
           Gated off a today open instance above — an in-progress resume card and the
           rest-day card must never render together (mezo-ws2x — Finding 4). */}
-      {!shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0 && !(isTodayShown && todaySession?.openWorkout) && (
+      {restDayCard && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 18 }}>
             <span className="eyebrow">{isTodayShown ? 'Ma pihenőnap' : 'Nincs tervezett edzés'}</span>
@@ -498,6 +502,25 @@ export function TrainTodayPage() {
               </CtaGhost>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Saját edzés footer — a one-off workout for TODAY must stay reachable even
+          when the day already carries scheduled sessions; the mezo-9bbc one-day
+          rework dropped this unconditional entry and left it rest-day-only
+          (mezo-eahv). The rest-day card above carries its own copy, so the footer
+          renders exactly when that card does not. Non-today selections are
+          read-only — no entry there. */}
+      {isTodayShown && !restDayCard && (
+        <div style={{ padding: '0 24px 16px' }}>
+          <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
+            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
+            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <Icon name="plus" size={12} /> Saját edzés
+          </button>
         </div>
       )}
 
