@@ -129,3 +129,33 @@ it('renders the phase rail and both reference rows for a screenshot night', asyn
   expect(screen.getAllByText('REM').length).toBe(2)
   expect(screen.getAllByText(/ref \d+–\d+%/).length).toBe(2)
 })
+
+test('renders the night-arc heading and card when the last night has a hypnogram', () => {
+  renderPage() // mock lastNight (2026-05-22) carries a hypnogram
+  expect(screen.getByText('Az éjszaka íve')).toBeInTheDocument()
+})
+
+test('omits the night-arc heading when the last night has no hypnogram (no stray heading over nothing)', async () => {
+  // NightArcCard itself returns null without a valid hypnogram, but its Eyebrow heading is a
+  // rendered sibling in SleepPage — this guards against the heading surviving alone.
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/sleep`, () =>
+      HttpResponse.json([
+        { id: 's1', date: '2026-05-30', bedtime: '23:10', wakeup: '06:40', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 0, notes: null },
+        { id: 's2', date: '2026-05-31', bedtime: '23:20', wakeup: '06:50', duration: 7.4, quality: 8, awakenings: 1, mealToSleep: 0, notes: null,
+          inBedMin: 470, awakeMin: 24, lightMin: 204, remMin: 140, deepMin: 100, sourceQualityPct: 85, source: 'screenshot' },
+      ]),
+    ),
+  )
+
+  render(
+    <MemoryRouter>
+      <SleepPage />
+    </MemoryRouter>,
+    { wrapper: makeHookWrapper() },
+  )
+
+  await waitFor(() => expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument())
+  expect(screen.queryByText('Az éjszaka íve')).not.toBeInTheDocument()
+})

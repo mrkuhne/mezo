@@ -11,7 +11,7 @@ import {
   REGULARITY_WINDOW_DAYS,
   EFFICIENCY_TARGET_PCT,
 } from '@/features/me/logic/sleepStats'
-import { DEEP_REF, phaseBreakdown, phasePct, REM_REF } from '@/features/me/logic/sleepPhases'
+import { DEEP_REF, parseHypnogram, phaseBreakdown, phasePct, REM_REF } from '@/features/me/logic/sleepPhases'
 import { PhaseRail } from '@/features/me/components/PhaseRail'
 import { PhaseReferenceRow } from '@/features/me/components/PhaseReferenceRow'
 import { SleepStat } from '@/features/me/components/SleepStat'
@@ -19,6 +19,7 @@ import { SleepLogRow } from '@/features/me/components/SleepLogRow'
 import { SleepChart } from '@/features/me/components/SleepChart'
 import { SleepStatCard } from '@/features/me/components/SleepStatCard'
 import { SleepEscalationCard } from '@/features/me/components/SleepEscalationCard'
+import { NightArcCard } from '@/features/me/components/NightArcCard'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { SleepGoalSheet } from '@/features/me/sheets/SleepGoalSheet'
 import { SleepStatsSheet } from '@/features/me/sheets/SleepStatsSheet'
@@ -46,6 +47,10 @@ export function SleepPage() {
   const lastEfficiency = lastNight ? efficiencyPct(lastNight) : null
   const lastBedDelta = lastNight ? bedDeltaMin(lastNight, goal) : null
   const lastPhases = lastNight ? phaseBreakdown(lastNight) : null
+  // NightArcCard itself returns null without a valid hypnogram, but its Eyebrow heading is a
+  // sibling — guard the whole block on a valid hypnogram too, or the heading strands alone
+  // over nothing.
+  const lastArc = lastNight ? parseHypnogram(lastNight) : null
 
   // Color the (real) quality number good/bad on the same threshold SleepChart
   // uses for "low" nights (quality <= 5) — a presentation heuristic, no mock target.
@@ -249,6 +254,13 @@ export function SleepPage() {
               </div>
             </div>
           </div>
+
+          {lastArc && (
+            <div style={{ padding: '0 24px 16px' }}>
+              <div style={{ marginBottom: 10 }}><Eyebrow>Az éjszaka íve</Eyebrow></div>
+              <NightArcCard entry={lastNight} />
+            </div>
+          )}
 
           {/* Duration + quality chart */}
           <div style={{ padding: '0 24px 16px' }}>
