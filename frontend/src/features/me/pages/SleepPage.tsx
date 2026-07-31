@@ -11,6 +11,9 @@ import {
   REGULARITY_WINDOW_DAYS,
   EFFICIENCY_TARGET_PCT,
 } from '@/features/me/logic/sleepStats'
+import { DEEP_REF, phaseBreakdown, phasePct, REM_REF } from '@/features/me/logic/sleepPhases'
+import { PhaseRail } from '@/features/me/components/PhaseRail'
+import { PhaseReferenceRow } from '@/features/me/components/PhaseReferenceRow'
 import { SleepStat } from '@/features/me/components/SleepStat'
 import { SleepLogRow } from '@/features/me/components/SleepLogRow'
 import { SleepChart } from '@/features/me/components/SleepChart'
@@ -42,6 +45,7 @@ export function SleepPage() {
   const regularity = regularityScore(sleepLog, goal, REGULARITY_WINDOW_DAYS)
   const lastEfficiency = lastNight ? efficiencyPct(lastNight) : null
   const lastBedDelta = lastNight ? bedDeltaMin(lastNight, goal) : null
+  const lastPhases = lastNight ? phaseBreakdown(lastNight) : null
 
   // Color the (real) quality number good/bad on the same threshold SleepChart
   // uses for "low" nights (quality <= 5) — a presentation heuristic, no mock target.
@@ -215,6 +219,24 @@ export function SleepPage() {
                     </span>
                   )}
                 </div>
+
+                {lastPhases && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
+                    <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+                        Fázisok
+                      </span>
+                      {lastNight.source === 'screenshot' && (
+                        <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--faint)' }}>screenshotból</span>
+                      )}
+                    </div>
+                    <PhaseRail breakdown={lastPhases} height={20} />
+                    <div className="col" style={{ gap: 11, marginTop: 13, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                      <PhaseReferenceRow label="Mély" pct={phasePct(lastPhases, 'deep')} range={DEEP_REF} color="var(--ph-deep)" />
+                      <PhaseReferenceRow label="REM" pct={phasePct(lastPhases, 'rem')} range={REM_REF} color="var(--ph-rem)" />
+                    </div>
+                  </div>
+                )}
 
                 {lastNight.notes && (
                   <p

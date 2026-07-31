@@ -3,10 +3,12 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { TimePicker } from '@/features/me/components/TimePicker'
 import { useSleep, useSleepShot } from '@/data/hooks'
-import type { SleepLogInput, SleepShotDraft } from '@/data/types'
+import type { SleepEntry, SleepLogInput, SleepShotDraft } from '@/data/types'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { clearNightWake, readNightWake } from '@/features/me/logic/nightTrace'
 import { localDateString } from '@/shared/lib/dates'
+import { PhaseRail } from '@/features/me/components/PhaseRail'
+import { phaseBreakdown } from '@/features/me/logic/sleepPhases'
 
 function computeDuration(bedtime: string, wakeup: string): number {
   const [bh, bm] = bedtime.split(':').map(Number)
@@ -17,9 +19,12 @@ function computeDuration(bedtime: string, wakeup: string): number {
   return +((wakeMins - bedMins) / 60).toFixed(1)
 }
 
-// Compact H:MM for the read-only phase breakdown (mezo-66ab).
-const fmtHm = (min: number) =>
-  min >= 60 ? `${Math.floor(min / 60)}ó${String(min % 60).padStart(2, '0')}p` : `${min}p`
+// The non-phase SleepEntry fields the draft doesn't carry — phaseBreakdown() only reads the
+// phase minutes, but its parameter type is the full SleepEntry, so this fills the rest with
+// inert placeholders purely to satisfy the shape (mezo-fk9a).
+const EMPTY_ENTRY_SHAPE: Omit<SleepEntry, 'awakeMin' | 'lightMin' | 'remMin' | 'deepMin'> = {
+  date: '', bedtime: '', wakeup: '', duration: 0, quality: 0, awakenings: 0, mealToSleep: 0, notes: null,
+}
 
 type Mode = 'manual' | 'shot'
 type ShotPhase = 'pick' | 'drafting' | 'review'
@@ -57,12 +62,37 @@ export function SleepLogSheet({
   // not the bed span — manual mode keeps the span-derived value (mezo-66ab).
   const heroDuration = isShot ? (durationInput ? Number(durationInput) : duration) : duration
 
+  // The draft is shaped like a SleepEntry for this purpose — reuse the one breakdown rule
+  // rather than re-deriving it here.
+  const draftPhases = draft
+    ? phaseBreakdown({
+        ...EMPTY_ENTRY_SHAPE,
+        awakeMin: draft.awakeMin, lightMin: draft.lightMin,
+        remMin: draft.remMin, deepMin: draft.deepMin,
+      })
+    : null
+
+  /** Phase fields ride along whenever an extraction happened, regardless of the active mode —
+   *  switching back to 'Kézi' used to discard them silently (mezo-fk9a). */
+  const phasePayload = draft
+    ? {
+        source: 'screenshot' as const,
+        sourceQualityPct: draft.sourceQualityPct ?? undefined,
+        awakeMin: draft.awakeMin ?? undefined,
+        lightMin: draft.lightMin ?? undefined,
+        remMin: draft.remMin ?? undefined,
+        deepMin: draft.deepMin ?? undefined,
+        hypnogram: draft.hypnogram ?? undefined,
+      }
+    : {}
+
   const save = (close: () => void) => {
     onSave({
       date: new Date().toISOString().slice(0, 10),
       bedtime, wakeup, durationH: duration, quality, awakenings,
       inBedMin: inBedMin ? Number(inBedMin) : undefined,
       note: note || undefined,
+      ...phasePayload,
     })
     clearNightWake(localDateString())
     close()
@@ -75,13 +105,8 @@ export function SleepLogSheet({
       durationH: durationInput ? Number(durationInput) : computeDuration(bedtime, wakeup),
       quality, awakenings,
       inBedMin: inBedMin ? Number(inBedMin) : undefined,
-      awakeMin: draft?.awakeMin ?? undefined,
-      lightMin: draft?.lightMin ?? undefined,
-      remMin: draft?.remMin ?? undefined,
-      deepMin: draft?.deepMin ?? undefined,
-      sourceQualityPct: draft?.sourceQualityPct ?? undefined,
-      source: 'screenshot',
       note: note || undefined,
+      ...phasePayload,
     })
     clearNightWake(localDateString())
     close()
@@ -239,15 +264,9 @@ export function SleepLogSheet({
                   style={{ width: 72, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }} />
               </div>
 
-              {isShot && draft && (draft.awakeMin != null || draft.sourceQualityPct != null) && (
-                <div style={{ padding: '6px 12px', fontSize: 10, color: 'var(--text-tertiary)' }}>
-                  fázisok: {[
-                    draft.awakeMin != null && `éber ${draft.awakeMin}p`,
-                    draft.lightMin != null && `könnyű ${fmtHm(draft.lightMin)}`,
-                    draft.remMin != null && `REM ${fmtHm(draft.remMin)}`,
-                    draft.deepMin != null && `mély ${fmtHm(draft.deepMin)}`,
-                    draft.sourceQualityPct != null && `minőség ${draft.sourceQualityPct}%`,
-                  ].filter(Boolean).join(' · ')}
+              {isShot && draftPhases && (
+                <div style={{ padding: '10px 12px 0' }}>
+                  <PhaseRail breakdown={draftPhases} />
                 </div>
               )}
 

@@ -120,3 +120,12 @@ test('stat card opens the deck sheet', () => {
   fireEvent.click(screen.getByText('Miért számít?'))
   expect(screen.getByText('A kutatás számai')).toBeInTheDocument()
 })
+
+it('renders the phase rail and both reference rows for a screenshot night', async () => {
+  renderPage()
+  // "Mély"/"REM" each label TWO things on the hero — the rail's own legend item and the
+  // reference row below it — so both is the correct count, not a stray duplicate.
+  expect((await screen.findAllByText('Mély')).length).toBe(2)
+  expect(screen.getAllByText('REM').length).toBe(2)
+  expect(screen.getAllByText(/ref \d+–\d+%/).length).toBe(2)
+})
