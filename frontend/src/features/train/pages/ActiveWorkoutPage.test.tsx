@@ -453,6 +453,69 @@ test('real mode: a set-log response with only a TARGET_HIT medal shows no toast 
   expect(screen.queryByText(/ÚJ REKORD/)).not.toBeInTheDocument()
 })
 
+// ---- the set-row half of the two-tier split (mezo-wp6n) ----
+// A prescribed-set row is `<div class="row gap-sm">` whose 2nd child is the
+// `.stag` kind tag ("Bemel." / "Working"), so the tag's parent IS the row. Query
+// through it so these assertions can never be satisfied by an element elsewhere
+// on the page (the toast also renders medal text). The done-tick is the row's
+// only <svg> (Icon); MedalChip renders a role="img" span, never an svg.
+const rowOf = (kindTag: HTMLElement) => kindTag.parentElement as HTMLElement
+
+test('mock mode: a set that hits its target gets a SAGE done-tick and a chip per RECORD medal — never a second tick', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1 working sets are prescribed 105 kg × 10 and prefill to exactly that, so
+  // set index 2 earns WEIGHT + E1RM (RECORD) *and* TARGET_HIT (TARGET) — the
+  // three-medal case that makes the loud/quiet split visible on one row.
+  await user.click(screen.getByText('Szett kész ✓')) // B1 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
+
+  // Exactly TWO chips — the TARGET_HIT contributes none (MedalChip gates on tier).
+  await waitFor(() =>
+    expect(within(rowOf(screen.getAllByText('Working')[0])).getAllByRole('img')).toHaveLength(2),
+  )
+  const workingRow = rowOf(screen.getAllByText('Working')[0])
+  expect(within(workingRow).getByRole('img', { name: 'Súly-rekord' })).toBeInTheDocument()
+  expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
+  // The double-tick fix: ONE glyph, recoloured — the row's single tick turns sage.
+  expect(workingRow.querySelectorAll('svg')).toHaveLength(1)
+  expect(workingRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--sage-deep)')
+
+  // The coral arm: a done warmup row earned no medals, so its tick stays coral.
+  // Without this the sage assertion above would pass even if the tick were
+  // unconditionally sage.
+  const warmupRow = rowOf(screen.getAllByText('Bemel.')[0])
+  expect(warmupRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--coral)')
+  expect(within(warmupRow).queryAllByRole('img')).toHaveLength(0)
+})
+
+test('mock mode: a set that sets records but MISSES its target keeps a coral done-tick (the tick tracks TARGET_HIT, not medals)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  // Drop the prefilled 105 kg to 102.5 — under the prescribed 105, so NO TARGET_HIT,
+  // yet 102,5 × 10 still beats lastWeek (102,5 × 9) on REPS_AT_WEIGHT and E1RM.
+  await user.click(screen.getByRole('button', { name: 'Súly csökkentése' }))
+  await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
+
+  await waitFor(() =>
+    expect(within(rowOf(screen.getAllByText('Working')[0])).getAllByRole('img')).toHaveLength(2),
+  )
+  const workingRow = rowOf(screen.getAllByText('Working')[0])
+  expect(within(workingRow).getByRole('img', { name: 'Rep-rekord' })).toBeInTheDocument()
+  expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
+  // Chips present, target missed -> the tick must stay coral.
+  expect(workingRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--coral)')
+})
+
 test('the giant Súly/Ismétlés steppers increment by their step on tap', async () => {
   const user = userEvent.setup()
   const { container } = setup()
