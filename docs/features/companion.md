@@ -105,10 +105,15 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   (`SportService.getSchedule`, slot convention `0=Hét..6=Vas`, mezo-ajp); `scope=meso` renders the
   full active mesocycle (`TrainService.listMesocycles`) — weeks/phases/day-templates. One day
   renders as `gym: … ; sport: … ; futás: …`, the same three parts in the same order as the
-  snapshot's `Ma:`/`Holnap:` (both build the sport part with `ToolText.sportLine`, so tool and
-  prompt can never disagree about a day's sport). `nincs adat` only when there is neither an active
-  mesocycle, nor an active running block, **nor a sport slot** at all — a volleyball evening is a
-  plan in its own right; a real rest day within an active plan renders `pihenőnap`.
+  snapshot's `Ma:`/`Holnap:`. Only the **sport** part is actually shared code (both build it with
+  `ToolText.sportLine`, so tool and prompt can never disagree about a day's sport) — the **gym**
+  part is rendered separately in each (`TrainTools.dayContentLine` vs
+  `ContextSnapshotAssembler.dayLine`) and their formats differ: a template with zero exercises
+  renders `gym: pihenőnap` from the tool but `gym (<day label>)` from the snapshot, so the two CAN
+  disagree about a day's gym (an unlikely data shape — a planned day with no exercises added —
+  left as-is). `nincs adat` only when there is neither an active mesocycle, nor an active running
+  block, **nor a sport slot** at all — a volleyball evening is a plan in its own right; a real rest
+  day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
   break a PR" basis, over the read-only `ExerciseRecordService.list` compute-on-read aggregation
   (Epley e1RM = weight×(30+reps)/30). No/blank `exercise` → a top-5 summary ranked by best e1RM;
