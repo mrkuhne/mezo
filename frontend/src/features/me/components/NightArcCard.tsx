@@ -97,10 +97,15 @@ export function NightArcCard({ entry }: { entry: SleepEntry }) {
         <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
           Első fél
         </span>
+        {/* showLegend MUST stay false: `first` is built from hypnogram bucket counts
+            (halfNightSplit), and PhaseRail's legend would print a phase % computed from those
+            counts — exactly the ADR-0015-banned computation (display-only hypnogram, never a
+            ratio statistic). */}
         <div style={{ marginTop: 6 }}><PhaseRail breakdown={first} showLegend={false} /></div>
         <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)', display: 'block', marginTop: 12 }}>
           Második fél
         </span>
+        {/* Same constraint as the first-half rail above — `second` is equally bucket-derived. */}
         <div style={{ marginTop: 6 }}><PhaseRail breakdown={second} showLegend={false} /></div>
       </div>
 

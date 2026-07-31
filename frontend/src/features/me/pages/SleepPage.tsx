@@ -264,7 +264,10 @@ export function SleepPage() {
             </div>
           )}
 
-          <PhaseAverageCard entries={sleepLog} windowDays={period === '7d' ? 7 : 14} />
+          {/* Fixed window (whole-branch review FIX 4) — the 7d/14d chips that used to drive this
+              live in the Trend block BELOW this card; tapping one retitled or removed a card
+              above it. The card's own heading already discloses its N ("...· N éjszakából"). */}
+          <PhaseAverageCard entries={sleepLog} windowDays={14} />
 
           {/* Duration + quality chart */}
           <div style={{ padding: '0 24px 16px' }}>

@@ -312,9 +312,12 @@ export function SleepLogSheet({
                 <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                   <Icon name="sparkle" size={11} color="var(--lav-deep)" />
                   <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
-                    {duration < 7 ? '7h alatt — a sleep-first triage alapján a reggeli briefing ezt fogja primary risk-ként jelölni.'
+                    {/* durationH, not the bare bedtime→wakeup `duration` — the 48px hero above
+                        was repointed to durationH (mezo-fk9a), so the tip must agree with what
+                        the user is actually looking at. */}
+                    {durationH < 7 ? '7h alatt — a sleep-first triage alapján a reggeli briefing ezt fogja primary risk-ként jelölni.'
                       : quality <= 5 ? 'Alacsony minőség — keressük meg a faktort együtt (késő szénhidrát? kávé? Reta?).'
-                      : duration >= 7.5 && quality >= 8 ? 'Target felett · ragyogó nap. Pattern engine ezt boldog vasárnap megerősíti.'
+                      : durationH >= 7.5 && quality >= 8 ? 'Target felett · ragyogó nap. Pattern engine ezt boldog vasárnap megerősíti.'
                       : 'Stabil tartomány — beírom a 7-napos MA-ba.'}
                   </p>
                 </div>

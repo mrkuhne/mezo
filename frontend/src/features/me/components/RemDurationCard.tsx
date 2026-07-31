@@ -18,7 +18,11 @@ const Y_RANGE = [90, 190] as const
  */
 export function RemDurationCard({ entries }: { entries: SleepEntry[] }) {
   const stats = remByDuration(entries)
-  if (!stats) return null
+  // The copy below hardcodes the direction ("...kevesebb a REM-ed") — deltaMin is longAvg -
+  // shortAvg and is otherwise unconstrained in sign, so a non-positive delta (noisy nights can
+  // produce one) would render a nonsensical negative "kevesebb" or a claim-free "0 perccel
+  // kevesebb". A card that cannot support its claim is simply absent, like the other four gates.
+  if (!stats || stats.deltaMin <= 0) return null
 
   const points = entries
     .map(phaseBreakdown)

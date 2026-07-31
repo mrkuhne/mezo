@@ -88,7 +88,11 @@ mean different things.
   doesn't need it, and — because the two would usually agree — the bug would only surface as a
   confusing discrepancy on some future borderline night. `sleepPhases.ts`'s two hypnogram-consuming
   functions (`halfNightSplit`, `deepFrontLoadPct`) are the only sanctioned uses; any new function that
-  wants a phase share must take `PhaseBreakdown`/the minute fields, not `Stage[]`.
+  wants a phase share must take `PhaseBreakdown`/the minute fields, not `Stage[]`. For the same reason,
+  `NightArcCard`'s two half-night `PhaseRail`s (fed the `halfNightSplit` output) must keep
+  `showLegend={false}` forever — `PhaseRail`'s legend prints a phase percentage computed from
+  whatever `PhaseBreakdown` it's given, and turning it on there would compute that percentage from
+  hypnogram bucket counts instead of the exact minute totals.
 
 ## Alternatives considered
 

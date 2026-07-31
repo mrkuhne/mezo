@@ -214,9 +214,9 @@ The sleep C-éj slice appended two feature-scoped CSS families to `prototype.css
 The sleep-depth-stats slice appended a third feature-scoped family to the sleep tail of
 `prototype.css` (`prototype.css:2076–2091`, right after the `.sstat*`/`.sesc*` education blocks
 above) — **not shared vocabulary** (same precedent as `.wdb*`/`.sstat*`/`.night*`), consumed by
-`PhaseRail.tsx`, `PhaseReferenceRow.tsx`, `NightArcCard.tsx`, `PhaseAverageCard.tsx`, and the
-phase block inlined in the `SleepPage` hero. Behavior lives in [me.md §2](me.md) Alvás — this
-section owns only the CSS/token layer.
+`PhaseRail.tsx`, `PhaseReferenceRow.tsx`, `NightArcCard.tsx`, `PhaseAverageCard.tsx`,
+`SleepLogSheet.tsx`, and the phase block inlined in the `SleepPage` hero. Behavior lives in
+[me.md §2](me.md) Alvás — this section owns only the CSS/token layer.
 
 - **Four `--ph-*` tokens, declared as aliases onto existing Napív accents** (`prototype.css:47–51`,
   inside the legacy-alias `:root` block, right after `--tool-*`): `--ph-deep: var(--lav-deep)`

@@ -17,6 +17,11 @@ export function SleepChart({
   const data = sliceForPeriod(entries, period)
   if (data.length < 2) return null
 
+  // Drives which legend entries render (FIX 2) — computed once against the whole rendered
+  // window so the legend always matches what's actually drawn below it.
+  const hasPhaseNight = data.some(d => phaseBreakdown(d) !== null)
+  const hasPlainNight = data.some(d => phaseBreakdown(d) === null)
+
   const W = 380
   const H = 150
   const padX = 8
@@ -55,10 +60,14 @@ export function SleepChart({
           const total = padY + innerH - top
           const phases = phaseBreakdown(d)
           if (!phases) {
-            const isLow = d.duration < 7 || d.quality <= 5
+            // Plain bars are provenance, not verdict (whole-branch review FIX 5): they mean
+            // "no phase data for this night," never "short" or "low-quality" — that judgement
+            // used to live here as an amber `isLow` tint, but the zero baseline already makes
+            // duration legible from bar height, and the quality polyline already plots quality
+            // explicitly in the same SVG. One constant fill for every phase-less night.
             return (
               <rect key={i} data-plain="" x={x} y={top} width={barW} height={total}
-                    fill={isLow ? 'var(--warning)' : 'url(#sleep-bar)'} opacity={isLow ? 0.55 : 1} />
+                    fill="url(#sleep-bar)" />
             )
           }
           const stack = [
@@ -104,7 +113,11 @@ export function SleepChart({
         ))}
       </svg>
       <div className="row mt-sm gap-md" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
-        {[
+        {/* Gated on what's actually on screen (whole-branch review FIX 2): the phase swatches
+            named colours that could be absent from every bar in the window, and a plain-bar
+            window had no key for the colour it showed. A mixed window — the common case —
+            shows both; the quality entry always stays. */}
+        {hasPhaseNight && [
           { label: 'mély', color: 'var(--ph-deep)' },
           { label: 'könnyű', color: 'var(--ph-light)' },
           { label: 'REM', color: 'var(--ph-rem)' },
@@ -114,6 +127,12 @@ export function SleepChart({
             <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{l.label}</span>
           </div>
         ))}
+        {hasPlainNight && (
+          <div className="row gap-xs">
+            <div style={{ width: 10, height: 4, background: 'var(--lav)' }} />
+            <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>időtartam</span>
+          </div>
+        )}
         <div className="row gap-xs">
           <div style={{ width: 10, height: 2, background: 'var(--lav-deep)' }} />
           <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>minőség 1-10</span>

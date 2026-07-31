@@ -27,4 +27,21 @@ describe('RemDurationCard', () => {
     )
     expect(container.querySelectorAll('circle')).toHaveLength(6)
   })
+
+  // Whole-branch review FIX 3: the copy hardcodes "...perccel kevesebb" (long REM minus short
+  // REM), but nothing constrains the sign of that delta — three noisy nights per side can put
+  // more REM on the short side. A card that can't support its own claim must be absent.
+  it('renders nothing when the delta is negative (short nights have MORE rem, not less)', () => {
+    const { container } = render(
+      <RemDurationCard entries={[short(150), short(160), short(140), long(120), long(130), long(140)]} />,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('renders nothing when the delta is exactly zero', () => {
+    const { container } = render(
+      <RemDurationCard entries={[short(130), short(130), short(130), long(130), long(130), long(130)]} />,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
 })

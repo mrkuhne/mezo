@@ -49,9 +49,10 @@ describe('SleepChart', () => {
     const { container } = render(<SleepChart entries={[short, long]} period="7d" />)
     const bars = [...container.querySelectorAll('rect[data-plain]')]
     expect(bars).toHaveLength(2)
-    // isLow (duration < 7) drives fill/opacity, so opacity disambiguates which bar is which.
-    const shortBar = bars.find(r => r.getAttribute('opacity') === '0.55')!
-    const longBar = bars.find(r => r.getAttribute('opacity') === '1')!
+    // Plain bars no longer carry an isLow amber tint (whole-branch review FIX 5 — they're
+    // provenance, not verdict), so DOM order — guaranteed by `data.map` — disambiguates which
+    // bar is which instead of opacity.
+    const [shortBar, longBar] = bars
     const ratio = Number(shortBar.getAttribute('height')) / Number(longBar.getAttribute('height'))
     expect(ratio).toBeCloseTo(6.0 / 7.5, 2)
   })
@@ -59,5 +60,24 @@ describe('SleepChart', () => {
   it('still returns null below two points', () => {
     const { container } = render(<SleepChart entries={[plain('2026-05-22')]} period="7d" />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('gates the legend on what is actually on screen (whole-branch review FIX 2)', () => {
+    // An all-plain window: no phase colour is drawn, so the phase legend must not name one —
+    // and the plain bars need their own időtartam key instead.
+    const { container: plainOnly } = render(
+      <SleepChart entries={[plain('2026-05-21', 6.5), plain('2026-05-22', 7.0)]} period="7d" />,
+    )
+    expect(plainOnly.textContent).toContain('időtartam')
+    expect(plainOnly.textContent).not.toContain('mély')
+    expect(plainOnly.textContent).not.toContain('REM')
+
+    // An all-phase window: every bar is stacked, so the időtartam swatch (which describes the
+    // plain-bar colour) would be a stray key for nothing on screen.
+    const { container: phaseOnly } = render(
+      <SleepChart entries={[withPhases('2026-05-21'), withPhases('2026-05-22')]} period="7d" />,
+    )
+    expect(phaseOnly.textContent).toContain('mély')
+    expect(phaseOnly.textContent).not.toContain('időtartam')
   })
 })
