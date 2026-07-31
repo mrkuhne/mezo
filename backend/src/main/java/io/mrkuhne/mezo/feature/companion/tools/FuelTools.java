@@ -319,20 +319,41 @@ public class FuelTools {
         if (tokens.isEmpty()) {
             return renderRecipeList(recipes.stream().limit(5).toList(), toolContext);
         }
-        List<ScoredRecipe> ranked = rankRecipes(recipes, tokens);
-        if (ranked.isEmpty()) {
+        RankResult ranked = rankRecipes(recipes, tokens);
+        List<ScoredRecipe> winners = ranked.winners();
+        if (winners.isEmpty()) {
             return "Receptek — \"" + filter + "\": " + ToolText.NO_DATA;
         }
+        // Partial fallback (mezo-280 Finding 2): the winners hit only SOME of the filter's tokens
+        // — an honest in-band marker so the model can never present a partial hit as the exact
+        // thing the user asked for (the same spirit as the "never fabricate a number" prompt rule).
+        String header = ranked.partial() ? "Receptek — \"" + filter + "\" (részleges egyezés):" : null;
         // The BEST match earns the full detail (incl. ingredients) — a clear winner is what the
         // user asked for by name; a tie falls back to the compact list rendering (capped at 5).
-        if (ranked.size() == 1 || ranked.get(0).score() > ranked.get(1).score()) {
-            return renderRecipeDetail(ranked.get(0).recipe(), toolContext);
+        // Either way, when other recipes also matched, name them (mezo-280 Finding 1): the
+        // name>ingredient weighting makes "one point ahead" the COMMON case, so a clear winner
+        // must never silently hide a recipe the model doesn't otherwise know exists.
+        if (winners.size() == 1 || winners.get(0).score() > winners.get(1).score()) {
+            String detail = renderRecipeDetailWithRunnerUps(winners, toolContext);
+            return header == null ? detail : header + "\n" + detail;
         }
-        return renderRecipeList(ranked.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
+        if (header == null) {
+            return renderRecipeList(winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
+        }
+        StringBuilder b = new StringBuilder(header);
+        appendRecipeLines(b, winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
+        return b.toString();
     }
 
     /** One recipe with its relevance score for the current filter (highest first). */
     private record ScoredRecipe(RecipeResponse recipe, int score) {}
+
+    /**
+     * {@code rankRecipes}' verdict (mezo-280): the score-sorted winners, plus whether they came
+     * from the partial fallback ({@code complete} was empty) — Finding 2's honest in-band marker
+     * needs to know this BEFORE rendering, not just which recipes won.
+     */
+    private record RankResult(List<ScoredRecipe> winners, boolean partial) {}
 
     /**
      * Ranks recipes against the folded filter tokens (mezo-sxe). Recipes matching EVERY token win
@@ -340,7 +361,7 @@ public class FuelTools {
      * matches all tokens do partial matches (score > 0) stand in, so a noisy filter still answers
      * instead of falling through to "nincs adat".
      */
-    private static List<ScoredRecipe> rankRecipes(List<RecipeResponse> recipes, List<String> tokens) {
+    private static RankResult rankRecipes(List<RecipeResponse> recipes, List<String> tokens) {
         List<ScoredRecipe> all = new ArrayList<>();
         List<ScoredRecipe> complete = new ArrayList<>();
         for (RecipeResponse r : recipes) {
@@ -362,11 +383,12 @@ public class FuelTools {
                 complete.add(scored);
             }
         }
-        List<ScoredRecipe> winners = complete.isEmpty() ? all : complete;
-        return winners.stream()
+        boolean partial = complete.isEmpty() && !all.isEmpty();
+        List<ScoredRecipe> winners = (complete.isEmpty() ? all : complete).stream()
                 .sorted(Comparator.comparingInt(ScoredRecipe::score).reversed()
                         .thenComparing(s -> s.recipe().getName()))
                 .toList();
+        return new RankResult(winners, partial);
     }
 
     /**
@@ -402,6 +424,14 @@ public class FuelTools {
     /** Compact per-recipe line: name (category): kcal/protein + fit score (null-guarded — no "pending" score renders). */
     private String renderRecipeList(List<RecipeResponse> recipes, ToolContext toolContext) {
         StringBuilder b = new StringBuilder("Receptek:");
+        appendRecipeLines(b, recipes, toolContext);
+        return b.toString();
+    }
+
+    /** The per-recipe lines shared by {@link #renderRecipeList} and the partial-match list branch
+     *  (mezo-280 Finding 2) — the latter supplies its own "Receptek — ... (részleges egyezés):"
+     *  header, so it appends lines onto that instead of duplicating the plain "Receptek:" one. */
+    private void appendRecipeLines(StringBuilder b, List<RecipeResponse> recipes, ToolContext toolContext) {
         for (RecipeResponse r : recipes) {
             b.append('\n').append(r.getName());
             if (r.getCategory() != null) {
@@ -414,6 +444,23 @@ public class FuelTools {
                 b.append(", illeszkedés ").append(ToolText.num(fit));
             }
             ToolContexts.audit(toolContext).addRef("Recipe", r.getName());
+        }
+    }
+
+    /** Full detail for the best scorer, plus a compact tail naming the runner-ups (mezo-280
+     *  Finding 1): the name>ingredient weighting makes "top scorer one point ahead" the COMMON
+     *  case, not the rare one, so a clear winner must not silently hide the other recipes that
+     *  also matched. Capped at 4 (the list render is already capped at 5). */
+    private String renderRecipeDetailWithRunnerUps(List<ScoredRecipe> winners, ToolContext toolContext) {
+        StringBuilder b = new StringBuilder(renderRecipeDetail(winners.get(0).recipe(), toolContext));
+        List<ScoredRecipe> runnerUps = winners.stream().skip(1).limit(4).toList();
+        if (!runnerUps.isEmpty()) {
+            b.append("\nTovábbi találatok: ").append(runnerUps.stream()
+                    .map(s -> s.recipe().getName())
+                    .collect(Collectors.joining(", ")));
+            for (ScoredRecipe s : runnerUps) {
+                ToolContexts.audit(toolContext).addRef("Recipe", s.recipe().getName());
+            }
         }
         return b.toString();
     }

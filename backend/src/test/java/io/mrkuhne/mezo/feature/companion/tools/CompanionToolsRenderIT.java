@@ -993,6 +993,67 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetRecipes_shouldNameRunnerUps_whenFilterMatchesMultipleRecipesWithAClearBestScorer() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Recept alap", LocalDate.now().plusDays(30));
+        // "leves" hits: A by NAME (weight 4) — the clear winner; B and C by TAG (weight 2) —
+        // before mezo-280 these two were invisible once A outscored them by even 1 point, which
+        // the name>ingredient/category/tag weighting makes the COMMON case, not the rare one.
+        recipePopulator.createRecipe(owner, item.getId(), "Csirkés leves", "lunch", List.of("gyors"), false);
+        recipePopulator.createRecipe(owner, item.getId(), "Zöldség tál", "dinner", List.of("leves"), false);
+        recipePopulator.createRecipe(owner, item.getId(), "Saláta mix", "snack", List.of("leves"), false);
+
+        String out = fuelTools.getRecipes("leves", ctx(owner));
+
+        // the best scorer still earns the full detail render (unqualified — no partial marker,
+        // this filter matches every token against A) ...
+        assertThat(out).startsWith("Csirkés leves (lunch):").contains("Összetevők: ")
+                // ... but the runner-ups are NAMED in a compact tail, not silently dropped.
+                .contains("\nTovábbi találatok: Saláta mix, Zöldség tál");
+        assertThat(audit.toRefsEnvelope().refs()).containsExactly(
+                new RefsEnvelope.Ref("Recipe", "Csirkés leves"),
+                new RefsEnvelope.Ref("Recipe", "Saláta mix"),
+                new RefsEnvelope.Ref("Recipe", "Zöldség tál"));
+    }
+
+    @Test
+    void testGetRecipes_shouldRenderPartialMatchMarkerOnDetail_whenOnlySomeTokensMatchAnyRecipe() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Recept alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId(), "Csirkés saláta", "lunch", List.of("gyors"), false);
+
+        // "csirkés pizza" — only the "csirkés" token hits (the name); "pizza" hits nothing at all.
+        // No recipe matches EVERY token, so the partial fallback stands in; before mezo-280 this
+        // rendered the full "Csirkés saláta" detail with NO marker, so the model could present it
+        // as the pizza recipe the user actually asked for.
+        String out = fuelTools.getRecipes("csirkés pizza", ctx(owner));
+
+        assertThat(out).startsWith("Receptek — \"csirkés pizza\" (részleges egyezés):\nCsirkés saláta (lunch):")
+                .contains("Összetevők: ");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Recipe", "Csirkés saláta"));
+    }
+
+    @Test
+    void testGetRecipes_shouldRenderPartialMatchMarkerOnList_whenTiedPartialWinners() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Recept alap", LocalDate.now().plusDays(30));
+        // Both recipes hit exactly ONE of the two tokens by NAME (tied score 4); neither hits
+        // BOTH, so the partial fallback applies to a TIE this time — the list-render path of the
+        // partial branch (Finding 2 explicitly requires both render paths to carry the marker).
+        recipePopulator.createRecipe(owner, item.getId(), "Csirkés saláta", "lunch", List.of("gyors"), false);
+        recipePopulator.createRecipe(owner, item.getId(), "Pizza wok", "dinner", List.of("gyors"), false);
+
+        String out = fuelTools.getRecipes("csirkés pizza", ctx(owner));
+
+        assertThat(out).startsWith("Receptek — \"csirkés pizza\" (részleges egyezés):\nCsirkés saláta (lunch):")
+                .contains("Pizza wok (dinner):")
+                .doesNotContain("nincs adat");
+        assertThat(audit.toRefsEnvelope().refs()).containsExactly(
+                new RefsEnvelope.Ref("Recipe", "Csirkés saláta"), new RefsEnvelope.Ref("Recipe", "Pizza wok"));
+    }
+
+    @Test
     void testGetPantry_shouldListFoodItemWithStockAndExpiry_whenKindFood() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate expires = LocalDate.now().plusDays(5);
