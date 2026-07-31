@@ -100,14 +100,17 @@ public class SleepShotDraftValidator {
         if (Math.abs(h.length() - expected) > LENGTH_TOLERANCE_BUCKETS) { // V2
             return null;
         }
-        // V3 precondition: without the three sleep-stage totals the composition is uncheckable,
-        // and an uncheckable hypnogram is not worth drawing.
-        if (e.deepMin() == null || e.lightMin() == null || e.remMin() == null) {
+        // V3 precondition: without ALL FOUR stage totals the composition is uncheckable, and an
+        // uncheckable hypnogram is not worth drawing. 'A' belongs in here with the other three:
+        // exempting it let a fabricated awake stretch spend V2's length budget while facing no
+        // cross-check at all. Sleep Cycle always renders the Awake legend row, so requiring it
+        // costs nothing real.
+        if (e.deepMin() == null || e.lightMin() == null || e.remMin() == null
+            || e.awakeMin() == null) {
             return null;
         }
         return composesWith(h, 'D', e.deepMin()) && composesWith(h, 'L', e.lightMin())
-            && composesWith(h, 'R', e.remMin())
-            && (e.awakeMin() == null || composesWith(h, 'A', e.awakeMin()))
+            && composesWith(h, 'R', e.remMin()) && composesWith(h, 'A', e.awakeMin())
             ? h : null;
     }
 
