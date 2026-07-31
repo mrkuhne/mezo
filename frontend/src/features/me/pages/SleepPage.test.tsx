@@ -37,10 +37,10 @@ test('renders the last-night hero', () => {
   renderPage()
   expect(screen.getByRole('heading', { level: 1, name: 'Alvás' })).toBeInTheDocument()
   expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument()
-  // hero duration (48px) renders "7.4" — also appears in the log, so assert it is present at least once
-  expect(screen.getAllByText('7.4').length).toBeGreaterThan(0)
-  // hero quality (32px) renders "7" — collides with other quality values, so assert presence
-  expect(screen.getAllByText('7').length).toBeGreaterThan(0)
+  // hero duration (48px) renders "7.5" — also appears in the log, so assert it is present at least once
+  expect(screen.getAllByText('7.5').length).toBeGreaterThan(0)
+  // hero quality (32px) renders "9" — collides with other quality values, so assert presence
+  expect(screen.getAllByText('9').length).toBeGreaterThan(0)
 })
 
 test('renders the recent log (last 7 nights, newest first)', () => {
@@ -89,8 +89,8 @@ it('opens the SleepGoalSheet from the szerkeszt button', async () => {
 
 it('shows the bed-delta stat on the hero', () => {
   renderPage()
-  // last mock night bed 23:05 vs target 23:15 -> −10p
-  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('−10p')
+  // last mock night bed 00:42 vs target 23:15 -> +87p (wraps past midnight: 42 − 1395 + 1440)
+  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('+87p')
 })
 
 test('renders the night-mode entry row linking to /me/sleep/night', () => {
