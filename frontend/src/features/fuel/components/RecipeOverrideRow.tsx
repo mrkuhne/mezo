@@ -12,9 +12,14 @@ export function stepFor(unit: string): number {
   return ['g', 'ml'].includes(unit.trim().toLowerCase()) ? 10 : 0.5
 }
 
-/** Hungarian decimal comma → number; null when the text is not a non-negative number. */
+/** Hungarian decimal comma → number; null when the text is blank or not a non-negative number.
+ *  Blank must be IGNORED, not read as 0 — `Number('')` is 0, which would silently log "left it
+ *  out" for anyone who clears the field to retype and then loses focus. Typing an explicit `0`
+ *  is still the way to say "left it out". */
 export function parseAmount(text: string): number | null {
-  const n = Number(text.trim().replace(',', '.'))
+  const trimmed = text.trim()
+  if (trimmed === '') return null
+  const n = Number(trimmed.replace(',', '.'))
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 

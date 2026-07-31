@@ -60,6 +60,24 @@ describe('RecipeOverrideRow', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  it.each(['', '   '])('ignores a blank entry (%j) instead of committing zero', (value) => {
+    const { onChange } = row()
+    fireEvent.click(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i }))
+    const input = screen.getByRole('textbox', { name: /banán mennyiség/i })
+    fireEvent.change(input, { target: { value } })
+    fireEvent.blur(input)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('still accepts an explicitly typed zero', () => {
+    const { onChange } = row()
+    fireEvent.click(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i }))
+    const input = screen.getByRole('textbox', { name: /banán mennyiség/i })
+    fireEvent.change(input, { target: { value: '0' } })
+    fireEvent.blur(input)
+    expect(onChange).toHaveBeenCalledWith(0)
+  })
+
   it('marks a changed line and offers a reset', () => {
     const { onReset } = row({ amount: 0.5 })
     expect(screen.getByText(/mód/i)).toBeInTheDocument()

@@ -92,6 +92,26 @@ describe('LogMealSheet ingredient overrides', () => {
     expect(item.ingredientOverrides).toBeUndefined()
   })
 
+  it('drops the override entirely when a row is stepped back to its original amount', () => {
+    const logSpy = vi.fn()
+    hoisted.logMeal = logSpy as (input: MealInput) => void
+    const recipe = openSheetWithRecipe()
+
+    fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
+    const name = recipe.ingredients[0].name
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`${name} csökkentés`, 'i') }))
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`${name} növelés`, 'i') }))
+
+    // the header must not claim a modification, and Alaphelyzet must be gone
+    expect(screen.queryByText(/módosítva/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /alaphelyzet/i })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    const item = (logSpy.mock.calls[0][0] as MealInput).items[0]
+    if (item.source === 'estimate') throw new Error('expected the recipe arm')
+    expect(item.ingredientOverrides).toBeUndefined()
+  })
+
   it('reverts every change with Alaphelyzet', () => {
     const logSpy = vi.fn()
     hoisted.logMeal = logSpy as (input: MealInput) => void

@@ -136,8 +136,18 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
   const addPicked = (p: MealPickedItem) => { setLines(prev => [...prev, lineFromPicked(p)]); setPickerOpen(false) }
   const bump = (key: string, delta: number) => setLines(prev => prev.map(p => p.key === key ? { ...p, amount: Math.max(1, p.amount + delta) } : p))
   const removeLine = (key: string) => setLines(prev => prev.filter(p => p.key !== key))
+  // Record only a GENUINE delta: stepping back to the recipe's own amount must remove the key, not
+  // store an equal value. Otherwise the "N MÓDOSÍTVA" count and Alaphelyzet linger on an untouched
+  // line, and the line wrongly leaves the frozen-contribution branch of the macro rule.
   const setOverride = (key: string, index: number, amount: number) =>
-    setLines(prev => prev.map(p => p.key === key ? { ...p, overrides: { ...p.overrides, [index]: amount } } : p))
+    setLines(prev => prev.map(p => {
+      if (p.key !== key) return p
+      const original = resolveRecipe(p.refId)?.ingredients[index]?.amount
+      const next = { ...p.overrides }
+      if (original !== undefined && amount === original) delete next[index]
+      else next[index] = amount
+      return { ...p, overrides: next }
+    }))
   const clearOverride = (key: string, index: number) =>
     setLines(prev => prev.map(p => {
       if (p.key !== key) return p
