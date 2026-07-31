@@ -5,19 +5,11 @@
 // ActiveWorkoutPage.tsx's prescribed-set rows).
 // ============================================================
 import type { Medal } from '@/data/train/medalTypes'
-
-// Exported so other medal-rendering surfaces (WorkoutSummary.tsx) reuse this
-// table instead of declaring a third copy of the same Hungarian labels.
-export const RECORD_LABEL: Record<string, string> = {
-  WEIGHT: 'Súly-rekord',
-  REPS_AT_WEIGHT: 'Rep-rekord',
-  E1RM: '1RM-rekord',
-  SESSION_VOLUME: 'Volumen-rekord',
-}
+import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 
 export function MedalChip({ medal }: { medal: Medal }) {
   if (medal.tier !== 'RECORD') return null
-  const label = RECORD_LABEL[medal.type] ?? 'Rekord'
+  const label = MEDAL_TYPE_LABEL[medal.type] ?? 'Rekord'
   return (
     <span
       role="img"

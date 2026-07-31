@@ -9,7 +9,7 @@
 import type { LastWeekSet } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { Icon } from '@/shared/ui/Icon'
-import { RECORD_LABEL } from '@/features/train/components/MedalChip'
+import { MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
 
 export interface SummaryExercise {
   id: string
@@ -36,21 +36,11 @@ const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: 
 }
 
 // The two-tier split (mezo-wp6n), mirrored from the live toast/chip: RECORD reads as
-// an achievement (amber, 🏅), TARGET_HIT stays quiet (sage, ✓). MEDAL_TYPE_LABEL reuses
-// MedalChip's RECORD_LABEL table rather than redeclaring the same Hungarian copy a
-// third time, extended with the one label MedalChip never needs (it renders nothing
-// for TARGET tier).
+// an achievement (amber, 🏅), TARGET_HIT stays quiet (sage, ✓). The Hungarian labels
+// and the value formatting are shared — logic/medalLabels.ts.
 const MEDAL_TIER_COPY: Record<Medal['tier'], { glyph: string; color: string }> = {
   RECORD: { glyph: '🏅', color: 'var(--amber-deep)' },
   TARGET: { glyph: '✓', color: 'var(--sage-deep)' },
-}
-const MEDAL_TYPE_LABEL: Record<string, string> = { ...RECORD_LABEL, TARGET_HIT: 'Cél teljesítve' }
-const MEDAL_UNIT_LABEL: Record<string, string> = { KG: 'kg', REPS: 'rep' }
-
-function medalValueLabel(m: Medal): string {
-  const fmt = (n: number) => n.toLocaleString('hu-HU')
-  if (m.weightKg != null && m.reps != null) return `${fmt(m.weightKg)} kg × ${m.reps}`
-  return `${fmt(m.value)} ${MEDAL_UNIT_LABEL[m.unit] ?? ''}`.trim()
 }
 
 function Stat({ label, val }: { label: string; val: string }) {

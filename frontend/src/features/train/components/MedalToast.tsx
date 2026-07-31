@@ -7,7 +7,10 @@
 import { Icon } from '@/shared/ui/Icon'
 import { huMonthDay } from '@/shared/lib/dates'
 import type { Medal } from '@/data/train/medalTypes'
+import { MEDAL_UNIT_LABEL, formatMedalNumber as fmt, medalValueLabel } from '@/features/train/logic/medalLabels'
 
+// The toast eyebrow's own uppercase short forms — deliberately NOT the shared
+// MEDAL_TYPE_LABEL copy ("Súly-rekord" et al.), which reads as a row label.
 const TYPE_LABEL: Record<string, string> = {
   WEIGHT: 'SÚLY',
   REPS_AT_WEIGHT: 'REP',
@@ -15,19 +18,13 @@ const TYPE_LABEL: Record<string, string> = {
   SESSION_VOLUME: 'VOLUMEN',
 }
 
-const UNIT_LABEL: Record<string, string> = { KG: 'kg', REPS: 'rep' }
-
-const fmt = (n: number) => n.toLocaleString('hu-HU')
-
 export function MedalToast({ medal, extraCount = 0 }: { medal: Medal; extraCount?: number }) {
   const eyebrow = `ÚJ REKORD · ${TYPE_LABEL[medal.type] ?? medal.type}`
   // The achieving set (weightKg × reps) covers WEIGHT/E1RM/REPS_AT_WEIGHT; a medal
   // without a set attached (SESSION_VOLUME never toasts today, but the fallback
   // keeps this component honest if that ever changes) shows its raw value instead.
-  const headline = medal.weightKg != null && medal.reps != null
-    ? `${fmt(medal.weightKg)} kg × ${medal.reps}`
-    : `${fmt(medal.value)} ${UNIT_LABEL[medal.unit] ?? ''}`.trim()
-  const unitLabel = UNIT_LABEL[medal.unit] ?? ''
+  const headline = medalValueLabel(medal)
+  const unitLabel = MEDAL_UNIT_LABEL[medal.unit] ?? ''
 
   return (
     <div
