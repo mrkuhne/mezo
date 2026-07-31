@@ -26,7 +26,9 @@ import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
-import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
+import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
+import type { Medal } from '@/data/train/medalTypes'
+import type { MockMedalContext } from '@/data/train/medalEvaluator'
 import {
   type Session,
   addExtraSet,
@@ -46,7 +48,8 @@ import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SetStepper } from '@/features/train/components/SetStepper'
 import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
-import { PRToast, type PRState } from '@/features/train/components/PRToast'
+import { MedalChip } from '@/features/train/components/MedalChip'
+import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
@@ -68,10 +71,17 @@ const WARMUP_ROWS = [
 const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
 const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
 
-// PR demo (prototype-scripted moment): the 3rd set of exercise 0 at/above this
-// weight triggers the Personal Record toast, which auto-hides after PR_TOAST_MS.
-const PR_DEMO_THRESHOLD_KG = 105
-const PR_TOAST_MS = 4500
+// The RECORD-tier medal toast auto-hides after this long (mezo-wp6n; was PR_TOAST_MS).
+const MEDAL_TOAST_MS = 4500
+
+// Dedupe key for a Medal (mezo-wp6n): the finish response's `medals[]` carries the whole
+// session's medals — including ones already folded into `sessionMedals` from a per-set
+// `logSet` onSuccess — so merging it needs an identity. type+exerciseName+setIndex is
+// unique per medal (SESSION_VOLUME's setIndex is always null, but it only ever arrives
+// once per exercise per session, at finish time).
+function medalKey(m: Medal): string {
+  return `${m.type}:${m.exerciseName}:${m.setIndex}`
+}
 
 // Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
 // muscle-color family key, preserving PLAN order (first-appearance order of each
@@ -149,7 +159,11 @@ interface SessionProps {
   activeMeso: Mesocycle | null
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
-  logSet: (workoutId: string, set: SetLogRequest) => void
+  logSet: (
+    workoutId: string,
+    set: SetLogRequest,
+    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+  ) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
@@ -209,11 +223,13 @@ function ActiveWorkoutSession({
   // Transient per-SET note (SetLogRequest.note, max 500 chars) — distinct from the
   // durable per-EXERCISE note (effectiveNote/localNotes above). Cleared after each log.
   const [note, setNote] = useState('')
-  const [showPR, setShowPR] = useState<PRState | null>(null)
-  // Progression: a real max_strength level-up from the finish signal drives the
-  // recap's "PR" framing (replaces the old 105 kg demo scan). Captured here so it
-  // survives after the level-up overlay (showLevelUp's host) is dismissed.
-  const [hadPrFromSignal, setHadPrFromSignal] = useState(false)
+  // Medal collection (mezo-wp6n): every medal earned this session (set-log + finish),
+  // the set-row lookup (keyed `${exerciseId}:${setIndex}`) driving the chips + the
+  // tick colour, and the currently-shown RECORD-tier celebration toast (+ how many
+  // other medals landed on the same set).
+  const [sessionMedals, setSessionMedals] = useState<Medal[]>([])
+  const [medalsBySet, setMedalsBySet] = useState<Record<string, Medal[]>>({})
+  const [toastMedal, setToastMedal] = useState<{ medal: Medal; extra: number } | null>(null)
   // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA.
   const [finishPending, setFinishPending] = useState(false)
   const { showLevelUp } = useLevelUp()
@@ -236,12 +252,12 @@ function ActiveWorkoutSession({
   const [noteEditOpen, setNoteEditOpen] = useState(false)
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({})
 
-  // Auto-hide the PR toast (leak-safe: cleared on unmount / re-trigger).
+  // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
-    if (!showPR) return
-    const t = setTimeout(() => setShowPR(null), PR_TOAST_MS)
+    if (!toastMedal) return
+    const t = setTimeout(() => setToastMedal(null), MEDAL_TOAST_MS)
     return () => clearTimeout(t)
-  }, [showPR])
+  }, [toastMedal])
 
   // A rest must not survive into the summary/recap phase. (No unmount cleanup
   // needed anymore — the timer state is page-local and dies with the page.)
@@ -382,34 +398,42 @@ function ActiveWorkoutSession({
 
   const completeSet = () => {
     const finishing = current // the exercise being logged right now
-    const finishingIdx = W.exercises.findIndex((e) => e.id === finishing.id)
-    const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the PR trigger + persisted setIndex)
+    const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the medal ctx + persisted setIndex)
+    const target = prescribedAt(session, finishing.id, wasSetIdx)
+    const kind = target?.kind ?? 'working'
     const next = completeSetModel(session, finishing.id, { weight, reps, rir })
     setSession(next)
-    if (workoutId) {
-      const kind = prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working'
-      logSet(workoutId, {
-        exerciseId: finishing.id, setIndex: wasSetIdx,
-        // Plyo / bodyweight sets carry no load.
-        weightKg: weightless ? 0 : weight, reps,
-        // Warmup sets log no RIR — effort tracking applies to working sets only.
-        ...(kind === 'warmup' ? {} : { rir }),
-        kind,
-        ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
-      })
-    }
+    // Medals (mezo-wp6n): always logged — real mode never had a `workoutId` guard
+    // reason to skip this (mirrors finishAndCelebrate's 'mock' sentinel below), and
+    // mock mode needs the call too, to run the mock medal evaluator. targetWeightKg/
+    // targetReps snapshot the Progresszió prescription in force for this set — without
+    // it TARGET_HIT is underivable later (spec §5.1).
+    logSet(workoutId ?? 'mock', {
+      exerciseId: finishing.id, setIndex: wasSetIdx,
+      // Plyo / bodyweight sets carry no load.
+      weightKg: weightless ? 0 : weight, reps,
+      // Warmup sets log no RIR — effort tracking applies to working sets only.
+      ...(kind === 'warmup' ? {} : { rir }),
+      kind,
+      ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
+      ...(target?.targetWeightKg != null ? { targetWeightKg: target.targetWeightKg } : {}),
+      ...(target?.targetReps != null ? { targetReps: target.targetReps } : {}),
+    }, {
+      ctx: { exerciseName: finishing.name, lastWeek: finishing.lastWeek, date: localToday },
+      onSuccess: (r) => {
+        const medals = r?.medals ?? []
+        if (!medals.length) return
+        setMedalsBySet((m) => ({ ...m, [`${finishing.id}:${wasSetIdx}`]: medals }))
+        setSessionMedals((s) => [...s, ...medals])
+        const records = medals.filter((m) => m.tier === 'RECORD')
+        if (records.length) {
+          const order = ['WEIGHT', 'E1RM', 'REPS_AT_WEIGHT', 'SESSION_VOLUME']
+          const top = [...records].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))[0]
+          setToastMedal({ medal: top, extra: medals.length - 1 })
+        }
+      },
+    })
     setNote('')
-
-    // PR demo: only set 3 of the first exercise at/above the threshold counts,
-    // and only when a last-week reference exists to compare against.
-    const firstLastWeek = W.exercises[0].lastWeek
-    if (finishingIdx === 0 && wasSetIdx === 2 && firstLastWeek && weight >= PR_DEMO_THRESHOLD_KG) {
-      setShowPR({
-        delta: (weight - firstLastWeek.weight).toFixed(1),
-        prev: firstLastWeek.weight,
-        prevReps: firstLastWeek.reps,
-      })
-    }
 
     // Last set of this exercise → pin it for the debrief sheet. Otherwise
     // completeSetModel already advanced the cursor for the same exercise, and the
@@ -446,9 +470,17 @@ function ActiveWorkoutSession({
     setFinishPending(true)
     finishWorkout(workoutId ?? 'mock', {
       onSuccess: (r) => {
-        if (r?.levelUp) {
-          setHadPrFromSignal(r.levelUp.levelUps.includes('max_strength'))
-          showLevelUp(r.levelUp)
+        if (r?.levelUp) showLevelUp(r.levelUp)
+        // SESSION_VOLUME (and any medal not already seen from a set-log onSuccess)
+        // arrives here — the finish response carries the whole session's medals, so
+        // merge with a dedupe against what's already in sessionMedals (mezo-wp6n).
+        if (r?.medals?.length) {
+          const finishMedals = r.medals
+          setSessionMedals((prev) => {
+            const seen = new Set(prev.map(medalKey))
+            const additions = finishMedals.filter((m) => !seen.has(medalKey(m)))
+            return additions.length ? [...prev, ...additions] : prev
+          })
         }
         if (!isMock) qc.invalidateQueries({ queryKey: ['challenges', templateSessionId, localToday] })
         setPhase('complete')
@@ -670,8 +702,8 @@ function ActiveWorkoutSession({
   // ---------- SUMMARY (closing) / COMPLETE (closed) ----------
   // Both render the WorkoutSummary: 'summary' is the pre-finish closing screen whose
   // "Edzés lezárása ✓" CTA drives finishWorkout; 'complete' is the same layout read-only
-  // (set lines) after the finish POST resolves. Real PR framing comes from the progression
-  // signal (a max_strength level-up); the mid-workout PR toast (showPR) is unchanged.
+  // (set lines) after the finish POST resolves. The real medals earned this session
+  // (mezo-wp6n) drive the summary now — replaces the old hadPR / hadPrFromSignal framing.
   if (phase === 'summary' || phase === 'complete') {
     const closing = phase === 'summary'
     return (
@@ -681,7 +713,7 @@ function ActiveWorkoutSession({
         mode={closing ? 'closing' : 'closed'}
         exercises={summaryExercises}
         challenges={summaryChallenges}
-        hadPR={!!showPR || hadPrFromSignal}
+        medals={sessionMedals}
         showSetLines={!closing}
         onFinish={finishAndCelebrate}
         finishPending={finishPending}
@@ -761,7 +793,7 @@ function ActiveWorkoutSession({
 
   return (
     <>
-      {showPR && <PRToast pr={showPR} />}
+      {toastMedal && <MedalToast medal={toastMedal.medal} extraCount={toastMedal.extra} />}
       {feedbackEx && (
         <FeedbackModal
           ex={feedbackEx}
@@ -1078,6 +1110,11 @@ function ActiveWorkoutSession({
               const accent = warm ? 'var(--warning)' : 'var(--coral)'
               const actual = session.logged[current.id]?.[i]
               const isDone = i < cursor
+              // Medals earned by this already-logged set (mezo-wp6n): RECORD ones get a
+              // chip; a TARGET_HIT re-colours the done-tick instead of adding a second
+              // mark (the double-tick fix — one glyph, two meanings).
+              const setMedals = isDone ? medalsBySet[`${current.id}:${i}`] ?? [] : []
+              const hitTarget = setMedals.some((m) => m.type === 'TARGET_HIT')
 
               // A read-only row — target for pending sets, logged actuals for done ones.
               const w = isDone ? actual?.weight : t?.targetWeightKg
@@ -1106,7 +1143,10 @@ function ActiveWorkoutSession({
                       {!warm && (
                         <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? '–'}</span>
                       )}
-                      <Icon name="check" size={13} color="var(--coral)" />
+                      {setMedals.filter((m) => m.tier === 'RECORD').map((m, mi) => (
+                        <MedalChip key={mi} medal={m} />
+                      ))}
+                      <Icon name="check" size={13} color={hitTarget ? 'var(--sage-deep)' : 'var(--coral)'} />
                     </span>
                   ) : warm ? null : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>

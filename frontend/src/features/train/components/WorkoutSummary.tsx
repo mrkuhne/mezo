@@ -7,6 +7,7 @@
 // mode 'closed': the same layout read-only (post-finish + review route).
 // ============================================================
 import type { LastWeekSet } from '@/data/types'
+import type { Medal } from '@/data/train/medalTypes'
 import { Icon } from '@/shared/ui/Icon'
 
 export interface SummaryExercise {
@@ -43,7 +44,7 @@ function Stat({ label, val }: { label: string; val: string }) {
 }
 
 export function WorkoutSummary({
-  title, eyebrow, mode, exercises, challenges, hadPR = false, showSetLines = false,
+  title, eyebrow, mode, exercises, challenges, medals = [], showSetLines = false,
   onFinish, finishPending = false, onBack, onExit,
 }: {
   title: string
@@ -51,7 +52,10 @@ export function WorkoutSummary({
   mode: 'closing' | 'closed'
   exercises: SummaryExercise[]
   challenges: SummaryChallenge[]
-  hadPR?: boolean
+  // The session's earned medals (mezo-wp6n) — replaces the old hadPR boolean. The
+  // medal list block itself is a later addition (Task 9); this component still owns
+  // the title-suffix framing.
+  medals?: Medal[]
   showSetLines?: boolean
   onFinish?: () => void
   finishPending?: boolean
@@ -72,7 +76,7 @@ export function WorkoutSummary({
         </button>
         <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>{eyebrow}</span>
         <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, marginTop: 6, color: 'var(--text-primary)' }}>
-          {title}{hadPR ? ' · PR ✨' : ''}
+          {title}{medals.length ? ` · ${medals.length} medál` : ''}
         </h2>
       </div>
 

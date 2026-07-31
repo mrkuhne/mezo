@@ -4,7 +4,7 @@ import { emitToast, onToast, type ToastMessage } from '@/shared/lib/toastBus'
 // Single global toast host (mounted once in AppLayout) + the useToast() imperative API.
 // Components call useToast().show(...); non-React code (mutation cache) emits via the
 // toastBus directly. One toast at a time — a new one replaces the current, auto-hides
-// after AUTO_HIDE_MS. Purpose-built confirmations (FuelStackPage protocol card, PRToast)
+// after AUTO_HIDE_MS. Purpose-built confirmations (FuelStackPage protocol card, MedalToast)
 // stay feature-local by design; this host is for generic error/success/info feedback.
 
 const AUTO_HIDE_MS = 3200
