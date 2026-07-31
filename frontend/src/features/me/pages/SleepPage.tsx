@@ -20,6 +20,8 @@ import { SleepChart } from '@/features/me/components/SleepChart'
 import { SleepStatCard } from '@/features/me/components/SleepStatCard'
 import { SleepEscalationCard } from '@/features/me/components/SleepEscalationCard'
 import { NightArcCard } from '@/features/me/components/NightArcCard'
+import { PhaseAverageCard } from '@/features/me/components/PhaseAverageCard'
+import { RemDurationCard } from '@/features/me/components/RemDurationCard'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { SleepGoalSheet } from '@/features/me/sheets/SleepGoalSheet'
 import { SleepStatsSheet } from '@/features/me/sheets/SleepStatsSheet'
@@ -262,6 +264,8 @@ export function SleepPage() {
             </div>
           )}
 
+          <PhaseAverageCard entries={sleepLog} windowDays={period === '7d' ? 7 : 14} />
+
           {/* Duration + quality chart */}
           <div style={{ padding: '0 24px 16px' }}>
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
@@ -283,6 +287,8 @@ export function SleepPage() {
             </div>
             <SleepChart entries={sleepLog} period={period} />
           </div>
+
+          <RemDurationCard entries={sleepLog} />
 
           {/* Recent log */}
           <div style={{ padding: '0 24px 24px' }}>

@@ -123,11 +123,24 @@ test('stat card opens the deck sheet', () => {
 
 it('renders the phase rail and both reference rows for a screenshot night', async () => {
   renderPage()
-  // "Mély"/"REM" each label TWO things on the hero — the rail's own legend item and the
-  // reference row below it — so both is the correct count, not a stray duplicate.
-  expect((await screen.findAllByText('Mély')).length).toBe(2)
-  expect(screen.getAllByText('REM').length).toBe(2)
-  expect(screen.getAllByText(/ref \d+–\d+%/).length).toBe(2)
+  // "Mély"/"REM" each label FOUR things: the hero's own rail legend item + reference row,
+  // and PhaseAverageCard's rail legend item + reference row (mock seed clears its 3-night
+  // floor) — two PhaseRail+PhaseReferenceRow pairs, not a stray duplicate.
+  expect((await screen.findAllByText('Mély')).length).toBe(4)
+  expect(screen.getAllByText('REM').length).toBe(4)
+  expect(screen.getAllByText(/ref \d+–\d+%/).length).toBe(4)
+})
+
+it('renders the phase-average card against the real mock seed (8 of 14 nights carry phases)', async () => {
+  renderPage()
+  expect(await screen.findByText('Átlagos összetétel · 8 éjszakából')).toBeInTheDocument()
+})
+
+it('renders the REM-duration card against the real mock seed (3 short / 5 long nights)', async () => {
+  renderPage()
+  // short avg rem (390,408,396min nights -> rem 112,112,110 = 111) vs long avg rem
+  // (438,462,438,468,450min nights -> rem 140,148,138,152,144 = 144) -> delta 33.
+  expect(await screen.findByText(/33 perccel/)).toBeInTheDocument()
 })
 
 test('renders the night-arc heading and card when the last night has a hypnogram', () => {
