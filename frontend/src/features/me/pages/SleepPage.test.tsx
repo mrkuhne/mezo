@@ -125,9 +125,12 @@ it('renders the phase rail and both reference rows for a screenshot night', asyn
   renderPage()
   // "Mély"/"REM" each label FOUR things: the hero's own rail legend item + reference row,
   // and PhaseAverageCard's rail legend item + reference row (mock seed clears its 3-night
-  // floor) — two PhaseRail+PhaseReferenceRow pairs, not a stray duplicate.
+  // floor) — two PhaseRail+PhaseReferenceRow pairs, not a stray duplicate. "REM" gets a
+  // fifth hit from the phase-stacked SleepChart's own bottom legend (mezo-fk9a task 9);
+  // that legend's other labels are lowercase ("mély"/"könnyű") so they don't collide with
+  // the capitalized "Mély" query.
   expect((await screen.findAllByText('Mély')).length).toBe(4)
-  expect(screen.getAllByText('REM').length).toBe(4)
+  expect(screen.getAllByText('REM').length).toBe(5)
   expect(screen.getAllByText(/ref \d+–\d+%/).length).toBe(4)
 })
 
