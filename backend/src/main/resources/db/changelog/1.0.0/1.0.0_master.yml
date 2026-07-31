@@ -510,3 +510,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607301200_mezo-ormb_meal_item_recipe_overrides.sql
+  - changeSet:
+      id: "1.0.0:202607301200_mezo-fk9a_add_sleep_log_hypnogram"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607301200_mezo-fk9a_add_sleep_log_hypnogram.sql

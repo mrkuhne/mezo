@@ -15,8 +15,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -82,4 +84,10 @@ public class SleepLogEntity extends OwnedEntity {
     @Pattern(regexp = "manual|screenshot")
     @Column(length = 10)
     private String source = "manual";
+
+    /** Quantised stage sequence from the screenshot (mezo-fk9a) — display-only provenance;
+     *  null on manual rows and whenever the extraction failed cross-validation. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column
+    private SleepHypnogram hypnogram;
 }

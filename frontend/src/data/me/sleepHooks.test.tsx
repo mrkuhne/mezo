@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient } from '@tanstack/react-query'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { useSleep } from '@/data/hooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -17,8 +17,10 @@ afterEach(() => {
 
 test('useSleep (real mode) loads the sleep log from the API and exposes lastNight', async () => {
   const { result } = renderHook(() => useSleep(), { wrapper: makeHookWrapper() })
-  await waitFor(() => expect(result.current.sleepLog.length).toBe(1))
-  expect(result.current.lastNight).toMatchObject({ date: '2026-06-01', duration: 7.5, quality: 8 })
+  // Default MSW fixture (mezo-fk9a) now carries 3 nights so the average card's 3-night
+  // gate can be exercised — lastNight is the most recent (2026-06-01, the hypnogram row).
+  await waitFor(() => expect(result.current.sleepLog.length).toBe(3))
+  expect(result.current.lastNight).toMatchObject({ date: '2026-06-01', duration: 7.5, quality: 9 })
 })
 
 test('useSleep.logSleep POSTs (mapping durationH) and the new entry appears after invalidation', async () => {
@@ -95,5 +97,29 @@ test('useSleep.logSleep invalidates ["habitDay"] and the day quest read (derived
     const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
     expect(keys).toContain(JSON.stringify(['habitDay']))
     expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-06-02']))
+  })
+})
+
+describe('useSleep (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+
+  // Whole-branch review FIX 1 (mezo-fk9a): the mock mutationFn used to rebuild the SleepEntry
+  // field by field and drop `hypnogram` — a screenshot night saved in mock mode became
+  // `lastNight` with no hypnogram, so "Az éjszaka íve" vanished the instant it was saved.
+  it('logSleep carries the hypnogram through into the stored entry', async () => {
+    const { result } = renderHook(() => useSleep(), { wrapper: makeHookWrapper() })
+    const before = result.current.sleepLog.length
+    const hypnogram = { bucketMin: 15, stages: 'AADDDLLLRRRAAAA' }
+
+    act(() => {
+      result.current.logSleep({
+        date: '2026-07-31', bedtime: '23:00', wakeup: '06:30', durationH: 7.5,
+        quality: 8, awakenings: 0, source: 'screenshot', hypnogram,
+      })
+    })
+
+    await waitFor(() => expect(result.current.sleepLog.length).toBe(before + 1))
+    expect(result.current.lastNight?.date).toBe('2026-07-31')
+    expect(result.current.lastNight?.hypnogram).toEqual(hypnogram)
   })
 })

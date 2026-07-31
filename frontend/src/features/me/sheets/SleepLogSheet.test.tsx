@@ -35,7 +35,7 @@ describe('screenshot mode (mezo-66ab)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Screenshot' }))
     const file = new File(['shot'], 'sleep.png', { type: 'image/png' })
     await userEvent.upload(screen.getByLabelText('Sleep Cycle screenshot'), file)
-    await screen.findByText(/fázisok/i) // review phase reached (mock resolves immediately)
+    await screen.findByText('Mély') // review phase reached: the phase rail has rendered (mock resolves immediately)
   }
 
   test('toggle shows the two modes and manual stays default', () => {
@@ -54,8 +54,13 @@ describe('screenshot mode (mezo-66ab)', () => {
     expect(screen.getByLabelText('Alvásidő (óra)')).toHaveValue(7.48)
     expect(screen.getByLabelText('Ágyban összesen (perc)')).toHaveValue(501)
     expect(screen.getByRole('button', { name: '10', pressed: true })).toBeInTheDocument() // 95% -> 10
-    expect(screen.getByText(/éber 52p/)).toBeInTheDocument() // read-only phase row
-    expect(screen.getByText(/95%/)).toBeInTheDocument()
+    // read-only phase rail (replaces the old "fázisok: éber 52p · …" text strip, mezo-fk9a):
+    // the awake segment still surfaces its minutes...
+    expect(screen.getByText('Éber')).toBeInTheDocument()
+    expect(screen.getByText('52p')).toBeInTheDocument()
+    // ...and the tracker's own quality score keeps its own caption under the rail, since
+    // PhaseRail has no slot for it.
+    expect(screen.getByText(/Sleep Cycle minőség: 95%/)).toBeInTheDocument()
   })
 
   test('review hero shows the asleep duration that gets saved, not the bed span', async () => {
@@ -92,6 +97,32 @@ describe('screenshot mode (mezo-66ab)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bedtime: '23:00', wakeup: '06:30' }))
     expect(onSave.mock.calls[0][0].source).toBeUndefined()
+  })
+
+  test('keeps the extracted phase fields when the user switches back to manual (leak fix, mezo-fk9a)', async () => {
+    const { onSave } = renderSheet()
+    await toReview() // switch to Screenshot, upload, land on the review step with a draft set
+
+    // Set a distinctive date while the Dátum input is still on screen (it is shot-mode only).
+    // This is the path discriminator: saveShot() sends this `date` state, whereas save()
+    // stamps today via new Date() and ignores it entirely.
+    fireEvent.change(screen.getByLabelText('Dátum'), { target: { value: '2026-01-15' } })
+
+    // flip back to Kézi — this used to silently drop everything the AI just read
+    await userEvent.click(screen.getByRole('button', { name: 'Kézi' }))
+    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      deepMin: 100, lightMin: 206, remMin: 144, awakeMin: 52,
+      sourceQualityPct: 95, source: 'screenshot',
+      hypnogram: { bucketMin: 15, stages: 'ALDDLRRLDDLLRRRLDDLLRRLALDDLRRLRRR' },
+      // the extracted ASLEEP duration rides along too — not the 8.3 bed span, which would
+      // contradict phase minutes summing to 7.5h and inflate efficiency (mezo-fk9a)
+      durationH: 7.48,
+    }))
+    // Proof the MANUAL branch ran: saveShot() would have sent the 2026-01-15 we just typed.
+    expect(onSave.mock.calls[0][0].date).toBe(new Date().toISOString().slice(0, 10))
+    expect(onSave.mock.calls[0][0].date).not.toBe('2026-01-15')
   })
 })
 

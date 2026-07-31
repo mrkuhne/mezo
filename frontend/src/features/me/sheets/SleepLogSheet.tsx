@@ -3,10 +3,12 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { TimePicker } from '@/features/me/components/TimePicker'
 import { useSleep, useSleepShot } from '@/data/hooks'
-import type { SleepLogInput, SleepShotDraft } from '@/data/types'
+import type { SleepEntry, SleepLogInput, SleepShotDraft } from '@/data/types'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { clearNightWake, readNightWake } from '@/features/me/logic/nightTrace'
 import { localDateString } from '@/shared/lib/dates'
+import { PhaseRail } from '@/features/me/components/PhaseRail'
+import { phaseBreakdown } from '@/features/me/logic/sleepPhases'
 
 function computeDuration(bedtime: string, wakeup: string): number {
   const [bh, bm] = bedtime.split(':').map(Number)
@@ -17,9 +19,12 @@ function computeDuration(bedtime: string, wakeup: string): number {
   return +((wakeMins - bedMins) / 60).toFixed(1)
 }
 
-// Compact H:MM for the read-only phase breakdown (mezo-66ab).
-const fmtHm = (min: number) =>
-  min >= 60 ? `${Math.floor(min / 60)}ó${String(min % 60).padStart(2, '0')}p` : `${min}p`
+// The non-phase SleepEntry fields the draft doesn't carry — phaseBreakdown() only reads the
+// phase minutes, but its parameter type is the full SleepEntry, so this fills the rest with
+// inert placeholders purely to satisfy the shape (mezo-fk9a).
+const EMPTY_ENTRY_SHAPE: Omit<SleepEntry, 'awakeMin' | 'lightMin' | 'remMin' | 'deepMin'> = {
+  date: '', bedtime: '', wakeup: '', duration: 0, quality: 0, awakenings: 0, mealToSleep: 0, notes: null,
+}
 
 type Mode = 'manual' | 'shot'
 type ShotPhase = 'pick' | 'drafting' | 'review'
@@ -53,16 +58,47 @@ export function SleepLogSheet({
 
   const isShot = mode === 'shot'
   const showInputs = mode === 'manual' || shotPhase === 'review'
-  // Shot review shows the value that will actually be SAVED (the asleep duration),
-  // not the bed span — manual mode keeps the span-derived value (mezo-66ab).
-  const heroDuration = isShot ? (durationInput ? Number(durationInput) : duration) : duration
+  // The ONE saved duration, used by both save paths and by the hero readout.
+  // `SleepEntry.duration` means ASLEEP hours everywhere (sleepStats treats it as asleep
+  // minutes; the bed span lives in inBedMin), so once an extraction exists its asleep
+  // duration wins over the bedtime→wakeup span — otherwise a row would carry 8.3h next to
+  // phase minutes summing to 7.5h and inflate efficiency (mezo-fk9a). A user-typed
+  // durationInput still overrides. With no draft this is the span, exactly as before.
+  const durationH = draft
+    ? (durationInput ? Number(durationInput) : (draft.durationH ?? duration))
+    : duration
+
+  // The draft is shaped like a SleepEntry for this purpose — reuse the one breakdown rule
+  // rather than re-deriving it here.
+  const draftPhases = draft
+    ? phaseBreakdown({
+        ...EMPTY_ENTRY_SHAPE,
+        awakeMin: draft.awakeMin, lightMin: draft.lightMin,
+        remMin: draft.remMin, deepMin: draft.deepMin,
+      })
+    : null
+
+  /** Phase fields ride along whenever an extraction happened, regardless of the active mode —
+   *  switching back to 'Kézi' used to discard them silently (mezo-fk9a). */
+  const phasePayload = draft
+    ? {
+        source: 'screenshot' as const,
+        sourceQualityPct: draft.sourceQualityPct ?? undefined,
+        awakeMin: draft.awakeMin ?? undefined,
+        lightMin: draft.lightMin ?? undefined,
+        remMin: draft.remMin ?? undefined,
+        deepMin: draft.deepMin ?? undefined,
+        hypnogram: draft.hypnogram ?? undefined,
+      }
+    : {}
 
   const save = (close: () => void) => {
     onSave({
       date: new Date().toISOString().slice(0, 10),
-      bedtime, wakeup, durationH: duration, quality, awakenings,
+      bedtime, wakeup, durationH, quality, awakenings,
       inBedMin: inBedMin ? Number(inBedMin) : undefined,
       note: note || undefined,
+      ...phasePayload,
     })
     clearNightWake(localDateString())
     close()
@@ -71,17 +107,10 @@ export function SleepLogSheet({
   const saveShot = (close: () => void) => {
     onSave({
       date,
-      bedtime, wakeup,
-      durationH: durationInput ? Number(durationInput) : computeDuration(bedtime, wakeup),
-      quality, awakenings,
+      bedtime, wakeup, durationH, quality, awakenings,
       inBedMin: inBedMin ? Number(inBedMin) : undefined,
-      awakeMin: draft?.awakeMin ?? undefined,
-      lightMin: draft?.lightMin ?? undefined,
-      remMin: draft?.remMin ?? undefined,
-      deepMin: draft?.deepMin ?? undefined,
-      sourceQualityPct: draft?.sourceQualityPct ?? undefined,
-      source: 'screenshot',
       note: note || undefined,
+      ...phasePayload,
     })
     clearNightWake(localDateString())
     close()
@@ -165,7 +194,7 @@ export function SleepLogSheet({
             <>
               <div className="card" style={{ padding: 18, marginBottom: 14, background: 'var(--wash-lav)' }}>
                 <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{heroDuration}</span>
+                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{durationH}</span>
                   <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>h</span>
                 </div>
                 <div className="row gap-lg mt-lg" style={{ justifyContent: 'center' }}>
@@ -239,15 +268,18 @@ export function SleepLogSheet({
                   style={{ width: 72, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }} />
               </div>
 
-              {isShot && draft && (draft.awakeMin != null || draft.sourceQualityPct != null) && (
-                <div style={{ padding: '6px 12px', fontSize: 10, color: 'var(--text-tertiary)' }}>
-                  fázisok: {[
-                    draft.awakeMin != null && `éber ${draft.awakeMin}p`,
-                    draft.lightMin != null && `könnyű ${fmtHm(draft.lightMin)}`,
-                    draft.remMin != null && `REM ${fmtHm(draft.remMin)}`,
-                    draft.deepMin != null && `mély ${fmtHm(draft.deepMin)}`,
-                    draft.sourceQualityPct != null && `minőség ${draft.sourceQualityPct}%`,
-                  ].filter(Boolean).join(' · ')}
+              {isShot && draftPhases && (
+                <div style={{ padding: '10px 12px 0' }}>
+                  <PhaseRail breakdown={draftPhases} />
+                </div>
+              )}
+
+              {/* The tracker's own quality score. PhaseRail has no slot for it (three cards share
+                  that component and only this one has the value), but the review step's whole job
+                  is showing what the AI read before the user commits it (mezo-fk9a). */}
+              {isShot && draft?.sourceQualityPct != null && (
+                <div style={{ padding: '8px 12px 0', fontSize: 10, fontWeight: 700, color: 'var(--faint)' }}>
+                  Sleep Cycle minőség: {draft.sourceQualityPct}%
                 </div>
               )}
 
@@ -280,9 +312,12 @@ export function SleepLogSheet({
                 <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                   <Icon name="sparkle" size={11} color="var(--lav-deep)" />
                   <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
-                    {duration < 7 ? '7h alatt — a sleep-first triage alapján a reggeli briefing ezt fogja primary risk-ként jelölni.'
+                    {/* durationH, not the bare bedtime→wakeup `duration` — the 48px hero above
+                        was repointed to durationH (mezo-fk9a), so the tip must agree with what
+                        the user is actually looking at. */}
+                    {durationH < 7 ? '7h alatt — a sleep-first triage alapján a reggeli briefing ezt fogja primary risk-ként jelölni.'
                       : quality <= 5 ? 'Alacsony minőség — keressük meg a faktort együtt (késő szénhidrát? kávé? Reta?).'
-                      : duration >= 7.5 && quality >= 8 ? 'Target felett · ragyogó nap. Pattern engine ezt boldog vasárnap megerősíti.'
+                      : durationH >= 7.5 && quality >= 8 ? 'Target felett · ragyogó nap. Pattern engine ezt boldog vasárnap megerősíti.'
                       : 'Stabil tartomány — beírom a 7-napos MA-ba.'}
                   </p>
                 </div>

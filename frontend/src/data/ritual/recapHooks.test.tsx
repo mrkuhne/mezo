@@ -166,7 +166,7 @@ describe('useDayRecap (mock mode)', () => {
     expect(weightEvent).toEqual({ icon: '⚖️', label: 'Súlymérés', meta: '78.6 kg', done: true })
 
     const sleepEvent = result.current.events.find((e) => e.icon === '😴')
-    expect(sleepEvent).toEqual({ icon: '😴', label: 'Alvás', meta: '7.4 óra', done: true })
+    expect(sleepEvent).toEqual({ icon: '😴', label: 'Alvás', meta: '7.5 óra', done: true })
 
     expect(result.current.events.filter((e) => e.icon === '✍️')).toHaveLength(3) // mockActivities.length
     const fociEvents = result.current.events.filter((e) => e.icon === '✦')

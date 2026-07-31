@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív")
 type: feature-platform
 status: done
-updated: 2026-07-29
+updated: 2026-07-31
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -208,6 +208,48 @@ The sleep C-éj slice appended two feature-scoped CSS families to `prototype.css
 - **`.wdb*` — the Today evening/night band** (`WindDownBanner.tsx`). **Theme-aware** (built from the normal Napív tokens — `--lav-deep`/`--wash-lav`/`--amber-deep`/`--wash-amber`/`--sage-deep`/`--wash-sage`/`--ink`/`--sub`/`--faint`/`--line`/`--warm`/`--surface`): `.wdb` (the dim/winddown card shell) + `.wdb-hd`/`.wdb-eye`/`.wdb-pill` (header + to-bed pill), `.wdb-title`, `.wdb-list`/`.wdb-tip`/`.wdb-tip-ic` (the dim/detox tip rows), `.wdb-foot`/`.wdb-stat` (the Walker-stat footer), and the winddown habit block `.wdb-hab`/`.wdb-hab-tx`/`.wdb-hab-t1/-t2`/`.wdb-hab-xp`/`.wdb-pipa`/`.wdb-done`. **The one exception is `.wdb-night`** — the night-phase entry row is **literal-dark in both themes** (its own dark surface + `#F5EFE6`/`#B7A899`/`#B9ACD9` text, matching the NightPage it links into), the idiom the retired `.dynamic-island.live` capsule used before its `mezo-xt65` deletion.
 - **`.sstat*` / `.sesc*` — the Sleep education layer** (slice C3, `mezo-hd8k`). **Theme-aware** (Napív aliases): `.sstat` (the daily-rotating Walker stat card on `SleepPage` — a whole-card `button` over a `--wash-lav` gradient) + `.sstat-eye`/`.sstat-title`/`.sstat-text`/`.sstat-src`, `.sstat-row` (the deck-sheet list rows) and `.sstat-foot` (the sources footer); `.sesc` (the escalation card — a `--wash-amber` gradient, deliberately amber not red, ADR 0010 tone) + `.sesc-actions`/`.sesc-cta`/`.sesc-quiet`, and the sheet-side `.sesc-sheet`/`.sesc-lead`/`.sesc-body` escalation section. Consumed by `SleepStatCard.tsx`/`SleepEscalationCard.tsx`/`SleepStatsSheet.tsx` — see [me.md](me.md) §2 Alvás.
 - **`.night*` / `.nb-*` / `.ns-*` / `.nw-*` — the full-screen NightPage, literal-dark in BOTH themes** (`#0E0B09` canvas, `#F5EFE6`/`#B7A899`/`#6E6156` text, `#B9ACD9` lavender accent — hardcoded hex, deliberately exempt from the tokens-only rule, same always-dark rationale the retired `.dynamic-island.live` capsule used (deleted in `mezo-xt65`): a 3 a.m. sub-30-lux surface reads as always-dark). `.night`/`.night-back`/`.night-body`/`.night-eye`/`.night-moon`/`.night-glow`/`.night-title`/`.night-tx`/`.night-cta`/`.night-quiet` (the idle/getup frames), `.night-orb` (the numberless breathing orb, `nb-breath 18s`) + `.night-tools`/`.night-tool` (the waiting-frame tool menu), `.night-steps` (the get-up list); and the three tool families **`.nb-*`** (breathing: `.nb-stage`/`.nb-orb` + the CSS-only `nb-lb-in/-hold/-out` label cycle over the 18 s `nb-breath` cycle), **`.ns-*`** (body scan: `.ns-card`/`.ns-part`/`.ns-tx`/`.ns-dots`/`.ns-dot`), **`.nw-*`** (4K-walk: `.nw-stage`/`.nw-setup`/`.nw-remind`/`.nw-t`/`.nw-tx`/`.nw-rtx`). **All transform/scale motion is reduced-motion-guarded** — `@media (prefers-reduced-motion: reduce)` stills `.nb-orb`/`.night-orb`; the `nb-lb-in/-hold/-out` **label opacity fades intentionally keep cycling** under reduce (spec D6: the 5-6-7 pacing must survive without motion), a deliberate, documented exception to the §3.5 "all infinite animation behind a reduce guard" rule.
+
+### Sleep-phase classes — the `.ph*` family (`mezo-fk9a`, 2026-07-31)
+
+The sleep-depth-stats slice appended a third feature-scoped family to the sleep tail of
+`prototype.css` (`prototype.css:2076–2091`, right after the `.sstat*`/`.sesc*` education blocks
+above) — **not shared vocabulary** (same precedent as `.wdb*`/`.sstat*`/`.night*`), consumed by
+`PhaseRail.tsx`, `PhaseReferenceRow.tsx`, `NightArcCard.tsx`, `PhaseAverageCard.tsx`,
+`SleepLogSheet.tsx`, and the phase block inlined in the `SleepPage` hero. Behavior lives in
+[me.md §2](me.md) Alvás — this section owns only the CSS/token layer.
+
+- **Four `--ph-*` tokens, declared as aliases onto existing Napív accents** (`prototype.css:47–51`,
+  inside the legacy-alias `:root` block, right after `--tool-*`): `--ph-deep: var(--lav-deep)`
+  (the sleep domain's own colour, reused for the deepest layer), `--ph-light: var(--sky)` (already
+  the wake end of the night-arc gradient), `--ph-rem: var(--rose)` (dream), `--ph-awake: var(--faint)`
+  (absence — deliberately not an alert colour). **The dark override block for these four is
+  EMPTY, on purpose** — same rule stated at the top of the file for every legacy alias (`prototype.css:4–10`):
+  each alias points at a Napív token that is *itself* themed (light in the top `:root`, dark in the
+  Pulse block), so the alias inherits the theme swap automatically. Adding a dark-mode override for
+  `--ph-*` here would **break** that inheritance, not improve it — it would pin the phase colours to
+  one value while the tokens they're aliased to keep moving. Deliberately **not** Sleep Cycle's own
+  neon magenta/cyan — the page has an established warm palette, and importing a foreign accent set
+  for one card family would read as a paste-in.
+- **`.phrail`/`.phrail i` + `.phleg*`** — the proportional phase rail + its 2×2 legend, sole consumer
+  `PhaseRail.tsx`. **Two different denominators, both intentional, neither expressed in CSS** (the
+  component computes the percentages, the CSS just paints flex children): the rail's segment
+  **widths** (`.phrail i`'s inline `width`) denominate on `inBed` — deep+light+rem+awake — so the
+  four segments always sum to a full bar; the legend's **`.phleg-p`** percentage denominates on
+  `asleep` — deep+light+rem only — because awake time is fragmentation, not a sleep stage, and
+  mixing it into that percentage's denominator would make every night look deep-deficient. `PhaseRail`
+  is the one component with **four consumers** (the hero, `PhaseAverageCard`, `NightArcCard`'s
+  two half-night rows, and `SleepLogSheet.tsx`'s screenshot draft-review strip) — the reason it is
+  its own component rather than inlined per-caller.
+- **`.phref-t`/`.phref-bar`/`.phref-band`/`.phref-pin`** — one reference row, sole consumer
+  `PhaseReferenceRow.tsx`. `.phref-band` is **always sage** (`color-mix(in srgb, var(--sage) 35%,
+  transparent)`, never `--error`/`--warning`) regardless of whether the value sits inside or outside
+  it — the component computes a **locational** verdict string ("a sávban" / "a sáv alatt" / "a sáv
+  felett") rather than a graded one, and the CSS has no in-band/out-of-band variant to reach for even
+  if a future edit wanted one. This is the sleep page's established gentle-tone rule (§9 below,
+  [me.md §9](me.md)) reaching into the token layer: there is structurally no way to render "your deep
+  sleep is low" in red from this class family, because the classes never learned an error state.
+  `.phref-pin`'s colour is the caller's own phase colour (`--ph-deep`/`--ph-rem`), not part of the
+  band/verdict semantics.
 
 ### Ritual — Napzárás full-screen classes (`mezo-ilsj`, 2026-07-25)
 

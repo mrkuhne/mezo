@@ -11,6 +11,8 @@ export const MOCK_SLEEP_SHOT_DRAFT: SleepShotDraft = {
   remMin: 144,
   deepMin: 100,
   sourceQualityPct: 95,
+  // 34 buckets x 15 min = 510 min, within tolerance of the 501-minute 00:42 -> 09:03 span.
+  hypnogram: { bucketMin: 15, stages: 'ALDDLRRLDDLLRRRLDDLLRRLALDDLRRLRRR' },
   confidence: 1,
   needsReview: false,
 }

@@ -272,19 +272,26 @@ export const handlers = [
 
   http.get(`${API_BASE}/api/biometrics/sleep`, () =>
     HttpResponse.json([
-      { id: 's1', date: '2026-06-01', bedtime: '23:10', wakeup: '06:40', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 0, notes: null },
+      { id: 's1', date: '2026-05-30', bedtime: '23:10', wakeup: '06:40', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 0, notes: null },
+      { id: 's2', date: '2026-05-31', bedtime: '23:20', wakeup: '06:50', duration: 7.4, quality: 8, awakenings: 1, mealToSleep: 0, notes: null,
+        inBedMin: 470, awakeMin: 24, lightMin: 204, remMin: 140, deepMin: 100, sourceQualityPct: 85, source: 'screenshot' },
+      { id: 's3', date: '2026-06-01', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 0, notes: null,
+        inBedMin: 501, awakeMin: 52, lightMin: 206, remMin: 144, deepMin: 100, sourceQualityPct: 95, source: 'screenshot',
+        hypnogram: { bucketMin: 15, stages: 'ALDDLRRLDDLLRRRLDDLLRRLALDDLRRLRRR' } },
     ]),
   ),
   http.post(`${API_BASE}/api/biometrics/sleep`, async ({ request }) => {
     const body = (await request.json()) as {
       date: string; bedtime: string; wakeup: string; durationH: number
       quality: number; awakenings: number; note?: string | null
+      hypnogram?: { bucketMin: number; stages: string } | null
     }
     return HttpResponse.json(
       {
         id: 's2', date: body.date, bedtime: body.bedtime, wakeup: body.wakeup,
         duration: body.durationH, quality: body.quality, awakenings: body.awakenings,
         mealToSleep: 0, notes: body.note ?? null,
+        hypnogram: body.hypnogram ?? null,
       },
       { status: 201 },
     )

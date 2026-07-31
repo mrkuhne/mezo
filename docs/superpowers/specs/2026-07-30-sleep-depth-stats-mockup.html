@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="hu" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Alvás-mélység statisztikák — irányok</title>
+<style>
+/* Standalone archive copy: token values inlined so this renders without the Vite dev server.
+   Live copies: frontend/src/styles/{fonts,prototype}.css */
+:root {
+  --canvas:#FBF6EF; --surface:#FFFFFF; --warm:#F4EBDF; --line:#EFE5D8;
+  --ink:#2B2118; --sub:#8A7A6A; --faint:#A5978A; --sub2:#5F5346;
+  --coral:#FF6B4A; --coral-deep:#C4622F; --amber:#FFB347; --amber-deep:#B45309;
+  --sage:#7FA48A; --sage-deep:#5F7A52; --lav:#9B8FC4; --lav-deep:#7A6DA8;
+  --rose:#E27A8B; --sky:#6FA7D8;
+  --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
+  --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
+  --ff-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  --ff-body: "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
+
+  /* NEW — sleep-phase accents, mapped onto Napív (not Sleep Cycle's neon) */
+  --ph-deep:  #7A6DA8;   /* lav-deep  — the deepest layer, the sleep domain's own colour */
+  --ph-light: #6FA7D8;   /* sky       — already the "wake" end of the night-arc gradient */
+  --ph-rem:   #E27A8B;   /* rose      — dream */
+  --ph-awake: #A5978A;   /* faint     — absence, never alarming */
+}
+</style>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #E8E1D8; font-family: var(--ff-body); padding: 28px 20px 60px; color: var(--ink); }
+  h2.sec { font-family: var(--ff-display); font-size: 22px; font-weight: 800; margin: 8px 0 4px; }
+  p.secsub { font-size: 12.5px; font-weight: 600; color: #7d6f61; line-height: 1.5; max-width: 1400px; margin-bottom: 18px; }
+  .rowwrap { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+  .col { width: 440px; flex: none; }
+  .colhead { margin-bottom: 10px; min-height: 84px; }
+  .lab { font-family: var(--ff-display); font-size: 18px; font-weight: 800; }
+  .lab small { display: block; font-family: var(--ff-body); font-size: 11.5px; font-weight: 700; color: #7d6f61; margin-top: 4px; line-height: 1.5; }
+  .scr { width: 440px; background: var(--canvas); border-radius: 26px; overflow: hidden; box-shadow: 0 20px 50px rgba(43,33,24,.16); padding: 18px 0 26px; }
+
+  .card { background: var(--surface); border-radius: 22px; box-shadow: var(--np-shadow-row); padding: 15px 16px; margin: 0 18px 12px; }
+  .eyebrow { display:flex; align-items:center; gap:9px; padding: 14px 20px 8px; }
+  .eyebrow span { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
+  .eyebrow i { flex: 1; height: 1px; background: var(--line); }
+  .mlab { font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+  .row { display: flex; align-items: center; }
+  .between { justify-content: space-between; }
+  .disp { font-family: var(--ff-display); font-weight: 800; letter-spacing: -.5px; }
+
+  /* ---- phase legend ---- */
+  .plg { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 14px; margin-top: 12px; }
+  .plg .it { display: flex; align-items: baseline; gap: 7px; font-size: 11.5px; font-weight: 700; color: var(--sub2); }
+  .plg .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; align-self: center; }
+  .plg .v { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 800; color: var(--ink); }
+  .plg .p { font-size: 10px; color: var(--faint); font-weight: 800; min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---- the proportional phase rail (composition) ---- */
+  .prail { display: flex; height: 13px; border-radius: 7px; overflow: hidden; background: var(--line); }
+  .prail i { display: block; height: 100%; }
+  .prail.tall { height: 20px; border-radius: 10px; }
+
+  /* ---- reference band ---- */
+  .refrow { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 11px; }
+  .refit .rt { display: flex; align-items: baseline; gap: 6px; font-size: 11px; font-weight: 800; color: var(--sub2); margin-bottom: 5px; }
+  .refit .rt b { font-family: var(--ff-display); font-size: 13.5px; color: var(--ink); }
+  .refit .rt em { font-style: normal; margin-left: auto; font-size: 10px; font-weight: 800; color: var(--faint); }
+  .rbar { position: relative; height: 6px; border-radius: 3px; background: var(--line); }
+  .rbar .band { position: absolute; top: 0; bottom: 0; background: rgba(127,164,138,.35); border-radius: 3px; }
+  .rbar .pin { position: absolute; top: -3px; width: 3px; height: 12px; border-radius: 2px; transform: translateX(-1.5px); }
+
+  svg { display: block; width: 100%; overflow: visible; }
+  .axis { font-size: 8.5px; font-weight: 800; fill: var(--faint); font-family: var(--ff-body); }
+  .lanelab { font-size: 8.5px; font-weight: 800; font-family: var(--ff-body); }
+
+  .note { font-size: 10.5px; color: var(--faint); font-weight: 700; line-height: 1.5; margin: 2px 18px 0; }
+  .warn { color: var(--amber-deep); }
+  .sharedwrap { margin-top: 34px; }
+</style>
+</head>
+<body>
+
+<h2 class="sec">Alvás-mélység — a „tegnap éjjel” blokk három iránya</h2>
+<p class="secsub">
+  Ugyanaz az éjszaka mindhárom oszlopban (a küldött screenshot adatai: ágyban 8ó21p · alvás 7ó29p · éber 52p · könnyű 3ó26p · REM 2ó24p · mély 1ó40p · minőség 95%).
+  A hypnogram szándékosan <b>kvantált</b>: 15 perces bucketek, tehát a lépcsős forma az őszinte ábrázolás — nem szimulálunk a forrásnál finomabb felbontást.
+  A fázisszínek a Napív-palettából jönnek (mély = lav-deep, könnyű = sky, REM = rose, éber = faint), nem a Sleep Cycle neonjából.
+</p>
+
+<div class="rowwrap">
+
+  <!-- ============================ A ============================ -->
+  <div class="col">
+    <div class="colhead">
+      <div class="lab">A · Mélység-sziluett
+        <small>A meglévő hero kártya alá kerül egy fázis-sáv, és külön kártyát kap az éjszaka „képe”. A sziluett a screenshot hangulatát idézi: a magasság a mélységet kódolja. Legdekoratívabb, legtöbb helyet visz.</small>
+      </div>
+    </div>
+    <div class="scr">
+      <div class="eyebrow"><span>Tegnap éjjel</span><i></i></div>
+      <div class="card" style="background: linear-gradient(180deg, rgba(155,143,196,.13) 0%, var(--surface) 62%); padding: 18px 18px 16px;">
+        <div class="row between" style="align-items: flex-start;">
+          <div>
+            <div class="mlab" style="color: var(--lav-deep);">Tegnap éjjel</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:4px;">
+              <span class="disp" style="font-size:46px; line-height:1;">7.5</span>
+              <span class="disp" style="font-size:18px; color: var(--sub);">h</span>
+            </div>
+            <div style="font-size:11.5px; font-weight:700; color: var(--sub); margin-top:5px;">0:42 → 9:03</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="mlab">Minőség</div>
+            <div class="disp" style="font-size:30px; color: var(--sage-deep); margin-top:3px;">9/10</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--line);">
+          <div class="row between" style="margin-bottom:8px;">
+            <span class="mlab">Fázisok</span>
+            <span style="font-size:9.5px; font-weight:800; color: var(--faint);">screenshotból</span>
+          </div>
+          <div class="prail tall" id="railA"></div>
+          <div class="plg" id="legA"></div>
+        </div>
+      </div>
+
+      <div class="eyebrow"><span>Az éjszaka íve</span><i></i></div>
+      <div class="card">
+        <svg viewBox="0 0 400 132" id="silA"></svg>
+        <div style="margin-top:10px; padding-top:11px; border-top:1px solid var(--line); font-size:11.5px; font-weight:700; color: var(--sub2); line-height:1.5;">
+          A mély alvásod <b style="color:var(--ink);">72%-a</b> az éjszaka első felében volt — ez a normális minta.
+          A REM a hajnali órákban sűrűsödik, ezért a korán kelés aránytalanul azt vágja le.
+        </div>
+      </div>
+      <div class="note">A sziluett magassága a fázist kódolja, nem mért mélységet. 15 perces felbontás.</div>
+    </div>
+  </div>
+
+  <!-- ============================ B ============================ -->
+  <div class="col">
+    <div class="colhead">
+      <div class="lab">B · Sáv-hypnogram (klinikai)
+        <small>Négy külön sáv, cellánként kitöltve. Ez a klasszikus hypnogram-nyelv és ez a legőszintébb a kvantált adathoz: nem sugall folytonos görbét. Könnyebb leolvasni „mikor mi volt”, viszont mérnökibb.</small>
+      </div>
+    </div>
+    <div class="scr">
+      <div class="eyebrow"><span>Tegnap éjjel</span><i></i></div>
+      <div class="card" style="background: linear-gradient(180deg, rgba(155,143,196,.13) 0%, var(--surface) 62%); padding: 18px 18px 16px;">
+        <div class="row between" style="align-items: flex-start;">
+          <div>
+            <div class="mlab" style="color: var(--lav-deep);">Tegnap éjjel</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:4px;">
+              <span class="disp" style="font-size:46px; line-height:1;">7.5</span>
+              <span class="disp" style="font-size:18px; color: var(--sub);">h</span>
+            </div>
+            <div style="font-size:11.5px; font-weight:700; color: var(--sub); margin-top:5px;">0:42 → 9:03</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="mlab">Minőség</div>
+            <div class="disp" style="font-size:30px; color: var(--sage-deep); margin-top:3px;">9/10</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="eyebrow"><span>Fázisok · az éjszaka lefutása</span><i></i></div>
+      <div class="card">
+        <svg viewBox="0 0 400 150" id="laneB"></svg>
+        <div class="plg" id="legB" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line);"></div>
+      </div>
+      <div class="note">Minden cella 15 perc. Az üres cellák nem hiányt jelentenek — a bucket domináns fázisa dönt.</div>
+    </div>
+  </div>
+
+  <!-- ============================ C ============================ -->
+  <div class="col">
+    <div class="colhead">
+      <div class="lab">C · Kompakt · egy kártya
+        <small>Minden a hero kártyán belül marad: fázis-sáv + alatta egy alacsony mini-sziluett. Nem növeli a scroll-hosszt, viszont a hypnogram apró marad — inkább textúra, mint olvasható ábra.</small>
+      </div>
+    </div>
+    <div class="scr">
+      <div class="eyebrow"><span>Tegnap éjjel</span><i></i></div>
+      <div class="card" style="background: linear-gradient(180deg, rgba(155,143,196,.13) 0%, var(--surface) 62%); padding: 18px 18px 16px;">
+        <div class="row between" style="align-items: flex-start;">
+          <div>
+            <div class="mlab" style="color: var(--lav-deep);">Tegnap éjjel</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:4px;">
+              <span class="disp" style="font-size:46px; line-height:1;">7.5</span>
+              <span class="disp" style="font-size:18px; color: var(--sub);">h</span>
+            </div>
+            <div style="font-size:11.5px; font-weight:700; color: var(--sub); margin-top:5px;">0:42 → 9:03</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="mlab">Minőség</div>
+            <div class="disp" style="font-size:30px; color: var(--sage-deep); margin-top:3px;">9/10</div>
+          </div>
+        </div>
+
+        <div style="margin-top:15px;">
+          <svg viewBox="0 0 400 62" id="silC"></svg>
+        </div>
+        <div class="prail" id="railC" style="margin-top:10px;"></div>
+        <div class="plg" id="legC"></div>
+
+        <div class="refrow" id="refC"></div>
+      </div>
+      <div class="note">A referencia-sáv (zöld) a felnőtt normáltartomány; a tű a te éjszakád. Sosem piros, sosem „megbuktál”.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ SHARED ============================ -->
+<div class="sharedwrap">
+  <h2 class="sec">A többi statisztika — iránytól független</h2>
+  <p class="secsub">Ezek mindhárom irány mellé ugyanígy kerülnének, lejjebb az oldalon. A fázis nélküli (kézzel rögzített) éjszakák szürke, sima oszlopként jelennek meg — a lyukas idősor látszik, nem el van rejtve.</p>
+
+  <div class="rowwrap">
+    <div class="col">
+      <div class="colhead"><div class="lab">Fázisokra bontott trend<small>A jelenlegi SleepChart oszlopai fázisokra bontva. A minőség-vonal marad.</small></div></div>
+      <div class="scr">
+        <div class="eyebrow"><span>Trend · 14 nap</span><i></i></div>
+        <div class="card">
+          <svg viewBox="0 0 400 170" id="trend"></svg>
+          <div class="plg" id="legT" style="margin-top:12px; padding-top:11px; border-top:1px solid var(--line);"></div>
+        </div>
+        <div class="note">6 éjszaka fázisadat nélkül (kézi rögzítés) — halvány, sima oszlop.</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="colhead"><div class="lab">Fázis-átlagok + referencia<small>A fázisos éjszakák átlaga, a normáltartományhoz mérve. „N éjszakából” mindig kiírva.</small></div></div>
+      <div class="scr">
+        <div class="eyebrow"><span>Átlagos összetétel · 8 éjszakából</span><i></i></div>
+        <div class="card">
+          <div class="prail tall" id="railAvg"></div>
+          <div class="plg" id="legAvg"></div>
+          <div class="refrow" id="refAvg"></div>
+        </div>
+        <div class="note">Kevesebb mint 3 fázisos éjszakánál a kártya nem jelenik meg — nincs félrevezető átlag.</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="colhead"><div class="lab">Első fél / második fél + hossz ↔ REM<small>A hypnogram egyetlen igazán új tanulsága, és a személyes bizonyíték rá.</small></div></div>
+      <div class="scr">
+        <div class="eyebrow"><span>Hol van a mély, hol a REM</span><i></i></div>
+        <div class="card">
+          <div class="row between" style="margin-bottom:7px;"><span class="mlab">Első fél · 0:42–4:52</span><span style="font-size:10px;font-weight:800;color:var(--faint)">3ó45p alvás</span></div>
+          <div class="prail" id="railH1"></div>
+          <div class="row between" style="margin:14px 0 7px;"><span class="mlab">Második fél · 4:52–9:03</span><span style="font-size:10px;font-weight:800;color:var(--faint)">3ó44p alvás</span></div>
+          <div class="prail" id="railH2"></div>
+          <div style="margin-top:13px; padding-top:12px; border-top:1px solid var(--line); font-size:11.5px; font-weight:700; color: var(--sub2); line-height:1.55;">
+            A mélyed <b style="color:var(--ink);">72%-a</b> az első félbe esett, a REM-ed <b style="color:var(--ink);">64%-a</b> a másodikba.
+          </div>
+        </div>
+
+        <div class="eyebrow"><span>Ha rövidebb az éjszaka</span><i></i></div>
+        <div class="card">
+          <svg viewBox="0 0 400 128" id="scatter"></svg>
+          <div style="margin-top:11px; padding-top:11px; border-top:1px solid var(--line); font-size:11.5px; font-weight:700; color: var(--sub2); line-height:1.55;">
+            A 7 óra alatti éjszakáidon átlagosan <b style="color:var(--ink);">38 perccel</b> kevesebb a REM-ed, miközben a mély alvásod alig változik.
+            A rövid éjszaka nem arányosan vág — a hajnali REM-et veszi el.
+          </div>
+        </div>
+        <div class="note">Legalább 6 fázisos éjszaka kell hozzá, különben a kártya rejtve marad.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const C = { D:'var(--ph-deep)', L:'var(--ph-light)', R:'var(--ph-rem)', A:'var(--ph-awake)' };
+const NAME = { D:'Mély', L:'Könnyű', R:'REM', A:'Éber' };
+const hm = m => (m>=60 ? Math.floor(m/60)+'ó ' : '') + (m%60) + 'p';
+
+/* ---- the night from the screenshot ---- */
+const N = { awake:52, light:206, rem:144, deep:100, asleep:449, inBed:501, bed:'0:42', wake:'9:03' };
+
+/* 15-min quantised hypnogram, 0:42 -> 9:03 (34 buckets). Deliberately NOT a perfect
+   match to the exact minutes above — quantisation drifts, which is why it is display-only. */
+const HYP = ('A L D D L R R L D D L L R R R L D D L L R R L A L D D L R R L R R R').split(' ');
+const START_MIN = 42;               // 0:42
+
+const LEVEL = { A:0, R:1, L:2, D:3 };   // 0 = shallowest at top
+const ORDER = ['D','L','R','A'];        // rail stack order: deep at the base
+
+/* ---------- proportional rail ---------- */
+function rail(el, parts, total) {
+  el.innerHTML = ORDER.map(k => parts[k] ? `<i style="width:${parts[k]/total*100}%;background:${C[k]}"></i>` : '').join('');
+}
+function legend(el, parts, denom) {
+  el.innerHTML = ORDER.map(k => {
+    if (!parts[k]) return '';
+    const pct = Math.round(parts[k] / denom * 100);
+    return `<div class="it"><span class="dot" style="background:${C[k]}"></span>${NAME[k]}
+      <span class="v">${hm(parts[k])}</span><span class="p">${pct}%</span></div>`;
+  }).join('');
+}
+
+const PARTS = { D:N.deep, L:N.light, R:N.rem, A:N.awake };
+['railA','railC'].forEach(id => rail(document.getElementById(id), PARTS, N.inBed));
+['legA','legB','legC'].forEach(id => legend(document.getElementById(id), PARTS, N.asleep));
+
+/* ---------- reference bands ---------- */
+/* Adult reference: deep 13-23% of total sleep, REM 20-25%. Scale 0-40%. */
+function refRows(el, rows) {
+  el.innerHTML = rows.map(r => {
+    const S = 40, band = `left:${r.lo/S*100}%;width:${(r.hi-r.lo)/S*100}%`;
+    const inBand = r.v >= r.lo && r.v <= r.hi;
+    return `<div class="refit">
+      <div class="rt">${r.label} <b>${r.v}%</b>
+        <em>${inBand ? 'a sávban' : (r.v > r.hi ? 'a sáv felett' : 'a sáv alatt')} · ref ${r.lo}–${r.hi}%</em></div>
+      <div class="rbar"><span class="band" style="${band}"></span>
+        <span class="pin" style="left:${r.v/S*100}%;background:${r.c}"></span></div>
+    </div>`;
+  }).join('');
+}
+const deepPct = Math.round(N.deep/N.asleep*100), remPct = Math.round(N.rem/N.asleep*100);
+refRows(document.getElementById('refC'), [
+  { label:'Mély', v:deepPct, lo:13, hi:23, c:'var(--ph-deep)' },
+  { label:'REM',  v:remPct,  lo:20, hi:25, c:'var(--ph-rem)'  },
+]);
+
+/* ---------- A / C : depth silhouette ---------- */
+function silhouette(id, h, showAxis) {
+  const svg = document.getElementById(id), W = 400, PB = showAxis ? 18 : 4, top = 4;
+  const n = HYP.length, bw = W / n, H = h - PB - top;
+  let s = '';
+  /* Bars HANG from a top baseline: the deeper the stage, the further it dips —
+     same reading direction as the Sleep Cycle curve the user already knows. */
+  HYP.forEach((k, i) => {
+    const frac = [0.20, 0.52, 0.74, 1.0][LEVEL[k]];   /* A barely dips, D dips deepest */
+    const bh = H * frac, x = i * bw;
+    s += `<rect x="${x + 0.6}" y="${top}" width="${bw - 1.2}" height="${bh}"
+            rx="${Math.min(2.2, bw/3)}" fill="${C[k]}" opacity="${k==='A' ? .45 : .92}"/>`;
+  });
+  if (showAxis) {
+    /* Hour ticks — skipped where they would collide with the bed/wake end labels. */
+    const span = n * 15;
+    for (let hh = 1; hh <= 9; hh++) {
+      const mins = hh * 60 - START_MIN;
+      if (mins < 26 || mins > span - 26) continue;
+      const x = (mins / 15) * bw;
+      s += `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + H}" stroke="var(--line)" stroke-width="1"/>`;
+      s += `<text class="axis" x="${x}" y="${h - 5}" text-anchor="middle">${String(hh).padStart(2,'0')}</text>`;
+    }
+    s += `<text class="axis" x="0" y="${h-5}" text-anchor="start" style="font-weight:800">${N.bed}</text>`;
+    s += `<text class="axis" x="${W}" y="${h-5}" text-anchor="end" style="font-weight:800">${N.wake}</text>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${h}`);
+  svg.innerHTML = s;
+}
+silhouette('silA', 132, true);
+silhouette('silC', 62, false);
+
+/* ---------- B : lane hypnogram ---------- */
+(function lanes() {
+  const svg = document.getElementById('laneB'), W = 400, h = 150, LW = 34, PB = 18;
+  const lanes = ['A','R','L','D'], lh = (h - PB - 6) / lanes.length;
+  const bw = (W - LW) / HYP.length;
+  let s = '';
+  lanes.forEach((k, li) => {
+    const y = 4 + li * lh;
+    s += `<text class="lanelab" x="0" y="${y + lh/2 + 3}" fill="${C[k]}">${NAME[k]}</text>`;
+    s += `<rect x="${LW}" y="${y + lh*0.16}" width="${W-LW}" height="${lh*0.68}" rx="4" fill="var(--line)" opacity=".55"/>`;
+    HYP.forEach((b, i) => {
+      if (b !== k) return;
+      s += `<rect x="${LW + i*bw + 0.5}" y="${y + lh*0.16}" width="${bw - 1}" height="${lh*0.68}"
+              rx="3" fill="${C[k]}" opacity="${k==='A' ? .5 : .92}"/>`;
+    });
+  });
+  for (let hh = 1; hh <= 9; hh++) {
+    const mins = hh*60 - START_MIN;
+    if (mins < 0 || mins > HYP.length*15) continue;
+    s += `<text class="axis" x="${LW + (mins/15)*bw}" y="${h - 4}" text-anchor="middle">${String(hh).padStart(2,'0')}</text>`;
+  }
+  svg.innerHTML = s;
+})();
+
+/* ---------- shared: averages ---------- */
+const AVG = { D:96, L:198, R:121, A:47 }, AVG_ASLEEP = 415, AVG_BED = 462;
+rail(document.getElementById('railAvg'), AVG, AVG_BED);
+legend(document.getElementById('legAvg'), AVG, AVG_ASLEEP);
+refRows(document.getElementById('refAvg'), [
+  { label:'Mély', v:Math.round(AVG.D/AVG_ASLEEP*100), lo:13, hi:23, c:'var(--ph-deep)' },
+  { label:'REM',  v:Math.round(AVG.R/AVG_ASLEEP*100), lo:20, hi:25, c:'var(--ph-rem)'  },
+]);
+
+/* ---------- shared: half-night rails ---------- */
+rail(document.getElementById('railH1'), { D:72, L:104, R:52, A:23 }, 251);
+rail(document.getElementById('railH2'), { D:28, L:102, R:92, A:29 }, 251);
+
+/* ---------- shared: stacked trend ---------- */
+(function trend() {
+  const svg = document.getElementById('trend'), W = 400, h = 170, PB = 20, PT = 6;
+  /* 14 nights; nulls = manual entries with no phase data */
+  const nights = [
+    { d:'05.09', dur:6.6, q:5, p:null },
+    { d:'05.10', dur:7.2, q:7, p:{D:88,L:190,R:118} },
+    { d:'05.11', dur:6.1, q:5, p:{D:82,L:172,R:112} },
+    { d:'05.12', dur:7.8, q:8, p:null },
+    { d:'05.13', dur:7.4, q:7, p:{D:99,L:200,R:145} },
+    { d:'05.14', dur:5.9, q:4, p:{D:79,L:168,R:107} },
+    { d:'05.15', dur:8.0, q:9, p:null },
+    { d:'05.16', dur:7.1, q:7, p:{D:94,L:186,R:146} },
+    { d:'05.17', dur:6.4, q:6, p:null },
+    { d:'05.18', dur:7.6, q:8, p:{D:104,L:198,R:154} },
+    { d:'05.19', dur:6.9, q:6, p:null },
+    { d:'05.20', dur:7.3, q:7, p:{D:91,L:196,R:151} },
+    { d:'05.21', dur:6.2, q:5, p:null },
+    { d:'05.22', dur:7.5, q:9, p:{D:100,L:206,R:144} },
+  ];
+  const MAX = 9, H = h - PB - PT, bw = W / nights.length;
+  let s = '';
+  nights.forEach((n, i) => {
+    const x = i*bw + bw*0.20, w = bw*0.60;
+    const totalH = n.dur / MAX * H;
+    if (!n.p) {
+      s += `<rect x="${x}" y="${PT + H - totalH}" width="${w}" height="${totalH}" rx="4"
+              fill="var(--ph-light)" opacity=".22"/>`;
+    } else {
+      const sum = n.p.D + n.p.L + n.p.R;
+      let acc = 0;
+      ['D','L','R'].forEach(k => {
+        const seg = n.p[k]/sum * totalH;
+        s += `<rect x="${x}" y="${PT + H - totalH + acc}" width="${w}" height="${seg}"
+                fill="${C[k]}" opacity=".9"/>`;
+        acc += seg;
+      });
+      /* rounded top + bottom via a clip-ish overlay: simple rounded outline */
+      s += `<rect x="${x}" y="${PT + H - totalH}" width="${w}" height="${totalH}" rx="4"
+              fill="none" stroke="var(--surface)" stroke-width="1.2"/>`;
+    }
+    if (i % 2 === 0) s += `<text class="axis" x="${x + w/2}" y="${h - 6}" text-anchor="middle">${n.d}</text>`;
+  });
+  /* quality polyline (kept from today's chart) */
+  const pts = nights.map((n,i) => `${i*bw + bw/2},${PT + H - (n.q/10)*H*0.92}`).join(' ');
+  s += `<polyline points="${pts}" fill="none" stroke="var(--lav-deep)" stroke-width="1.6"
+          stroke-linecap="round" opacity=".75"/>`;
+  nights.forEach((n,i) => {
+    s += `<circle cx="${i*bw + bw/2}" cy="${PT + H - (n.q/10)*H*0.92}" r="2.2" fill="var(--lav-deep)"/>`;
+  });
+  svg.innerHTML = s;
+})();
+legend(document.getElementById('legT'), { D:1, L:1, R:1 }, 1);
+/* legend for the trend shows names only */
+document.querySelectorAll('#legT .v, #legT .p').forEach(e => e.remove());
+
+/* ---------- shared: duration <-> REM scatter ---------- */
+(function scatter() {
+  const svg = document.getElementById('scatter'), W = 400, h = 128, PL = 26, PB = 18, PT = 6;
+  const pts = [
+    [5.9,107],[6.1,112],[6.4,116],[6.9,124],[7.1,146],[7.2,118],[7.3,151],[7.4,145],[7.5,144],[7.6,154],[7.8,158],[8.0,166],
+  ];
+  const XR=[5.5,8.5], YR=[90,180], PW = W-PL, H = h-PB-PT;
+  const px = v => PL + (v-XR[0])/(XR[1]-XR[0])*PW;
+  const py = v => PT + H - (v-YR[0])/(YR[1]-YR[0])*H;
+  let s = '';
+  [120,150,180].forEach(g => {
+    s += `<line x1="${PL}" y1="${py(g)}" x2="${W}" y2="${py(g)}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text class="axis" x="0" y="${py(g)+3}">${g}p</text>`;
+  });
+  /* 7h threshold marker */
+  s += `<line x1="${px(7)}" y1="${PT}" x2="${px(7)}" y2="${PT+H}" stroke="var(--amber-deep)"
+          stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>`;
+  s += `<text class="axis" x="${px(7)}" y="${h-5}" text-anchor="middle" fill="var(--amber-deep)">7ó</text>`;
+  pts.forEach(([x,y]) => {
+    s += `<circle cx="${px(x)}" cy="${py(y)}" r="3.4" fill="var(--ph-rem)" opacity="${x<7?.5:.95}"/>`;
+  });
+  s += `<text class="axis" x="${px(6.2)}" y="${h-5}" text-anchor="middle">6ó</text>`;
+  s += `<text class="axis" x="${px(8)}" y="${h-5}" text-anchor="middle">8ó</text>`;
+  svg.innerHTML = s;
+})();
+</script>
+</body>
+</html>

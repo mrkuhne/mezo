@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.biometrics.sleep.service;
 
+import io.mrkuhne.mezo.api.dto.Hypnogram;
 import io.mrkuhne.mezo.api.dto.SleepShotDraftResponse;
 import io.mrkuhne.mezo.feature.biometrics.sleep.config.SleepShotProperties;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepShotDraftValidator.Extracted;
@@ -37,7 +38,11 @@ public class SleepShotService {
         "asleepMin":total asleep minutes from 'Asleep' (e.g. 7h 29m -> 449),
         "inBedMin":total minutes from 'In bed',"awakeMin":minutes from the 'Awake' stage,
         "lightMin":minutes from 'Light',"remMin":minutes from 'Dream' (Dream IS REM),
-        "deepMin":minutes from 'Deep',"qualityPct":the 0-100 'Sleep quality' number}
+        "deepMin":minutes from 'Deep',"qualityPct":the 0-100 'Sleep quality' number,
+        "hypnogram":a string with ONE letter per 15 minutes of the 'Sleep stages' graph,
+        left to right, from 'Went to bed' to 'Woke up'. Letters: D=Deep, L=Light, R=Dream,
+        A=Awake. Decide each 15-minute slot by the COLOUR of the curve there (white=Awake,
+        magenta=Dream, light cyan=Light, dark teal=Deep), NOT by its height}
         Use null for anything not visible on the screenshot. Numbers as integers.
         """;
 
@@ -55,8 +60,9 @@ public class SleepShotService {
             () -> port.complete(SYSTEM_PROMPT, "", p.bytes(), p.mime()));
         Extracted e = normalize(parse(answer));
         Score score = validator.score(e, props.confidenceThreshold());
-        log.info("Sleep screenshot draft for {}: confidence={} needsReview={}",
-            userId, score.confidence(), score.needsReview());
+        String hypnogram = validator.acceptedHypnogram(e);
+        log.info("Sleep screenshot draft for {}: confidence={} needsReview={} hypnogram={}",
+            userId, score.confidence(), score.needsReview(), hypnogram == null ? "rejected" : "ok");
         return SleepShotDraftResponse.builder()
             .bedtime(e.bedtime())
             .wakeup(e.wakeup())
@@ -68,6 +74,8 @@ public class SleepShotService {
             .remMin(e.remMin())
             .deepMin(e.deepMin())
             .sourceQualityPct(e.qualityPct())
+            .hypnogram(hypnogram == null ? null
+                : Hypnogram.builder().bucketMin(15).stages(hypnogram).build())
             .confidence(score.confidence())
             .needsReview(score.needsReview())
             .build();
@@ -123,7 +131,7 @@ public class SleepShotService {
     /** Zero-pad clock times (Sleep Cycle renders '0:42'); leave everything else as extracted. */
     private static Extracted normalize(Extracted e) {
         return new Extracted(pad(e.bedtime()), pad(e.wakeup()), e.asleepMin(), e.inBedMin(),
-            e.awakeMin(), e.lightMin(), e.remMin(), e.deepMin(), e.qualityPct());
+            e.awakeMin(), e.lightMin(), e.remMin(), e.deepMin(), e.qualityPct(), e.hypnogram());
     }
 
     private static String pad(String hhmm) {

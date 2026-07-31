@@ -30,6 +30,7 @@ export function useSleep() {
           remMin: input.remMin ?? null, deepMin: input.deepMin ?? null,
           sourceQualityPct: input.sourceQualityPct ?? null,
           source: input.source ?? 'manual',
+          hypnogram: input.hypnogram ?? null,
         })
       : sleepApi.log,
     onSuccess: (entry) => {
