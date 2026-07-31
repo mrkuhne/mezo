@@ -585,16 +585,20 @@ In `frontend/src/data/me/sleepShot.ts`, add to `MOCK_SLEEP_SHOT_DRAFT` after `so
 
 - [ ] **Step 4: Seed the mock log**
 
-In `frontend/src/data/me/sleep.ts`, add phase fields to **8** of the 14 nights, leaving 6 untouched so the sparse-series handling is exercised. For each enriched night the three sleep phases must sum to `duration * 60` (±2 min) so `phaseBreakdown` agrees with the displayed hours. Add a hypnogram to **5** of them whose bucket count is within 2 of `round(spanMin / 15)`.
+In `frontend/src/data/me/sleep.ts`, add phase fields to **8** of the 14 nights, leaving 6 untouched so the sparse-series handling is exercised. For each enriched night the three sleep phases must sum to `duration * 60` (±2 min) so `phaseBreakdown` agrees with the displayed hours. Add a hypnogram to **6** of them whose bucket count is within 2 of `round(spanMin / 15)`.
+
+> **Count the fixture against every gating threshold before writing it.** The first draft of this seed left only ONE night under 7 hours asleep, while `RemDurationCard` requires **≥3 on each side of the 7-hour line** (§7) — the card would have shipped permanently invisible in mock mode with the whole suite green. The rows below give **3 short** (05-11, 05-15, 05-16) and **5 long**. Any future edit to these numbers must re-check that split.
+>
+> **The LAST row is read by half the app.** `useSleep().lastNight` is `sleepLog[sleepLog.length - 1]`, so changing its `duration`/`bedtime`/`wakeup` ripples into `meData.test.tsx`, `SleepPage.test.tsx` and `recapHooks.test.tsx`. Editing this file means running the **full** suite in both modes, never a scoped pattern.
 
 Use exactly these replacements (the other six lines stay as they are):
 
 ```ts
   { date: '2026-05-10', bedtime: '23:40', wakeup: '07:00', duration: 7.3, quality: 7, awakenings: 1, mealToSleep: 95, notes: 'Vacsora csúszott', inBedMin: 460, awakeMin: 22, lightMin: 200, remMin: 140, deepMin: 98, sourceQualityPct: 82, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ALDDLLRRLDDLLRRLDDLLRRLALDDLRRR' } },
-  { date: '2026-05-11', bedtime: '23:55', wakeup: '07:20', duration: 7.4, quality: 6, awakenings: 2, mealToSleep: 80, notes: 'Volleyball szombat · late dinner', inBedMin: 475, awakeMin: 31, lightMin: 210, remMin: 132, deepMin: 102, sourceQualityPct: 78, source: 'screenshot' },
+  { date: '2026-05-11', bedtime: '23:55', wakeup: '07:20', duration: 6.5, quality: 6, awakenings: 2, mealToSleep: 80, notes: 'Volleyball szombat · late dinner', inBedMin: 432, awakeMin: 42, lightMin: 190, remMin: 112, deepMin: 88, sourceQualityPct: 72, source: 'screenshot' },
   { date: '2026-05-13', bedtime: '23:10', wakeup: '06:50', duration: 7.7, quality: 8, awakenings: 1, mealToSleep: 140, notes: null, inBedMin: 480, awakeMin: 18, lightMin: 208, remMin: 148, deepMin: 106, sourceQualityPct: 88, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ADDLLRRLDDLLRRRLDDLLRRLLDDLRRRRR' } },
   { date: '2026-05-15', bedtime: '00:15', wakeup: '07:00', duration: 6.8, quality: 5, awakenings: 3, mealToSleep: 65, notes: 'Magnézium kihagyva · késő szénhidrát', inBedMin: 445, awakeMin: 37, lightMin: 196, remMin: 112, deepMin: 100, sourceQualityPct: 64, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ALDDLLRLDDLLARLDDLLRRLALDDLR' } },
-  { date: '2026-05-16', bedtime: '23:00', wakeup: '06:30', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 150, notes: null, inBedMin: 468, awakeMin: 20, lightMin: 204, remMin: 142, deepMin: 104, sourceQualityPct: 86, source: 'screenshot' },
+  { date: '2026-05-16', bedtime: '23:00', wakeup: '06:30', duration: 6.6, quality: 8, awakenings: 1, mealToSleep: 150, notes: null, inBedMin: 430, awakeMin: 34, lightMin: 194, remMin: 110, deepMin: 92, sourceQualityPct: 74, source: 'screenshot' },
   { date: '2026-05-18', bedtime: '23:50', wakeup: '07:10', duration: 7.3, quality: 7, awakenings: 2, mealToSleep: 95, notes: 'Volleyball + késő vacsora', inBedMin: 462, awakeMin: 24, lightMin: 202, remMin: 138, deepMin: 98, sourceQualityPct: 80, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ALDDLLRRLDDLLRRLDDLLRRLALDDLRRR' } },
   { date: '2026-05-19', bedtime: '22:45', wakeup: '06:30', duration: 7.8, quality: 9, awakenings: 0, mealToSleep: 160, notes: 'Reta D1 · pihenve, magnézium ment', inBedMin: 478, awakeMin: 13, lightMin: 210, remMin: 152, deepMin: 106, sourceQualityPct: 92, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ADDLLRRLDDLLRRRLDDLLRRLLDDLRRRR' } },
 ```
