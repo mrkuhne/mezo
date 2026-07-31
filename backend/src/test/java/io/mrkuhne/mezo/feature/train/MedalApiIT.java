@@ -109,7 +109,13 @@ class MedalApiIT extends ApiIntegrationTest {
             "/api/train/workouts/" + active.getId() + "/sets", req,
             ownerAuthHeaders(), HttpStatus.CREATED, ExerciseSetResponse.class);
 
-        assertThat(body.getMedals()).extracting(Medal::getType).contains(Medal.TypeEnum.WEIGHT);
+        // SESSION_VOLUME is session-scoped and must NEVER ride along on a set row. This fixture is
+        // deliberately volume-POSITIVE (prior session 100×8 = 800, this one 102.5×8 = 820), so a
+        // forSet→forSession swap at logSet — the signatures are identical, so it would compile —
+        // really would leak one here. The absence assertion is the trap that catches it.
+        assertThat(body.getMedals()).extracting(Medal::getType)
+            .contains(Medal.TypeEnum.WEIGHT)
+            .doesNotContain(Medal.TypeEnum.SESSION_VOLUME);
         Medal weight = medalOfType(body.getMedals(), Medal.TypeEnum.WEIGHT);
         assertThat(weight.getPreviousValue()).isEqualByComparingTo("100.00");
     }
