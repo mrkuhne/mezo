@@ -47,6 +47,7 @@ export const sleepApi = {
         source: input.source, sourceQualityPct: input.sourceQualityPct,
         awakeMin: input.awakeMin, lightMin: input.lightMin,
         remMin: input.remMin, deepMin: input.deepMin,
+        hypnogram: input.hypnogram,
       } satisfies LogSleepRequest),
     }) as Promise<SleepEntry>,
 }
@@ -67,6 +68,7 @@ export const sleepShotApi = {
         remMin: r.remMin ?? null,
         deepMin: r.deepMin ?? null,
         sourceQualityPct: r.sourceQualityPct ?? null,
+        hypnogram: r.hypnogram ?? null,
         confidence: r.confidence,
         needsReview: r.needsReview,
       }))

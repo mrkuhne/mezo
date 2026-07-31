@@ -17,8 +17,10 @@ afterEach(() => {
 
 test('useSleep (real mode) loads the sleep log from the API and exposes lastNight', async () => {
   const { result } = renderHook(() => useSleep(), { wrapper: makeHookWrapper() })
-  await waitFor(() => expect(result.current.sleepLog.length).toBe(1))
-  expect(result.current.lastNight).toMatchObject({ date: '2026-06-01', duration: 7.5, quality: 8 })
+  // Default MSW fixture (mezo-fk9a) now carries 3 nights so the average card's 3-night
+  // gate can be exercised — lastNight is the most recent (2026-06-01, the hypnogram row).
+  await waitFor(() => expect(result.current.sleepLog.length).toBe(3))
+  expect(result.current.lastNight).toMatchObject({ date: '2026-06-01', duration: 7.5, quality: 9 })
 })
 
 test('useSleep.logSleep POSTs (mapping durationH) and the new entry appears after invalidation', async () => {
