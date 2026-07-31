@@ -52,10 +52,18 @@ public class MedalService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
 
-    /** Every medal the owner has ever earned, newest first. */
+    /**
+     * Every medal the owner has ever earned, newest first. Same-day medals are grouped by exercise
+     * and then by type so two GETs cannot shuffle the cabinet: the underlying set query has no
+     * ORDER BY, so without explicit keys the presentation order would be whatever Postgres
+     * happened to return. What remains tied (one exercise out-doing itself twice in a day) falls
+     * back to the replay's own chronological order, which {@link #replay} makes deterministic.
+     */
     public List<Medal> list(UUID createdBy) {
         return replay(createdBy).stream()
-            .sorted(Comparator.comparing((Earned e) -> e.medal().getDate()).reversed())
+            .sorted(Comparator.comparing((Earned e) -> e.medal().getDate()).reversed()
+                .thenComparing((Earned e) -> e.medal().getExerciseName())
+                .thenComparing((Earned e) -> e.medal().getType()))
             .map(Earned::medal)
             .toList();
     }
@@ -122,7 +130,7 @@ public class MedalService {
             ExerciseCatalogEntity cat =
                 display.getCatalogId() != null ? catalog.get(display.getCatalogId()) : null;
             List<ExerciseSetEntity> ordered = entry.getValue().stream()
-                .sorted(Comparator.comparing(this::setInstant)).toList();
+                .sorted(replayOrder()).toList();
             replaySets(ordered, display, cat, earned);
             replaySessions(ordered, display, cat, earned);
         }
@@ -181,8 +189,12 @@ public class MedalService {
             LinkedHashMap::new, Collectors.toList()));
 
         RunningBest bestVolume = new RunningBest();
-        List<List<ExerciseSetEntity>> sessions = bySession.values().stream()
-            .sorted(Comparator.comparing(this::sessionInstant)).toList();
+        List<List<ExerciseSetEntity>> sessions = bySession.entrySet().stream()
+            .sorted(Comparator.comparing(
+                    (Map.Entry<UUID, List<ExerciseSetEntity>> e) -> sessionInstant(e.getValue()))
+                .thenComparing((Map.Entry<UUID, List<ExerciseSetEntity>> e) -> e.getKey().toString()))
+            .map(Map.Entry::getValue)
+            .toList();
         for (List<ExerciseSetEntity> session : sessions) {
             BigDecimal volume = sessionVolume(session);
             if (volume.signum() <= 0) {
@@ -221,6 +233,23 @@ public class MedalService {
             .previousValue(award.previousValue())
             .previousDate(previousDate)
             .build();
+    }
+
+    /**
+     * The order the replay reads one identity's sets in, and it MUST be total. A medal is only
+     * awarded against what came strictly before, so the order decides the outcome, not just the
+     * presentation: two sets tied on their instant at 100×8 and 102.5×8 yield a WEIGHT medal in one
+     * order and none in the other. Ties are unreachable for API-logged sets (each {@code logSet}
+     * stamps its own {@code Instant.now()}) but TOTAL for rows inserted as one batch with
+     * {@code done_at} null — Postgres {@code now()} is transaction-scoped, which is what a
+     * demofixtures seed or a future import produces — and the set query carries no ORDER BY, so
+     * without this the sequence would be whatever the scan returned. {@code setIndex} breaks the
+     * tie the way a human reads the session; the id is the final total key.
+     */
+    private Comparator<ExerciseSetEntity> replayOrder() {
+        return Comparator.comparing((ExerciseSetEntity s) -> setInstant(s))
+            .thenComparing(ExerciseSetEntity::getSetIndex)
+            .thenComparing((ExerciseSetEntity s) -> s.getId().toString());
     }
 
     /** Scale-insensitive weight key: 100.00 and 100.0 are the same weight to a rep record. */

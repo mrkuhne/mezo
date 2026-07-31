@@ -242,6 +242,91 @@ class MedalApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetMedals_shouldReadTiedSetsInSetIndexOrder_whenAWholeSessionSharesOneTimestamp() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity first =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        trainPopulator.createLoggedSet(owner, bench.getId(), first.getId(), 0,
+            "100.00", 8, 2, middayOf(DAY_1));
+        // one batch, ONE shared instant — what a seed/import produces (Postgres now() is
+        // transaction-scoped) — and inserted in reverse, so scan order contradicts setIndex order
+        WorkoutSessionEntity second =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_2, "completed");
+        Instant tied = middayOf(DAY_2);
+        trainPopulator.createLoggedSet(owner, bench.getId(), second.getId(), 2, "100.00", 8, 1, tied);
+        trainPopulator.createLoggedSet(owner, bench.getId(), second.getId(), 1, "105.00", 8, 1, tied);
+        trainPopulator.createLoggedSet(owner, bench.getId(), second.getId(), 0, "102.50", 8, 1, tied);
+
+        List<Medal> medals = getMedals().getMedals();
+
+        // read as 102.5 → 105 → 100, the escalation medals twice; read in insert order the 102.5
+        // set would follow the 105 one and earn nothing, leaving a single WEIGHT medal
+        List<Medal> weights = medals.stream()
+            .filter(m -> m.getType() == Medal.TypeEnum.WEIGHT).toList();
+        assertThat(weights).extracting(
+                m -> m.getValue().stripTrailingZeros().toPlainString(),
+                m -> m.getPreviousValue().stripTrailingZeros().toPlainString(),
+                Medal::getSetIndex)
+            .containsExactly(tuple("102.5", "100", 0), tuple("105", "102.5", 1));
+        assertThat(medals).extracting(Medal::getType).containsExactly(
+            Medal.TypeEnum.WEIGHT, Medal.TypeEnum.WEIGHT,
+            Medal.TypeEnum.E1_RM, Medal.TypeEnum.E1_RM,
+            Medal.TypeEnum.SESSION_VOLUME);
+    }
+
+    @Test
+    void testGetMedals_shouldAwardTargetHit_whenTheSnapshottedPrescriptionIsMet() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity instance =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        ExerciseSetEntity onTarget = trainPopulator.createTargetedSet(owner, bench.getId(),
+            instance.getId(), 0, "100.00", 8, "100.00", 8, middayOf(DAY_1));
+
+        assertThat(onTarget.getTargetWeightKg()).isEqualByComparingTo("100.00"); // the row really carries it
+        List<Medal> medals = getMedals().getMedals();
+
+        // history-independent: a lone session earns no RECORD medal, but the prescription still pays
+        assertThat(medals).hasSize(1);
+        Medal target = medals.get(0);
+        assertThat(target.getType()).isEqualTo(Medal.TypeEnum.TARGET_HIT);
+        assertThat(target.getTier()).isEqualTo(Medal.TierEnum.TARGET);
+        assertThat(target.getUnit()).isEqualTo(Medal.UnitEnum.REPS);
+        assertThat(target.getValue()).isEqualByComparingTo("8");
+        assertThat(target.getPreviousValue()).isNull();
+        assertThat(target.getPreviousDate()).isNull();
+        assertThat(target.getWeightKg()).isEqualByComparingTo("100.00");
+        assertThat(target.getReps()).isEqualTo(8);
+        assertThat(target.getDate()).isEqualTo(DAY_1);
+        assertThat(target.getExerciseName()).isEqualTo("Fekvenyomás");
+        assertThat(target.getWorkoutSessionId()).isEqualTo(instance.getId());
+        assertThat(target.getSetIndex()).isZero();
+    }
+
+    @Test
+    void testGetMedals_shouldNotAwardTargetHit_whenTheSetCarriesNoTarget() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity instance =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        // the same lift as the TARGET_HIT test, unprescribed: no target to hit, and no target to MISS
+        trainPopulator.createTargetedSet(owner, bench.getId(), instance.getId(), 0,
+            "100.00", 8, null, null, middayOf(DAY_1));
+
+        assertThat(getMedals().getMedals()).isEmpty();
+    }
+
+    @Test
     void testGetMedals_shouldReturn401_whenUnauthenticated() {
         getForBody("/api/train/medals", null, HttpStatus.UNAUTHORIZED, Void.class);
     }
