@@ -337,9 +337,17 @@ class SleepShotDraftValidatorHypnogramTest {
         assertThat(validator.acceptedHypnogram(with("ALDDLRRL"))).isNull();
     }
 
+    /** CAREFUL: `expected` comes from the CLOCK SPAN, not from GOOD.length(). Span 501 min
+     *  -> Math.round(501/15f) = 33, while GOOD is 34 chars. Conflating the two is how the
+     *  first draft of this test ended up asserting a drift of 1 while claiming to test 2. */
     @Test
-    void testAcceptedHypnogram_shouldTolerateTwoBucketsOfLengthDrift() {
-        assertThat(validator.acceptedHypnogram(with(GOOD.substring(0, 32)))).isNotNull();
+    void testAcceptedHypnogram_shouldAccept_whenLengthDriftIsExactlyTwoBuckets() {
+        assertThat(validator.acceptedHypnogram(with(GOOD.substring(0, 31)))).isNotNull();  // 31 vs 33
+    }
+
+    @Test
+    void testAcceptedHypnogram_shouldReturnNull_whenLengthDriftIsThreeBuckets() {
+        assertThat(validator.acceptedHypnogram(with(GOOD.substring(0, 30)))).isNull();     // 30 vs 33
     }
 
     @Test
@@ -425,14 +433,16 @@ Add the gate. Note it is deliberately NOT part of `score(...)`: a rejected drawi
         if (Math.abs(h.length() - expected) > LENGTH_TOLERANCE_BUCKETS) { // V2
             return null;
         }
-        // V3 precondition: without the three sleep-stage totals the composition is uncheckable,
-        // and an uncheckable hypnogram is not worth drawing.
-        if (e.deepMin() == null || e.lightMin() == null || e.remMin() == null) {
+        // V3 precondition: without ALL FOUR stage totals the composition is uncheckable, and an
+        // uncheckable hypnogram is not worth drawing. Awake is included deliberately — a stage
+        // that occupies V2's length budget without being tethered to a number absorbs the slack,
+        // and a fabricated awake stretch then sails through every remaining check.
+        if (e.deepMin() == null || e.lightMin() == null || e.remMin() == null
+            || e.awakeMin() == null) {
             return null;
         }
         return composesWith(h, 'D', e.deepMin()) && composesWith(h, 'L', e.lightMin())
-            && composesWith(h, 'R', e.remMin())
-            && (e.awakeMin() == null || composesWith(h, 'A', e.awakeMin()))
+            && composesWith(h, 'R', e.remMin()) && composesWith(h, 'A', e.awakeMin())
             ? h : null;
     }
 

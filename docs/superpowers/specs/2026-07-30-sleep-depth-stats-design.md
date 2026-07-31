@@ -76,9 +76,11 @@ New checks in `SleepShotDraftValidator`, applied only to the hypnogram:
 |---|---|---|
 | V1 | **Alphabet** | every character is one of `D L R A` |
 | V2 | **Length** | `abs(len − round(spanMin / 15)) <= 2`, where `spanMin` is the midnight-wrapped `bedtime → wakeup` clock span (always available; `inBedMin` may be null) |
-| V3 | **Composition** | for each stage `k` with a non-null minute total: `abs(count(k) × 15 − actualMin_k) <= max(30, 0.35 × actualMin_k)` |
+| V3 | **Composition** | for **every** stage `k` ∈ {D, L, R, A}: `abs(count(k) × 15 − actualMin_k) <= max(30, 0.35 × actualMin_k)` |
 
-**Precondition:** a hypnogram is only considered at all when `deepMin`, `lightMin` **and** `remMin` are all present — without them V3 cannot run, and an uncheckable hypnogram is not worth drawing.
+**Precondition:** a hypnogram is only considered at all when `deepMin`, `lightMin`, `remMin` **and** `awakeMin` are all present — without them V3 cannot run, and an uncheckable hypnogram is not worth drawing.
+
+> **All four, not three.** An earlier draft of this spec exempted `A` from V3 whenever `awakeMin` was null, while still letting `A` characters consume V2's length budget. Review found that exploitable: with `awakeMin` null, the sequence `AAAAA` + `D×6` + `L×11` + `R×12` (34 chars against an expected 33) passes V2 and all three remaining composition checks, and shows the user a fabricated 75-minute awake stretch that nothing cross-checked. Every stage that occupies length must be tethered to a number, or the untethered one absorbs the slack. The Sleep Cycle screenshot always renders all four legend rows, so requiring `awakeMin` costs nothing real.
 
 **Verdict is all-or-nothing:** any failure sets `hypnogram = null` on the draft. A hypnogram with one stage misread is a *wrong picture*, and there is no partial-credit rendering that would be honest.
 
