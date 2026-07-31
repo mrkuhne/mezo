@@ -7,6 +7,7 @@ export type ConversationResponse = components['schemas']['ConversationResponse']
 export type MessageResponse = components['schemas']['MessageResponse']
 export type SendMessageRequest = components['schemas']['SendMessageRequest']
 export type StreamDelta = components['schemas']['StreamDelta']
+export type StreamToolCall = components['schemas']['StreamToolCall']
 export type StreamError = components['schemas']['StreamError']
 
 const CONVERSATION = '/api/companion/conversation'
@@ -31,19 +32,26 @@ export const chatApi = {
     apiFetch<MessageResponse[]>(`${CONVERSATION}/${conversationId}/messages`),
 
   /**
-   * One streamed turn: emits `onDelta` per chunk, resolves with the persisted assistant
-   * message from the terminal `done` event; a terminal `error` event (or a stream that
-   * ends without `done`) rejects with ApiError so callers share one failure path.
+   * One streamed turn: emits `onDelta` per chunk and `onTool` as each tool actually
+   * executes (progress only — the authoritative chips are the terminal `done` row's
+   * `tools`, which also cover advisor-retry calls made after the stream ended); resolves
+   * with the persisted assistant message from that `done` event. A terminal `error`
+   * event (or a stream that ends without `done`) rejects with ApiError so callers share
+   * one failure path.
    */
   streamMessage: async (
     conversationId: string,
     content: string,
     onDelta: (text: string) => void,
+    onTool?: (tool: Tool) => void,
   ): Promise<MessageResponse> => {
     const body = JSON.stringify({ content } satisfies SendMessageRequest)
     for await (const ev of apiSse(`${CONVERSATION}/${conversationId}/message/stream`, { method: 'POST', body })) {
       if (ev.event === 'delta') {
         onDelta((JSON.parse(ev.data) as StreamDelta).text)
+      } else if (ev.event === 'tool') {
+        // wire `type` is a plain string; values come from our own backend — same cast as toChatMessage
+        onTool?.(JSON.parse(ev.data) as StreamToolCall as Tool)
       } else if (ev.event === 'done') {
         return JSON.parse(ev.data) as MessageResponse
       } else if (ev.event === 'error') {

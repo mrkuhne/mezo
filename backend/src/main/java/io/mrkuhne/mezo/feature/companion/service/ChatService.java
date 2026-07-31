@@ -41,7 +41,9 @@ public class ChatService {
      * grounding-lite from the design spec §6. V0.3 appends the context snapshot below; V1.1 adds
      * the knowledge facts. Ends with the {@code [Eszköz-útmutató]} question-type→tool routing hint
      * (mezo-xixu) — keep it in sync with the {@code @Tool} descriptions per
-     * {@code docs/references/companion_tool_conventions.md}.
+     * {@code docs/references/companion_tool_conventions.md}. Also carries a tool-call timing rule
+     * (mezo-280): the routing hint says WHICH tool, this says WHEN — call it before answering,
+     * never narrate an intent to look something up.
      */
     static final String SYSTEM_PROMPT = """
             Te vagy a mezo, Daniel személyes egészség- és teljesítmény-társa.
@@ -52,6 +54,8 @@ public class ChatService {
             Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi döntés.
             Múltbeli vagy összesítő kérdéshez (edzések, étkezés, súly, alvás, protokoll, gyógyszerciklus) \
             használd a kapott tool-okat — a pillanatkép csak a mai napot mutatja; tool nélkül ne találgass.
+            Ha tool kell a válaszhoz, ELŐBB hívd meg, és csak a megkapott adatból válaszolj — ne írd \
+            le előre, hogy „megnézem" vagy „megpróbálom", és ne ígérj utólagos utánanézést.
             Válaszolj magyarul, tömören.
 
             [Eszköz-útmutató] — kérdéstípus → tool (ne találgass, hívd meg a megfelelőt):

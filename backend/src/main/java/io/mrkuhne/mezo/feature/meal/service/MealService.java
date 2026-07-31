@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.MealIngredientOverrideRequest;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealItemRecipeOverrideJson;
 import io.mrkuhne.mezo.feature.meal.entity.MealProvenanceJson;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
@@ -30,8 +32,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -183,7 +187,9 @@ public class MealService {
         BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
         Facts facts = "pantry".equals(item.getSource())
             ? pantryFacts(userId, item.getPantryItemId(), factor)
-            : recipeFacts(userId, item.getRecipeId(), item.getAmount());
+            // the frozen envelope IS the record of what went in — score what was eaten (mezo-ormb)
+            : recipeFacts(userId, item.getRecipeId(), item.getAmount(),
+                overrideMap(item.getRecipeOverrides()));
         String amountLabel = item.getAmount().stripTrailingZeros().toPlainString() + item.getUnit();
         return new ScoredLine(
             item.getSnapshotName(), amountLabel,
@@ -230,10 +236,13 @@ public class MealService {
 
     /**
      * Recipe arm: Σ over the recipe's ingredient lines against their LIVE pantry rows
-     * (fact × lineAmount/liveServing), ÷ recipe servings × logged adag. Ingredients whose pantry
-     * row is gone or fact-less simply don't contribute — coverage stays honest.
+     * (fact × effectiveAmount/liveServing), ÷ recipe servings × logged adag, where a line's
+     * effective amount is its override if the meal item's frozen envelope carries one, else the
+     * recipe's own amount. Ingredients whose pantry row is gone or fact-less simply don't
+     * contribute — coverage stays honest.
      */
-    private Facts recipeFacts(UUID userId, UUID recipeId, BigDecimal servingsLogged) {
+    private Facts recipeFacts(UUID userId, UUID recipeId, BigDecimal servingsLogged,
+                              Map<Integer, BigDecimal> overrides) {
         RecipeEntity recipe = recipeRepository
             .findByIdAndCreatedByAndDeletedFalse(recipeId, userId).orElse(null);
         if (recipe == null || recipe.getLines().isEmpty()) {
@@ -257,7 +266,11 @@ public class MealService {
             }
             any = true;
             BigDecimal livePer = orDefault(p.getServingAmount(), BigDecimal.ONE);
-            BigDecimal factor = line.getAmount().divide(
+            // effective amount = the override for this line, else the recipe's own amount; a
+            // zeroed line yields factor 0 and contributes nothing, while `any` stays true —
+            // we DID resolve the pantry row, so coverage is honestly reported
+            BigDecimal effective = overrides.getOrDefault(line.getLineOrder(), line.getAmount());
+            BigDecimal factor = effective.divide(
                 livePer.signum() == 0 ? BigDecimal.ONE : livePer, 6, RoundingMode.HALF_UP);
             fiber = addFact(fiber, p.getFiberG(), factor);
             sugar = addFact(sugar, p.getSugarG(), factor);
@@ -305,10 +318,20 @@ public class MealService {
         item.setAmount(req.getAmount());
         item.setUnit(req.getUnit());
 
+        // ingredientOverrides is a recipe-arm concept only — never silently ignored on another arm
+        if (!"recipe".equals(req.getSource())
+            && req.getIngredientOverrides() != null && !req.getIngredientOverrides().isEmpty()) {
+            throw invalidItems();
+        }
+
         if ("recipe".equals(req.getSource())) {
             RecipeEntity recipe = resolveRecipe(userId, req.getRecipeId());
             item.setRecipeId(recipe.getId());
-            RecipeMacros whole = recipeMapper.toResponse(recipe).getMacros(); // reuse the recipe rollup
+            Map<Integer, BigDecimal> overrides = resolveOverrides(recipe, req);
+            item.setRecipeOverrides(toOverrideEnvelope(recipe, overrides));
+            // the frozen snapshot is computed from the OVERRIDDEN set; an empty map reproduces the
+            // stored rollup exactly, so an un-overridden log stays bit-identical
+            RecipeMacros whole = recipeMapper.rollupWithOverrides(recipe, overrides);
             BigDecimal servings = BigDecimal.valueOf(
                 recipe.getServings() == null || recipe.getServings() < 1 ? 1 : recipe.getServings());
             item.setSnapshotName(recipe.getName());
@@ -318,7 +341,14 @@ public class MealService {
             item.setSnapshotProteinG(perServing(whole.getP(), servings));
             item.setSnapshotCarbsG(perServing(whole.getC(), servings));
             item.setSnapshotFatG(perServing(whole.getF(), servings));
-            item.setSnapshotNova(recipe.getNovaDominant());
+            // Only a line dropped to 0 changes WHICH ingredients went in, so only then can the
+            // dominant NOVA move. A non-zero amount change leaves the ingredient set — and with it
+            // the recipe's frozen novaDominant — intact; recomputing there would swap a frozen value
+            // for a live pantry read on an unrelated edit, and a since-deleted pantry row would
+            // silently lower the meal's NOVA. Fully freezing this needs recipe_ingredient.snapshot_nova.
+            boolean anyLineDropped = overrides.values().stream().anyMatch(a -> a.signum() == 0);
+            item.setSnapshotNova(anyLineDropped
+                ? dominantNova(recipe, overrides) : recipe.getNovaDominant());
         } else if ("pantry".equals(req.getSource())) {
             PantryItemEntity p = resolvePantry(userId, req.getPantryItemId());
             item.setPantryItemId(p.getId());
@@ -364,6 +394,86 @@ public class MealService {
         }
         return recipeRepository.findByIdAndCreatedByAndDeletedFalse(recipeId, userId)
             .orElseThrow(this::invalidItems);
+    }
+
+    /**
+     * Request overrides → {@code lineOrder → amount}, fully validated (mezo-ormb). {@code lineOrder}
+     * is the key; {@code pantryItemId} is a CONSISTENCY CHECK — {@code recipe_ingredient} has no
+     * unique {@code (recipe_id, pantry_item_id)}, so a recipe may list the same item twice, and a
+     * reorder between the client's read and this write would otherwise land on the wrong line.
+     * Every anomaly is a 400 on "items"; nothing is silently skipped.
+     */
+    private Map<Integer, BigDecimal> resolveOverrides(RecipeEntity recipe, MealItemRequest req) {
+        List<MealIngredientOverrideRequest> reqs = req.getIngredientOverrides();
+        if (reqs == null || reqs.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, RecipeIngredientEntity> byOrder = recipe.getLines().stream()
+            .collect(Collectors.toMap(RecipeIngredientEntity::getLineOrder, Function.identity()));
+        Map<Integer, BigDecimal> resolved = new LinkedHashMap<>();
+        for (MealIngredientOverrideRequest o : reqs) {
+            // a null ELEMENT slips past @Valid (the cascade validates non-null elements only) —
+            // without this guard it would NPE into a 500 instead of the contract's 400
+            if (o == null || o.getLineOrder() == null || o.getAmount() == null
+                || o.getAmount().signum() < 0) {
+                throw invalidItems();
+            }
+            RecipeIngredientEntity line = byOrder.get(o.getLineOrder());
+            if (line == null || !line.getPantryItemId().equals(o.getPantryItemId())) {
+                throw invalidItems(); // unknown line, or a different ingredient sits there now
+            }
+            if (resolved.put(o.getLineOrder(), o.getAmount()) != null) {
+                throw invalidItems(); // the same line overridden twice
+            }
+        }
+        return resolved;
+    }
+
+    /**
+     * The persisted envelope: ONLY the changed lines, self-describing (snapshot name + unit +
+     * the recipe's original amount) so the log renders without resolving the live recipe.
+     * Empty → NULL, never {@code []}, so an un-overridden row keeps its exact current shape.
+     */
+    private static List<MealItemRecipeOverrideJson> toOverrideEnvelope(
+            RecipeEntity recipe, Map<Integer, BigDecimal> overrides) {
+        if (overrides.isEmpty()) {
+            return null;
+        }
+        return recipe.getLines().stream()
+            .filter(l -> overrides.containsKey(l.getLineOrder()))
+            .map(l -> new MealItemRecipeOverrideJson(l.getLineOrder(), l.getPantryItemId(),
+                l.getSnapshotName(), l.getUnit(), l.getAmount(), overrides.get(l.getLineOrder())))
+            .toList();
+    }
+
+    /** Persisted envelope → the same {@code lineOrder → amount} map, for the scoring read path. */
+    static Map<Integer, BigDecimal> overrideMap(List<MealItemRecipeOverrideJson> envelope) {
+        if (envelope == null || envelope.isEmpty()) {
+            return Map.of();
+        }
+        return envelope.stream().collect(Collectors.toMap(
+            MealItemRecipeOverrideJson::lineOrder, MealItemRecipeOverrideJson::amount));
+    }
+
+    /**
+     * Dominant NOVA over the lines that ACTUALLY went in (effective amount &gt; 0), read from the live
+     * pantry rows. The recipe's stored {@code novaDominant} would still claim a zeroed-out
+     * highest-NOVA ingredient, freezing a NOVA the meal never contained.
+     */
+    private Short dominantNova(RecipeEntity recipe, Map<Integer, BigDecimal> overrides) {
+        // ids come from the OWNED recipe's lines; @SQLRestriction filters soft-deleted rows
+        List<UUID> ids = recipe.getLines().stream()
+            .filter(l -> overrides.getOrDefault(l.getLineOrder(), l.getAmount()).signum() > 0)
+            .map(RecipeIngredientEntity::getPantryItemId)
+            .toList();
+        if (ids.isEmpty()) {
+            return null;
+        }
+        return pantryItemRepository.findAllById(ids).stream()
+            .map(PantryItemEntity::getNova)
+            .filter(Objects::nonNull)
+            .max(Short::compareTo)
+            .orElse(null);
     }
 
     /** Owner-scoped, not-deleted pantry-item lookup; missing/foreign/deleted are indistinguishable 400s. */

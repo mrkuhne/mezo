@@ -88,8 +88,19 @@ export interface FuelMeal {
   recipeId?: string
   breakdown?: MealBreakdown
 }
+/** One recipe ingredient logged at a different amount (mezo-ormb). `lineOrder` is the recipe's
+ *  ingredient array index; `pantryItemId` is the server-side consistency check, not the key.
+ *  `amount` 0 means the line was left out. */
+export interface MealIngredientOverrideInput { lineOrder: number; pantryItemId: string; amount: number }
 /** Editor line for a recipe/pantry ref — maps to MealItemRequest (refId → recipeId|pantryItemId by source). */
-export interface MealRefInputItem { source: 'recipe' | 'pantry'; refId: string; amount: number; unit: string }
+export interface MealRefInputItem {
+  source: 'recipe' | 'pantry'
+  refId: string
+  amount: number
+  unit: string
+  /** recipe arm only — absent means "the recipe as written" */
+  ingredientOverrides?: MealIngredientOverrideInput[]
+}
 /** Editor line for a free-form AI/user estimate — no seed ref; carries its own per-basis macro snapshot. */
 export interface MealEstimateInputItem {
   source: 'estimate'

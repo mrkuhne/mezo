@@ -186,3 +186,25 @@ describe('mealApi', () => {
     await expect(mealApi.remove('m1')).resolves.toBeUndefined()
   })
 })
+
+describe('toRequest ingredientOverrides', () => {
+  const base: MealInput = {
+    slot: 'lunch', loggedAt: null, title: 'Ebéd',
+    items: [{ source: 'recipe', refId: 'rec-1', amount: 1, unit: 'adag' }],
+  }
+
+  it('omits the field entirely when nothing was overridden', () => {
+    const item = toRequest(base).items[0] as Record<string, unknown>
+    expect(item.ingredientOverrides).toBeUndefined()
+  })
+
+  it('passes the overrides through untouched', () => {
+    const withOv: MealInput = {
+      ...base,
+      items: [{ source: 'recipe', refId: 'rec-1', amount: 1, unit: 'adag',
+        ingredientOverrides: [{ lineOrder: 1, pantryItemId: 'p-9', amount: 0.5 }] }],
+    }
+    expect(toRequest(withOv).items[0].ingredientOverrides).toEqual(
+      [{ lineOrder: 1, pantryItemId: 'p-9', amount: 0.5 }])
+  })
+})

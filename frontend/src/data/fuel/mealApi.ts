@@ -131,7 +131,11 @@ export function toRequest(input: MealInput): MealRequest {
         : ({ source: it.source,
             recipeId: it.source === 'recipe' ? it.refId : null,
             pantryItemId: it.source === 'pantry' ? it.refId : null,
-            amount: it.amount, unit: it.unit } satisfies MealItemRequest)),
+            amount: it.amount, unit: it.unit,
+            // absent (not null, not []) when untouched — an un-overridden log keeps today's exact body
+            ...(it.source === 'recipe' && it.ingredientOverrides?.length
+              ? { ingredientOverrides: it.ingredientOverrides }
+              : {}) } satisfies MealItemRequest)),
     provenance: input.provenance ?? null,
   } satisfies MealRequest
 }

@@ -1,0 +1,275 @@
+<style>
+  .mz { --canvas:#FBF6EF; --s1:#FFFFFF; --s2:#F4EBDF; --line:#EFE5D8;
+        --bs:rgba(43,33,24,0.08); --tp:#2B2118; --ts:#5F5346; --tt:#8A7A6A;
+        --coral:#FF6B4A; --sage:#7FA48A; --amber:#FBBF24; }
+  .phones { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-top:8px }
+  .ph { width:300px; flex:0 0 auto }
+  .ph-cap { text-align:center; margin-bottom:8px }
+  .ph-cap .k { display:inline-block; font:700 11px/1 ui-monospace,monospace; letter-spacing:.14em;
+               padding:5px 9px; background:#FF6B4A; color:#fff; border-radius:3px }
+  .ph-cap .t { margin-top:7px; font-size:13px; font-weight:600 }
+  .ph-cap .d { margin-top:3px; font-size:11.5px; opacity:.65; line-height:1.45 }
+  .screen { background:var(--canvas); border:1px solid var(--bs); border-radius:14px;
+            padding:13px 12px 14px; color:var(--tp); box-shadow:0 6px 22px rgba(43,33,24,.10);
+            font-family:-apple-system,system-ui,sans-serif }
+  .mz .eyebrow { font:700 8.5px/1 ui-monospace,monospace; letter-spacing:.14em; color:var(--coral) }
+  .mz .lbl { font:600 8.5px/1 ui-monospace,monospace; letter-spacing:.12em; color:var(--tt) }
+  .mz .h1 { font-size:19px; font-weight:700; margin-top:3px; letter-spacing:-.01em }
+  .seg { display:flex; gap:4px; padding:4px; background:var(--s1); border:1px solid var(--bs); margin:6px 0 8px }
+  .seg span { flex:1; text-align:center; padding:6px 0; font:600 9.5px/1 sans-serif; text-transform:uppercase;
+              color:var(--tt); background:var(--s2) }
+  .seg span.on { background:var(--coral); color:#fff }
+  .card { background:var(--s1); border:1px solid var(--bs); padding:10px 11px; margin-bottom:6px }
+  .card.rec { border-left:2px solid var(--coral) }
+  .card.pan { border-left:2px solid var(--amber) }
+  .row { display:flex; align-items:center; gap:8px }
+  .nm { font-size:12.5px; font-weight:500; flex:1; min-width:0 }
+  .tag { font:700 7px/1 ui-monospace,monospace; text-transform:uppercase; padding:3px 5px;
+         background:rgba(127,164,138,.18); color:var(--coral) }
+  .tag.k { background:rgba(251,191,36,.18); color:#B45309 }
+  .stp { display:inline-flex; align-items:center; background:var(--s2); flex:0 0 auto }
+  .stp b { width:22px; height:25px; display:grid; place-items:center; color:var(--coral); font-size:14px; font-weight:400 }
+  .stp i { min-width:30px; text-align:center; font:600 11.5px/1 ui-monospace,monospace; font-style:normal }
+  .stp u { font:600 7.5px/1 ui-monospace,monospace; color:var(--tt); padding:0 5px 0 1px; text-decoration:none }
+  .stp.sm b { width:19px; height:22px; font-size:12px } .stp.sm i { min-width:26px; font-size:10.5px }
+  .macros { display:flex; gap:5px; margin-top:8px }
+  .mc { flex:1; text-align:center; background:var(--s2); padding:5px 0 }
+  .mc s { display:block; font:600 7px/1 ui-monospace,monospace; color:var(--tt); text-decoration:none; letter-spacing:.08em }
+  .mc em { display:block; font:700 11.5px/1 ui-monospace,monospace; font-style:normal; margin-top:3px }
+  .x { color:var(--tt); font-size:12px; flex:0 0 auto }
+  .disc { width:100%; margin-top:9px; padding:7px 9px; display:flex; align-items:center; gap:6px;
+          font:600 10.5px/1 sans-serif; color:var(--coral); background:rgba(127,164,138,.07);
+          border:1px dashed var(--line) }
+  .ing { display:flex; align-items:center; gap:7px; padding:7px 0; border-top:1px solid var(--bs) }
+  .ing .n { flex:1; font-size:11.5px; color:var(--ts); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .ing .kc { font:600 8.5px/1 ui-monospace,monospace; color:var(--tt); flex:0 0 auto; min-width:38px; text-align:right }
+  .edited { background:rgba(255,107,74,.09) }
+  .edited .n { color:var(--tp); font-weight:600 }
+  .badge { font:700 7px/1 ui-monospace,monospace; color:var(--coral); background:rgba(255,107,74,.14); padding:2px 4px }
+  .tot { margin-top:10px; padding:10px 11px; background:rgba(127,164,138,.06); border:1px solid var(--line) }
+  .cta { margin-top:11px; display:flex; gap:7px }
+  .cta span { padding:9px 0; text-align:center; font:600 11px/1 sans-serif; border:1px solid var(--bs); color:var(--ts); flex:1 }
+  .cta span.p { flex:1.9; background:var(--coral); color:#fff; border-color:var(--coral) }
+  .ov { position:relative; margin-top:-2px; padding:11px 12px 12px; background:var(--s1);
+        border:1px solid var(--coral); box-shadow:0 -3px 14px rgba(43,33,24,.09) }
+  .ov-h { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:4px }
+  .strike { color:var(--tt); text-decoration:line-through; font-size:9.5px }
+  .note { margin-top:9px; font-size:10.5px; line-height:1.5; color:var(--ts);
+          padding:8px 9px; background:var(--s2); border-left:2px solid var(--coral) }
+</style>
+
+<h2>Hogyan szerkeszd a hozzávalók mennyiségét logoláskor?</h2>
+<p class="subtitle">Mindhárom változat ugyanazt a helyzetet mutatja: „Fehérjés zabkása" receptet logolsz, de a banán csak fél akkora volt — <b>1 db → 0,5 db</b>. Nézd meg, melyik illik jobban a napi ritmusodhoz, aztán kattints a választásodra lentebb.</p>
+
+<div class="mz">
+<div class="phones">
+
+  <!-- ============ A ============ -->
+  <div class="ph">
+    <div class="ph-cap">
+      <span class="k">A</span>
+      <div class="t">Inline kibontás</div>
+      <div class="d">A recept sorában egy „Hozzávalók (5)" sáv, ami helyben lenyílik.</div>
+    </div>
+    <div class="screen">
+      <div class="eyebrow">LOGOLÁS · MAI NAP</div>
+      <div class="h1">Mit ettél?</div>
+      <div class="seg"><span>REGGELI</span><span class="on">EBÉD</span><span>VACS</span><span>SNACK</span></div>
+      <div class="lbl">TÉTELEK &nbsp;<span style="color:var(--coral)">1</span></div>
+      <div style="height:7px"></div>
+
+      <div class="card rec">
+        <div class="row">
+          <span class="nm">Fehérjés zabkása</span>
+          <span class="tag">recept</span>
+          <span class="stp"><b>−</b><i>1</i><b>+</b><u>adag</u></span>
+          <span class="x">✕</span>
+        </div>
+        <div class="macros">
+          <div class="mc"><s>KCAL</s><em>487</em></div><div class="mc"><s>P</s><em>34</em></div>
+          <div class="mc"><s>C</s><em>52</em></div><div class="mc"><s>F</s><em>14</em></div>
+        </div>
+
+        <div style="margin-top:9px; padding-top:8px; border-top:1px solid var(--bs);
+                    display:flex; align-items:center; justify-content:space-between">
+          <span class="lbl">HOZZÁVALÓK · 5</span>
+          <span style="font:600 9.5px/1 sans-serif; color:var(--coral)">összecsuk ▴</span>
+        </div>
+
+        <div class="ing"><span class="n">Zabpehely</span>
+          <span class="stp sm"><b>−</b><i>60</i><b>+</b><u>g</u></span><span class="kc">228</span></div>
+        <div class="ing edited"><span class="n">Banán <span class="badge">MÓD</span></span>
+          <span class="stp sm"><b>−</b><i>0,5</i><b>+</b><u>db</u></span><span class="kc">53</span></div>
+        <div class="ing"><span class="n">Tejsavófehérje</span>
+          <span class="stp sm"><b>−</b><i>30</i><b>+</b><u>g</u></span><span class="kc">116</span></div>
+        <div class="ing"><span class="n">Mandulavaj</span>
+          <span class="stp sm"><b>−</b><i>15</i><b>+</b><u>g</u></span><span class="kc">92</span></div>
+        <div class="ing"><span class="n">Görög joghurt</span>
+          <span class="stp sm"><b>−</b><i>150</i><b>+</b><u>g</u></span><span class="kc">98</span></div>
+      </div>
+
+      <div class="disc">＋ Receptből / Kamrából hozzáad</div>
+      <div class="tot">
+        <div class="row" style="justify-content:space-between; margin-bottom:7px">
+          <span class="eyebrow">EZ AZ ÉTKEZÉS</span>
+          <span class="strike">eredeti 540</span>
+        </div>
+        <div class="macros" style="margin-top:0">
+          <div class="mc"><s>KCAL</s><em>487</em></div><div class="mc"><s>P</s><em>34</em></div>
+          <div class="mc"><s>C</s><em>52</em></div><div class="mc"><s>F</s><em>14</em></div>
+        </div>
+      </div>
+      <div class="cta"><span>Mégse</span><span class="p">✓ Logolás</span></div>
+    </div>
+  </div>
+
+  <!-- ============ B ============ -->
+  <div class="ph">
+    <div class="ph-cap">
+      <span class="k">B</span>
+      <div class="t">Külön finomhangoló lap</div>
+      <div class="d">A recept során egy ceruza → külön lap nyílik a hozzávalókkal.</div>
+    </div>
+    <div class="screen">
+      <div class="eyebrow">LOGOLÁS · MAI NAP</div>
+      <div class="h1">Mit ettél?</div>
+      <div class="seg"><span>REGGELI</span><span class="on">EBÉD</span><span>VACS</span><span>SNACK</span></div>
+      <div class="lbl">TÉTELEK &nbsp;<span style="color:var(--coral)">1</span></div>
+      <div style="height:7px"></div>
+
+      <div class="card rec">
+        <div class="row">
+          <span class="nm">Fehérjés zabkása</span>
+          <span class="tag">recept</span>
+          <span style="color:var(--coral); font-size:12px">✎</span>
+          <span class="stp"><b>−</b><i>1</i><b>+</b><u>adag</u></span>
+          <span class="x">✕</span>
+        </div>
+        <div style="margin-top:7px"><span class="badge">1 HOZZÁVALÓ MÓDOSÍTVA</span></div>
+        <div class="macros">
+          <div class="mc"><s>KCAL</s><em>487</em></div><div class="mc"><s>P</s><em>34</em></div>
+          <div class="mc"><s>C</s><em>52</em></div><div class="mc"><s>F</s><em>14</em></div>
+        </div>
+      </div>
+      <div class="disc">＋ Receptből / Kamrából hozzáad</div>
+
+      <div class="ov">
+        <div class="ov-h">
+          <span class="eyebrow">HOZZÁVALÓK FINOMHANGOLÁSA</span>
+          <span class="x">✕</span>
+        </div>
+        <div style="font-size:12.5px; font-weight:600; margin-bottom:2px">Fehérjés zabkása</div>
+        <div style="font-size:10px; color:var(--tt); margin-bottom:3px">Állítsd be, amiből ténylegesen más ment bele.</div>
+
+        <div class="ing"><span class="n">Zabpehely</span>
+          <span class="stp sm"><b>−</b><i>60</i><b>+</b><u>g</u></span><span class="kc">228</span></div>
+        <div class="ing edited"><span class="n">Banán <span class="strike">1 db</span></span>
+          <span class="stp sm"><b>−</b><i>0,5</i><b>+</b><u>db</u></span><span class="kc">53</span></div>
+        <div class="ing"><span class="n">Tejsavófehérje</span>
+          <span class="stp sm"><b>−</b><i>30</i><b>+</b><u>g</u></span><span class="kc">116</span></div>
+        <div class="ing"><span class="n">Mandulavaj</span>
+          <span class="stp sm"><b>−</b><i>15</i><b>+</b><u>g</u></span><span class="kc">92</span></div>
+        <div class="ing"><span class="n">Görög joghurt</span>
+          <span class="stp sm"><b>−</b><i>150</i><b>+</b><u>g</u></span><span class="kc">98</span></div>
+
+        <div class="cta" style="margin-top:10px">
+          <span>Alaphelyzet</span><span class="p">Kész · 487 kcal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ C ============ -->
+  <div class="ph">
+    <div class="ph-cap">
+      <span class="k">C</span>
+      <div class="t">Szétbontás tételekre</div>
+      <div class="d">A recept szétesik önálló kamra-tételekre, mind külön szerkeszthető.</div>
+    </div>
+    <div class="screen">
+      <div class="eyebrow">LOGOLÁS · MAI NAP</div>
+      <div class="h1">Mit ettél?</div>
+      <div class="seg"><span>REGGELI</span><span class="on">EBÉD</span><span>VACS</span><span>SNACK</span></div>
+      <div class="lbl">TÉTELEK &nbsp;<span style="color:var(--coral)">5</span></div>
+      <div style="height:7px"></div>
+
+      <div style="display:flex; align-items:center; gap:7px; padding:6px 9px; margin-bottom:6px;
+                  background:rgba(255,107,74,.08); border-left:2px solid var(--coral)">
+        <span style="flex:1; font:600 10.5px/1 sans-serif; color:var(--coral)">Fehérjés zabkása · szétbontva</span>
+        <span style="font:600 9px/1 sans-serif; color:var(--tt)">visszazár ▴</span>
+      </div>
+
+      <div class="card pan"><div class="row">
+        <span class="nm">Zabpehely</span><span class="tag k">kamra</span>
+        <span class="stp"><b>−</b><i>60</i><b>+</b><u>g</u></span><span class="x">✕</span></div>
+        <div class="macros"><div class="mc"><s>KCAL</s><em>228</em></div><div class="mc"><s>P</s><em>8</em></div>
+          <div class="mc"><s>C</s><em>38</em></div><div class="mc"><s>F</s><em>4</em></div></div></div>
+
+      <div class="card pan" style="border-left-color:var(--coral); background:rgba(255,107,74,.05)"><div class="row">
+        <span class="nm">Banán <span class="badge">MÓD</span></span><span class="tag k">kamra</span>
+        <span class="stp"><b>−</b><i>0,5</i><b>+</b><u>db</u></span><span class="x">✕</span></div>
+        <div class="macros"><div class="mc"><s>KCAL</s><em>53</em></div><div class="mc"><s>P</s><em>1</em></div>
+          <div class="mc"><s>C</s><em>13</em></div><div class="mc"><s>F</s><em>0</em></div></div></div>
+
+      <div class="card pan"><div class="row">
+        <span class="nm">Tejsavófehérje</span><span class="tag k">kamra</span>
+        <span class="stp"><b>−</b><i>30</i><b>+</b><u>g</u></span><span class="x">✕</span></div></div>
+      <div class="card pan"><div class="row">
+        <span class="nm">Mandulavaj</span><span class="tag k">kamra</span>
+        <span class="stp"><b>−</b><i>15</i><b>+</b><u>g</u></span><span class="x">✕</span></div></div>
+      <div class="card pan"><div class="row">
+        <span class="nm">Görög joghurt</span><span class="tag k">kamra</span>
+        <span class="stp"><b>−</b><i>150</i><b>+</b><u>g</u></span><span class="x">✕</span></div></div>
+
+      <div class="disc">＋ Receptből / Kamrából hozzáad</div>
+      <div class="tot">
+        <div class="row" style="justify-content:space-between; margin-bottom:7px">
+          <span class="eyebrow">EZ AZ ÉTKEZÉS</span><span class="strike">eredeti 540</span>
+        </div>
+        <div class="macros" style="margin-top:0">
+          <div class="mc"><s>KCAL</s><em>487</em></div><div class="mc"><s>P</s><em>34</em></div>
+          <div class="mc"><s>C</s><em>52</em></div><div class="mc"><s>F</s><em>14</em></div>
+        </div>
+      </div>
+      <div class="cta"><span>Mégse</span><span class="p">✓ Logolás</span></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="section" style="margin-top:26px">
+  <h3>Amiben érdemben különböznek</h3>
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Inline kibontás — alapból csukva</h3>
+        <p><b>Gyors út érintetlen:</b> egy koppintás a logolás, ha jó a recept ahogy van. A „Hozzávalók (5)" sáv csak akkor nyílik, ha kell.<br>
+        <b>Marad recept:</b> a naplóban egy sorként látod („Fehérjés zabkása"), a recept-statisztikák (hányszor logoltad, átlagpontszám) épek maradnak.<br>
+        <b>Ára:</b> 8-hozzávalós receptnél a sheet hosszú lesz, sok görgetés a telefonon.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Külön finomhangoló lap</h3>
+        <p><b>Nem hízik a fő sheet:</b> a szerkesztés külön lapon, teljes helyen — akkor is kényelmes, ha 12 hozzávaló van.<br>
+        <b>Marad recept:</b> ugyanaz az előny, mint A-nál.<br>
+        <b>Ára:</b> lapon a lapban (a Kajanapló sheet fölött nyílik még egy) — mobilon ez plusz réteg, és a fő nézeten csak egy „1 hozzávaló módosítva" jelzés utal a változásra.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="c" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Szétbontás önálló tételekre</h3>
+        <p><b>Teljes szabadság:</b> hozzávalót ki is dobhatsz, cserélhetsz, újat tehetsz mellé — pont úgy, mint bármelyik kamra-tétel.<br>
+        <b>Ára — és ez a nagy:</b> a recept mint egység <b>elveszik</b> a naplóból. Az étkezés 5 különálló sorként mentődik, a „hányszor logoltad ezt a receptet" és a recept-pontszám követése megszakad. A napló is zsúfoltabb lesz.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">
+  <b>Az én javaslatom: A.</b> A gyors út marad egy koppintás, a recept egyben marad (a statisztikák és a pontozás miatt ez fontos), és nincs lap-a-lapban. Ha kiderül, hogy a hosszú receptek zavaróak, A-ból még mindig könnyű B-be lépni — a szerkesztő ugyanaz, csak máshol jelenik meg. C-t nem javaslom: azt, hogy „ma nem tettem bele mandulavajat", az A/B-ben is meg tudod oldani 0-ra állítással, viszont a recept-követést nem éri meg feláldozni.
+</p>
