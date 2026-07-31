@@ -37,6 +37,29 @@ public class RecipePopulator {
         return repository.saveAndFlush(recipe);
     }
 
+    /**
+     * A second, freely-named recipe for filter tests that need more than one row (mezo-sxe) —
+     * same two ingredient lines, but caller-chosen name/category/tags/starred so a test can pin
+     * WHICH axis a filter matched on.
+     */
+    public RecipeEntity createRecipe(UUID owner, UUID pantryItemId, String name, String category,
+        List<String> tags, boolean starred) {
+        RecipeEntity recipe = new RecipeEntity();
+        recipe.setCreatedBy(owner);
+        recipe.setName(name);
+        recipe.setCategory(category);
+        recipe.setServings(1);
+        recipe.setPrepMins(5);
+        recipe.setTags(tags);
+        recipe.setStarred(starred);
+        recipe.setNovaDominant((short) 1);
+
+        recipe.getLines().add(line(recipe, owner, pantryItemId, 0, "Banán", new BigDecimal("120")));
+        recipe.getLines().add(line(recipe, owner, pantryItemId, 1, "Zabpehely", new BigDecimal("40")));
+
+        return repository.saveAndFlush(recipe);
+    }
+
     private RecipeIngredientEntity line(
         RecipeEntity recipe, UUID owner, UUID pantryItemId, int order, String name, BigDecimal amount) {
         RecipeIngredientEntity ing = new RecipeIngredientEntity();

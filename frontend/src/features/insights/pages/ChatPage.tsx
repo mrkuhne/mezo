@@ -68,9 +68,19 @@ export function ChatPage() {
           <ChatMessage key={i} m={m} />
         ))}
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
-        {turn && turn.thinking && <ThinkingDots />}
-        {turn && !turn.thinking && turn.draft && (
-          <ChatMessage m={{ role: 'assistant', ts: 'most', text: turn.draft }} />
+        {/* mezo-280 (Finding 3): thinking flips false the moment a 'tool' event lands, well before
+            the first 'delta' — gating on turn.draft instead keeps the dots visible next to the
+            live chips through that gap, instead of an empty grey answer card. */}
+        {turn && !turn.draft && <ThinkingDots />}
+        {turn && !turn.thinking && (turn.draft || turn.tools.length > 0) && (
+          <ChatMessage
+            m={{
+              role: 'assistant',
+              ts: 'most',
+              text: turn.draft,
+              ...(turn.tools.length > 0 ? { tools: turn.tools } : {}),
+            }}
+          />
         )}
         {error && (
           <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>

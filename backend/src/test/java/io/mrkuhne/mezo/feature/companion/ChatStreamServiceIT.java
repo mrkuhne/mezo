@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamError;
+import io.mrkuhne.mezo.api.dto.StreamToolCall;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -138,5 +140,71 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> chatStreamService.streamMessage(
                 userId, UUID.randomUUID(), request("x")))
                 .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testStreamMessage_shouldEmitToolEventBeforeDone_whenScriptedToolRuns() {
+        UUID userId = databasePopulator.populateUser("stream-tool-event@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"))
+                .collectList().block();
+
+        // the live 'tool' event carries the SAME pre-baked label as the done row's chip, so the FE
+        // renders a live chip and a final chip through one component
+        List<ServerSentEvent<Object>> toolEvents = events.stream()
+                .filter(e -> "tool".equals(e.event())).toList();
+        assertThat(toolEvents).singleElement().satisfies(e -> {
+            StreamToolCall data = (StreamToolCall) e.data();
+            assertThat(data.getName()).isEqualTo("get_recovery(scope=sleep, days=3)");
+            assertThat(data.getType()).isEqualTo("read");
+        });
+        // The premise of mezo-280: the chip appears WHILE the answer streams. Pinning the tool frame
+        // ahead of the LAST delta — not merely ahead of 'done' — is what rules out the very
+        // behaviour this feature exists to kill: buffering every tool event and flushing the lot
+        // immediately before the terminal row.
+        int lastDeltaIndex = IntStream.range(0, events.size())
+                .filter(i -> "delta".equals(events.get(i).event()))
+                .max().orElseThrow();
+        assertThat(events.indexOf(toolEvents.getFirst())).isLessThan(lastDeltaIndex);
+        assertThat(events.getLast().event()).isEqualTo("done");
+        assertThat(((MessageResponse) events.getLast().data()).getTools())
+                .extracting(MessageTool::getName).containsExactly("get_recovery(scope=sleep, days=3)");
+    }
+
+    @Test
+    void testStreamMessage_shouldEmitBareToolNameWithoutParentheses_whenToolRunsWithoutArgs() {
+        UUID userId = databasePopulator.populateUser("stream-tool-noargs@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("aludtam eleget? [fake-tool:get_recovery]"))
+                .collectList().block();
+
+        // no JSON argument object -> compactArgs("{}") == "" -> the label is the BARE tool name
+        assertThat(events).filteredOn(e -> "tool".equals(e.event()))
+                .singleElement()
+                .satisfies(e -> assertThat(((StreamToolCall) e.data()).getName()).isEqualTo("get_recovery"));
+        // and the done row's chip takes the same branch — the live and final labels stay twins
+        assertThat(((MessageResponse) events.getLast().data()).getTools())
+                .extracting(MessageTool::getName).containsExactly("get_recovery");
+    }
+
+    @Test
+    void testStreamMessage_shouldEmitNoToolEvents_whenTurnRunsNoTools() {
+        UUID userId = databasePopulator.populateUser("stream-no-tool-event@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(), request("mi a mai terv?"))
+                .collectList().block();
+
+        assertThat(events).noneMatch(e -> "tool".equals(e.event()));
+        assertThat(events.getLast().event()).isEqualTo("done");
     }
 }
