@@ -237,8 +237,9 @@ section owns only the CSS/token layer.
   four segments always sum to a full bar; the legend's **`.phleg-p`** percentage denominates on
   `asleep` — deep+light+rem only — because awake time is fragmentation, not a sleep stage, and
   mixing it into that percentage's denominator would make every night look deep-deficient. `PhaseRail`
-  is the one component with **three consumers** (the hero, `PhaseAverageCard`, and `NightArcCard`'s
-  two half-night rows) — the reason it is its own component rather than inlined per-caller.
+  is the one component with **four consumers** (the hero, `PhaseAverageCard`, `NightArcCard`'s
+  two half-night rows, and `SleepLogSheet.tsx`'s screenshot draft-review strip) — the reason it is
+  its own component rather than inlined per-caller.
 - **`.phref-t`/`.phref-bar`/`.phref-band`/`.phref-pin`** — one reference row, sole consumer
   `PhaseReferenceRow.tsx`. `.phref-band` is **always sage** (`color-mix(in srgb, var(--sage) 35%,
   transparent)`, never `--error`/`--warning`) regardless of whether the value sits inside or outside
