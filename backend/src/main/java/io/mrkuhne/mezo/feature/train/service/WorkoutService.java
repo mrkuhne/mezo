@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ import org.springframework.transaction.annotation.Transactional;
  * parent chain belongs to the caller. Per house rule (spring_patterns.md) only the write
  * methods carry method-level {@code @Transactional}.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkoutService {
@@ -508,7 +510,15 @@ public class WorkoutService {
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the replay reads through the repository — the row must be visible
         ExerciseSetResponse response = mapper.toSetResponse(saved);
-        response.setMedals(medalService.forSet(createdBy, saved.getId()));
+        // Medals are derived and purely decorative (mezo-wp6n) — the set write above is the user's
+        // real data and must survive a failure in the replay-derivation that follows it. Degrade to
+        // "no medals for this set" rather than let the @Transactional method roll back the log.
+        try {
+            response.setMedals(medalService.forSet(createdBy, saved.getId()));
+        } catch (RuntimeException e) {
+            log.warn("Medal derivation failed for set {} — logging the set anyway", saved.getId(), e);
+            response.setMedals(List.of());
+        }
         return response;
     }
 
@@ -616,7 +626,15 @@ public class WorkoutService {
             GymSignal signal = gymSignalCalculator.compute(createdBy, instance.getId());
             base.setLevelUp(levelUpResultMapper.toDto(progressionService.applyGym(createdBy, signal)));
         }
-        base.setMedals(medalService.forSession(createdBy, instance.getId()));
+        // Same rationale as logSet above: medals are derived and decorative, the finish/completion
+        // write must not roll back because the medal replay blew up.
+        try {
+            base.setMedals(medalService.forSession(createdBy, instance.getId()));
+        } catch (RuntimeException e) {
+            log.warn("Medal derivation failed for session {} — finishing the workout anyway",
+                instance.getId(), e);
+            base.setMedals(List.of());
+        }
         return base;
     }
 

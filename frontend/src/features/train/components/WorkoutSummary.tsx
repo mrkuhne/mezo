@@ -9,7 +9,7 @@
 import type { LastWeekSet } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { Icon } from '@/shared/ui/Icon'
-import { MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
+import { MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
 
 export interface SummaryExercise {
   id: string
@@ -33,14 +33,6 @@ const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: 
   miss: { glyph: '◯', label: 'nem jött össze', color: 'var(--warning)' },
   skipped: { glyph: '⊘', label: 'skippelted', color: 'var(--text-tertiary)' },
   inconclusive: { glyph: '◌', label: 'nem értékelhető', color: 'var(--text-tertiary)' },
-}
-
-// The two-tier split (mezo-wp6n), mirrored from the live toast/chip: RECORD reads as
-// an achievement (amber, 🏅), TARGET_HIT stays quiet (sage, ✓). The Hungarian labels
-// and the value formatting are shared — logic/medalLabels.ts.
-const MEDAL_TIER_COPY: Record<Medal['tier'], { glyph: string; color: string }> = {
-  RECORD: { glyph: '🏅', color: 'var(--amber-deep)' },
-  TARGET: { glyph: '✓', color: 'var(--sage-deep)' },
 }
 
 function Stat({ label, val }: { label: string; val: string }) {

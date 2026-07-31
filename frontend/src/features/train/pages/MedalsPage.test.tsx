@@ -24,35 +24,56 @@ test('own header: pghead-np over + h1', async () => {
 
 test('the counter chip + honest backfill line render alongside the cabinet', async () => {
   renderView()
-  expect(await screen.findByText('2 medál')).toBeInTheDocument()
+  // 3 in the default fixture (mezo-wp6n handlers): WEIGHT + TARGET_HIT + SESSION_VOLUME.
+  expect(await screen.findByText('3 medál')).toBeInTheDocument()
   expect(
     screen.getByText(/visszamenőleg.*korábban logolt szetteid alapján/),
   ).toBeInTheDocument()
 })
 
-// Two medals from the default fixture (mezo-wp6n handlers): a RECORD (Chest
-// Supported Row, 2026-06-02, previousDate set) and a TARGET_HIT (Hip Thrust,
-// 2026-06-01, no previous* at all).
+// Three medals from the default fixture (mezo-wp6n handlers): a RECORD (Chest
+// Supported Row, 2026-06-02, previousDate set), a TARGET_HIT (Hip Thrust,
+// 2026-06-01, no previous* at all), and a SESSION_VOLUME RECORD (Leg Press,
+// 2026-06-05, carrying the session's top set in weightKg/reps).
 test('the default fixture groups by date with exercise names + type labels under their date heading', async () => {
   renderView()
   const recordHeading = await screen.findByText(new RegExp(huMonthDayDow('2026-06-02')))
   const targetHeading = screen.getByText(new RegExp(huMonthDayDow('2026-06-01')))
+  const volumeHeading = screen.getByText(new RegExp(huMonthDayDow('2026-06-05')))
   expect(recordHeading).toBeInTheDocument()
   expect(targetHeading).toBeInTheDocument()
+  expect(volumeHeading).toBeInTheDocument()
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
   expect(screen.getByText('Súly-rekord')).toBeInTheDocument()
   expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
   expect(screen.getByText('Cél teljesítve')).toBeInTheDocument()
+  expect(screen.getByText('Leg Press')).toBeInTheDocument()
+  expect(screen.getByText('Volumen-rekord')).toBeInTheDocument()
 })
 
 test('RECORD gets the amber medal glyph, TARGET_HIT the quiet sage tick — different colors', async () => {
   renderView()
   await screen.findByText('Chest Supported Row')
-  const recordGlyph = screen.getByText('🏅')
+  // Two RECORD rows now (WEIGHT + SESSION_VOLUME) share the same glyph/color — any one
+  // of them is representative for the color comparison against the TARGET_HIT tick.
+  const recordGlyphs = screen.getAllByText('🏅')
   const targetGlyph = screen.getByText('✓')
-  expect(recordGlyph.style.color).not.toBe('')
+  expect(recordGlyphs.length).toBeGreaterThan(0)
+  expect(recordGlyphs[0].style.color).not.toBe('')
   expect(targetGlyph.style.color).not.toBe('')
-  expect(recordGlyph.style.color).not.toBe(targetGlyph.style.color)
+  expect(recordGlyphs[0].style.color).not.toBe(targetGlyph.style.color)
+})
+
+// The regression case for mezo-wp6n Finding 1: a real-mode SESSION_VOLUME medal
+// carries weightKg/reps (the session's top set) but must still headline the
+// session volume, not `weightKg × reps` — that would show one set's load next to
+// a "previous" that is itself a volume, and read as an indistinguishable WEIGHT row.
+test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not the set', async () => {
+  renderView()
+  const row = (await screen.findByText('Leg Press')).closest('.card') as HTMLElement
+  expect(within(row).getByText('820 kg')).toBeInTheDocument()
+  expect(within(row).queryByText(/102,5 kg × 8/)).not.toBeInTheDocument()
+  expect(within(row).getByText(/Előző: 800 kg/)).toBeInTheDocument()
 })
 
 test('a TARGET_HIT medal never renders a previous-value slot (nothing was beaten)', async () => {

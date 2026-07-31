@@ -77,8 +77,9 @@ const MEDAL_TOAST_MS = 4500
 // Dedupe key for a Medal (mezo-wp6n): the finish response's `medals[]` carries the whole
 // session's medals — including ones already folded into `sessionMedals` from a per-set
 // `logSet` onSuccess — so merging it needs an identity. type+exerciseName+setIndex is
-// unique per medal (SESSION_VOLUME's setIndex is always null, but it only ever arrives
-// once per exercise per session, at finish time).
+// unique per medal (SESSION_VOLUME's setIndex is NOT null — the backend's toMedal
+// carries the session's top set's index there too — but it only ever arrives once per
+// exercise per session, at finish time, so the same key still cannot collide).
 function medalKey(m: Medal): string {
   return `${m.type}:${m.exerciseName}:${m.setIndex}`
 }

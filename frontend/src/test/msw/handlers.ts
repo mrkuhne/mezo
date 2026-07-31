@@ -712,6 +712,18 @@ export const handlers = [
           value: 10, unit: 'REPS', weightKg: 120, reps: 10,
           previousValue: null, previousDate: null,
         },
+        // SESSION_VOLUME carries the session's top set in weightKg/reps — exactly as
+        // the real backend's MedalService.toMedal does (mezo-wp6n Finding 1) — so this
+        // fixture actually exercises medalValueLabel's SESSION_VOLUME branch instead of
+        // accidentally passing by omitting the fields. Numbers mirror MedalApiIT's
+        // pinned scenario (820kg session volume off a 102.5×8 top set, beating 800kg).
+        {
+          type: 'SESSION_VOLUME', tier: 'RECORD', exerciseName: 'Leg Press',
+          catalogId: 'f1e3a0e2-0000-4000-8000-000000000077', muscle: 'quad', date: '2026-06-05',
+          workoutSessionId: 'e1f3a0e2-0000-4000-8000-000000000022', setIndex: 2,
+          value: 820, unit: 'KG', weightKg: 102.5, reps: 8,
+          previousValue: 800, previousDate: '2026-05-22',
+        },
       ],
     }),
   ),

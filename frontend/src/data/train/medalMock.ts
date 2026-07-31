@@ -35,10 +35,13 @@ export const medalsMock: Medal[] = [
     previousValue: 10, previousDate: '2026-06-15',
   },
   {
+    // weightKg/reps mirror the backend shape (MedalService.toMedal): they name the
+    // session's top set, NOT the headline — that's `value` (the session volume, kg).
+    // See medalLabels.ts medalValueLabel for why the two must not be conflated.
     type: 'SESSION_VOLUME', tier: 'RECORD', exerciseName: 'Lat Pulldown · Pronated',
     catalogId: 'exl-2', muscle: 'back-wide', date: '2026-07-13',
-    workoutSessionId: 'w4', setIndex: null,
-    value: 2450, unit: 'KG', weightKg: null, reps: null,
+    workoutSessionId: 'w4', setIndex: 2,
+    value: 2450, unit: 'KG', weightKg: 77.5, reps: 10,
     previousValue: 2200, previousDate: '2026-06-29',
   },
   {

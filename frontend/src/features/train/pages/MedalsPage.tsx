@@ -21,16 +21,10 @@
 import { useMedals } from '@/data/hooks'
 import type { Medal } from '@/data/train/medalTypes'
 import {
-  MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel,
+  MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel,
 } from '@/features/train/logic/medalLabels'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
-
-// Same two-tier split as WorkoutSummary's medal block (mezo-wp6n).
-const MEDAL_TIER_COPY: Record<Medal['tier'], { glyph: string; color: string }> = {
-  RECORD: { glyph: '🏅', color: 'var(--amber-deep)' },
-  TARGET: { glyph: '✓', color: 'var(--sage-deep)' },
-}
 
 interface DateGroup { date: string; medals: Medal[] }
 
