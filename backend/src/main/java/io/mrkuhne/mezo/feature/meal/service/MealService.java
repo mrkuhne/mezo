@@ -397,7 +397,10 @@ public class MealService {
             .collect(Collectors.toMap(RecipeIngredientEntity::getLineOrder, Function.identity()));
         Map<Integer, BigDecimal> resolved = new LinkedHashMap<>();
         for (MealIngredientOverrideRequest o : reqs) {
-            if (o.getLineOrder() == null || o.getAmount() == null || o.getAmount().signum() < 0) {
+            // a null ELEMENT slips past @Valid (the cascade validates non-null elements only) —
+            // without this guard it would NPE into a 500 instead of the contract's 400
+            if (o == null || o.getLineOrder() == null || o.getAmount() == null
+                || o.getAmount().signum() < 0) {
                 throw invalidItems();
             }
             RecipeIngredientEntity line = byOrder.get(o.getLineOrder());

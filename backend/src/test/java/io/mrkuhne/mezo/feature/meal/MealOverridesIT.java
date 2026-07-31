@@ -229,6 +229,21 @@ class MealOverridesIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreate_shouldReject_whenAnOverrideElementIsNull() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Túró", 1);
+        RecipeResponse recipe = createRecipe(auth, ingredient(food, "250"));
+
+        // a null element slips past @Valid's cascade (it validates non-null elements only);
+        // without the guard this NPEs into a 500 instead of the contract's 400
+        List<MealIngredientOverrideRequest> withNull = new java.util.ArrayList<>();
+        withNull.add(null);
+
+        assertHasFieldError(postBadMeal(auth, mealReq(recipeItem(recipe.getId(), "1", withNull))),
+            "items", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
     void testCreate_shouldReject_whenOverridesRideOnAPantryItem() {
         HttpHeaders auth = ownerAuthHeaders();
         UUID food = createFood(auth, "Túró", 1);
