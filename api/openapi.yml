@@ -3600,12 +3600,16 @@ paths:
       operationId: streamMessage
       summary: >-
         Send a user message and stream the assistant's answer as Server-Sent
-        Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON), then
-        exactly one terminal event — 'done' (data = the persisted assistant
-        MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant
-        turn is NOT persisted, the user message is). Every data line is JSON.
-        Clients should send "Accept: text/event-stream, application/json" so
-        pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON.
+        Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON)
+        interleaved with 0..n 'tool' (data = StreamToolCall JSON — emitted as
+        each tool actually executes, mezo-280), then exactly one terminal event
+        — 'done' (data = the persisted assistant MessageResponse JSON) or
+        'error' (data = StreamError JSON; the assistant turn is NOT persisted,
+        the user message is). A 'tool' event is progress only: the authoritative
+        tool list is the done row's `tools`, which also covers any advisor-retry
+        calls made after the stream ended. Every data line is JSON. Clients
+        should send "Accept: text/event-stream, application/json" so pre-stream
+        errors (400/401/404) arrive as normal SystemMessageList JSON.
       parameters:
         - name: conversationId
           in: path
@@ -3623,12 +3627,13 @@ paths:
         '200':
           description: >-
             SSE frames — see the per-event data schemas (StreamDelta /
-            MessageResponse / StreamError)
+            StreamToolCall / MessageResponse / StreamError)
           content:
             text/event-stream:
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/StreamDelta'
+                  - $ref: '#/components/schemas/StreamToolCall'
                   - $ref: '#/components/schemas/MessageResponse'
                   - $ref: '#/components/schemas/StreamError'
         '400':
@@ -10085,6 +10090,26 @@ components:
         text:
           type: string
           description: One streamed answer chunk (token/segment delta).
+    StreamToolCall:
+      type: object
+      required:
+        - type
+        - name
+      description: >-
+        One tool call, streamed the moment it executes (mezo-280) so the UI can
+        show WHAT the companion is reading while it reads it, instead of
+        back-filling every chip at 'done'. Same shape and same pre-baked
+        "name(args)" label as MessageTool, so the FE renders a live chip and the
+        done row's chip identically.
+      properties:
+        type:
+          type: string
+          description: >-
+            'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only
+            'read'
+        name:
+          type: string
+          description: 'Tool name carrying its args, e.g. ''get_training_plan(scope=today)''.'
     StreamError:
       type: object
       required:

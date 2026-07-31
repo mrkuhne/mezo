@@ -82,6 +82,27 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testStreamMessage_shouldEmitLiveToolEvent_whenScriptedToolRuns() {
+        // Finding 6 (mezo-280 review): ChatStreamServiceIT already proves the Flux carries a live
+        // ServerSentEvent<StreamToolCall> object, and the FE's MSW tests prove it parses
+        // 'event:tool' — but nothing had exercised Spring's ServerSentEvent WRITER for this exact
+        // DTO over a real HTTP response. A codec failure here would break every live chat turn.
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        String sse = postForBody(streamUri(conversation.getId()),
+                SendMessageRequest.builder()
+                        .content("aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]").build(),
+                sseHeaders(), HttpStatus.OK, String.class);
+
+        // the LIVE frame emitted the moment the tool actually runs (ChatStreamService#toolEvent),
+        // not just the same chip echoed back in the terminal 'done' row.
+        assertThat(sse).contains("event:tool")
+                .contains("\"name\":\"get_recovery(scope=sleep, days=3)\"")
+                .contains("\"type\":\"read\"");
+    }
+
+    @Test
     void testStreamMessage_shouldStreamDeltasThenDoneAndPersist_whenValid() {
         ConversationResponse conversation = postForBody(
                 CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);

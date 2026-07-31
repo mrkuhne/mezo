@@ -65,6 +65,96 @@ describe('ChatPage (real mode)', () => {
     expect(screen.getByText(/\[Sleep\]/)).toBeInTheDocument()
   })
 
+  test('renders the live tool chip while the turn is still streaming (mezo-280)', async () => {
+    // the stream is gated after the 'tool' frame — the module handler's frames all land
+    // within the same microtask flush (too fast for any assertion to catch mid-stream),
+    // so this holds 'delta'/'done' back until the in-flight-chip assertions have run.
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+          await rest
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z',
+            tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+            refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    // the chip renders from the in-flight draft bubble, before 'done' replaces it
+    await screen.findByText('get_sleep(days=3)')
+    // 'most' is the placeholder ts only the in-flight turn's two bubbles use (user + draft) —
+    // seeing both confirms the chip came from the draft, not the appended, authoritative row.
+    expect(screen.getAllByText('most')).toHaveLength(2)
+
+    releaseRest()
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+  })
+
+  test('keeps the thinking dots next to the live tool chip until the first delta arrives (mezo-280 Finding 3)', async () => {
+    // same gated-stream idiom as the chip test above: hold 'delta'/'done' back so the
+    // tool-arrived-but-no-draft-yet gap (the empty-grey-card bug) is actually observable.
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+          await rest
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z',
+            tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+            refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    const { container } = renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    // the tool chip is up, but no delta has landed yet — this is exactly the gap that used to
+    // render an empty grey answer card with no visible sign that anything is still happening.
+    await screen.findByText('get_sleep(days=3)')
+    expect(container.querySelectorAll('.np-pulse')).toHaveLength(3)
+
+    releaseRest()
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+    // once the real answer has landed, the dots are gone — no lingering placeholder.
+    expect(container.querySelectorAll('.np-pulse')).toHaveLength(0)
+  })
+
   test('renders the V1.3 badge when the done event flags the answer degraded', async () => {
     server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, () => {
       const encoder = new TextEncoder()

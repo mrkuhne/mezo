@@ -90,6 +90,18 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldForbidPreToolNarration_whenSystemPromptAssembled() {
+        UUID userId = databasePopulator.populateUser("prompt-no-preamble@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        // The tool-routing hint says WHICH tool; this says WHEN — the companion used to stream
+        // "most megnézem…" and end the turn there, which reads as answering before it looked.
+        assertThat(resp.getContent()).contains("ELŐBB hívd meg");
+    }
+
+    @Test
     void testSendMessage_shouldStopRecordingAtCap_whenMoreSentinelsThanBudget() {
         UUID userId = databasePopulator.populateUser("chat-tool-cap@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);

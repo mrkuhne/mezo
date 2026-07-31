@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 class ToolCallAuditTest {
@@ -41,5 +45,35 @@ class ToolCallAuditTest {
         assertThat(refs.refs()).containsExactly(
                 new RefsEnvelope.Ref("Sleep", "2026-07-01"),
                 new RefsEnvelope.Ref("Sleep", "2026-07-02"));
+    }
+
+    @Test
+    void testRecordCall_shouldNotifyListenerWithTheRecordedCall_whenListenerRegistered() {
+        ToolCallAudit audit = new ToolCallAudit(5, 5);
+        List<ToolCallsEnvelope.ToolCall> seen = new ArrayList<>();
+        audit.onCall(seen::add);
+
+        audit.recordCall("get_recovery", "scope=sleep, days=3");
+
+        assertThat(seen).singleElement().satisfies(call -> {
+            assertThat(call.name()).isEqualTo("get_recovery");
+            assertThat(call.args()).isEqualTo("scope=sleep, days=3");
+            assertThat(call.type()).isEqualTo(ToolCallAudit.TYPE_READ);
+        });
+    }
+
+    @Test
+    void testRecordCall_shouldStillRecord_whenListenerThrows() {
+        ToolCallAudit audit = new ToolCallAudit(5, 5);
+        audit.onCall(call -> {
+            throw new IllegalStateException("listener blew up");
+        });
+
+        audit.recordCall("get_recipes", "filter=smoothie");
+
+        // a broken progress listener must never fail the turn — the audit is the source of truth
+        assertThat(audit.callCount()).isEqualTo(1);
+        assertThat(audit.toToolCallsEnvelope().calls()).singleElement()
+                .extracting(ToolCallsEnvelope.ToolCall::name).isEqualTo("get_recipes");
     }
 }

@@ -6,6 +6,7 @@ import { ApiError } from '@/data/_client/api'
 import { chatApi, toChatMessage } from '@/data/insights/chatApi'
 import { initialChat, cannedReply } from '@/data/insights/chat'
 import type { ChatMessage } from '@/data/types'
+import type { Tool } from '@/shared/ui/ToolChip'
 
 export interface ChatBootstrap {
   conversationId: string | null
@@ -15,7 +16,7 @@ export interface ChatBootstrap {
 }
 
 /** One in-flight turn — the optimistic overlay ChatPage renders under the history. */
-export interface ChatTurn { userText: string; draft: string; thinking: boolean }
+export interface ChatTurn { userText: string; draft: string; thinking: boolean; tools: Tool[] }
 
 const CHAT_KEY = ['chat'] as const
 const EMPTY_CHAT: ChatBootstrap = { conversationId: null, messages: [], degraded: false, mode: 'live' }
@@ -69,7 +70,7 @@ export function useChatActions() {
     }))
 
   const sendMock = (text: string) => {
-    setTurn({ userText: text, draft: '', thinking: true })
+    setTurn({ userText: text, draft: '', thinking: true, tools: [] })
     setTimeout(() => {
       append('mock-conversation', [
         { role: 'user', ts: 'now', text },
@@ -87,13 +88,17 @@ export function useChatActions() {
   }
 
   const sendReal = (text: string) => {
-    setTurn({ userText: text, draft: '', thinking: true })
+    setTurn({ userText: text, draft: '', thinking: true, tools: [] })
     void (async () => {
       try {
         const cached = queryClient.getQueryData<ChatBootstrap>(CHAT_KEY)
         const conversationId = cached?.conversationId ?? (await chatApi.createConversation()).id
-        const done = await chatApi.streamMessage(conversationId, text, (delta) =>
-          setTurn((t) => (t ? { ...t, draft: t.draft + delta, thinking: false } : t)))
+        const done = await chatApi.streamMessage(
+          conversationId,
+          text,
+          (delta) => setTurn((t) => (t ? { ...t, draft: t.draft + delta, thinking: false } : t)),
+          (tool) => setTurn((t) => (t ? { ...t, tools: [...t.tools, tool], thinking: false } : t)),
+        )
         append(conversationId, [{ role: 'user', ts: nowTs(), text }, toChatMessage(done)])
       } catch {
         setError('Nem sikerült válaszolni — próbáld újra.')

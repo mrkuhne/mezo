@@ -68,4 +68,50 @@ describe('useChatActions (real mode)', () => {
     expect(assistant.tools).toEqual([{ type: 'read', name: 'get_sleep(days=3)' }])
     expect(assistant.refs).toEqual([{ kind: 'Sleep', id: '2026-07-02' }])
   })
+
+  // mezo-280: the live 'tool' SSE event accumulates onto the in-flight turn as it streams,
+  // ahead of the terminal 'done' row — this is what lets ChatPage show the chip mid-answer.
+  // The stream is gated after the 'tool' frame so the test can observe that intermediate
+  // state before letting 'delta'/'done' complete the turn — the module handler's frames
+  // land within the same microtask flush, too fast for a plain waitFor to ever catch mid-stream.
+  it('exposes streamed tools on the in-flight turn before the stream completes', async () => {
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+          await rest
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z',
+            tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+            refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    const wrapper = makeHookWrapper()
+    const chat = renderHook(() => useChat(), { wrapper })
+    await waitFor(() => expect(chat.result.current.data.conversationId).toBe('c-1'))
+
+    const actions = renderHook(() => useChatActions(), { wrapper })
+    act(() => actions.result.current.send('Fáradt vagyok'))
+
+    await waitFor(() =>
+      expect(actions.result.current.turn?.tools).toContainEqual({ type: 'read', name: 'get_sleep(days=3)' }))
+    expect(actions.result.current.turn?.thinking).toBe(false)
+
+    releaseRest()
+    await waitFor(() => expect(actions.result.current.turn).toBeNull())
+  })
 })
