@@ -59,7 +59,21 @@ describe('averageBreakdown', () => {
   })
 
   it('keeps the parts summing to the whole after rounding', () => {
-    const r = averageBreakdown([night({ deepMin: 99 }), night({ deepMin: 100 }), night({ deepMin: 101 })], 14)!
+    // Every per-field mean here lands OFF-integer, so Math.round actually bites and the two
+    // possible implementations genuinely diverge:
+    //   rebuilt from the rounded parts -> deep 301/3=100.33->100, light 604/3=201.33->201,
+    //                                     rem 424/3=141.33->141  =>  asleep 442
+    //   rounding the raw asleep mean    -> (439+442+448)/3 = 443.0 -> 443
+    // Asserting 442 is what makes the rail's segments provably fill their total.
+    const r = averageBreakdown([
+      night({ deepMin: 99, lightMin: 200, remMin: 140, awakeMin: 52 }),  // asleep 439
+      night({ deepMin: 100, lightMin: 201, remMin: 141, awakeMin: 52 }), // asleep 442
+      night({ deepMin: 102, lightMin: 203, remMin: 143, awakeMin: 52 }), // asleep 448
+    ], 14)!
+    expect(r.avg.deep).toBe(100)
+    expect(r.avg.light).toBe(201)
+    expect(r.avg.rem).toBe(141)
+    expect(r.avg.asleep).toBe(442) // NOT 443 — rebuilt from the rounded parts
     expect(r.avg.asleep).toBe(r.avg.deep + r.avg.light + r.avg.rem)
     expect(r.avg.inBed).toBe(r.avg.asleep + r.avg.awake)
   })
@@ -127,15 +141,37 @@ describe('remByDuration', () => {
     expect(r.deltaMin).toBe(40)
   })
 
-  it('classifies by the computed asleep sum, not by the duration field', () => {
-    // Every short() entry inherits duration: 7.5 from `night`/`base` (7.5h claimed), but its
-    // phases sum to 150+100+90 = 340..360 min (< 7h) — well under what `duration` claims.
-    // If classification ever read `entry.duration` instead of the computed asleep sum, all six
-    // nights would land on the same side of the 7h line and this would fail.
+  it('puts a night of exactly 7.0h asleep on the long side', () => {
+    // 90 + 200 + 130 = 420 min = exactly 7.0h. The contract is `>= SHORT_NIGHT_H`, so the
+    // boundary night is LONG. Without a fixture sitting exactly on the line, flipping the
+    // short-side test from `<` to `<=` would pass the whole rest of the suite.
+    const exactly7h = () => night({ deepMin: 90, lightMin: 200, remMin: 130, awakeMin: 20 })
     const r = remByDuration([
-      short(100), short(110), short(120), long(140), long(150), long(160),
+      short(100), short(100), short(100), exactly7h(), exactly7h(), exactly7h(),
     ])!
     expect(r.shortNights).toBe(3)
     expect(r.longNights).toBe(3)
+    expect(r.longAvg).toBe(130)  // the 420-min nights' REM — they are on the long side
+    expect(r.shortAvg).toBe(100)
+  })
+
+  it('classifies by the computed asleep sum, not by the duration field', () => {
+    // `duration` and the phase sum deliberately DISAGREE about which side of 7h each night is on,
+    // so a duration-based implementation returns a wrong NON-NULL answer (the two averages swap)
+    // rather than degenerating to null — that is what gives this test its teeth.
+    // duration claims 6.0h (short), phases sum to 450 min = 7.5h -> genuinely LONG:
+    const longByPhases = () => night({ duration: 6.0, deepMin: 100, lightMin: 206, remMin: 144, awakeMin: 20 })
+    // duration claims 8.0h (long), phases sum to 360 min = 6.0h -> genuinely SHORT:
+    const shortByPhases = () => night({ duration: 8.0, deepMin: 90, lightMin: 180, remMin: 90, awakeMin: 20 })
+    const r = remByDuration([
+      longByPhases(), longByPhases(), longByPhases(),
+      shortByPhases(), shortByPhases(), shortByPhases(),
+    ])!
+    expect(r.shortNights).toBe(3)
+    expect(r.longNights).toBe(3)
+    // The short side must be the duration:8.0 group — the one a duration-based
+    // implementation would have called "long", flipping these two averages.
+    expect(r.shortAvg).toBe(90)
+    expect(r.longAvg).toBe(144)
   })
 })
