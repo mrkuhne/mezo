@@ -63,6 +63,7 @@ public interface TrainMapper {
     GymScheduleSlotResponse toGymSlotResponse(GymScheduleSlotEntity entity);
 
     @Mapping(target = "kind", expression = "java(ExerciseSetResponse.KindEnum.fromValue(entity.getKind()))")
+    @Mapping(target = "medals", ignore = true)
     ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
 
     @Mapping(target = "targetRIR", source = "targetRir")

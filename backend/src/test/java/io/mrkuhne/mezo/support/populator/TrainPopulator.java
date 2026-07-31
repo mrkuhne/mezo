@@ -262,6 +262,20 @@ public class TrainPopulator {
         return exerciseSetRepository.saveAndFlush(set);
     }
 
+    /**
+     * Logged set carrying the Progresszió-prescribed target snapshotted onto the row at log time
+     * (mezo-wp6n) — the TARGET_HIT medal fixture. Pass a null {@code targetWeightKg} /
+     * {@code targetReps} for the unprescribed arm.
+     */
+    public ExerciseSetEntity createTargetedSet(UUID createdBy, UUID exerciseId, UUID workoutSessionId,
+        int setIndex, String weightKg, int reps, String targetWeightKg, Integer targetReps, Instant doneAt) {
+        ExerciseSetEntity set = createLoggedSet(
+            createdBy, exerciseId, workoutSessionId, setIndex, weightKg, reps, 1, doneAt);
+        set.setTargetWeightKg(targetWeightKg != null ? new BigDecimal(targetWeightKg) : null);
+        set.setTargetReps(targetReps);
+        return exerciseSetRepository.saveAndFlush(set);
+    }
+
     /** Fully-specified set (explicit weight/reps/skip) — GymSignal aggregation tests. */
     public ExerciseSetEntity createExerciseSetFull(UUID createdBy, UUID exerciseId,
         UUID workoutSessionId, int setIndex, BigDecimal weightKg, Integer reps, boolean skipped) {

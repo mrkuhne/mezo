@@ -7,7 +7,9 @@
 // mode 'closed': the same layout read-only (post-finish + review route).
 // ============================================================
 import type { LastWeekSet } from '@/data/types'
+import type { Medal } from '@/data/train/medalTypes'
 import { Icon } from '@/shared/ui/Icon'
+import { MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
 
 export interface SummaryExercise {
   id: string
@@ -43,7 +45,7 @@ function Stat({ label, val }: { label: string; val: string }) {
 }
 
 export function WorkoutSummary({
-  title, eyebrow, mode, exercises, challenges, hadPR = false, showSetLines = false,
+  title, eyebrow, mode, exercises, challenges, medals = [], showSetLines = false,
   onFinish, finishPending = false, onBack, onExit,
 }: {
   title: string
@@ -51,7 +53,10 @@ export function WorkoutSummary({
   mode: 'closing' | 'closed'
   exercises: SummaryExercise[]
   challenges: SummaryChallenge[]
-  hadPR?: boolean
+  // The session's earned medals (mezo-wp6n) — replaces the old boolean PR flag. The
+  // medal list block itself is a later addition (Task 9); this component still owns
+  // the title-suffix framing.
+  medals?: Medal[]
   showSetLines?: boolean
   onFinish?: () => void
   finishPending?: boolean
@@ -72,7 +77,7 @@ export function WorkoutSummary({
         </button>
         <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>{eyebrow}</span>
         <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, marginTop: 6, color: 'var(--text-primary)' }}>
-          {title}{hadPR ? ' · PR ✨' : ''}
+          {title}{medals.length ? ` · ${medals.length} medál` : ''}
         </h2>
       </div>
 
@@ -85,6 +90,35 @@ export function WorkoutSummary({
           <Stat label="Gyakorlat" val={`${doneEx}/${exercises.length}`} />
         </div>
       </div>
+
+      {/* Medálok — the session's earned medals (mezo-wp6n). Sorted RECORD-first so a
+          long run of TARGET_HIT rows (one per on-target working set — a session can
+          legitimately produce 15+) doesn't bury the rare RECORD achievements below the
+          fold; nothing is grouped or truncated, the same as the Gyakorlatonként list
+          below, which already relies on the screen's natural scroll for long sessions. */}
+      {medals.length > 0 && (
+        <div style={{ padding: '0 24px 16px' }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Medálok</div>
+          <div className="col gap-sm">
+            {[...medals]
+              .sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'RECORD' ? -1 : 1))
+              .map((m, i) => {
+                const tierCopy = MEDAL_TIER_COPY[m.tier]
+                const typeLabel = MEDAL_TYPE_LABEL[m.type] ?? m.type
+                return (
+                  <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
+                    <span aria-hidden="true" style={{ color: tierCopy.color, fontSize: 14, width: 20, textAlign: 'center' }}>{tierCopy.glyph}</span>
+                    <span className="col flex-1" style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{m.exerciseName}</span>
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 2 }}>{typeLabel}</span>
+                    </span>
+                    <span className="label-mono" style={{ fontSize: 9, color: tierCopy.color }}>{medalValueLabel(m)}</span>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Kihívások */}
       {challenges.length > 0 && (

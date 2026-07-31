@@ -8,11 +8,18 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { resetMockMedalHistory } from '@/data/train/medalEvaluator'
 
 // Asserts Phase-1 mock workout data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
+// `completeSet` now always calls `logSet` (mezo-wp6n), so mock mode's medal evaluator
+// runs on every set logged in every test below — its `history` map is module-level
+// state (medalEvaluator.ts) and would otherwise leak across tests in this file (e.g.
+// an earlier test logging a heavier Chest Supported Row set would suppress this
+// file's own WEIGHT-record test). Reset it per test, same as medalEvaluator.test.ts.
+beforeEach(() => resetMockMedalHistory())
 
 function setup() {
   return render(
@@ -394,19 +401,119 @@ test('real mode: a warmup set posts without rir, a working set posts with it', a
   expect(bodies[1].rir).toBe(1) // the prescribed working RIR target
 })
 
-test('logging a PR-weight third set on the first exercise fires the PR toast', async () => {
+// ---- real medals (mezo-wp6n): replaces the scripted 105 kg demo toast ----
+
+test('mock mode: logging a set that beats the mock lastWeek fires the RECORD medal toast', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1: 2 warmups, then the working sets are prescribed at 105 kg. Set 3 (the first
-  // working set) auto-prefills to 105 → clears the PR threshold vs lastWeek 102.5.
+  // ex1 (Chest Supported Row): 2 warmups, then working sets prefill to 105 kg × 10 —
+  // beats lastWeek (102.5 kg × 9) on WEIGHT and E1RM, and also meets the prescribed
+  // target (TARGET_HIT) — three medals on one set. The toast shows the highest-
+  // priority RECORD (WEIGHT before E1RM) and counts the other two.
   await user.click(screen.getByText('Szett kész ✓')) // warmup 1
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // warmup 2
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
-  await user.click(screen.getByText('Szett kész ✓')) // working set (setIndex 2) -> PR
-  expect(screen.getByText('Personal Record')).toBeInTheDocument()
-  expect(screen.getByText('+2.5 kg')).toBeInTheDocument()
+  await user.click(screen.getByText('Szett kész ✓')) // working set (setIndex 2) -> RECORD
+  expect(await screen.findByText('ÚJ REKORD · SÚLY')).toBeInTheDocument()
+  expect(screen.getByText('105 kg × 10')).toBeInTheDocument()
+  // Mock-mode RECORD medals never carry a previousDate (medalEvaluator.ts) — the
+  // "— … óta állt" clause must be dropped, never render as "null"/"undefined".
+  expect(screen.getByText(/Eddigi legjobbad 102,5 kg volt\./)).toBeInTheDocument()
+  expect(screen.queryByText(/óta állt/)).not.toBeInTheDocument()
+  expect(screen.getByText(/\+2 további medál/)).toBeInTheDocument()
+})
+
+test('real mode: a set-log response with only a TARGET_HIT medal shows no toast (TARGET tier stays quiet)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, async ({ params, request }) => {
+      const body = (await request.json()) as { exerciseId: string; setIndex: number; weightKg: number }
+      calls.push(`set:${params.id}:${body.exerciseId}:${body.setIndex}:${body.weightKg}`)
+      return HttpResponse.json({
+        id: 'st-' + body.setIndex, exerciseId: body.exerciseId, setIndex: body.setIndex,
+        medals: [{
+          type: 'TARGET_HIT', tier: 'TARGET', exerciseName: 'Chest Supported Row',
+          date: '2026-06-12', setIndex: body.setIndex,
+          value: 9, unit: 'REPS', weightKg: 102.5, reps: 9,
+          previousValue: null, previousDate: null,
+        }],
+      }, { status: 201 })
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5'))
+  expect(screen.queryByText(/ÚJ REKORD/)).not.toBeInTheDocument()
+})
+
+// ---- the set-row half of the two-tier split (mezo-wp6n) ----
+// A prescribed-set row is `<div class="row gap-sm">` whose 2nd child is the
+// `.stag` kind tag ("Bemel." / "Working"), so the tag's parent IS the row. Query
+// through it so these assertions can never be satisfied by an element elsewhere
+// on the page (the toast also renders medal text). The done-tick is the row's
+// only <svg> (Icon); MedalChip renders a role="img" span, never an svg.
+const rowOf = (kindTag: HTMLElement) => kindTag.parentElement as HTMLElement
+
+test('mock mode: a set that hits its target gets a SAGE done-tick and a chip per RECORD medal — never a second tick', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1 working sets are prescribed 105 kg × 10 and prefill to exactly that, so
+  // set index 2 earns WEIGHT + E1RM (RECORD) *and* TARGET_HIT (TARGET) — the
+  // three-medal case that makes the loud/quiet split visible on one row.
+  await user.click(screen.getByText('Szett kész ✓')) // B1 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
+
+  // Exactly TWO chips — the TARGET_HIT contributes none (MedalChip gates on tier).
+  await waitFor(() =>
+    expect(within(rowOf(screen.getAllByText('Working')[0])).getAllByRole('img')).toHaveLength(2),
+  )
+  const workingRow = rowOf(screen.getAllByText('Working')[0])
+  expect(within(workingRow).getByRole('img', { name: 'Súly-rekord' })).toBeInTheDocument()
+  expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
+  // The double-tick fix: ONE glyph, recoloured — the row's single tick turns sage.
+  expect(workingRow.querySelectorAll('svg')).toHaveLength(1)
+  expect(workingRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--sage-deep)')
+
+  // The coral arm: a done warmup row earned no medals, so its tick stays coral.
+  // Without this the sage assertion above would pass even if the tick were
+  // unconditionally sage.
+  const warmupRow = rowOf(screen.getAllByText('Bemel.')[0])
+  expect(warmupRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--coral)')
+  expect(within(warmupRow).queryAllByRole('img')).toHaveLength(0)
+})
+
+test('mock mode: a set that sets records but MISSES its target keeps a coral done-tick (the tick tracks TARGET_HIT, not medals)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2 (warmup)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  // Drop the prefilled 105 kg to 102.5 — under the prescribed 105, so NO TARGET_HIT,
+  // yet 102,5 × 10 still beats lastWeek (102,5 × 9) on REPS_AT_WEIGHT and E1RM.
+  await user.click(screen.getByRole('button', { name: 'Súly csökkentése' }))
+  await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
+
+  await waitFor(() =>
+    expect(within(rowOf(screen.getAllByText('Working')[0])).getAllByRole('img')).toHaveLength(2),
+  )
+  const workingRow = rowOf(screen.getAllByText('Working')[0])
+  expect(within(workingRow).getByRole('img', { name: 'Rep-rekord' })).toBeInTheDocument()
+  expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
+  // Chips present, target missed -> the tick must stay coral.
+  expect(workingRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--coral)')
 })
 
 test('the giant Súly/Ismétlés steppers increment by their step on tap', async () => {
@@ -546,9 +653,10 @@ test('summary → Edzés lezárása shows the level-up overlay, then the closed 
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
   // The read-only closed summary is revealed underneath.
   expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
-  // The gym fixture has a max_strength level-up → the summary's PR framing derives
-  // from the real signal (hadPrFromSignal), not the old 105 kg demo scan.
-  expect(screen.getByText(/Pull Day · PR/)).toBeInTheDocument()
+  // ex2..ex5's working sets all hit their prescribed target (and several also beat
+  // lastWeek), so the session's real medal count (mezo-wp6n) drives the title suffix
+  // now — replaces the old hadPrFromSignal / 105 kg demo framing.
+  expect(screen.getByText(/Pull Day · \d+ medál/)).toBeInTheDocument()
 })
 
 test('the ⋯ menu offers early finish and it lands on the summary screen', async () => {

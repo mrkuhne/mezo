@@ -284,6 +284,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/medals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's full medal history, newest first (derived from logged sets) */
+        get: operations["getMedals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/sport-sessions": {
         parameters: {
             query?: never;
@@ -2607,6 +2624,35 @@ export interface components {
             /** @description Top set of the last 5 sessions, oldest first (sparkline order), max 5 */
             recentTopSets: components["schemas"]["RecordSetRef"][];
         };
+        Medal: {
+            /** @enum {string} */
+            type: "WEIGHT" | "REPS_AT_WEIGHT" | "E1RM" | "SESSION_VOLUME" | "TARGET_HIT";
+            /** @enum {string} */
+            tier: "RECORD" | "TARGET";
+            exerciseName: string;
+            /** Format: uuid */
+            catalogId?: string | null;
+            muscle?: string | null;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            workoutSessionId?: string | null;
+            setIndex?: number | null;
+            /** @description kg for WEIGHT/E1RM/SESSION_VOLUME, reps for REPS_AT_WEIGHT/TARGET_HIT */
+            value: number;
+            /** @enum {string} */
+            unit: "KG" | "REPS";
+            /** @description the achieving set's load */
+            weightKg?: number | null;
+            reps?: number | null;
+            /** @description what was beaten; always null for TARGET_HIT */
+            previousValue?: number | null;
+            /** Format: date */
+            previousDate?: string | null;
+        };
+        MedalListResponse: {
+            medals: components["schemas"]["Medal"][];
+        };
         /** @description templateSessionId/exercises/openWorkout are absent when there is no active meso or today is a rest day; weekDoneDates is always present (possibly empty). */
         WorkoutTodayResponse: {
             /** Format: uuid */
@@ -2697,6 +2743,8 @@ export interface components {
             status: "active" | "completed";
             sets: components["schemas"]["ExerciseSetResponse"][];
             levelUp?: components["schemas"]["LevelUpResult"];
+            /** @description Medals earned across the session, including SESSION_VOLUME */
+            medals?: components["schemas"]["Medal"][];
         };
         WorkoutSummaryResponse: {
             /** Format: uuid */
@@ -2808,6 +2856,8 @@ export interface components {
             skipped: boolean;
             /** @enum {string} */
             kind?: "warmup" | "working";
+            /** @description Medals this set earned (empty when none) */
+            medals?: components["schemas"]["Medal"][];
         };
         WorkoutStartRequest: {
             /** Format: uuid */
@@ -2825,6 +2875,10 @@ export interface components {
             note?: string;
             /** @description warmup|working — defaults to working server-side when omitted */
             kind?: string;
+            /** @description The Progresszió-prescribed load for this set, snapshotted at log time */
+            targetWeightKg?: number | null;
+            /** @description The Progresszió-prescribed reps for this set, snapshotted at log time */
+            targetReps?: number | null;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */
@@ -5641,6 +5695,35 @@ export interface operations {
                 };
             };
             /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMedals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Medals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedalListResponse"];
+                };
+            };
+            /** @description Unauthorized */
             401: {
                 headers: {
                     [name: string]: unknown;

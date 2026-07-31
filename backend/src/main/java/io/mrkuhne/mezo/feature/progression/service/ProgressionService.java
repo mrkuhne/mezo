@@ -84,18 +84,20 @@ public class ProgressionService {
                 kinds.put(muscle, "MUSCLE");
             }
         });
-        // best e1RM → max_strength XP (+ PR bonus on the first-ever weighted session, v1 rule)
+        // best e1RM → max_strength XP. The PR bonus now pays per genuinely broken RECORD-tier
+        // medal (mezo-wp6n); before this it fired on the first-ever weighted session only —
+        // a v1 stand-in for the record detection that did not exist yet.
         if (signal.bestE1rm() != null) {
-            boolean firstEver = skillProgressRepository
-                .findByCreatedByAndSkillKey(createdBy, "max_strength").isEmpty();
             long xp = (long) signal.bestE1rm().intValue() * g.e1rmXpPerKg()
-                + (firstEver ? g.prBonusXp() : 0L);
+                + (long) signal.recordMedalCount() * g.prBonusXp();
             deltas.merge("max_strength", xp, Long::sum);
             kinds.put("max_strength", "ATHLETIC");
         }
-        // work sets → strength_endurance; bodyweight reps → flat strength_endurance too
+        // work sets → strength_endurance; bodyweight reps → flat strength_endurance too;
+        // capped TARGET_HIT medals → strength_endurance target bonus
         long enduranceXp = (long) signal.workSetCount() * g.strengthEnduranceXpPerSet()
-            + (long) signal.bodyweightRepCount() * g.bodyweightXpPerRep();
+            + (long) signal.bodyweightRepCount() * g.bodyweightXpPerRep()
+            + (long) Math.min(signal.targetMedalCount(), g.targetMedalCap()) * g.targetMedalXp();
         if (enduranceXp > 0) {
             deltas.merge("strength_endurance", enduranceXp, Long::sum);
             kinds.put("strength_endurance", "ATHLETIC");

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.train.signal;
 
+import io.mrkuhne.mezo.api.dto.Medal;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
@@ -8,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository.ExerciseIdentityRow;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.service.MedalService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ public class GymSignalCalculator {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
+    private final MedalService medalService;
 
     public GymSignal compute(UUID createdBy, UUID instanceId) {
         List<ExerciseSetEntity> sets = exerciseSetRepository
@@ -63,7 +66,13 @@ public class GymSignalCalculator {
                 bestE1rm = e1rm;
             }
         }
-        return new GymSignal(instanceId, volumeByMuscle, bestE1rm, workSetCount, bodyweightRepCount);
+        List<Medal> medals = medalService.forSession(createdBy, instanceId);
+        int recordMedals = (int) medals.stream()
+            .filter(m -> m.getTier() == Medal.TierEnum.RECORD).count();
+        int targetMedals = (int) medals.stream()
+            .filter(m -> m.getTier() == Medal.TierEnum.TARGET).count();
+        return new GymSignal(instanceId, volumeByMuscle, bestE1rm, workSetCount,
+            bodyweightRepCount, recordMedals, targetMedals);
     }
 
     private String muscleOf(UUID exerciseId, Map<UUID, ExerciseIdentityRow> exercises,

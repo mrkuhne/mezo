@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
+import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
@@ -35,6 +36,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
+import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -58,6 +60,7 @@ public class TrainController implements TrainApi {
     private final GymScheduleService gymScheduleService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
+    private final MedalService medalService;
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
@@ -95,6 +98,11 @@ public class TrainController implements TrainApi {
     @Override
     public List<ExerciseRecordResponse> getExerciseRecords() {
         return exerciseRecordService.list(currentUserId.get());
+    }
+
+    @Override
+    public MedalListResponse getMedals() {
+        return MedalListResponse.builder().medals(medalService.list(currentUserId.get())).build();
     }
 
     @Override

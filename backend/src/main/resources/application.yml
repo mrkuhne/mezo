@@ -588,7 +588,9 @@ mezo:
       volume-unit: 100          # kg·reps that equal one volume XP unit
       volume-xp-per-unit: 10    # muscle XP per volume unit (per the day's logged muscles)
       e1rm-xp-per-kg: 2         # max_strength XP per kg of best Epley e1RM
-      pr-bonus-xp: 40           # one-off bonus when the session's best e1RM beats the prior best
+      pr-bonus-xp: 40           # max_strength XP per RECORD-tier medal earned in the session
+      target-medal-xp: 5        # strength_endurance XP per TARGET_HIT medal earned in the session
+      target-medal-cap: 12      # max TARGET_HIT medals paid per workout (targetMedalXp cap)
       strength-endurance-xp-per-set: 8  # per logged work set (non-skipped, reps present)
       bodyweight-xp-per-rep: 1  # flat XP per rep for weightless sets (no e1RM/volume)
     # Run-path XP weights.

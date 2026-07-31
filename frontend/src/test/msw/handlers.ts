@@ -576,7 +576,13 @@ export const handlers = [
   ),
   http.post(`${API_BASE}/api/train/workouts/:id/sets`, () =>
     HttpResponse.json(
-      { id: 'f1f3a0e2-0000-4000-8000-000000000030', exerciseId: 'c1f3a0e2-0000-4000-8000-000000000002', setIndex: 0 },
+      {
+        id: 'f1f3a0e2-0000-4000-8000-000000000030', exerciseId: 'c1f3a0e2-0000-4000-8000-000000000002', setIndex: 0,
+        // Empty, not omitted (mezo-wp6n): a bare `undefined` would let a real-mode medal
+        // assertion silently pass against `r?.medals` — tests that need a populated
+        // response override this handler with server.use().
+        medals: [],
+      },
       { status: 201 },
     ),
   ),
@@ -586,6 +592,7 @@ export const handlers = [
       id: String(params.id),
       templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
       date: '2026-06-12', status: 'completed', sets: [],
+      medals: [],
     }),
   ),
   // T3 sport endpoints — schedule fixture mirrors the demofixtures BVSC week.
@@ -692,6 +699,40 @@ export const handlers = [
         recentTopSets: [{ weightKg: 0, reps: 35, date: '2026-06-02' }],
       },
     ]),
+  ),
+  // Medal cabinet fixture (mezo-wp6n) — a small mixed-type slice; tests needing a
+  // specific set/tier override with server.use().
+  http.get(`${API_BASE}/api/train/medals`, () =>
+    HttpResponse.json({
+      medals: [
+        {
+          type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Chest Supported Row',
+          catalogId: 'f1e3a0e2-0000-4000-8000-000000000070', muscle: 'back-mid', date: '2026-06-02',
+          workoutSessionId: 'e1f3a0e2-0000-4000-8000-000000000020', setIndex: 2,
+          value: 102.5, unit: 'KG', weightKg: 102.5, reps: 9,
+          previousValue: 100, previousDate: '2026-05-19',
+        },
+        {
+          type: 'TARGET_HIT', tier: 'TARGET', exerciseName: 'Hip Thrust',
+          catalogId: 'f1e3a0e2-0000-4000-8000-000000000071', muscle: 'glute', date: '2026-06-01',
+          workoutSessionId: 'e1f3a0e2-0000-4000-8000-000000000021', setIndex: 1,
+          value: 10, unit: 'REPS', weightKg: 120, reps: 10,
+          previousValue: null, previousDate: null,
+        },
+        // SESSION_VOLUME carries the session's top set in weightKg/reps — exactly as
+        // the real backend's MedalService.toMedal does (mezo-wp6n Finding 1) — so this
+        // fixture actually exercises medalValueLabel's SESSION_VOLUME branch instead of
+        // accidentally passing by omitting the fields. Numbers mirror MedalApiIT's
+        // pinned scenario (820kg session volume off a 102.5×8 top set, beating 800kg).
+        {
+          type: 'SESSION_VOLUME', tier: 'RECORD', exerciseName: 'Leg Press',
+          catalogId: 'f1e3a0e2-0000-4000-8000-000000000077', muscle: 'quad', date: '2026-06-05',
+          workoutSessionId: 'e1f3a0e2-0000-4000-8000-000000000022', setIndex: 2,
+          value: 820, unit: 'KG', weightKg: 102.5, reps: 8,
+          previousValue: 800, previousDate: '2026-05-22',
+        },
+      ],
+    }),
   ),
   http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
