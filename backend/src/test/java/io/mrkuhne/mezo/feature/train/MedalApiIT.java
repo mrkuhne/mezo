@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.Medal;
 import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -84,6 +85,114 @@ class MedalApiIT extends ApiIntegrationTest {
         ExerciseSetEntity reloaded = exerciseSetRepository.findById(body.getId()).orElseThrow();
         assertThat(reloaded.getTargetWeightKg()).isEqualByComparingTo("100.00");
         assertThat(reloaded.getTargetReps()).isEqualTo(8);
+    }
+
+    @Test
+    void testLogSet_shouldReturnAWeightMedal_whenTheSetBeatsAPriorSession() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity priorSession =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        trainPopulator.createLoggedSet(owner, bench.getId(), priorSession.getId(), 0,
+            "100.00", 8, 2, middayOf(DAY_1));
+        WorkoutSessionEntity active =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_2, "active");
+
+        SetLogRequest req = SetLogRequest.builder()
+            .exerciseId(bench.getId()).setIndex(0)
+            .weightKg(new BigDecimal("102.50")).reps(8).rir(1).kind("working")
+            .build();
+        ExerciseSetResponse body = postForBody(
+            "/api/train/workouts/" + active.getId() + "/sets", req,
+            ownerAuthHeaders(), HttpStatus.CREATED, ExerciseSetResponse.class);
+
+        assertThat(body.getMedals()).extracting(Medal::getType).contains(Medal.TypeEnum.WEIGHT);
+        Medal weight = medalOfType(body.getMedals(), Medal.TypeEnum.WEIGHT);
+        assertThat(weight.getPreviousValue()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void testLogSet_shouldReturnATargetHitMedal_whenThePrescribedValuesAreMet() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        WorkoutSessionEntity instance =
+            trainPopulator.createWorkoutInstance(owner, template, LocalDate.now(), "active");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+
+        SetLogRequest req = SetLogRequest.builder()
+            .exerciseId(bench.getId()).setIndex(0)
+            .weightKg(new BigDecimal("100.00")).reps(8).rir(2).kind("working")
+            .targetWeightKg(new BigDecimal("100.00")).targetReps(8)
+            .build();
+        ExerciseSetResponse body = postForBody(
+            "/api/train/workouts/" + instance.getId() + "/sets", req,
+            ownerAuthHeaders(), HttpStatus.CREATED, ExerciseSetResponse.class);
+
+        Medal target = medalOfType(body.getMedals(), Medal.TypeEnum.TARGET_HIT);
+        assertThat(target.getPreviousValue()).isNull();
+    }
+
+    @Test
+    void testLogSet_shouldReturnNoMedals_whenTheSetTiesTheRecordWithNoTarget() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity priorSession =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        trainPopulator.createLoggedSet(owner, bench.getId(), priorSession.getId(), 0,
+            "100.00", 8, 2, middayOf(DAY_1));
+        WorkoutSessionEntity active =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_2, "active");
+
+        // ties the 100 kg × 8 record exactly — strict > is required, so a tie earns nothing;
+        // no target carried either, so TARGET_HIT cannot fire.
+        SetLogRequest req = SetLogRequest.builder()
+            .exerciseId(bench.getId()).setIndex(0)
+            .weightKg(new BigDecimal("100.00")).reps(8).rir(2).kind("working")
+            .build();
+        ExerciseSetResponse body = postForBody(
+            "/api/train/workouts/" + active.getId() + "/sets", req,
+            ownerAuthHeaders(), HttpStatus.CREATED, ExerciseSetResponse.class);
+
+        assertThat(body.getMedals()).isNotNull().isEmpty();
+
+        // deferred finding from Task 2: the no-target path must round-trip as null, not be coerced
+        ExerciseSetEntity reloaded = exerciseSetRepository.findById(body.getId()).orElseThrow();
+        assertThat(reloaded.getTargetWeightKg()).isNull();
+        assertThat(reloaded.getTargetReps()).isNull();
+    }
+
+    @Test
+    void testFinishWorkout_shouldReturnSessionMedals_whenTheSessionBeatsAPriorVolume() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity priorSession =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        trainPopulator.createLoggedSet(owner, bench.getId(), priorSession.getId(), 0,
+            "100.00", 8, 2, middayOf(DAY_1));
+        WorkoutSessionEntity active =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_2, "active");
+        trainPopulator.createLoggedSet(owner, bench.getId(), active.getId(), 0,
+            "102.50", 8, 1, middayOf(DAY_2));
+
+        WorkoutInstanceResponse body = postForBody(
+            "/api/train/workouts/" + active.getId() + "/finish", null,
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
+
+        assertThat(body.getStatus()).isEqualTo(WorkoutInstanceResponse.StatusEnum.COMPLETED);
+        Medal volume = medalOfType(body.getMedals(), Medal.TypeEnum.SESSION_VOLUME);
+        assertThat(volume.getValue()).isEqualByComparingTo("820");
+        assertThat(volume.getPreviousValue()).isEqualByComparingTo("800");
     }
 
     @Test

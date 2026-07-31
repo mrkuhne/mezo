@@ -100,6 +100,10 @@ public class WorkoutService {
     private final VolumeProgressionService volumeProgressionService;
     private final MuscleGroupVolumeLogRepository muscleGroupVolumeLogRepository;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
+    // Medal collection (mezo-wp6n): derived-medal replay, read-only consumer of the frozen
+    // MedalService — attaches the medals a set/session just earned to the logSet/finishWorkout
+    // responses. No feature gate: medals are always-on (mirrors ExerciseRecordService).
+    private final MedalService medalService;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -501,7 +505,11 @@ public class WorkoutService {
         set.setDoneAt(Instant.now());
         set.setTargetWeightKg(req.getTargetWeightKg());
         set.setTargetReps(req.getTargetReps());
-        return mapper.toSetResponse(exerciseSetRepository.save(set));
+        ExerciseSetEntity saved = exerciseSetRepository.save(set);
+        exerciseSetRepository.flush(); // the replay reads through the repository — the row must be visible
+        ExerciseSetResponse response = mapper.toSetResponse(saved);
+        response.setMedals(medalService.forSet(createdBy, saved.getId()));
+        return response;
     }
 
     /**
@@ -608,6 +616,7 @@ public class WorkoutService {
             GymSignal signal = gymSignalCalculator.compute(createdBy, instance.getId());
             base.setLevelUp(levelUpResultMapper.toDto(progressionService.applyGym(createdBy, signal)));
         }
+        base.setMedals(medalService.forSession(createdBy, instance.getId()));
         return base;
     }
 
