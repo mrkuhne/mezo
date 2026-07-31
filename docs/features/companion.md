@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-07-30
+updated: 2026-07-31
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -968,11 +968,15 @@ The ChatPage is now the real FE surface. **Contract crossing the seam:**
 transform). The hook layer is `data/insights/chatHooks.ts`: `useChat()` (a single `['chat']`
 `useDualQuery` bootstrap — newest conversation + history; 404 → `degraded`; `mode: 'mock'|'live'`
 keeps `isMockMode()` out of the feature layer) + `useChatActions()` (send/stream state machine —
-optimistic `ChatTurn {userText, draft, thinking}` overlay, `done` appended into the query cache).
+optimistic `ChatTurn {userText, draft, thinking, tools}` overlay, `done` appended into the query cache).
 **Since V0.5 the chips are real**: the wire `tools[]` (`{type:'read', name:'get_recovery(scope=sleep, days=3)'}`)
 render as `ToolChip`s and `refs[]` as `RefTag`s on history AND streamed turns — the FE needed
-zero code changes (the pass-through was built at V0.4); chips appear when the terminal `done`
-lands (the in-flight draft bubble stays chip-less by design — chips describe the persisted truth).
+zero code changes (the pass-through was built at V0.4). **Since mezo-280 the chips are also live**:
+each `tool` SSE event appends onto `ChatTurn.tools`, so the in-flight draft bubble renders its
+chips through the same `ToolChipRow` as they execute, rather than all at once after the answer.
+The draft — chips included — is still discarded wholesale when the terminal `done` row is appended:
+that row's `tools[]` stays the persisted truth (it also covers advisor-retry calls made after the
+stream ended), so the live chips are progress only.
 
 ### 5.2 Companion ↔ Auth & ownership (wired)
 Every companion write/read rides the auth spine ([`_platform-auth-security.md`](_platform-auth-security.md)

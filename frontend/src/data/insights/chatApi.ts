@@ -50,7 +50,8 @@ export const chatApi = {
       if (ev.event === 'delta') {
         onDelta((JSON.parse(ev.data) as StreamDelta).text)
       } else if (ev.event === 'tool') {
-        onTool?.(JSON.parse(ev.data) as Tool)
+        // wire `type` is a plain string; values come from our own backend — same cast as toChatMessage
+        onTool?.(JSON.parse(ev.data) as StreamToolCall as Tool)
       } else if (ev.event === 'done') {
         return JSON.parse(ev.data) as MessageResponse
       } else if (ev.event === 'error') {
