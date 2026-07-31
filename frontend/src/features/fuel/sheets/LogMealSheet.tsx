@@ -20,6 +20,8 @@ import { Display } from '@/shared/ui/Display'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { MealPickerSheet, type MealPickedItem } from '@/features/fuel/sheets/MealPickerSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
+import { computeRecipeMacrosWithOverrides } from '@/data/fuel/recipeMacros'
+import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
 
 export type LogMealPrefill =
   | { source: 'recipe'; recipeId: string }
@@ -38,7 +40,11 @@ const SLOTS: { id: Slot; label: string }[] = [
 // fall back to its hex from the design system; matches the .srctag.kamra look).
 const PANTRY_ACCENT = 'var(--cat-dairy, #FBBF24)'
 
-interface DraftLine { key: string; source: 'recipe' | 'pantry'; refId: string; amount: number; unit: string }
+interface DraftLine {
+  key: string; source: 'recipe' | 'pantry'; refId: string; amount: number; unit: string
+  /** recipe arm only — ingredient array index → amount, in the recipe's own unit (mezo-ormb) */
+  overrides?: Record<number, number>
+}
 
 const round = (n: number) => Math.round(n)
 const zero = { kcal: 0, p: 0, c: 0, f: 0 }
@@ -71,6 +77,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
   // their value sticks ("derived-until-touched"). See `shownName` below (mezo-u68c).
   const [nameOverride, setNameOverride] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [lines, setLines] = useState<DraftLine[]>(() => {
     if (!prefill) return []
     if (prefill.source === 'recipe') return [{ key: 'pf', source: 'recipe', refId: prefill.recipeId, amount: 1, unit: 'adag' }]
@@ -86,17 +93,20 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
       const r = resolveRecipe(l.refId)
       const s = Math.max(1, r?.servings ?? 1)
       const factor = l.amount
-      // Single-round (round only once, at the end) — IDENTICAL to the data layer's
-      // buildLine recipe arm: round((macro / servings) * amount). Rounding the
-      // per-serving value first would make the live total drift 1-3 kcal off the meal
-      // that actually gets persisted.
+      // With overrides the whole-recipe rollup is re-rolled from the substituted amounts, then
+      // ÷ servings × adag — the SAME order as the backend (round per line, divide unrounded,
+      // round once at the end). Without overrides this is r.macros verbatim, so the un-overridden
+      // path is bit-identical to before.
+      const whole = r && l.overrides && Object.keys(l.overrides).length
+        ? computeRecipeMacrosWithOverrides(r.ingredients, ingredients, l.overrides)
+        : (r?.macros ?? zero)
       return {
         name: r?.name ?? 'Recept', tag: 'recept' as const, step: 1, min: 1,
         contribution: {
-          kcal: round((r?.macros.kcal ?? 0) / s * factor),
-          p: round((r?.macros.p ?? 0) / s * factor),
-          c: round((r?.macros.c ?? 0) / s * factor),
-          f: round((r?.macros.f ?? 0) / s * factor),
+          kcal: round(whole.kcal / s * factor),
+          p: round(whole.p / s * factor),
+          c: round(whole.c / s * factor),
+          f: round(whole.f / s * factor),
         },
       }
     }
@@ -126,6 +136,17 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
   const addPicked = (p: MealPickedItem) => { setLines(prev => [...prev, lineFromPicked(p)]); setPickerOpen(false) }
   const bump = (key: string, delta: number) => setLines(prev => prev.map(p => p.key === key ? { ...p, amount: Math.max(1, p.amount + delta) } : p))
   const removeLine = (key: string) => setLines(prev => prev.filter(p => p.key !== key))
+  const setOverride = (key: string, index: number, amount: number) =>
+    setLines(prev => prev.map(p => p.key === key ? { ...p, overrides: { ...p.overrides, [index]: amount } } : p))
+  const clearOverride = (key: string, index: number) =>
+    setLines(prev => prev.map(p => {
+      if (p.key !== key) return p
+      const next = { ...p.overrides }
+      delete next[index]
+      return { ...p, overrides: next }
+    }))
+  const resetOverrides = (key: string) =>
+    setLines(prev => prev.map(p => p.key === key ? { ...p, overrides: undefined } : p))
 
   const canSave = lines.length > 0
   const save = (close: () => void) => {
@@ -137,7 +158,24 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
       // local dropped a pre-workout meal out of its pre-window (mezo-g8qm; LogDoseSheet's offsetIso rule).
       loggedAt: nowOffsetIso(),
       title: shownName.trim() || null,
-      items: lines.map(l => ({ source: l.source, refId: l.refId, amount: l.amount, unit: l.unit })),
+      items: lines.map(l => {
+        const entries = Object.entries(l.overrides ?? {})
+          .filter(([i, v]) => {
+            const r = l.source === 'recipe' ? resolveRecipe(l.refId) : undefined
+            return r ? v !== r.ingredients[Number(i)]?.amount : false
+          })
+        return {
+          source: l.source, refId: l.refId, amount: l.amount, unit: l.unit,
+          // only genuinely-changed lines ride along; an untouched recipe keeps today's exact body
+          ...(l.source === 'recipe' && entries.length
+            ? { ingredientOverrides: entries.map(([i, v]) => ({
+                lineOrder: Number(i),
+                pantryItemId: resolveRecipe(l.refId)!.ingredients[Number(i)].refId,
+                amount: v,
+              })) }
+            : {}),
+        }
+      }),
     }
     logMeal(input)
     close()
@@ -221,6 +259,66 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                   <div style={{ marginTop: 9 }}>
                     <MacroCells macros={meta.contribution} perLabel={`${l.amount} ${l.unit}`} />
                   </div>
+                  {l.source === 'recipe' && (() => {
+                    const r = resolveRecipe(l.refId)
+                    if (!r || r.ingredients.length === 0) return null
+                    const open = !!expanded[l.key]
+                    const touched = Object.keys(l.overrides ?? {}).length
+                    return (
+                      <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+                        <button
+                          onClick={() => setExpanded(p => ({ ...p, [l.key]: !p[l.key] }))}
+                          aria-label="Hozzávalók finomhangolása" aria-expanded={open}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>
+                            HOZZÁVALÓK · {r.ingredients.length}{touched ? ` · ${touched} MÓDOSÍTVA` : ''}
+                          </span>
+                          <span style={{ fontSize: 9.5, fontWeight: 600, color: 'var(--coral)' }}>
+                            {open ? 'összecsuk ▴' : 'finomhangolás ▾'}
+                          </span>
+                        </button>
+                        {open && (
+                          <>
+                            {r.servings > 1 && (
+                              <div style={{ marginTop: 5, fontSize: 9.5, color: 'var(--text-tertiary)' }}>
+                                a teljes recepthez ({r.servings} adag)
+                              </div>
+                            )}
+                            {r.ingredients.map((ing, i) => {
+                              const src = ingredients.find(x => x.id === ing.refId)
+                              const amount = l.overrides?.[i] ?? ing.amount
+                              return (
+                                <RecipeOverrideRow
+                                  key={`${l.key}-${i}`}
+                                  name={ing.name ?? src?.name ?? ing.refId}
+                                  unit={ing.unit}
+                                  originalAmount={ing.amount}
+                                  amount={amount}
+                                  // Mirrors computeRecipeMacrosWithOverrides exactly: an UNTOUCHED
+                                  // row shows the server-frozen contribution (never re-derived from
+                                  // the live pantry row, which may have drifted since the recipe was
+                                  // saved); an OVERRIDDEN row is rescaled from the live source, or 0
+                                  // when that source is gone.
+                                  kcal={l.overrides?.[i] === undefined
+                                    ? (ing.contribution?.kcal
+                                        ?? (src ? round(src.macros.kcal * (ing.amount / (src.per || 1))) : 0))
+                                    : (src ? round(src.macros.kcal * (amount / (src.per || 1))) : 0)}
+                                  onChange={(v) => setOverride(l.key, i, v)}
+                                  onReset={() => clearOverride(l.key, i)}
+                                />
+                              )
+                            })}
+                            {touched > 0 && (
+                              <button onClick={() => resetOverrides(l.key)} aria-label="Alaphelyzet"
+                                style={{ marginTop: 7, fontSize: 10, fontWeight: 600, color: 'var(--coral)' }}>
+                                Alaphelyzet
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
             </div>
