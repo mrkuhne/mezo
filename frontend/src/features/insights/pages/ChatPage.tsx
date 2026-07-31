@@ -69,8 +69,15 @@ export function ChatPage() {
         ))}
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
         {turn && turn.thinking && <ThinkingDots />}
-        {turn && !turn.thinking && turn.draft && (
-          <ChatMessage m={{ role: 'assistant', ts: 'most', text: turn.draft }} />
+        {turn && !turn.thinking && (turn.draft || turn.tools.length > 0) && (
+          <ChatMessage
+            m={{
+              role: 'assistant',
+              ts: 'most',
+              text: turn.draft,
+              ...(turn.tools.length > 0 ? { tools: turn.tools } : {}),
+            }}
+          />
         )}
         {error && (
           <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>

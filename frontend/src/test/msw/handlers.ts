@@ -953,6 +953,7 @@ export const handlers = [
     const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
+        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
         // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes
