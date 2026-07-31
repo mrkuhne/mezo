@@ -8,6 +8,7 @@ import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { fuelDay } from '@/data/fuel/fuel'
 import { ingredients, recipes as mockRecipes, MOCK_AI_MEAL_DRAFT } from '@/data/fuel/pantry'
+import { computeRecipeMacrosWithOverrides } from '@/data/fuel/recipeMacros'
 import { PANTRY_KEY, RECIPES_KEY } from '@/data/fuel/queryKeys'
 import type { MealInput, MealItemLine, FuelMeal, FuelDay, MacroSet, RecipeLog, MealAiDraft } from '@/data/types'
 
@@ -186,7 +187,13 @@ function buildLine(item: MealInput['items'][number]): MealItemLine {
   if (item.source === 'recipe') {
     const r = mockRecipes.find(x => x.id === item.refId)
     const per = Math.max(1, r?.servings ?? 1)
-    const m = r?.macros ?? { kcal: 0, p: 0, c: 0, f: 0 }
+    // mock parity with the backend: overrides re-roll the WHOLE recipe, then ÷ servings × adag
+    const m = r
+      ? (item.ingredientOverrides?.length
+          ? computeRecipeMacrosWithOverrides(r.ingredients, ingredients,
+              Object.fromEntries(item.ingredientOverrides.map(o => [o.lineOrder, o.amount])))
+          : r.macros)
+      : { kcal: 0, p: 0, c: 0, f: 0 }
     return {
       source: 'recipe', refId: item.refId, amount: item.amount, unit: item.unit,
       name: r?.name ?? 'Recept',
