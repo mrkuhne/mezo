@@ -8936,6 +8936,51 @@ components:
           pattern: ^(read|compute|write)$
         name:
           type: string
+    MealIngredientOverrideRequest:
+      type: object
+      description: >-
+        One recipe ingredient logged at an amount other than the recipe's. Keyed
+        by lineOrder; pantryItemId is a consistency check (recipe_ingredient has
+        no unique (recipe_id, pantry_item_id), so pantryItemId alone is
+        ambiguous, and lineOrder alone would silently mis-apply after a
+        reorder). amount 0 means the line was left out.
+      required:
+        - lineOrder
+        - pantryItemId
+        - amount
+      properties:
+        lineOrder:
+          type: integer
+          minimum: 0
+        pantryItemId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          minimum: 0
+    MealIngredientOverrideResponse:
+      type: object
+      required:
+        - lineOrder
+        - pantryItemId
+        - name
+        - unit
+        - originalAmount
+        - amount
+      properties:
+        lineOrder:
+          type: integer
+        pantryItemId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string
+        originalAmount:
+          type: number
+        amount:
+          type: number
     MealItemRequest:
       type: object
       required:
@@ -8986,6 +9031,11 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+        ingredientOverrides:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MealIngredientOverrideRequest'
     MealItemResponse:
       type: object
       required:
@@ -9019,6 +9069,11 @@ components:
           nullable: true
         contribution:
           $ref: '#/components/schemas/Macros'
+        ingredientOverrides:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MealIngredientOverrideResponse'
     MealRequest:
       type: object
       required:

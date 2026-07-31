@@ -3600,6 +3600,22 @@ export interface components {
             type: string;
             name: string;
         };
+        /** @description One recipe ingredient logged at an amount other than the recipe's. Keyed by lineOrder; pantryItemId is a consistency check (recipe_ingredient has no unique (recipe_id, pantry_item_id), so pantryItemId alone is ambiguous, and lineOrder alone would silently mis-apply after a reorder). amount 0 means the line was left out. */
+        MealIngredientOverrideRequest: {
+            lineOrder: number;
+            /** Format: uuid */
+            pantryItemId: string;
+            amount: number;
+        };
+        MealIngredientOverrideResponse: {
+            lineOrder: number;
+            /** Format: uuid */
+            pantryItemId: string;
+            name: string;
+            unit: string;
+            originalAmount: number;
+            amount: number;
+        };
         MealItemRequest: {
             source: string;
             /** Format: uuid */
@@ -3616,6 +3632,7 @@ export interface components {
             carbsG?: number | null;
             fatG?: number | null;
             nova?: number | null;
+            ingredientOverrides?: components["schemas"]["MealIngredientOverrideRequest"][] | null;
         };
         MealItemResponse: {
             source: string;
@@ -3629,6 +3646,7 @@ export interface components {
             name: string;
             nova?: number | null;
             contribution: components["schemas"]["Macros"];
+            ingredientOverrides?: components["schemas"]["MealIngredientOverrideResponse"][] | null;
         };
         MealRequest: {
             slot: string;
