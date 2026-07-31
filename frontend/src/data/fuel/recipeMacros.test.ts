@@ -96,4 +96,31 @@ describe('computeRecipeMacrosWithOverrides', () => {
     // both lines share refId 'ing-x'; overriding index 1 must not touch index 0
     expect(computeRecipeMacrosWithOverrides(lines, [src], { 1: 40 }).kcal).toBe(275 + 44)
   })
+
+  it('keeps the server-frozen contribution for an untouched line, even if the pantry row drifted', () => {
+    // the recipe line was frozen at 110 kcal; the live pantry row now says 999 kcal/100 g
+    const drifted = { ...src, macros: { kcal: 999, p: 99, c: 99, f: 99 } } as unknown as Ingredient
+    const frozen: RecipeIngredientLine[] = [
+      { refId: 'ing-x', amount: 100, unit: 'g', contribution: { kcal: 110, p: 13, c: 4, f: 5 } },
+      { refId: 'ing-x', amount: 100, unit: 'g', contribution: { kcal: 110, p: 13, c: 4, f: 5 } },
+    ]
+    // nothing overridden -> both lines must report their frozen values, not the drifted rate
+    expect(computeRecipeMacrosWithOverrides(frozen, [drifted], {})).toEqual(
+      { kcal: 220, p: 26, c: 8, f: 10 })
+  })
+
+  it('keeps an untouched line whole when its pantry source is gone', () => {
+    const orphan: RecipeIngredientLine[] = [
+      { refId: 'ing-deleted', amount: 50, unit: 'g', contribution: { kcal: 55, p: 6, c: 2, f: 2 } },
+    ]
+    expect(computeRecipeMacrosWithOverrides(orphan, [], {})).toEqual({ kcal: 55, p: 6, c: 2, f: 2 })
+  })
+
+  it('contributes zero for an overridden line whose pantry source is gone', () => {
+    const orphan: RecipeIngredientLine[] = [
+      { refId: 'ing-deleted', amount: 50, unit: 'g', contribution: { kcal: 55, p: 6, c: 2, f: 2 } },
+    ]
+    // no live rate to rescale from — 0 is honest; inventing one would disagree with the server
+    expect(computeRecipeMacrosWithOverrides(orphan, [], { 0: 25 })).toEqual({ kcal: 0, p: 0, c: 0, f: 0 })
+  })
 })

@@ -54,20 +54,24 @@ export function computeRecipeMacrosWithOverrides(
   ingredients: Ingredient[],
   overrides: Record<number, number>,
 ): Macros {
+  const zero: Macros = { kcal: 0, p: 0, c: 0, f: 0 }
   const sum = lines.reduce<Macros>(
     (acc, line, i) => {
       const ing = ingredients.find(x => x.id === line.refId)
-      // No resolvable live source (e.g. the pantry row was deleted): an UNTOUCHED line keeps the
-      // server-computed contribution it already carries, so the preview stays as accurate as it is
-      // today; an OVERRIDDEN one contributes 0 rather than inventing a rate we cannot know.
-      const c = ing
-        ? lineContribution(overrides[i] ?? line.amount, ing.per, ing.macros)
-        : (overrides[i] !== undefined
-            ? { kcal: 0, p: 0, c: 0, f: 0 }
-            : (line.contribution ?? { kcal: 0, p: 0, c: 0, f: 0 }))
+      const amount = overrides[i]
+      // UNTOUCHED line: keep the contribution the server already computed from the recipe's FROZEN
+      // per-line snapshot. Recomputing it from the live pantry row would silently disagree with what
+      // the backend stores whenever that row drifted since the recipe was saved. Only when the line
+      // carries no contribution (bare fixtures / drafts) do we derive one from the live source.
+      // OVERRIDDEN line: no frozen rate for the new amount exists on the wire, so it is rescaled from
+      // the live pantry row; with no resolvable source it contributes 0 rather than inventing a rate.
+      const c =
+        amount === undefined
+          ? (line.contribution ?? (ing ? lineContribution(line.amount, ing.per, ing.macros) : zero))
+          : (ing ? lineContribution(amount, ing.per, ing.macros) : zero)
       return { kcal: acc.kcal + c.kcal, p: acc.p + c.p, c: acc.c + c.c, f: acc.f + c.f }
     },
-    { kcal: 0, p: 0, c: 0, f: 0 },
+    { ...zero },
   )
   return { kcal: roundMacro(sum.kcal), p: roundMacro(sum.p), c: roundMacro(sum.c), f: roundMacro(sum.f) }
 }
