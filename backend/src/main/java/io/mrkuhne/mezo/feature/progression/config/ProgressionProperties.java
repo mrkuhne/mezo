@@ -32,7 +32,9 @@ public record ProgressionProperties(
         @NotNull @Positive Integer volumeUnit,                // 100 (kg·reps per XP unit)
         @NotNull @Positive Integer volumeXpPerUnit,           // 10 (muscle XP per volume unit)
         @NotNull @PositiveOrZero Integer e1rmXpPerKg,         // 2 (max_strength XP per best-e1RM kg)
-        @NotNull @PositiveOrZero Integer prBonusXp,           // 40 (bonus when e1RM beats prior best)
+        @NotNull @PositiveOrZero Integer prBonusXp,           // 40 (per RECORD-tier medal — a genuinely broken record)
+        @NotNull @PositiveOrZero Integer targetMedalXp,       // 5 (per TARGET_HIT medal)
+        @NotNull @PositiveOrZero Integer targetMedalCap,      // 12 (max paid TARGET_HIT medals/workout)
         @NotNull @PositiveOrZero Integer strengthEnduranceXpPerSet, // 8 (per logged work set)
         @NotNull @PositiveOrZero Integer bodyweightXpPerRep   // 1 (flat XP per bodyweight rep)
     ) {}

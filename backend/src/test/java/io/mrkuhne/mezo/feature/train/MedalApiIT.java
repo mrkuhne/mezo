@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.progression.config.ProgressionProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -18,6 +19,7 @@ import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -44,6 +46,7 @@ class MedalApiIT extends ApiIntegrationTest {
     @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private MedalService medalService;
+    @Autowired private ProgressionProperties progressionProperties;
 
     /** Find-or-create yields the demodata-seeded owner's id — the principal behind ownerAuthHeaders(). */
     private UUID ownerId() {
@@ -444,5 +447,77 @@ class MedalApiIT extends ApiIntegrationTest {
     @Test
     void testGetMedals_shouldReturn401_whenUnauthenticated() {
         getForBody("/api/train/medals", null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testFinishWorkout_shouldPayThePrBonusPerRecordMedal_whenRecordsWereBroken() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        // prior session: TWO sets at 100 kg × 8 (volume 1600) — a tie earns no set-level medal, but
+        // it raises the prior session-volume baseline safely above this session's 820, so the active
+        // session below fires WEIGHT + E1RM only, never SESSION_VOLUME too (still RECORD-tier, but
+        // would otherwise inflate recordMedalCount past the 2 this test pins).
+        WorkoutSessionEntity priorSession =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        trainPopulator.createLoggedSet(owner, bench.getId(), priorSession.getId(), 0,
+            "100.00", 8, 2, middayOf(DAY_1));
+        trainPopulator.createLoggedSet(owner, bench.getId(), priorSession.getId(), 1,
+            "100.00", 8, 2, middayOf(DAY_1).plusSeconds(180));
+        WorkoutSessionEntity active =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_2, "active");
+        trainPopulator.createLoggedSet(owner, bench.getId(), active.getId(), 0,
+            "102.50", 8, 1, middayOf(DAY_2));
+
+        WorkoutInstanceResponse body = postForBody(
+            "/api/train/workouts/" + active.getId() + "/finish", null,
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
+
+        // exactly 2 RECORD-tier medals on this session: WEIGHT + E1RM
+        assertThat(body.getMedals()).extracting(Medal::getType)
+            .containsExactlyInAnyOrder(Medal.TypeEnum.WEIGHT, Medal.TypeEnum.E1_RM);
+        assertThat(body.getMedals()).allSatisfy(
+            m -> assertThat(m.getTier()).isEqualTo(Medal.TierEnum.RECORD));
+
+        BigDecimal bestE1rm = new BigDecimal("102.50")
+            .multiply(BigDecimal.valueOf(38)).divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
+        ProgressionProperties.Gym gym = progressionProperties.gym();
+        long plainE1rmXp = (long) bestE1rm.intValue() * gym.e1rmXpPerKg();
+        long expectedBonus = 2L * gym.prBonusXp();
+
+        assertThat(body.getLevelUp()).isNotNull();
+        assertThat(body.getLevelUp().getGains()).anySatisfy(g -> {
+            assertThat(g.getSkillKey()).isEqualTo("max_strength");
+            assertThat(g.getXpGained()).isEqualTo(plainE1rmXp + expectedBonus);
+        });
+    }
+
+    @Test
+    void testFinishWorkout_shouldStayIdempotent_whenFinishedTwice() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity priorSession =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "completed");
+        trainPopulator.createLoggedSet(owner, bench.getId(), priorSession.getId(), 0,
+            "100.00", 8, 2, middayOf(DAY_1));
+        WorkoutSessionEntity active =
+            trainPopulator.createWorkoutInstance(owner, template, DAY_2, "active");
+        trainPopulator.createLoggedSet(owner, bench.getId(), active.getId(), 0,
+            "102.50", 8, 1, middayOf(DAY_2));
+
+        WorkoutInstanceResponse first = postForBody(
+            "/api/train/workouts/" + active.getId() + "/finish", null,
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
+        WorkoutInstanceResponse second = postForBody(
+            "/api/train/workouts/" + active.getId() + "/finish", null,
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
+
+        assertThat(second.getLevelUp().getTotalXp()).isEqualTo(first.getLevelUp().getTotalXp());
+        assertThat(second.getLevelUp().getGains()).isEqualTo(first.getLevelUp().getGains());
     }
 }
