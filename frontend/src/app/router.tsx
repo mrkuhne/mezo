@@ -8,6 +8,7 @@ import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
+import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
@@ -64,6 +65,7 @@ export const routes: RouteObject[] = [
           { path: 'sport', element: <SportPage /> },
           { path: 'futas', element: <RunningPage /> },
           { path: 'exercises', element: <ExercisesPage /> },
+          { path: 'medals', element: <MedalsPage /> },
           { path: 'mesocycles', element: <MesocycleLibraryPage /> },
         ],
       },

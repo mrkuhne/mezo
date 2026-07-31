@@ -32,8 +32,13 @@ test('Train opens on Mai and the sub-nav switches between sub-tabs', async () =>
   await userEvent.click(screen.getByRole('menuitem', { name: 'Sport' }))
   expect(screen.getByText('BVSC csarnok')).toBeInTheDocument()
 
-  // Open dropdown and click Mesociklusok
+  // Open dropdown and click Medálok (mezo-wp6n — the cabinet's sub-nav entry)
   await userEvent.click(screen.getByRole('button', { name: 'Sport' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Medálok' }))
+  expect(screen.getByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
+
+  // Open dropdown and click Mesociklusok
+  await userEvent.click(screen.getByRole('button', { name: 'Medálok' }))
   await userEvent.click(screen.getByRole('menuitem', { name: 'Mesociklusok' }))
   expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
 

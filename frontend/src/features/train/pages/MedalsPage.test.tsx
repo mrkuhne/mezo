@@ -1,0 +1,175 @@
+import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { MedalsPage } from '@/features/train/pages/MedalsPage'
+import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
+import type { Medal } from '@/data/train/medalTypes'
+
+// Real-mode view: medals come from the MSW fixture unless a test overrides it.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+afterEach(() => vi.unstubAllEnvs())
+
+const renderView = () =>
+  render(<QueryWrapper><MemoryRouter><MedalsPage /></MemoryRouter></QueryWrapper>)
+
+test('own header: pghead-np over + h1', async () => {
+  renderView()
+  await screen.findByText('Edzés · Medálok')
+  expect(screen.getByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
+})
+
+test('the counter chip + honest backfill line render alongside the cabinet', async () => {
+  renderView()
+  expect(await screen.findByText('2 medál')).toBeInTheDocument()
+  expect(
+    screen.getByText(/visszamenőleg.*korábban logolt szetteid alapján/),
+  ).toBeInTheDocument()
+})
+
+// Two medals from the default fixture (mezo-wp6n handlers): a RECORD (Chest
+// Supported Row, 2026-06-02, previousDate set) and a TARGET_HIT (Hip Thrust,
+// 2026-06-01, no previous* at all).
+test('the default fixture groups by date with exercise names + type labels under their date heading', async () => {
+  renderView()
+  const recordHeading = await screen.findByText(new RegExp(huMonthDayDow('2026-06-02')))
+  const targetHeading = screen.getByText(new RegExp(huMonthDayDow('2026-06-01')))
+  expect(recordHeading).toBeInTheDocument()
+  expect(targetHeading).toBeInTheDocument()
+  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+  expect(screen.getByText('Súly-rekord')).toBeInTheDocument()
+  expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
+  expect(screen.getByText('Cél teljesítve')).toBeInTheDocument()
+})
+
+test('RECORD gets the amber medal glyph, TARGET_HIT the quiet sage tick — different colors', async () => {
+  renderView()
+  await screen.findByText('Chest Supported Row')
+  const recordGlyph = screen.getByText('🏅')
+  const targetGlyph = screen.getByText('✓')
+  expect(recordGlyph.style.color).not.toBe('')
+  expect(targetGlyph.style.color).not.toBe('')
+  expect(recordGlyph.style.color).not.toBe(targetGlyph.style.color)
+})
+
+test('a TARGET_HIT medal never renders a previous-value slot (nothing was beaten)', async () => {
+  renderView()
+  const row = (await screen.findByText('Hip Thrust')).closest('.card') as HTMLElement
+  expect(within(row).queryByText(/Előző/)).not.toBeInTheDocument()
+})
+
+describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
+  const customMedals: Medal[] = [
+    // 2026-07-01: TARGET_HIT logged before the RECORD in the source order — the
+    // cabinet must keep that order (chronological record), NOT re-sort RECORD-first
+    // the way WorkoutSummary does for a single session's recap.
+    {
+      type: 'TARGET_HIT', tier: 'TARGET', exerciseName: 'Row Machine',
+      date: '2026-07-01', setIndex: 1, value: 10, unit: 'REPS', weightKg: 60, reps: 10,
+      previousValue: null, previousDate: null,
+    },
+    // A RECORD medal with a previousValue but NO previousDate — the mock-mode shape
+    // (medalEvaluator.ts) the "…óta állt" phrasing must drop cleanly for.
+    {
+      type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Squat',
+      date: '2026-07-01', setIndex: 2, value: 140, unit: 'KG', weightKg: 140, reps: 5,
+      previousValue: 135, previousDate: null,
+    },
+    // 2026-07-10 (newer): a RECORD medal WITH a previousDate.
+    {
+      type: 'E1RM', tier: 'RECORD', exerciseName: 'Bench Press',
+      date: '2026-07-10', setIndex: 3, value: 150, unit: 'KG', weightKg: 130, reps: 5,
+      previousValue: 145, previousDate: '2026-06-20',
+    },
+  ]
+
+  beforeEach(() => {
+    server.use(
+      http.get(`${API_BASE}/api/train/medals`, () => HttpResponse.json({ medals: customMedals })),
+    )
+  })
+
+  test('newest date group renders first, older date group after', async () => {
+    const { container } = renderView()
+    await screen.findByText('Bench Press')
+    const cards = Array.from(container.querySelectorAll('.card'))
+    const names = cards.map((c) => c.textContent)
+    const benchIdx = names.findIndex((t) => t?.includes('Bench Press'))
+    const rowIdx = names.findIndex((t) => t?.includes('Row Machine'))
+    const squatIdx = names.findIndex((t) => t?.includes('Squat'))
+    expect(benchIdx).toBeGreaterThanOrEqual(0)
+    // newest-first grouping: the 2026-07-10 row precedes both 2026-07-01 rows
+    expect(benchIdx).toBeLessThan(rowIdx)
+    expect(benchIdx).toBeLessThan(squatIdx)
+    // within 2026-07-01, the server order (TARGET_HIT then RECORD) is kept —
+    // no re-sort to put the RECORD row first.
+    expect(rowIdx).toBeLessThan(squatIdx)
+  })
+
+  test('a RECORD medal with previousValue but null previousDate drops the date cleanly', async () => {
+    renderView()
+    const row = (await screen.findByText('Squat')).closest('.card') as HTMLElement
+    expect(within(row).getByText(/Előző: 135 kg/)).toBeInTheDocument()
+    // never a dangling "null"/"undefined" or trailing separator
+    expect(row.textContent).not.toMatch(/null|undefined/i)
+    expect(within(row).queryByText(/óta állt/)).not.toBeInTheDocument()
+  })
+
+  test('a RECORD medal WITH a previousDate renders the "…óta állt" phrasing', async () => {
+    renderView()
+    const row = (await screen.findByText('Bench Press')).closest('.card') as HTMLElement
+    expect(within(row).getByText(new RegExp(`Előző: 145 kg · ${huMonthDay('2026-06-20')} óta állt`))).toBeInTheDocument()
+  })
+})
+
+test('empty cabinet: an honest single line, no ghost rows, no counter chip, no backfill note', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/medals`, () => HttpResponse.json({ medals: [] })),
+  )
+  const { container } = renderView()
+  expect(
+    await screen.findByText('Még nincs medálod — az első megdöntött rekord ide kerül.'),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
+  expect(container.querySelectorAll('.card').length).toBe(0)
+  expect(screen.queryByText(/medál$/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/visszamenőleg/)).not.toBeInTheDocument()
+})
+
+describe('MedalsPage (real mode, pending)', () => {
+  it('shows a skeleton while the query is unresolved — never the seed', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/medals`, () => new Promise(() => {})),
+    )
+    renderView()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(screen.queryByText('Chest Supported Row')).not.toBeInTheDocument()
+  })
+})
+
+describe('MedalsPage (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('renders the seeded cabinet synchronously — no skeleton', () => {
+    renderView()
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText('8 medál')).toBeInTheDocument()
+  })
+
+  it('groups the seeded cabinet by date, newest first', () => {
+    const { container } = renderView()
+    const cards = Array.from(container.querySelectorAll('.card'))
+    const names = cards.map((c) => c.textContent ?? '')
+    // 2026-07-27 (Hammer Curl E1RM + TARGET_HIT) is the newest date in the seed —
+    // it must render before 2026-06-15 (the oldest Hammer Curl WEIGHT medal).
+    const newestIdx = names.findIndex((t) => t.includes('1RM-rekord') && t.includes('Hammer Curl'))
+    const oldestIdx = names.findIndex((t) => t.includes('Súly-rekord') && t.includes('Hammer Curl'))
+    expect(newestIdx).toBeGreaterThanOrEqual(0)
+    expect(oldestIdx).toBeGreaterThanOrEqual(0)
+    expect(newestIdx).toBeLessThan(oldestIdx)
+  })
+})

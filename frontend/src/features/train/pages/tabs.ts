@@ -12,5 +12,6 @@ export const TRAIN_TABS: TrainTab[] = [
   { id: 'sport', to: '/train/sport', label: 'Sport' },
   { id: 'futas', to: '/train/futas', label: 'Futás' },
   { id: 'exercises', to: '/train/exercises', label: 'Gyakorlatok' },
+  { id: 'medals', to: '/train/medals', label: 'Medálok' },
   { id: 'mesocycles', to: '/train/mesocycles', label: 'Mesociklusok' },
 ]
