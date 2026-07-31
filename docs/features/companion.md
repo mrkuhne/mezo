@@ -66,10 +66,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 **V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
 
 - **SSE stream endpoint** — `POST .../message/stream` (`text/event-stream`): 0..n `delta`
-  events (JSON `StreamDelta{text}`), then exactly one terminal `done` (the persisted assistant
-  `MessageResponse`) or `error` (`StreamError{code}`, assistant NOT persisted). Hand-written
-  `CompanionStreamController` + `ChatStreamService` over the port's `stream(…)` — the
-  **contract-first SSE precedent** (§9 Decision 11).
+  events (JSON `StreamDelta{text}`) interleaved with 0..n `tool` events (JSON
+  `StreamToolCall{type,name}`, emitted the moment each tool executes — mezo-280, see §3 below),
+  then exactly one terminal `done` (the persisted assistant `MessageResponse`) or `error`
+  (`StreamError{code}`, assistant NOT persisted). Hand-written `CompanionStreamController` +
+  `ChatStreamService` over the port's `stream(…)` — the **contract-first SSE precedent** (§9
+  Decision 11).
 - **Two-transaction streamed turn** — `ChatService.prepareTurn` (user row) → LLM stream →
   `ChatService.completeTurn` (assistant row); a mid-stream failure keeps the user row only.
 - **Real dual-mode FE** — `useChat()` + `useChatActions()` (`data/insights/chatHooks.ts`) +
@@ -484,14 +486,27 @@ ChatPage (send) → useChatActions.sendReal → chatApi.streamMessage        (fe
 POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
   → CompanionStreamController.streamMessage    controller/CompanionStreamController.java:38
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
-  → ChatStreamService.streamMessage            service/ChatStreamService.java:47
+  → ChatStreamService.streamMessage            service/ChatStreamService.java:59
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
          prompt = voice + snapshot + history, persist USER row, title-once + lastMessageAt
       2. audit = toolRegistry.newTurnAudit()          ── V0.5: per-turn budget + call/ref collector
+         toolSink = Sinks.many().unicast().onBackpressureBuffer(); audit.onCall(call ->
+         toolSink.tryEmitNext(toolEvent(call)))       ── mezo-280: registered BEFORE step 3, because
+         some CompanionLlm implementations run the tool loop while the Flux is being ASSEMBLED —
+         i.e. before anything subscribes; the buffering sink replays those pre-subscription calls
+         once merged in
       3. companionLlm.stream(prompt, content,         ── NO TX: Spring AI runs the tool loop
              toolRegistry.callbacks(audit),              internally — each RecordingToolCallback
-             toolRegistry.toolContext(userId, audit))     records {name,args} + tools add refs;
-         each text chunk → event:delta, data: StreamDelta{text} (JSON)
+             toolRegistry.toolContext(userId, audit))     records {name,args} + tools add refs,
+                                                            firing audit's onCall listener → toolSink
+         each text chunk → event:delta, data: StreamDelta{text} (JSON); Flux.merge(toolSink.asFlux(),
+         deltas) interleaves 0..n event:tool, data: StreamToolCall{type,name} (JSON — the SAME
+         pre-baked "name(args)" label as the done row's chip, bare name when args are blank) with the
+         0..n deltas — progress only, the done row's tools[] stays authoritative. doFinally (NOT
+         doOnComplete) completes toolSink when the delta Flux terminates, so a client disconnect
+         can't leave the merge waiting on an orphaned sink; any LATER call (an advisor corrective
+         round, step 4) emits into an already-completed sink and is silently dropped from the live
+         stream — it still lands in the done row
       4. advisorChain.review(prompt, content, answer, …)   ── V1.3 (NO TX, bean present only when
          mezo.companion.advisors.enabled): clinical regex → LLM verdict; violation → ONE
          corrective re-prompt (AdvisorRetry.block appended; same tools+audit) → re-check;
@@ -500,9 +515,10 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          row WITH tool_calls/refs envelopes + degraded → terminal event:done, data: MessageResponse
          (tools[] = "name(args)" chips, refs[] = tool-contributed data refs, degraded flag)
       onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
-  → FE: deltas append into the optimistic draft bubble; done → the persisted pair is written
-    into the ['chat'] query cache (no refetch) and the chips/refs render; error → inline error
-    bubble + invalidate
+  → FE: deltas AND tool events append into the optimistic draft bubble (chips render live through
+    ToolChipRow — mezo-280); done → the persisted pair is written into the ['chat'] query cache (no
+    refetch), discarding the draft — chips included — wholesale, and the authoritative chips/refs
+    render; error → inline error bubble + invalidate
 ```
 
 MVC adapts the returned `Flux<ServerSentEvent<Object>>` onto an internal `SseEmitter`
@@ -548,7 +564,13 @@ and wraps each in `RecordingToolCallback` (`tools/RecordingToolCallback.java`) b
 `ToolCallAudit` (`tools/ToolCallAudit.java`). The decorator records `{type:'read', name, args}`
 BEFORE delegating (a tool cannot forget its audit), soft-fails past
 `mezo.companion.tools.max-calls-per-turn` with honest in-band text, and converts a tool exception
-into an honest error result (one broken read never kills a streamed turn). Tools receive the
+into an honest error result (one broken read never kills a streamed turn). **Since mezo-280,**
+`ToolCallAudit` also carries one optional, `volatile`, fail-safe progress listener —
+`onCall(Consumer<ToolCall>)`, invoked from `recordCall` inside a try/catch so a broken listener can
+never fail a turn. `ChatStreamService` registers one to turn each recorded call into the live
+`tool` SSE event described above; the sync `ChatService.sendMessage` path registers none, so it is
+unaffected. Spring AI executes a turn's tool calls sequentially, so the listener needs no extra
+synchronization on top of the audit's own. Tools receive the
 Spring AI `ToolContext` carrying `userId` (ownership scoping is structural — model args are never
 trusted for identity, `tools/ToolContexts.java`) and the audit (for `addRef(kind, id)` — deduped,
 capped at `max-refs-per-turn`). Results are compact deterministic Hungarian text with `nincs adat`
@@ -631,14 +653,22 @@ message, so the current turn travels as the `userMessage` param, never inside th
 block (`ChatService.java:54-58`). `renderHistory` (`ChatService.java:73`) prepends a
 `HISTORY_HEADER` (`"Eddigi beszélgetés (legrégebbitől a legújabbig):"`) then one line per prior
 message — `"Daniel: …"` for a user row, `"Mezo: …"` for an assistant row. `SYSTEM_PROMPT`
-(`ChatService.java:32`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
+(`ChatService.java:48`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
 clinical guard "Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az
 orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6, + the V0.5 tool-usage line
 "Múltbeli vagy összesítő kérdéshez … használd a kapott tool-okat" + (mezo-xixu) a terse
 `[Eszköz-útmutató]` block mapping question-type → tool name (PR → `get_exercise_records`, edzésterv
 → `get_training_plan`, recept → `get_recipes`, … — one line per tool, kept in sync with the
 `@Tool` descriptions per
-[`companion_tool_conventions.md`](../references/companion_tool_conventions.md)). The `CompanionLlm` port keeps
+[`companion_tool_conventions.md`](../references/companion_tool_conventions.md)). **Since mezo-280**
+one closing timing sentence follows the tool-usage line: *"Ha tool kell a válaszhoz, ELŐBB hívd
+meg, és csak a megkapott adatból válaszolj — ne írd le előre, hogy „megnézem" vagy „megpróbálom",
+és ne ígérj utólagos utánanézést."* The `[Eszköz-útmutató]` block says WHICH tool; this sentence
+says WHEN — it targets a live-observed failure mode where the model narrated an intent to look
+something up ("most megpróbálom megnézni…") and streamed that narration before the tool result
+came back, which read as answering before it had looked even though Spring AI's own streaming
+tool loop is correctly ordered (design spec §1, `2026-07-30-companion-stream-tool-events-design.md`
+§1.2). The `CompanionLlm` port keeps
 the two-string prompt shape and carries the tools alongside (`complete(system, user, tools,
 toolContext)`) — the message-list variant V0.2 Decision #4 predicted turned out unnecessary
 (Decision 16).
@@ -811,7 +841,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/conversation` | `ConversationResponse` | 201 · 401 | New empty conversation (`title` null; `startedAt` = `created_at`). `saveAndFlush` so `@CreationTimestamp` is populated before mapping. |
 | `GET /api/companion/conversation/{id}/messages` | `MessageResponse[]` | 200 · 401 · 404 | Full history, oldest-first. 404 for missing **or foreign** (`getOwned`, no existence leak). |
 | `POST /api/companion/conversation/{id}/message` | `MessageResponse` | 200 · 400 · 401 · 404 | The **sync** chat turn (V0.2, single transaction — LLM failure still rolls the whole turn back). |
-| `POST /api/companion/conversation/{id}/message/stream` | SSE `delta*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
+| `POST /api/companion/conversation/{id}/message/stream` | SSE `(delta\|tool)*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11); `tool` events interleave live since mezo-280 (progress only — the `done` row's `tools[]` stays authoritative). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
 | `GET /api/companion/fact` | `KnowledgeFactResponse[]` | 200 · 401 | V1.1 — owner's facts, `reinforcement_count desc, created_at desc`. |
 | `POST /api/companion/fact` | `KnowledgeFactResponse` | 201 · 400 · 401 | V1.1 manual add — `CreateFactRequest {factText 1..500, category pattern}`; `source=manual`, `include_in_prompt=true`, `reinforcement_count=0`. |
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
@@ -834,8 +864,10 @@ and `Growth` — a stable scope label (`skills`/`week-{weekStart}`/`achievements
 mezo-xixu `Insight` — a confirmed pattern's title (`get_insights(scope=patterns)`; no ref for the
 deferred `predictions`/`experiments` scopes)),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
-`StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
-data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
+`StreamDelta {text}` + `StreamError {code}` + `StreamToolCall {type, name}` (V0.4 + mezo-280 — the
+SSE per-event `data:` payloads; every data line is JSON; `StreamToolCall.name` carries the SAME
+pre-baked `"name(args)"` label as `MessageTool.name`, `type` always `read` in V0.5),
+`KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
 includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
@@ -1309,11 +1341,16 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
 **V0.4 test additions:**
 
-- **`ChatStreamServiceIT`** (3 tests, deliberately NOT `@Transactional` — it observes the real
+- **`ChatStreamServiceIT`** (7 tests, deliberately NOT `@Transactional` — it observes the real
   two-transaction turn): deltas join to the full answer + terminal `done` carries the persisted
   row + title/lastMessageAt touched; forced stream failure (`FakeCompanionLlm.FAIL_STREAM`
   sentinel in the content) ⇒ `error` event, **only** the user row persisted; foreign
-  conversation throws 404 before any streaming.
+  conversation throws 404 before any streaming (V0.4); scripted tool call ⇒ chips on `done` +
+  persisted envelope (V0.5). **Grown by 3 at mezo-280:** a `tool` event fires strictly before the
+  LAST `delta`, not merely before `done` — pinning that the chip appears WHILE the answer is still
+  streaming, which is what rules out buffering every tool event and flushing them all right before
+  the terminal row; a tool run without args emits the BARE name (no parentheses), the same branch
+  the done row's chip takes; a tool-less turn emits zero `tool` events (regression guard).
 - **`CompanionStreamApiIT`** (5 tests, HTTP-level): 401 / 404-as-JSON / 400 field error (the
   hand-written `@Valid` works), raw-SSE happy path (`event:delta`/`event:done` + persistence +
   title), error event without an assistant row. TestRestTemplate buffers the finite fake stream,
@@ -1680,7 +1717,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`done`/`error` Flux over the port).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/TodayQuestSource.java` — the companion-owned port for `[Napi gyakorlat]`'s quest count, implemented by `feature/quest/service/TodayQuestAdapter.java` (keeps the quest↔companion dependency one-directional; the `progression.QuestLedgerSource` precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (top-N injection, `FACTS_HEADER`).
@@ -1721,7 +1758,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools,MemoryTools}.java` — the 12 `@Tool` reads from the V0.5–V2.3 batch.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 15 `@Tool` reads.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine; `ToolCallAudit.onCall` is the mezo-280 live-progress listener seam.
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
@@ -1768,6 +1805,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 - Tool & context expansion design spec (`mezo-xixu`): [`docs/superpowers/specs/2026-07-26-companion-tool-context-expansion-design.md`](../superpowers/specs/2026-07-26-companion-tool-context-expansion-design.md)
+- Live tool SSE events + anti-preamble prompt design spec (`mezo-280`): [`docs/superpowers/specs/2026-07-30-companion-stream-tool-events-design.md`](../superpowers/specs/2026-07-30-companion-stream-tool-events-design.md)
 - Roadmap (14 slices): [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
 - V1.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v12-fact-extraction.md`](../superpowers/plans/2026-07-03-companion-v12-fact-extraction.md)
 - V1.3 plan: [`docs/superpowers/plans/2026-07-03-companion-v13-advisors.md`](../superpowers/plans/2026-07-03-companion-v13-advisors.md)
