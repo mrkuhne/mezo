@@ -115,7 +115,7 @@ Rows are grouped by date, newest first, within-day order exactly as `GET /api/tr
 (§4) — each row names the exercise, the medal type, the achieved value, and what it beat
 (`previousValue`/`previousDate`, always null on a `TARGET_HIT` or a first-ever baseline). Because the
 four RECORD types (`WEIGHT`/`REPS_AT_WEIGHT`/`E1RM`/`SESSION_VOLUME`) are **replayed over the entire
-existing set history** rather than stored (ADR 0015), the cabinet is populated the first time it's
+existing set history** rather than stored ([ADR 0015](../decisions/0015-medals-derived-not-materialized.md)), the cabinet is populated the first time it's
 opened with medals the user never saw live — the cabinet copy says so honestly, calling the history
 reconstructed rather than implying it was tracked all along. `TARGET_HIT` cannot be backfilled the same
 way (its prescription snapshot didn't exist before this change, §4), so it only accrues from the ship
