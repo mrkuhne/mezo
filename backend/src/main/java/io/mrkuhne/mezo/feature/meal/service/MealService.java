@@ -187,7 +187,9 @@ public class MealService {
         BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
         Facts facts = "pantry".equals(item.getSource())
             ? pantryFacts(userId, item.getPantryItemId(), factor)
-            : recipeFacts(userId, item.getRecipeId(), item.getAmount());
+            // the frozen envelope IS the record of what went in — score what was eaten (mezo-ormb)
+            : recipeFacts(userId, item.getRecipeId(), item.getAmount(),
+                overrideMap(item.getRecipeOverrides()));
         String amountLabel = item.getAmount().stripTrailingZeros().toPlainString() + item.getUnit();
         return new ScoredLine(
             item.getSnapshotName(), amountLabel,
@@ -234,10 +236,13 @@ public class MealService {
 
     /**
      * Recipe arm: Σ over the recipe's ingredient lines against their LIVE pantry rows
-     * (fact × lineAmount/liveServing), ÷ recipe servings × logged adag. Ingredients whose pantry
-     * row is gone or fact-less simply don't contribute — coverage stays honest.
+     * (fact × effectiveAmount/liveServing), ÷ recipe servings × logged adag, where a line's
+     * effective amount is its override if the meal item's frozen envelope carries one, else the
+     * recipe's own amount. Ingredients whose pantry row is gone or fact-less simply don't
+     * contribute — coverage stays honest.
      */
-    private Facts recipeFacts(UUID userId, UUID recipeId, BigDecimal servingsLogged) {
+    private Facts recipeFacts(UUID userId, UUID recipeId, BigDecimal servingsLogged,
+                              Map<Integer, BigDecimal> overrides) {
         RecipeEntity recipe = recipeRepository
             .findByIdAndCreatedByAndDeletedFalse(recipeId, userId).orElse(null);
         if (recipe == null || recipe.getLines().isEmpty()) {
@@ -261,7 +266,11 @@ public class MealService {
             }
             any = true;
             BigDecimal livePer = orDefault(p.getServingAmount(), BigDecimal.ONE);
-            BigDecimal factor = line.getAmount().divide(
+            // effective amount = the override for this line, else the recipe's own amount; a
+            // zeroed line yields factor 0 and contributes nothing, while `any` stays true —
+            // we DID resolve the pantry row, so coverage is honestly reported
+            BigDecimal effective = overrides.getOrDefault(line.getLineOrder(), line.getAmount());
+            BigDecimal factor = effective.divide(
                 livePer.signum() == 0 ? BigDecimal.ONE : livePer, 6, RoundingMode.HALF_UP);
             fiber = addFact(fiber, p.getFiberG(), factor);
             sugar = addFact(sugar, p.getSugarG(), factor);
