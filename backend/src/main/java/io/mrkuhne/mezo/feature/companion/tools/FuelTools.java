@@ -34,6 +34,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +51,9 @@ import java.util.stream.Collectors;
 public class FuelTools {
 
     /** Recipe-filter keywords that stand in for the boolean {@code starred} flag (mezo-xixu):
-     *  there is no literal substring to match against a boolean, so a fixed keyword set is
-     *  matched bidirectionally against the (partial) user filter. */
+     *  there is no literal substring to match against a boolean, so a fixed keyword set answers
+     *  for it — matched as a WHOLE search token (mezo-sxe), never as a substring in either
+     *  direction. Keep these accent-free: they are compared against folded tokens. */
     private static final List<String> STARRED_KEYWORDS = List.of("csillagos", "csillagozott", "kedvenc", "starred");
 
     /** get_fuel_log's supported range values; anything else (incl. null) falls back to "day". */
@@ -300,10 +302,12 @@ public class FuelTools {
 
     @Tool(name = "get_recipes", description = "A user receptjei: név, makrók, illeszkedés-pontszám, "
             + "összetevők. Használd, amikor a user receptet keres, mit főzzön/egyen kérdez, vagy egy "
-            + "konkrét recept részleteire kíváncsi.")
+            + "konkrét recept részleteire kíváncsi — a szűrő a recept NEVÉRE és összetevőire is "
+            + "illeszkedik, nem kell szó szerint pontosan megadni.")
     public String getRecipes(
-            @ToolParam(required = false, description = "Szűrés étkezés/kategória/tag/csillagozott/"
-                    + "illeszkedés szerint (részleges egyezés) — üresen az összes receptet listázza.")
+            @ToolParam(required = false, description = "Szabad szöveges keresés: recept neve, "
+                    + "összetevő, étkezés/kategória/tag/csillagozott/illeszkedés (szavanként, "
+                    + "sorrendtől és ékezetektől függetlenül) — üresen az összes receptet listázza.")
             String filter,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
@@ -311,25 +315,123 @@ public class FuelTools {
         if (recipes.isEmpty()) {
             return "Receptek: " + ToolText.NO_DATA;
         }
-        if (filter == null || filter.isBlank()) {
+        List<String> tokens = filter == null ? List.of() : ToolText.searchTokens(filter);
+        if (tokens.isEmpty()) {
             return renderRecipeList(recipes.stream().limit(5).toList(), toolContext);
         }
-        String needle = filter.trim().toLowerCase();
-        List<RecipeResponse> matches = recipes.stream().filter(r -> matchesRecipeFilter(r, needle)).toList();
-        if (matches.isEmpty()) {
+        RankResult ranked = rankRecipes(recipes, tokens);
+        List<ScoredRecipe> winners = ranked.winners();
+        if (winners.isEmpty()) {
             return "Receptek — \"" + filter + "\": " + ToolText.NO_DATA;
         }
-        // A single strong match earns the full detail (incl. ingredients); several matches fall
-        // back to the same compact list rendering as the no-filter case (capped at 5 refs).
-        if (matches.size() == 1) {
-            return renderRecipeDetail(matches.get(0), toolContext);
+        // Partial fallback (mezo-280 Finding 2): the winners hit only SOME of the filter's tokens
+        // — an honest in-band marker so the model can never present a partial hit as the exact
+        // thing the user asked for (the same spirit as the "never fabricate a number" prompt rule).
+        String header = ranked.partial() ? "Receptek — \"" + filter + "\" (részleges egyezés):" : null;
+        // The BEST match earns the full detail (incl. ingredients) — a clear winner is what the
+        // user asked for by name; a tie falls back to the compact list rendering (capped at 5).
+        // Either way, when other recipes also matched, name them (mezo-280 Finding 1): the
+        // name>ingredient weighting makes "one point ahead" the COMMON case, so a clear winner
+        // must never silently hide a recipe the model doesn't otherwise know exists.
+        if (winners.size() == 1 || winners.get(0).score() > winners.get(1).score()) {
+            String detail = renderRecipeDetailWithRunnerUps(winners, toolContext);
+            return header == null ? detail : header + "\n" + detail;
         }
-        return renderRecipeList(matches.stream().limit(5).toList(), toolContext);
+        if (header == null) {
+            return renderRecipeList(winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
+        }
+        StringBuilder b = new StringBuilder(header);
+        appendRecipeLines(b, winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
+        return b.toString();
+    }
+
+    /** One recipe with its relevance score for the current filter (highest first). */
+    private record ScoredRecipe(RecipeResponse recipe, int score) {}
+
+    /**
+     * {@code rankRecipes}' verdict (mezo-280): the score-sorted winners, plus whether they came
+     * from the partial fallback ({@code complete} was empty) — Finding 2's honest in-band marker
+     * needs to know this BEFORE rendering, not just which recipes won.
+     */
+    private record RankResult(List<ScoredRecipe> winners, boolean partial) {}
+
+    /**
+     * Ranks recipes against the folded filter tokens (mezo-sxe). Recipes matching EVERY token win
+     * outright — "smoothie collagen" must not surface every unrelated smoothie; only when nothing
+     * matches all tokens do partial matches (score > 0) stand in, so a noisy filter still answers
+     * instead of falling through to "nincs adat".
+     */
+    private static RankResult rankRecipes(List<RecipeResponse> recipes, List<String> tokens) {
+        List<ScoredRecipe> all = new ArrayList<>();
+        List<ScoredRecipe> complete = new ArrayList<>();
+        for (RecipeResponse r : recipes) {
+            int score = 0;
+            int hits = 0;
+            for (String token : tokens) {
+                int weight = tokenWeight(r, token);
+                if (weight > 0) {
+                    hits++;
+                    score += weight;
+                }
+            }
+            if (hits == 0) {
+                continue;
+            }
+            ScoredRecipe scored = new ScoredRecipe(r, score);
+            all.add(scored);
+            if (hits == tokens.size()) {
+                complete.add(scored);
+            }
+        }
+        boolean partial = complete.isEmpty() && !all.isEmpty();
+        List<ScoredRecipe> winners = (complete.isEmpty() ? all : complete).stream()
+                .sorted(Comparator.comparingInt(ScoredRecipe::score).reversed()
+                        .thenComparing(s -> s.recipe().getName()))
+                .toList();
+        return new RankResult(winners, partial);
+    }
+
+    /**
+     * How strongly ONE token hits ONE recipe, 0 when it does not. The name outranks the
+     * ingredients, which outrank the classification axes — asking for a recipe BY NAME is the
+     * most specific intent, and before mezo-sxe it was the one axis the filter ignored entirely.
+     */
+    private static int tokenWeight(RecipeResponse r, String token) {
+        if (ToolText.containsFolded(r.getName(), token)) {
+            return 4;
+        }
+        if (r.getIngredients() != null
+                && r.getIngredients().stream().anyMatch(i -> ToolText.containsFolded(i.getName(), token))) {
+            return 3;
+        }
+        if (ToolText.containsFolded(r.getSlot(), token) || ToolText.containsFolded(r.getCategory(), token)
+                || ToolText.containsFolded(r.getRole(), token)) {
+            return 2;
+        }
+        if (r.getTags() != null && r.getTags().stream().anyMatch(t -> ToolText.containsFolded(t, token))) {
+            return 2;
+        }
+        if (r.getMezoFit() != null && r.getMezoFit().getFitsFor() != null
+                && r.getMezoFit().getFitsFor().stream().anyMatch(f -> ToolText.containsFolded(f, token))) {
+            return 2;
+        }
+        // There is no literal substring to match against a boolean, so the starred flag answers to
+        // a fixed keyword set — matched as a WHOLE token. It used to match bidirectionally
+        // (keyword.contains(needle)), which made "cs" or "a" return every starred recipe.
+        return Boolean.TRUE.equals(r.getStarred()) && STARRED_KEYWORDS.contains(token) ? 2 : 0;
     }
 
     /** Compact per-recipe line: name (category): kcal/protein + fit score (null-guarded — no "pending" score renders). */
     private String renderRecipeList(List<RecipeResponse> recipes, ToolContext toolContext) {
         StringBuilder b = new StringBuilder("Receptek:");
+        appendRecipeLines(b, recipes, toolContext);
+        return b.toString();
+    }
+
+    /** The per-recipe lines shared by {@link #renderRecipeList} and the partial-match list branch
+     *  (mezo-280 Finding 2) — the latter supplies its own "Receptek — ... (részleges egyezés):"
+     *  header, so it appends lines onto that instead of duplicating the plain "Receptek:" one. */
+    private void appendRecipeLines(StringBuilder b, List<RecipeResponse> recipes, ToolContext toolContext) {
         for (RecipeResponse r : recipes) {
             b.append('\n').append(r.getName());
             if (r.getCategory() != null) {
@@ -342,6 +444,23 @@ public class FuelTools {
                 b.append(", illeszkedés ").append(ToolText.num(fit));
             }
             ToolContexts.audit(toolContext).addRef("Recipe", r.getName());
+        }
+    }
+
+    /** Full detail for the best scorer, plus a compact tail naming the runner-ups (mezo-280
+     *  Finding 1): the name>ingredient weighting makes "top scorer one point ahead" the COMMON
+     *  case, not the rare one, so a clear winner must not silently hide the other recipes that
+     *  also matched. Capped at 4 (the list render is already capped at 5). */
+    private String renderRecipeDetailWithRunnerUps(List<ScoredRecipe> winners, ToolContext toolContext) {
+        StringBuilder b = new StringBuilder(renderRecipeDetail(winners.get(0).recipe(), toolContext));
+        List<ScoredRecipe> runnerUps = winners.stream().skip(1).limit(4).toList();
+        if (!runnerUps.isEmpty()) {
+            b.append("\nTovábbi találatok: ").append(runnerUps.stream()
+                    .map(s -> s.recipe().getName())
+                    .collect(Collectors.joining(", ")));
+            for (ScoredRecipe s : runnerUps) {
+                ToolContexts.audit(toolContext).addRef("Recipe", s.recipe().getName());
+            }
         }
         return b.toString();
     }
@@ -367,26 +486,6 @@ public class FuelTools {
         }
         ToolContexts.audit(toolContext).addRef("Recipe", r.getName());
         return b.toString();
-    }
-
-    /** slot/category/tag/starred/fitsFor substring match (case-insensitive) — NOT the recipe name (spec §R1). */
-    private static boolean matchesRecipeFilter(RecipeResponse r, String needle) {
-        if (containsIgnoreCase(r.getSlot(), needle) || containsIgnoreCase(r.getCategory(), needle)) {
-            return true;
-        }
-        if (r.getTags() != null && r.getTags().stream().anyMatch(t -> containsIgnoreCase(t, needle))) {
-            return true;
-        }
-        if (Boolean.TRUE.equals(r.getStarred())
-                && STARRED_KEYWORDS.stream().anyMatch(k -> k.contains(needle) || needle.contains(k))) {
-            return true;
-        }
-        return r.getMezoFit() != null && r.getMezoFit().getFitsFor() != null
-                && r.getMezoFit().getFitsFor().stream().anyMatch(f -> containsIgnoreCase(f, needle));
-    }
-
-    private static boolean containsIgnoreCase(String value, String needle) {
-        return value != null && value.toLowerCase().contains(needle);
     }
 
     @Tool(name = "get_pantry", description = "A kamra készlete: mi van otthon, mennyi, meddig jó. Használd, "

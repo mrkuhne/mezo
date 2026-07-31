@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.RecordSetRef;
 import io.mrkuhne.mezo.api.dto.RunPrescribedSession;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
+import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -19,6 +20,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
+import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -64,6 +66,9 @@ public class TrainTools {
     private final ExerciseRepository exerciseRepository;
     private final TrainService trainService;
     private final RunningService runningService;
+    // mezo-ajp: the recurring weekly sport schedule is the ONLY forward-planned sport in the model
+    // (sport_session is a backward log), so a day's sport can only come from here — read-only.
+    private final SportService sportService;
     // Read-only compute-on-read aggregation over working sets (ExerciseRecordService#list) —
     // NEVER a write-transactional method; there is none on this service.
     private final ExerciseRecordService exerciseRecordService;
@@ -246,12 +251,15 @@ public class TrainTools {
     private String renderDay(UUID userId, String scope, LocalDate date, ToolContext toolContext) {
         boolean hasActiveMeso = hasActiveMeso(userId);
         List<RunningBlockResponse> activeBlocks = activeRunningBlocks(userId);
+        List<SportScheduleSlotResponse> sportSlots = sportService.getSchedule(userId);
         String header = "Edzésterv (" + dayHeaderLabel(scope, date) + "):";
-        if (!hasActiveMeso && activeBlocks.isEmpty()) {
+        // mezo-ajp: a scheduled sport slot is a plan in its own right — a volleyball evening with
+        // no meso and no running block must never render "nincs adat".
+        if (!hasActiveMeso && activeBlocks.isEmpty() && sportSlots.isEmpty()) {
             return header + " " + ToolText.NO_DATA;
         }
         ToolContexts.audit(toolContext).addRef("TrainingPlan", date.toString());
-        return header + "\n" + dayContentLine(userId, date, activeBlocks);
+        return header + "\n" + dayContentLine(userId, date, activeBlocks, sportSlots);
     }
 
     /** The next 7 days (today..+6), one compact line per day — same content as {@link #renderDay}. */
@@ -259,21 +267,27 @@ public class TrainTools {
         LocalDate today = LocalDate.now();
         boolean hasActiveMeso = hasActiveMeso(userId);
         List<RunningBlockResponse> activeBlocks = activeRunningBlocks(userId);
+        List<SportScheduleSlotResponse> sportSlots = sportService.getSchedule(userId);
         String header = "Edzésterv (" + today + " – " + today.plusDays(6) + "):";
-        if (!hasActiveMeso && activeBlocks.isEmpty()) {
+        if (!hasActiveMeso && activeBlocks.isEmpty() && sportSlots.isEmpty()) {
             return header + " " + ToolText.NO_DATA;
         }
         StringBuilder b = new StringBuilder(header);
         for (int i = 0; i < 7; i++) {
             LocalDate d = today.plusDays(i);
-            b.append('\n').append(d).append(": ").append(dayContentLine(userId, d, activeBlocks));
+            b.append('\n').append(d).append(": ").append(dayContentLine(userId, d, activeBlocks, sportSlots));
         }
         ToolContexts.audit(toolContext).addRef("TrainingPlan", today + ".." + today.plusDays(6));
         return b.toString();
     }
 
-    /** "gym: {day-label}: {exercises}" (or "gym: pihenőnap") + an optional "; futás: {label}" tail. */
-    private String dayContentLine(UUID userId, LocalDate date, List<RunningBlockResponse> activeBlocks) {
+    /**
+     * "gym: {day-label}: {exercises}" (or "gym: pihenőnap"), then an optional "; sport: …" per
+     * schedule slot falling on this date's weekday, then an optional "; futás: {label}" tail —
+     * the same three parts, in the same order, as {@code ContextSnapshotAssembler}'s Ma:/Holnap:.
+     */
+    private String dayContentLine(UUID userId, LocalDate date, List<RunningBlockResponse> activeBlocks,
+            List<SportScheduleSlotResponse> sportSlots) {
         Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDate(userId, date);
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
@@ -288,10 +302,21 @@ public class TrainTools {
                             .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                             .collect(Collectors.joining(", ")));
         }
+        sportSlotsOn(sportSlots, date).forEach(s -> line.append("; ").append(ToolText.sportLine(
+                s.getSport(), s.getTime(), s.getKind() == null ? null : s.getKind().getValue(),
+                s.getDurationMin())));
         activeBlocks.stream().findFirst()
                 .flatMap(block -> runSessionLabel(block, date))
                 .ifPresent(label -> line.append("; futás: ").append(label));
         return line.toString();
+    }
+
+    /** The recurring slots whose weekday matches {@code date} (slot convention: 0=Hét..6=Vas). */
+    static List<SportScheduleSlotResponse> sportSlotsOn(List<SportScheduleSlotResponse> slots, LocalDate date) {
+        int dow = date.getDayOfWeek().getValue() - 1;
+        return slots.stream()
+                .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
+                .toList();
     }
 
     /** scope=meso: the active mesocycle's full structure — weeks/phases/day-templates. */

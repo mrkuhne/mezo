@@ -1436,7 +1436,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a user message and stream the assistant's answer as Server-Sent Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON), then exactly one terminal event — 'done' (data = the persisted assistant MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant turn is NOT persisted, the user message is). Every data line is JSON. Clients should send "Accept: text/event-stream, application/json" so pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON. */
+        /** Send a user message and stream the assistant's answer as Server-Sent Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON) interleaved with 0..n 'tool' (data = StreamToolCall JSON — emitted as each tool actually executes, mezo-280), then exactly one terminal event — 'done' (data = the persisted assistant MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant turn is NOT persisted, the user message is). A 'tool' event is progress only: the authoritative tool list is the done row's `tools`, which also covers any advisor-retry calls made after the stream ended. Every data line is JSON. Clients should send "Accept: text/event-stream, application/json" so pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON. */
         post: operations["streamMessage"];
         delete?: never;
         options?: never;
@@ -3654,6 +3654,22 @@ export interface components {
             type: string;
             name: string;
         };
+        /** @description One recipe ingredient logged at an amount other than the recipe's. Keyed by lineOrder; pantryItemId is a consistency check (recipe_ingredient has no unique (recipe_id, pantry_item_id), so pantryItemId alone is ambiguous, and lineOrder alone would silently mis-apply after a reorder). amount 0 means the line was left out. */
+        MealIngredientOverrideRequest: {
+            lineOrder: number;
+            /** Format: uuid */
+            pantryItemId: string;
+            amount: number;
+        };
+        MealIngredientOverrideResponse: {
+            lineOrder: number;
+            /** Format: uuid */
+            pantryItemId: string;
+            name: string;
+            unit: string;
+            originalAmount: number;
+            amount: number;
+        };
         MealItemRequest: {
             source: string;
             /** Format: uuid */
@@ -3670,6 +3686,7 @@ export interface components {
             carbsG?: number | null;
             fatG?: number | null;
             nova?: number | null;
+            ingredientOverrides?: components["schemas"]["MealIngredientOverrideRequest"][] | null;
         };
         MealItemResponse: {
             source: string;
@@ -3683,6 +3700,7 @@ export interface components {
             name: string;
             nova?: number | null;
             contribution: components["schemas"]["Macros"];
+            ingredientOverrides?: components["schemas"]["MealIngredientOverrideResponse"][] | null;
         };
         MealRequest: {
             slot: string;
@@ -4106,6 +4124,13 @@ export interface components {
         StreamDelta: {
             /** @description One streamed answer chunk (token/segment delta). */
             text: string;
+        };
+        /** @description One tool call, streamed the moment it executes (mezo-280) so the UI can show WHAT the companion is reading while it reads it, instead of back-filling every chip at 'done'. Same shape and same pre-baked "name(args)" label as MessageTool, so the FE renders a live chip and the done row's chip identically. */
+        StreamToolCall: {
+            /** @description 'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only 'read' */
+            type: string;
+            /** @description Tool name carrying its args, e.g. 'get_training_plan(scope=today)'. */
+            name: string;
         };
         StreamError: {
             /** @description Stream failure code — 'COMPANION_STREAM_FAILED'. */
@@ -9168,13 +9193,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description SSE frames — see the per-event data schemas (StreamDelta / MessageResponse / StreamError) */
+            /** @description SSE frames — see the per-event data schemas (StreamDelta / StreamToolCall / MessageResponse / StreamError) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": components["schemas"]["StreamDelta"] | components["schemas"]["MessageResponse"] | components["schemas"]["StreamError"];
+                    "text/event-stream": components["schemas"]["StreamDelta"] | components["schemas"]["StreamToolCall"] | components["schemas"]["MessageResponse"] | components["schemas"]["StreamError"];
                 };
             };
             /** @description Validation error (emitted before the stream starts) */

@@ -220,8 +220,8 @@ public class ContextSnapshotAssembler {
         // Dated resolution (mezo-xixu, the flagship fix): what's ACTUALLY on today/tomorrow,
         // not just the recurring weekly pattern below — the chat's #1 hallucination source.
         List<SportScheduleSlotResponse> sport = sportService.getSchedule(userId);
-        b.append("; Ma: ").append(todayLine(userId, today));
-        b.append("; Holnap: ").append(tomorrowLine(userId, today, sport));
+        b.append("; Ma: ").append(dayLine(userId, today, today, sport));
+        b.append("; Holnap: ").append(dayLine(userId, today, today.plusDays(1), sport));
         // Recurring weekly pattern + backward digest — kept as TRAILING background context.
         List<GymScheduleSlotResponse> gym = gymScheduleService.getSchedule(userId);
         b.append("; gym-rend: ").append(gym.isEmpty() ? NO_DATA : gym.stream()
@@ -250,43 +250,28 @@ public class ContextSnapshotAssembler {
     }
 
     /**
-     * Ma: today's DATED resolution — the active meso's template day for today's HU weekday
-     * (same read-only lookup as {@link #tomorrowLine}, mezo-xixu). Deliberately does NOT call
-     * {@link WorkoutService#getToday}: that method is write-transactional (auto-closes stale
-     * instances, ensures closing exercises) and the snapshot renders on every chat turn — a
-     * read triggering writes on every turn would violate this assembler's read-only contract.
+     * One day's DATED resolution — the active meso's template day for that HU weekday (present ⇒
+     * GYM, absent ⇒ REST; meso-template-based, no gym_schedule_slot needed), any recurring
+     * sport-schedule slot on that weekday, and the active running block's prescribed session for
+     * that weekday (best-effort — absent block/week renders nothing, never fabricated).
+     *
+     * <p>Ma: and Holnap: share this ONE method (mezo-ajp): they used to be two near-identical
+     * renderers that had drifted apart — "Ma" resolved gym only, so today's sport and run were
+     * invisible and the model had to re-derive them from the trailing weekly "sport-rend" pattern,
+     * the very hallucination path the dated resolution exists to remove.
+     *
+     * <p>Deliberately does NOT call {@link WorkoutService#getToday}: that method is
+     * write-transactional (auto-closes stale instances, ensures closing exercises) and the snapshot
+     * renders on every chat turn — a read triggering writes on every turn would violate this
+     * assembler's read-only contract.
      */
-    private String todayLine(UUID userId, LocalDate today) {
-        Optional<WorkoutSessionEntity> todayTemplate = workoutService.findPlannedTemplateForDate(userId, today);
-        if (todayTemplate.isEmpty()) {
-            return "pihenőnap";
-        }
-        WorkoutSessionEntity t = todayTemplate.get();
-        List<ExerciseEntity> exercises = exerciseRepository
-                .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId()));
-        if (exercises.isEmpty()) {
-            return "pihenőnap";
-        }
-        String label = t.getDayLabel() != null ? t.getDayLabel() : "gym";
-        return label + ": " + exercises.stream()
-                .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
-                .collect(Collectors.joining(", "));
-    }
-
-    /**
-     * Holnap: tomorrow's DATED resolution — the active meso's template day for tomorrow's HU
-     * weekday (present ⇒ GYM, absent ⇒ REST; meso-template-based, no gym_schedule_slot needed),
-     * any recurring sport-schedule slot on that weekday, and the active running block's
-     * prescribed session for that weekday (best-effort — absent block/week renders nothing, never
-     * fabricated).
-     */
-    private String tomorrowLine(UUID userId, LocalDate today, List<SportScheduleSlotResponse> sport) {
-        LocalDate tomorrow = today.plusDays(1);
-        int tomorrowDow = tomorrow.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+    private String dayLine(UUID userId, LocalDate today, LocalDate date,
+            List<SportScheduleSlotResponse> sport) {
+        int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
         List<String> parts = new ArrayList<>();
-        Optional<WorkoutSessionEntity> tomorrowTemplate = workoutService.findPlannedTemplateForDate(userId, tomorrow);
-        if (tomorrowTemplate.isPresent()) {
-            WorkoutSessionEntity t = tomorrowTemplate.get();
+        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDate(userId, date);
+        if (template.isPresent()) {
+            WorkoutSessionEntity t = template.get();
             List<ExerciseEntity> exercises = exerciseRepository
                     .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId()));
             String gymPart = "gym (" + t.getDayLabel() + ")";
@@ -300,29 +285,30 @@ public class ContextSnapshotAssembler {
             parts.add("pihenőnap (gym)");
         }
         sport.stream()
-                .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == tomorrowDow)
-                .forEach(s -> parts.add("sport: " + s.getSport() + " " + s.getTime()
-                        + (s.getKind() != null ? " " + s.getKind().getValue() : "")
-                        + (s.getDurationMin() != null ? " (" + s.getDurationMin() + " perc)" : "")));
+                .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
+                .forEach(s -> parts.add(ToolText.sportLine(s.getSport(), s.getTime(),
+                        s.getKind() == null ? null : s.getKind().getValue(), s.getDurationMin())));
         runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst()
-                .flatMap(block -> tomorrowRunPart(block, today, tomorrowDow))
+                .flatMap(block -> runPart(block, today, dow))
                 .ifPresent(parts::add);
         return String.join(", ", parts);
     }
 
-    /** The active running block's prescribed session for tomorrow's weekday, if the plan has one. */
-    private Optional<String> tomorrowRunPart(RunningBlockEntity block, LocalDate today, int tomorrowDow) {
+    /** The active running block's prescribed session for weekday {@code dow}, if the plan has one. */
+    private Optional<String> runPart(RunningBlockEntity block, LocalDate today, int dow) {
         if (block.getStructure() == null || block.getWeeks() == null || block.getWeeks() <= 0
                 || block.getStartDate() == null) {
             return Optional.empty();
         }
         // week derived from startDate (TrainService.clampWeek idiom), mirrors the meso week above.
+        // Ma: and Holnap: are at most one day apart, so both resolve from `today`'s week — the
+        // block's own start date, not the rendered date, is what fixes which week we are in.
         long week = Math.clamp(ChronoUnit.DAYS.between(block.getStartDate(), today) / 7 + 1, 1, block.getWeeks());
         return block.getStructure().weeks().stream()
                 .filter(w -> w.weekNumber() != null && w.weekNumber() == week)
                 .findFirst()
                 .flatMap(w -> w.sessions().stream()
-                        .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == tomorrowDow)
+                        .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == dow)
                         .findFirst())
                 .map(s -> "futás: " + s.label());
     }
