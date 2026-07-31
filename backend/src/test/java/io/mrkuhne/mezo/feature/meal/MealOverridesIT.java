@@ -192,6 +192,22 @@ class MealOverridesIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreate_shouldKeepTheFrozenNova_whenAnOverrideOnlyChangesAnAmount() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID clean = createFood(auth, "Túró", 1);
+        UUID processed = createFood(auth, "Szirup", 4);
+        RecipeResponse recipe = createRecipe(auth, ingredient(clean, "250"), ingredient(processed, "20"));
+
+        // halving an UNRELATED line must not move the dominant NOVA off the recipe's frozen value —
+        // the same ingredients still went in, only less of one of them
+        MealResponse halved = postForBody("/api/meal",
+            mealReq(recipeItem(recipe.getId(), "1", List.of(override(0, clean, "125")))),
+            auth, HttpStatus.CREATED, MealResponse.class);
+
+        assertThat(halved.getItems().get(0).getNova()).isEqualTo(4);
+    }
+
+    @Test
     void testCreate_shouldReject_whenLineOrderIsOutOfRange() {
         HttpHeaders auth = ownerAuthHeaders();
         UUID food = createFood(auth, "Túró", 1);

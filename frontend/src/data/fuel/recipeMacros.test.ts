@@ -116,11 +116,13 @@ describe('computeRecipeMacrosWithOverrides', () => {
     expect(computeRecipeMacrosWithOverrides(orphan, [], {})).toEqual({ kcal: 55, p: 6, c: 2, f: 2 })
   })
 
-  it('contributes zero for an overridden line whose pantry source is gone', () => {
+  it('rescales the frozen contribution for an overridden line whose pantry source is gone', () => {
     const orphan: RecipeIngredientLine[] = [
       { refId: 'ing-deleted', amount: 50, unit: 'g', contribution: { kcal: 55, p: 6, c: 2, f: 2 } },
     ]
-    // no live rate to rescale from — 0 is honest; inventing one would disagree with the server
-    expect(computeRecipeMacrosWithOverrides(orphan, [], { 0: 25 })).toEqual({ kcal: 0, p: 0, c: 0, f: 0 })
+    // halving 50 g -> factor 0.5 over the frozen 55/6/2/2. Falling back to 0 here would erase a line
+    // the server still counts in full from its own frozen snapshot.
+    expect(computeRecipeMacrosWithOverrides(orphan, [], { 0: 25 })).toEqual(
+      { kcal: 28, p: 3, c: 1, f: 1 })
   })
 })

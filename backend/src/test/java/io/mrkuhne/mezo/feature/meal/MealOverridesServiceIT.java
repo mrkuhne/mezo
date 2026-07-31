@@ -36,9 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code lineOrder}/{@code amount} and {@code @DecimalMin("0")} on {@code amount}, and {@code @Valid}
  * cascades from {@code MealRequest} — so over HTTP Spring rejects those with a
  * {@code MethodArgumentNotValidException} before {@code MealService} runs. Calling the service
- * DIRECTLY bypasses bean validation and is the only way to prove the service's own guards hold
- * (defence in depth: the service is also reachable from {@code MealAiDraftService} and future
- * internal callers, which do not go through the controller's validation).
+ * DIRECTLY bypasses bean validation and is the only way to prove the service's own guards hold:
+ * Bean Validation pre-empts them entirely on the HTTP path, so these tests are the only way to
+ * exercise them ({@code MealAiDraftService} is NOT another live route in — it only calls the
+ * static {@code MealService.perServing}, never {@code create}).
  *
  * <p>Deliberately a separate class from {@code MealServiceIT}, which must stay untouched as the
  * un-overridden-path regression proof.

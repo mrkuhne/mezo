@@ -341,8 +341,14 @@ public class MealService {
             item.setSnapshotProteinG(perServing(whole.getP(), servings));
             item.setSnapshotCarbsG(perServing(whole.getC(), servings));
             item.setSnapshotFatG(perServing(whole.getF(), servings));
-            item.setSnapshotNova(overrides.isEmpty()
-                ? recipe.getNovaDominant() : dominantNova(recipe, overrides));
+            // Only a line dropped to 0 changes WHICH ingredients went in, so only then can the
+            // dominant NOVA move. A non-zero amount change leaves the ingredient set — and with it
+            // the recipe's frozen novaDominant — intact; recomputing there would swap a frozen value
+            // for a live pantry read on an unrelated edit, and a since-deleted pantry row would
+            // silently lower the meal's NOVA. Fully freezing this needs recipe_ingredient.snapshot_nova.
+            boolean anyLineDropped = overrides.values().stream().anyMatch(a -> a.signum() == 0);
+            item.setSnapshotNova(anyLineDropped
+                ? dominantNova(recipe, overrides) : recipe.getNovaDominant());
         } else if ("pantry".equals(req.getSource())) {
             PantryItemEntity p = resolvePantry(userId, req.getPantryItemId());
             item.setPantryItemId(p.getId());

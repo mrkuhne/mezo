@@ -20,7 +20,7 @@ import { Display } from '@/shared/ui/Display'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { MealPickerSheet, type MealPickedItem } from '@/features/fuel/sheets/MealPickerSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
-import { computeRecipeMacrosWithOverrides } from '@/data/fuel/recipeMacros'
+import { computeRecipeMacrosWithOverrides, rescaleFrozen } from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
 
 export type LogMealPrefill =
@@ -169,21 +169,20 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
       loggedAt: nowOffsetIso(),
       title: shownName.trim() || null,
       items: lines.map(l => {
+        const recipe = l.source === 'recipe' ? resolveRecipe(l.refId) : undefined
+        // A concurrent recipe edit (useRecipes refetches on window focus) can shrink `ingredients`
+        // while this sheet is open, leaving a stale override index with no ingredient behind it —
+        // `?.` + dropping any entry that can't resolve keeps that a no-op instead of a crash on save.
         const entries = Object.entries(l.overrides ?? {})
-          .filter(([i, v]) => {
-            const r = l.source === 'recipe' ? resolveRecipe(l.refId) : undefined
-            return r ? v !== r.ingredients[Number(i)]?.amount : false
+          .flatMap(([i, v]) => {
+            const original = recipe?.ingredients[Number(i)]
+            if (!original || v === original.amount) return []
+            return [{ lineOrder: Number(i), pantryItemId: original.refId, amount: v }]
           })
         return {
           source: l.source, refId: l.refId, amount: l.amount, unit: l.unit,
           // only genuinely-changed lines ride along; an untouched recipe keeps today's exact body
-          ...(l.source === 'recipe' && entries.length
-            ? { ingredientOverrides: entries.map(([i, v]) => ({
-                lineOrder: Number(i),
-                pantryItemId: resolveRecipe(l.refId)!.ingredients[Number(i)].refId,
-                amount: v,
-              })) }
-            : {}),
+          ...(l.source === 'recipe' && entries.length ? { ingredientOverrides: entries } : {}),
         }
       }),
     }
@@ -307,12 +306,15 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                                   // Mirrors computeRecipeMacrosWithOverrides exactly: an UNTOUCHED
                                   // row shows the server-frozen contribution (never re-derived from
                                   // the live pantry row, which may have drifted since the recipe was
-                                  // saved); an OVERRIDDEN row is rescaled from the live source, or 0
-                                  // when that source is gone.
+                                  // saved); an OVERRIDDEN row is rescaled from the live source, or —
+                                  // when that source is gone — from the line's own frozen contribution
+                                  // (the backend still counts it in full from ITS frozen snapshot).
                                   kcal={l.overrides?.[i] === undefined
                                     ? (ing.contribution?.kcal
                                         ?? (src ? round(src.macros.kcal * (ing.amount / (src.per || 1))) : 0))
-                                    : (src ? round(src.macros.kcal * (amount / (src.per || 1))) : 0)}
+                                    : (src
+                                        ? round(src.macros.kcal * (amount / (src.per || 1)))
+                                        : rescaleFrozen(ing.contribution, amount, ing.amount).kcal)}
                                   onChange={(v) => setOverride(l.key, i, v)}
                                   onReset={() => clearOverride(l.key, i)}
                                 />
