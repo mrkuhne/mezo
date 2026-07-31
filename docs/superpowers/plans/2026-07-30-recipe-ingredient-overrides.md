@@ -1932,7 +1932,15 @@ interface DraftLine {
                                   unit={ing.unit}
                                   originalAmount={ing.amount}
                                   amount={amount}
-                                  kcal={src ? round(src.macros.kcal * (amount / (src.per || 1))) : 0}
+                                  // Mirrors computeRecipeMacrosWithOverrides exactly: an UNTOUCHED
+                                  // row shows the server-frozen contribution (never re-derived from
+                                  // the live pantry row, which may have drifted since the recipe was
+                                  // saved); an OVERRIDDEN row is rescaled from the live source, or 0
+                                  // when that source is gone.
+                                  kcal={l.overrides?.[i] === undefined
+                                    ? (ing.contribution?.kcal
+                                        ?? (src ? round(src.macros.kcal * (ing.amount / (src.per || 1))) : 0))
+                                    : (src ? round(src.macros.kcal * (amount / (src.per || 1))) : 0)}
                                   onChange={(v) => setOverride(l.key, i, v)}
                                   onReset={() => clearOverride(l.key, i)}
                                 />
