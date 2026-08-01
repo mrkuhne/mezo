@@ -76,3 +76,8 @@ New module `frontend/src/features/train/logic/setBudget.ts`:
 - Backend/API/DB changes of any kind (D9).
 - Lower-bound "too few sets" warnings (the MEV system already covers under-volume).
 - Workout-execution surfaces (GymDayPage logging flow) beyond the two read-only mirrors.
+
+## 7. Implementation reality notes
+
+- **`ExerciseRecipeRow` was not deleted.** §3.2 said it would be "removed with its tests" once `ExerciseAccordionRow` replaced it in the unified editor. In practice `CustomWorkoutBuilderPage` (`frontend/src/features/train/pages/CustomWorkoutBuilderPage.tsx`) still renders the always-open `ExerciseRecipeRow` for its own exercise list — that surface was out of scope for the unification (§6, "workout-execution surfaces… beyond the two read-only mirrors" implicitly covers Saját edzés too, which was never part of D5's screen-merge scope). `ExerciseRecipeRow.tsx` therefore stays in the tree, retained solely as `CustomWorkoutBuilderPage`'s row component; `ExerciseAccordionRow` is the only recipe row used by the meso builder (`MesoExercises`) and the planner's terminal `Program` step.
+- **`muscleWeek.ts` is untouched.** §3.1 sketched `MuscleWeekRow` gaining `failureSets`/`volumeSets` fields "computed in the same pass" so `setBudget.ts` would derive budget from `muscleWeek.ts`'s existing traversal (one traversal source). The shipped `setBudget.ts` (`frontend/src/features/train/logic/setBudget.ts`) instead does its own independent pass over `MesoDay[]` in `muscleBudgets()`/`sessionCapWarnings()` — `muscleWeek.ts` and its `MuscleWeekRow` type were not modified. This is a harmless divergence (both modules are pure, cheap, and read the same `days` input), but a reader following §3.1 literally will not find the promised fields on `MuscleWeekRow`.
