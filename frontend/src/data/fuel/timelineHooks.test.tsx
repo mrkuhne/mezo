@@ -237,6 +237,13 @@ describe('useFuelTimeline (real mode)', () => {
     server.use(
       http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no weight goal → fuel-settings cadence + fallback budget
       http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
+      // Pin the training inputs empty too: the default sport-schedule fixture carries a ≥90-min
+      // slot on most weekdays, which correctly earns a peri-workout snack window (mezo-1oy5) and
+      // made the expected window count weekday-dependent (a latent flake — it only stayed green
+      // while the schedule query happened to resolve after the assertions; surfaced by mezo-e1sp's
+      // extra sport-events query shifting resolution order). Cold-load here means a PLAIN day.
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
         HttpResponse.json({
           date: String(params.date),
