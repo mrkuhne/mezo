@@ -8,14 +8,9 @@
 // auto-expand-on-add, and optional inline day-rename for custom splits
 // (capability parity with PlannerDaySection's onRename).
 //
-// Hero warningCount scoping: overBudgets is a WEEKLY metric (muscleBudgets
-// sums across all days) so it stays global — a muscle over its weekly cap
-// matters regardless of which day tab is open. Session-cap breaches
-// (sessionCapWarnings) are inherently per-day, and the hero's other numbers
-// (dayType/daySets/dayExerciseCount) already describe "the day you're
-// looking at" — so the hero's badge counts only the ACTIVE day's cap
-// breaches, while SetBudgetCard (the week-wide budget panel) still lists
-// every day's breaches via the unfiltered capWarnings array.
+// Hero warningCount is WEEK-level: (budgets at level 'over') + ALL
+// session-cap breaches across the week — the hero is the week-truth
+// surface; per-day locality is what the red tab dots are for.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import type { GymExercise, MesoDay } from '@/data/types'
@@ -50,8 +45,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
   const capWarnings = sessionCapWarnings(days)
   const warningDays = new Set(capWarnings.map((w) => w.day))
   const overBudgets = budgets.filter((b) => b.level === 'over')
-  const activeDayCapWarnings = day ? capWarnings.filter((w) => w.day === day.day) : []
-  const warningCount = overBudgets.length + activeDayCapWarnings.length
+  const warningCount = overBudgets.length + capWarnings.length
 
   // Auto-expand: track known exercise ids across renders; when the active day
   // gains an id we haven't seen before (a freshly added exercise), expand it.
@@ -164,13 +158,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
       ) : (
         <>
           <SortableList
-            // Intentionally NOT spreading `label: e.name` (unlike MesoDayTabsEditor's
-            // ExerciseRecipeRow usage): SortableList's reorder buttons ("<label>
-            // áthelyezése/feljebb/lejjebb") would otherwise share the "Gyak a"-style
-            // prefix with ExerciseAccordionRow's own name-based toggle aria-label,
-            // making the two ambiguous for name-substring queries. Omitting it lets
-            // SortableList fall back to the exercise id, which stays unique.
-            items={day.exercises}
+            items={day.exercises.map((e) => ({ ...e, label: e.name }))}
             onReorder={(ids) => onReorder(day.day, ids)}
             renderItem={(e) => (
               <ExerciseAccordionRow

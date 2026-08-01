@@ -20,15 +20,15 @@ describe('MesoEditor', () => {
     expect(screen.getByText('12')).toBeInTheDocument()          // active day H: 6+6
     expect(screen.getByText(/25 szett/)).toBeInTheDocument()    // week: 12+13
   })
-  it('flags warnings: chest 12 failure sets = 100% (near, not over) but Cs back 13 sets breaks the session cap', () => {
+  it('flags warnings: chest 12 failure sets = 100% (near, not over); H chest 12 sets and Cs back 13 sets both break the session cap', () => {
     render(<MesoEditor days={days} {...props} />)
-    expect(screen.getByText(/1 jelzés/)).toBeInTheDocument()
+    expect(screen.getByText(/2 jelzés/)).toBeInTheDocument()
   })
   it('collapsed rows expand one at a time', () => {
     render(<MesoEditor days={days} {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: /Gyak a/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Gyak a · szerkesztés/ }))
     expect(screen.getByRole('button', { name: /Volume/ })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Gyak b/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Gyak b · szerkesztés/ }))
     expect(screen.getAllByRole('button', { name: /Volume/ })).toHaveLength(1)
   })
   it('add button forwards the active day key', () => {

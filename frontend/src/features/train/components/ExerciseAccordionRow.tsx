@@ -33,7 +33,10 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        aria-label={ex.name}
+        // "· szerkesztés" suffix disambiguates this toggle from SortableList's
+        // name-prefixed reorder/drag buttons ("<name> áthelyezése/feljebb/lejjebb")
+        // when the row is hosted in a sortable list (MesoEditor).
+        aria-label={`${ex.name} · szerkesztés`}
         className="row"
         style={{
           width: '100%', alignItems: 'center', gap: 10, padding: '10px 12px',
