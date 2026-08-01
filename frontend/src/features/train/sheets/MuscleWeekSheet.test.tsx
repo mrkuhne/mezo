@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { MuscleWeekSheet } from '@/features/train/sheets/MuscleWeekSheet'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -31,7 +31,10 @@ test('renders header + the three sections', () => {
 
 test('muscle row shows sets, weekly reps, exercise count and stimulus chips', () => {
   renderSheet()
-  expect(screen.getByText('Mell')).toBeInTheDocument()
+  // "Mell" also appears in the Set-büdzsé mirror below (mezo-7rdg) — scope to the
+  // muscle-row card (identified by its unique rep-range text) to disambiguate.
+  const muscleRow = screen.getByText('24–36 rep · 1 gyakorlat').closest('.col')
+  expect(within(muscleRow as HTMLElement).getByText('Mell')).toBeInTheDocument()
   expect(screen.getByText('24–36 rep · 1 gyakorlat')).toBeInTheDocument()
   expect(screen.getByText('1×/hét gym')).toBeInTheDocument()
   expect(screen.getByText('+~300 XP')).toBeInTheDocument()
@@ -43,4 +46,24 @@ test('sport event card renders with region loads; forecast lists volleyball skil
   expect(screen.getByText('Váll ▲▲▲')).toBeInTheDocument()
   expect(screen.getByText('Vertikális emelkedés')).toBeInTheDocument()
   expect(screen.getByText('Maximális erő')).toBeInTheDocument()
+})
+
+test('renders the Set-büdzsé section (mezo-7rdg)', () => {
+  renderSheet()
+  expect(screen.getByText('Set-büdzsé')).toBeInTheDocument()
+})
+
+test('an over-budget muscle shows the "heti keret" warning (mezo-7rdg)', () => {
+  const overBudgetMeso: Mesocycle = {
+    ...meso,
+    days: [{
+      day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 2,
+      exercises: [
+        { id: 'ob1', name: 'Bench Press', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 4, repMax: 6, targetRIR: 1, type: 'compound', anchorWeightKg: 100 },
+        { id: 'ob2', name: 'Cable Fly', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 12, repMax: 15, targetRIR: 3, type: 'isolation', anchorWeightKg: 15 },
+      ],
+    }],
+  }
+  render(<QueryWrapper><MuscleWeekSheet meso={overBudgetMeso} sportSlots={slots} onClose={() => {}} /></QueryWrapper>)
+  expect(screen.getByText(/Mell: heti keret/)).toBeInTheDocument()
 })

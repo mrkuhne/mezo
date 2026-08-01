@@ -17,6 +17,8 @@ import { muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import { growthForecast } from '@/features/train/logic/growthForecast'
 import { ATHLETIC_META } from '@/features/progression/logic/levelUpMeta'
+import { muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
+import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 
 interface MuscleWeekSheetProps {
   meso: Mesocycle
@@ -107,6 +109,10 @@ export function MuscleWeekSheet({ meso, sportSlots, onClose }: MuscleWeekSheetPr
           <div style={{ fontSize: 9.5, color: 'var(--text-tertiary)', marginTop: 10, textAlign: 'center' }}>
             ▲ = sport/futás plusz-stimulus · XP = becslés a tervezett hétből
           </div>
+
+          {/* Set-büdzsé — read-only mirror of the unified editor's weekly budget (mezo-7rdg) */}
+          <SectionHead color="var(--amber-deep)" title="Set-büdzsé" sub="failure ≤12 · volume ≤20 szett/hét · max 11 szett/edzés" />
+          <SetBudgetCard budgets={muscleBudgets(days)} capWarnings={sessionCapWarnings(days)} defaultOpen />
 
           {/* ② Sport & futás terhelés */}
           <SectionHead color="var(--tag-sport)" title="Sport & futás terhelés" sub="a hét tervezett eseményei izomcsoportokra vetítve" />
