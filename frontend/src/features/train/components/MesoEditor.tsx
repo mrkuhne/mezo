@@ -37,7 +37,14 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
     () => days.find((d) => d.current)?.day ?? days.find((d) => !isOffDay(d))?.day ?? days[0]?.day ?? null,
   )
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const knownIds = useRef<Set<string>>(new Set())
+  // Auto-expand baseline: seeded ONCE at mount with every exercise id across
+  // ALL days (not just the active one, so tab switches never fake-trigger) —
+  // nothing is expanded on mount; only ids appearing AFTER this baseline count
+  // as freshly added and auto-expand.
+  const knownIds = useRef<Set<string> | null>(null)
+  if (knownIds.current === null) {
+    knownIds.current = new Set(days.flatMap((d) => d.exercises.map((e) => e.id)))
+  }
 
   const day = days.find((d) => d.day === activeDay) ?? days[0]
 
@@ -47,11 +54,12 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
   const overBudgets = budgets.filter((b) => b.level === 'over')
   const warningCount = overBudgets.length + capWarnings.length
 
-  // Auto-expand: track known exercise ids across renders; when the active day
-  // gains an id we haven't seen before (a freshly added exercise), expand it.
+  // Auto-expand: when the active day gains an id absent from the mount-time
+  // baseline (a freshly added exercise), expand it.
   useEffect(() => {
     if (!day) return
     const seen = knownIds.current
+    if (!seen) return
     let newId: string | null = null
     for (const e of day.exercises) {
       if (!seen.has(e.id)) newId = e.id
@@ -134,7 +142,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
       )}
 
       <MesoEditorHero
-        dayType={showRename ? 'Egyéni nap' : day.type}
+        dayType={day.type}
         daySets={daySets}
         dayExerciseCount={day.exercises.length}
         weekSets={weekSets}

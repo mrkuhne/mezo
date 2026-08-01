@@ -24,6 +24,10 @@ describe('MesoEditor', () => {
     render(<MesoEditor days={days} {...props} />)
     expect(screen.getByText(/2 jelzés/)).toBeInTheDocument()
   })
+  it('nothing is expanded on mount — pre-existing exercises are not treated as new', () => {
+    render(<MesoEditor days={days} {...props} />)
+    expect(screen.queryByRole('button', { name: /Volume/ })).not.toBeInTheDocument()
+  })
   it('collapsed rows expand one at a time', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /Gyak a · szerkesztés/ }))
