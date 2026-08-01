@@ -498,7 +498,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - When `onRenameDay` is provided and `day.muscle === 'custom'`: the hero's `dayType` line is replaced by an inline text input (`aria-label` `` `${day.day} nap átnevezése` ``) calling `onRenameDay(day.day, value)` on change — capability parity with `PlannerDaySection`'s rename.
 - Budget card: `<SetBudgetCard budgets={budgets} capWarnings={capWarnings} defaultOpen={warningCount > 0} />` where `budgets = muscleBudgets(days)`, `capWarnings = sessionCapWarnings(days)`.
 - Off-day: port the off-day card from `MesoDayTabsEditor.tsx:87-97` unchanged.
-- Exercise list: `SortableList` (as `MesoDayTabsEditor.tsx:100-110`) rendering `ExerciseAccordionRow` with `expanded={expandedId === e.id}` / `onToggle={() => setExpandedId(cur => cur === e.id ? null : e.id)}`. Single-expand state `useState<string | null>(null)`.
+- Exercise list: `SortableList` (as `MesoDayTabsEditor.tsx:100-110`, keeping `label: e.name` for the drag-handle aria-labels) rendering `ExerciseAccordionRow` with `expanded={expandedId === e.id}` / `onToggle={() => setExpandedId(cur => cur === e.id ? null : e.id)}`. Single-expand state `useState<string | null>(null)`. The accordion header button carries `aria-label` `` `${ex.name} · szerkesztés` `` so its accessible name never collides with the sortable-row buttons (`… áthelyezése/feljebb/lejjebb`).
 - **Auto-expand new exercise:** keep a `useRef<Set<string>>` of known exercise ids; on `days` change, if the active day contains an id not in the set, `setExpandedId(newId)`; refresh the set every render pass.
 - Add button: port `MesoDayTabsEditor.tsx:111-132` (dashed "Gyakorlat hozzáadása" → `onAddClick(day.day)`).
 
@@ -527,15 +527,15 @@ describe('MesoEditor', () => {
     expect(screen.getByText('12')).toBeInTheDocument()          // active day H: 6+6
     expect(screen.getByText(/25 szett/)).toBeInTheDocument()    // week: 12+13
   })
-  it('flags warnings: chest 12 failure sets = 100% (near, not over) but Cs back 13 sets breaks the session cap', () => {
+  it('flags warnings: chest budget is 100% (near, not over), but H chest 12 sets AND Cs back 13 sets both break the session cap', () => {
     render(<MesoEditor days={days} {...props} />)
-    expect(screen.getByText(/1 jelzés/)).toBeInTheDocument()
+    expect(screen.getByText(/2 jelzés/)).toBeInTheDocument()
   })
   it('collapsed rows expand one at a time', () => {
     render(<MesoEditor days={days} {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: /Gyak a/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Gyak a · szerkesztés/ }))
     expect(screen.getByRole('button', { name: /Volume/ })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Gyak b/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Gyak b · szerkesztés/ }))
     expect(screen.getAllByRole('button', { name: /Volume/ })).toHaveLength(1)
   })
   it('add button forwards the active day key', () => {
