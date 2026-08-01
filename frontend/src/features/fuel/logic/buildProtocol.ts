@@ -40,10 +40,13 @@ export function deriveBlocks(
   // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
   const gym = gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
   if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
-  // Sport: today's session from the recurring weekly schedule. The label carries the session's
-  // sport identity (volleyball|cross|trx) so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
-  const vb = sport.schedule?.volleyball.sessions.find(s => s.today && s.time)
-  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
+  // Sport: EVERY today-session — recurring slots and dated one-off events alike (mezo-e1sp);
+  // a single .find silently dropped the second block of a stacked day (e.g. a recurring
+  // training + a one-off match) from the calorie budget and the meal windows. The label
+  // carries the session's sport identity so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
+  for (const vb of sport.schedule?.volleyball.sessions.filter(s => s.today && s.time) ?? []) {
+    blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
+  }
   // Run: today's prescribed session in the active block's current week (needs a plan time).
   // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
   const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]

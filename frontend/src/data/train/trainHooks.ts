@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { addDays, huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { evaluateMockSetMedals, type MockMedalContext } from '@/data/train/medalEvaluator'
 import {
   trainApi,
@@ -15,6 +15,8 @@ import {
   type MesocycleCreateRequest,
   type MesocycleResponse,
   type SetLogRequest,
+  type SportEventCreateRequest,
+  type SportEventResponse,
   type SportScheduleSlotInput,
   type SportScheduleSlotResponse,
   type SportSessionCreateRequest,
@@ -169,6 +171,54 @@ function toGymSlots(slots: GymScheduleSlotResponse[]): GymScheduleSlot[] {
   return slots.map((s) => ({ dayOfWeek: s.dayOfWeek, time: s.time }))
 }
 
+/** DAY_ORDER index (0=Hét..6=Vas) of an ISO date — local-time parse, mirrors deriveSportWeek. */
+function dayIdxOf(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number)
+  return (new Date(y, m - 1, d).getDay() + 6) % 7
+}
+
+// One-off events (mezo-e1sp) join the weekly rhythm as extra dated sessions. Only the
+// current Mon–Sun week's events merge in — every downstream surface (Mai/Heti agenda,
+// Today hero, the fuel day-plan blocks) reasons over this week — and each carries its
+// concrete `date` so weekAgenda pins it to that one day instead of every same-weekday.
+// `today` is date-based (never weekday-based) for a one-off. Base passes through
+// untouched when the week has no events, keeping mock mode byte-identical to Phase 1.
+export function mergeEventsIntoSchedule(
+  base: SportSchedule | null,
+  events: SportEventResponse[],
+): SportSchedule | null {
+  const now = new Date()
+  const mondayIso = localDateString(
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)),
+  )
+  const sundayIso = addDays(mondayIso, 6)
+  const week = events.filter((e) => e.date >= mondayIso && e.date <= sundayIso)
+  if (!week.length) return base
+  const today = localDateString()
+  const extra: VolleyballSession[] = week.map((e) => ({
+    day: DAY_ORDER[dayIdxOf(e.date)],
+    date: e.date,
+    oneOff: true,
+    time: e.time,
+    duration: e.durationMin,
+    court: e.location ?? '',
+    intensity: e.intensityLabel ?? '',
+    role: e.kind === 'match' ? 'meccs' : 'edzés',
+    sport: (e.sport as VolleyballSession['sport']) ?? 'volleyball',
+    ...(e.date === today ? { today: true } : {}),
+  }))
+  const vb = base?.volleyball
+  return {
+    volleyball: {
+      team: vb?.team ?? '',
+      season: vb?.season ?? '',
+      // The hero's `Heti ritmus · {n}h` stays the RECURRING rhythm — one-offs don't move it.
+      weeklyHours: vb?.weeklyHours ?? 0,
+      sessions: [...(vb?.sessions ?? []), ...extra],
+    },
+  }
+}
+
 // Catalog row -> the Phase-1 library shape; `id` doubles as the catalog uuid and
 // `catalogId` flags "came from the backend catalog" (mock statics never set it).
 // `videoUrl`/`editable` carry the authoring metadata (video demo + user-authored flag).
@@ -270,6 +320,10 @@ type TrainData = {
   finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
+  /** All one-off (non-recurring) sport events, date+time ascending (mezo-e1sp) — the Sport tab's upcoming list. */
+  sportEvents: SportEventResponse[]
+  addSportEvent: (req: SportEventCreateRequest, opts?: { onSuccess?: () => void; onSettled?: () => void }) => void
+  deleteSportEvent: (id: string, opts?: MutateOpts) => void
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
   createCatalogExercise: (req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
   updateCatalogExercise: (id: string, req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
@@ -305,6 +359,16 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     queryKey: ['train', 'sportSchedule'],
     queryFn: mock ? async () => sport.schedule : () => trainApi.sportSchedule().then(toSportSchedule),
     initialData: mock ? sport.schedule : undefined,
+  })
+  // One-off (non-recurring) sport events (mezo-e1sp). The FULL list loads — it stays small
+  // and the Sport tab renders upcoming ones beyond this week; the current week's slice is
+  // merged into `sport.schedule` below. Mock is a client-owned cache (the event mutations
+  // edit it via setQueryData), so staleTime pins it like the gym-slot cache above.
+  const { data: eventsData } = useQuery({
+    queryKey: ['train', 'sportEvents'],
+    queryFn: mock ? async () => [] as SportEventResponse[] : () => trainApi.sportEvents(),
+    initialData: mock ? ([] as SportEventResponse[]) : undefined,
+    staleTime: mock ? Infinity : undefined,
   })
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
@@ -495,6 +559,34 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       : (slots: SportScheduleSlotInput[]) => trainApi.replaceSportSchedule(slots),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSchedule'] }) },
   })
+  // One-off sport events (mezo-e1sp): real persists then refetches; mock emulates the
+  // server in the client-owned cache so the demo shows the event on Sport/Mai/Fuel too.
+  const addSportEventMutation = useMutation({
+    mutationFn: mock
+      ? async (req: SportEventCreateRequest): Promise<SportEventResponse> => {
+          const created: SportEventResponse = {
+            id: `se-${performance.now()}`,
+            date: req.date, time: req.time, durationMin: req.durationMin,
+            kind: (req.kind as SportEventResponse['kind']) ?? 'training',
+            sport: req.sport ?? 'volleyball',
+            location: req.location, intensityLabel: req.intensityLabel,
+          }
+          qc.setQueryData<SportEventResponse[]>(['train', 'sportEvents'], (prev) =>
+            [...(prev ?? []), created].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)))
+          return created
+        }
+      : (req: SportEventCreateRequest) => trainApi.createSportEvent(req),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportEvents'] }) },
+  })
+  const deleteSportEventMutation = useMutation({
+    mutationFn: mock
+      ? async (id: string) => {
+          qc.setQueryData<SportEventResponse[]>(['train', 'sportEvents'], (prev) =>
+            (prev ?? []).filter((e) => e.id !== id))
+        }
+      : (id: string) => trainApi.deleteSportEvent(id),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportEvents'] }) },
+  })
   const gymScheduleMutation = useMutation({
     mutationFn: mock
       ? async (_slots: GymScheduleSlotInput[]) => undefined
@@ -589,6 +681,15 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     (slots: SportScheduleSlotInput[], opts?: MutateOpts) => sportScheduleMutation.mutate(slots, opts),
     [sportScheduleMutation],
   )
+  const addSportEvent = useCallback(
+    (req: SportEventCreateRequest, opts?: { onSuccess?: () => void; onSettled?: () => void }) =>
+      addSportEventMutation.mutate(req, { onSuccess: () => opts?.onSuccess?.(), onSettled: () => opts?.onSettled?.() }),
+    [addSportEventMutation],
+  )
+  const deleteSportEvent = useCallback(
+    (id: string, opts?: MutateOpts) => deleteSportEventMutation.mutate(id, opts),
+    [deleteSportEventMutation],
+  )
   const saveGymSchedule = useCallback(
     (slots: GymScheduleSlotInput[], opts?: MutateOpts) => gymScheduleMutation.mutate(slots, opts),
     [gymScheduleMutation],
@@ -632,9 +733,12 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     workoutPending: !mock && (mesoPending || todayPending),
     sportPending: !mock && sportQueryPending,
     exercisesPending: !mock && (catalogPending || recordsPending),
+    // One-off events merge into the schedule in BOTH modes (mezo-e1sp); with no events
+    // the base passes through untouched, so mock stays byte-identical to Phase 1.
     sport: mock
-      ? { ...sport, sessions: sportData?.sessions ?? [] }
-      : { schedule: scheduleData ?? null, week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
+      ? { ...sport, schedule: mergeEventsIntoSchedule(sport.schedule, eventsData ?? []), sessions: sportData?.sessions ?? [] }
+      : { schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
+    sportEvents: eventsData ?? [],
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     exerciseRecords: recordsData ?? [],
     createMesocycle,
@@ -649,6 +753,8 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     finishWorkout,
     logSportSession,
     saveSportSchedule,
+    addSportEvent,
+    deleteSportEvent,
     saveGymSchedule,
     createCatalogExercise,
     updateCatalogExercise,

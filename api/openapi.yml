@@ -959,6 +959,98 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport-events:
+    get:
+      tags:
+        - Train
+      operationId: listSportEvents
+      summary: 'One-off (non-recurring) sport events, date then time ascending'
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: One-off sport events (empty array when none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportEventResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Train
+      operationId: createSportEvent
+      summary: Create a one-off (non-recurring) sport event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportEventCreateRequest'
+      responses:
+        '201':
+          description: Created sport event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportEventResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/sport-events/{id}':
+    delete:
+      tags:
+        - Train
+      operationId: deleteSportEvent
+      summary: Soft-delete a one-off sport event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found (or not owned)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/gym-schedule:
     get:
       tags:
@@ -7031,6 +7123,73 @@ components:
         sport:
           type: string
           description: volleyball | cross | trx
+    SportEventCreateRequest:
+      type: object
+      description: A dated one-off sport event outside the weekly rhythm
+      required:
+        - date
+        - time
+        - durationMin
+      properties:
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        durationMin:
+          type: integer
+          minimum: 15
+          maximum: 360
+        kind:
+          type: string
+          pattern: ^(training|match)$
+          description: Defaults to training server-side when omitted.
+        sport:
+          type: string
+          pattern: ^(volleyball|cross|trx)$
+          description: >-
+            Sport discriminator; defaults to volleyball server-side when
+            omitted.
+        location:
+          type: string
+          maxLength: 120
+        intensityLabel:
+          type: string
+          maxLength: 40
+    SportEventResponse:
+      type: object
+      required:
+        - id
+        - date
+        - time
+        - durationMin
+        - kind
+        - sport
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          description: 'HH:mm'
+        durationMin:
+          type: integer
+        kind:
+          type: string
+          enum:
+            - training
+            - match
+        sport:
+          type: string
+          description: volleyball | cross | trx
+        location:
+          type: string
+        intensityLabel:
+          type: string
     GymScheduleSlotResponse:
       type: object
       required:

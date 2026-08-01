@@ -337,6 +337,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/sport-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One-off (non-recurring) sport events, date then time ascending */
+        get: operations["listSportEvents"];
+        put?: never;
+        /** Create a one-off (non-recurring) sport event */
+        post: operations["createSportEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/sport-events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Soft-delete a one-off sport event */
+        delete: operations["deleteSportEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/gym-schedule": {
         parameters: {
             query?: never;
@@ -2937,6 +2972,34 @@ export interface components {
             intensityLabel?: string;
             /** @description volleyball | cross | trx */
             sport: string;
+        };
+        /** @description A dated one-off sport event outside the weekly rhythm */
+        SportEventCreateRequest: {
+            /** Format: date */
+            date: string;
+            time: string;
+            durationMin: number;
+            /** @description Defaults to training server-side when omitted. */
+            kind?: string;
+            /** @description Sport discriminator; defaults to volleyball server-side when omitted. */
+            sport?: string;
+            location?: string;
+            intensityLabel?: string;
+        };
+        SportEventResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            /** @description HH:mm */
+            time: string;
+            durationMin: number;
+            /** @enum {string} */
+            kind: "training" | "match";
+            /** @description volleyball | cross | trx */
+            sport: string;
+            location?: string;
+            intensityLabel?: string;
         };
         GymScheduleSlotResponse: {
             /** Format: uuid */
@@ -5867,6 +5930,118 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listSportEvents: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One-off sport events (empty array when none) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportEventResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createSportEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SportEventCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created sport event */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportEventResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteSportEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found (or not owned) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

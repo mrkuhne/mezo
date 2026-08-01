@@ -36,6 +36,25 @@ test('attaches completed custom instances by ISO date and flags today from the s
   expect(agenda.filter((a) => a.isToday)).toHaveLength(1)
 })
 
+// One-off events (mezo-e1sp): a dated slot pins to its exact ISO date — the same weekday
+// of ANOTHER week must not inherit it. Clock pinned: week = Mon 2026-07-13 … Sun 07-19.
+test('a dated one-off slot lands only on its own date, never on other weeks', () => {
+  const today = new Date(2026, 6, 15) // Wednesday 2026-07-15
+  const agenda = buildWeekAgenda({
+    gymTimes: [],
+    sportSlots: [
+      { ...(sport('Szo', '19:00') as object), date: '2026-07-18', oneOff: true } as never,
+      { ...(sport('Szo', '10:00') as object), date: '2026-07-25', oneOff: true } as never, // next week's Sat
+      sport('Szo', '08:00'), // recurring (no date) — always matches its weekday
+    ],
+    runningBlock: null,
+    weekWorkouts: [],
+    today,
+  })
+  const sat = agenda.find((a) => a.day === 'Szo')!
+  expect(sat.sport.map((s) => s.time)).toEqual(['19:00', '08:00'])
+})
+
 // The `custom` population itself was never covered — the case the name above promises
 // (mezo-9bbc final review, I6). Clock pinned so the week is Mon 2026-07-13 … Sun 07-19.
 test('populates `custom` only from COMPLETED custom instances, on their own date', () => {
