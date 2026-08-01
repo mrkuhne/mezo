@@ -29,10 +29,11 @@ async function renderExercisesView() {
   await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
 }
 
-test('Gyakorlatok view shows the intro, day tabs and the current day content', async () => {
+test('Gyakorlatok view shows the hero, the set-budget card and the current day content', async () => {
   await renderExercisesView()
-  expect(screen.getByText('Heti gyakorlat-terv')).toBeInTheDocument()
-  expect(screen.getByText('Heti szet-volumen')).toBeInTheDocument()
+  expect(screen.getByText(/szett ma/)).toBeInTheDocument()
+  expect(screen.getByText(/Heti terhelés:/)).toBeInTheDocument()
+  expect(screen.getByText('Heti szet-büdzsé')).toBeInTheDocument()
   // current day (Csü · Pull) is the default active tab → its content shows
   expect(screen.getByRole('button', { name: 'Csü · Pull' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
@@ -166,7 +167,9 @@ test('recipe stepper change persists the day list (PUT) in real mode', async () 
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   await waitFor(() => expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument())
   await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
-  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · Working növelése' }))
+  // The accordion row starts collapsed — expand it before its steppers appear.
+  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · szerkesztés' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · Munkaszett növelése' }))
   await waitFor(() => expect(puts).toHaveLength(1))
   expect(puts[0].body[0].workingSets).toBe(5)
 })
