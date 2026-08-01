@@ -77,7 +77,7 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
                 justifyContent: 'center', alignItems: 'center', gap: 4, padding: '7px 0', borderRadius: 8,
                 border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
                 background: isFailure ? 'linear-gradient(135deg, var(--coral), var(--coral-deep))' : 'transparent',
-                color: isFailure ? '#fff' : 'var(--text-secondary)',
+                color: isFailure ? 'var(--text-inverse)' : 'var(--text-secondary)',
               }}
             >
               🔥 Failure
@@ -91,7 +91,7 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
                 justifyContent: 'center', alignItems: 'center', gap: 4, padding: '7px 0', borderRadius: 8,
                 border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
                 background: !isFailure ? 'var(--sage-deep)' : 'transparent',
-                color: !isFailure ? '#fff' : 'var(--text-secondary)',
+                color: !isFailure ? 'var(--text-inverse)' : 'var(--text-secondary)',
               }}
             >
               🌿 Volume
