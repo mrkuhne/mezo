@@ -67,7 +67,7 @@ test('picking an exercise appends it to the open day', async () => {
 
 test('adding an exercise persists the day list in real mode (PUT with day id)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false') // override the file-level mock pin
-  const puts: { url: string; body: { name: string; catalogId?: string }[] }[] = []
+  const puts: { url: string; body: { name: string; catalogId?: string; targetRIR: number }[] }[] = []
   const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
   const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
   server.use(
@@ -111,6 +111,10 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
   // The picked item carries the catalog uuid; the pre-existing row stays unlinked.
   expect(puts[0].body[1].catalogId).toBe('f1e3a0e2-0000-4000-8000-000000000071')
   expect(puts[0].body[0].catalogId).toBeUndefined()
+  // New adds default to the VOLUME style (targetRIR 2, exerciseDefaults); the
+  // pre-existing row keeps its own RIR.
+  expect(puts[0].body[1].targetRIR).toBe(2)
+  expect(puts[0].body[0].targetRIR).toBe(1)
 })
 
 test('reordering a day exercise via ▲ persists the new order (PUT) in real mode', async () => {
