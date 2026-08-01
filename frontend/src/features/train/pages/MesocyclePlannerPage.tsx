@@ -1,14 +1,18 @@
 // ============================================================
-// Mezo · MesocyclePlannerPage — 5-step AI-guided new-mesocycle planner.
+// Mezo · MesocyclePlannerPage — 4-step AI-guided new-mesocycle planner.
 // Full-screen sibling route (/train/mesocycles/new): own back-button header,
-// 5-segment progress bar, eyebrow brand step counter, per-step page title and
-// footer nav. The terminal step (4) hosts the two save actions.
+// 4-segment progress bar, eyebrow brand step counter, per-step page title and
+// footer nav. The terminal step (3) hosts the AI program review + set/rep
+// tuning on the unified MesoEditor (day tabs, set-budget card, accordion
+// recipe rows) and the two save actions.
 //   Step 0 · Cél             → goal preset picker (prefills the rest)
 //   Step 1 · Hossz + fázisok → name / start / length / phase-curve editor
 //   Step 2 · Split + napok   → split picker + days-per-week
-//   Step 3 · Gyakorlatok     → generateProgram review (collapsible days)
-//   Step 4 · Set & rep       → day-tabbed recipe editor (MesoDayTabsEditor) + save
+//   Step 3 · Program         → generateProgram review + MesoEditor (day tabs,
+//                              set-budget card, accordion set/rep tuning) + save
 // Ported from prototype meso-planner.jsx MesocyclePlannerPage + its step parts.
+// Steps 3+4 (program review, set/rep tuning) merged into one terminal step on
+// the unified MesoEditor (mezo-7rdg Task 6) — MesoDayTabsEditor/PlannerDaySection retired.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -23,11 +27,11 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, stepLabels } from '@/features/train/logic/planner'
 import type { PlannerDay } from '@/features/train/logic/planner'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
-import { PlannerDaySection } from '@/features/train/components/PlannerDaySection'
-import { MesoDayTabsEditor } from '@/features/train/components/MesoDayTabsEditor'
+import { MesoEditor } from '@/features/train/components/MesoEditor'
+import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
 import { MiniStat } from '@/features/train/components/MiniStat'
 
-const STEP_COUNT = 5
+const STEP_COUNT = 4
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
 const CORAL_TINT = 'color-mix(in srgb, var(--coral) 6%, transparent)'
 const CORAL_TINT_STRONG = 'color-mix(in srgb, var(--coral) 12%, transparent)'
@@ -36,8 +40,7 @@ const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
   'Mennyi időnk van?',
   'Hogyan osszuk be?',
-  'AI program · gyakorlatok',
-  'Mennyit és hányszor?',
+  'A programod · gyakorlatok + set & rep',
 ] as const
 
 export function MesocyclePlannerPage() {
@@ -128,14 +131,7 @@ export function MesocyclePlannerPage() {
     setProgram((prev) =>
       (prev ?? []).map((d) => {
         if (d.day !== dayName) return d
-        const exercises = [
-          ...d.exercises,
-          {
-            id: `${item.id}-${crypto.randomUUID()}`, name: item.name, muscle: item.muscle, type: item.type,
-            warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
-            ...(item.catalogId ? { catalogId: item.catalogId } : {}),
-          },
-        ]
+        const exercises = [...d.exercises, libraryToGymExercise(item)]
         return { ...d, exercises, exerciseCount: exercises.length }
       }),
     )
@@ -223,7 +219,7 @@ export function MesocyclePlannerPage() {
 
   const canNext =
     (step === 0 && !!goal) || (step === 1 && weeks > 0)
-    || (step === 2 && selectedDays.length === days) || (step === 3 && !!program) || step === 4
+    || (step === 2 && selectedDays.length === days) || step === 3
 
   const handleBack = () => {
     if (step > 0) setStep(step - 1)
@@ -317,23 +313,15 @@ export function MesocyclePlannerPage() {
           program={program}
           onAdd={addExercise}
           onRemove={removeExercise}
-          onReorder={reorderExercises}
-          onRename={renameDay}
-        />
-      )}
-      {step === 4 && (
-        <Step4Recipe
-          program={program}
-          onAdd={addExercise}
-          onRemove={removeExercise}
           onChange={updateExercise}
           onReorder={reorderExercises}
+          onRename={renameDay}
         />
       )}
 
       {/* Nav */}
       <div style={{ padding: '16px 24px 32px' }}>
-        {step < 4 && (
+        {step < 3 && (
           <div className="row gap-sm">
             {step > 0 && (
               <button
@@ -361,7 +349,7 @@ export function MesocyclePlannerPage() {
             </button>
           </div>
         )}
-        {step === 4 && (
+        {step === 3 && (
           <div className="col gap-sm">
             <button
               type="button"
@@ -837,7 +825,8 @@ function Step2Split({
   )
 }
 
-// === Step 3: AI-generated program review ===
+// === Step 3 (terminal): AI-generated program review + set/rep tuning on the
+// unified MesoEditor (day tabs, set-budget card, accordion recipe rows) ===
 function Step3Program({
   goal,
   name,
@@ -846,6 +835,7 @@ function Step3Program({
   program,
   onAdd,
   onRemove,
+  onChange,
   onReorder,
   onRename,
 }: {
@@ -856,24 +846,11 @@ function Step3Program({
   program: PlannerDay[] | null
   onAdd: (dayName: string, item: ExerciseLibraryItem) => void
   onRemove: (dayName: string, exId: string) => void
+  onChange: (dayName: string, exId: string, patch: Partial<GymExercise>) => void
   onReorder: (dayName: string, ids: string[]) => void
   onRename: (dayName: string, name: string) => void
 }) {
-  const firstTrainingDay = (p: PlannerDay[] | null) =>
-    p?.find((d) => d.type !== 'Rest' && d.type !== 'Volleyball')?.day ?? null
-  const [expandedDay, setExpandedDay] = useState<string | null>(() => firstTrainingDay(program))
   const [pickerDay, setPickerDay] = useState<string | null>(null)
-
-  // Auto-expand exactly once per generation: when program arrives (null → data)
-  // while mounted. Edits change array identity but never re-open a collapsed day (mezo-xnq).
-  const hadProgram = useRef(program !== null)
-  useEffect(() => {
-    if (program && !hadProgram.current) {
-      hadProgram.current = true
-      setExpandedDay(firstTrainingDay(program))
-    }
-    if (!program) hadProgram.current = false
-  }, [program])
 
   if (!program) {
     return (
@@ -951,89 +928,20 @@ function Step3Program({
         </div>
       </div>
 
-      {/* Days */}
-      <div className="col gap-sm">
-        {program.map((d) => (
-          <PlannerDaySection
-            key={d.day}
-            day={d}
-            expanded={expandedDay === d.day}
-            onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
-            onRemove={(exId) => onRemove(d.day, exId)}
-            onReorder={(ids) => onReorder(d.day, ids)}
-            onAdd={() => setPickerDay(d.day)}
-            onRename={d.muscle === 'custom' ? (name) => onRename(d.day, name) : undefined}
-          />
-        ))}
-      </div>
-
-      {/* Tool transparency */}
-      <div className="row gap-xs flex-wrap mt-lg">
-        <span className="toolchip read" style={{ fontSize: 9 }}>
-          get_meso_history()
-        </span>
-        <span className="toolchip read" style={{ fontSize: 9 }}>
-          get_niggle_events()
-        </span>
-        <span className="toolchip compute" style={{ fontSize: 9 }}>
-          generateMesoPlan(goal, split)
-        </span>
-        <span className="toolchip compute" style={{ fontSize: 9 }}>
-          rankByStimFatigue()
-        </span>
-      </div>
-
-      {pickerDay && (
-        <ExercisePickerSheet
-          dayLabel={(() => {
-            const d = program?.find((x) => x.day === pickerDay)
-            return d ? `${d.day} · ${d.type}` : undefined
-          })()}
-          onClose={() => setPickerDay(null)}
-          onPick={(item) => onAdd(pickerDay, item)}
-        />
-      )}
-    </div>
-  )
-}
-
-// === Step 4 (index): Set & rep tuning on the day-tabbed recipe editor ===
-function Step4Recipe({ program, onAdd, onRemove, onChange, onReorder }: {
-  program: PlannerDay[] | null
-  onAdd: (dayName: string, item: ExerciseLibraryItem) => void
-  onRemove: (dayName: string, exId: string) => void
-  onChange: (dayName: string, exId: string, patch: Partial<GymExercise>) => void
-  onReorder: (dayName: string, ids: string[]) => void
-}) {
-  const [pickerDay, setPickerDay] = useState<string | null>(null)
-  if (!program) return null // canNext gates entry on a generated program
-
-  return (
-    <div style={{ padding: '8px 24px' }}>
-      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}>
-        <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--coral)" />
-          <div className="col flex-1">
-            <span className="eyebrow brand">Set & rep · hangolás</span>
-            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
-              <SafeMarkdown text="Válts napot a tabokkal — a recept a steppereken állítható. **A Mezo defaultjai csak kiindulópont, bármit átírhatsz.**" />
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <MesoDayTabsEditor
+      {/* Day tabs + set-budget card + accordion recipe editor (shared with the builder's Gyakorlatok view) */}
+      <MesoEditor
         days={program}
         onAddClick={setPickerDay}
         onRemove={onRemove}
         onChange={onChange}
         onReorder={onReorder}
+        onRenameDay={onRename}
       />
 
       {pickerDay && (
         <ExercisePickerSheet
           dayLabel={(() => {
-            const d = program.find((x) => x.day === pickerDay)
+            const d = program?.find((x) => x.day === pickerDay)
             return d ? `${d.day} · ${d.type}` : undefined
           })()}
           onClose={() => setPickerDay(null)}
