@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.SportEventResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
@@ -17,6 +18,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
@@ -59,6 +61,10 @@ public interface TrainMapper {
     @Mapping(target = "kind",
         expression = "java(SportScheduleSlotResponse.KindEnum.fromValue(entity.getKind()))")
     SportScheduleSlotResponse toSlotResponse(SportScheduleSlotEntity entity);
+
+    @Mapping(target = "kind",
+        expression = "java(SportEventResponse.KindEnum.fromValue(entity.getKind()))")
+    SportEventResponse toEventResponse(SportEventEntity entity);
 
     GymScheduleSlotResponse toGymSlotResponse(GymScheduleSlotEntity entity);
 

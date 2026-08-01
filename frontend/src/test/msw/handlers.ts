@@ -605,6 +605,8 @@ export const handlers = [
       { id: 'e1f3a0e2-0000-4000-8000-000000000055', dayOfWeek: 5, time: '10:00', durationMin: 120, kind: 'match', location: 'Kőbánya Sport', intensityLabel: 'magas' },
     ]),
   ),
+  // One-off sport events (mezo-e1sp) — default empty; tests override when they need one.
+  http.get(`${API_BASE}/api/train/sport-events`, () => HttpResponse.json([])),
   // Weekly gym slots fixture — Csü (index 3) carries a time so deriveGymSchedule
   // can fill the meso fixture's only gym day. Lean shape: id + dayOfWeek + time.
   http.get(`${API_BASE}/api/train/gym-schedule`, () =>
@@ -745,6 +747,14 @@ export const handlers = [
     const slots = (await request.json()) as Array<Record<string, unknown>>
     return HttpResponse.json(slots.map((s, i) => ({ id: `e1f3a0e2-0000-4000-8000-0000000000${60 + i}`, ...s })))
   }),
+  http.post(`${API_BASE}/api/train/sport-events`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(
+      { id: 'e3f3a0e2-0000-4000-8000-000000000090', kind: 'training', sport: 'volleyball', ...body },
+      { status: 201 },
+    )
+  }),
+  http.delete(`${API_BASE}/api/train/sport-events/:id`, () => new HttpResponse(null, { status: 204 })),
   http.put(`${API_BASE}/api/train/gym-schedule`, async ({ request }) => {
     const slots = (await request.json()) as Array<Record<string, unknown>>
     return HttpResponse.json(slots.map((s, i) => ({ id: `e2f3a0e2-0000-4000-8000-0000000000${70 + i}`, ...s })))
