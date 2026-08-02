@@ -462,6 +462,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/sets/{setId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Overwrite the performance fields of one logged set in an ACTIVE workout instance */
+        put: operations["updateWorkoutSet"];
+        post?: never;
+        /** Soft-delete one logged set and renumber the exercise's remaining setIndexes */
+        delete: operations["deleteWorkoutSet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/{id}/feedback": {
         parameters: {
             query?: never;
@@ -2914,6 +2932,15 @@ export interface components {
             targetWeightKg?: number | null;
             /** @description The Progresszió-prescribed reps for this set, snapshotted at log time */
             targetReps?: number | null;
+        };
+        /** @description Full replacement of one logged set's performance fields (mezo-l3on). Deliberately NOT a partial patch — an absent optional field CLEARS it, which avoids the JSON null vs. missing tri-state. setIndex, kind, exerciseId and the target* prescription snapshot are immutable. */
+        SetUpdateRequest: {
+            weightKg: number;
+            reps: number;
+            /** @description Ignored (forced null) on a warmup set — effort tracking is working-set-only */
+            rir?: number | null;
+            side?: string;
+            note?: string;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */
@@ -6337,6 +6364,117 @@ export interface operations {
                 };
             };
             /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout already completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateWorkoutSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated set with its re-derived medals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseSetResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Set not found, not owned, not in this instance, or a skip marker */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout already completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteWorkoutSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Set deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Set not found, not owned, not in this instance, or a skip marker */
             404: {
                 headers: {
                     [name: string]: unknown;
