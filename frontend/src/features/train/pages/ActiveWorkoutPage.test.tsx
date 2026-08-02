@@ -1400,3 +1400,59 @@ test('the header counter is disabled while a debrief modal is open (jumps must n
   // Parity with the ⋯ actions button: the overview trigger is inert during a debrief.
   expect(screen.getByRole('button', { name: 'Gyakorlatlista' })).toBeDisabled()
 })
+
+// ---- set edit + slot delete (mezo-l3on) ----
+
+/** The set-list row buttons carry the row's own label; the first is always B1 on ex1. */
+const firstRow = () => screen.getAllByRole('button', { name: /szett szerkesztése/ })[0]
+
+test('mock mode: a logged set row opens the edit sheet, and saving rewrites the row', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓'))
+  const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+  if (skipRest) await user.click(skipRest)
+
+  const before = firstRow().getAttribute('aria-label')
+  await user.click(firstRow())
+  const sheet = within(screen.getByRole('dialog'))
+  await user.click(sheet.getByLabelText('Ismétlés növelése'))
+  await user.click(sheet.getByRole('button', { name: 'Mentés ✓' }))
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  // The row is read-only output of the session model, so a changed label proves the edit landed.
+  expect(firstRow().getAttribute('aria-label')).not.toBe(before)
+})
+
+test('mock mode: deleting a set drops one slot from the exercise', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelectorAll('.setdots .sd')).toHaveLength(5)
+
+  // The pending-slot path: nothing is logged yet, so this row has no server row either.
+  await user.click(firstRow())
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+
+  await waitFor(() => expect(container.querySelectorAll('.setdots .sd')).toHaveLength(4))
+})
+
+test('mock mode: the last remaining slot cannot be deleted', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+
+  // 5 planned slots -> delete four of them, one at a time.
+  for (let i = 0; i < 4; i++) {
+    await user.click(firstRow())
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  }
+  expect(container.querySelectorAll('.setdots .sd')).toHaveLength(1)
+
+  await user.click(firstRow())
+  const sheet = within(screen.getByRole('dialog'))
+  expect(sheet.getByRole('button', { name: 'Szett törlése' })).toBeDisabled()
+  expect(sheet.getByText(/Az utolsó szett nem törölhető/)).toBeInTheDocument()
+})

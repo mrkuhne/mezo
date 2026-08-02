@@ -26,12 +26,14 @@ import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
-import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
+import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
 import type { MockMedalContext } from '@/data/train/medalEvaluator'
 import {
   type Session,
   addExtraSet,
+  attachSetId,
+  canRemoveSet,
   completeSet as completeSetModel,
   currentExerciseId,
   effectiveSetCount,
@@ -40,8 +42,10 @@ import {
   nextSetIdx,
   nextUnfinishedAfter,
   prescribedAt,
+  removeSet,
   seedFromOpen,
   skipExercise as skipExerciseModel,
+  updateLoggedSet,
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Icon } from '@/shared/ui/Icon'
@@ -58,6 +62,7 @@ import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet
 import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
 import { PrepHero } from '@/features/train/components/PrepHero'
 import { PrepExerciseCard } from '@/features/train/components/PrepExerciseCard'
+import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 
 type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
@@ -82,6 +87,11 @@ const MEDAL_TOAST_MS = 4500
 // exercise per session, at finish time, so the same key still cannot collide).
 function medalKey(m: Medal): string {
   return `${m.type}:${m.exerciseName}:${m.setIndex}`
+}
+
+/** The human label of one set slot — shared by the set-list row, its aria-label and the edit sheet. */
+function setSlotLabel(index: number, warmup: boolean, warmupCount: number): string {
+  return warmup ? `B${index + 1} bemelegítő szett` : `${index - warmupCount + 1}. working szett`
 }
 
 // Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
@@ -121,7 +131,7 @@ export function ActiveWorkoutPage() {
   // link while another workout runs resumes the running one, and a day already completed
   // this week falls through to the review redirect below (D5).
   const [searchParams] = useSearchParams()
-  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: searchParams.get('day') })
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: searchParams.get('day') })
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
@@ -145,6 +155,8 @@ export function ActiveWorkoutPage() {
       todaySession={todaySession}
       startWorkout={startWorkout}
       logSet={logSet}
+      updateSet={updateSet}
+      deleteSet={deleteSet}
       skipExercise={skipExercise}
       saveExerciseNote={saveExerciseNote}
       saveWorkoutFeedback={saveWorkoutFeedback}
@@ -165,6 +177,13 @@ interface SessionProps {
     set: SetLogRequest,
     opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
   ) => void
+  updateSet: (
+    workoutId: string,
+    setId: string,
+    body: SetUpdateRequest,
+    opts?: { onSuccess?: (r?: ExerciseSetResponse) => void },
+  ) => void
+  deleteSet: (workoutId: string, setId: string) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
@@ -179,7 +198,7 @@ function prefill(e: LoggedWorkoutExercise): LastWeekSet {
 }
 
 function ActiveWorkoutSession({
-  workout, activeMeso, todaySession, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
+  workout, activeMeso, todaySession, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
 }: SessionProps) {
   const W = workout
   const goBack = useBackNav('/train')
@@ -252,6 +271,9 @@ function ActiveWorkoutSession({
   // mutation; real refetches /today, but the override avoids a flash in between).
   const [noteEditOpen, setNoteEditOpen] = useState(false)
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({})
+  // The set-list row tapped for edit/delete (mezo-l3on) — an index into the VIEWED
+  // exercise's slots, so it must not survive a jump to another exercise (Step 4b below).
+  const [editingSetIdx, setEditingSetIdx] = useState<number | null>(null)
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -327,6 +349,12 @@ function ActiveWorkoutSession({
     // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.id, cursor])
+  // The open set-edit sheet addresses a row index INTO the viewed exercise (mezo-l3on);
+  // that index is meaningless against another exercise, so a jump (pager / dots /
+  // overview / swipe) must close it rather than let it edit the wrong slot.
+  useEffect(() => {
+    setEditingSetIdx(null)
+  }, [current.id])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -422,6 +450,10 @@ function ActiveWorkoutSession({
     }, {
       ctx: { exerciseName: finishing.name, lastWeek: finishing.lastWeek, date: localToday },
       onSuccess: (r) => {
+        // Bind the server's set id onto the just-appended logged entry (mezo-l3on) —
+        // BEFORE the medal-less early return below, so a plain set (no medal earned)
+        // still gets an addressable id for a later edit/delete.
+        if (r?.id) setSession((s) => attachSetId(s, finishing.id, wasSetIdx, r.id!))
         const medals = r?.medals ?? []
         if (!medals.length) return
         setMedalsBySet((m) => ({ ...m, [`${finishing.id}:${wasSetIdx}`]: medals }))
@@ -452,6 +484,61 @@ function ActiveWorkoutSession({
       // above the bar (set dots + prefilled steppers).
       rest.start(restSecondsFor(current.type))
     }
+  }
+
+  // Drop every in-session medal chip of one exercise (mezo-l3on): after an edit or a delete the
+  // exercise's OTHER sets can gain or lose records too, and the authoritative list only arrives
+  // with the finish response — a missing chip is honest, a stale one is not.
+  const clearExerciseMedals = (ex: LoggedWorkoutExercise) => {
+    setMedalsBySet((m) => {
+      const next: Record<string, Medal[]> = {}
+      const dropped: Medal[] = []
+      for (const [k, v] of Object.entries(m)) {
+        if (k.startsWith(`${ex.id}:`)) dropped.push(...v)
+        else next[k] = v
+      }
+      const droppedKeys = new Set(dropped.map(medalKey))
+      setSessionMedals((s) => s.filter((md) => !droppedKeys.has(medalKey(md))))
+      return next
+    })
+  }
+
+  const handleSetSave = (idx: number, v: SetEditValues) => {
+    const ex = current
+    const setId = session.logged[ex.id]?.[idx]?.id
+    setSession(updateLoggedSet(session, ex.id, idx, { weight: v.weight, reps: v.reps, rir: v.rir, side: v.side, note: v.note }))
+    clearExerciseMedals(ex)
+    const isWarmup = prescribedAt(session, ex.id, idx)?.kind === 'warmup'
+    if (setId) {
+      updateSet(workoutId ?? 'mock', setId, {
+        weightKg: weightless ? 0 : v.weight,
+        reps: v.reps,
+        ...(isWarmup ? {} : { rir: v.rir }),
+        ...(v.side ? { side: v.side } : {}),
+        ...(v.note.trim() ? { note: v.note.trim() } : {}),
+      }, {
+        onSuccess: (r) => {
+          const medals = r?.medals ?? []
+          if (medals.length) {
+            setMedalsBySet((m) => ({ ...m, [`${ex.id}:${idx}`]: medals }))
+            setSessionMedals((s) => [...s, ...medals])
+          }
+        },
+      })
+    }
+    setEditingSetIdx(null)
+  }
+
+  const handleSetDelete = (idx: number) => {
+    const ex = current
+    const setId = session.logged[ex.id]?.[idx]?.id
+    // The removed set must not leave a rest countdown running toward it.
+    rest.skip()
+    setSession(removeSet(session, ex.id, idx))
+    clearExerciseMedals(ex)
+    // A pending slot has no server row — the shrink is purely client state.
+    if (setId) deleteSet(workoutId ?? 'mock', setId)
+    setEditingSetIdx(null)
   }
 
   // The save button of the debrief persists the RP values for the just-finished exercise.
@@ -819,6 +906,32 @@ function ActiveWorkoutSession({
           onClose={() => setActionSheetOpen(false)}
         />
       )}
+      {editingSetIdx !== null && !feedbackEx && (() => {
+        const idx = editingSetIdx
+        const t = prescribedAt(session, current.id, idx)
+        const warm = t?.kind === 'warmup'
+        const actual = session.logged[current.id]?.[idx]
+        return (
+          <SetEditSheet
+            exerciseName={current.name}
+            setLabel={setSlotLabel(idx, warm, warmupCount)}
+            mode={actual ? 'logged' : 'pending'}
+            kind={warm ? 'warmup' : 'working'}
+            exerciseType={current.type}
+            initial={{
+              weight: actual?.weight ?? t?.targetWeightKg ?? prefill(current).weight,
+              reps: actual?.reps ?? t?.targetReps ?? prefill(current).reps,
+              rir: actual?.rir ?? t?.targetRIR ?? current.targetRIR,
+              side: actual?.side ?? null,
+              note: actual?.note ?? '',
+            }}
+            canDelete={canRemoveSet(session, current.id)}
+            onSave={(v) => handleSetSave(idx, v)}
+            onDelete={() => handleSetDelete(idx)}
+            onClose={() => setEditingSetIdx(null)}
+          />
+        )
+      })()}
       {noteEditOpen && (
         <NoteEditSheet
           initialNote={effectiveNote}
@@ -1122,10 +1235,13 @@ function ActiveWorkoutSession({
               const r = isDone ? actual?.reps : t?.targetReps
               const rr = isDone ? actual?.rir : t?.targetRIR
               return (
-                <div
+                <button
                   key={i}
-                  className="row gap-sm"
-                  style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1 }}
+                  type="button"
+                  className="row gap-sm np-press"
+                  aria-label={`${setSlotLabel(i, warm, warmupCount)} szerkesztése${isDone ? ` — ${w ?? '–'} kg × ${r ?? '–'}` : ''}`}
+                  onClick={() => setEditingSetIdx(i)}
+                  style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1, width: '100%', textAlign: 'left' }}
                 >
                   <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
                   <span className="stag" style={{ background: 'color-mix(in srgb, ' + accent + ' 14%, transparent)', color: accent }}>{kindLabel}</span>
@@ -1152,7 +1268,8 @@ function ActiveWorkoutSession({
                   ) : warm ? null : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
                   )}
-                </div>
+                  <span aria-hidden="true" style={{ color: 'var(--text-tertiary)', fontSize: 13, marginLeft: 2 }}>›</span>
+                </button>
               )
             })}
           </div>
