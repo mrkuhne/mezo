@@ -83,12 +83,13 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
         {days.map((d) => {
           const active = d.day === day.day
           const dayOff = isOffDay(d)
+          const dayWarning = warningDays.has(d.day)
           return (
             <button
               key={d.day}
               type="button"
               aria-pressed={active}
-              aria-label={`${d.day} · ${d.type}`}
+              aria-label={`${d.day} · ${d.type}${dayWarning ? ' · terhelés-jelzés' : ''}`}
               onClick={() => setActiveDay(d.day)}
               className="rad-12"
               style={{
@@ -112,7 +113,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
                   {d.exercises.length}
                 </span>
               )}
-              {warningDays.has(d.day) && (
+              {dayWarning && (
                 <span
                   aria-hidden="true"
                   style={{
@@ -142,7 +143,9 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
       )}
 
       <MesoEditorHero
-        dayType={day.type}
+        // When the rename input is shown, it already carries the custom day's
+        // name — blank the hero eyebrow so the name isn't rendered twice.
+        dayType={showRename ? '' : day.type}
         daySets={daySets}
         dayExerciseCount={day.exercises.length}
         weekSets={weekSets}

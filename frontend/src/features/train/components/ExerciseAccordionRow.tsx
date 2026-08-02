@@ -111,8 +111,17 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
             <StepperTile
               label="Rep tartomány" aria={`${ex.name} · Rep tartomány`}
               value={`${ex.repMin}–${ex.repMax}`}
-              onDec={() => onChange({ repMin: Math.max(1, ex.repMin - 1), repMax: Math.max(1, ex.repMax - 1) })}
-              onInc={() => onChange({ repMin: Math.min(100, ex.repMin + 1), repMax: Math.min(100, ex.repMax + 1) })}
+              onDec={() => {
+                // A tile only SHIFTS the window — width changes belong to the
+                // Finomhangolás steppers. A no-op at repMin===1 keeps the
+                // window width from collapsing at the lower boundary.
+                if (ex.repMin === 1) return
+                onChange({ repMin: ex.repMin - 1, repMax: ex.repMax - 1 })
+              }}
+              onInc={() => {
+                if (ex.repMax === 100) return
+                onChange({ repMin: ex.repMin + 1, repMax: ex.repMax + 1 })
+              }}
             />
             <AnchorTile aria={`${ex.name} · Kiinduló kg`} value={ex.anchorWeightKg} onChange={(v) => onChange({ anchorWeightKg: v })} />
             <StepperTile

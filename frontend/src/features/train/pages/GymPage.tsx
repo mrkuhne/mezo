@@ -149,12 +149,17 @@ export function GymPage() {
                     {g.rows.map((r) => {
                       const fam = muscleColor(r.muscle)
                       const over = overGroups.has(budgetGroup(r.muscle) ?? '')
+                      const pillLabel = `${MUSCLE_LABELS[r.muscle] ?? r.muscle} ${r.workingSets}${over ? ' ⚠' : ''}`
                       return (
-                        <span key={r.muscle} style={{
-                          fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
-                          background: fam.wash, color: over ? 'var(--error)' : fam.deep, whiteSpace: 'nowrap',
-                        }}>
-                          {MUSCLE_LABELS[r.muscle] ?? r.muscle} {r.workingSets}{over ? ' ⚠' : ''}
+                        <span
+                          key={r.muscle}
+                          style={{
+                            fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
+                            background: fam.wash, color: over ? 'var(--error)' : fam.deep, whiteSpace: 'nowrap',
+                          }}
+                          {...(over ? { title: 'Heti szet-keret túllépve', 'aria-label': `${pillLabel} · Heti szet-keret túllépve` } : {})}
+                        >
+                          {pillLabel}
                         </span>
                       )
                     })}

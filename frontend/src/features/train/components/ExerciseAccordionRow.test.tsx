@@ -39,6 +39,14 @@ describe('ExerciseAccordionRow', () => {
     expect(onChange).toHaveBeenCalledWith({ repMin: 9, repMax: 11 })
   })
 
+  it('rep window decrease is a no-op at the repMin=1 boundary (no width collapse)', () => {
+    const onChange = vi.fn()
+    const lowEx: GymExercise = { ...ex, repMin: 1, repMax: 3 }
+    render(<ExerciseAccordionRow ex={lowEx} expanded onToggle={noop} onRemove={noop} onChange={onChange} />)
+    fireEvent.click(screen.getByLabelText('Fekvenyomás · Rep tartomány csökkentése'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('header click toggles', () => {
     const onToggle = vi.fn()
     render(<ExerciseAccordionRow ex={ex} expanded={false} onToggle={onToggle} onRemove={noop} onChange={noop} />)

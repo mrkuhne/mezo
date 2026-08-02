@@ -184,12 +184,14 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   // the first custom day (Body A) is active by default even though it has no exercises yet
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
-  expect(screen.getByText('Body A')).toBeInTheDocument()
+  // the custom day's name lives ONLY in the rename input (the hero eyebrow is
+  // blanked while the rename input is shown, so the name isn't duplicated).
+  expect(screen.getByDisplayValue('Body A')).toBeInTheDocument()
   // renaming the day updates the header (MesoEditor's own custom-day rename input)
   const nameInput = screen.getByLabelText(/nap átnevezése/)
   await user.clear(nameInput)
   await user.type(nameInput, 'Láb nap')
-  expect(screen.getByText('Láb nap')).toBeInTheDocument()
+  expect(screen.getByDisplayValue('Láb nap')).toBeInTheDocument()
   // the add affordance opens the picker and the pick lands in the day
   await user.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
   await user.click(screen.getByText('Hip Thrust'))
