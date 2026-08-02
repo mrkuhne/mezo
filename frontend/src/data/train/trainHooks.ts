@@ -309,11 +309,13 @@ type TrainData = {
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
   // (ActiveWorkoutPage) supplies it because only it knows which exercise/lastWeek is being
-  // logged; real mode ignores it. The response carries `medals` in BOTH modes.
+  // logged; real mode ignores it. The response carries `medals` in BOTH modes. `onError`
+  // (mezo-l3on fix-round-2, N1) lets the caller roll back its own optimistic local append
+  // when the POST fails — otherwise a strayed set can never bind a server id.
   logSet: (
     workoutId: string,
     set: SetLogRequest,
-    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void; onError?: (err: unknown) => void },
   ) => void
   /** Overwrite one logged set (mezo-l3on). Mock mode is a no-op that echoes the id. */
   updateSet: (
@@ -678,8 +680,12 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     (
       workoutId: string,
       set: SetLogRequest,
-      opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
-    ) => logSetMutation.mutate({ workoutId, set, ctx: opts?.ctx }, { onSuccess: (r) => opts?.onSuccess?.(r) }),
+      opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void; onError?: (err: unknown) => void },
+    ) =>
+      logSetMutation.mutate(
+        { workoutId, set, ctx: opts?.ctx },
+        { onSuccess: (r) => opts?.onSuccess?.(r), onError: (err) => opts?.onError?.(err) },
+      ),
     [logSetMutation],
   )
   const updateSet = useCallback(

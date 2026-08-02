@@ -823,6 +823,25 @@ test('real mode: starting creates the instance and Szett kész posts the set', a
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5')) // prefill = last week
 })
 
+test('real mode: a failed logSet POST rolls back the optimistic set (N1, fix round 2) — the row is not stranded', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, () => new HttpResponse(null, { status: 500 })),
+  )
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  // The optimistic local append (completeSetModel) must roll back once the POST
+  // fails — otherwise the row is stranded forever with no server id, and C2's
+  // disabled-row rule would then make it permanently un-editable/-deletable.
+  await waitFor(() => expect(container.querySelector('.setdots .sd.don')).toBeNull())
+  expect(container.querySelector('.setdots .sd.cur')).toBeInTheDocument()
+})
+
 test('real mode: typing a per-set note before Szett kész sends it in the logSet payload', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []

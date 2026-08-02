@@ -36,6 +36,7 @@ import {
   canRemoveSet,
   completeSet as completeSetModel,
   currentExerciseId,
+  dropLoggedSetByLocalId,
   effectiveSetCount,
   makeSession,
   mergePlan,
@@ -175,7 +176,7 @@ interface SessionProps {
   logSet: (
     workoutId: string,
     set: SetLogRequest,
-    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void; onError?: (err: unknown) => void },
   ) => void
   updateSet: (
     workoutId: string,
@@ -346,9 +347,14 @@ function ActiveWorkoutSession({
       setReps(t?.targetReps ?? prevWorking?.reps ?? p.reps)
       setRir(t?.targetRIR ?? prevWorking?.rir ?? p.rir)
     }
-    // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
+    // Reset on set-index / exercise transitions, and on the exercise's own slot-count
+    // change (N2, fix round 2): a delete of a PENDING slot changes neither `current.id`
+    // nor `cursor`, but the prescription splice (removeSet, C1) shifts what
+    // `prescribedAt(cursor)` returns — without this dep the steppers would keep
+    // showing the stale target while the kind tag/RIR row (computed at render) already
+    // moved on. NOT re-run on note changes (deliberately excluded).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.id, cursor])
+  }, [current.id, cursor, effectiveSetCount(session, current.id)])
   // The open set-edit sheet addresses a row index INTO the viewed exercise (mezo-l3on);
   // that index is meaningless against another exercise, so a jump (pager / dots /
   // overview / swipe) must close it rather than let it edit the wrong slot.
@@ -430,7 +436,11 @@ function ActiveWorkoutSession({
     const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the medal ctx + persisted setIndex)
     const target = prescribedAt(session, finishing.id, wasSetIdx)
     const kind = target?.kind ?? 'working'
-    const next = completeSetModel(session, finishing.id, { weight, reps, rir })
+    // A client-side identity (mezo-l3on fix-round-2, N1), assigned NOW so the async logSet
+    // response (success OR failure) can address THIS exact entry later — never by array
+    // index, which shifts under a concurrent edit/delete or a second in-flight log.
+    const localId = crypto.randomUUID()
+    const next = completeSetModel(session, finishing.id, { weight, reps, rir, localId })
     setSession(next)
     // Medals (mezo-wp6n): always logged — real mode never had a `workoutId` guard
     // reason to skip this (mirrors finishAndCelebrate's 'mock' sentinel below), and
@@ -452,8 +462,9 @@ function ActiveWorkoutSession({
       onSuccess: (r) => {
         // Bind the server's set id onto the just-appended logged entry (mezo-l3on) —
         // BEFORE the medal-less early return below, so a plain set (no medal earned)
-        // still gets an addressable id for a later edit/delete.
-        if (r?.id) setSession((s) => attachSetId(s, finishing.id, wasSetIdx, r.id!))
+        // still gets an addressable id for a later edit/delete. Addressed by localId
+        // (fix-round-2, N1): a no-op if the user already deleted this exact entry.
+        if (r?.id) setSession((s) => attachSetId(s, finishing.id, localId, r.id!))
         const medals = r?.medals ?? []
         if (!medals.length) return
         setMedalsBySet((m) => ({ ...m, [`${finishing.id}:${wasSetIdx}`]: medals }))
@@ -464,6 +475,14 @@ function ActiveWorkoutSession({
           const top = [...records].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))[0]
           setToastMedal({ medal: top, extra: medals.length - 1 })
         }
+      },
+      // N1 (fix round 2): a failed POST (gym wifi) must roll back the optimistic local
+      // append — otherwise the row is stranded with no `id` forever, and C2's disabled-
+      // row rule then makes it permanently untappable while still counting toward the
+      // cursor and the summary. Addressed by localId, so a delete that already removed
+      // this entry before the failure lands is a harmless no-op.
+      onError: () => {
+        setSession((s) => dropLoggedSetByLocalId(s, finishing.id, localId))
       },
     })
     setNote('')
@@ -1198,24 +1217,27 @@ function ActiveWorkoutSession({
 
           {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
               completeSet's own last-set branch (which is what normally pins `feedbackEx`
-              and never re-renders this CTA afterwards) — so gate on the cursor directly:
-              once there is no next slot to log, neither the CTA nor a stray rest bar
-              belongs here (the debrief modal takes over). */}
-          {cursor < currentSetCount && (
-            rest.status === 'idle' ? (
+              and never re-renders this CTA afterwards) — so the CTA is gated on the
+              cursor directly: once there is no next slot to log, it must not linger.
+              N3 (fix round 2): the REST BAR is a different story — a rest can still be
+              genuinely running (free-navigated away from mid-rest, or navigated back to
+              a since-completed exercise) and must stay visible/pausable regardless of
+              whether this exercise still has a next slot; only the CTA is cursor-gated. */}
+          {rest.status === 'idle' ? (
+            cursor < currentSetCount && (
               <button type="button" className="donebtn np-press" onClick={completeSet}>
                 Szett kész ✓
               </button>
-            ) : (
-              <RestTimerBar
-                remaining={rest.remaining}
-                total={rest.total}
-                paused={rest.status === 'paused'}
-                onPause={rest.pause}
-                onResume={rest.resume}
-                onSkip={rest.skip}
-              />
             )
+          ) : (
+            <RestTimerBar
+              remaining={rest.remaining}
+              total={rest.total}
+              paused={rest.status === 'paused'}
+              onPause={rest.pause}
+              onResume={rest.resume}
+              onSkip={rest.skip}
+            />
           )}
         </div>
 
