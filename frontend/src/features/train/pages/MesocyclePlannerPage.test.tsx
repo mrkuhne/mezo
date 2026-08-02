@@ -69,12 +69,10 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
   // fireEvent-style direct change is the reliable way to set <input type="date">
   await user.type(dateInput, '2026-06-16')
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  // step 2 -> step 3
+  // step 2 -> step 3 (Program — terminal step, save buttons live here)
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   // step 3: wait out the 600ms generate delay
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
-  // step 3 -> step 4 (Set & rep): the save buttons live here now
-  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: /Hozzáad mint tervezett/i }))
 
   await waitFor(() => expect(posted).not.toBeNull())
@@ -151,26 +149,29 @@ test('the generated program lands on the selected weekdays', async () => {
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
   await user.click(screen.getByRole('button', { name: 'Pén' })) // off
   await user.click(screen.getByRole('button', { name: 'Vas' })) // on instead
-  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 3
-  // program generation has a 600ms delay
-  const vasSection = await screen.findByRole('button', { name: /Vas/ }, { timeout: 3000 })
-  expect(vasSection).toHaveTextContent(/Pull/) // 5th entry of the PPL sequence lands on Vas
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
+  // program generation has a 600ms delay; day tabs land once it resolves
+  const vasTab = await screen.findByRole('button', { name: /Vas/ }, { timeout: 3000 })
+  await user.click(vasTab)
+  expect(screen.getByText('Pull')).toBeInTheDocument() // 5th entry of the PPL sequence lands on Vas (hero dayType)
   // Pén became a rest day
-  const penSection = screen.getByRole('button', { name: /^Pén/ })
-  expect(penSection).toHaveTextContent(/Rest/)
+  await user.click(screen.getByRole('button', { name: /^Pén/ }))
+  expect(screen.getByText('Rest')).toBeInTheDocument()
 })
 
-test('an expanded program day can be collapsed (and stays collapsed)', async () => {
+test('day tabs switch between program days (replaces the old per-day accordion)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 3
-  // the first training day auto-expands once the program lands
-  const header = await screen.findByRole('button', { name: /Hét.*Push/, expanded: true }, { timeout: 3000 })
-  await user.click(header)
-  expect(screen.getByRole('button', { name: /Hét.*Push/ })).toHaveAttribute('aria-expanded', 'false')
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
+  // the first training day (Hét · Push) is active by default once the program lands
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  expect(screen.getByText('Push')).toBeInTheDocument()
+  // switching tabs swaps the active day's hero
+  await user.click(screen.getByRole('button', { name: /Sze/ }))
+  expect(screen.getByText('Legs')).toBeInTheDocument()
 })
 
 test('custom split: empty nameable days, the user picks the exercises', async () => {
@@ -180,15 +181,17 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
   await user.click(screen.getByText('Custom split'))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 3
-  // the first custom day auto-expands even though it has no exercises yet
-  const header = await screen.findByRole('button', { name: /Body A/, expanded: true }, { timeout: 3000 })
-  expect(header).toHaveTextContent(/Üres nap/)
-  // renaming the day updates the header
-  const nameInput = screen.getByLabelText('Nap neve')
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
+  // the first custom day (Body A) is active by default even though it has no exercises yet
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  // the custom day's name lives ONLY in the rename input (the hero eyebrow is
+  // blanked while the rename input is shown, so the name isn't duplicated).
+  expect(screen.getByDisplayValue('Body A')).toBeInTheDocument()
+  // renaming the day updates the header (MesoEditor's own custom-day rename input)
+  const nameInput = screen.getByLabelText(/nap átnevezése/)
   await user.clear(nameInput)
   await user.type(nameInput, 'Láb nap')
-  expect(screen.getByRole('button', { name: /Láb nap/ })).toBeInTheDocument()
+  expect(screen.getByDisplayValue('Láb nap')).toBeInTheDocument()
   // the add affordance opens the picker and the pick lands in the day
   await user.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
   await user.click(screen.getByText('Hip Thrust'))
@@ -196,7 +199,7 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   await user.click(screen.getByRole('button', { name: /^Kész/ }))
   await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
   expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Láb nap/ })).toHaveTextContent(/1 gyakorlat/)
+  expect(screen.getByText('1 gyakorlat')).toBeInTheDocument()
 })
 
 test('manually picked weekdays survive a day-count change', async () => {
@@ -225,23 +228,21 @@ test('program edits survive a step round-trip when inputs are unchanged', async 
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> program review
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program (terminal)
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
-  // the auto-expand lands in a second commit — wait for the rows before counting
-  // (findAll: the expanded day has several rows, so a singular findBy would throw)
-  await screen.findAllByRole('button', { name: 'Eltávolítás' })
-  // remove the first exercise of the auto-expanded day
-  const removeButtons = screen.getAllByRole('button', { name: 'Eltávolítás' })
-  const countBefore = removeButtons.length
-  await user.click(removeButtons[0])
-  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
-  // back to step 2 (the review step has no Vissza button — use the tappable
+  // the active (first training) day's exercise rows are collapsed by default
+  // in the accordion editor — expand the first one to reach its remove button.
+  const rows = () => screen.getAllByRole('button', { name: /· szerkesztés$/ })
+  const countBefore = rows().length
+  await user.click(rows()[0])
+  await user.click(screen.getByRole('button', { name: /törlése$/ }))
+  expect(rows()).toHaveLength(countBefore - 1)
+  // back to step 2 (the Program step has no Vissza button — use the tappable
   // progress segment) and forward again — NO regeneration, edit preserved
   await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
-  await screen.findAllByRole('button', { name: 'Eltávolítás' })
-  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
+  expect(rows()).toHaveLength(countBefore - 1)
 })
 
 test('changing an input regenerates the program', async () => {
@@ -261,29 +262,31 @@ test('changing an input regenerates the program', async () => {
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
 })
 
-test('Set & rep step: day tabs, recipe editing, edits survive the 4↔5 round-trip', async () => {
+test('Program step: budget card + accordion recipe editing, edits survive the 3↔2 round-trip', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Gyakorlatok
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program (terminal, merged review + tuning)
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
-  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Set & rep
-  expect(screen.getByText('Mennyit és hányszor?')).toBeInTheDocument()
-  // save buttons live here now
+  expect(screen.getByText('A programod · gyakorlatok + set & rep')).toBeInTheDocument()
+  // save buttons live here immediately — no extra Tovább needed
   expect(screen.getByRole('button', { name: /Hozzáad mint tervezett/i })).toBeInTheDocument()
-  // a day tab is preselected; the always-visible steppers bump the day set count.
-  // Generated names are dynamic, so target the first Working stepper by regex.
-  const daySummary = () => screen.getByText(/gyakorlat · \d+ szet/).textContent
-  const before = daySummary()
-  await user.click(screen.getAllByRole('button', { name: /· Working növelése$/ })[0])
-  const after = daySummary()
+  // the unified editor's weekly set-budget card renders on this step
+  expect(screen.getByText(/Heti szet-büdzsé/)).toBeInTheDocument()
+  // a day tab is preselected; expand the first exercise row to reach its
+  // steppers, then bump Munkaszett and watch the day-level set total change.
+  const heroSets = () => screen.getByText('szett ma').parentElement?.textContent
+  const before = heroSets()
+  await user.click(screen.getAllByRole('button', { name: /· szerkesztés$/ })[0])
+  await user.click(screen.getAllByRole('button', { name: /· Munkaszett növelése$/ })[0])
+  const after = heroSets()
   expect(after).not.toBe(before)
-  // round-trip back to Gyakorlatok (via the progress segment — the terminal
+  // round-trip back to Split + napok (via the progress segment — the terminal
   // step has no Vissza button) and forward: no regeneration, edit kept
-  await user.click(screen.getByRole('button', { name: '4. lépés · Gyakorlatok' }))
-  expect(screen.getByText(/A te blokkod/i)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  expect(daySummary()).toBe(after)
+  expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
+  expect(heroSets()).toBe(after)
 })

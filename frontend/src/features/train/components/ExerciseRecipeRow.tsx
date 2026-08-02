@@ -1,8 +1,10 @@
 // ============================================================
 // Mezo · ExerciseRecipeRow — one exercise's recipe editor row (name +
-// muscle + remove ✕ + the six always-visible recipe steppers). Shared by
-// MesoDayTabsEditor (planner/builder) and CustomWorkoutBuilderPage (saját
-// edzés composer, mezo-ws2x). Extracted verbatim from MesoDayTabsEditor.
+// muscle + remove ✕ + the six always-visible recipe steppers). Custom-
+// workout-builder-only: CustomWorkoutBuilderPage (saját edzés composer,
+// mezo-ws2x). The unified set-budget editor (mezo-7rdg) uses the
+// accordion-style ExerciseAccordionRow instead. Extracted verbatim from
+// MesoDayTabsEditor.
 // ============================================================
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'

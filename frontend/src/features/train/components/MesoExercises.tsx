@@ -1,39 +1,26 @@
 // ============================================================
 // Mezo · MesoExercises (builder · Gyakorlatok) — the weekly exercise editor.
 // Seeds LOCAL day-state from meso.days (deep-ish copy so edits never mutate the
-// module const), renders an intro card with live totals, the shared
-// day-tabbed MesoDayTabsEditor (switch days via tabs, tune the recipe on the
-// always-visible steppers), and a footer set-volume summary. Add/remove/change/reorder all mutate the
-// local state only (Phase-1 UI) and fire a background full-list PUT when the day
-// carries a real row id. The exercise picker (ExercisePickerSheet) opens for the
-// active day and appends to that day's list.
+// module const), renders the shared unified MesoEditor (gradient hero, the
+// collapsible weekly set-budget card, and the day-tabbed accordion exercise
+// rows). Add/remove/change/reorder all mutate the local state only (Phase-1
+// UI) and fire a background full-list PUT when the day carries a real row id.
+// The exercise picker (ExercisePickerSheet) opens for the active day and
+// appends to that day's list.
 // Ported from prototype mesocycles.jsx MesoExercises.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Icon } from '@/shared/ui/Icon'
-import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { MesoDayTabsEditor } from '@/features/train/components/MesoDayTabsEditor'
+import { MesoEditor } from '@/features/train/components/MesoEditor'
+import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
 // Deep-ish clone of the meso days so local edits never mutate the data-layer
 // module const (each day + its exercises array gets its own copy).
 function seedDays(days: MesoDay[]): MesoDay[] {
   return days.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) }))
-}
-
-// Sensible recipe defaults when promoting a library pick into a planned exercise.
-function libraryToGymExercise(item: ExerciseLibraryItem): MesoDay['exercises'][number] {
-  return {
-    id: `${item.id}-${crypto.randomUUID()}`,
-    name: item.name,
-    muscle: item.muscle,
-    warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
-    type: item.type,
-    ...(item.catalogId ? { catalogId: item.catalogId } : {}),
-  }
 }
 
 export function MesoExercises({ meso }: { meso: Mesocycle }) {
@@ -63,14 +50,6 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
       </div>
     )
   }
-
-  const totalExercises = days.reduce((a, d) => a + d.exercises.length, 0)
-  const trainingDays = days.filter((d) => d.exercises.length > 0).length
-  const totalSets = days.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
-
-  const introBody =
-    `**${totalExercises} gyakorlat · ${trainingDays} edzésnap.** ` +
-    'Válts napot a tabokkal · állítsd a receptet a steppereken · plusz/törlés/drag-rendezés.'
 
   const removeExercise = (dayKey: string, exId: string) => {
     const next = days.map((d) => {
@@ -118,45 +97,13 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
   return (
     <div className="col">
       <div style={{ padding: '12px 24px' }}>
-        {/* Intro card */}
-        <div
-          className="card"
-          style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}
-        >
-          <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--coral)" />
-            <div className="col flex-1">
-              <Eyebrow brand>Heti gyakorlat-terv</Eyebrow>
-              <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                <SafeMarkdown text={introBody} />
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Day-tabbed exercise + recipe editor */}
-        <MesoDayTabsEditor
+        <MesoEditor
           days={days}
           onAddClick={setPickerDay}
           onRemove={removeExercise}
           onChange={updateExercise}
           onReorder={reorderExercises}
         />
-      </div>
-
-      {/* Weekly volume summary */}
-      <div style={{ padding: '16px 24px' }}>
-        <div className="card" style={{ padding: 14 }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <Eyebrow>Heti szet-volumen</Eyebrow>
-            <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>
-              {totalSets} szet
-            </span>
-          </div>
-          <p className="text-tertiary mt-sm" style={{ fontSize: 11, lineHeight: 1.45 }}>
-            A Volumen view-ban izomcsoportonkénti MEV/MAV/MRV bontásban látod.
-          </p>
-        </div>
       </div>
 
       {pickerDay && (

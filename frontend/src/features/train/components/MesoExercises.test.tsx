@@ -29,10 +29,11 @@ async function renderExercisesView() {
   await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
 }
 
-test('Gyakorlatok view shows the intro, day tabs and the current day content', async () => {
+test('Gyakorlatok view shows the hero, the set-budget card and the current day content', async () => {
   await renderExercisesView()
-  expect(screen.getByText('Heti gyakorlat-terv')).toBeInTheDocument()
-  expect(screen.getByText('Heti szet-volumen')).toBeInTheDocument()
+  expect(screen.getByText(/szett ma/)).toBeInTheDocument()
+  expect(screen.getByText(/Heti terhelés:/)).toBeInTheDocument()
+  expect(screen.getByText('Heti szet-büdzsé')).toBeInTheDocument()
   // current day (Csü · Pull) is the default active tab → its content shows
   expect(screen.getByRole('button', { name: 'Csü · Pull' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
@@ -66,7 +67,7 @@ test('picking an exercise appends it to the open day', async () => {
 
 test('adding an exercise persists the day list in real mode (PUT with day id)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false') // override the file-level mock pin
-  const puts: { url: string; body: { name: string; catalogId?: string }[] }[] = []
+  const puts: { url: string; body: { name: string; catalogId?: string; targetRIR: number }[] }[] = []
   const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
   const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
   server.use(
@@ -85,7 +86,7 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
       ]),
     ),
     http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request, params }) => {
-      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; catalogId?: string }[] })
+      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; catalogId?: string; targetRIR: number }[] })
       return HttpResponse.json({ id: params.dayId, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 2, exercises: [] })
     }),
   )
@@ -110,6 +111,10 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
   // The picked item carries the catalog uuid; the pre-existing row stays unlinked.
   expect(puts[0].body[1].catalogId).toBe('f1e3a0e2-0000-4000-8000-000000000071')
   expect(puts[0].body[0].catalogId).toBeUndefined()
+  // New adds default to the VOLUME style (targetRIR 2, exerciseDefaults); the
+  // pre-existing row keeps its own RIR.
+  expect(puts[0].body[1].targetRIR).toBe(2)
+  expect(puts[0].body[0].targetRIR).toBe(1)
 })
 
 test('reordering a day exercise via ▲ persists the new order (PUT) in real mode', async () => {
@@ -166,7 +171,9 @@ test('recipe stepper change persists the day list (PUT) in real mode', async () 
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   await waitFor(() => expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument())
   await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
-  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · Working növelése' }))
+  // The accordion row starts collapsed — expand it before its steppers appear.
+  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · szerkesztés' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · Munkaszett növelése' }))
   await waitFor(() => expect(puts).toHaveLength(1))
   expect(puts[0].body[0].workingSets).toBe(5)
 })

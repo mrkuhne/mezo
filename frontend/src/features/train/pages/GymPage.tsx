@@ -16,6 +16,7 @@ import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { muscleRegionGroups, muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
+import { budgetGroup, muscleBudgets } from '@/features/train/logic/setBudget'
 import { GymStat } from '@/features/train/components/GymStat'
 import { PhaseDots } from '@/features/train/components/PhaseDots'
 import { GymDayCard } from '@/features/train/components/GymDayCard'
@@ -71,6 +72,9 @@ export function GymPage() {
   const totalSets = gymDays.reduce((acc, d) => acc + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
   // Region-grouped per-muscle weekly breakdown for the meta-card grid (mezo-ly27).
   const muscleGroups = muscleRegionGroups(muscleWeekFromMeso(days))
+  // Read-only set-budget mirror (mezo-7rdg): muscle groups over their weekly budget
+  // get a warning pill on the meta card, echoing the MuscleWeekSheet detail view.
+  const overGroups = new Set(muscleBudgets(days).filter((b) => b.level === 'over').map((b) => b.group))
 
   // Current phase for the active week (Week 3 ⇒ phaseCurve[2] ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -144,12 +148,18 @@ export function GymPage() {
                   <span className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
                     {g.rows.map((r) => {
                       const fam = muscleColor(r.muscle)
+                      const over = overGroups.has(budgetGroup(r.muscle) ?? '')
+                      const pillLabel = `${MUSCLE_LABELS[r.muscle] ?? r.muscle} ${r.workingSets}${over ? ' ⚠' : ''}`
                       return (
-                        <span key={r.muscle} style={{
-                          fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
-                          background: fam.wash, color: fam.deep, whiteSpace: 'nowrap',
-                        }}>
-                          {MUSCLE_LABELS[r.muscle] ?? r.muscle} {r.workingSets}
+                        <span
+                          key={r.muscle}
+                          style={{
+                            fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
+                            background: fam.wash, color: over ? 'var(--error)' : fam.deep, whiteSpace: 'nowrap',
+                          }}
+                          {...(over ? { title: 'Heti szet-keret túllépve', 'aria-label': `${pillLabel} · Heti szet-keret túllépve` } : {})}
+                        >
+                          {pillLabel}
                         </span>
                       )
                     })}

@@ -6,6 +6,7 @@ import { GymPage } from '@/features/train/pages/GymPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import type { MesoDay } from '@/data/types'
 
 // GymDayCard taps route straight to the session/review (direct-start flow,
 // mezo-bxpg) via useNavigate; mock it so we can assert the exact target
@@ -16,13 +17,33 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+// Set-budget mirror test (mezo-7rdg) needs an over-budget muscle group, which the
+// stock mock meso doesn't produce. Rather than editing the shared mock seed
+// (out of scope), wrap the real useTrain and let a single test swap in a
+// custom `days` array on top of the otherwise-real activeMeso.
+let daysOverride: MesoDay[] | null = null
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useTrain: (...args: Parameters<typeof actual.useTrain>) => {
+      const real = actual.useTrain(...args)
+      if (!daysOverride || !real.activeMeso) return real
+      return { ...real, activeMeso: { ...real.activeMeso, days: daysOverride } }
+    },
+  }
+})
+
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   mockNavigate.mockReset()
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  daysOverride = null
+})
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><GymPage /></MemoryRouter></QueryWrapper>)
 
@@ -74,6 +95,21 @@ test('tapping the meta card opens the MuscleWeekSheet', () => {
   renderView()
   fireEvent.click(screen.getByRole('button', { name: 'Heti izomterhelés — részletek' }))
   expect(screen.getByRole('heading', { name: 'Heti izomterhelés' })).toBeInTheDocument()
+})
+
+test('an over-budget muscle pill shows the warning icon in error color (mezo-7rdg)', () => {
+  daysOverride = [{
+    day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 2,
+    exercises: [
+      { id: 'ob1', name: 'Bench Press', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 4, repMax: 6, targetRIR: 1, type: 'compound', anchorWeightKg: 100 },
+      { id: 'ob2', name: 'Cable Fly', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 12, repMax: 15, targetRIR: 3, type: 'isolation', anchorWeightKg: 15 },
+    ],
+  }]
+  renderView()
+  const card = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
+  const pill = within(card).getByText(/^Mell \d+ ⚠$/)
+  expect(pill).toBeInTheDocument()
+  expect(pill).toHaveStyle({ color: 'var(--error)' })
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the GymSkeleton (role="status")
