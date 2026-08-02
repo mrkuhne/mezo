@@ -288,4 +288,53 @@ class WorkoutSetMutationIT extends ApiIntegrationTest {
         deleteAndExpect("/api/train/workouts/" + UUID.randomUUID() + "/sets/" + UUID.randomUUID(),
             null, HttpStatus.UNAUTHORIZED);
     }
+
+    /** A set logged into instance A (now finished), plus a SECOND, independent, still-ACTIVE
+     *  instance B of a different template day — the fixture for proving the cross-instance
+     *  ownership guard (mezo-l3on, F3: {@code ownedActiveSetOrThrow}'s
+     *  {@code instance.getId().equals(s.getWorkoutSessionId())} check). */
+    private record CrossInstanceFixture(ExerciseSetResponse setInA, WorkoutInstanceResponse instanceB, HttpHeaders headers) {
+    }
+
+    private CrossInstanceFixture crossInstanceFixture() {
+        UUID owner = ownerId();
+        HttpHeaders headers = ownerAuthHeaders();
+        WorkoutSessionEntity templateA = templateDayForToday(owner);
+        ExerciseEntity exerciseA = trainPopulator.createExercise(owner, templateA.getId(), "Row", 0);
+        WorkoutInstanceResponse instanceA = start(templateA, headers);
+        ExerciseSetResponse setInA = logSet(instanceA.getId(), exerciseA.getId(), 0, "80", 10, headers);
+        postForBody("/api/train/workouts/" + instanceA.getId() + "/finish",
+            null, headers, HttpStatus.OK, WorkoutInstanceResponse.class);
+
+        // A DIFFERENT template day (fresh mesocycle) — B must be its own instance, not a resume
+        // of A, and must not trip the "one completion per template day per week" guard (D5).
+        WorkoutSessionEntity templateB = templateDayForToday(owner);
+        trainPopulator.createExercise(owner, templateB.getId(), "Row", 0);
+        WorkoutInstanceResponse instanceB = start(templateB, headers);
+
+        return new CrossInstanceFixture(setInA, instanceB, headers);
+    }
+
+    @Test
+    void testUpdateSet_shouldReturn404_whenSetBelongsToAnotherInstance() {
+        CrossInstanceFixture fx = crossInstanceFixture();
+
+        // fx.instanceB() IS active and owned — so a bare "not active"/"not owned" check would
+        // wrongly let this through (or 409) if the guard didn't also verify the set's OWN
+        // workoutSessionId against the instance addressed in the URL.
+        String body = putForBody(
+            "/api/train/workouts/" + fx.instanceB().getId() + "/sets/" + fx.setInA().getId(),
+            update("90", 8, 1), fx.headers(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testDeleteSet_shouldReturn404_whenSetBelongsToAnotherInstance() {
+        CrossInstanceFixture fx = crossInstanceFixture();
+
+        String body = exchangeForBody(HttpMethod.DELETE,
+            "/api/train/workouts/" + fx.instanceB().getId() + "/sets/" + fx.setInA().getId(),
+            null, fx.headers(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
 }

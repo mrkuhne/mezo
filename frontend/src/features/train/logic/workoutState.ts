@@ -18,10 +18,10 @@ export interface LoggedSet {
    *  moment between the optimistic local append and the logSet response that carries it. */
   id?: string
   /** Client-assigned identity (mezo-l3on fix-round-2), set at the moment of the optimistic
-   *  `completeSet` append. `attachSetId`/`dropLoggedSetByLocalId` address an entry by THIS,
-   *  never by array index — an index shifts under a concurrent edit/delete/second-in-flight-log,
-   *  which could otherwise misbind the server id (or a rollback) onto the wrong entry. Absent on
-   *  a set rebuilt from persisted server data (`seedFromOpen`) — those already carry a stable `id`. */
+   *  `completeSet` append. `attachSetId` addresses an entry by THIS, never by array index —
+   *  an index shifts under a concurrent edit/delete/second-in-flight-log, which could otherwise
+   *  misbind the server id onto the wrong entry. Absent on a set rebuilt from persisted server
+   *  data (`seedFromOpen`) — those already carry a stable `id`. */
   localId?: string
   side?: SetSide | null
   note?: string
@@ -134,21 +134,6 @@ export function attachSetId(s: Session, id: string, localId: string, setId: stri
   const idx = logged?.findIndex((x) => x.localId === localId) ?? -1
   if (idx === -1) return s
   return updateLoggedSet(s, id, idx, { id: setId })
-}
-
-/**
- * Roll back an optimistic `completeSet` append that never actually landed on the server
- * (mezo-l3on fix-round-2, N1) — addressed by its LOCAL id, never by index. Unlike
- * `removeSet`, this does NOT touch `removed`/`prescribed`: the slot was never consumed by
- * a real server row, so there is nothing to reconcile there — only the mistaken `logged`
- * entry goes. A NO-OP (same session) when the entry is already gone (e.g. the user
- * deleted it locally before the failing POST's `onError` fired).
- */
-export function dropLoggedSetByLocalId(s: Session, id: string, localId: string): Session {
-  const logged = s.logged[id]
-  const idx = logged?.findIndex((x) => x.localId === localId) ?? -1
-  if (idx === -1) return s
-  return { ...s, logged: { ...s.logged, [id]: [...logged!.slice(0, idx), ...logged!.slice(idx + 1)] } }
 }
 
 /**

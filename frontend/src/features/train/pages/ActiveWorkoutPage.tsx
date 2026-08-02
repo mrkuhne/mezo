@@ -36,7 +36,6 @@ import {
   canRemoveSet,
   completeSet as completeSetModel,
   currentExerciseId,
-  dropLoggedSetByLocalId,
   effectiveSetCount,
   makeSession,
   mergePlan,
@@ -275,6 +274,13 @@ function ActiveWorkoutSession({
   // The set-list row tapped for edit/delete (mezo-l3on) — an index into the VIEWED
   // exercise's slots, so it must not survive a jump to another exercise (Step 4b below).
   const [editingSetIdx, setEditingSetIdx] = useState<number | null>(null)
+  // The `localId`s of logged sets whose logSet POST errored (mezo-l3on fix-round-3, F1).
+  // A failed log means "there is no server row" — that's certain, not transient — so the
+  // honest UI keeps the set visible (no silent rollback, which was itself the round-2 bug:
+  // it could desync `logged[i]` from `prescribed[i]`) and simply lets the row become
+  // tappable again, same as a bound `id` would. The global mutation-error toast already
+  // tells the user the save failed; this just keeps the row from being a dead end.
+  const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -476,13 +482,21 @@ function ActiveWorkoutSession({
           setToastMedal({ medal: top, extra: medals.length - 1 })
         }
       },
-      // N1 (fix round 2): a failed POST (gym wifi) must roll back the optimistic local
-      // append — otherwise the row is stranded with no `id` forever, and C2's disabled-
-      // row rule then makes it permanently untappable while still counting toward the
-      // cursor and the summary. Addressed by localId, so a delete that already removed
-      // this entry before the failure lands is a harmless no-op.
+      // F1 (fix round 3): a failed POST (gym wifi) must NOT roll the local entry back —
+      // round 2's rollback could desync `logged[i]` from `prescribed[i]` when the
+      // dropped entry wasn't the LAST one (a later set shifts into a mismatched
+      // prescription, and a second in-flight log can also collide on the reused
+      // setIndex). There genuinely is no server row for this set — that's certain, not
+      // transient — so the honest move is to keep it visible and mark it failed, which
+      // the row-disabled rule below treats the same as a bound id (tappable, not a
+      // dead end): the user can delete it (local-only, exactly like a pending slot) or
+      // edit it locally.
       onError: () => {
-        setSession((s) => dropLoggedSetByLocalId(s, finishing.id, localId))
+        setFailedSetLocalIds((prev) => {
+          const next = new Set(prev)
+          next.add(localId)
+          return next
+        })
       },
     })
     setNote('')
@@ -1294,12 +1308,16 @@ function ActiveWorkoutSession({
               const w = isDone ? actual?.weight : t?.targetWeightKg
               const r = isDone ? actual?.reps : t?.targetReps
               const rr = isDone ? actual?.rir : t?.targetRIR
-              // C2 (fix round 1): a LOGGED row whose server id hasn't landed yet (the
-              // window between the optimistic local append and logSet's response) must
-              // not be tappable — editing/deleting it then would have nothing to PUT/
-              // DELETE against, silently orphaning the server-side row forever. A
+              // C2 (fix round 1): a LOGGED row whose log is still genuinely IN FLIGHT
+              // (the window between the optimistic local append and logSet's response)
+              // must not be tappable — editing/deleting it then would have nothing to
+              // PUT/DELETE against, silently orphaning the server-side row forever. A
               // not-yet-logged (pending) row legitimately has no id and stays tappable.
-              const rowDisabled = isDone && !actual?.id
+              // F1 (fix round 3): a row whose log is KNOWN to have failed is NOT
+              // in-flight — there is no server row, for certain, so it's tappable too
+              // (delete falls back to local-only, same as a pending slot).
+              const rowFailed = !!actual?.localId && failedSetLocalIds.has(actual.localId)
+              const rowDisabled = isDone && !actual?.id && !rowFailed
               return (
                 <button
                   key={i}

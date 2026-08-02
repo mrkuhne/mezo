@@ -15,7 +15,6 @@ import {
   removeSet,
   updateLoggedSet,
   attachSetId,
-  dropLoggedSetByLocalId,
   type SessionExerciseInput,
 } from '@/features/train/logic/workoutState'
 
@@ -248,21 +247,6 @@ describe('set edit + slot removal (mezo-l3on)', () => {
     s = removeSet(s, 'a', 0)
     const after = attachSetId(s, 'a', 'local-2', 'st-2')
     expect(after.logged.a[0]).toMatchObject({ localId: 'local-2', id: 'st-2' })
-  })
-
-  test('dropLoggedSetByLocalId rolls back an optimistic append without touching removed/prescribed', () => {
-    let s = makeSession(ex)
-    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2, localId: 'local-1' })
-    const before = effectiveSetCount(s, 'a')
-    const after = dropLoggedSetByLocalId(s, 'a', 'local-1')
-    expect(after.logged.a).toHaveLength(0)
-    expect(after.removed.a).toBeUndefined()
-    expect(effectiveSetCount(after, 'a')).toBe(before) // the SLOT survives — only the mistaken log entry goes
-  })
-
-  test('dropLoggedSetByLocalId is a no-op when the entry is already gone', () => {
-    const s = completeSet(makeSession(ex), 'a', { weight: 80, reps: 10, rir: 2, localId: 'local-1' })
-    expect(dropLoggedSetByLocalId(s, 'a', 'unknown-local-id')).toBe(s)
   })
 
   test('seedFromOpen carries the server id, side and note into the session', () => {
