@@ -70,6 +70,33 @@ class LlmLogWriterIT extends AbstractIntegrationTest {
     }
 
     /**
+     * mezo-1rz9: a CANCELLED stream row must survive the DB CHECK (the migration widened
+     * {@code ck_llm_log_history_status}) and keep whatever the stream revealed before the client
+     * disconnected — the partial answer, and a COST when the tally caught a completed round's usage
+     * (those tokens were billed; a cancel does not make them free).
+     */
+    @Test
+    void testPersist_shouldStoreCancelledRowWithPartialUsage_whenStreamWasCancelled() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT_STREAM)
+            .requestedModel("gemini-2.5-flash").servedModel("gemini-2.5-flash")
+            .status(CallStatus.CANCELLED).latencyMs(120).streamed(true)
+            .tokens(new TokenUsage(10_000, 1_000, 500, 0, 11_500))
+            .systemPrompt("sys").userMessage("hi").responseText("partial ans")
+            .context(new LlmCallContext("companion_chat", "stream", "conversation", UUID.randomUUID()))
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.parse("2026-07-28T10:00:00Z")));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.getStatus()).isEqualTo(CallStatus.CANCELLED);
+        assertThat(row.isStreamed()).isTrue();
+        assertThat(row.getResponseText()).isEqualTo("partial ans");
+        assertThat(row.getCostUsd()).isEqualByComparingTo("0.00675");
+        assertThat(row.getErrorCode()).isNull();
+    }
+
+    /**
      * Payload discipline: each payload column is capped at {@code mezo.llm-log.max-payload-chars},
      * the row is flagged {@code truncated}, and {@code payload_bytes} still records the TRUE
      * pre-truncation size — the cap must not erase how big the call really was.
