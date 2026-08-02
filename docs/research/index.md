@@ -23,6 +23,7 @@ ingest.
 - [QQRT](concepts/qqrt.md) — Quantity·Quality·Regularity·Timing; the four legs and how each maps to a mezo surface. `confidence: medium`.
 - [Sleep Debunks](concepts/sleep-debunks.md) — the myth list (smart-wake, blue light, magnesium, melatonin, Z-drugs) mezo deliberately builds nothing on. `confidence: medium`.
 - [Morning Routine (Ethier six recs)](concepts/morning-routine.md) — the six morning recs → their mezo habits; the Walker/Ethier division of labor. `confidence: medium`.
+- [Set-Volume Landmarks](concepts/set-volume-landmarks.md) — failure (5–12 set/hét) vs volume (12–20) styles, ~11 set/session cap, frequency fix; the source numbers behind the Train set-budget layer (mezo-7rdg). `confidence: medium`.
 
 ## Comparisons
 
