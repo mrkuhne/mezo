@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.LastWeekRef;
 import io.mrkuhne.mezo.api.dto.OverloadSummary;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.SetUpdateRequest;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailExercise;
@@ -520,6 +521,75 @@ public class WorkoutService {
             response.setMedals(List.of());
         }
         return response;
+    }
+
+    /**
+     * Overwrite one logged set's performance fields in an ACTIVE instance (mezo-l3on). Full
+     * replacement, not a patch: an absent optional field clears it (spec D7). {@code setIndex},
+     * {@code kind}, {@code exerciseId} and the {@code target*} prescription snapshot are immutable —
+     * they describe WHICH slot this is and what was prescribed for it, not what the user did.
+     */
+    @Transactional
+    public ExerciseSetResponse updateSet(UUID createdBy, UUID workoutId, UUID setId, SetUpdateRequest req) {
+        ExerciseSetEntity set = ownedActiveSetOrThrow(createdBy, workoutId, setId);
+        set.setWeightKg(req.getWeightKg());
+        set.setReps(req.getReps());
+        // Warmup sets carry no RIR (mirrors logSet) — effort tracking is working-set-only.
+        set.setRir("warmup".equals(set.getKind()) ? null : req.getRir());
+        set.setSide(req.getSide());
+        set.setNote(req.getNote());
+        ExerciseSetEntity saved = exerciseSetRepository.save(set);
+        exerciseSetRepository.flush(); // the medal replay reads through the repository
+        ExerciseSetResponse response = mapper.toSetResponse(saved);
+        // Same rationale as logSet: medals are derived and decorative, the user's edit must survive
+        // a failure in the replay-derivation that follows it.
+        try {
+            response.setMedals(medalService.forSet(createdBy, saved.getId()));
+        } catch (RuntimeException e) {
+            log.warn("Medal derivation failed for updated set {} — keeping the update", saved.getId(), e);
+            response.setMedals(List.of());
+        }
+        return response;
+    }
+
+    /**
+     * Soft-delete one logged set of an ACTIVE instance and RENUMBER the exercise's remaining sets to
+     * 0..n-1 (mezo-l3on, spec D5). The frontend cursor is positional ({@code logged.length}) and
+     * {@code seedFromOpen} assumes contiguous indices, so a gap would make the next logged set
+     * collide with an existing index.
+     */
+    @Transactional
+    public void deleteSet(UUID createdBy, UUID workoutId, UUID setId) {
+        ExerciseSetEntity set = ownedActiveSetOrThrow(createdBy, workoutId, setId);
+        UUID exerciseId = set.getExerciseId();
+        exerciseSetRepository.delete(set); // @SQLDelete → soft delete
+        exerciseSetRepository.flush();
+        List<ExerciseSetEntity> remaining = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdAndExerciseIdOrderBySetIndexAsc(createdBy, workoutId, exerciseId);
+        for (int i = 0; i < remaining.size(); i++) {
+            remaining.get(i).setSetIndex(i);
+        }
+        exerciseSetRepository.saveAll(remaining);
+        exerciseSetRepository.flush();
+    }
+
+    /**
+     * Shared guard for the set-level writes: owned instance, still {@code active}, and a set row that
+     * belongs to THIS instance and is not a whole-exercise skip marker. Mirrors {@link #logSet}'s
+     * chain-verification; a skip marker is not a logged set, so it is addressable only through the
+     * skip flow.
+     */
+    private ExerciseSetEntity ownedActiveSetOrThrow(UUID createdBy, UUID workoutId, UUID setId) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        if (!"active".equals(instance.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_WORKOUT_NOT_ACTIVE").build(), HttpStatus.CONFLICT);
+        }
+        return exerciseSetRepository.findById(setId)
+            .filter(s -> createdBy.equals(s.getCreatedBy())
+                && instance.getId().equals(s.getWorkoutSessionId())
+                && !s.isSkipped())
+            .orElseThrow(WorkoutService::notFound);
     }
 
     /**

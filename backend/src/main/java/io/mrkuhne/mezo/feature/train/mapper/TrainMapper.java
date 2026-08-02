@@ -68,6 +68,13 @@ public interface TrainMapper {
 
     GymScheduleSlotResponse toGymSlotResponse(GymScheduleSlotEntity entity);
 
+    // setIndex needs an explicit source mapping: the generated builder's `setIndex(Integer)` method
+    // IS the field's fluent accessor, but MapStruct's builder introspection parses any method
+    // starting with lowercase "set" as a classic JavaBean setter and strips the prefix — so it sees
+    // the target property as "index", not "setIndex". Left implicit, MapStruct silently drops the
+    // field instead of mapping it (mezo-l3on: caught by the delete+renumber IT asserting the
+    // response setIndex).
+    @Mapping(target = "index", source = "setIndex")
     @Mapping(target = "kind", expression = "java(ExerciseSetResponse.KindEnum.fromValue(entity.getKind()))")
     @Mapping(target = "medals", ignore = true)
     ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
