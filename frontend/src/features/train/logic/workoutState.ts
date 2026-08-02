@@ -80,10 +80,12 @@ export function canRemoveSet(s: Session, id: string): boolean {
 /**
  * Drop ONE slot of an exercise (spec D2): the count shrinks by one, and when the addressed index
  * is already logged its entry goes too, so the later sets shift down into its place. Refuses (and
- * returns the same session) at the one-slot floor.
+ * returns the same session) at the one-slot floor, and equally refuses an index at or beyond the
+ * current effective count — that address isn't a slot, and removing it anyway would desync
+ * `removed` from `logged` (a logged set left with nowhere to render).
  */
 export function removeSet(s: Session, id: string, index: number): Session {
-  if (!canRemoveSet(s, id)) return s
+  if (!canRemoveSet(s, id) || index >= effectiveSetCount(s, id)) return s
   const logged = s.logged[id] ?? []
   const next: Session = { ...s, removed: { ...s.removed, [id]: (s.removed[id] ?? 0) + 1 } }
   if (index < logged.length) {

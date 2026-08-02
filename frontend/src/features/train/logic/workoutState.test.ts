@@ -202,6 +202,16 @@ describe('set edit + slot removal (mezo-l3on)', () => {
     expect(effectiveSetCount(s, 'a')).toBe(1)
   })
 
+  test('removeSet refuses an index that is not an existing slot (past effectiveSetCount)', () => {
+    const three = [{ id: 'a', warmupSets: 0, workingSets: 3, prescribedSets: null }]
+    let s = makeSession(three)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2 })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2 })
+    s = completeSet(s, 'a', { weight: 85, reps: 8, rir: 1 })
+    expect(removeSet(s, 'a', 3)).toBe(s)
+    expect(effectiveSetCount(s, 'a')).toBe(3)
+  })
+
   test('canRemoveSet is true while more than one slot remains', () => {
     expect(canRemoveSet(makeSession(ex), 'a')).toBe(true)
   })
@@ -225,5 +235,13 @@ describe('set edit + slot removal (mezo-l3on)', () => {
       sets: [{ id: 'st-1', exerciseId: 'a', setIndex: 0, weightKg: 80, reps: 10, rir: 2, side: 'L', note: 'bal' }],
     })
     expect(s.logged.a[0]).toMatchObject({ id: 'st-1', weight: 80, reps: 10, rir: 2, side: 'L', note: 'bal' })
+  })
+
+  test('updateLoggedSet preserves id/side/note untouched by a weight-only patch', () => {
+    const seeded = seedFromOpen(ex, {
+      sets: [{ id: 'st-1', exerciseId: 'a', setIndex: 0, weightKg: 80, reps: 10, rir: 2, side: 'L', note: 'bal' }],
+    })
+    const after = updateLoggedSet(seeded, 'a', 0, { weight: 90 })
+    expect(after.logged.a[0]).toMatchObject({ id: 'st-1', weight: 90, reps: 10, rir: 2, side: 'L', note: 'bal' })
   })
 })
