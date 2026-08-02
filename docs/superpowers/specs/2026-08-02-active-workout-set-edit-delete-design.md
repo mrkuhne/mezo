@@ -131,7 +131,7 @@ deleteSet: (workoutId: string, setId: string): Promise<void> => …DELETE…
 
 `trainHooks.ts` — `useTrain` két új mutációval, a meglévő `logSetMutation` mintájára, `onSuccess: invalidateToday`:
 
-- `updateSet(workoutId, setId, body, opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void })` — **mock ág:** újrafuttatja az `evaluateMockSetMedals`-t az új értékekkel (paritás a valódi újraderiválással), és visszaad egy `{ id: setId, medals }` választ.
+- `updateSet(workoutId, setId, body, opts?: { onSuccess?: (r?: ExerciseSetResponse) => void })` — **mock ág:** `{ id: setId, medals: [] }`. Szándékosan **nem** futtatja újra az `evaluateMockSetMedals`-t: az evaluátor modul-szintű futó előzményt vezet (`ps.push(...)` a `medalEvaluator.ts` végén), így egy újraértékelés a szerkesztett szettet **második** történeti sorként rögzítené és felfelé hazudná a következő rekordokat. Mock módban tehát a szerkesztett gyakorlat érem-chipjei egyszerűen eltűnnek — hiányzó chip, nem hamis chip.
 - `deleteSet(workoutId, setId)` — mock ág no-op.
 - A `logSetMutation` **mock ága kiegészül `id: crypto.randomUUID()`-val**, hogy a szerkeszthetőség mock módban is működjön (a `TrainData` felület nem változik ettől).
 
@@ -192,7 +192,7 @@ Közös, a `logSet`-tel azonos őrök, egy privát segédbe emelve (`ownedActive
 
 `updateSet`: felülírja a `weightKg`/`reps`/`rir`/`side`/`note` mezőket (a `rir`-t **warmup soron mindig `null`-ra**, tükrözve a logolás szabályát), `save` + `flush`, majd `medalService.forSet(...)` a `logSet`-ből ismert `try/catch` degradációval (az érem dekoratív, a felhasználó adata nem veszhet el egy derivációs hibán).
 
-`deleteSet`: `exerciseSetRepository.delete(entity)` (a `@SQLDelete` miatt soft delete), `flush`, majd **újraszámozás** — `findByCreatedByAndWorkoutSessionIdAndExerciseIdOrderBySetIndexAsc` (új derived query) eredményén végigfutva `setSetIndex(i)`, `saveAll`, `flush`.
+`deleteSet`: `exerciseSetRepository.delete(entity)` (a `@SQLDelete` miatt soft delete), `flush`, majd **újraszámozás** — a **már létező** `findByCreatedByAndWorkoutSessionIdAndExerciseIdOrderBySetIndexAsc` derived query eredményén végigfutva `setSetIndex(i)`, `saveAll`, `flush`. Új repository-metódus nem kell.
 
 `TrainController`: a generált `TrainApi` két új metódusa, egysoros delegálás a service-re (`currentUserId.get()`), a `logWorkoutSet` mintájára.
 
