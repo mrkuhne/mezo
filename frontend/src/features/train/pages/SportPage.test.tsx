@@ -160,6 +160,43 @@ test('real mode Napló hides the jump average when sessions carry no jumpCount',
   expect(screen.queryByText('Intenzitás')).not.toBeInTheDocument() // null intensity -> MiniBar hidden
 })
 
+// ---- One-off events (mezo-e1sp) ----
+
+test('mock: the dashed chip opens the SportEventSheet and a save lands in the upcoming list', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: '+ Egyszeri esemény' }))
+  expect(await screen.findByRole('heading', { name: 'Új esemény' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  // default date = today → the cache-emulated write shows up in the upcoming list
+  expect(await screen.findByText('Egyszeri események')).toBeInTheDocument()
+  expect(screen.getByText(/90p · meccs/)).toBeInTheDocument()
+  // ...and the schedule merge lands it on today's day card with the one-off badge
+  expect(screen.getByText('EGYSZERI')).toBeInTheDocument()
+})
+
+test('real mode renders upcoming one-off events and deletes via the ✕', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const today = new Date()
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const deleted: string[] = []
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-events`, () =>
+      HttpResponse.json([
+        { id: 'e3f3a0e2-0000-4000-8000-0000000000e1', date: iso, time: '19:30', durationMin: 120, kind: 'match', sport: 'volleyball', location: 'Kőbánya Sport' },
+      ]),
+    ),
+    http.delete(`${API_BASE}/api/train/sport-events/:id`, ({ params }) => {
+      deleted.push(String(params.id))
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  renderView()
+  expect(await screen.findByText('Egyszeri események')).toBeInTheDocument()
+  expect(screen.getByText(/120p · meccs · Kőbánya Sport/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /esemény törlése/ }))
+  await waitFor(() => expect(deleted).toEqual(['e3f3a0e2-0000-4000-8000-0000000000e1']))
+})
+
 // Loading skeleton (mezo-f2z) — real mode shows the SportSkeleton (role="status")
 // while the sport-sessions query is unresolved (sportPending); mock seeds → no skeleton.
 describe('SportPage (real mode, pending)', () => {

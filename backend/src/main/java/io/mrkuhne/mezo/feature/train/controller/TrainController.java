@@ -22,6 +22,8 @@ import io.mrkuhne.mezo.api.dto.RunSessionLogResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.SportEventCreateRequest;
+import io.mrkuhne.mezo.api.dto.SportEventResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
@@ -168,6 +170,21 @@ public class TrainController implements TrainApi {
     @Override
     public List<SportScheduleSlotResponse> replaceSportSchedule(List<SportScheduleSlotInput> sportScheduleSlotInput) {
         return sportService.replaceSchedule(currentUserId.get(), sportScheduleSlotInput);
+    }
+
+    @Override
+    public List<SportEventResponse> listSportEvents(LocalDate from, LocalDate to) {
+        return sportService.listEvents(currentUserId.get(), from, to);
+    }
+
+    @Override
+    public SportEventResponse createSportEvent(SportEventCreateRequest sportEventCreateRequest) {
+        return sportService.createEvent(currentUserId.get(), sportEventCreateRequest);
+    }
+
+    @Override
+    public void deleteSportEvent(UUID id) {
+        sportService.deleteEvent(currentUserId.get(), id);
     }
 
     @Override

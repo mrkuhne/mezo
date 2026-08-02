@@ -43,8 +43,10 @@ export function buildWeekAgenda({
 
   return DAY_ORDER.map((d, i) => {
     const g = gymTimes.find((x) => x.day === d)
-    const v = sportSlots.filter((x) => x.day === d)
     const date = weekDateIso(i, today)
+    // A dated one-off event (mezo-e1sp) pins to its exact ISO date — weekday-label matching
+    // alone would repeat it on that weekday of every rendered week. Recurring slots carry no date.
+    const v = sportSlots.filter((x) => x.day === d && (!x.date || x.date === date))
     return {
       day: d,
       date,

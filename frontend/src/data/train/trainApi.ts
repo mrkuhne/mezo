@@ -18,6 +18,8 @@ export type WorkoutFeedbackInput = components['schemas']['WorkoutFeedbackInput']
 export type SportSessionCreateRequest = components['schemas']['SportSessionCreateRequest']
 export type SportScheduleSlotInput = components['schemas']['SportScheduleSlotInput']
 export type SportScheduleSlotResponse = components['schemas']['SportScheduleSlotResponse']
+export type SportEventCreateRequest = components['schemas']['SportEventCreateRequest']
+export type SportEventResponse = components['schemas']['SportEventResponse']
 export type GymScheduleSlotInput = components['schemas']['GymScheduleSlotInput']
 export type GymScheduleSlotResponse = components['schemas']['GymScheduleSlotResponse']
 export type ExerciseCatalogItem = components['schemas']['ExerciseCatalogItem']
@@ -92,6 +94,14 @@ export const trainApi = {
     apiFetch<SportScheduleSlotResponse[]>('/api/train/sport-schedule'),
   replaceSportSchedule: (body: SportScheduleSlotInput[]): Promise<SportScheduleSlotResponse[]> =>
     apiFetch<SportScheduleSlotResponse[]>('/api/train/sport-schedule', { method: 'PUT', body: JSON.stringify(body) }),
+  sportEvents: (from?: string, to?: string): Promise<SportEventResponse[]> =>
+    apiFetch<SportEventResponse[]>(
+      from && to ? `/api/train/sport-events?from=${from}&to=${to}` : '/api/train/sport-events',
+    ),
+  createSportEvent: (body: SportEventCreateRequest): Promise<SportEventResponse> =>
+    apiFetch<SportEventResponse>('/api/train/sport-events', { method: 'POST', body: JSON.stringify(body) }),
+  deleteSportEvent: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/train/sport-events/${id}`, { method: 'DELETE' }),
   gymSchedule: (): Promise<GymScheduleSlotResponse[]> =>
     apiFetch<GymScheduleSlotResponse[]>('/api/train/gym-schedule'),
   replaceGymSchedule: (body: GymScheduleSlotInput[]): Promise<GymScheduleSlotResponse[]> =>
