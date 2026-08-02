@@ -823,6 +823,95 @@ test('real mode: starting creates the instance and Szett kész posts the set', a
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5')) // prefill = last week
 })
 
+test('real mode: a failed logSet POST leaves the row present AND tappable, and deleting it fires no server call (F1, fix round 3)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, () => new HttpResponse(null, { status: 500 })),
+    http.delete(`${API_BASE}/api/train/workouts/:id/sets/:setId`, ({ params }) => {
+      calls.push(`delete:${params.setId}`)
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  // Round 2 rolled the entry back on failure — but that could desync logged[i] from
+  // prescribed[i] for anything but the LAST entry (fix round 3, F1). The honest move
+  // is to leave the set visible: the dot stays "done" throughout.
+  await waitFor(() => expect(container.querySelector('.setdots .sd.don')).toBeInTheDocument())
+  // The row is disabled while the POST is genuinely in flight, then becomes tappable
+  // again once it's KNOWN to have failed (not stuck disabled forever, unlike a still-
+  // in-flight row).
+  await waitFor(() => {
+    const row = screen.getAllByRole('button', { name: /szett szerkesztése/ })[0]
+    expect(row).not.toBeDisabled()
+  })
+  await user.click(screen.getAllByRole('button', { name: /szett szerkesztése/ })[0])
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  // No DELETE fired — there is no server row to address (the POST never succeeded);
+  // the removal is purely local, exactly like deleting a never-logged pending slot.
+  expect(calls.some((c) => c.startsWith('delete:'))).toBe(false)
+})
+
+test('real mode: an edit PUTs the FIRST logged set\'s OWN server id, and deleting it DELETEs that same id (F2, fix round 3)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  // 3 working sets so logging the first TWO never completes the exercise (no debrief
+  // takeover, which would block set-editing entirely by design).
+  useRealHandlers({ ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 3 }] }, calls)
+  const putBodies: Record<string, Record<string, unknown>> = {}
+  server.use(
+    http.put(`${API_BASE}/api/train/workouts/:id/sets/:setId`, async ({ params, request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      putBodies[String(params.setId)] = body
+      calls.push(`put:${params.setId}`)
+      return HttpResponse.json({ id: String(params.setId), exerciseId: 'e-1', setIndex: 0, medals: [] })
+    }),
+    http.delete(`${API_BASE}/api/train/workouts/:id/sets/:setId`, ({ params }) => {
+      calls.push(`delete:${params.setId}`)
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+
+  // Log the first working set at its 102.5 kg prefill (useRealHandlers echoes id `st-0`).
+  await user.click(screen.getByText('Szett kész ✓'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5'))
+  await user.click(await screen.findByRole('button', { name: 'Pihenő kihagyása' }))
+  // Bump the weight on the MAIN excard (not the sheet) before logging the SECOND set, so
+  // the two rows carry visibly DIFFERENT weights — the only way to prove the later
+  // edit/delete addressed the right ROW, not merely "some" row.
+  await user.click(screen.getByLabelText('Súly növelése'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:1:105'))
+  await user.click(await screen.findByRole('button', { name: 'Pihenő kihagyása' }))
+
+  // Edit the FIRST row (102.5 kg) — bump REPS only (not weight), so the 102.5/105 kg
+  // marker keeps discriminating the two rows through the edit.
+  await user.click(screen.getAllByRole('button', { name: /szett szerkesztése/ })[0])
+  await user.click(within(screen.getByRole('dialog')).getByLabelText('Ismétlés növelése'))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mentés ✓' }))
+  await waitFor(() => expect(calls).toContain('put:st-0'))
+  expect(putBodies['st-0']).toMatchObject({ weightKg: 102.5, reps: 10 }) // lastWeek reps 9 + 1
+
+  // Delete the FIRST row — must DELETE st-0 specifically, not st-1.
+  await user.click(screen.getAllByRole('button', { name: /szett szerkesztése/ })[0])
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+  await waitFor(() => expect(calls).toContain('delete:st-0'))
+  // The surviving row (now at index 0) carries the SECOND set's 105 kg marker —
+  // proof the shift landed correctly, not just that "a" DELETE fired.
+  const survivorRow = screen.getAllByRole('button', { name: /szett szerkesztése/ })[0]
+  expect(survivorRow.getAttribute('aria-label')).toContain('105')
+})
+
 test('real mode: typing a per-set note before Szett kész sends it in the logSet payload', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
@@ -1399,4 +1488,107 @@ test('the header counter is disabled while a debrief modal is open (jumps must n
   expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
   // Parity with the ⋯ actions button: the overview trigger is inert during a debrief.
   expect(screen.getByRole('button', { name: 'Gyakorlatlista' })).toBeDisabled()
+})
+
+// ---- set edit + slot delete (mezo-l3on) ----
+
+/** The set-list row buttons carry the row's own label; the first is always B1 on ex1. */
+const firstRow = () => screen.getAllByRole('button', { name: /szett szerkesztése/ })[0]
+
+test('mock mode: a logged set row opens the edit sheet, and saving rewrites the row', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1: prescribed 52.5 kg × 10
+  const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+  if (skipRest) await user.click(skipRest)
+
+  await user.click(firstRow())
+  const sheet = within(screen.getByRole('dialog'))
+  await user.click(sheet.getByLabelText('Ismétlés növelése'))
+  await user.click(sheet.getByRole('button', { name: 'Mentés ✓' }))
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  // Fix round 1 (I3): assert the EXACT rewritten label, not just "it changed" — a save
+  // that silently wrote the wrong field (or the wrong index) would still pass a mere
+  // inequality check.
+  expect(firstRow().getAttribute('aria-label')).toBe('B1 bemelegítő szett szerkesztése — 52.5 kg × 11')
+})
+
+test('mock mode: logging a set that earns no medal still binds its server id (the row stays tappable)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // B1 is a warmup — the mock evaluator never scores warmup-kind sets (isWorking gate in
+  // trainHooks.ts), so this log earns NO medal at all. Regression guard for the headline
+  // judgement call (attachSetId must run before the `!medals.length` early return): if that
+  // ordering ever regresses, the row would stay disabled forever (C2's fix below).
+  await user.click(screen.getByText('Szett kész ✓'))
+  const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+  if (skipRest) await user.click(skipRest)
+
+  await waitFor(() => expect(firstRow()).not.toBeDisabled())
+  await user.click(firstRow())
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+})
+
+test('mock mode: deleting a set drops one slot from the exercise', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelectorAll('.setdots .sd')).toHaveLength(5)
+
+  // The pending-slot path: nothing is logged yet, so this row has no server row either.
+  await user.click(firstRow())
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+
+  await waitFor(() => expect(container.querySelectorAll('.setdots .sd')).toHaveLength(4))
+  // Fix round 1 (C1(a) / I3): discriminate WHICH slot was removed. Deleting the pending
+  // B1 warmup must leave exactly ONE warmup dot behind and all three working dots intact
+  // — not silently swallow a working slot while both warmups survive.
+  const dots = Array.from(container.querySelectorAll('.setdots .sd'))
+  expect(dots.map((d) => d.textContent)).toEqual(['B1', '1', '2', '3'])
+})
+
+test('mock mode: deleting the last pending slot completes the exercise and triggers its debrief', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Log 4 of ex1's 5 planned sets (2 warmup + 2 working), leaving the 5th (last working
+  // set) pending.
+  for (let i = 0; i < 4; i++) {
+    await user.click(screen.getByText('Szett kész ✓'))
+    const skip = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+    if (skip) await user.click(skip)
+  }
+  expect(screen.getByText('Szett kész ✓')).toBeInTheDocument()
+
+  // Delete the still-pending 5th (last) slot.
+  const lastRow = screen.getAllByRole('button', { name: /szett szerkesztése/ })[4]
+  await user.click(lastRow)
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+
+  // I3/I2: the exercise is now fully logged (4/4) — the debrief must fire (mirroring the
+  // last-set-logged path) and the CTA must not linger with nothing left to log.
+  await waitFor(() => expect(screen.getByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument())
+  expect(screen.queryByText('Szett kész ✓')).not.toBeInTheDocument()
+})
+
+test('mock mode: the last remaining slot cannot be deleted', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+
+  // 5 planned slots -> delete four of them, one at a time.
+  for (let i = 0; i < 4; i++) {
+    await user.click(firstRow())
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  }
+  expect(container.querySelectorAll('.setdots .sd')).toHaveLength(1)
+
+  await user.click(firstRow())
+  const sheet = within(screen.getByRole('dialog'))
+  expect(sheet.getByRole('button', { name: 'Szett törlése' })).toBeDisabled()
+  expect(sheet.getByText(/Az utolsó szett nem törölhető/)).toBeInTheDocument()
 })

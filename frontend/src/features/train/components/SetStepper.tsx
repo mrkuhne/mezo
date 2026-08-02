@@ -11,7 +11,7 @@ import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
  * by useEditableNumber, so exact non-±step values (microplates, odd dumbbells —
  * weightKg has no multipleOf in the contract) stay reachable; commit on blur/Enter.
  */
-export function SetStepper({ label, value, step, onChange, unit, integer, min = 0, max = 999 }: {
+export function SetStepper({ label, value, step, onChange, unit, integer, min = 0, max = 999, disabled = false }: {
   label: string
   value: number
   step: number
@@ -20,6 +20,7 @@ export function SetStepper({ label, value, step, onChange, unit, integer, min = 
   integer?: boolean
   min?: number
   max?: number
+  disabled?: boolean
 }) {
   const clamp = (v: number) => Math.min(max, Math.max(min, v))
   const [editing, setEditing] = useState(false)
@@ -46,14 +47,14 @@ export function SetStepper({ label, value, step, onChange, unit, integer, min = 
           {unit && <small> {unit}</small>}
         </div>
       ) : (
-        <button type="button" className="n" aria-label={`${label} pontos megadása`} onClick={() => setEditing(true)}>
+        <button type="button" className="n" aria-label={`${label} pontos megadása`} disabled={disabled} onClick={() => !disabled && setEditing(true)}>
           {display}
           {unit && <small> {unit}</small>}
         </button>
       )}
       <div className="row">
-        <button type="button" className="b np-press" aria-label={`${label} csökkentése`} onClick={() => onChange(clamp(value - step))}>−</button>
-        <button type="button" className="b np-press" aria-label={`${label} növelése`} onClick={() => onChange(clamp(value + step))}>+</button>
+        <button type="button" className="b np-press" aria-label={`${label} csökkentése`} disabled={disabled} onClick={() => onChange(clamp(value - step))}>−</button>
+        <button type="button" className="b np-press" aria-label={`${label} növelése`} disabled={disabled} onClick={() => onChange(clamp(value + step))}>+</button>
       </div>
     </div>
   )

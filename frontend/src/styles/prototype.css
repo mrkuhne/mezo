@@ -138,6 +138,20 @@ html, body {
 *::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+/* Disabled baseline (mezo-l3on fix-round-3, F4): a bare `disabled` button otherwise looks
+   identical to an active one (full opacity, pointer cursor) — e.g. the pending-mode
+   SetEditSheet's read-only ± steppers read as broken rather than intentionally locked.
+   Lower specificity than `.pagerbar .pg:disabled`/`.hab-act:disabled` (element vs.
+   class selectors), so those two keep their own already-tuned disabled look untouched. */
+button:disabled { opacity: .45; cursor: default; }
+/* The opacity above applies everywhere unopposed (neither of these rules sets it), but
+   `.steprow .stepper .b`/`button.n` and `.rirrow button` each redundantly hardcode their
+   OWN unconditional `cursor: pointer` at equal-or-higher specificity than the bare rule
+   above — exactly the controls the pending-mode SetEditSheet disables — so the cursor
+   half needs these three explicit companions to actually take effect there. */
+.steprow .stepper .b:disabled,
+.steprow .stepper button.n:disabled,
+.rirrow button:disabled { cursor: default; }
 input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
 
 .app-root {

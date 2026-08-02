@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.api.dto.RunSessionLogResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.SetUpdateRequest;
 import io.mrkuhne.mezo.api.dto.SportEventCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportEventResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
@@ -220,6 +221,16 @@ public class TrainController implements TrainApi {
     @Override
     public ExerciseSetResponse logWorkoutSet(UUID id, SetLogRequest setLogRequest) {
         return workoutService.logSet(currentUserId.get(), id, setLogRequest);
+    }
+
+    @Override
+    public ExerciseSetResponse updateWorkoutSet(UUID id, UUID setId, SetUpdateRequest setUpdateRequest) {
+        return workoutService.updateSet(currentUserId.get(), id, setId, setUpdateRequest);
+    }
+
+    @Override
+    public void deleteWorkoutSet(UUID id, UUID setId) {
+        workoutService.deleteSet(currentUserId.get(), id, setId);
     }
 
     @Override

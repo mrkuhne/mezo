@@ -11,6 +11,7 @@ export type WorkoutTodayResponse = components['schemas']['WorkoutTodayResponse']
 export type WorkoutInstanceResponse = components['schemas']['WorkoutInstanceResponse']
 export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
+export type SetUpdateRequest = components['schemas']['SetUpdateRequest']
 export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
 export type PrescribedSet = components['schemas']['PrescribedSet']
@@ -76,6 +77,13 @@ export const trainApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  updateSet: (workoutId: string, setId: string, body: SetUpdateRequest): Promise<ExerciseSetResponse> =>
+    apiFetch<ExerciseSetResponse>(`/api/train/workouts/${workoutId}/sets/${setId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteSet: (workoutId: string, setId: string): Promise<void> =>
+    apiFetch<void>(`/api/train/workouts/${workoutId}/sets/${setId}`, { method: 'DELETE' }),
   skip: (workoutId: string, exerciseId: string): Promise<void> =>
     apiFetch<void>(`/api/train/workouts/${workoutId}/skip`, {
       method: 'POST',

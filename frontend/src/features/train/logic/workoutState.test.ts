@@ -11,6 +11,10 @@ import {
   skipExercise,
   seedFromOpen,
   mergePlan,
+  canRemoveSet,
+  removeSet,
+  updateLoggedSet,
+  attachSetId,
   type SessionExerciseInput,
 } from '@/features/train/logic/workoutState'
 
@@ -166,5 +170,127 @@ describe('nextUnfinishedAfter', () => {
     expect(nextUnfinishedAfter(s, 'b')).toBe('a')
     s = completeSet(s, 'a', { weight: 40, reps: 12, rir: 1 })
     expect(nextUnfinishedAfter(s, 'a')).toBeNull()
+  })
+})
+
+describe('set edit + slot removal (mezo-l3on)', () => {
+  const ex = [{ id: 'a', warmupSets: 1, workingSets: 3, prescribedSets: null }]
+
+  test('removeSet on a pending slot shrinks the effective count without touching logs', () => {
+    const s = completeSet(makeSession(ex), 'a', { weight: 80, reps: 10, rir: 2 })
+    const after = removeSet(s, 'a', 3)
+    expect(effectiveSetCount(after, 'a')).toBe(3)
+    expect(after.logged.a).toHaveLength(1)
+  })
+
+  test('removeSet on a logged set drops the entry AND the slot, shifting later sets down', () => {
+    let s = makeSession(ex)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2 })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2 })
+    s = completeSet(s, 'a', { weight: 85, reps: 8, rir: 1 })
+    const after = removeSet(s, 'a', 1)
+    expect(effectiveSetCount(after, 'a')).toBe(3)
+    expect(after.logged.a.map((x) => x.weight)).toEqual([80, 85])
+    expect(nextSetIdx(after, 'a')).toBe(2)
+  })
+
+  test('removeSet refuses to drop the last remaining slot', () => {
+    const one = [{ id: 'a', warmupSets: 0, workingSets: 1, prescribedSets: null }]
+    const s = makeSession(one)
+    expect(canRemoveSet(s, 'a')).toBe(false)
+    expect(removeSet(s, 'a', 0)).toBe(s)
+    expect(effectiveSetCount(s, 'a')).toBe(1)
+  })
+
+  test('removeSet refuses an index that is not an existing slot (past effectiveSetCount)', () => {
+    const three = [{ id: 'a', warmupSets: 0, workingSets: 3, prescribedSets: null }]
+    let s = makeSession(three)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2 })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2 })
+    s = completeSet(s, 'a', { weight: 85, reps: 8, rir: 1 })
+    expect(removeSet(s, 'a', 3)).toBe(s)
+    expect(effectiveSetCount(s, 'a')).toBe(3)
+  })
+
+  test('canRemoveSet is true while more than one slot remains', () => {
+    expect(canRemoveSet(makeSession(ex), 'a')).toBe(true)
+  })
+
+  test('updateLoggedSet overwrites only the addressed set', () => {
+    let s = makeSession(ex)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2 })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2 })
+    const after = updateLoggedSet(s, 'a', 0, { weight: 77.5, reps: 12, rir: 3, note: 'javítva' })
+    expect(after.logged.a[0]).toMatchObject({ weight: 77.5, reps: 12, rir: 3, note: 'javítva' })
+    expect(after.logged.a[1]).toMatchObject({ weight: 82.5, reps: 9 })
+  })
+
+  test('attachSetId binds the server id to the logged entry addressed by localId', () => {
+    const s = completeSet(makeSession(ex), 'a', { weight: 80, reps: 10, rir: 2, localId: 'local-1' })
+    expect(attachSetId(s, 'a', 'local-1', 'st-9').logged.a[0].id).toBe('st-9')
+  })
+
+  // N1 (fix round 2): index-addressed binding was the actual bug — an entry must be
+  // addressed by its client-assigned `localId`, which survives a concurrent delete/edit,
+  // never by array index (which shifts under one).
+
+  test('attachSetId with an unknown localId is a no-op (e.g. the set was deleted before the response landed)', () => {
+    const s = completeSet(makeSession(ex), 'a', { weight: 80, reps: 10, rir: 2, localId: 'local-1' })
+    expect(attachSetId(s, 'a', 'unknown-local-id', 'st-9')).toBe(s)
+  })
+
+  test('attachSetId still lands on the right entry after an EARLIER logged set was removed (index-independent)', () => {
+    let s = makeSession(ex)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2, localId: 'local-1' })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2, localId: 'local-2' })
+    // Remove the FIRST logged entry — local-2's array index shifts from 1 down to 0.
+    s = removeSet(s, 'a', 0)
+    const after = attachSetId(s, 'a', 'local-2', 'st-2')
+    expect(after.logged.a[0]).toMatchObject({ localId: 'local-2', id: 'st-2' })
+  })
+
+  test('seedFromOpen carries the server id, side and note into the session', () => {
+    const s = seedFromOpen(ex, {
+      sets: [{ id: 'st-1', exerciseId: 'a', setIndex: 0, weightKg: 80, reps: 10, rir: 2, side: 'L', note: 'bal' }],
+    })
+    expect(s.logged.a[0]).toMatchObject({ id: 'st-1', weight: 80, reps: 10, rir: 2, side: 'L', note: 'bal' })
+  })
+
+  test('updateLoggedSet preserves id/side/note untouched by a weight-only patch', () => {
+    const seeded = seedFromOpen(ex, {
+      sets: [{ id: 'st-1', exerciseId: 'a', setIndex: 0, weightKg: 80, reps: 10, rir: 2, side: 'L', note: 'bal' }],
+    })
+    const after = updateLoggedSet(seeded, 'a', 0, { weight: 90 })
+    expect(after.logged.a[0]).toMatchObject({ id: 'st-1', weight: 90, reps: 10, rir: 2, side: 'L', note: 'bal' })
+  })
+
+  // C1 (fix round 1): the prescription must shift with the removed slot, or row `i`
+  // re-pairs against the wrong (unshifted) prescribed target after a delete.
+  const withPrescription = [{
+    id: 'a', warmupSets: 2, workingSets: 3,
+    prescribedSets: [
+      { kind: 'warmup' as const, targetWeightKg: 40, targetReps: 12, targetRIR: null },
+      { kind: 'warmup' as const, targetWeightKg: 60, targetReps: 10, targetRIR: null },
+      { kind: 'working' as const, targetWeightKg: 100, targetReps: 8, targetRIR: 2 },
+      { kind: 'working' as const, targetWeightKg: 100, targetReps: 8, targetRIR: 2 },
+      { kind: 'working' as const, targetWeightKg: 100, targetReps: 8, targetRIR: 2 },
+    ],
+  }]
+
+  test('C1(a): removeSet on a PENDING warmup slot drops that warmup from the prescription, not a working slot', () => {
+    const s = makeSession(withPrescription)
+    const after = removeSet(s, 'a', 0)
+    expect(after.prescribed.a.map((p) => p.kind)).toEqual(['warmup', 'working', 'working', 'working'])
+    expect(effectiveSetCount(after, 'a')).toBe(4)
+  })
+
+  test('C1(b): removeSet on an already-LOGGED warmup slot re-pairs the later logged working set with a working prescription', () => {
+    let s = makeSession(withPrescription)
+    s = completeSet(s, 'a', { weight: 40, reps: 12, rir: 0 }) // B1 (logged idx 0)
+    s = completeSet(s, 'a', { weight: 60, reps: 10, rir: 0 }) // B2 (logged idx 1)
+    s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 0 }) // W1 (logged idx 2)
+    const after = removeSet(s, 'a', 0) // delete B1 — W1 shifts down to logged idx 1
+    expect(after.prescribed.a[1].kind).toBe('working')
+    expect(after.logged.a[1]).toMatchObject({ weight: 100, reps: 8, rir: 0 })
   })
 })

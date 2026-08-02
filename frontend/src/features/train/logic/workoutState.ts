@@ -8,10 +8,23 @@
 // ============================================================
 import type { PrescribedSet } from '@/data/types'
 
+export type SetSide = 'L' | 'B' | 'R'
+
 export interface LoggedSet {
   weight: number
   reps: number
   rir: number
+  /** Server-side set id — the address for the edit/delete writes (mezo-l3on). Absent for the
+   *  moment between the optimistic local append and the logSet response that carries it. */
+  id?: string
+  /** Client-assigned identity (mezo-l3on fix-round-2), set at the moment of the optimistic
+   *  `completeSet` append. `attachSetId` addresses an entry by THIS, never by array index —
+   *  an index shifts under a concurrent edit/delete/second-in-flight-log, which could otherwise
+   *  misbind the server id onto the wrong entry. Absent on a set rebuilt from persisted server
+   *  data (`seedFromOpen`) — those already carry a stable `id`. */
+  localId?: string
+  side?: SetSide | null
+  note?: string
 }
 
 export interface Session {
@@ -21,6 +34,9 @@ export interface Session {
   logged: Record<string, LoggedSet[]>
   /** Extra (ad-hoc) sets added beyond the plan, per exerciseId. */
   extra: Record<string, number>
+  /** Slots removed from an exercise (mezo-l3on) — the mirror of `extra`, and client-only in the
+   *  same way: a mid-workout reload restores the template's planned count. */
+  removed: Record<string, number>
   /** Exercise ids the user chose to skip. */
   skipped: string[]
   /** Planned set count per exerciseId (immutable baseline). */
@@ -49,7 +65,7 @@ export function makeSession(exercises: SessionExerciseInput[]): Session {
     planned[e.id] = e.warmupSets + e.workingSets
     prescribed[e.id] = e.prescribedSets ?? []
   }
-  return { order, logged: {}, extra: {}, skipped: [], planned, prescribed }
+  return { order, logged: {}, extra: {}, removed: {}, skipped: [], planned, prescribed }
 }
 
 /** The prescribed target for a given set index of an exercise (null past the plan / no prescription). */
@@ -57,9 +73,67 @@ export function prescribedAt(s: Session, id: string, idx: number): PrescribedSet
   return s.prescribed[id]?.[idx] ?? null
 }
 
-/** Planned sets + any extra sets added for this exercise. */
+/** Planned sets + extras − removed slots, never below one (the exercise always has a slot). */
 export function effectiveSetCount(s: Session, id: string): number {
-  return (s.planned[id] ?? 0) + (s.extra[id] ?? 0)
+  return Math.max(1, (s.planned[id] ?? 0) + (s.extra[id] ?? 0) - (s.removed[id] ?? 0))
+}
+
+/** A slot may be dropped only while the exercise would keep at least one (spec D4). */
+export function canRemoveSet(s: Session, id: string): boolean {
+  return effectiveSetCount(s, id) > 1
+}
+
+/**
+ * Drop ONE slot of an exercise (spec D2): the count shrinks by one, and when the addressed index
+ * is already logged its entry goes too, so the later sets shift down into its place. Refuses (and
+ * returns the same session) at the one-slot floor, and equally refuses an index at or beyond the
+ * current effective count — that address isn't a slot, and removing it anyway would desync
+ * `removed` from `logged` (a logged set left with nowhere to render).
+ *
+ * The PRESCRIPTION shifts in lock-step with the removed slot (mezo-l3on fix-round-1, C1): without
+ * this, row `i` after a delete would still pair against the UNSHIFTED `prescribed[id][i]` — e.g.
+ * deleting a pending warmup slot would silently make a WORKING slot vanish from the rendered list
+ * instead (the warmup count never drops), and deleting an already-logged slot could re-pair a
+ * logged WORKING set with a warmup prescription (no RIR), which then round-trips into a
+ * `SetUpdateRequest` PUT with no `rir` — a full-replacement write, so the server would zero out a
+ * real RIR value. `removed[id]` keeps counting (the slot-count arithmetic is unchanged) — only the
+ * per-index prescribed alignment is corrected.
+ */
+export function removeSet(s: Session, id: string, index: number): Session {
+  if (!canRemoveSet(s, id) || index >= effectiveSetCount(s, id)) return s
+  const logged = s.logged[id] ?? []
+  const next: Session = { ...s, removed: { ...s.removed, [id]: (s.removed[id] ?? 0) + 1 } }
+  if (index < logged.length) {
+    next.logged = { ...s.logged, [id]: [...logged.slice(0, index), ...logged.slice(index + 1)] }
+  }
+  const prescribed = s.prescribed[id]
+  if (prescribed && index < prescribed.length) {
+    next.prescribed = { ...s.prescribed, [id]: [...prescribed.slice(0, index), ...prescribed.slice(index + 1)] }
+  }
+  return next
+}
+
+/** Overwrite the addressed logged set's fields (no-op past the end of the log). */
+export function updateLoggedSet(s: Session, id: string, index: number, patch: Partial<LoggedSet>): Session {
+  const logged = s.logged[id]
+  if (!logged || index >= logged.length) return s
+  const next = [...logged]
+  next[index] = { ...next[index], ...patch }
+  return { ...s, logged: { ...s.logged, [id]: next } }
+}
+
+/**
+ * Bind the server's set id onto the logged entry addressed by its LOCAL id (mezo-l3on
+ * fix-round-2) — never by array index, which shifts under a concurrent edit/delete and
+ * could misbind the id onto the wrong (or since-removed) entry. A NO-OP (same session)
+ * when no entry carries this `localId` anymore — the user deleted it before the logSet
+ * response landed.
+ */
+export function attachSetId(s: Session, id: string, localId: string, setId: string): Session {
+  const logged = s.logged[id]
+  const idx = logged?.findIndex((x) => x.localId === localId) ?? -1
+  if (idx === -1) return s
+  return updateLoggedSet(s, id, idx, { id: setId })
 }
 
 /**
@@ -139,11 +213,14 @@ export function mergePlan(s: Session, exercises: SessionExerciseInput[]): Sessio
 
 /** Persisted-set shape used when resuming an in-flight workout. */
 interface PersistedSet {
+  id?: string
   exerciseId: string
   setIndex: number
   weightKg?: number | null
   reps?: number | null
   rir?: number | null
+  side?: string | null
+  note?: string | null
   /** Whole-exercise skip marker (no perf data) — routes to `skipped`, not `logged`. */
   skipped?: boolean
 }
@@ -174,6 +251,9 @@ export function seedFromOpen(
       weight: Number(set.weightKg ?? 0),
       reps: set.reps ?? 0,
       rir: set.rir ?? 0,
+      ...(set.id ? { id: set.id } : {}),
+      ...(set.side ? { side: set.side as SetSide } : {}),
+      ...(set.note ? { note: set.note } : {}),
     }
     ;(logged[set.exerciseId] ??= []).push(entry)
   }

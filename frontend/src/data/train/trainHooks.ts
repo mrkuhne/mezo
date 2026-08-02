@@ -15,6 +15,7 @@ import {
   type MesocycleCreateRequest,
   type MesocycleResponse,
   type SetLogRequest,
+  type SetUpdateRequest,
   type SportEventCreateRequest,
   type SportEventResponse,
   type SportScheduleSlotInput,
@@ -308,12 +309,23 @@ type TrainData = {
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
   // (ActiveWorkoutPage) supplies it because only it knows which exercise/lastWeek is being
-  // logged; real mode ignores it. The response carries `medals` in BOTH modes.
+  // logged; real mode ignores it. The response carries `medals` in BOTH modes. `onError`
+  // (mezo-l3on fix-round-2, N1) lets the caller roll back its own optimistic local append
+  // when the POST fails — otherwise a strayed set can never bind a server id.
   logSet: (
     workoutId: string,
     set: SetLogRequest,
-    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void; onError?: (err: unknown) => void },
   ) => void
+  /** Overwrite one logged set (mezo-l3on). Mock mode is a no-op that echoes the id. */
+  updateSet: (
+    workoutId: string,
+    setId: string,
+    body: SetUpdateRequest,
+    opts?: { onSuccess?: (r?: ExerciseSetResponse) => void },
+  ) => void
+  /** Soft-delete one logged set; the server renumbers the exercise's remaining setIndexes. */
+  deleteSet: (workoutId: string, setId: string) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
@@ -472,13 +484,30 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
                 setIndex: args.set.setIndex,
               })
             : []
-          // Only `medals` is synthesised — no `id`/set echo, nothing downstream reads
-          // those fields off a mock logSet response (mirrors the finishMutation /
-          // logSportMutation mock-branch idiom below of casting a partial payload).
-          return { medals } as ExerciseSetResponse
+          // `id` is synthesised too (mezo-l3on): the set-edit sheet addresses sets by their server
+          // id, so mock mode needs a stable one per logged set.
+          return { id: crypto.randomUUID(), medals } as ExerciseSetResponse
         }
       : (args: { workoutId: string; set: SetLogRequest; ctx?: MockMedalContext }) =>
           trainApi.logSet(args.workoutId, args.set),
+    onSuccess: invalidateToday,
+  })
+  // Set edit/delete (mezo-l3on). The mock branch deliberately does NOT re-run
+  // evaluateMockSetMedals: that evaluator keeps a module-level running history and pushes every
+  // evaluated set into it, so re-evaluating an edit would record the set a SECOND time and inflate
+  // the next record. Mock mode simply shows no medal chips for an edited exercise.
+  const updateSetMutation = useMutation({
+    mutationFn: mock
+      ? async (args: { workoutId: string; setId: string; body: SetUpdateRequest }) =>
+          ({ id: args.setId, medals: [] as ExerciseSetResponse['medals'] }) as ExerciseSetResponse
+      : (args: { workoutId: string; setId: string; body: SetUpdateRequest }) =>
+          trainApi.updateSet(args.workoutId, args.setId, args.body),
+    onSuccess: invalidateToday,
+  })
+  const deleteSetMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { workoutId: string; setId: string }) => undefined
+      : (args: { workoutId: string; setId: string }) => trainApi.deleteSet(args.workoutId, args.setId),
     onSuccess: invalidateToday,
   })
   const skipMutation = useMutation({
@@ -651,9 +680,27 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     (
       workoutId: string,
       set: SetLogRequest,
-      opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
-    ) => logSetMutation.mutate({ workoutId, set, ctx: opts?.ctx }, { onSuccess: (r) => opts?.onSuccess?.(r) }),
+      opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void; onError?: (err: unknown) => void },
+    ) =>
+      logSetMutation.mutate(
+        { workoutId, set, ctx: opts?.ctx },
+        { onSuccess: (r) => opts?.onSuccess?.(r), onError: (err) => opts?.onError?.(err) },
+      ),
     [logSetMutation],
+  )
+  const updateSet = useCallback(
+    (
+      workoutId: string,
+      setId: string,
+      body: SetUpdateRequest,
+      opts?: { onSuccess?: (r?: ExerciseSetResponse) => void },
+    ) =>
+      updateSetMutation.mutate({ workoutId, setId, body }, { onSuccess: (r) => opts?.onSuccess?.(r) }),
+    [updateSetMutation],
+  )
+  const deleteSet = useCallback(
+    (workoutId: string, setId: string) => deleteSetMutation.mutate({ workoutId, setId }),
+    [deleteSetMutation],
   )
   const skipExercise = useCallback(
     (workoutId: string, exerciseId: string) => skipMutation.mutate({ workoutId, exerciseId }),
@@ -747,6 +794,8 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     saveDayExercises,
     startWorkout,
     logSet,
+    updateSet,
+    deleteSet,
     skipExercise,
     saveExerciseNote,
     saveWorkoutFeedback,

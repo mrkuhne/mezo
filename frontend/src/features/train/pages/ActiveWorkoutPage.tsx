@@ -26,12 +26,14 @@ import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
-import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
+import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
 import type { MockMedalContext } from '@/data/train/medalEvaluator'
 import {
   type Session,
   addExtraSet,
+  attachSetId,
+  canRemoveSet,
   completeSet as completeSetModel,
   currentExerciseId,
   effectiveSetCount,
@@ -40,8 +42,10 @@ import {
   nextSetIdx,
   nextUnfinishedAfter,
   prescribedAt,
+  removeSet,
   seedFromOpen,
   skipExercise as skipExerciseModel,
+  updateLoggedSet,
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Icon } from '@/shared/ui/Icon'
@@ -58,6 +62,7 @@ import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet
 import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
 import { PrepHero } from '@/features/train/components/PrepHero'
 import { PrepExerciseCard } from '@/features/train/components/PrepExerciseCard'
+import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 
 type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
@@ -82,6 +87,11 @@ const MEDAL_TOAST_MS = 4500
 // exercise per session, at finish time, so the same key still cannot collide).
 function medalKey(m: Medal): string {
   return `${m.type}:${m.exerciseName}:${m.setIndex}`
+}
+
+/** The human label of one set slot — shared by the set-list row, its aria-label and the edit sheet. */
+function setSlotLabel(index: number, warmup: boolean, warmupCount: number): string {
+  return warmup ? `B${index + 1} bemelegítő szett` : `${index - warmupCount + 1}. working szett`
 }
 
 // Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
@@ -121,7 +131,7 @@ export function ActiveWorkoutPage() {
   // link while another workout runs resumes the running one, and a day already completed
   // this week falls through to the review redirect below (D5).
   const [searchParams] = useSearchParams()
-  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: searchParams.get('day') })
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: searchParams.get('day') })
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
@@ -145,6 +155,8 @@ export function ActiveWorkoutPage() {
       todaySession={todaySession}
       startWorkout={startWorkout}
       logSet={logSet}
+      updateSet={updateSet}
+      deleteSet={deleteSet}
       skipExercise={skipExercise}
       saveExerciseNote={saveExerciseNote}
       saveWorkoutFeedback={saveWorkoutFeedback}
@@ -163,8 +175,15 @@ interface SessionProps {
   logSet: (
     workoutId: string,
     set: SetLogRequest,
-    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void },
+    opts?: { ctx?: MockMedalContext; onSuccess?: (r?: ExerciseSetResponse) => void; onError?: (err: unknown) => void },
   ) => void
+  updateSet: (
+    workoutId: string,
+    setId: string,
+    body: SetUpdateRequest,
+    opts?: { onSuccess?: (r?: ExerciseSetResponse) => void },
+  ) => void
+  deleteSet: (workoutId: string, setId: string) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
@@ -179,7 +198,7 @@ function prefill(e: LoggedWorkoutExercise): LastWeekSet {
 }
 
 function ActiveWorkoutSession({
-  workout, activeMeso, todaySession, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
+  workout, activeMeso, todaySession, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
 }: SessionProps) {
   const W = workout
   const goBack = useBackNav('/train')
@@ -252,6 +271,16 @@ function ActiveWorkoutSession({
   // mutation; real refetches /today, but the override avoids a flash in between).
   const [noteEditOpen, setNoteEditOpen] = useState(false)
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({})
+  // The set-list row tapped for edit/delete (mezo-l3on) — an index into the VIEWED
+  // exercise's slots, so it must not survive a jump to another exercise (Step 4b below).
+  const [editingSetIdx, setEditingSetIdx] = useState<number | null>(null)
+  // The `localId`s of logged sets whose logSet POST errored (mezo-l3on fix-round-3, F1).
+  // A failed log means "there is no server row" — that's certain, not transient — so the
+  // honest UI keeps the set visible (no silent rollback, which was itself the round-2 bug:
+  // it could desync `logged[i]` from `prescribed[i]`) and simply lets the row become
+  // tappable again, same as a bound `id` would. The global mutation-error toast already
+  // tells the user the save failed; this just keeps the row from being a dead end.
+  const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -324,9 +353,20 @@ function ActiveWorkoutSession({
       setReps(t?.targetReps ?? prevWorking?.reps ?? p.reps)
       setRir(t?.targetRIR ?? prevWorking?.rir ?? p.rir)
     }
-    // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
+    // Reset on set-index / exercise transitions, and on the exercise's own slot-count
+    // change (N2, fix round 2): a delete of a PENDING slot changes neither `current.id`
+    // nor `cursor`, but the prescription splice (removeSet, C1) shifts what
+    // `prescribedAt(cursor)` returns — without this dep the steppers would keep
+    // showing the stale target while the kind tag/RIR row (computed at render) already
+    // moved on. NOT re-run on note changes (deliberately excluded).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.id, cursor])
+  }, [current.id, cursor, effectiveSetCount(session, current.id)])
+  // The open set-edit sheet addresses a row index INTO the viewed exercise (mezo-l3on);
+  // that index is meaningless against another exercise, so a jump (pager / dots /
+  // overview / swipe) must close it rather than let it edit the wrong slot.
+  useEffect(() => {
+    setEditingSetIdx(null)
+  }, [current.id])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -402,7 +442,11 @@ function ActiveWorkoutSession({
     const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the medal ctx + persisted setIndex)
     const target = prescribedAt(session, finishing.id, wasSetIdx)
     const kind = target?.kind ?? 'working'
-    const next = completeSetModel(session, finishing.id, { weight, reps, rir })
+    // A client-side identity (mezo-l3on fix-round-2, N1), assigned NOW so the async logSet
+    // response (success OR failure) can address THIS exact entry later — never by array
+    // index, which shifts under a concurrent edit/delete or a second in-flight log.
+    const localId = crypto.randomUUID()
+    const next = completeSetModel(session, finishing.id, { weight, reps, rir, localId })
     setSession(next)
     // Medals (mezo-wp6n): always logged — real mode never had a `workoutId` guard
     // reason to skip this (mirrors finishAndCelebrate's 'mock' sentinel below), and
@@ -422,6 +466,11 @@ function ActiveWorkoutSession({
     }, {
       ctx: { exerciseName: finishing.name, lastWeek: finishing.lastWeek, date: localToday },
       onSuccess: (r) => {
+        // Bind the server's set id onto the just-appended logged entry (mezo-l3on) —
+        // BEFORE the medal-less early return below, so a plain set (no medal earned)
+        // still gets an addressable id for a later edit/delete. Addressed by localId
+        // (fix-round-2, N1): a no-op if the user already deleted this exact entry.
+        if (r?.id) setSession((s) => attachSetId(s, finishing.id, localId, r.id!))
         const medals = r?.medals ?? []
         if (!medals.length) return
         setMedalsBySet((m) => ({ ...m, [`${finishing.id}:${wasSetIdx}`]: medals }))
@@ -432,6 +481,22 @@ function ActiveWorkoutSession({
           const top = [...records].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))[0]
           setToastMedal({ medal: top, extra: medals.length - 1 })
         }
+      },
+      // F1 (fix round 3): a failed POST (gym wifi) must NOT roll the local entry back —
+      // round 2's rollback could desync `logged[i]` from `prescribed[i]` when the
+      // dropped entry wasn't the LAST one (a later set shifts into a mismatched
+      // prescription, and a second in-flight log can also collide on the reused
+      // setIndex). There genuinely is no server row for this set — that's certain, not
+      // transient — so the honest move is to keep it visible and mark it failed, which
+      // the row-disabled rule below treats the same as a bound id (tappable, not a
+      // dead end): the user can delete it (local-only, exactly like a pending slot) or
+      // edit it locally.
+      onError: () => {
+        setFailedSetLocalIds((prev) => {
+          const next = new Set(prev)
+          next.add(localId)
+          return next
+        })
       },
     })
     setNote('')
@@ -451,6 +516,92 @@ function ActiveWorkoutSession({
       // No "next" label anywhere — mid-exercise the next set is visible right
       // above the bar (set dots + prefilled steppers).
       rest.start(restSecondsFor(current.type))
+    }
+  }
+
+  // Drop every in-session medal chip of one exercise (mezo-l3on): after an edit or a delete the
+  // exercise's OTHER sets can gain or lose records too, and the authoritative list only arrives
+  // with the finish response — a missing chip is honest, a stale one is not.
+  // `dropped` reads the closure-captured `medalsBySet` STATE (not the updater's own argument),
+  // so `setMedalsBySet`'s updater below is a plain, side-effect-free filter, and `setSessionMedals`
+  // is called OUTSIDE any updater (fix round 1, minors) — an updater fn must be pure (StrictMode
+  // double-invokes it to catch exactly this), so a side-effecting `setState` call must never live
+  // inside one.
+  const clearExerciseMedals = (ex: LoggedWorkoutExercise) => {
+    const dropped = Object.entries(medalsBySet)
+      .filter(([k]) => k.startsWith(`${ex.id}:`))
+      .flatMap(([, v]) => v)
+    setMedalsBySet((m) => {
+      const next: Record<string, Medal[]> = {}
+      for (const [k, v] of Object.entries(m)) {
+        if (!k.startsWith(`${ex.id}:`)) next[k] = v
+      }
+      return next
+    })
+    const droppedKeys = new Set(dropped.map(medalKey))
+    setSessionMedals((s) => s.filter((md) => !droppedKeys.has(medalKey(md))))
+  }
+
+  const handleSetSave = (idx: number, v: SetEditValues) => {
+    const ex = current
+    const setId = session.logged[ex.id]?.[idx]?.id
+    setSession(updateLoggedSet(session, ex.id, idx, { weight: v.weight, reps: v.reps, rir: v.rir, side: v.side, note: v.note }))
+    clearExerciseMedals(ex)
+    const isWarmup = prescribedAt(session, ex.id, idx)?.kind === 'warmup'
+    if (setId) {
+      updateSet(workoutId ?? 'mock', setId, {
+        weightKg: weightless ? 0 : v.weight,
+        reps: v.reps,
+        ...(isWarmup ? {} : { rir: v.rir }),
+        ...(v.side ? { side: v.side } : {}),
+        ...(v.note.trim() ? { note: v.note.trim() } : {}),
+      }, {
+        onSuccess: (r) => {
+          const medals = r?.medals ?? []
+          if (medals.length) {
+            setMedalsBySet((m) => ({ ...m, [`${ex.id}:${idx}`]: medals }))
+            setSessionMedals((s) => [...s, ...medals])
+          }
+        },
+      })
+    }
+    setEditingSetIdx(null)
+  }
+
+  const handleSetDelete = (idx: number) => {
+    const ex = current
+    // I1 (fix round 1): removeSet returns the SAME session when it refuses (floor
+    // reached, or an index at/beyond the slot count) — bail before any side effect
+    // fires (rest.skip / medal clear / the server DELETE).
+    const next = removeSet(session, ex.id, idx)
+    if (next === session) return
+    const loggedBefore = session.logged[ex.id] ?? []
+    const wasLogged = idx < loggedBefore.length
+    const setId = loggedBefore[idx]?.id
+    // The removed set must not leave a rest countdown running toward it — but only
+    // when the deleted row was itself LOGGED (minor fix): deleting an unrelated
+    // pending slot must not kill an in-flight rest meant for a DIFFERENT set.
+    if (wasLogged) rest.skip()
+    setSession(next)
+    clearExerciseMedals(ex)
+    // A pending slot has no server row — the shrink is purely client state.
+    if (setId) deleteSet(workoutId ?? 'mock', setId)
+    setEditingSetIdx(null)
+    // I2 (fix round 1): deleting the exercise's LAST PENDING slot can make it read as
+    // fully logged with no debrief ever having run (completeSet only pins `feedbackEx`
+    // when ITS OWN last-set log lands — a delete bypasses that entirely). Mirror the
+    // same transition here, but only when the exercise WASN'T already fully resolved
+    // before this delete (revisiting an already-debriefed exercise to trim a stray
+    // logged set must not re-open its debrief).
+    const wasFullyLogged = loggedBefore.length >= effectiveSetCount(session, ex.id)
+    const isNowFullyLogged = (next.logged[ex.id]?.length ?? 0) >= effectiveSetCount(next, ex.id)
+    if (!wasFullyLogged && isNowFullyLogged) {
+      // No "next" set remains to rest toward — a rest that outlived the delete above
+      // (deleting a PENDING slot while an unrelated rest was still counting down)
+      // must not survive into the debrief either.
+      rest.skip()
+      setFeedbackEx(ex)
+      setActionSheetOpen(false)
     }
   }
 
@@ -819,6 +970,32 @@ function ActiveWorkoutSession({
           onClose={() => setActionSheetOpen(false)}
         />
       )}
+      {editingSetIdx !== null && !feedbackEx && (() => {
+        const idx = editingSetIdx
+        const t = prescribedAt(session, current.id, idx)
+        const warm = t?.kind === 'warmup'
+        const actual = session.logged[current.id]?.[idx]
+        return (
+          <SetEditSheet
+            exerciseName={current.name}
+            setLabel={setSlotLabel(idx, warm, warmupCount)}
+            mode={actual ? 'logged' : 'pending'}
+            kind={warm ? 'warmup' : 'working'}
+            exerciseType={current.type}
+            initial={{
+              weight: actual?.weight ?? t?.targetWeightKg ?? prefill(current).weight,
+              reps: actual?.reps ?? t?.targetReps ?? prefill(current).reps,
+              rir: actual?.rir ?? t?.targetRIR ?? current.targetRIR,
+              side: actual?.side ?? null,
+              note: actual?.note ?? '',
+            }}
+            canDelete={canRemoveSet(session, current.id)}
+            onSave={(v) => handleSetSave(idx, v)}
+            onDelete={() => handleSetDelete(idx)}
+            onClose={() => setEditingSetIdx(null)}
+          />
+        )
+      })()}
       {noteEditOpen && (
         <NoteEditSheet
           initialNote={effectiveNote}
@@ -1052,10 +1229,20 @@ function ActiveWorkoutSession({
             onChange={(e) => setNote(e.target.value)}
           />
 
+          {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
+              completeSet's own last-set branch (which is what normally pins `feedbackEx`
+              and never re-renders this CTA afterwards) — so the CTA is gated on the
+              cursor directly: once there is no next slot to log, it must not linger.
+              N3 (fix round 2): the REST BAR is a different story — a rest can still be
+              genuinely running (free-navigated away from mid-rest, or navigated back to
+              a since-completed exercise) and must stay visible/pausable regardless of
+              whether this exercise still has a next slot; only the CTA is cursor-gated. */}
           {rest.status === 'idle' ? (
-            <button type="button" className="donebtn np-press" onClick={completeSet}>
-              Szett kész ✓
-            </button>
+            cursor < currentSetCount && (
+              <button type="button" className="donebtn np-press" onClick={completeSet}>
+                Szett kész ✓
+              </button>
+            )
           ) : (
             <RestTimerBar
               remaining={rest.remaining}
@@ -1121,11 +1308,25 @@ function ActiveWorkoutSession({
               const w = isDone ? actual?.weight : t?.targetWeightKg
               const r = isDone ? actual?.reps : t?.targetReps
               const rr = isDone ? actual?.rir : t?.targetRIR
+              // C2 (fix round 1): a LOGGED row whose log is still genuinely IN FLIGHT
+              // (the window between the optimistic local append and logSet's response)
+              // must not be tappable — editing/deleting it then would have nothing to
+              // PUT/DELETE against, silently orphaning the server-side row forever. A
+              // not-yet-logged (pending) row legitimately has no id and stays tappable.
+              // F1 (fix round 3): a row whose log is KNOWN to have failed is NOT
+              // in-flight — there is no server row, for certain, so it's tappable too
+              // (delete falls back to local-only, same as a pending slot).
+              const rowFailed = !!actual?.localId && failedSetLocalIds.has(actual.localId)
+              const rowDisabled = isDone && !actual?.id && !rowFailed
               return (
-                <div
+                <button
                   key={i}
-                  className="row gap-sm"
-                  style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1 }}
+                  type="button"
+                  className="row gap-sm np-press"
+                  aria-label={`${setSlotLabel(i, warm, warmupCount)} szerkesztése${isDone ? ` — ${w ?? '–'} kg × ${r ?? '–'}${warm ? '' : ` — RIR ${rr ?? '–'}`}` : ''}`}
+                  disabled={rowDisabled}
+                  onClick={() => setEditingSetIdx(i)}
+                  style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1, width: '100%', textAlign: 'left' }}
                 >
                   <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
                   <span className="stag" style={{ background: 'color-mix(in srgb, ' + accent + ' 14%, transparent)', color: accent }}>{kindLabel}</span>
@@ -1152,7 +1353,8 @@ function ActiveWorkoutSession({
                   ) : warm ? null : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
                   )}
-                </div>
+                  <span aria-hidden="true" style={{ color: 'var(--text-tertiary)', fontSize: 13, marginLeft: 2 }}>›</span>
+                </button>
               )
             })}
           </div>
