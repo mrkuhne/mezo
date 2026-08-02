@@ -1410,19 +1410,37 @@ test('mock mode: a logged set row opens the edit sheet, and saving rewrites the 
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByText('Szett kész ✓')) // B1: prescribed 52.5 kg × 10
   const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
   if (skipRest) await user.click(skipRest)
 
-  const before = firstRow().getAttribute('aria-label')
   await user.click(firstRow())
   const sheet = within(screen.getByRole('dialog'))
   await user.click(sheet.getByLabelText('Ismétlés növelése'))
   await user.click(sheet.getByRole('button', { name: 'Mentés ✓' }))
 
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  // The row is read-only output of the session model, so a changed label proves the edit landed.
-  expect(firstRow().getAttribute('aria-label')).not.toBe(before)
+  // Fix round 1 (I3): assert the EXACT rewritten label, not just "it changed" — a save
+  // that silently wrote the wrong field (or the wrong index) would still pass a mere
+  // inequality check.
+  expect(firstRow().getAttribute('aria-label')).toBe('B1 bemelegítő szett szerkesztése — 52.5 kg × 11')
+})
+
+test('mock mode: logging a set that earns no medal still binds its server id (the row stays tappable)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // B1 is a warmup — the mock evaluator never scores warmup-kind sets (isWorking gate in
+  // trainHooks.ts), so this log earns NO medal at all. Regression guard for the headline
+  // judgement call (attachSetId must run before the `!medals.length` early return): if that
+  // ordering ever regresses, the row would stay disabled forever (C2's fix below).
+  await user.click(screen.getByText('Szett kész ✓'))
+  const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+  if (skipRest) await user.click(skipRest)
+
+  await waitFor(() => expect(firstRow()).not.toBeDisabled())
+  await user.click(firstRow())
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
 })
 
 test('mock mode: deleting a set drops one slot from the exercise', async () => {
@@ -1436,6 +1454,35 @@ test('mock mode: deleting a set drops one slot from the exercise', async () => {
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
 
   await waitFor(() => expect(container.querySelectorAll('.setdots .sd')).toHaveLength(4))
+  // Fix round 1 (C1(a) / I3): discriminate WHICH slot was removed. Deleting the pending
+  // B1 warmup must leave exactly ONE warmup dot behind and all three working dots intact
+  // — not silently swallow a working slot while both warmups survive.
+  const dots = Array.from(container.querySelectorAll('.setdots .sd'))
+  expect(dots.map((d) => d.textContent)).toEqual(['B1', '1', '2', '3'])
+})
+
+test('mock mode: deleting the last pending slot completes the exercise and triggers its debrief', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Log 4 of ex1's 5 planned sets (2 warmup + 2 working), leaving the 5th (last working
+  // set) pending.
+  for (let i = 0; i < 4; i++) {
+    await user.click(screen.getByText('Szett kész ✓'))
+    const skip = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+    if (skip) await user.click(skip)
+  }
+  expect(screen.getByText('Szett kész ✓')).toBeInTheDocument()
+
+  // Delete the still-pending 5th (last) slot.
+  const lastRow = screen.getAllByRole('button', { name: /szett szerkesztése/ })[4]
+  await user.click(lastRow)
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
+
+  // I3/I2: the exercise is now fully logged (4/4) — the debrief must fire (mirroring the
+  // last-set-logged path) and the CTA must not linger with nothing left to log.
+  await waitFor(() => expect(screen.getByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument())
+  expect(screen.queryByText('Szett kész ✓')).not.toBeInTheDocument()
 })
 
 test('mock mode: the last remaining slot cannot be deleted', async () => {

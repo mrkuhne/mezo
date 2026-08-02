@@ -83,6 +83,15 @@ export function canRemoveSet(s: Session, id: string): boolean {
  * returns the same session) at the one-slot floor, and equally refuses an index at or beyond the
  * current effective count — that address isn't a slot, and removing it anyway would desync
  * `removed` from `logged` (a logged set left with nowhere to render).
+ *
+ * The PRESCRIPTION shifts in lock-step with the removed slot (mezo-l3on fix-round-1, C1): without
+ * this, row `i` after a delete would still pair against the UNSHIFTED `prescribed[id][i]` — e.g.
+ * deleting a pending warmup slot would silently make a WORKING slot vanish from the rendered list
+ * instead (the warmup count never drops), and deleting an already-logged slot could re-pair a
+ * logged WORKING set with a warmup prescription (no RIR), which then round-trips into a
+ * `SetUpdateRequest` PUT with no `rir` — a full-replacement write, so the server would zero out a
+ * real RIR value. `removed[id]` keeps counting (the slot-count arithmetic is unchanged) — only the
+ * per-index prescribed alignment is corrected.
  */
 export function removeSet(s: Session, id: string, index: number): Session {
   if (!canRemoveSet(s, id) || index >= effectiveSetCount(s, id)) return s
@@ -90,6 +99,10 @@ export function removeSet(s: Session, id: string, index: number): Session {
   const next: Session = { ...s, removed: { ...s.removed, [id]: (s.removed[id] ?? 0) + 1 } }
   if (index < logged.length) {
     next.logged = { ...s.logged, [id]: [...logged.slice(0, index), ...logged.slice(index + 1)] }
+  }
+  const prescribed = s.prescribed[id]
+  if (prescribed && index < prescribed.length) {
+    next.prescribed = { ...s.prescribed, [id]: [...prescribed.slice(0, index), ...prescribed.slice(index + 1)] }
   }
   return next
 }

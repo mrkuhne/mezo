@@ -244,4 +244,34 @@ describe('set edit + slot removal (mezo-l3on)', () => {
     const after = updateLoggedSet(seeded, 'a', 0, { weight: 90 })
     expect(after.logged.a[0]).toMatchObject({ id: 'st-1', weight: 90, reps: 10, rir: 2, side: 'L', note: 'bal' })
   })
+
+  // C1 (fix round 1): the prescription must shift with the removed slot, or row `i`
+  // re-pairs against the wrong (unshifted) prescribed target after a delete.
+  const withPrescription = [{
+    id: 'a', warmupSets: 2, workingSets: 3,
+    prescribedSets: [
+      { kind: 'warmup' as const, targetWeightKg: 40, targetReps: 12, targetRIR: null },
+      { kind: 'warmup' as const, targetWeightKg: 60, targetReps: 10, targetRIR: null },
+      { kind: 'working' as const, targetWeightKg: 100, targetReps: 8, targetRIR: 2 },
+      { kind: 'working' as const, targetWeightKg: 100, targetReps: 8, targetRIR: 2 },
+      { kind: 'working' as const, targetWeightKg: 100, targetReps: 8, targetRIR: 2 },
+    ],
+  }]
+
+  test('C1(a): removeSet on a PENDING warmup slot drops that warmup from the prescription, not a working slot', () => {
+    const s = makeSession(withPrescription)
+    const after = removeSet(s, 'a', 0)
+    expect(after.prescribed.a.map((p) => p.kind)).toEqual(['warmup', 'working', 'working', 'working'])
+    expect(effectiveSetCount(after, 'a')).toBe(4)
+  })
+
+  test('C1(b): removeSet on an already-LOGGED warmup slot re-pairs the later logged working set with a working prescription', () => {
+    let s = makeSession(withPrescription)
+    s = completeSet(s, 'a', { weight: 40, reps: 12, rir: 0 }) // B1 (logged idx 0)
+    s = completeSet(s, 'a', { weight: 60, reps: 10, rir: 0 }) // B2 (logged idx 1)
+    s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 0 }) // W1 (logged idx 2)
+    const after = removeSet(s, 'a', 0) // delete B1 — W1 shifts down to logged idx 1
+    expect(after.prescribed.a[1].kind).toBe('working')
+    expect(after.logged.a[1]).toMatchObject({ weight: 100, reps: 8, rir: 0 })
+  })
 })

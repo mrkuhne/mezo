@@ -489,18 +489,24 @@ function ActiveWorkoutSession({
   // Drop every in-session medal chip of one exercise (mezo-l3on): after an edit or a delete the
   // exercise's OTHER sets can gain or lose records too, and the authoritative list only arrives
   // with the finish response — a missing chip is honest, a stale one is not.
+  // `dropped` reads the closure-captured `medalsBySet` STATE (not the updater's own argument),
+  // so `setMedalsBySet`'s updater below is a plain, side-effect-free filter, and `setSessionMedals`
+  // is called OUTSIDE any updater (fix round 1, minors) — an updater fn must be pure (StrictMode
+  // double-invokes it to catch exactly this), so a side-effecting `setState` call must never live
+  // inside one.
   const clearExerciseMedals = (ex: LoggedWorkoutExercise) => {
+    const dropped = Object.entries(medalsBySet)
+      .filter(([k]) => k.startsWith(`${ex.id}:`))
+      .flatMap(([, v]) => v)
     setMedalsBySet((m) => {
       const next: Record<string, Medal[]> = {}
-      const dropped: Medal[] = []
       for (const [k, v] of Object.entries(m)) {
-        if (k.startsWith(`${ex.id}:`)) dropped.push(...v)
-        else next[k] = v
+        if (!k.startsWith(`${ex.id}:`)) next[k] = v
       }
-      const droppedKeys = new Set(dropped.map(medalKey))
-      setSessionMedals((s) => s.filter((md) => !droppedKeys.has(medalKey(md))))
       return next
     })
+    const droppedKeys = new Set(dropped.map(medalKey))
+    setSessionMedals((s) => s.filter((md) => !droppedKeys.has(medalKey(md))))
   }
 
   const handleSetSave = (idx: number, v: SetEditValues) => {
@@ -531,14 +537,39 @@ function ActiveWorkoutSession({
 
   const handleSetDelete = (idx: number) => {
     const ex = current
-    const setId = session.logged[ex.id]?.[idx]?.id
-    // The removed set must not leave a rest countdown running toward it.
-    rest.skip()
-    setSession(removeSet(session, ex.id, idx))
+    // I1 (fix round 1): removeSet returns the SAME session when it refuses (floor
+    // reached, or an index at/beyond the slot count) — bail before any side effect
+    // fires (rest.skip / medal clear / the server DELETE).
+    const next = removeSet(session, ex.id, idx)
+    if (next === session) return
+    const loggedBefore = session.logged[ex.id] ?? []
+    const wasLogged = idx < loggedBefore.length
+    const setId = loggedBefore[idx]?.id
+    // The removed set must not leave a rest countdown running toward it — but only
+    // when the deleted row was itself LOGGED (minor fix): deleting an unrelated
+    // pending slot must not kill an in-flight rest meant for a DIFFERENT set.
+    if (wasLogged) rest.skip()
+    setSession(next)
     clearExerciseMedals(ex)
     // A pending slot has no server row — the shrink is purely client state.
     if (setId) deleteSet(workoutId ?? 'mock', setId)
     setEditingSetIdx(null)
+    // I2 (fix round 1): deleting the exercise's LAST PENDING slot can make it read as
+    // fully logged with no debrief ever having run (completeSet only pins `feedbackEx`
+    // when ITS OWN last-set log lands — a delete bypasses that entirely). Mirror the
+    // same transition here, but only when the exercise WASN'T already fully resolved
+    // before this delete (revisiting an already-debriefed exercise to trim a stray
+    // logged set must not re-open its debrief).
+    const wasFullyLogged = loggedBefore.length >= effectiveSetCount(session, ex.id)
+    const isNowFullyLogged = (next.logged[ex.id]?.length ?? 0) >= effectiveSetCount(next, ex.id)
+    if (!wasFullyLogged && isNowFullyLogged) {
+      // No "next" set remains to rest toward — a rest that outlived the delete above
+      // (deleting a PENDING slot while an unrelated rest was still counting down)
+      // must not survive into the debrief either.
+      rest.skip()
+      setFeedbackEx(ex)
+      setActionSheetOpen(false)
+    }
   }
 
   // The save button of the debrief persists the RP values for the just-finished exercise.
@@ -1165,19 +1196,26 @@ function ActiveWorkoutSession({
             onChange={(e) => setNote(e.target.value)}
           />
 
-          {rest.status === 'idle' ? (
-            <button type="button" className="donebtn np-press" onClick={completeSet}>
-              Szett kész ✓
-            </button>
-          ) : (
-            <RestTimerBar
-              remaining={rest.remaining}
-              total={rest.total}
-              paused={rest.status === 'paused'}
-              onPause={rest.pause}
-              onResume={rest.resume}
-              onSkip={rest.skip}
-            />
+          {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
+              completeSet's own last-set branch (which is what normally pins `feedbackEx`
+              and never re-renders this CTA afterwards) — so gate on the cursor directly:
+              once there is no next slot to log, neither the CTA nor a stray rest bar
+              belongs here (the debrief modal takes over). */}
+          {cursor < currentSetCount && (
+            rest.status === 'idle' ? (
+              <button type="button" className="donebtn np-press" onClick={completeSet}>
+                Szett kész ✓
+              </button>
+            ) : (
+              <RestTimerBar
+                remaining={rest.remaining}
+                total={rest.total}
+                paused={rest.status === 'paused'}
+                onPause={rest.pause}
+                onResume={rest.resume}
+                onSkip={rest.skip}
+              />
+            )
           )}
         </div>
 
@@ -1234,12 +1272,19 @@ function ActiveWorkoutSession({
               const w = isDone ? actual?.weight : t?.targetWeightKg
               const r = isDone ? actual?.reps : t?.targetReps
               const rr = isDone ? actual?.rir : t?.targetRIR
+              // C2 (fix round 1): a LOGGED row whose server id hasn't landed yet (the
+              // window between the optimistic local append and logSet's response) must
+              // not be tappable — editing/deleting it then would have nothing to PUT/
+              // DELETE against, silently orphaning the server-side row forever. A
+              // not-yet-logged (pending) row legitimately has no id and stays tappable.
+              const rowDisabled = isDone && !actual?.id
               return (
                 <button
                   key={i}
                   type="button"
                   className="row gap-sm np-press"
-                  aria-label={`${setSlotLabel(i, warm, warmupCount)} szerkesztése${isDone ? ` — ${w ?? '–'} kg × ${r ?? '–'}` : ''}`}
+                  aria-label={`${setSlotLabel(i, warm, warmupCount)} szerkesztése${isDone ? ` — ${w ?? '–'} kg × ${r ?? '–'}${warm ? '' : ` — RIR ${rr ?? '–'}`}` : ''}`}
+                  disabled={rowDisabled}
                   onClick={() => setEditingSetIdx(i)}
                   style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1, width: '100%', textAlign: 'left' }}
                 >
