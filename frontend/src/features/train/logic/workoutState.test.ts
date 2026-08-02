@@ -11,6 +11,10 @@ import {
   skipExercise,
   seedFromOpen,
   mergePlan,
+  canRemoveSet,
+  removeSet,
+  updateLoggedSet,
+  attachSetId,
   type SessionExerciseInput,
 } from '@/features/train/logic/workoutState'
 
@@ -166,5 +170,60 @@ describe('nextUnfinishedAfter', () => {
     expect(nextUnfinishedAfter(s, 'b')).toBe('a')
     s = completeSet(s, 'a', { weight: 40, reps: 12, rir: 1 })
     expect(nextUnfinishedAfter(s, 'a')).toBeNull()
+  })
+})
+
+describe('set edit + slot removal (mezo-l3on)', () => {
+  const ex = [{ id: 'a', warmupSets: 1, workingSets: 3, prescribedSets: null }]
+
+  test('removeSet on a pending slot shrinks the effective count without touching logs', () => {
+    const s = completeSet(makeSession(ex), 'a', { weight: 80, reps: 10, rir: 2 })
+    const after = removeSet(s, 'a', 3)
+    expect(effectiveSetCount(after, 'a')).toBe(3)
+    expect(after.logged.a).toHaveLength(1)
+  })
+
+  test('removeSet on a logged set drops the entry AND the slot, shifting later sets down', () => {
+    let s = makeSession(ex)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2 })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2 })
+    s = completeSet(s, 'a', { weight: 85, reps: 8, rir: 1 })
+    const after = removeSet(s, 'a', 1)
+    expect(effectiveSetCount(after, 'a')).toBe(3)
+    expect(after.logged.a.map((x) => x.weight)).toEqual([80, 85])
+    expect(nextSetIdx(after, 'a')).toBe(2)
+  })
+
+  test('removeSet refuses to drop the last remaining slot', () => {
+    const one = [{ id: 'a', warmupSets: 0, workingSets: 1, prescribedSets: null }]
+    const s = makeSession(one)
+    expect(canRemoveSet(s, 'a')).toBe(false)
+    expect(removeSet(s, 'a', 0)).toBe(s)
+    expect(effectiveSetCount(s, 'a')).toBe(1)
+  })
+
+  test('canRemoveSet is true while more than one slot remains', () => {
+    expect(canRemoveSet(makeSession(ex), 'a')).toBe(true)
+  })
+
+  test('updateLoggedSet overwrites only the addressed set', () => {
+    let s = makeSession(ex)
+    s = completeSet(s, 'a', { weight: 80, reps: 10, rir: 2 })
+    s = completeSet(s, 'a', { weight: 82.5, reps: 9, rir: 2 })
+    const after = updateLoggedSet(s, 'a', 0, { weight: 77.5, reps: 12, rir: 3, note: 'javítva' })
+    expect(after.logged.a[0]).toMatchObject({ weight: 77.5, reps: 12, rir: 3, note: 'javítva' })
+    expect(after.logged.a[1]).toMatchObject({ weight: 82.5, reps: 9 })
+  })
+
+  test('attachSetId binds the server id to the logged entry', () => {
+    const s = completeSet(makeSession(ex), 'a', { weight: 80, reps: 10, rir: 2 })
+    expect(attachSetId(s, 'a', 0, 'st-9').logged.a[0].id).toBe('st-9')
+  })
+
+  test('seedFromOpen carries the server id, side and note into the session', () => {
+    const s = seedFromOpen(ex, {
+      sets: [{ id: 'st-1', exerciseId: 'a', setIndex: 0, weightKg: 80, reps: 10, rir: 2, side: 'L', note: 'bal' }],
+    })
+    expect(s.logged.a[0]).toMatchObject({ id: 'st-1', weight: 80, reps: 10, rir: 2, side: 'L', note: 'bal' })
   })
 })
