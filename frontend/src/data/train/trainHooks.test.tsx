@@ -474,3 +474,26 @@ test('useTrain (mock mode) catalog write mutations resolve without any network c
   // Mock library keeps the Phase-1 static video/editable metadata unchanged.
   expect(result.current.exerciseLibrary[0]).toMatchObject({ videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false })
 })
+
+test('useTrain (real mode) updateSet/deleteSet hit the set sub-resource', async () => {
+  const calls: string[] = []
+  server.use(
+    http.put(`${API_BASE}/api/train/workouts/:id/sets/:setId`, async ({ params, request }) => {
+      const body = (await request.json()) as { weightKg: number; reps: number }
+      calls.push(`put:${params.id}/${params.setId}:${body.weightKg}x${body.reps}`)
+      return HttpResponse.json({ id: String(params.setId), exerciseId: 'ex-1', setIndex: 0, medals: [] })
+    }),
+    http.delete(`${API_BASE}/api/train/workouts/:id/sets/:setId`, ({ params }) => {
+      calls.push(`del:${params.id}/${params.setId}`)
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const saved = vi.fn()
+  result.current.updateSet('w-1', 'st-7', { weightKg: 82.5, reps: 9, rir: 1 }, { onSuccess: saved })
+  await waitFor(() => expect(saved).toHaveBeenCalled())
+  result.current.deleteSet('w-1', 'st-7')
+  await waitFor(() =>
+    expect(calls).toEqual(expect.arrayContaining(['put:w-1/st-7:82.5x9', 'del:w-1/st-7'])),
+  )
+})
