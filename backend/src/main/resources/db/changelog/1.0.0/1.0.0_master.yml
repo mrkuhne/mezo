@@ -531,3 +531,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608010400_mezo-e1sp_create_sport_event.sql
+  - changeSet:
+      id: "1.0.0:202608021100_mezo-1rz9_llm_log_status_cancelled"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608021100_mezo-1rz9_llm_log_status_cancelled.sql

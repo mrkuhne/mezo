@@ -779,8 +779,13 @@ but it is documented here because both recording adapters live in `feature/compa
   take the cost history), `created_at timestamptz`; **`call_kind`** (`CHAT|CHAT_STREAM|VISION|SMART|
   TOOL|EMBED_DOC|EMBED_QUERY`), attribution (`feature` **not null**, `operation`, `entity_kind`,
   `entity_id`), request/outcome (`requested_model`, `served_model`, `status`
-  (`ck_llm_log_history_status IN ('SUCCESS','ERROR')`), `error_code`, `error_class`, `latency_ms`,
-  `streamed`, `tool_rounds`, `service_tier`), generation counters (`prompt_/candidates_/thoughts_/
+  (`ck_llm_log_history_status IN ('SUCCESS','ERROR','CANCELLED')` — the third value added by
+  `mezo-1rz9` for streams whose SSE client disconnected mid-turn), `error_code`, `error_class`,
+  `latency_ms`, `streamed`, `tool_rounds` (populated since `mezo-58ig`: N usage-reporting model
+  rounds ⇒ N−1 tool rounds; null when none observed), `service_tier`), generation counters
+  (**per-round-summed on tool turns** since `mezo-58ig` — Spring AI 2.0's tool loop returns only the
+  LAST round's response, so `GeminiRoundUsageAdvisor` + the `GeminiRoundUsage` tally sum each billed
+  round's own native usage instead; single-round calls are byte-identical) (`prompt_/candidates_/thoughts_/
   cached_/total_tokens`), embedding counters (`embed_input_count`, `embed_dimensions`,
   `embed_billable_chars`), payload (`system_prompt`, `user_message`, `response_text`, `truncated`,
   `payload_bytes` = the TRUE pre-truncation UTF-8 size), image markers (`image_count`,
@@ -795,9 +800,13 @@ but it is documented here because both recording adapters live in `feature/compa
   `LlmLogEntity` deliberately does **not** extend `OwnedEntity` (that superclass mandates the
   soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable; they leave
   only via retention pruning (a hard `DELETE`, not built yet).
-- **Reading it:** usage/cost aggregates **must filter `status = 'SUCCESS'`** — an ERROR row carries no
+- **Reading it:** usage/cost aggregates **must exclude `status = 'ERROR'`** — an ERROR row carries no
   provider-reported usage or cost, but its request-side counters (image counts, embedding batch size
-  + dimensions) do survive. A null `cost_usd` means *unpriced/unknown*, never *free*: an unpriced
+  + dimensions) do survive. A **`CANCELLED`** row (`mezo-1rz9` — the SSE client disconnected
+  mid-stream) sits between the two: it keeps the partial `response_text` and whatever usage the
+  per-round tally caught from already-completed tool rounds — those tokens WERE billed, so when
+  present they carry a real `cost_usd`; the never-arrived final usage chunk stays null. A null
+  `cost_usd` means *unpriced/unknown*, never *free*: an unpriced
   served model (also `log.warn`ed), an absent usage block and an unknown embedding char count all
   record null rather than a fabricated `0`. Because `created_by` is null on cron/`@Async` threads
   (and on `CHAT_STREAM` rows, whose terminal signal may run off the request thread), a read side must
@@ -1692,11 +1701,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   read side, and filter `status = 'SUCCESS'` in any usage/cost aggregate.
 
 **Deferred (with bd ids):**
-- **LLM audit-log follow-ups (mezo-2zyu v1 = DB only):** `mezo-58ig` — thoughts/cached record as
-  null on TOOL-round turns (Spring AI's cumulative `DefaultUsage` drops the native payload);
-  `mezo-1rz9` — a cancelled/aborted SSE stream records no row at all. Also open: a read API / admin
-  view, retention pruning (nothing prunes the table yet), budget alerting, and reconciling the
-  placeholder `mezo.llm-log.pricing` rates with current Gemini pricing.
+- **LLM audit-log follow-ups (mezo-2zyu v1 = DB only):** still open — a read API / admin view,
+  retention pruning (nothing prunes the table yet), budget alerting, and reconciling the placeholder
+  `mezo.llm-log.pricing` rates with current Gemini pricing. (`mezo-58ig` per-round usage and
+  `mezo-1rz9` CANCELLED streams are FIXED — see the audit-log section above.)
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
   `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review
   prerequisite; until then the deployed chat is the honest degraded state). The v0 exit criterion
@@ -1748,6 +1756,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — LLM call audit log (mezo-2zyu, [ADR 0014](../decisions/0014-llm-call-audit-log.md))**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiUsageExtractor.java` — the ONE place Gemini's response metadata is read (served model, service tier, prompt/candidates/thoughts/cached tokens); absent usage → null, never 0.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/{GeminiRoundUsage,GeminiRoundUsageAdvisor}.java` — the per-round usage capture (`mezo-58ig`): a per-call tally rides the ChatClient request context to a CallAdvisor/StreamAdvisor ordered between ToolCallingAdvisor's loop and the model, which sums each round's own native usage; the adapter prefers the tally over the final-response read and derives `tool_rounds` from it.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiEmbeddingAdapter.java` — records the embedding calls (character-based `EmbedUsage`, `billableCharacterCount`) around its `EmbedContentResponse`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/{LlmCallRecorder,EventPublishingLlmCallRecorder,NoOpLlmCallRecorder}.java` — the seam the adapters call; switch on ⇒ publish, off ⇒ no-op.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/{LlmCallRecord,TokenUsage,EmbedUsage,LlmActorResolver}.java` — what the adapter observed + who called (null on cron threads).

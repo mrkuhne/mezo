@@ -25,7 +25,10 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import reactor.core.publisher.Flux;
@@ -93,7 +96,8 @@ class GeminiCompanionLlmRecordingTest {
         llm.complete("sys", "hi", List.of(noOpTool()), Map.of("k", "v"));
 
         assertThat(recorder.last().callKind()).isEqualTo(CallKind.TOOL);
-        assertThat(recorder.last().toolRounds()).isNull();
+        // One model round observed, no tool round executed — 0 is now KNOWN, not unknown (mezo-58ig).
+        assertThat(recorder.last().toolRounds()).isZero();
     }
 
     @Test
@@ -180,6 +184,65 @@ class GeminiCompanionLlmRecordingTest {
         assertThat(record.errorCode()).isNull();
     }
 
+    /**
+     * mezo-58ig: on a tool-round turn Spring AI's final response no longer carries the Google-native
+     * usage, so thoughts/cached recorded as null. The per-round accumulator must instead sum each
+     * round's own native counters (each round is a separately billed provider call — summing prompt
+     * across rounds is exactly what the provider bills) and count the rounds.
+     */
+    @Test
+    void testComplete_shouldSumPerRoundUsageAndCountRounds_whenToolRoundsRun() {
+        GeminiCompanionLlm llm = adapter(sequencedChatModel(
+            toolCallRound(usage(1_000, 50, 100, 10, 1_150)),
+            answerRound("done", usage(1_200, 80, 200, 20, 1_480))));
+
+        String out = llm.complete("sys", "hi", List.of(noOpTool()), Map.of("k", "v"));
+
+        assertThat(out).isEqualTo("done");
+        LlmCallRecord record = recorder.last();
+        assertThat(record.status()).isEqualTo(CallStatus.SUCCESS);
+        assertThat(record.tokens().prompt()).isEqualTo(2_200);
+        assertThat(record.tokens().candidates()).isEqualTo(130);
+        assertThat(record.tokens().thoughts()).isEqualTo(300);
+        assertThat(record.tokens().cached()).isEqualTo(30);
+        assertThat(record.tokens().total()).isEqualTo(2_630);
+        assertThat(record.toolRounds()).isEqualTo(1);
+    }
+
+    /**
+     * mezo-1rz9: an SSE client disconnect cancels the Flux — neither doOnComplete nor doOnError
+     * fires, so the turn used to vanish from the audit log although the provider billed the tokens
+     * generated so far. A cancel must land a CANCELLED record carrying the partial answer.
+     */
+    @Test
+    void testStream_shouldRecordCancelledWithPartialAnswer_whenClientDisconnects() {
+        GeminiCompanionLlm llm = adapter(hangingStreamingChatModel(chunk("part", null)));
+
+        List<String> chunks = llm.stream("sys", "hi").take(1).collectList().block();
+
+        assertThat(chunks).containsExactly("part");
+        assertThat(recorder.count()).isEqualTo(1);
+        LlmCallRecord record = recorder.last();
+        assertThat(record.status()).isEqualTo(CallStatus.CANCELLED);
+        assertThat(record.callKind()).isEqualTo(CallKind.CHAT_STREAM);
+        assertThat(record.streamed()).isTrue();
+        assertThat(record.responseText()).isEqualTo("part");
+        assertThat(record.tokens()).isNull(); // the usage-only final chunk never arrived — unknown, not 0
+        assertThat(record.errorClass()).isNull();
+    }
+
+    /** A completed stream must record exactly once (SUCCESS) — the cancel hook must not double-log. */
+    @Test
+    void testStream_shouldRecordExactlyOneSuccess_whenStreamCompletesNormally() {
+        GeminiCompanionLlm llm = adapter(streamingChatModel(
+            chunk("he", null), chunk("llo", usageMetadata())));
+
+        llm.stream("sys", "hi").collectList().block();
+
+        assertThat(recorder.count()).isEqualTo(1);
+        assertThat(recorder.last().status()).isEqualTo(CallStatus.SUCCESS);
+    }
+
     @Test
     void testComplete_shouldCarryTheAmbientContext_whenACallSiteBoundOne() {
         GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
@@ -221,6 +284,77 @@ class GeminiCompanionLlmRecordingTest {
                 throw failure;
             }
         };
+    }
+
+    /**
+     * Round N of a tool loop answers with response N — the shape ToolCallingAdvisor drives.
+     *
+     * <p>{@code getOptions()} must return a {@link ToolCallingChatOptions} like the real
+     * {@code GoogleGenAiChatModel} does: the ChatClient builds each request's options by mutating
+     * the MODEL's own options, and both the tool-callback attachment and ToolCallingAdvisor's loop
+     * are gated on that options type — with a plain ChatOptions the tools are silently dropped.
+     */
+    private static ChatModel sequencedChatModel(ChatResponse... rounds) {
+        java.util.concurrent.atomic.AtomicInteger next = new java.util.concurrent.atomic.AtomicInteger();
+        return new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                return rounds[Math.min(next.getAndIncrement(), rounds.length - 1)];
+            }
+
+            @Override
+            public ChatOptions getOptions() {
+                return ToolCallingChatOptions.builder().model(CHAT_MODEL).build();
+            }
+        };
+    }
+
+    /** A text-answer round with the FAITHFUL usage shape (GoogleGenAiUsage — portable == native). */
+    private static ChatResponse answerRound(String text, GenerateContentResponseUsageMetadata usage) {
+        return ChatResponse.builder()
+            .generations(List.of(new Generation(new AssistantMessage(text))))
+            .metadata(ChatResponseMetadata.builder().model(CHAT_MODEL)
+                .usage(GoogleGenAiUsage.from(usage)).build())
+            .build();
+    }
+
+    /** A round whose answer is a tool CALL (no text) — forces the tool-execution loop to recurse. */
+    private static ChatResponse toolCallRound(GenerateContentResponseUsageMetadata usage) {
+        AssistantMessage toolCall = AssistantMessage.builder()
+            .content("")
+            .toolCalls(List.of(new AssistantMessage.ToolCall("tc-1", "function", "noop", "{}")))
+            .build();
+        return ChatResponse.builder()
+            .generations(List.of(new Generation(toolCall)))
+            .metadata(ChatResponseMetadata.builder().model(CHAT_MODEL)
+                .usage(GoogleGenAiUsage.from(usage)).build())
+            .build();
+    }
+
+    /** Emits the given chunks and then hangs — cancellation is the only way out. */
+    private static ChatModel hangingStreamingChatModel(ChatResponse... chunks) {
+        return new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                throw new IllegalStateException("not used");
+            }
+
+            @Override
+            public Flux<ChatResponse> stream(Prompt prompt) {
+                return Flux.concat(Flux.just(chunks), Flux.never());
+            }
+        };
+    }
+
+    private static GenerateContentResponseUsageMetadata usage(
+            int prompt, int candidates, int thoughts, int cached, int total) {
+        return GenerateContentResponseUsageMetadata.builder()
+            .promptTokenCount(prompt)
+            .candidatesTokenCount(candidates)
+            .thoughtsTokenCount(thoughts)
+            .cachedContentTokenCount(cached)
+            .totalTokenCount(total)
+            .build();
     }
 
     private static ChatModel streamingChatModel(ChatResponse... chunks) {
@@ -288,6 +422,10 @@ class GeminiCompanionLlmRecordingTest {
         LlmCallRecord last() {
             assertThat(records).isNotEmpty();
             return records.get(records.size() - 1);
+        }
+
+        int count() {
+            return records.size();
         }
     }
 }
