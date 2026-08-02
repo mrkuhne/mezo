@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 /** PUT/DELETE on a single logged set of an ACTIVE instance (mezo-l3on). */
@@ -69,7 +70,15 @@ class WorkoutSetMutationIT extends ApiIntegrationTest {
         ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
         HttpHeaders headers = ownerAuthHeaders();
         WorkoutInstanceResponse started = start(template, headers);
-        ExerciseSetResponse logged = logSet(started.getId(), exercise.getId(), 0, "80", 10, headers);
+        // Log WITH a target* prescription snapshot so the "immutable fields survive" assertions
+        // below are non-vacuous (a null target left null would prove nothing).
+        SetLogRequest original = SetLogRequest.builder()
+            .exerciseId(exercise.getId()).setIndex(0)
+            .weightKg(new BigDecimal("80")).reps(10).rir(2)
+            .targetWeightKg(new BigDecimal("77.5")).targetReps(12)
+            .build();
+        ExerciseSetResponse logged = postForBody("/api/train/workouts/" + started.getId() + "/sets",
+            original, headers, HttpStatus.CREATED, ExerciseSetResponse.class);
 
         ExerciseSetResponse updated = putForBody(
             "/api/train/workouts/" + started.getId() + "/sets/" + logged.getId(),
@@ -82,6 +91,37 @@ class WorkoutSetMutationIT extends ApiIntegrationTest {
         // Immutable fields survive the overwrite.
         assertThat(updated.getSetIndex()).isEqualTo(0);
         assertThat(updated.getKind()).isEqualTo(ExerciseSetResponse.KindEnum.WORKING);
+        assertThat(updated.getExerciseId()).isEqualTo(exercise.getId());
+        // The target* prescription snapshot isn't on the response DTO at all — the only way to
+        // prove it survived untouched is reading the persisted row back.
+        ExerciseSetEntity persisted = exerciseSetRepository.findById(updated.getId()).orElseThrow();
+        assertThat(persisted.getExerciseId()).isEqualTo(exercise.getId());
+        assertThat(persisted.getTargetWeightKg()).isEqualByComparingTo(new BigDecimal("77.5"));
+        assertThat(persisted.getTargetReps()).isEqualTo(12);
+    }
+
+    @Test
+    void testUpdateSet_shouldClearOptionalFields_whenAbsentFromRequest() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+        HttpHeaders headers = ownerAuthHeaders();
+        WorkoutInstanceResponse started = start(template, headers);
+        SetLogRequest withExtras = SetLogRequest.builder()
+            .exerciseId(exercise.getId()).setIndex(0)
+            .weightKg(new BigDecimal("80")).reps(10).rir(2)
+            .side("L").note("felt strong").build();
+        ExerciseSetResponse logged = postForBody("/api/train/workouts/" + started.getId() + "/sets",
+            withExtras, headers, HttpStatus.CREATED, ExerciseSetResponse.class);
+
+        // Full replacement, not a patch (spec D7): update()'s SetUpdateRequest omits side/note
+        // entirely, which must CLEAR them rather than leave the previously-logged values in place.
+        putForBody("/api/train/workouts/" + started.getId() + "/sets/" + logged.getId(),
+            update("82.5", 8, 1), headers, HttpStatus.OK, ExerciseSetResponse.class);
+
+        ExerciseSetEntity persisted = exerciseSetRepository.findById(logged.getId()).orElseThrow();
+        assertThat(persisted.getSide()).isNull();
+        assertThat(persisted.getNote()).isNull();
     }
 
     @Test
@@ -210,6 +250,22 @@ class WorkoutSetMutationIT extends ApiIntegrationTest {
         WorkoutInstanceResponse after = postForBody("/api/train/workouts/" + started.getId() + "/finish",
             null, headers, HttpStatus.OK, WorkoutInstanceResponse.class);
         assertThat(after.getSets()).extracting(ExerciseSetResponse::getSetIndex).containsExactly(0, 1);
+    }
+
+    @Test
+    void testDeleteSet_shouldReturn404_whenSetUnknown() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+        HttpHeaders headers = ownerAuthHeaders();
+        WorkoutInstanceResponse started = start(template, headers);
+
+        // The shared ownedActiveSetOrThrow guard backs both PUT and DELETE — prove it on this path
+        // too, mirroring testUpdateSet_shouldReturn404_whenSetUnknown.
+        String body = exchangeForBody(HttpMethod.DELETE,
+            "/api/train/workouts/" + started.getId() + "/sets/" + UUID.randomUUID(),
+            null, headers, HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
 
     @Test
