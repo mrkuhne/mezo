@@ -25,12 +25,13 @@ import org.springframework.stereotype.Component;
  * candidates AND total are all null-or-0, nothing was reported (a real generation always has
  * prompt &gt; 0; Spring AI's own {@code UsageCalculator.isEmpty} uses the same total==0 heuristic).
  *
- * <p><b>Known limitation — tool rounds (bd mezo-58ig).</b> When Spring AI executes one or more tool
- * rounds it aggregates usage itself: {@code UsageCalculator.getCumulativeUsage} returns a plain
- * {@code DefaultUsage} with {@code nativeUsage = null}, so neither branch below can see the Google
- * fields and thoughts/cached record as {@code null} — honestly "unknown", never a fabricated 0.
- * prompt/candidates/total stay correct (they are the cumulative sums). Capturing the per-round
- * breakdown would need an observation-level hook, which is out of scope for v1.
+ * <p><b>Tool rounds (bd mezo-58ig).</b> Spring AI 2.0's tool loop (ToolCallingAdvisor) hands the
+ * caller the LAST round's response as the final one, so extracting from it alone under-reports a
+ * multi-round turn (and the cumulative {@code DefaultUsage} shapes it sometimes builds carry
+ * {@code nativeUsage = null}, dropping thoughts/cached entirely). The fix lives one level up:
+ * {@link GeminiRoundUsageAdvisor} calls this extractor once per round and
+ * {@link GeminiRoundUsage} sums the per-round reports — the adapter prefers that tally over this
+ * final-response read whenever a round was observed.
  */
 @Component
 public class GeminiUsageExtractor {

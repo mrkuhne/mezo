@@ -19,14 +19,17 @@ import { Icon } from '@/shared/ui/Icon'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import type { Tool } from '@/shared/ui/ToolChip'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { DAY_ORDER } from '@/data/train/train'
+import type { SportEventResponse } from '@/data/train/trainApi'
 import { SportStat } from '@/features/train/components/SportStat'
 import { SportSessionCard } from '@/features/train/components/SportSessionCard'
 import { CrossLoadRow } from '@/features/train/components/CrossLoadRow'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { SportScheduleSheet } from '@/features/train/sheets/SportScheduleSheet'
+import { SportEventSheet } from '@/features/train/sheets/SportEventSheet'
 import SportSkeleton from '@/features/train/pages/SportSkeleton'
-import { sportOf, SPORT_TAGS } from '@/features/train/logic/sportKinds'
+import { sportOf, SPORT_TAGS, type SportKind } from '@/features/train/logic/sportKinds'
 
 type SportSubView = 'week' | 'log' | 'crossload'
 
@@ -42,12 +45,14 @@ const RPE_EXPLAINER =
   'regenerálódás + másnapi load számolásához.'
 
 export function SportPage() {
-  const { sport, logSportSession, saveSportSchedule, sportPending } = useTrain()
+  const { sport, sportEvents, logSportSession, saveSportSchedule, addSportEvent, deleteSportEvent, sportPending } =
+    useTrain()
   const { showLevelUp } = useLevelUp()
   // Sticky so returning here restores the segment the user left from — see useStickyTab.
   const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [eventOpen, setEventOpen] = useState(false)
 
   // Loading skeleton (real mode): while the sport-sessions query (sportPending) is
   // unresolved, render the layout-matched skeleton before the first render. Placed
@@ -187,22 +192,30 @@ export function SportPage() {
         })}
       </div>
 
-      {view === 'week' &&
-        (volleyball ? (
-          <SportWeekView
-            schedule={volleyball}
-            onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
-          />
-        ) : (
-          <div style={{ padding: '8px 24px 16px' }}>
-            <GhostState
-              lines={2}
-              message="A heti rended itt jelenik majd meg."
-              ctaLabel="+ Állítsd be a heti rended"
-              onCta={() => setScheduleOpen(true)}
+      {view === 'week' && (
+        <>
+          {volleyball ? (
+            <SportWeekView
+              schedule={volleyball}
+              onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
             />
-          </div>
-        ))}
+          ) : (
+            <div style={{ padding: '8px 24px 16px' }}>
+              <GhostState
+                lines={2}
+                message="A heti rended itt jelenik majd meg."
+                ctaLabel="+ Állítsd be a heti rended"
+                onCta={() => setScheduleOpen(true)}
+              />
+            </div>
+          )}
+          <SportEventsSection
+            events={sportEvents}
+            onAdd={() => setEventOpen(true)}
+            onDelete={deleteSportEvent}
+          />
+        </>
+      )}
       {view === 'log' && <SportLogView sessions={sport.sessions} />}
       {view === 'crossload' &&
         (sport.crossLoad ? (
@@ -221,9 +234,15 @@ export function SportPage() {
       )}
       {scheduleOpen && (
         <SportScheduleSheet
-          initial={volleyball?.sessions ?? []}
+          initial={volleyball?.sessions.filter((s) => !s.oneOff) ?? []}
           onSave={saveSportSchedule}
           onClose={() => setScheduleOpen(false)}
+        />
+      )}
+      {eventOpen && (
+        <SportEventSheet
+          onClose={() => setEventOpen(false)}
+          onSave={(req, done) => addSportEvent(req, { onSettled: done })}
         />
       )}
     </>
@@ -310,6 +329,14 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                                   MA
                                 </span>
                               )}
+                              {session.oneOff && (
+                                <span
+                                  className="chip"
+                                  style={{ fontSize: 9, padding: '2px 6px', color: 'var(--text-secondary)' }}
+                                >
+                                  EGYSZERI
+                                </span>
+                              )}
                             </div>
                             <span
                               className="text-tertiary"
@@ -346,6 +373,75 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// === One-off events (mezo-e1sp): upcoming list + the single add entry point ===
+// A saved event lands on its day in `Heti terv`/`Mai` via the trainHooks schedule
+// merge; this section manages the standing list (today + future, with delete) and
+// works in mock mode too (cache-emulated writes).
+function SportEventsSection({ events, onAdd, onDelete }: {
+  events: SportEventResponse[]
+  onAdd: () => void
+  onDelete: (id: string) => void
+}) {
+  const today = localDateString()
+  const upcoming = events.filter((e) => e.date >= today)
+  return (
+    <div style={{ padding: '0 24px 16px' }}>
+      {upcoming.length > 0 && (
+        <>
+          <span className="eyebrow" style={{ display: 'block', marginBottom: 8 }}>
+            Egyszeri események
+          </span>
+          <div className="col gap-sm" style={{ marginBottom: 8 }}>
+            {upcoming.map((e) => {
+              // The event's sport is CHECK-constrained server-side; sportOf normalizes it
+              // through the same guard every other surface uses.
+              const kind = sportOf({ sport: e.sport as SportKind })
+              return (
+                <div key={e.id} className="card row" style={{ padding: '10px 12px', alignItems: 'center', gap: 10 }}>
+                  <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
+                  <div className="col flex-1">
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                      {huMonthDayDow(e.date)} · {e.time}
+                    </span>
+                    <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2 }}>
+                      {[`${e.durationMin}p`, e.kind === 'match' ? 'meccs' : 'edzés', e.location]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="chip"
+                    aria-label={`${huMonthDayDow(e.date)} esemény törlése`}
+                    onClick={() => onDelete(e.id)}
+                    style={{ padding: '6px 8px' }}
+                  >
+                    <Icon name="x" size={10} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+      <button
+        type="button"
+        className="chip"
+        onClick={onAdd}
+        style={{
+          width: '100%',
+          padding: '10px',
+          fontSize: 10,
+          borderStyle: 'dashed',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        + Egyszeri esemény
+      </button>
     </div>
   )
 }

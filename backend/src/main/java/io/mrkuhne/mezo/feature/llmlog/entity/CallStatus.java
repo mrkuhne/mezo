@@ -10,5 +10,13 @@ public enum CallStatus {
     SUCCESS,
 
     /** The call failed; error_code/error_class carry the reason and the usage columns stay null. */
-    ERROR
+    ERROR,
+
+    /**
+     * A streamed call whose subscriber disconnected mid-stream (mezo-1rz9): the provider was neither
+     * done nor failing — the client walked away. The partial answer is recorded; the usage columns
+     * are usually null because Gemini's usage block rides the final chunk, which never arrived —
+     * the provider still billed the tokens generated up to the cancel.
+     */
+    CANCELLED
 }

@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.SportEventCreateRequest;
+import io.mrkuhne.mezo.api.dto.SportEventResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
@@ -9,11 +11,14 @@ import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
 import io.mrkuhne.mezo.feature.train.signal.SportSignalCalculator;
+import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
+import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +46,7 @@ public class SportService {
 
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository slotRepository;
+    private final SportEventRepository eventRepository;
     private final TrainMapper mapper;
     private final SportSignalCalculator sportSignalCalculator;
     private final ProgressionService progressionService;
@@ -98,5 +104,33 @@ public class SportService {
         fresh.sort(Comparator.comparing(SportScheduleSlotEntity::getDayOfWeek)
             .thenComparing(SportScheduleSlotEntity::getTime));
         return fresh.stream().map(mapper::toSlotResponse).toList();
+    }
+
+    /** One-off events, date then time ascending; both bounds present → range, else the full list. */
+    public List<SportEventResponse> listEvents(UUID createdBy, LocalDate from, LocalDate to) {
+        List<SportEventEntity> events = (from != null && to != null)
+            ? eventRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(createdBy, from, to)
+            : eventRepository.findByCreatedByAndDeletedFalseOrderByDateAscTimeAsc(createdBy);
+        return events.stream().map(mapper::toEventResponse).toList();
+    }
+
+    @Transactional
+    public SportEventResponse createEvent(UUID createdBy, SportEventCreateRequest req) {
+        SportEventEntity e = new SportEventEntity();
+        e.setCreatedBy(createdBy); // server-side ownership — never from the client
+        e.setDate(req.getDate());
+        e.setTime(req.getTime());
+        e.setDurationMin(req.getDurationMin());
+        if (req.getKind() != null) e.setKind(req.getKind()); // training|match; entity defaults training
+        if (req.getSport() != null) e.setSport(req.getSport()); // volleyball|cross|trx; entity defaults volleyball
+        e.setLocation(req.getLocation());
+        e.setIntensityLabel(req.getIntensityLabel());
+        return mapper.toEventResponse(eventRepository.save(e));
+    }
+
+    @Transactional
+    public void deleteEvent(UUID createdBy, UUID id) {
+        eventRepository.delete(eventRepository.findByIdAndCreatedByAndDeletedFalse(id, createdBy)
+            .orElseThrow(OwnershipGuard::notFound)); // @SQLDelete soft-deletes
     }
 }

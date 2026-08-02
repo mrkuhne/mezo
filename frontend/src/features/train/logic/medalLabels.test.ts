@@ -11,9 +11,11 @@ const base: Medal = {
 }
 
 describe('medalValueLabel', () => {
+  // E1RM deliberately does NOT belong here — its headline is the estimate, not
+  // the set. It used to be in this list, which is exactly why the bug shipped:
+  // the test asserted the defect. Its correct behavior is pinned further down.
   test.each([
     ['WEIGHT', '102,5 kg × 8'],
-    ['E1RM', '102,5 kg × 8'],
     ['REPS_AT_WEIGHT', '102,5 kg × 8'],
     ['TARGET_HIT', '102,5 kg × 8'],
   ] as const)('%s with weightKg/reps renders the achieving set', (type, expected) => {
@@ -45,5 +47,17 @@ describe('medalValueLabel', () => {
   test('a medal with no weightKg/reps at all falls through to raw value + unit', () => {
     const medal: Medal = { ...base, type: 'TARGET_HIT', weightKg: null, reps: null, value: 10, unit: 'REPS' }
     expect(medalValueLabel(medal)).toBe('10 rep')
+  })
+
+  // mezo-je3u: E1RM's headline is the ESTIMATE and previousValue is the prior
+  // estimate, so printing the achieving set put "22 kg × 12" next to
+  // "Előző: 28 kg" — a record rendered as a regression.
+  test('E1RM headlines the estimate, not the set that achieved it', () => {
+    const medal: Medal = {
+      ...base, type: 'E1RM', value: 30.7, unit: 'KG',
+      weightKg: 22, reps: 12, previousValue: 28, previousDate: '2026-06-15',
+    }
+    expect(medalValueLabel(medal)).toBe('30,7 kg')
+    expect(medalValueLabel(medal)).not.toBe('22 kg × 12')
   })
 })

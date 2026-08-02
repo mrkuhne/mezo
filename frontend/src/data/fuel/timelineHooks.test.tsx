@@ -77,6 +77,28 @@ describe('deriveBlocks — sport block label reflects the session sport (mezo-rh
   })
 })
 
+// A stacked day — a recurring slot + a dated one-off event (mezo-e1sp) — must yield one
+// sport block per today-session; the old single `.find` silently dropped every session
+// after the first from the calorie budget (activityKcal) and the meal windows.
+describe('deriveBlocks — every today-session becomes a block (mezo-e1sp)', () => {
+  it('emits one sport block per today-session on a stacked day', () => {
+    const schedule: SportSchedule = {
+      volleyball: {
+        team: '', season: '', weeklyHours: 5,
+        sessions: [
+          { day: 'Hét', time: '12:00', duration: 60, court: '', intensity: '', role: 'edzés', sport: 'trx', today: true },
+          { day: 'Hét', time: '19:00', duration: 90, court: '', intensity: '', role: 'meccs', sport: 'volleyball', today: true, oneOff: true, date: '2026-08-03' },
+        ],
+      },
+    }
+    const blocks = deriveBlocks(null, { schedule }, null).filter((b) => b.kind === 'sport')
+    expect(blocks.map((b) => [b.time, b.durationMin, b.label])).toEqual([
+      ['12:00', 60, 'TRX'],
+      ['19:00', 90, 'Volleyball'],
+    ])
+  })
+})
+
 describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
@@ -215,6 +237,13 @@ describe('useFuelTimeline (real mode)', () => {
     server.use(
       http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no weight goal → fuel-settings cadence + fallback budget
       http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
+      // Pin the training inputs empty too: the default sport-schedule fixture carries a ≥90-min
+      // slot on most weekdays, which correctly earns a peri-workout snack window (mezo-1oy5) and
+      // made the expected window count weekday-dependent (a latent flake — it only stayed green
+      // while the schedule query happened to resolve after the assertions; surfaced by mezo-e1sp's
+      // extra sport-events query shifting resolution order). Cold-load here means a PLAIN day.
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
         HttpResponse.json({
           date: String(params.date),

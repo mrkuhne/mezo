@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
@@ -19,6 +20,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
@@ -52,6 +54,7 @@ public class TrainPopulator {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
+    private final SportEventRepository sportEventRepository;
 
     /** A user-authored catalog exercise (created_by set) for catalog-write tests. */
     public ExerciseCatalogEntity createUserCatalogExercise(UUID createdBy, String name, String muscle, String type) {
@@ -468,5 +471,15 @@ public class TrainPopulator {
         s.setLocation("BVSC csarnok");
         s.setIntensityLabel("közepes");
         return sportScheduleSlotRepository.saveAndFlush(s);
+    }
+
+    public SportEventEntity createSportEvent(UUID createdBy, LocalDate date, String time, int durationMin) {
+        SportEventEntity e = new SportEventEntity();
+        e.setCreatedBy(createdBy);
+        e.setDate(date);
+        e.setTime(time);
+        e.setDurationMin(durationMin);
+        e.setKind("match");
+        return sportEventRepository.saveAndFlush(e);
     }
 }

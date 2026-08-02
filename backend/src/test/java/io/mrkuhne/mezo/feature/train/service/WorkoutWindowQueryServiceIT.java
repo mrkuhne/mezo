@@ -190,6 +190,50 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testWindowsFor_shouldReturnSportWindowFromOneOffEvent_whenEventOnDate() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createSportEvent(owner, wed, "19:30", 120);   // one-off match, not played yet
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().kind()).isEqualTo("sport");
+        assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(19, 30));
+        assertThat(windows.getFirst().end()).isEqualTo(LocalTime.of(21, 30));
+        assertThat(windows.getFirst().done()).isFalse();
+    }
+
+    @Test
+    void testWindowsFor_shouldNotReturnOneOffEvent_whenQueriedForAnotherDate() {
+        UUID owner = owner();
+        train.createSportEvent(owner, LocalDate.of(2026, 6, 24), "19:30", 120);
+
+        assertThat(service.windowsFor(owner, LocalDate.of(2026, 6, 25))).isEmpty();
+    }
+
+    @Test
+    void testWindowsFor_shouldConsumeTheOneOffEvent_whenTheSessionWasPlayedNearItsTime() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createScheduleSlot(owner, 2, "09:00", 60, "training");
+        train.createSportEvent(owner, wed, "18:00", 90);    // one-off near the played 18:15
+        train.createSportSession(owner, wed);               // played 18:15 for 90 min
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(2);
+        assertThat(windows).anySatisfy(w -> {
+            assertThat(w.start()).isEqualTo(LocalTime.of(9, 0));    // recurring slot: planned, not played
+            assertThat(w.done()).isFalse();
+        });
+        assertThat(windows).anySatisfy(w -> {
+            assertThat(w.start()).isEqualTo(LocalTime.of(18, 15));  // the played one-off event
+            assertThat(w.done()).isTrue();
+        });
+    }
+
+    @Test
     void testWindowsFor_shouldReturnRunWindow_whenStoredCurrentWeekIsStale() {
         UUID owner = owner();
         LocalDate start = LocalDate.of(2026, 6, 16);        // Tue — week 1 = 06-16..06-22

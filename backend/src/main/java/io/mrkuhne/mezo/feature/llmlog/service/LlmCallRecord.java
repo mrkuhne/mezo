@@ -16,7 +16,11 @@ import lombok.Builder;
  * On an ERROR record, PROVIDER-reported usage and cost are absent (null) — {@link #tokens} and the
  * billable char count in particular — but REQUEST-side counters (image counts, embedding batch size
  * and dimensions) DO survive, because they are facts of the attempt, not something the provider had
- * to answer. Usage/cost aggregates must therefore filter {@code status = SUCCESS}.
+ * to answer. A CANCELLED record (mezo-1rz9) sits between the two: usage is whatever the stream
+ * revealed before the client disconnected — typically null, but a completed tool round's tally IS
+ * kept, because the provider billed it. Usage/cost aggregates therefore filter on
+ * {@code status <> 'ERROR'} semantics: an ERROR row never carries provider usage, a CANCELLED row
+ * may.
  */
 @Builder
 public record LlmCallRecord(
