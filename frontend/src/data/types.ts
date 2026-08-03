@@ -185,6 +185,17 @@ export interface Protocol {
   itemCount: number; confidence: number; lastReplanReason: string | null
   history: { v: number; when: string; reason: string }[]
 }
+// --- Fuel · Stack occurrences (living protocol, mezo-vx9v) — mirrors ProtocolItemResponse ---
+/** Daily intake zone — the wire contract (StackZone entity keys). Never rename these strings. */
+export type StackZoneKey = 'wake' | 'breakfast' | 'pre_workout' | 'post_workout' | 'lunch' | 'dinner' | 'evening' | 'bedtime'
+export type StackPlacementSource = 'rule' | 'llm' | 'user' | 'fallback'
+/** One item's occurrence in a zone — a protocol can carry the same pantryItemId in several zones. */
+export interface ProtocolOccurrence {
+  id: string; pantryItemId: string; slotKey: StackZoneKey
+  dose: string | null; pinned: boolean
+  placementSource: StackPlacementSource; placementReason: string | null
+  restDayFallback: StackZoneKey | 'skip' | null; dailyTotalHint: string | null
+}
 // --- Medication (Gyógyszer) — mirrors the generated Medication* DTOs (api.gen.ts) ---
 export type MedicationPhaseKey = 'peak' | 'stable' | 'trough'
 export interface MedicationPhase { key: MedicationPhaseKey; fromDay: number; toDay: number; label: string }
