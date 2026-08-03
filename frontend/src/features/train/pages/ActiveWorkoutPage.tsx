@@ -21,7 +21,10 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
-import { REGION_LABELS, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
+import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
+import { setStyle } from '@/features/train/logic/setBudget'
+import { sessionProgressSegments, warmupPctLabel } from '@/features/train/logic/workoutCardMeta'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
@@ -92,6 +95,14 @@ function medalKey(m: Medal): string {
 /** The human label of one set slot — shared by the set-list row, its aria-label and the edit sheet. */
 function setSlotLabel(index: number, warmup: boolean, warmupCount: number): string {
   return warmup ? `B${index + 1} bemelegítő szett` : `${index - warmupCount + 1}. working szett`
+}
+
+/** The index of the most recently LOGGED warmup set (strictly before `cursor`), or null when none. */
+function lastLoggedWarmupIdx(s: Session, exerciseId: string, cursor: number): number | null {
+  for (let i = cursor - 1; i >= 0; i--) {
+    if (prescribedAt(s, exerciseId, i)?.kind === 'warmup') return i
+  }
+  return null
 }
 
 // Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
@@ -881,6 +892,29 @@ function ActiveWorkoutSession({
   const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const currentSetCount = effectiveSetCount(session, current.id)
 
+  // Execution card v2 (mezo-8xmf): muscle-family theming + structured context
+  // zones. `family` drives the card wash/rail/glow + the CTA/active-RIR-pill/
+  // current-dot fills (all via the --fam-* custom props set on .excard below);
+  // `cardStyle` is the set-budget style (setBudget.ts) driving the Stílus cell
+  // + the RIR-row hint. `doneWorkingSets` and `firstWorkingTargetKg` read the
+  // SESSION's live prescription (not the static `current.prescribedSets`) so a
+  // removeSet-shifted warmup/working split stays correct.
+  const family = muscleColor(current.muscle)
+  const muscleLabel = MUSCLE_LABELS[current.muscle] ?? current.muscle
+  const cardStyle = setStyle(current.targetRIR)
+  const doneWorkingSets = Math.max(0, cursor - warmupCount)
+  const firstWorkingTargetKg = (session.prescribed[current.id] ?? [])
+    .find((p) => p.kind === 'working' && p.targetWeightKg != null)?.targetWeightKg ?? null
+  const lastWarmupIdx = lastLoggedWarmupIdx(session, current.id, cursor)
+  const warmupNote = lastWarmupIdx != null ? warmupPctLabel(current, lastWarmupIdx) : null
+  // Session progress bar (under the header): one flex segment per exercise,
+  // weighted by its own planned set count, coloured by ITS OWN muscle family.
+  const progressSegments = sessionProgressSegments(
+    W.exercises,
+    currentIdx,
+    (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
+  )
+
   // Reorderable segment for the ⋯ action sheet: the exercises up to and including
   // the VIEWED one stay FIXED; only the ones after it in session.order can be
   // reordered. Reorder is client-only / ephemeral — it just replaces session.order,
@@ -1094,6 +1128,21 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
+        {/* Session progress bar (v2, mezo-8xmf): one segment per exercise, flex-weighted
+            by its planned set count, family-coloured; opacity signals done/current/upcoming. */}
+        <div className="wkx-progressbar" aria-hidden="true">
+          {progressSegments.map((seg, i) => (
+            <span
+              key={i}
+              style={{
+                flex: seg.weight,
+                background: muscleColor(seg.colorMuscle).rail,
+                opacity: seg.state === 'done' ? 1 : seg.state === 'current' ? 0.45 : 0.25,
+              }}
+            />
+          ))}
+        </div>
+
         {/* Niggle banner if active */}
         {niggleActive && currentIdx <= 1 && (
           <div style={{ padding: '8px 24px' }}>
@@ -1107,8 +1156,13 @@ function ActiveWorkoutSession({
             note pill, set-dots, giant steppers, RIR/Side pills, Szett kész ✓
             (mezo-8141). Replaces the old eyebrow/Múlt-hét-hero/tool-row layout. */}
         <div
-          className="excard np-anim"
-          style={{ '--i': 1 } as React.CSSProperties}
+          className="excard wkx-excard np-anim"
+          style={{
+            '--i': 1,
+            '--fam-rail': family.rail,
+            '--fam-wash': family.wash,
+            '--fam-deep': family.deep,
+          } as React.CSSProperties}
           // Swipe navigation (free nav): only large horizontal drags fire, so taps on
           // the inner steppers/buttons are ignored. Left = next, right = previous.
           onPointerDown={(e) => { swipeStart.current = e.clientX }}
@@ -1133,11 +1187,45 @@ function ActiveWorkoutSession({
               </div>
             </div>
           )}
-          <div className="exo">{currentIdx + 1}. gyakorlat · {current.muscle}</div>
+          {/* ① eyebrow — idx/n · muscleLabel · type (family-deep) + name only. */}
+          <div className="exo" style={{ color: family.deep }}>
+            {currentIdx + 1}/{W.exercises.length} · {muscleLabel} · {current.type}
+          </div>
           <h2>{current.name}</h2>
-          {current.lastWeek && (
-            <div className="prev">
-              múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @ RIR {current.lastWeek.rir}
+
+          {/* ② stat-strip — three labeled cells: Stílus (failure/volume + RIR),
+              Rep-cél (mono range), Szett (mono done/working). */}
+          <div className="wkx-statstrip">
+            <div className="wkx-statcell">
+              <div className="wkx-statlabel">Stílus</div>
+              <div className="wkx-statvalue" style={{ color: cardStyle === 'failure' ? 'var(--coral-deep)' : 'var(--sage-deep)' }}>
+                {cardStyle === 'failure' ? '🔥 Failure' : `🌿 Volume · RIR ${current.targetRIR}`}
+              </div>
+            </div>
+            <div className="wkx-statcell">
+              <div className="wkx-statlabel">Rep-cél</div>
+              <div className="wkx-statvalue mono">{current.repMin}–{current.repMax}</div>
+            </div>
+            <div className="wkx-statcell">
+              <div className="wkx-statlabel">Szett</div>
+              <div className="wkx-statvalue mono">{doneWorkingSets}/{current.workingSets}</div>
+            </div>
+          </div>
+
+          {/* ③ múlt + javaslat subrow — top-bordered, own row; left the last-week top
+              set (hidden with no lastWeek), right the first working target (hidden
+              when the engine hasn't prescribed one). */}
+          {(current.lastWeek || firstWorkingTargetKg != null) && (
+            <div className="wkx-subrow">
+              {current.lastWeek && (
+                <span className="mono wkx-subrow-prev">
+                  múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @{current.lastWeek.rir}
+                </span>
+              )}
+              <span style={{ flex: 1 }} />
+              {firstWorkingTargetKg != null && (
+                <span className="wkx-subrow-next">↗ ma: {firstWorkingTargetKg.toLocaleString('hu-HU')} kg</span>
+              )}
             </div>
           )}
 
@@ -1185,6 +1273,9 @@ function ActiveWorkoutSession({
                 </div>
               )
             })}
+            {/* ④ last-logged-warmup note (spec §Execution card v2): the % of the
+                first working target this warmup was loaded at. */}
+            {warmupNote && <span className="mono wkx-setdots-note">{warmupNote} ✓</span>}
           </div>
 
           {/* Giant steppers — the single logging surface (spec §4.5). Only
@@ -1205,6 +1296,11 @@ function ActiveWorkoutSession({
                   {n}
                 </button>
               ))}
+              <span style={{ flex: 1 }} />
+              {/* ⑥ inline style hint — failure pushes to bukásig, volume keeps reserve. */}
+              <span className="wkx-rirhint" style={{ color: cardStyle === 'failure' ? 'var(--amber-deep)' : 'var(--sage-deep)' }}>
+                {cardStyle === 'failure' ? '🔥 bukásig!' : '🌿 hagyj 2 rep tartalékot'}
+              </span>
             </div>
           )}
           {current.type === 'isolation' && (

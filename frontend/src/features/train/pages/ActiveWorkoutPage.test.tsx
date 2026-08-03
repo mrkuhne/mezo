@@ -108,8 +108,69 @@ test('mock mode: the excard shows the "múlt héten" comparison line when lastWe
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 }
-  expect(await screen.findByText('múlt héten: 102,5 kg × 9 @ RIR 2')).toBeInTheDocument()
+  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 } — v2 subrow format (mezo-8xmf):
+  // `múlt héten: {w} kg × {r} @{rir}` (short @rir, not "@ RIR n").
+  expect(await screen.findByText('múlt héten: 102,5 kg × 9 @2')).toBeInTheDocument()
+})
+
+// ---- Execution card v2 (mezo-8xmf): muscle-themed card + structured context zones ----
+
+test('mock mode: the eyebrow shows idx/n · muscleLabel · type, and the stat-strip renders style + rep-range + set count', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1: 1/5, muscle 'back-mid' -> MUSCLE_LABELS 'Hát (közép)', type compound.
+  expect(container.querySelector('.excard .exo')).toHaveTextContent('1/5 · Hát (közép) · compound')
+  // ex1.targetRIR = 0 -> failure style (setStyle, RIR<=1); repMin/repMax = 8/10;
+  // 2 warmup + 3 working planned, none logged yet.
+  const strip = container.querySelector('.wkx-statstrip')
+  expect(strip).toHaveTextContent('🔥 Failure')
+  expect(strip).toHaveTextContent('8–10')
+  expect(strip).toHaveTextContent('0/3')
+})
+
+test('mock mode: the RIR row shows the failure-style "bukásig" hint on a working set', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Log both ex1 warmups to reach the first working set (RIR row visible).
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  expect(await screen.findByText('🔥 bukásig!')).toBeInTheDocument()
+})
+
+test('real mode: a volume-style exercise (targetRIR 2) shows the sage hint and the Volume stat cell', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], warmupSets: 0, workingSets: 1, targetRIR: 2 }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  expect(container.querySelector('.wkx-statstrip')).toHaveTextContent('🌿 Volume · RIR 2')
+  expect(await screen.findByText('🌿 hagyj 2 rep tartalékot')).toBeInTheDocument()
+})
+
+test('mock mode: the session progress bar renders one segment per exercise', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Pull Day (mock) has 5 exercises.
+  expect(container.querySelectorAll('.wkx-progressbar span')).toHaveLength(5)
+})
+
+test('mock mode: the set-dots note shows the last logged warmup\'s percent label once a warmup is logged', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.wkx-setdots-note')).toBeNull()
+  // ex1 B1: 52.5 kg target vs the first working target 105 kg -> 50%.
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(await screen.findByText('B1 = 50% · 52.5 ✓')).toBeInTheDocument()
 })
 
 test('the wk-top header shows the workout title, the gyakorlat/szett counter, an exercise dot per exercise and the Vissza + ⋯ buttons', async () => {
