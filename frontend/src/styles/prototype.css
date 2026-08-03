@@ -1652,15 +1652,111 @@ button.itemrow { cursor: pointer; }
 .excard { background: var(--surface); border-radius: 30px; padding: 22px 19px; box-shadow: 0 3px 6px rgba(43,33,24,.04), 0 20px 44px rgba(43,33,24,.10); margin: 16px 24px 0; }
 .excard .exo { font-size: 11px; font-weight: 800; color: var(--coral-deep); letter-spacing: 1px; text-transform: uppercase; }
 .excard h2 { font-family: var(--ff-display); font-size: 27px; font-weight: 800; margin-top: 6px; letter-spacing: -.4px; color: var(--ink); }
-.excard .prev { font-size: 12.5px; color: var(--faint); font-weight: 600; margin-top: 4px; }
-.setdots { display: flex; gap: 8px; margin-top: 15px; }
-.setdots .sd { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: var(--warm); color: var(--faint); }
-.setdots .sd.don { background: var(--wash-sage); color: var(--sage-deep); }
-.setdots .sd.cur { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255,107,74,.38); }
+.setdots { display: flex; gap: 8px; margin-top: 15px; align-items: center; flex-wrap: wrap; }
+.setdots .sd { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: var(--warm); color: var(--faint); flex-shrink: 0; }
+/* Done working dots take the exercise's muscle-family rail; done warmup dots
+   stay amber (spec: "B-dots amber, working dots family color"). The family
+   custom props are set on .wkx-excard (see below) and inherit down. */
+.setdots .sd.don:not(.wu) { background: var(--fam-rail, var(--sage)); color: var(--text-inverse); }
+.setdots .sd.don.wu { background: var(--amber); color: var(--text-inverse); }
+.setdots .sd.cur { background: var(--fam-rail, var(--coral)); color: var(--text-inverse); box-shadow: 0 6px 14px color-mix(in srgb, var(--fam-rail, var(--coral)) 45%, transparent); }
 .setdots .sd.wu:not(.don):not(.cur) { background: rgba(255,179,71,.16); color: #8F5514; }
 :root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
 .setdots .sd.extra:not(.don):not(.cur) { background: transparent; border: 1.5px dashed var(--coral); box-sizing: border-box; color: var(--coral-deep); }
+.wkx-setdots-note { font-size: 9px; color: var(--text-tertiary); margin-left: 4px; }
 .donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
+
+/* Generic tabular/monospace utility (JetBrains Mono) — the execution card v2's
+   stat-strip/subrow numeric values (mezo-8xmf). */
+.mono { font-family: var(--ff-mono); font-variant-numeric: tabular-nums; }
+
+/* ===== Execution card v2 (mezo-8xmf) — muscle-family theming + structured
+   context zones. --fam-rail/--fam-wash/--fam-deep are set inline on .wkx-excard
+   per muscleColor(ex.muscle) and inherit into every descendant rule below. ===== */
+.excard.wkx-excard {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fam-rail) 12%, transparent) 0%, var(--surface-1) 50%);
+  border-left: 5px solid var(--fam-rail);
+}
+.excard.wkx-excard::before {
+  content: '';
+  position: absolute; top: -40px; right: -28px; width: 160px; height: 160px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--fam-rail) 30%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.excard.wkx-excard .donebtn {
+  background: linear-gradient(135deg, var(--fam-rail), var(--fam-deep));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--fam-deep) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+/* Session progress bar (under the wk-top header) — one flex segment per
+   exercise, family-coloured, opacity carries the done/current/upcoming state. */
+.wkx-progressbar { display: flex; gap: 3px; height: 7px; border-radius: 4px; overflow: hidden; margin: 10px 24px 0; }
+.wkx-progressbar span { display: block; transition: opacity .3s ease; }
+
+/* ② stat-strip — three labeled, divided cells. */
+.wkx-statstrip { display: flex; background: color-mix(in srgb, var(--surface-1) 75%, transparent); border: 1px solid var(--border-subtle); border-radius: 14px; margin-top: 10px; overflow: hidden; }
+.wkx-statcell { flex: 1; min-width: 0; padding: 8px 4px 7px; text-align: center; }
+.wkx-statcell + .wkx-statcell { border-left: 1px solid var(--border-subtle); }
+.wkx-statlabel { font-size: 8px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-tertiary); font-weight: 800; }
+.wkx-statvalue { font-size: 13px; font-weight: 800; margin-top: 2px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ③ múlt + javaslat subrow. */
+.wkx-subrow { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-secondary); }
+.wkx-subrow-prev { font-weight: 700; color: var(--text-primary); }
+.wkx-subrow-next { color: var(--sage-deep); font-weight: 800; white-space: nowrap; }
+
+/* ===== Set list v4 (mezo-8xmf) — strict table: exercise-level constants (target
+   pill, footer summary) appear ONCE; rows are fixed SZETT/KG/ISM/RIR/status
+   columns. Div/button "grid table" (no literal <table>, matching this codebase's
+   flex/grid row idiom) so a whole row can stay a real <button> — the disabled/
+   aria-label/tap-to-edit semantics carry over unchanged from the pre-v4 rows.
+   --fam-rail/--fam-wash/--fam-deep are re-set on .wkx-slist (a SIBLING of
+   .wkx-excard, not a descendant — the custom props don't cascade sideways). */
+.wkx-slist { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 18px; margin: 6px 24px 20px; overflow: hidden; }
+.wkx-shead { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px 8px; }
+.wkx-tgt { font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+
+.wkx-srow { display: grid; grid-template-columns: 52px 74px 64px 56px 1fr; align-items: center; width: 100%; padding: 8px 14px; border: 0; border-top: 1px solid var(--border-subtle); background: none; font: inherit; text-align: left; cursor: pointer; }
+.wkx-srow:disabled { cursor: default; }
+.wkx-srow-head { font-size: 8px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-tertiary); font-weight: 800; background: var(--surface-2); cursor: default; padding: 5px 14px; }
+.wkx-srow-warm { background: color-mix(in srgb, var(--amber) 10%, transparent); }
+.wkx-srow-cur { background: var(--fam-wash, var(--wash-gym)); }
+.wkx-c-set { text-align: center; }
+.wkx-c-kg { text-align: right; padding-right: 10px; }
+.wkx-c-rep { text-align: right; padding-right: 10px; }
+.wkx-c-rir { text-align: center; }
+.wkx-c-st { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; min-height: 20px; }
+
+.wkx-mark { display: inline-flex; width: 24px; height: 24px; border-radius: 50%; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; border: 1.5px solid var(--border-subtle); color: var(--text-tertiary); background: var(--surface); }
+.wkx-mark-warm { background: var(--amber); border-color: var(--amber); color: var(--text-inverse); }
+.wkx-mark-done { background: var(--fam-rail, var(--coral)); border-color: var(--fam-rail, var(--coral)); color: var(--text-inverse); }
+.wkx-mark-cur { border-color: var(--fam-deep, var(--coral-deep)); color: var(--fam-deep, var(--coral-deep)); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fam-deep, var(--coral-deep)) 22%, transparent); }
+
+.wkx-stat-ok { color: var(--sage-deep); font-weight: 800; font-size: 12px; }
+.wkx-stat-dev { color: var(--amber-deep); font-weight: 800; font-size: 10px; }
+.wkx-stat-most { font-weight: 800; font-size: 9px; white-space: nowrap; }
+
+.wkx-sfoot { display: flex; }
+.wkx-sfoot > div { flex: 1; text-align: center; padding: 9px 4px 10px; }
+.wkx-sfoot > div + div { border-left: 1px solid var(--border-subtle); }
+.wkx-sfoot .l { font-size: 8px; text-transform: uppercase; letter-spacing: .09em; color: var(--text-tertiary); font-weight: 800; }
+.wkx-sfoot .v { font-size: 12.5px; font-weight: 800; margin-top: 1px; }
+
+/* ⑤ compact steppers — scoped to the excard only (SetEditSheet's .steprow keeps
+   the full-size stepper). Value 28→21px, buttons 40→29px. */
+.excard .steprow { gap: 8px; }
+.excard .steprow .stepper { padding: 10px 9px 9px; border-radius: 18px; }
+.excard .steprow .stepper .n { font-size: 21px; }
+.excard .steprow .stepper .row { gap: 20px; margin-top: 6px; }
+.excard .steprow .stepper .b { flex: 0 0 29px; width: 29px; height: 29px; font-size: 15px; }
+
+/* ⑥ compact fixed-width RIR/Side pills + the inline style hint — scoped to the
+   excard only (SetEditSheet's .rirrow keeps the original flex-fill pills). */
+.excard .rirrow button { flex: none; width: 34px; padding: 5px 0; border-radius: 9px; font-size: 11px; }
+.excard .rirrow button[aria-pressed="true"] { background: var(--fam-deep, var(--coral-deep)); border-color: var(--fam-deep, var(--coral-deep)); color: var(--text-inverse); box-shadow: none; }
+.wkx-rirhint { font-size: 9.5px; font-weight: 700; white-space: nowrap; margin-left: 6px; }
 
 /* ===== In-card rest timer bar (CTA-morph, mezo-xt65) — swaps in for .donebtn while a
    rest runs. Same pill radius + rendered height as .donebtn => zero layout shift on the

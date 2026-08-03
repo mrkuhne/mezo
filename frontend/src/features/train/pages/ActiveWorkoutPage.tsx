@@ -21,7 +21,10 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
-import { REGION_LABELS, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
+import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
+import { setStyle } from '@/features/train/logic/setBudget'
+import { avgWorkingRir, exerciseTonnage, sessionProgressSegments, setStatus, topSetDeltaPct, warmupPctLabel } from '@/features/train/logic/workoutCardMeta'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
@@ -92,6 +95,14 @@ function medalKey(m: Medal): string {
 /** The human label of one set slot — shared by the set-list row, its aria-label and the edit sheet. */
 function setSlotLabel(index: number, warmup: boolean, warmupCount: number): string {
   return warmup ? `B${index + 1} bemelegítő szett` : `${index - warmupCount + 1}. working szett`
+}
+
+/** The index of the most recently LOGGED warmup set (strictly before `cursor`), or null when none. */
+function lastLoggedWarmupIdx(s: Session, exerciseId: string, cursor: number): number | null {
+  for (let i = cursor - 1; i >= 0; i--) {
+    if (prescribedAt(s, exerciseId, i)?.kind === 'warmup') return i
+  }
+  return null
 }
 
 // Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
@@ -881,6 +892,34 @@ function ActiveWorkoutSession({
   const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const currentSetCount = effectiveSetCount(session, current.id)
 
+  // Execution card v2 (mezo-8xmf): muscle-family theming + structured context
+  // zones. `family` drives the card wash/rail/glow + the CTA/active-RIR-pill/
+  // current-dot fills (all via the --fam-* custom props set on .excard below);
+  // `cardStyle` is the set-budget style (setBudget.ts) driving the Stílus cell
+  // + the RIR-row hint. `doneWorkingSets` and `firstWorkingTargetKg` read the
+  // SESSION's live prescription (not the static `current.prescribedSets`) so a
+  // removeSet-shifted warmup/working split stays correct.
+  const family = muscleColor(current.muscle)
+  const muscleLabel = MUSCLE_LABELS[current.muscle] ?? current.muscle
+  const cardStyle = setStyle(current.targetRIR)
+  const doneWorkingSets = Math.max(0, cursor - warmupCount)
+  // Live working-slot count (mezo-8xmf final review): the Szett stat-cell denominator must
+  // track the SESSION's live prescription like the numerator above, not the static
+  // `current.workingSets` — otherwise a ＋Szett extra set shows `4/3` and a removed working
+  // slot sticks at `/3`.
+  const liveWorkingSetCount = Math.max(0, currentSetCount - warmupCount)
+  const firstWorkingTargetKg = (session.prescribed[current.id] ?? [])
+    .find((p) => p.kind === 'working' && p.targetWeightKg != null)?.targetWeightKg ?? null
+  const lastWarmupIdx = lastLoggedWarmupIdx(session, current.id, cursor)
+  const warmupNote = lastWarmupIdx != null ? warmupPctLabel(current, lastWarmupIdx) : null
+  // Session progress bar (under the header): one flex segment per exercise,
+  // weighted by its own planned set count, coloured by ITS OWN muscle family.
+  const progressSegments = sessionProgressSegments(
+    W.exercises,
+    currentIdx,
+    (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
+  )
+
   // Reorderable segment for the ⋯ action sheet: the exercises up to and including
   // the VIEWED one stay FIXED; only the ones after it in session.order can be
   // reordered. Reorder is client-only / ephemeral — it just replaces session.order,
@@ -1094,6 +1133,21 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
+        {/* Session progress bar (v2, mezo-8xmf): one segment per exercise, flex-weighted
+            by its planned set count, family-coloured; opacity signals done/current/upcoming. */}
+        <div className="wkx-progressbar" aria-hidden="true">
+          {progressSegments.map((seg, i) => (
+            <span
+              key={i}
+              style={{
+                flex: seg.weight,
+                background: muscleColor(seg.colorMuscle).rail,
+                opacity: seg.state === 'done' ? 1 : seg.state === 'current' ? 0.45 : 0.25,
+              }}
+            />
+          ))}
+        </div>
+
         {/* Niggle banner if active */}
         {niggleActive && currentIdx <= 1 && (
           <div style={{ padding: '8px 24px' }}>
@@ -1107,8 +1161,13 @@ function ActiveWorkoutSession({
             note pill, set-dots, giant steppers, RIR/Side pills, Szett kész ✓
             (mezo-8141). Replaces the old eyebrow/Múlt-hét-hero/tool-row layout. */}
         <div
-          className="excard np-anim"
-          style={{ '--i': 1 } as React.CSSProperties}
+          className="excard wkx-excard np-anim"
+          style={{
+            '--i': 1,
+            '--fam-rail': family.rail,
+            '--fam-wash': family.wash,
+            '--fam-deep': family.deep,
+          } as React.CSSProperties}
           // Swipe navigation (free nav): only large horizontal drags fire, so taps on
           // the inner steppers/buttons are ignored. Left = next, right = previous.
           onPointerDown={(e) => { swipeStart.current = e.clientX }}
@@ -1133,11 +1192,45 @@ function ActiveWorkoutSession({
               </div>
             </div>
           )}
-          <div className="exo">{currentIdx + 1}. gyakorlat · {current.muscle}</div>
+          {/* ① eyebrow — idx/n · muscleLabel · type (family-deep) + name only. */}
+          <div className="exo" style={{ color: family.deep }}>
+            {currentIdx + 1}/{W.exercises.length} · {muscleLabel} · {current.type}
+          </div>
           <h2>{current.name}</h2>
-          {current.lastWeek && (
-            <div className="prev">
-              múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @ RIR {current.lastWeek.rir}
+
+          {/* ② stat-strip — three labeled cells: Stílus (failure/volume + RIR),
+              Rep-cél (mono range), Szett (mono done/working). */}
+          <div className="wkx-statstrip">
+            <div className="wkx-statcell">
+              <div className="wkx-statlabel">Stílus</div>
+              <div className="wkx-statvalue" style={{ color: cardStyle === 'failure' ? 'var(--coral-deep)' : 'var(--sage-deep)' }}>
+                {cardStyle === 'failure' ? '🔥 Failure' : `🌿 Volume · RIR ${current.targetRIR}`}
+              </div>
+            </div>
+            <div className="wkx-statcell">
+              <div className="wkx-statlabel">Rep-cél</div>
+              <div className="wkx-statvalue mono">{current.repMin}–{current.repMax}</div>
+            </div>
+            <div className="wkx-statcell">
+              <div className="wkx-statlabel">Szett</div>
+              <div className="wkx-statvalue mono">{doneWorkingSets}/{liveWorkingSetCount}</div>
+            </div>
+          </div>
+
+          {/* ③ múlt + javaslat subrow — top-bordered, own row; left the last-week top
+              set (hidden with no lastWeek), right the first working target (hidden
+              when the engine hasn't prescribed one). */}
+          {(current.lastWeek || firstWorkingTargetKg != null) && (
+            <div className="wkx-subrow">
+              {current.lastWeek && (
+                <span className="mono wkx-subrow-prev">
+                  múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @{current.lastWeek.rir}
+                </span>
+              )}
+              <span style={{ flex: 1 }} />
+              {firstWorkingTargetKg != null && (
+                <span className="wkx-subrow-next">↗ ma: {firstWorkingTargetKg.toLocaleString('hu-HU')} kg</span>
+              )}
             </div>
           )}
 
@@ -1185,6 +1278,9 @@ function ActiveWorkoutSession({
                 </div>
               )
             })}
+            {/* ④ last-logged-warmup note (spec §Execution card v2): the % of the
+                first working target this warmup was loaded at. */}
+            {warmupNote && <span className="mono wkx-setdots-note">{warmupNote} ✓</span>}
           </div>
 
           {/* Giant steppers — the single logging surface (spec §4.5). Only
@@ -1205,6 +1301,11 @@ function ActiveWorkoutSession({
                   {n}
                 </button>
               ))}
+              <span style={{ flex: 1 }} />
+              {/* ⑥ inline style hint — failure pushes to bukásig, volume keeps reserve. */}
+              <span className="wkx-rirhint" style={{ color: cardStyle === 'failure' ? 'var(--amber-deep)' : 'var(--sage-deep)' }}>
+                {cardStyle === 'failure' ? '🔥 bukásig!' : '🌿 hagyj 2 rep tartalékot'}
+              </span>
             </div>
           )}
           {current.type === 'isolation' && (
@@ -1284,81 +1385,145 @@ function ActiveWorkoutSession({
           </div>
         ) : null}
 
-        {/* Prescribed set list (spec §6): demoted to read-only status rows now that
-            logging lives in the excard above — targets for pending sets, logged
-            actuals for done sets; ALL information survives, only the input
-            controls moved out. */}
-        <div style={{ padding: '6px 24px 20px' }}>
-          <div className="col gap-sm">
-            {Array.from({ length: currentSetCount }, (_, i) => {
-              const t = prescribedAt(session, current.id, i)
-              const warm = t?.kind === 'warmup'
-              const setLabel = warm ? `B${i + 1}` : `${i - warmupCount + 1}`
-              const kindLabel = warm ? 'Bemel.' : 'Working'
-              const accent = warm ? 'var(--warning)' : 'var(--coral)'
-              const actual = session.logged[current.id]?.[i]
-              const isDone = i < cursor
-              // Medals earned by this already-logged set (mezo-wp6n): RECORD ones get a
-              // chip; a TARGET_HIT re-colours the done-tick instead of adding a second
-              // mark (the double-tick fix — one glyph, two meanings).
-              const setMedals = isDone ? medalsBySet[`${current.id}:${i}`] ?? [] : []
-              const hitTarget = setMedals.some((m) => m.type === 'TARGET_HIT')
+        {/* Set list (v4, mezo-8xmf — strict table): exercise-level constants
+            (the rep-range/RIR target, the last-week comparison) appear ONCE —
+            in the header pill and the footer — instead of repeating per row.
+            Rows are fixed SZETT/KG/ISM/RIR/status columns; tap opens the same
+            SetEditSheet as before. */}
+        {(() => {
+          // Zip the session's LoggedSet[] (weight/reps/rir, no `kind`) with each
+          // slot's OWN prescribed kind so the pure workoutCardMeta helpers (which
+          // take a generic {weightKg, reps, kind} shape) can run over it.
+          const loggedForMeta = (session.logged[current.id] ?? []).map((s, j) => ({
+            weightKg: s.weight,
+            reps: s.reps,
+            rir: s.rir,
+            kind: (prescribedAt(session, current.id, j)?.kind ?? 'working') as 'warmup' | 'working',
+          }))
+          const tonnage = exerciseTonnage(loggedForMeta)
+          const deltaPct = topSetDeltaPct(loggedForMeta, current.lastWeek?.weight ?? null)
+          const avgRir = avgWorkingRir(loggedForMeta)
+          return (
+            <div
+              className="wkx-slist"
+              style={{ '--fam-rail': family.rail, '--fam-wash': family.wash, '--fam-deep': family.deep } as React.CSSProperties}
+            >
+              {/* Exercise-level target — the ONLY place the rep-range/RIR/style shows. */}
+              <div className="wkx-shead">
+                <span className="eyebrow">Szettek</span>
+                <span style={{ flex: 1 }} />
+                <span className="wkx-tgt" style={{ background: family.wash, color: family.deep }}>
+                  cél: {current.repMin}–{current.repMax} rep · RIR {current.targetRIR} {cardStyle === 'failure' ? '🔥' : '🌿'}
+                </span>
+              </div>
 
-              // A read-only row — target for pending sets, logged actuals for done ones.
-              const w = isDone ? actual?.weight : t?.targetWeightKg
-              const r = isDone ? actual?.reps : t?.targetReps
-              const rr = isDone ? actual?.rir : t?.targetRIR
-              // C2 (fix round 1): a LOGGED row whose log is still genuinely IN FLIGHT
-              // (the window between the optimistic local append and logSet's response)
-              // must not be tappable — editing/deleting it then would have nothing to
-              // PUT/DELETE against, silently orphaning the server-side row forever. A
-              // not-yet-logged (pending) row legitimately has no id and stays tappable.
-              // F1 (fix round 3): a row whose log is KNOWN to have failed is NOT
-              // in-flight — there is no server row, for certain, so it's tappable too
-              // (delete falls back to local-only, same as a pending slot).
-              const rowFailed = !!actual?.localId && failedSetLocalIds.has(actual.localId)
-              const rowDisabled = isDone && !actual?.id && !rowFailed
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className="row gap-sm np-press"
-                  aria-label={`${setSlotLabel(i, warm, warmupCount)} szerkesztése${isDone ? ` — ${w ?? '–'} kg × ${r ?? '–'}${warm ? '' : ` — RIR ${rr ?? '–'}`}` : ''}`}
-                  disabled={rowDisabled}
-                  onClick={() => setEditingSetIdx(i)}
-                  style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1, width: '100%', textAlign: 'left' }}
-                >
-                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
-                  <span className="stag" style={{ background: 'color-mix(in srgb, ' + accent + ' 14%, transparent)', color: accent }}>{kindLabel}</span>
-                  <span
-                    style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)', whiteSpace: 'nowrap', marginLeft: 4 }}
+              <div className="wkx-srow wkx-srow-head">
+                <span className="wkx-c-set">Szett</span>
+                <span className="wkx-c-kg">kg</span>
+                <span className="wkx-c-rep">ism</span>
+                <span className="wkx-c-rir">RIR</span>
+                <span className="wkx-c-st" />
+              </div>
+
+              {Array.from({ length: currentSetCount }, (_, i) => {
+                const t = prescribedAt(session, current.id, i)
+                const warm = t?.kind === 'warmup'
+                const actual = session.logged[current.id]?.[i]
+                const isDone = i < cursor
+                const isCurrentRow = i === cursor
+                // Medals earned by this already-logged set (mezo-wp6n): RECORD ones
+                // still get a chip in the status cell (a TARGET_HIT carries no visual
+                // of its own anymore — the rep-range status column below already
+                // covers "hit vs missed", now the table's own doing).
+                const setMedals = isDone ? medalsBySet[`${current.id}:${i}`] ?? [] : []
+
+                // C2 (fix round 1): a LOGGED row whose log is still genuinely IN FLIGHT
+                // (the window between the optimistic local append and logSet's response)
+                // must not be tappable — editing/deleting it then would have nothing to
+                // PUT/DELETE against, silently orphaning the server-side row forever. A
+                // not-yet-logged (pending) row legitimately has no id and stays tappable.
+                // F1 (fix round 3): a row whose log is KNOWN to have failed is NOT
+                // in-flight — there is no server row, for certain, so it's tappable too
+                // (delete falls back to local-only, same as a pending slot).
+                const rowFailed = !!actual?.localId && failedSetLocalIds.has(actual.localId)
+                const rowDisabled = isDone && !actual?.id && !rowFailed
+
+                // aria-label — unchanged shape from the pre-v4 row (target for
+                // pending sets, logged actuals for done ones); several tests assert
+                // its exact text.
+                const wLbl = isDone ? actual?.weight : t?.targetWeightKg
+                const rLbl = isDone ? actual?.reps : t?.targetReps
+                const rrLbl = isDone ? actual?.rir : t?.targetRIR
+                const ariaLabel = `${setSlotLabel(i, warm, warmupCount)} szerkesztése${isDone ? ` — ${wLbl ?? '–'} kg × ${rLbl ?? '–'}${warm ? '' : ` — RIR ${rrLbl ?? '–'}`}` : ''}`
+
+                const markLabel = warm ? `B${i + 1}` : String(i - warmupCount + 1)
+                const markCls = isCurrentRow ? 'wkx-mark-cur' : warm ? 'wkx-mark-warm' : isDone ? 'wkx-mark-done' : 'wkx-mark-pend'
+
+                // KG/ISM/RIR: logged actuals for done rows; ghosted TARGET values for
+                // pending ones (the exercise's own rep RANGE for a pending working
+                // row — its single targetReps is only meaningful for a warmup ramp).
+                const kgVal = isDone ? actual?.weight ?? null : t?.targetWeightKg ?? null
+                const kgDisplay = kgVal == null ? '—' : kgVal.toLocaleString('hu-HU')
+                const repDisplay = isDone
+                  ? String(actual?.reps ?? '—')
+                  : warm
+                    ? String(t?.targetReps ?? '—')
+                    : `${current.repMin}–${current.repMax}`
+                const rirDisplay = warm ? '–' : String(isDone ? actual?.rir ?? '–' : t?.targetRIR ?? current.targetRIR)
+
+                let statusNode: React.ReactNode = null
+                if (isCurrentRow) {
+                  statusNode = <span className="wkx-stat-most" style={{ color: family.deep }}>MOST ↑</span>
+                } else if (isDone && actual) {
+                  const status = setStatus(current, { reps: actual.reps, kind: warm ? 'warmup' : 'working' })
+                  statusNode = status === 'ok'
+                    ? <span className="wkx-stat-ok">✓</span>
+                    : <span className="wkx-stat-dev">{status === 'below' ? '▼ cél alatt' : '▲ cél felett'}</span>
+                }
+
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={'wkx-srow' + (isCurrentRow ? ' wkx-srow-cur' : warm ? ' wkx-srow-warm' : '')}
+                    disabled={rowDisabled}
+                    aria-label={ariaLabel}
+                    onClick={() => setEditingSetIdx(i)}
                   >
-                    {w == null ? '—' : w}
-                    <span style={{ fontSize: 10, color: 'var(--text-tertiary)', margin: '0 1px 0 2px' }}>kg</span>
-                    <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400 }}>×</span>
-                    {r ?? '—'}
-                  </span>
-                  <span style={{ flex: 1 }} />
-                  {/* Logged working sets show their ACTUAL RIR (user fix 1); warmups log none. */}
-                  {isDone ? (
-                    <span className="row gap-xs" style={{ alignItems: 'center' }}>
-                      {!warm && (
-                        <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? '–'}</span>
-                      )}
-                      {setMedals.filter((m) => m.tier === 'RECORD').map((m, mi) => (
-                        <MedalChip key={mi} medal={m} />
-                      ))}
-                      <Icon name="check" size={13} color={hitTarget ? 'var(--sage-deep)' : 'var(--coral)'} />
+                    <span className="wkx-c-set">
+                      <span className={'wkx-mark ' + markCls}>{markLabel}</span>
                     </span>
-                  ) : warm ? null : (
-                    <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
-                  )}
-                  <span aria-hidden="true" style={{ color: 'var(--text-tertiary)', fontSize: 13, marginLeft: 2 }}>›</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+                    <span className="wkx-c-kg num" style={{ color: isDone ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>{kgDisplay}</span>
+                    <span className="wkx-c-rep num" style={{ color: isDone ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>{repDisplay}</span>
+                    <span className="wkx-c-rir num" style={{ color: isDone ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>{rirDisplay}</span>
+                    <span className="wkx-c-st">
+                      {statusNode}
+                      {isDone && setMedals.filter((m) => m.tier === 'RECORD').map((m, mi) => <MedalChip key={mi} medal={m} />)}
+                    </span>
+                  </button>
+                )
+              })}
+
+              {/* Exercise-level summary — the ONLY place volume/last-week/RIR shows. */}
+              <div className="wkx-sfoot">
+                <div>
+                  <div className="l">Volumen</div>
+                  <div className="v num">{tonnage.toLocaleString('hu-HU')} kg</div>
+                </div>
+                <div>
+                  <div className="l">vs múlt hét</div>
+                  <div className="v" style={{ color: deltaPct == null ? 'var(--text-tertiary)' : deltaPct >= 0 ? 'var(--sage-deep)' : 'var(--amber-deep)' }}>
+                    {deltaPct == null ? '–' : `${deltaPct > 0 ? '+' : ''}${deltaPct}%`}
+                  </div>
+                </div>
+                <div>
+                  <div className="l">Átl. RIR</div>
+                  <div className="v num">{avgRir == null ? '–' : avgRir.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </>
   )

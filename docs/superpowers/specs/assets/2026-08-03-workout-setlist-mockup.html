@@ -1,0 +1,126 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  .mz { --canvas:#FBF6EF; --s1:#FFFFFF; --s2:#F4EBDF; --s3:#EFE5D8; --ink:#2B2118; --ink2:#5F5346; --ink3:#8A7A6A;
+        --coral:#FF6B4A; --coral-deep:#C4622F; --amber:#FFB347; --amber-deep:#9A6A12; --sage:#7FA48A; --sage-deep:#5F7A52;
+        --lav:#9B8FC4; --lav-deep:#7A6DA8; --rose:#E27A8B; --sky:#6FA7D8;
+        --wash-lav:#EEEBF6; --wash-amber:#FFF3E4; --wash-sage:#EAF0E3;
+        --bs: rgba(43,33,24,.08); }
+  .phone { width: 360px; background: var(--canvas); border-radius: 28px; border: 6px solid #2B2118;
+           padding: 14px 12px 18px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink);
+           box-shadow: 0 8px 30px rgba(43,33,24,.18); flex-shrink: 0; }
+  .phone * { box-sizing: border-box; }
+  .mono { font-family:'JetBrains Mono'; }
+  .card { background:linear-gradient(180deg, var(--wash-lav) 0%, var(--s1) 48%); border:1px solid var(--bs); border-left:5px solid var(--lav);
+          border-radius:20px; padding:12px 14px; }
+  .exo { font-size:9px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; color:var(--lav-deep); }
+  .eyebrow { font-size:9px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; color:var(--ink3); }
+
+  /* ===== v4: szigorú táblázat ===== */
+  .slist { background:var(--s1); border:1px solid var(--bs); border-radius:18px; padding:12px 0 0; margin-top:10px; overflow:hidden; }
+  .shead { display:flex; align-items:baseline; padding:0 14px 8px; }
+  .tgt { font-size:10px; font-weight:800; color:var(--lav-deep); background:var(--wash-lav); border-radius:999px; padding:3px 9px; }
+
+  table.st { width:100%; border-collapse:collapse; }
+  .st th { font-size:8px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink3); font-weight:800;
+           padding:5px 0 5px; border-top:1px solid var(--bs); border-bottom:1px solid var(--bs); background:var(--s2); }
+  .st td { padding:8px 0; border-bottom:1px solid var(--bs); font-size:13px; vertical-align:middle; }
+  .st .c-set  { width:52px; text-align:center; }
+  .st .c-kg   { width:74px; text-align:right; padding-right:10px; }
+  .st .c-rep  { width:64px; text-align:right; padding-right:10px; }
+  .st .c-rir  { width:56px; text-align:center; }
+  .st .c-st   { text-align:center; }
+  .smark { display:inline-flex; width:24px; height:24px; border-radius:50%; align-items:center; justify-content:center;
+           font-size:9px; font-weight:800; border:1.5px solid var(--bs); color:var(--ink3); background:#fff; }
+  .num { font-family:'JetBrains Mono'; font-weight:500; }
+  .stat-ok { color:var(--sage-deep); font-weight:800; font-size:12px; }
+  .stat-dev { color:var(--amber-deep); font-weight:800; font-size:10px; }
+  .row-warm td { background:#FFF3E455; }
+  .row-cur td { background:var(--wash-lav); }
+  .row-pend td { color:var(--ink3); }
+  .sfoot { display:flex; }
+  .sfoot > div { flex:1; text-align:center; padding:9px 4px 10px; }
+  .sfoot > div + div { border-left:1px solid var(--bs); }
+  .sfoot .l { font-size:8px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink3); font-weight:800; }
+  .sfoot .v { font-size:12.5px; font-weight:800; margin-top:1px; }
+  .zonenote { font-size:11px; line-height:1.55; color:var(--ink2); }
+  .zn { display:flex; gap:8px; margin-bottom:8px; align-items:flex-start; }
+  .zn b.num2 { flex:none; width:20px; height:20px; border-radius:50%; background:#2B2118; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans'; }
+</style>
+
+<h2>v4 — a szett-lista mint valódi táblázat</h2>
+<p class="subtitle">A javítás elve: <b>ami gyakorlat-szintű állandó (cél, múlt hét), az egyszer szerepel</b> — a lista fejlécében ill. a láblécben, nem soronként ismételve. A sorok szigorú, igazított oszlopok: SZETT · KG · ISM · RIR · státusz. Kattints a ✓-ra, ha ez már az igazi!</p>
+
+<div style="display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; justify-content:center; margin-top:20px;">
+
+  <div class="phone mz">
+    <div class="card" style="margin-bottom:0;">
+      <div class="exo">3/8 · Váll (első) · compound</div>
+      <b style="font-family:'Bricolage Grotesque'; font-size:20px;">Overhead Press</b>
+    </div>
+
+    <div class="slist">
+      <!-- lista-fejléc: cím + A GYAKORLAT CÉLJA egyszer -->
+      <div class="shead">
+        <span class="eyebrow">Szettek</span>
+        <span style="flex:1;"></span>
+        <span class="tgt">cél: 6–8 rep · RIR 0 🔥</span>
+      </div>
+
+      <table class="st">
+        <tr>
+          <th class="c-set">Szett</th><th class="c-kg">kg</th><th class="c-rep">ism</th><th class="c-rir">RIR</th><th class="c-st"></th>
+        </tr>
+        <tr class="row-warm">
+          <td class="c-set"><span class="smark" style="background:var(--amber);border-color:var(--amber);color:#fff;">B1</span></td>
+          <td class="c-kg num">22,5</td>
+          <td class="c-rep num">8</td>
+          <td class="c-rir num" style="color:var(--ink3);">–</td>
+          <td class="c-st"><span class="stat-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td class="c-set"><span class="smark" style="background:var(--lav);border-color:var(--lav);color:#fff;">1</span></td>
+          <td class="c-kg num">45</td>
+          <td class="c-rep num">8</td>
+          <td class="c-rir num">0</td>
+          <td class="c-st"><span class="stat-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td class="c-set"><span class="smark" style="background:var(--lav);border-color:var(--lav);color:#fff;">2</span></td>
+          <td class="c-kg num">45</td>
+          <td class="c-rep num">5</td>
+          <td class="c-rir num">0</td>
+          <td class="c-st"><span class="stat-dev">▼ cél alatt</span></td>
+        </tr>
+        <tr class="row-cur row-pend">
+          <td class="c-set"><span class="smark" style="border-color:var(--lav-deep); color:var(--lav-deep); box-shadow:0 0 0 3px #9B8FC433; background:#fff;">3</span></td>
+          <td class="c-kg num">45</td>
+          <td class="c-rep num">6–8</td>
+          <td class="c-rir num">0</td>
+          <td class="c-st"><span style="font-size:9px; font-weight:800; color:var(--lav-deep);">MOST ↑</span></td>
+        </tr>
+      </table>
+
+      <!-- lábléc: gyakorlat-szintű összegzés egyszer -->
+      <div class="sfoot">
+        <div><div class="l">Volumen</div><div class="v num">1 305 kg</div></div>
+        <div><div class="l">vs múlt hét</div><div class="v" style="color:var(--sage-deep);">↗ +6%</div></div>
+        <div><div class="l">Átl. RIR</div><div class="v num">0.0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:330px;">
+    <div class="option" data-choice="OK" onclick="toggleSelect(this)" style="margin-bottom:14px;">
+      <div class="letter">✓</div>
+      <div class="content"><h3>Ez az — mehet a spec</h3><p>v2 kártya + v4 táblázatos szett-lista együtt a mezo-8xmf spec-be.</p></div>
+    </div>
+    <div class="zonenote">
+      <div class="zn"><b class="num2">1</b><span><b>A cél EGYSZER szerepel</b> — a lista fejlécében pillként (`cél: 6–8 rep · RIR 0 🔥`). Nem ismételjük soronként — ettől tűnt el a zaj.</span></div>
+      <div class="zn"><b class="num2">2</b><span><b>Valódi oszlopok</b> — fejléc-sor (SZETT · KG · ISM · RIR) + jobbra igazított mono számok, fix oszlopszélesség. Minden érték egy vonalban.</span></div>
+      <div class="zn"><b class="num2">3</b><span><b>Állapot = utolsó oszlop</b> — ✓ (sage) / ▼ cél alatt (amber) / MOST (izomszín). A bemelegítő sor halvány amber hátteret kap, az aktuális izomszín-wash-t.</span></div>
+      <div class="zn"><b class="num2">4</b><span><b>Múlt hét a láblécben</b> — gyakorlat-szintű adat, egyszer: Volumen · vs múlt hét · átl. RIR. (A soronkénti "múlt: 42,5×7" kikerült.)</span></div>
+      <div class="zn"><b class="num2">5</b><span><b>Tap a soron</b> = meglévő szerkesztő-sheet, változatlan.</span></div>
+    </div>
+  </div>
+</div>

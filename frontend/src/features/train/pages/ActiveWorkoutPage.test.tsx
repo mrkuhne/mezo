@@ -108,8 +108,70 @@ test('mock mode: the excard shows the "múlt héten" comparison line when lastWe
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 }
-  expect(await screen.findByText('múlt héten: 102,5 kg × 9 @ RIR 2')).toBeInTheDocument()
+  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 } — v2 subrow format (mezo-8xmf):
+  // `múlt héten: {w} kg × {r} @{rir}` (short @rir, not "@ RIR n").
+  expect(await screen.findByText('múlt héten: 102,5 kg × 9 @2')).toBeInTheDocument()
+})
+
+// ---- Execution card v2 (mezo-8xmf): muscle-themed card + structured context zones ----
+
+test('mock mode: the eyebrow shows idx/n · muscleLabel · type, and the stat-strip renders style + rep-range + set count', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1: 1/5, muscle 'back-mid' -> MUSCLE_LABELS 'Hát (közép)', type compound.
+  expect(container.querySelector('.excard .exo')).toHaveTextContent('1/5 · Hát (közép) · compound')
+  // ex1.targetRIR = 0 -> failure style (setStyle, RIR<=1); repMin/repMax = 8/10;
+  // 2 warmup + 3 working planned, none logged yet.
+  const strip = container.querySelector('.wkx-statstrip')
+  expect(strip).toHaveTextContent('🔥 Failure')
+  expect(strip).toHaveTextContent('8–10')
+  expect(strip).toHaveTextContent('0/3')
+})
+
+test('mock mode: the RIR row shows the failure-style "bukásig" hint on a working set', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Log both ex1 warmups to reach the first working set (RIR row visible).
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  expect(await screen.findByText('🔥 bukásig!')).toBeInTheDocument()
+})
+
+test('real mode: a volume-style exercise (targetRIR 2) shows the sage hint and the Volume stat cell', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], warmupSets: 0, workingSets: 1, targetRIR: 2 }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  expect(container.querySelector('.wkx-statstrip')).toHaveTextContent('🌿 Volume · RIR 2')
+  expect(await screen.findByText('🌿 hagyj 2 rep tartalékot')).toBeInTheDocument()
+})
+
+test('mock mode: the session progress bar renders one segment per exercise', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Pull Day (mock) has 5 exercises.
+  expect(container.querySelectorAll('.wkx-progressbar span')).toHaveLength(5)
+})
+
+test('mock mode: the set-dots note shows the last logged warmup\'s percent label once a warmup is logged', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.wkx-setdots-note')).toBeNull()
+  // ex1 B1: 52.5 kg target vs the first working target 105 kg -> 50%. The kg is
+  // hu-HU formatted (final-review fix, mezo-8xmf) like the rest of the card's numbers.
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(await screen.findByText('B1 = 50% · 52,5 ✓')).toBeInTheDocument()
 })
 
 test('the wk-top header shows the workout title, the gyakorlat/szett counter, an exercise dot per exercise and the Vissza + ⋯ buttons', async () => {
@@ -270,12 +332,99 @@ test('mock mode: renders the progression banner rationale line instead of the st
   expect(await screen.findByText(/→ \+2,5 kg/)).toBeInTheDocument() // ex1.progression.rationale
 })
 
-test('mock mode: warmup sets render up-front as amber "Bemel." rows (spec §6)', async () => {
+test('mock mode: warmup sets render up-front as 2 amber-filled "B" marker rows in the set-list table (v4, mezo-8xmf)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // The prescribed set list shows ALL sets up front; ex1's 2 warmups are 2 amber rows.
-  expect(screen.getAllByText('Bemel.')).toHaveLength(2)
+  // The v4 table shows ALL sets up front; ex1's 2 warmups are the 2 "bemelegítő
+  // szett" rows (the old kind tag "Bemel." is gone — the marker circle + row
+  // label now carry the warmup/working distinction).
+  expect(screen.getAllByRole('button', { name: /bemelegítő szett szerkesztése/ })).toHaveLength(2)
+})
+
+// ---- Set list v4 (mezo-8xmf): strict table — header pill, marker/status columns, footer ----
+
+test('mock mode: the set-list header pill shows the exercise target once; the current row is outlined with "MOST ↑", later rows are ghosted with their target values', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1: repMin 8, repMax 10, targetRIR 0 -> failure style (🔥) — the target
+  // appears ONCE, in the header pill, not repeated per row.
+  expect(screen.getByText('cél: 8–10 rep · RIR 0 🔥')).toBeInTheDocument()
+
+  const rows = screen.getAllByRole('button', { name: /szett szerkesztése/ })
+  // B1 (index 0) is the current (not-yet-logged) row: outlined marker + "MOST ↑".
+  expect(rows[0].querySelector('.wkx-mark')).toHaveClass('wkx-mark-cur')
+  expect(rows[0].querySelector('.wkx-c-st')).toHaveTextContent('MOST ↑')
+  // B2 (index 1) hasn't been reached yet either — a not-yet-current warmup row
+  // still marks amber-filled (mirrors the old set-dots' B-prefixed pending
+  // marker) and shows its OWN target values, no status glyph.
+  expect(rows[1].querySelector('.wkx-mark')).toHaveClass('wkx-mark-warm')
+  expect(rows[1].querySelector('.wkx-c-kg')).toHaveTextContent('80')
+  expect(rows[1].querySelector('.wkx-c-rep')).toHaveTextContent('3')
+  expect(rows[1].querySelector('.wkx-c-st')).toHaveTextContent('')
+  // The first working row (index 2) is a plain pending row: ghosted with the
+  // TARGET weight and the exercise's own rep RANGE (not the single engine
+  // target reps) — the binding v4 rule for pending working rows.
+  expect(rows[2].querySelector('.wkx-mark')).toHaveClass('wkx-mark-pend')
+  expect(rows[2].querySelector('.wkx-c-kg')).toHaveTextContent('105')
+  expect(rows[2].querySelector('.wkx-c-rep')).toHaveTextContent('8–10')
+  expect(rows[2].querySelector('.wkx-c-rir')).toHaveTextContent('0')
+  expect(rows[2].querySelector('.wkx-c-st')).toHaveTextContent('')
+})
+
+test('mock mode: a logged working set below the prescribed rep range shows "▼ cél alatt"', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  // Prefilled reps = 10 (the engine target); drop to 5 — below ex1's repMin (8).
+  for (let i = 0; i < 5; i++) {
+    await user.click(screen.getByRole('button', { name: 'Ismétlés csökkentése' }))
+  }
+  await user.click(screen.getByText('Szett kész ✓'))
+  const workingRow = screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
+  expect(workingRow.querySelector('.wkx-c-st')).toHaveTextContent('▼ cél alatt')
+})
+
+test('mock mode: a logged working set above the prescribed rep range shows "▲ cél felett"', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  // Prefilled reps = 10 (the repMax boundary, still "ok"); bump to 11 — above
+  // ex1's repMax (10).
+  await user.click(screen.getByRole('button', { name: 'Ismétlés növelése' }))
+  await user.click(screen.getByText('Szett kész ✓'))
+  const workingRow = screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
+  expect(workingRow.querySelector('.wkx-c-st')).toHaveTextContent('▲ cél felett')
+})
+
+test('mock mode: the set-list footer summarizes tonnage, the vs-last-week delta and the average RIR from the logged sets', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1: 52.5 kg × 8
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // B2: 80 kg × 3
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByText('Szett kész ✓')) // working 1: 105 kg × 10 @RIR 0
+  const foot = container.querySelector('.wkx-sfoot') as HTMLElement
+  // Volumen = Σ(weight×reps) over ALL logged sets (warmups included, per the
+  // design doc's literal "of logged sets"): 52.5×8 + 80×3 + 105×10 = 1710 kg.
+  expect(within(foot).getByText(`${(1710).toLocaleString('hu-HU')} kg`)).toBeInTheDocument()
+  // vs múlt hét = (105 − 102.5) / 102.5 × 100 = 2.44 → round 2 → "+2%" (sage).
+  const deltaCell = within(foot).getByText('+2%')
+  expect(deltaCell).toBeInTheDocument()
+  expect(deltaCell).toHaveStyle({ color: 'var(--sage-deep)' })
+  // Átl. RIR = mean of the one logged working RIR (0) → "0,0".
+  expect(within(foot).getByText('0,0')).toBeInTheDocument()
 })
 
 // ---- warmup vs working distinction on the logging card (mezo-eerq) ----
@@ -285,22 +434,28 @@ test('mock mode: a warmup set hides the RIR row (effort tracking is working-set-
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
   // ex1 set 1 is a warmup (B1) — signalled by the set dot alone (mezo-xt65
-  // deleted the kind chip); no RIR selector on the logging card.
+  // deleted the kind chip); no RIR selector on the logging card. Scoped to the
+  // excard (v4, mezo-8xmf): the set-list table's own "RIR" COLUMN HEADER now
+  // also renders that text, so an unscoped query would see two matches.
   await screen.findByRole('button', { name: 'Súly növelése' })
   expect(container.querySelector('.setdots .sd.cur')).toHaveTextContent('B1')
-  expect(screen.queryByText('RIR')).not.toBeInTheDocument() // the rirrow label
+  const excard = container.querySelector('.excard') as HTMLElement
+  expect(within(excard).queryByText('RIR')).not.toBeInTheDocument() // the rirrow label
   expect(screen.queryByRole('button', { name: 'RIR 0' })).not.toBeInTheDocument()
 })
 
 test('mock mode: a working set shows the RIR row', async () => {
   const user = userEvent.setup()
-  setup()
+  const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByText('Szett kész ✓')) // B1
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // B2
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
-  expect(await screen.findByText('RIR')).toBeInTheDocument()
+  // Scoped to the excard (v4, mezo-8xmf): the set-list table's RIR column
+  // header also renders "RIR" text now.
+  const excard = container.querySelector('.excard') as HTMLElement
+  expect(await within(excard).findByText('RIR')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'RIR 0' })).toBeInTheDocument()
 })
 
@@ -312,7 +467,8 @@ test('mock mode: a deviated working-set weight carries into the next working set
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // B2 (80)
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
-  await screen.findByText('RIR') // the first working set is on deck
+  // Scoped to the excard (v4, mezo-8xmf) — see the two tests above.
+  await within(container.querySelector('.excard') as HTMLElement).findByText('RIR') // the first working set is on deck
   expect(container.querySelector('.steprow')).toHaveTextContent('105') // engine seeds working 1
   await user.click(screen.getByRole('button', { name: 'Súly növelése' })) // 105 -> 107.5
   await user.click(screen.getByText('Szett kész ✓')) // log working 1 at 107.5
@@ -454,14 +610,17 @@ test('real mode: a set-log response with only a TARGET_HIT medal shows no toast 
 })
 
 // ---- the set-row half of the two-tier split (mezo-wp6n) ----
-// A prescribed-set row is `<div class="row gap-sm">` whose 2nd child is the
-// `.stag` kind tag ("Bemel." / "Working"), so the tag's parent IS the row. Query
-// through it so these assertions can never be satisfied by an element elsewhere
-// on the page (the toast also renders medal text). The done-tick is the row's
-// only <svg> (Icon); MedalChip renders a role="img" span, never an svg.
-const rowOf = (kindTag: HTMLElement) => kindTag.parentElement as HTMLElement
+// v4 (mezo-8xmf): the read-only row is now a `<button class="wkx-srow">` found
+// by its aria-label (setSlotLabel), not by a `.stag` kind tag — the old
+// "Bemel."/"Working" text tags are gone (the marker circle + row label carry
+// that distinction now). RECORD medal chips (MedalChip, role="img") still
+// render in the row's status cell; the old coral/sage "done-tick" Icon that
+// tracked the TARGET_HIT medal is GONE — the v4 status column already conveys
+// hit/miss directly via the rep-range status (✓ / ▼ cél alatt / ▲ cél felett),
+// so that distinction no longer needs a second, medal-driven visual.
+const firstWorkingRow = () => screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
 
-test('mock mode: a set that hits its target gets a SAGE done-tick and a chip per RECORD medal — never a second tick', async () => {
+test('mock mode: a set that hits its target gets a sage ✓ status and a chip per RECORD medal', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -475,25 +634,21 @@ test('mock mode: a set that hits its target gets a SAGE done-tick and a chip per
   await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
 
   // Exactly TWO chips — the TARGET_HIT contributes none (MedalChip gates on tier).
-  await waitFor(() =>
-    expect(within(rowOf(screen.getAllByText('Working')[0])).getAllByRole('img')).toHaveLength(2),
-  )
-  const workingRow = rowOf(screen.getAllByText('Working')[0])
+  await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
+  const workingRow = firstWorkingRow()
   expect(within(workingRow).getByRole('img', { name: 'Súly-rekord' })).toBeInTheDocument()
   expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
-  // The double-tick fix: ONE glyph, recoloured — the row's single tick turns sage.
-  expect(workingRow.querySelectorAll('svg')).toHaveLength(1)
-  expect(workingRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--sage-deep)')
+  // 10 reps is within ex1's prescribed [8,10] range -> the sage ✓ status.
+  expect(workingRow.querySelector('.wkx-c-st')).toHaveTextContent('✓')
 
-  // The coral arm: a done warmup row earned no medals, so its tick stays coral.
-  // Without this the sage assertion above would pass even if the tick were
-  // unconditionally sage.
-  const warmupRow = rowOf(screen.getAllByText('Bemel.')[0])
-  expect(warmupRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--coral)')
+  // The warmup arm: a done warmup row earns no medals (the mock evaluator never
+  // scores warmup-kind sets), but still shows its own ✓ status.
+  const warmupRow = screen.getAllByRole('button', { name: /bemelegítő szett szerkesztése/ })[0]
   expect(within(warmupRow).queryAllByRole('img')).toHaveLength(0)
+  expect(warmupRow.querySelector('.wkx-c-st')).toHaveTextContent('✓')
 })
 
-test('mock mode: a set that sets records but MISSES its target keeps a coral done-tick (the tick tracks TARGET_HIT, not medals)', async () => {
+test('mock mode: a set that sets records still shows its chips even when the logged weight misses the prescribed target', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -506,14 +661,13 @@ test('mock mode: a set that sets records but MISSES its target keeps a coral don
   await user.click(screen.getByRole('button', { name: 'Súly csökkentése' }))
   await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
 
-  await waitFor(() =>
-    expect(within(rowOf(screen.getAllByText('Working')[0])).getAllByRole('img')).toHaveLength(2),
-  )
-  const workingRow = rowOf(screen.getAllByText('Working')[0])
+  await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
+  const workingRow = firstWorkingRow()
   expect(within(workingRow).getByRole('img', { name: 'Rep-rekord' })).toBeInTheDocument()
   expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
-  // Chips present, target missed -> the tick must stay coral.
-  expect(workingRow.querySelector('svg')).toHaveAttribute('stroke', 'var(--coral)')
+  // The weight miss doesn't affect reps (still 10, within [8,10]) -> still ✓;
+  // the v4 status column is rep-range-only, unlike the old TARGET_HIT tick.
+  expect(workingRow.querySelector('.wkx-c-st')).toHaveTextContent('✓')
 })
 
 test('the giant Súly/Ismétlés steppers increment by their step on tap', async () => {
@@ -551,22 +705,38 @@ test('reordering remaining exercises changes which exercise comes next', async (
   expect(dots[2]).toHaveClass('cur') // Cable Pull-Around: now current
 })
 
+// The Szett stat-cell's value (e.g. "0/3") — helper so callers don't hand-roll the
+// wkx-statcell/wkx-statlabel traversal.
+function szettCellValue(container: HTMLElement): string | null {
+  const cells = Array.from(container.querySelectorAll('.wkx-statcell'))
+  const cell = cells.find((c) => c.querySelector('.wkx-statlabel')?.textContent === 'Szett')
+  return cell?.querySelector('.wkx-statvalue')?.textContent ?? null
+}
+
 test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6', async () => {
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))          // active, current = Chest Supported Row (5 planned sets: 2 warmup + 3 working)
   expect(container.querySelectorAll('.setdots .sd')).toHaveLength(5)
-  expect(screen.getAllByText('Working')).toHaveLength(3)    // 3 planned working rows
+  // v4 (mezo-8xmf): the set-list table row count is the "Working"/"Bemel." tag
+  // count's replacement — count rows by their aria-label instead.
+  expect(screen.getAllByRole('button', { name: /working szett szerkesztése/ })).toHaveLength(3) // 3 planned working rows
+  // Szett stat-cell (final-review fix, mezo-8xmf): denominator must track the LIVE
+  // working-slot count, not the static `current.workingSets` — before the extra set
+  // it reads the planned 0/3.
+  expect(szettCellValue(container)).toBe('0/3')
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
   const dots = container.querySelectorAll('.setdots .sd')
   expect(dots).toHaveLength(6)
-  expect(screen.getAllByText('Working')).toHaveLength(4)    // the extra shows as a 4th working row
-  expect(screen.getAllByText('Bemel.')).toHaveLength(2)     // warmups unchanged
+  expect(screen.getAllByRole('button', { name: /working szett szerkesztése/ })).toHaveLength(4) // the extra shows as a 4th working row
+  expect(screen.getAllByRole('button', { name: /bemelegítő szett szerkesztése/ })).toHaveLength(2) // warmups unchanged
   // The added (6th) set-dot carries the restored dashed "extra" marker (final-review
   // fix, mezo-8141 — Finding 2); the planned dots stay plain.
   expect(dots[5]).toHaveClass('extra')
   expect(dots[0]).not.toHaveClass('extra')
+  // Denominator now reflects the 4th live working slot — 0/4, not the stale 0/3.
+  expect(szettCellValue(container)).toBe('0/4')
 })
 
 test('⋯ Kihagyás advances to the next exercise without opening the debrief', async () => {
@@ -1437,9 +1607,9 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
   expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
 })
 
-test('a logged working set shows its RIR chip in the read-only set list', async () => {
+test('a logged working set shows its RIR in the set-list table\'s own RIR column', async () => {
   const user = userEvent.setup()
-  const { container } = setup()
+  setup()
   await user.click(screen.getByText(/Kezdjük el/))
   // ex1 has 2 warmups first: log 3 sets so ONE working set (index 2) is done.
   await user.click(screen.getByText('Szett kész ✓'))
@@ -1449,10 +1619,10 @@ test('a logged working set shows its RIR chip in the read-only set list', async 
   // the current (3rd) set is a working set — select RIR 1, then log it
   await user.click(screen.getByRole('button', { name: 'RIR 1' }))
   await user.click(screen.getByText('Szett kész ✓'))
-  // read-only list: the DONE working row carries the logged RIR chip
-  const rows = container.querySelectorAll('.col.gap-sm .row.gap-sm')
-  const doneWorking = Array.from(rows).find((r) => r.textContent?.includes('Working') && r.textContent?.includes('RIR 1'))
-  expect(doneWorking).toBeTruthy()
+  // v4 (mezo-8xmf): RIR is its own table column now, not a chip — the just-
+  // logged (first) working row's RIR cell reads the logged value directly.
+  const workingRow = screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
+  expect(workingRow.querySelector('.wkx-c-rir')).toHaveTextContent('1')
 })
 
 // ---- Task 7: free exercise navigation (pager bar, overview sheet, tappable dots) ----
