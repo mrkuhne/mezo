@@ -240,7 +240,7 @@ export function splitBudget(budget: Macro4, windows: PlannedWindow[]): Macro4[] 
 }
 
 // ── recipe fit ───────────────────────────────────────────────────────────────
-function perServing(r: Recipe): Macro4 {
+export function perServing(r: Recipe): Macro4 {
   const s = r.servings || 1
   return { kcal: r.macros.kcal / s, p: r.macros.p / s, c: r.macros.c / s, f: r.macros.f / s }
 }
