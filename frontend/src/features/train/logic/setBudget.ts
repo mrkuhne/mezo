@@ -23,6 +23,8 @@ export const NEAR_THRESHOLD = 0.85
 // conservative on purpose. traps/core are intentionally absent: RP treats
 // their MEV as ~0 (indirect volume from rows/deadlifts/compounds covers them),
 // so they never trigger the under-volume signal. "Starting points, not gospel."
+// Invariant: every MEV must stay < NEAR_THRESHOLD × FAILURE_WEEKLY_CAP (≈10.2)
+// so an 'under' row can never mask a 'near'/'over' budget state.
 export const GROUP_MEV: Record<string, number> = {
   chest: 4, back: 10, quad: 4, ham: 2, glute: 6, shoulder: 6, biceps: 8, triceps: 4, calf: 4,
 }
