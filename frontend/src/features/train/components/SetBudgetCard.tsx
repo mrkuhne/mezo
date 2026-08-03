@@ -28,9 +28,10 @@ function setStyleSummary(failureSets: number, volumeSets: number): string {
   return `${volumeSets}🌿`
 }
 
-function pillColors(row: MuscleBudgetRow): { bg: string; fg: string } {
+function pillColors(row: MuscleBudgetRow): { bg: string; fg: string; border?: string } {
   if (row.level === 'over') return { bg: 'color-mix(in srgb, var(--error) 12%, transparent)', fg: 'var(--error)' }
   if (row.level === 'near') return { bg: 'var(--wash-amber)', fg: 'var(--amber-deep)' }
+  if (row.level === 'under') return { bg: 'var(--surface-2)', fg: 'var(--text-tertiary)', border: '1.5px dashed var(--text-tertiary)' }
   const fam = muscleColor(row.colorMuscle)
   return { bg: fam.wash, fg: fam.deep }
 }
@@ -38,6 +39,7 @@ function pillColors(row: MuscleBudgetRow): { bg: string; fg: string } {
 export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCardProps) {
   const [open, setOpen] = useState(defaultOpen ?? false)
   const overBudgets = budgets.filter((b) => b.level === 'over')
+  const underRows = budgets.filter((b) => b.level === 'under')
 
   return (
     <div className="card" style={{ padding: 16 }}>
@@ -65,9 +67,10 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                 style={{
                   fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999,
                   background: colors.bg, color: colors.fg,
+                  ...(colors.border ? { border: colors.border } : {}),
                 }}
               >
-                {row.label} {pct(row.budget)}%
+                {row.label} {row.level === 'under' ? '↓' : ''}{pct(row.budget)}%
               </span>
             )
           })}
@@ -80,7 +83,10 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
             const fam = muscleColor(row.colorMuscle)
             const p = pct(row.budget)
             const fillWidth = Math.min(100, p)
-            const fillBackground = row.level === 'over' ? 'linear-gradient(90deg, var(--coral), var(--error))' : fam.rail
+            const fillBackground =
+              row.level === 'over' ? 'linear-gradient(90deg, var(--coral), var(--error))'
+              : row.level === 'under' ? 'var(--text-tertiary)'
+              : fam.rail
             return (
               <div key={row.group} className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ width: 5, height: 34, borderRadius: 2, background: fam.rail, flexShrink: 0 }} />
@@ -92,15 +98,30 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                       {row.plyoSets > 0 && <span style={{ color: 'var(--text-tertiary)' }}> +{row.plyoSets} plyo</span>}
                     </span>
                   </div>
-                  <div style={{ height: 8.5, borderRadius: 999, background: 'var(--surface-2)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${fillWidth}%`, borderRadius: 999, background: fillBackground }} />
+                  <div style={{ position: 'relative', height: 8.5, borderRadius: 999, background: 'var(--surface-2)', overflow: 'hidden' }}>
+                    {row.zoneStart !== null && (
+                      <div
+                        data-testid={`zone-${row.group}`}
+                        style={{
+                          position: 'absolute', top: 0, bottom: 0, right: 0,
+                          left: `${Math.min(100, Math.round(row.zoneStart * 100))}%`,
+                          background: 'color-mix(in srgb, var(--sage) 28%, transparent)',
+                        }}
+                      />
+                    )}
+                    <div style={{ position: 'relative', height: '100%', width: `${fillWidth}%`, borderRadius: 999, background: fillBackground }} />
                   </div>
+                  {row.level === 'under' ? (
+                    <span style={{ fontSize: 10.5, color: 'var(--text-tertiary)' }}>↓ MEV alatt — még +{row.setsToZone} szett a zónáig</span>
+                  ) : row.zoneStart !== null && row.level !== 'over' ? (
+                    <span style={{ fontSize: 10.5, color: 'var(--sage-deep)' }}>✓ optimális zónában</span>
+                  ) : null}
                 </div>
               </div>
             )
           })}
 
-          {overBudgets.length > 0 || capWarnings.length > 0 ? (
+          {overBudgets.length > 0 || capWarnings.length > 0 || underRows.length > 0 ? (
             <div className="col" style={{ gap: 8 }}>
               {overBudgets.map((row) => {
                 const p = pct(row.budget)
@@ -125,6 +146,18 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                   }}
                 >
                   ⚠ <strong>{warning.label}: {warning.sets} szett egy edzésen ({warning.day}).</strong> 11 fölött nincs kimutatható plusz — oszd el két napra!
+                </div>
+              ))}
+              {underRows.map((row) => (
+                <div
+                  key={`under-${row.group}`}
+                  style={{
+                    borderRadius: 12, padding: '9px 11px', fontSize: 11.5, lineHeight: 1.45,
+                    background: 'var(--surface-2)', color: 'var(--text-secondary)',
+                  }}
+                >
+                  ↓ <strong>{row.label}: {row.workingSets} szett — a minimum-hatásos mennyiség (MEV ≈ {row.mev}) alatt.</strong>{' '}
+                  Ennyi inkább csak szinten tart; +{row.setsToZone} szett már növekedést hozna{row.suggestedDay ? ` (pl. ${row.suggestedDay})` : ''}.
                 </div>
               ))}
             </div>
