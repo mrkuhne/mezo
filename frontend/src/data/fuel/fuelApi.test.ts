@@ -12,7 +12,6 @@ const full: ProtocolViewResponse = {
     status: 'active',
     confidence: 0.82,
     lastReplanReason: 'Új cél',
-    selectedPantryItemIds: ['a', 'b', 'c'],
     items: [
       { id: 'item-a', pantryItemId: 'a', slotKey: 'wake', pinned: false, placementSource: 'rule', placementReason: 'r1' },
       { id: 'item-b', pantryItemId: 'b', slotKey: 'lunch', pinned: true, placementSource: 'user' },
@@ -28,16 +27,15 @@ const full: ProtocolViewResponse = {
 
 describe('fromProtocolView', () => {
   it('maps a full response onto the FE Protocol shape', () => {
-    const { protocol, selectedIds } = fromProtocolView(full)
+    const { protocol } = fromProtocolView(full)
     expect(protocol).not.toBeNull()
     expect(protocol!.version).toBe(3)
     expect(protocol!.status).toBe('active')
     expect(protocol!.source).toBe('Stack builder')
-    expect(protocol!.itemCount).toBe(3) // = selection length
+    expect(protocol!.itemCount).toBe(3) // = items length
     expect(protocol!.confidence).toBe(0.82)
     expect(protocol!.lastReplanReason).toBe('Új cél')
     expect(protocol!.builtAt).not.toBe('') // formatted, non-empty
-    expect(selectedIds).toEqual(['a', 'b', 'c'])
   })
 
   it('maps history entries incl. null reason → empty string', () => {
@@ -66,22 +64,19 @@ describe('fromProtocolView', () => {
         version: 1,
         builtAt: '2026-06-30T08:00:00Z',
         status: 'active',
-        selectedPantryItemIds: ['x'],
+        items: [],
       },
       history: [],
     }
-    const { protocol, occurrences, selectedIds } = fromProtocolView(noOptionals)
+    const { protocol, occurrences } = fromProtocolView(noOptionals)
     expect(protocol!.confidence).toBe(0)
     expect(protocol!.lastReplanReason).toBeNull()
     expect(protocol!.history).toEqual([])
-    // `active.items` absent (pre-vx9v legacy shape) → the deprecated bridge is honestly empty,
-    // never re-derived from `selectedPantryItemIds`.
     expect(occurrences).toEqual([])
-    expect(selectedIds).toEqual([])
   })
 
   it('returns nulls/empties when there is no active protocol', () => {
     const empty: ProtocolViewResponse = { history: [] }
-    expect(fromProtocolView(empty)).toEqual({ protocol: null, occurrences: [], selectedIds: null })
+    expect(fromProtocolView(empty)).toEqual({ protocol: null, occurrences: [] })
   })
 })

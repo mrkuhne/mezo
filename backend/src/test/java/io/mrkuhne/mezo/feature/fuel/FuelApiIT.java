@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.IntakeListResponse;
 import io.mrkuhne.mezo.api.dto.IntakeRequest;
 import io.mrkuhne.mezo.api.dto.IntakeResponse;
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemPatchRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
@@ -30,9 +29,10 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * HTTP-level contract IT for the Fuel "Stack/Protocol" slice — drives the generated {@code FuelApi}
- * over the real stack. Proves the protocol round-trip (activate → read → re-activate bumps the
- * version), the intake ledger round-trip (log → per-day read → soft-delete), and the two error
- * contracts (unauthenticated → 401, empty selection → 400).
+ * over the real stack. Proves the living-protocol round-trip (add → read → add+patch bumps the
+ * version further), the occurrence CRUD (add/patch/delete, incl. engine placement, user pinning,
+ * duplicate-zone 409, and legacy-row backfill), the intake ledger round-trip (log → per-day read →
+ * soft-delete), and the error contracts (unauthenticated → 401, missing required field → 400).
  */
 class FuelApiIT extends ApiIntegrationTest {
 
@@ -47,32 +47,40 @@ class FuelApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testProtocol_shouldRoundTripAndBumpVersion_whenActivatedTwice() {
+    void testProtocol_shouldRoundTripAndBumpVersionFurther_whenItemAddedThenPatched() {
         UUID owner = ownerId();
         PantryItemEntity s1 = pantryPop.createSupplement(owner, "Kreatin");
+        HttpHeaders auth = ownerAuthHeaders();
 
-        // POST activates v1 from the supplement selection -> 201 + active.version == 1
-        ProtocolViewResponse created = postForBody("/api/fuel/protocol",
-            new ProtocolActivateRequest().selectedPantryItemIds(List.of(s1.getId())),
-            ownerAuthHeaders(), HttpStatus.CREATED, ProtocolViewResponse.class);
-        assertThat(created.getActive()).isNotNull();
-        assertThat(created.getActive().getVersion()).isEqualTo(1);
-        assertThat(created.getActive().getSelectedPantryItemIds()).containsExactly(s1.getId());
+        // POST /items lazily creates the living protocol and adds one occurrence -> 201
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(s1.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
 
-        // GET returns the same active v1
-        ProtocolViewResponse fetched = getForBody("/api/fuel/protocol",
-            ownerAuthHeaders(), HttpStatus.OK, ProtocolViewResponse.class);
-        assertThat(fetched.getActive()).isNotNull();
-        assertThat(fetched.getActive().getVersion()).isEqualTo(1);
-        assertThat(fetched.getActive().getSelectedPantryItemIds()).containsExactly(s1.getId());
+        // GET returns the active protocol carrying that one item
+        ProtocolViewResponse afterAdd = getForBody("/api/fuel/protocol",
+            auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(afterAdd.getActive()).isNotNull();
+        int versionAfterAdd = afterAdd.getActive().getVersion();
+        assertThat(afterAdd.getActive().getItems())
+            .extracting(ProtocolItemResponse::getPantryItemId).containsExactly(s1.getId());
 
-        // Second POST supersedes v1 and bumps to version 2
+        // A second occurrence + a patch on the first bumps the version further — the living
+        // protocol's touch() replaces the old whole-selection re-activate as the bump mechanism.
         PantryItemEntity s2 = pantryPop.createSupplement(owner, "Omega-3");
-        ProtocolViewResponse reactivated = postForBody("/api/fuel/protocol",
-            new ProtocolActivateRequest().selectedPantryItemIds(List.of(s1.getId(), s2.getId())),
-            ownerAuthHeaders(), HttpStatus.CREATED, ProtocolViewResponse.class);
-        assertThat(reactivated.getActive().getVersion()).isEqualTo(2);
-        assertThat(reactivated.getActive().getSelectedPantryItemIds()).containsExactly(s1.getId(), s2.getId());
+        postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(s2.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        patchForBody("/api/fuel/protocol/items/" + created.getId(),
+            new ProtocolItemPatchRequest().dose("3g"),
+            auth, HttpStatus.OK, ProtocolItemResponse.class);
+
+        ProtocolViewResponse afterPatch = getForBody("/api/fuel/protocol",
+            auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(afterPatch.getActive().getVersion()).isGreaterThan(versionAfterAdd);
+        assertThat(afterPatch.getActive().getItems())
+            .extracting(ProtocolItemResponse::getPantryItemId)
+            .containsExactlyInAnyOrder(s1.getId(), s2.getId());
     }
 
     @Test
@@ -117,14 +125,15 @@ class FuelApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testActivateProtocol_shouldReturn400_whenSelectionEmpty() {
+    void testAddProtocolItem_shouldReturn400_whenPantryItemIdMissing() {
         ownerId();
-        // Empty selection fails the contract's @Size(min=1) bean validation on the request body
-        // (intercepted before the service), surfacing the FIELD SystemMessage contract as a 400.
-        ResponseEntity<String> res = exchangeForResponse(HttpMethod.POST, "/api/fuel/protocol",
-            new ProtocolActivateRequest().selectedPantryItemIds(List.of()), ownerAuthHeaders());
+        // A missing required field fails the contract's `required` bean validation on the request
+        // body (intercepted before the service), surfacing the FIELD SystemMessage contract as a 400
+        // — the occurrence-op equivalent of the retired activate endpoint's empty-selection 400.
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.POST, "/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest(), ownerAuthHeaders());
         assertThat(res.getStatusCode().value()).isEqualTo(400);
-        assertHasFieldError(res.getBody(), "selectedPantryItemIds", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(res.getBody(), "pantryItemId", "VALIDATION_REQUIRED_FIELD");
     }
 
     @Test
@@ -252,8 +261,8 @@ class FuelApiIT extends ApiIntegrationTest {
         var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
         // 9 legacy NULL-slot rows for the SAME pantry item — one more than the 8 StackZone slots.
         // NULLs are distinct under the partial unique index, so pre-vx9v duplicate rows for one
-        // pantry item can already pile up (reachable today via the still-live activate endpoint,
-        // which has no uniqueness check on selectedPantryItemIds).
+        // pantry item could already pile up — a historical artifact of the now-removed
+        // whole-selection activate endpoint, which had no uniqueness check on its selection.
         protocolPopulator.createProtocol(owner, 1, "active", Collections.nCopies(9, kreatin.getId()));
         HttpHeaders auth = ownerAuthHeaders();
 

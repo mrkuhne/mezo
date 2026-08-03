@@ -1266,8 +1266,7 @@ export interface paths {
         /** The active protocol + version history (active absent when none exists — honest-empty) */
         get: operations["getProtocol"];
         put?: never;
-        /** Activate a new protocol version from the current selection (previous active superseded) */
-        post: operations["activateProtocol"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4127,8 +4126,7 @@ export interface components {
             status: "active" | "superseded";
             confidence?: number;
             lastReplanReason?: string;
-            selectedPantryItemIds: string[];
-            items?: components["schemas"]["ProtocolItemResponse"][];
+            items: components["schemas"]["ProtocolItemResponse"][];
         };
         ProtocolItemResponse: {
             /** Format: uuid */
@@ -4161,10 +4159,6 @@ export interface components {
         ProtocolViewResponse: {
             active?: components["schemas"]["ProtocolResponse"];
             history: components["schemas"]["ProtocolHistoryEntry"][];
-        };
-        ProtocolActivateRequest: {
-            selectedPantryItemIds: string[];
-            reason?: string;
         };
         IntakeRequest: {
             /** Format: uuid */
@@ -8951,48 +8945,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProtocolViewResponse"];
-                };
-            };
-            /** @description Missing/invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
-    activateProtocol: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProtocolActivateRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProtocolViewResponse"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

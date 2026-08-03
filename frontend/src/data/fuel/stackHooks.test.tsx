@@ -56,32 +56,10 @@ describe('useStack / useProtocol (mock mode)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
     expect(result.current.protocol.version).toBe(3)
-    // Seed carries no selection by design (the page's default selection applies).
-    expect(result.current.selectedIds).toBeNull()
     expect(result.current.occurrences).toHaveLength(8)
     expect(result.current.occurrences.find(o => o.id === 'occ-magnez')).toMatchObject({
       pantryItemId: 'magnez', slotKey: 'evening', pinned: false, placementSource: 'rule',
     })
-  })
-
-  it('applyProtocol resolves with version 4 and the ["protocol"] cache reflects it', async () => {
-    const { Wrapper } = sharedWrapper()
-    const { result } = renderHook(
-      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
-      { wrapper: Wrapper },
-    )
-    expect(result.current.protocol.protocol.version).toBe(3)
-
-    let view: Awaited<ReturnType<typeof result.current.actions.applyProtocol>> | undefined
-    await act(async () => {
-      view = await result.current.actions.applyProtocol(['kreatin', 'd3k2'])
-    })
-    expect(view!.protocol!.version).toBe(4)
-    expect(view!.selectedIds).toEqual(['kreatin', 'd3k2'])
-
-    await waitFor(() => expect(result.current.protocol.protocol.version).toBe(4))
-    expect(result.current.protocol.selectedIds).toEqual(['kreatin', 'd3k2'])
-    expect(result.current.protocol.protocol.itemCount).toBe(2)
   })
 
   it('addItem with an explicit slotKey adds a pinned user occurrence in a new zone', async () => {
@@ -232,7 +210,6 @@ describe('useStack / useProtocol (real mode)', () => {
     const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
     expect(result.current.protocol.version).toBe(0)
     expect(result.current.protocol.status).toBe('none')
-    expect(result.current.selectedIds).toBeNull()
     expect(result.current.occurrences).toEqual([]) // never the 8-item seed
   })
 
@@ -322,40 +299,6 @@ describe('useStack / useProtocol (real mode)', () => {
     expect(date).toBe(localDateString())
   })
 
-  it('applyProtocol POSTs selectedPantryItemIds and writes the response into the ["protocol"] cache', async () => {
-    let posted: { selectedPantryItemIds: string[]; reason?: string } | undefined
-    server.use(http.post(`${API_BASE}/api/fuel/protocol`, async ({ request }) => {
-      posted = (await request.json()) as { selectedPantryItemIds: string[]; reason?: string }
-      return HttpResponse.json({
-        active: {
-          id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active',
-          confidence: 0.9, selectedPantryItemIds: posted.selectedPantryItemIds,
-          // The real backend's getView()/toResponse() always populates `items` too (mezo-vx9v) —
-          // the selectedIds bridge now derives from these, not from selectedPantryItemIds directly.
-          items: posted.selectedPantryItemIds.map((id, i) => ({
-            id: `item-${i}`, pantryItemId: id, slotKey: 'wake', pinned: false, placementSource: 'rule',
-          })),
-        },
-        history: [{ version: 1, builtAt: '2026-07-02T06:00:00Z', reason: posted.reason }],
-      })
-    }))
-    const { Wrapper } = sharedWrapper()
-    const { result } = renderHook(
-      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
-      { wrapper: Wrapper },
-    )
-    // Let the initial GET settle to the ghost first, so the in-flight fetch cannot clobber the
-    // applyProtocol setQueryData (in the real app the GET resolves long before the user applies).
-    await waitFor(() => expect(result.current.protocol.protocol.status).toBe('none'))
-    await act(async () => {
-      await result.current.actions.applyProtocol(['kreatin', 'd3k2'], 'kézi')
-    })
-    expect(posted).toEqual({ selectedPantryItemIds: ['kreatin', 'd3k2'], reason: 'kézi' })
-    await waitFor(() => expect(result.current.protocol.protocol.version).toBe(1))
-    expect(result.current.protocol.selectedIds).toEqual(['kreatin', 'd3k2'])
-    expect(result.current.protocol.protocol.status).toBe('active')
-  })
-
   it('addItem POSTs {pantryItemId} and invalidates ["protocol"]', async () => {
     let posted: Record<string, unknown> | undefined
     server.use(http.post(`${API_BASE}/api/fuel/protocol/items`, async ({ request }) => {
@@ -434,7 +377,6 @@ describe('useStack / useProtocol (real mode)', () => {
       HttpResponse.json({
         active: {
           id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active', confidence: 0.9,
-          selectedPantryItemIds: ['d3k2'],
           items: [
             { id: 'occ-1', pantryItemId: 'd3k2', slotKey: 'lunch', pinned: false, placementSource: 'rule' },
             { id: 'occ-2', pantryItemId: 'd3k2', slotKey: 'dinner', pinned: true, placementSource: 'user' },

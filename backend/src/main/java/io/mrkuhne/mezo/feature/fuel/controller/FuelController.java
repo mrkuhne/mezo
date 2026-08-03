@@ -4,7 +4,6 @@ import io.mrkuhne.mezo.api.controller.FuelApi;
 import io.mrkuhne.mezo.api.dto.IntakeListResponse;
 import io.mrkuhne.mezo.api.dto.IntakeRequest;
 import io.mrkuhne.mezo.api.dto.IntakeResponse;
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemPatchRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
@@ -28,11 +27,6 @@ public class FuelController implements FuelApi {
     @Override
     public ProtocolViewResponse getProtocol() {
         return protocolService.getView(currentUserId.get());
-    }
-
-    @Override
-    public ProtocolViewResponse activateProtocol(ProtocolActivateRequest protocolActivateRequest) {
-        return protocolService.activate(currentUserId.get(), protocolActivateRequest);
     }
 
     @Override

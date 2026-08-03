@@ -18,10 +18,9 @@ const GHOST_PROTOCOL: Protocol = {
   version: 0, builtAt: '', source: '', status: 'none',
   itemCount: 0, confidence: 0, lastReplanReason: null, history: [],
 }
-const EMPTY_VIEW: ProtocolView = { protocol: null, occurrences: [], selectedIds: null }
-// mock: the seed protocol + its 8 occurrence seed rows are active; selectedIds stays the
-// deprecated null bridge (the page's default selection applies, Task 9 wires it further).
-const mockView: ProtocolView = { protocol: protocolSeed, occurrences: protocolOccurrences, selectedIds: null }
+const EMPTY_VIEW: ProtocolView = { protocol: null, occurrences: [] }
+// mock: the seed protocol + its 8 occurrence seed rows are active.
+const mockView: ProtocolView = { protocol: protocolSeed, occurrences: protocolOccurrences }
 // mock intake seed derives from the stash's taken flags so mock/real read the same shape
 const mockIntakeSeed: Intake[] = supplementsStash
   .filter(s => s.taken)
@@ -32,16 +31,10 @@ const mockIntakeSeed: Intake[] = supplementsStash
  * Phase-1 `protocol` + the 8-item occurrence seed synchronously via initialData; real fetches
  * `GET /api/fuel/protocol` and, while unresolved OR when there is no active protocol, returns the
  * version-0 ghost with `occurrences: []` — never the seed.
- *
- * `selectedIds` is a DEPRECATED bridge (distinct pantryItemIds derived from `occurrences`) kept
- * only for the still-live consumers of the old selection-based shape (FuelStackPage,
- * useFuelTimeline, NotificationsPage, useScheduleSnapshotWriter) — Task 8 retires it once they
- * move onto `occurrences`.
  */
 export function useProtocol(): {
   protocol: Protocol
   occurrences: ProtocolOccurrence[]
-  selectedIds: string[] | null
 } {
   const { data } = useDualQuery<ProtocolView>({
     queryKey: PROTOCOL_KEY,
@@ -50,7 +43,7 @@ export function useProtocol(): {
     realEmpty: EMPTY_VIEW,
     realStaleTime: 0,
   })
-  return { protocol: data.protocol ?? GHOST_PROTOCOL, occurrences: data.occurrences, selectedIds: data.selectedIds }
+  return { protocol: data.protocol ?? GHOST_PROTOCOL, occurrences: data.occurrences }
 }
 
 /** The day's supplement intakes — mock derives from the stash's taken flags; real fetches the date.
@@ -137,29 +130,15 @@ export function useStackActions(date: string = localDateString()) {
  * `fuelApi` endpoint then invalidates `['protocol']`; mock mode mutates the cache directly via
  * `setQueryData` mutators that mirror the backend's placement rules (`mockPlaceOccurrence`).
  *
- * `applyProtocol` (the pre-vx9v whole-selection activate — mock recomputes the ['protocol']
- * cache at version+1, real POSTs `selectedPantryItemIds` then writes the response into the cache)
- * stays alongside: FuelStackPage still calls it until Task 8 reworks the page onto these actions;
- * Task 10 removes the activate endpoint + this action entirely.
+ * There is no whole-selection "apply the current selection" action anymore — the pre-vx9v
+ * whole-selection mutation (+ its mock cache mutator) was retired in Task 10 alongside the
+ * matching backend endpoint; the living protocol is only ever built up one occurrence at a time
+ * via the actions below.
  */
 export function useProtocolActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
   const invalidateProtocol = () => qc.invalidateQueries({ queryKey: PROTOCOL_KEY })
-
-  const applyM = useMutation({
-    mutationFn: mock
-      ? async (v: { selectedIds: string[]; reason?: string }) => mockActivate(qc, v.selectedIds)
-      : async (v: { selectedIds: string[]; reason?: string }) => {
-          const view = await fuelApi.activateProtocol(v.selectedIds, v.reason)
-          qc.setQueryData(PROTOCOL_KEY, view)
-          return view
-        },
-  })
-  const applyProtocol = useCallback(
-    (selectedIds: string[], reason?: string) => applyM.mutateAsync({ selectedIds, reason }),
-    [applyM],
-  )
 
   const addM = useMutation({
     mutationFn: async (input: { pantryItemId: string; slotKey?: StackZoneKey; dose?: string }) => {
@@ -212,7 +191,7 @@ export function useProtocolActions() {
     await Promise.all(occurrences.filter(o => o.pantryItemId === pantryItemId).map(o => removeItem(o.id)))
   }, [qc, mock, removeItem])
 
-  return { applyProtocol, addItem, moveItem, setDose, unpinItem, removeItem, removeAllFor }
+  return { addItem, moveItem, setDose, unpinItem, removeItem, removeAllFor }
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
@@ -232,26 +211,6 @@ function mockRemoveIntake(qc: QueryClient, date: string, pantryItemId: string, s
     const row = findIntakeRow(rows, pantryItemId, slotKey)
     return row ? rows.filter(r => r.id !== row.id) : rows
   })
-}
-
-function mockActivate(qc: QueryClient, selectedIds: string[]): ProtocolView {
-  const prev = qc.getQueryData<ProtocolView>(PROTOCOL_KEY) ?? mockView
-  const base = prev.protocol ?? GHOST_PROTOCOL
-  const next: ProtocolView = {
-    protocol: {
-      ...base,
-      version: base.version + 1,
-      builtAt: 'most',
-      source: 'Stack builder',
-      status: 'active',
-      itemCount: selectedIds.length,
-      history: [{ v: base.version + 1, when: 'most', reason: 'Stack bekapcsolás' }, ...base.history],
-    },
-    occurrences: prev.occurrences, // untouched — the pre-vx9v activate path doesn't touch occurrences
-    selectedIds,
-  }
-  qc.setQueryData(PROTOCOL_KEY, next)
-  return next
 }
 
 /** Where a NEW occurrence lands: `opts.slotKey` wins (a manual/user placement, pinned); otherwise

@@ -1,6 +1,5 @@
 package io.mrkuhne.mezo.feature.fuel.service;
 
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolHistoryEntry;
 import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemPatchRequest;
@@ -33,11 +32,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Reads and (re)activates the single owner-scoped supplement Stack/Protocol, and — as of mezo-vx9v
- * — hosts the "living protocol" occurrence operations ({@link #addItem}, {@link #patchItem},
- * {@link #deleteItem}) that mutate one {@code protocol_item} row in place instead of requiring a
- * full re-activation. {@link #activate} stays byte-for-byte functional (removed in Task 10) and
- * still snapshots the whole selection; the occurrence ops are strictly additive on top.
+ * Reads the single owner-scoped supplement Stack/Protocol and hosts the "living protocol"
+ * occurrence operations ({@link #addItem}, {@link #patchItem}, {@link #deleteItem}) that mutate
+ * one {@code protocol_item} row in place. There is no whole-selection (re)activate step — the
+ * pre-mezo-vx9v {@code activate} endpoint that snapshotted an entire selection at once was removed
+ * in Task 10; the single living protocol row is now created lazily by {@link #ensureActive} on the
+ * first occurrence write and only ever version-bumped in place by {@link #touch}.
  *
  * <p>{@link #getView} lazily backfills pre-vx9v rows (created before {@code slot_key} existed):
  * on first read it runs {@link PlacementEngine#place} for every item still missing a zone and
@@ -49,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProtocolService {
 
     private static final String STATUS_ACTIVE = "active";
-    private static final String STATUS_SUPERSEDED = "superseded";
     private static final String KIND_FOOD = "food";
     private static final String SOURCE_USER = "user";
     private static final String REASON_MANUAL = "Kézzel ide helyezve.";
@@ -74,51 +73,6 @@ public class ProtocolService {
         return new ProtocolViewResponse()
             .active(active == null ? null : toResponse(active))
             .history(history);
-    }
-
-    @Transactional
-    public ProtocolViewResponse activate(UUID userId, ProtocolActivateRequest request) {
-        List<UUID> ids = request.getSelectedPantryItemIds();
-        if (ids == null || ids.isEmpty()) {
-            throw new SystemRuntimeErrorException(
-                SystemMessage.field("VALIDATION_REQUIRED_FIELD", "selectedPantryItemIds").build(),
-                HttpStatus.BAD_REQUEST);
-        }
-        for (UUID id : ids) {
-            PantryItemEntity item = pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(id, userId)
-                .orElseThrow(() -> new SystemRuntimeErrorException(
-                    SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
-            if (KIND_FOOD.equals(item.getKind())) {
-                throw new SystemRuntimeErrorException(
-                    SystemMessage.field("VALIDATION_INVALID_VALUE", "selectedPantryItemIds").build(),
-                    HttpStatus.BAD_REQUEST);
-            }
-        }
-        protocolRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE)
-            .ifPresent(prev -> prev.setStatus(STATUS_SUPERSEDED));
-        // Push the supersede UPDATE before inserting the new active row: the partial unique index
-        // uq_protocol_active_per_user forbids two active rows, and Hibernate flushes inserts before
-        // updates within a transaction.
-        protocolRepository.flush();
-
-        ProtocolEntity next = new ProtocolEntity();
-        next.setCreatedBy(userId); // server-side ownership — never from the client
-        next.setVersion(protocolRepository.maxVersion(userId) + 1);
-        next.setBuiltAt(Instant.now());
-        next.setStatus(STATUS_ACTIVE);
-        next.setConfidence(properties.defaultConfidence());
-        next.setLastReplanReason(request.getReason());
-        ProtocolEntity saved = protocolRepository.save(next);
-
-        for (int i = 0; i < ids.size(); i++) {
-            ProtocolItemEntity pi = new ProtocolItemEntity();
-            pi.setCreatedBy(userId);
-            pi.setProtocolId(saved.getId());
-            pi.setPantryItemId(ids.get(i));
-            pi.setItemOrder(i);
-            itemRepository.save(pi);
-        }
-        return getView(userId);
     }
 
     // --- occurrence ops (mezo-vx9v living protocol) ---
@@ -213,7 +167,6 @@ public class ProtocolService {
             .status(ProtocolResponse.StatusEnum.fromValue(p.getStatus()))
             .confidence(p.getConfidence())
             .lastReplanReason(p.getLastReplanReason())
-            .selectedPantryItemIds(items.stream().map(ProtocolItemEntity::getPantryItemId).distinct().toList())
             .items(items.stream().map(i -> toItemResponse(i, pantryName(i.getPantryItemId()))).toList());
     }
 
@@ -224,9 +177,9 @@ public class ProtocolService {
      *
      * <p>Backfill collision handling: the partial unique index only protects rows that already
      * have a {@code slotKey} — two (or many more) un-backfilled legacy rows for the SAME pantry
-     * item can already coexist (Task 1 review finding; reachable today even through the
-     * still-live {@code activate} endpoint, which has no uniqueness check on {@code
-     * selectedPantryItemIds}). When the engine's placement for one of them would collide with a
+     * item can already coexist (Task 1 review finding; a historical artifact of the now-removed
+     * whole-selection {@code activate} endpoint, which had no uniqueness check on its selection).
+     * When the engine's placement for one of them would collide with a
      * zone already taken (by another item of the same pantry item, in this same batch or already
      * backfilled), we advance to the next {@link StackZone} in canonical order (wrapping) until a
      * free zone is found. When there are MORE duplicates than the 8 available zones, some of them

@@ -4,7 +4,6 @@ import type { Protocol, ProtocolOccurrence, StackZoneKey, StackPlacementSource }
 import { nowOffsetIso } from '@/shared/lib/dates'
 
 type ProtocolViewResponse = components['schemas']['ProtocolViewResponse']
-type ProtocolActivateRequest = components['schemas']['ProtocolActivateRequest']
 type ProtocolItemResponse = components['schemas']['ProtocolItemResponse']
 type ProtocolItemCreateRequest = components['schemas']['ProtocolItemCreateRequest']
 type ProtocolItemPatchRequest = components['schemas']['ProtocolItemPatchRequest']
@@ -23,10 +22,6 @@ export interface Intake {
 export interface ProtocolView {
   protocol: Protocol | null
   occurrences: ProtocolOccurrence[]
-  /** @deprecated bridge for the still-live selection-based consumers (FuelStackPage,
-   *  useFuelTimeline, NotificationsPage, useScheduleSnapshotWriter) — distinct pantryItemIds
-   *  derived from `occurrences`. Task 8 moves them onto `occurrences` and this field goes away. */
-  selectedIds: string[] | null
 }
 
 const formatBuiltAt = (iso: string) =>
@@ -43,10 +38,10 @@ function fromItem(r: ProtocolItemResponse): ProtocolOccurrence {
   }
 }
 
-/** Contract protocol-view → FE Protocol shape (itemCount = selection length, source is fixed). */
+/** Contract protocol-view → FE Protocol shape (itemCount = the occurrence count, source is fixed). */
 export function fromProtocolView(r: ProtocolViewResponse): ProtocolView {
   const a = r.active
-  if (!a) return { protocol: null, occurrences: [], selectedIds: null }
+  if (!a) return { protocol: null, occurrences: [] }
   const occurrences = (a.items ?? []).map(fromItem)
   return {
     protocol: {
@@ -54,13 +49,12 @@ export function fromProtocolView(r: ProtocolViewResponse): ProtocolView {
       builtAt: formatBuiltAt(a.builtAt),
       source: 'Stack builder',
       status: a.status,
-      itemCount: a.selectedPantryItemIds.length,
+      itemCount: occurrences.length,
       confidence: a.confidence ?? 0,
       lastReplanReason: a.lastReplanReason ?? null,
       history: (r.history ?? []).map(h => ({ v: h.version, when: formatBuiltAt(h.builtAt), reason: h.reason ?? '' })),
     },
     occurrences,
-    selectedIds: [...new Set(occurrences.map(o => o.pantryItemId))],
   }
 }
 
@@ -71,11 +65,6 @@ function fromIntake(r: IntakeResponse): Intake {
 export const fuelApi = {
   getProtocol: (): Promise<ProtocolView> =>
     apiFetch<ProtocolViewResponse>('/api/fuel/protocol').then(fromProtocolView),
-  activateProtocol: (selectedIds: string[], reason?: string): Promise<ProtocolView> =>
-    apiFetch<ProtocolViewResponse>('/api/fuel/protocol', {
-      method: 'POST',
-      body: JSON.stringify({ selectedPantryItemIds: selectedIds, reason } satisfies ProtocolActivateRequest),
-    }).then(fromProtocolView),
   listIntakes: (date: string): Promise<Intake[]> =>
     apiFetch<IntakeListResponse>(`/api/fuel/intake/${date}`).then(r => r.intakes.map(fromIntake)),
   // Always stamp an offset-bearing `takenAt` for "now" (browser wall-clock + local UTC offset) so

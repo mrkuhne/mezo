@@ -2,7 +2,7 @@ package io.mrkuhne.mezo.feature.fuel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
@@ -13,13 +13,13 @@ import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** The demodata protocol seeder: two real stim products by-name-idempotently + a v1 protocol
- *  only when the owner has none — an existing active protocol is never touched (spec D6). */
+/** The demodata protocol seeder: two real stim products by-name-idempotently + two engine-placed
+ *  living-protocol occurrences, only when the owner has no active protocol yet — an existing
+ *  active protocol is never touched (spec D6). */
 class ProtocolSeedDataIT extends ApiIntegrationTest {
 
     @Autowired private ProtocolSeedData seed;
@@ -36,7 +36,7 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testRun_shouldSeedItemsAndActivateProtocol_whenCleanSlate() {
+    void testRun_shouldSeedItemsAndAddEnginePlacedOccurrences_whenCleanSlate() {
         UUID owner = ownerId();
         seed.run();
         var items = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner);
@@ -55,12 +55,20 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
 
         var active = protocolRepository
             .findByCreatedByAndStatusAndDeletedFalse(owner, "active").orElseThrow();
-        assertThat(active.getVersion()).isEqualTo(1);
-        assertThat(active.getLastReplanReason()).isEqualTo(ProtocolSeedData.SEED_REASON);
-        assertThat(protocolItemRepository
-            .findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(active.getId()))
+        // The exact starting version is an ensureActive/touch implementation detail (each addItem
+        // bumps by 1 — ProtocolServiceIT's testTouch_... precedent); what matters here is placement.
+        assertThat(active.getVersion()).isGreaterThanOrEqualTo(1);
+        var placedItems = protocolItemRepository
+            .findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(active.getId());
+        assertThat(placedItems)
             .extracting(ProtocolItemEntity::getPantryItemId)
             .containsExactly(tasty.getId(), origin.getId());
+        // Tasty Dose gombakávé matches the rule table's "kávé" needle -> wake; Origin PWO matches
+        // the "pwo" needle -> pre_workout (both are caffeine, but the name-rule table wins over the
+        // shared caffeine=true flag — PlacementRules is ordered, kávé/koffein before pwo).
+        assertThat(placedItems)
+            .extracting(ProtocolItemEntity::getSlotKey)
+            .containsExactly("wake", "pre_workout");
     }
 
     @Test
@@ -97,13 +105,10 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
     void testRun_shouldNotTouchExistingActiveProtocol_whenOneExists() {
         UUID owner = ownerId();
         var mine = pantryItemPopulator.createStim(owner, "Sajat koffein");
-        protocolService.activate(owner, new ProtocolActivateRequest()
-            .selectedPantryItemIds(List.of(mine.getId())).reason("user protocol"));
+        protocolService.addItem(owner, new ProtocolItemCreateRequest().pantryItemId(mine.getId()));
         seed.run();
         var all = protocolRepository.findByCreatedByAndDeletedFalseOrderByVersionDesc(owner);
         assertThat(all).hasSize(1);
-        assertThat(all.getFirst().getVersion()).isEqualTo(1);
-        assertThat(all.getFirst().getLastReplanReason()).isEqualTo("user protocol");
         assertThat(protocolItemRepository
             .findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(all.getFirst().getId()))
             .extracting(ProtocolItemEntity::getPantryItemId)

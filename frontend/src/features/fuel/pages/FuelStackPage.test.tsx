@@ -120,7 +120,6 @@ describe('FuelStackPage (real mode)', () => {
       http.get(`${API_BASE}/api/fuel/protocol`, () => HttpResponse.json({
         active: {
           id: 'proto-1', version: 1, builtAt: '2026-08-03T06:00:00Z', status: 'active', confidence: 0.9,
-          selectedPantryItemIds: ['kreatin'],
           items: [{ id: 'occ-1', pantryItemId: 'kreatin', slotKey: 'wake', pinned: false, placementSource: 'rule' }],
         },
         history: [],

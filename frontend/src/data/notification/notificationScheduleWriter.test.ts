@@ -194,7 +194,7 @@ function stubHooks(opts: {
   gymSchedule?: GymSchedule | null
 } = {}) {
   hooks.useStack.mockReturnValue({ stash: STASH })
-  hooks.useProtocol.mockReturnValue({ protocol: {}, occurrences: opts.occurrences ?? OCCURRENCES, selectedIds: null })
+  hooks.useProtocol.mockReturnValue({ protocol: {}, occurrences: opts.occurrences ?? OCCURRENCES })
   hooks.useIntakes.mockReturnValue([])
   hooks.useFuelSettings.mockReturnValue({ settings: { mealsPerDay: 4, caffeineCutoff: '14:00' } })
   hooks.useSleepGoal.mockReturnValue({

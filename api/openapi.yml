@@ -53,10 +53,13 @@ tags:
   - name: Progression
   - name: Fuel
     description: >
-      Fuel-owned protocol + supplement-intake endpoints. The protocol persists
-      ONLY the selected pantry-item ids + version metadata (ADR/spec 2026-07-02)
-      — timing slots are recomputed by the FE buildProtocol. supplement_intake
-      is an append-only taken-ledger FK-ing pantry_item (ADR 0005).
+      Fuel-owned protocol + supplement-intake endpoints. The protocol is a
+      LIVING set of occurrences (one protocol_item row per pantry-item/zone
+      placement, each carrying its own slotKey/dose/pin state) — there is no
+      whole-selection activate step; occurrences are added/moved/re-dosed/
+      unpinned/removed individually and the engine places a new occurrence's
+      zone when slotKey is omitted (mezo-vx9v). supplement_intake is an
+      append-only taken-ledger FK-ing pantry_item (ADR 0005).
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
   - name: CompanionStream
@@ -3316,38 +3319,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProtocolViewResponse'
-        '401':
-          description: Missing/invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-    post:
-      tags:
-        - Fuel
-      operationId: activateProtocol
-      summary: >-
-        Activate a new protocol version from the current selection (previous
-        active superseded)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProtocolActivateRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProtocolViewResponse'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:
@@ -10319,7 +10290,7 @@ components:
         - version
         - builtAt
         - status
-        - selectedPantryItemIds
+        - items
       properties:
         id:
           type: string
@@ -10338,11 +10309,6 @@ components:
           type: number
         lastReplanReason:
           type: string
-        selectedPantryItemIds:
-          type: array
-          items:
-            type: string
-            format: uuid
         items:
           type: array
           items:
@@ -10422,19 +10388,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProtocolHistoryEntry'
-    ProtocolActivateRequest:
-      type: object
-      required:
-        - selectedPantryItemIds
-      properties:
-        selectedPantryItemIds:
-          type: array
-          minItems: 1
-          items:
-            type: string
-            format: uuid
-        reason:
-          type: string
     IntakeRequest:
       type: object
       required:

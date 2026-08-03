@@ -187,7 +187,7 @@ describe('useFuelTimeline (real mode)', () => {
           HttpResponse.json({
             active: {
               id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active',
-              selectedPantryItemIds: ['kreatin'], confidence: 0.9,
+              confidence: 0.9,
               items: [
                 {
                   id: 'occ-kreatin', pantryItemId: 'kreatin', slotKey: 'wake', dose: '5g',
