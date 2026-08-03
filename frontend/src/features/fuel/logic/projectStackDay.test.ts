@@ -227,6 +227,36 @@ describe('rest day regrouping (no training blocks today)', () => {
   })
 })
 
+// ── 3b. weightKg → peri-workout snack cascade (mezo-vx9v Task 8 review follow-up) ────────────────
+describe('weightKg forwards to placeWindows and can cascade into a meal-zone time shift', () => {
+  // sport block short enough (60min < PERI_SNACK_MIN_DURATION=90) that ONLY the weightKg-driven
+  // kcal threshold (blockKcal = MET_BY_KIND.sport(4.5) * weightKg * 1h) can make it "significant"
+  // enough to earn a peri-workout snack window. weightKg=0 → 0kcal, no snack; weightKg=90 →
+  // 405kcal ≥ PERI_SNACK_MIN_KCAL(300) → snack inserted, and — because placeWindows' "pre-fuel"
+  // training snap then prefers the closer-to-the-block snack window over breakfast — the
+  // breakfast zone's OWN anchored time shifts as a side effect (it stops being re-snapped).
+  const stash = [stashLite('kreatin', 'Kreatin')]
+  const occurrences: ProtocolOccurrence[] = [occ({ id: 'o1', pantryItemId: 'kreatin', slotKey: 'breakfast' })]
+  const blocks: PlannerBlock[] = [{ kind: 'sport', time: '13:00', durationMin: 60, label: 'Sport' }]
+  const base = { occurrences, stash, intakes: [] as Intake[], wake: '06:00', bed: '23:00', mealsPerDay: 3, blocks }
+
+  test('weightKg 0 keeps breakfast snapped to the pre-fuel training slot; weightKg 90 frees it back to its own anchor', () => {
+    const light = projectStackDay({ ...base, weightKg: 0 })
+    const heavy = projectStackDay({ ...base, weightKg: 90 })
+    const lightBreakfast = light.find(s => s.zone === 'breakfast')?.time
+    const heavyBreakfast = heavy.find(s => s.zone === 'breakfast')?.time
+    expect(lightBreakfast).toBe('11:45')
+    expect(heavyBreakfast).toBe('06:45')
+    expect(heavyBreakfast).not.toBe(lightBreakfast)
+  })
+
+  test('omitting weightKg behaves exactly like weightKg: 0 (defaults to 0, not undefined-crashes)', () => {
+    const noWeight = projectStackDay(base)
+    const explicitZero = projectStackDay({ ...base, weightKg: 0 })
+    expect(noWeight.find(s => s.zone === 'breakfast')?.time).toBe(explicitZero.find(s => s.zone === 'breakfast')?.time)
+  })
+})
+
 // ── 4. dose fallback ─────────────────────────────────────────────────────────
 describe('dose fallback', () => {
   const stash = [stashLite('kreatin', 'Kreatin', '5g stash-dose')]

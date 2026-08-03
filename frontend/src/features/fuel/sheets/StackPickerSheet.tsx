@@ -1,9 +1,12 @@
 // ============================================================
-// Mezo · StackPickerSheet
-// Add/remove pantry-stash supplements to the active stack. A search box
-// filters the shelf by name + brand; each row is a checkbox-card whose
-// accent colour is derived from caffeine/type, and tapping it toggles the
-// item via onToggle(id). Close via the sheet's animated dismiss.
+// Mezo · StackPickerSheet (rewired mezo-vx9v Task 8 — add-occurrence, not select/toggle)
+// Adds a pantry-stash item to the active protocol as a new occurrence. A search box filters the
+// shelf by name + brand; each row is a plain card whose accent colour is derived from
+// caffeine/type. Tapping a row calls onAdd(pantryItemId) — the caller places it (rule/llm
+// placement when no zone is pinned yet) and the sheet STAYS OPEN so several items can be added in
+// one visit; an already-occupied item (any zone) shows a small 'a stackben' chip but stays
+// tappable (adding it again in a NEW zone is valid — a duplicate (item, zone) pair surfaces via
+// the mutation's 409 toast, same as every other write here).
 // Port: prototype/src/fuel-stack.jsx StackPickerSheet (520–600).
 //
 // Adaptations vs prototype:
@@ -31,12 +34,12 @@ function rowColor(s: SupplementStashItem): string {
 }
 
 export function StackPickerSheet({
-  selectedIds,
-  onToggle,
+  occupiedIds,
+  onAdd,
   onClose,
 }: {
-  selectedIds: string[]
-  onToggle: (id: string) => void
+  occupiedIds: Set<string>
+  onAdd: (pantryItemId: string) => void
   onClose: () => void
 }) {
   const { stash } = useStack()
@@ -90,12 +93,12 @@ export function StackPickerSheet({
           {/* Shelf list */}
           <div className="col gap-sm" style={{ maxHeight: 460, overflowY: 'auto' }}>
             {filtered.map(s => {
-              const selected = selectedIds.includes(s.id)
+              const occupied = occupiedIds.has(s.id)
               const color = rowColor(s)
               return (
                 <button
                   key={s.id}
-                  onClick={() => onToggle(s.id)}
+                  onClick={() => onAdd(s.id)}
                   className="card row"
                   style={{
                     padding: '10px 12px',
@@ -103,33 +106,22 @@ export function StackPickerSheet({
                     textAlign: 'left',
                     alignItems: 'center',
                     gap: 10,
-                    borderColor: selected ? color : 'var(--border-subtle)',
-                    background: selected
-                      ? `color-mix(in srgb, ${color} 6%, transparent)`
-                      : 'var(--surface-1)',
+                    borderColor: 'var(--border-subtle)',
+                    background: 'var(--surface-1)',
                     borderLeft: '2px solid ' + color,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      border: '1.5px solid ' + (selected ? color : 'var(--border-strong)'),
-                      background: selected ? color : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {selected && <Icon name="check" size={11} color="var(--text-inverse)" />}
-                  </div>
                   <div className="col flex-1" style={{ minWidth: 0 }}>
                     <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{s.name}</span>
                       {s.caffeine && (
                         <span className="label-mono" style={{ fontSize: 8, color: 'var(--warning)' }}>
                           koffein
+                        </span>
+                      )}
+                      {occupied && (
+                        <span className="chip" style={{ fontSize: 8, padding: '2px 6px' }}>
+                          a stackben
                         </span>
                       )}
                     </div>
@@ -140,6 +132,7 @@ export function StackPickerSheet({
                       {s.brand} · {s.dose}
                     </span>
                   </div>
+                  <Icon name="plus" size={12} color={color} />
                 </button>
               )
             })}

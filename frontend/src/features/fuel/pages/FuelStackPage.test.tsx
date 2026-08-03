@@ -14,94 +14,145 @@ const renderView = () => render(
 
 afterEach(() => vi.unstubAllEnvs())
 
-test('renders context, active stack and generated timing', () => {
-  renderView()
-  expect(screen.getByRole('heading', { name: 'AI builder' })).toBeInTheDocument()
-  expect(screen.getByText(/AI-generált timing/)).toBeInTheDocument()
+const kreatinStashRow = {
+  id: 'kreatin', name: 'Kreatin', brand: 'MP', type: 'supplement', category: 'muscle',
+  dose: '5g', form: 'por', stock: 30, stockUnit: 'adag', protocol: '', timing: 'flexible', taken: false,
+}
+
+describe('FuelStackPage (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+
+  test('renders the Napi protokoll heading', () => {
+    renderView()
+    expect(screen.getByRole('heading', { name: 'Napi protokoll' })).toBeInTheDocument()
+  })
+
+  test('own header: pghead-np sage over + h1, no live chip', () => {
+    const { container } = renderView()
+    expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
+    expect(screen.getByText('Fuel · Stack')).toBeInTheDocument()
+    expect(screen.queryByText('live')).not.toBeInTheDocument()
+  })
+
+  test('zone cards render the seed occurrences in STACK_ZONE_ORDER (Ébredés before Este)', () => {
+    const { container } = renderView()
+    const labels = [...container.querySelectorAll('.zh .zn')].map(el => el.textContent)
+    expect(labels).toContain('Ébredés')
+    expect(labels).toContain('Este')
+    expect(labels.indexOf('Ébredés')).toBeLessThan(labels.indexOf('Este'))
+  })
+
+  test('the kreatin row (rule-placed, not pinned) shows the auto badge', () => {
+    renderView()
+    const row = screen.getByRole('button', { name: 'Kreatin monohidrát beállítások' })
+    expect(row).toHaveTextContent('auto')
+  })
+
+  test('tapping the Kreatin tick toggles its taken styling (check icon appears/disappears)', async () => {
+    renderView()
+    const tick = screen.getByRole('button', { name: 'Kreatin monohidrát bevétel' })
+    // Seed: kreatin is taken (mezo-vx9v mock intake seed derives from the stash's taken:true flag).
+    expect(tick.querySelector('svg')).not.toBeNull()
+    await userEvent.click(tick)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Kreatin monohidrát bevétel' }).querySelector('svg')).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: 'Kreatin monohidrát bevétel' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Kreatin monohidrát bevétel' }).querySelector('svg')).not.toBeNull())
+  })
+
+  test('tapping a row (not the tick) opens the StackItemSheet with its zone chips', async () => {
+    renderView()
+    await userEvent.click(screen.getByRole('button', { name: 'Magnézium-glicinát beállítások' }))
+    expect(await screen.findByText('Mozgatás másik zónába')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Ébredés' }).length).toBeGreaterThan(0)
+  })
+
+  test('the picker opens from + Hozzáadás a Kamrából and adding an item is reflected in the cache (a new row renders)', async () => {
+    renderView()
+    await userEvent.click(screen.getByRole('button', { name: /Hozzáadás a Kamrából/ }))
+    expect(await screen.findByText('Mit szedjünk')).toBeInTheDocument()
+    // 'reta' (Retatrutide) has no seed occurrence — adding it lands a NEW row in the wake zone
+    // (mockPlaceOccurrence's timing-hint pass: 'weekly-monday' → 'wake') without colliding with
+    // the seed kreatin/kohi/tastydose rows already there.
+    await userEvent.type(screen.getByPlaceholderText(/Keress a polcon/), 'reta')
+    await userEvent.click(await screen.findByText('Retatrutide'))
+    expect(await screen.findByRole('button', { name: 'Retatrutide beállítások' })).toBeInTheDocument()
+  })
+
+  test('the day-summary strip shows edzésnap for the seeded training day (mock gym seed carries today:true)', () => {
+    renderView()
+    // Lowercase 'ébredés' (case-sensitive, no /i) is unique to the strip's inline prose — the
+    // zone card's own zone-label header renders capitalized 'Ébredés', a distinct string.
+    const strip = screen.getByText(/ébredés/)
+    expect(strip.textContent).toMatch(/edzésnap/)
+    expect(strip.textContent).not.toMatch(/pihenőnap/)
+  })
+
+  test('no "Bekapcsolás" text anywhere — the stack has no apply/activate step anymore', () => {
+    renderView()
+    expect(screen.queryByText(/Bekapcsolás/)).not.toBeInTheDocument()
+  })
+
+  test('the compact "Miért így" block is present (seed occurrences carry primary-zone reasons)', () => {
+    renderView()
+    expect(screen.getByText('Miért így')).toBeInTheDocument()
+  })
 })
 
-test('own header: pghead-np sage over + h1', () => {
-  const { container } = renderView()
-  expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
-  expect(screen.getByText('Fuel · Stack')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'AI builder' })).toBeInTheDocument()
-})
+describe('FuelStackPage (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
-test('Hozzáadás opens the stack picker', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Hozzáadás' }))
-  expect(await screen.findByText('Mit szedjünk')).toBeInTheDocument()
-})
+  test('one active occurrence (kreatin/wake) renders exactly one zone card', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [kreatinStashRow] })),
+      http.get(`${API_BASE}/api/fuel/protocol`, () => HttpResponse.json({
+        active: {
+          id: 'proto-1', version: 1, builtAt: '2026-08-03T06:00:00Z', status: 'active', confidence: 0.9,
+          selectedPantryItemIds: ['kreatin'],
+          items: [{ id: 'occ-1', pantryItemId: 'kreatin', slotKey: 'wake', pinned: false, placementSource: 'rule' }],
+        },
+        history: [],
+      })),
+    )
+    const { container } = renderView()
+    await screen.findByRole('heading', { name: 'Napi protokoll' })
+    await waitFor(() => expect(container.querySelectorAll('.zcard')).toHaveLength(1))
+    expect(screen.getByRole('button', { name: 'Kreatin beállítások' })).toBeInTheDocument()
+  })
 
-test('Bekapcsolás shows the applied toast with the version returned by applyProtocol', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderView()
-  // Toast only renders after applyProtocol resolves — the mock mutation is async-but-immediate,
-  // so this must await (seed v3 → the returned v4).
-  await userEvent.click(screen.getByRole('button', { name: /Bekapcsolás/ }))
-  expect(await screen.findByText('Protokoll · v4 aktív')).toBeInTheDocument()
-})
+  test('an unresolved protocol renders the empty-stack dashed card, never the mock seed', async () => {
+    renderView() // default handler → { history: [] } → no active protocol → ghost, occurrences: []
+    await screen.findByRole('heading', { name: 'Napi protokoll' })
+    expect(await screen.findByText('Üres stack · adj hozzá a Kamrából')).toBeInTheDocument()
+    expect(screen.queryByText('Kreatin monohidrát')).not.toBeInTheDocument()
+  })
 
-test('Mentés protokollként is a deferred CTA (disabled + hamarosan)', () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderView()
-  const save = screen.getByRole('button', { name: /Mentés protokollként/ })
-  expect(save).toBeDisabled()
-  expect(save).toHaveTextContent('hamarosan')
-})
+  test('adding an item via the picker POSTs the pantryItemId', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [kreatinStashRow] })),
+    )
+    let posted: Record<string, unknown> | undefined
+    server.use(http.post(`${API_BASE}/api/fuel/protocol/items`, async ({ request }) => {
+      posted = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ id: 'item-new', pantryItemId: 'kreatin', slotKey: 'wake', pinned: false, placementSource: 'rule' }, { status: 201 })
+    }))
+    renderView()
+    await screen.findByRole('heading', { name: 'Napi protokoll' })
+    await userEvent.click(screen.getByRole('button', { name: /Hozzáadás a Kamrából/ }))
+    await userEvent.click(await screen.findByText('Kreatin'))
+    await waitFor(() => expect(posted).toMatchObject({ pantryItemId: 'kreatin' }))
+  })
 
-test('tapping a slot item toggles its intake (log when empty, undo when taken)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderView()
-  // Magnézium starts un-taken → tapping logs the intake → the trailing check icon appears.
-  const mg = screen.getByRole('button', { name: 'Magnézium-glicinát bevétel' })
-  expect(mg.querySelector('svg')).toBeNull()
-  await userEvent.click(mg)
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Magnézium-glicinát bevétel' }).querySelector('svg')).not.toBeNull(),
-  )
-  // Kreatin starts taken → tapping undoes the intake → the check icon disappears.
-  const kr = screen.getByRole('button', { name: 'Kreatin bevétel' })
-  expect(kr.querySelector('svg')).not.toBeNull()
-  await userEvent.click(kr)
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Kreatin bevétel' }).querySelector('svg')).toBeNull(),
-  )
-})
-
-test('hides the "Mit nézek most" context card in real mode — seed meso/reta/load cells were fiction (mezo-t16y.4)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  renderView()
-  await screen.findByRole('heading', { name: 'AI builder' })
-  expect(screen.queryByText('Mit nézek most')).not.toBeInTheDocument()
-})
-
-test('shows the "Mit nézek most" demo context card in mock mode', () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderView()
-  expect(screen.getByText('Mit nézek most')).toBeInTheDocument()
-})
-
-test('hides the recommendations section when the backend has none (real mode)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  renderView()
-  await screen.findByRole('heading', { name: 'AI builder' })
-  expect(screen.queryByText('Mit hozzáadnék')).not.toBeInTheDocument()
-})
-
-test('does not fetch /api/goals when rendering the Stack (mezo-4nu, real mode)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  let goalsCalls = 0
-  server.use(
-    http.get(`${API_BASE}/api/goals`, () => {
-      goalsCalls++
-      return HttpResponse.json([])
-    }),
-  )
-  renderView()
-  await screen.findByRole('heading', { name: 'AI builder' })
-  // give any mount-time queries a chance to fire before asserting the counter stayed at 0
-  await waitFor(() => expect(screen.getByText(/AI-generált timing/)).toBeInTheDocument())
-  expect(goalsCalls).toBe(0)
+  test('does not fetch /api/goals when rendering the Stack (mezo-4nu invariant, preserved through Task 8)', async () => {
+    let goalsCalls = 0
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => {
+        goalsCalls++
+        return HttpResponse.json([])
+      }),
+    )
+    renderView()
+    await screen.findByRole('heading', { name: 'Napi protokoll' })
+    await waitFor(() => expect(screen.getByText('Üres stack · adj hozzá a Kamrából')).toBeInTheDocument())
+    expect(goalsCalls).toBe(0)
+  })
 })

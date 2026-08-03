@@ -45,6 +45,9 @@ export interface StackDayInput {
   bed: string
   mealsPerDay: number
   blocks: PlannerBlock[]
+  /** Bodyweight (kg) — forwarded to `placeWindows`' peri-workout-snack kcal threshold; omitted/0
+   *  means duration-only significance (mezo-vx9v Task 8 review follow-up). */
+  weightKg?: number
 }
 
 /** Seeds a `'<pantryItemId>|<zone>'` key per intake that already carries an explicit `slotKey`,
@@ -74,7 +77,7 @@ export function projectStackDay(input: StackDayInput): StackDaySlot[] {
   const hasTraining = blocks.length > 0
   const sorted = [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))
   const first = sorted[0]
-  const windows = placeWindows(wake, bed, mealsPerDay, blocks)
+  const windows = placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
   const windowTime = (slot: 'breakfast' | 'lunch' | 'dinner') => {
     const w = windows.find(x => x.slotKey === slot && x.kind === 'meal')
     return w ? toHHmm(Math.round(w.time)) : null

@@ -579,16 +579,6 @@ export interface ReplanScenario {
   tools: { type: ToolType; name: string }[]
   confidence: number
 }
-export interface StackRecommendation {
-  name: string
-  source: PantrySourceKey
-  price: string
-  inStash: boolean
-  reason: string
-  metric: string
-  confidence: number
-}
-
 // --- Fuel · Stack protocol builder ---
 export interface ProtocolSlotItem { refId: string; name: string; dose: string; color: string }
 export interface ProtocolSlotData {

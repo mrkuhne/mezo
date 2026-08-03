@@ -4,7 +4,6 @@ import type {
   WeeklySupplementRow,
   RecurringPattern,
   ReplanScenario,
-  StackRecommendation,
   WeeklyStats,
 } from '@/data/types'
 
@@ -169,36 +168,3 @@ export const replanScenarios: ReplanScenario[] = [
   },
 ]
 
-// fuel-stack.jsx STACK_RECOMMENDATIONS (300–328)
-export const stackRecommendations: StackRecommendation[] = [
-  {
-    name: 'ZMA · Zinc + Mg + B6',
-    source: 'myprotein.hu',
-    price: '5 490 Ft',
-    inStash: false,
-    reason:
-      'Heti 5 gym + 4 vb stacked load mellett a Zn-status historikusan +20% testreszabás · esti recovery-stack-ben helyett-cserélheti a magnézium-glicinátot.',
-    metric: '+0.4 sleep quality',
-    confidence: 0.74,
-  },
-  {
-    name: 'Ashwagandha KSM-66',
-    source: 'myprotein.hu',
-    price: '8 990 Ft',
-    inStash: false,
-    reason:
-      'MAV-fázis + magas heti volumen + Reta cycle együttesen cortisol-emelő. 600mg esti dózisban a HRV historikusan +6-8% — ezzel a load-dal ajánlott.',
-    metric: '+6% HRV',
-    confidence: 0.68,
-  },
-  {
-    name: 'Citrullin Malát',
-    source: 'myprotein.hu',
-    price: '6 490 Ft',
-    inStash: false,
-    reason:
-      'Az AAKG-pump-ot kiegészíti — pre-workout 6g citrullin + 3g AAKG együtt érdemibb vasoldilation. Pull Day-eken észrevehetően jobb pumpa.',
-    metric: '+12% rep-out volume',
-    confidence: 0.72,
-  },
-]
