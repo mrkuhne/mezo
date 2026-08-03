@@ -1707,6 +1707,43 @@ button.itemrow { cursor: pointer; }
 .wkx-subrow-prev { font-weight: 700; color: var(--text-primary); }
 .wkx-subrow-next { color: var(--sage-deep); font-weight: 800; white-space: nowrap; }
 
+/* ===== Set list v4 (mezo-8xmf) — strict table: exercise-level constants (target
+   pill, footer summary) appear ONCE; rows are fixed SZETT/KG/ISM/RIR/status
+   columns. Div/button "grid table" (no literal <table>, matching this codebase's
+   flex/grid row idiom) so a whole row can stay a real <button> — the disabled/
+   aria-label/tap-to-edit semantics carry over unchanged from the pre-v4 rows.
+   --fam-rail/--fam-wash/--fam-deep are re-set on .wkx-slist (a SIBLING of
+   .wkx-excard, not a descendant — the custom props don't cascade sideways). */
+.wkx-slist { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 18px; margin: 6px 24px 20px; overflow: hidden; }
+.wkx-shead { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px 8px; }
+.wkx-tgt { font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+
+.wkx-srow { display: grid; grid-template-columns: 52px 74px 64px 56px 1fr; align-items: center; width: 100%; padding: 8px 14px; border: 0; border-top: 1px solid var(--border-subtle); background: none; font: inherit; text-align: left; cursor: pointer; }
+.wkx-srow:disabled { cursor: default; }
+.wkx-srow-head { font-size: 8px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-tertiary); font-weight: 800; background: var(--surface-2); cursor: default; padding: 5px 14px; }
+.wkx-srow-warm { background: color-mix(in srgb, var(--amber) 10%, transparent); }
+.wkx-srow-cur { background: var(--fam-wash, var(--wash-gym)); }
+.wkx-c-set { text-align: center; }
+.wkx-c-kg { text-align: right; padding-right: 10px; }
+.wkx-c-rep { text-align: right; padding-right: 10px; }
+.wkx-c-rir { text-align: center; }
+.wkx-c-st { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; min-height: 20px; }
+
+.wkx-mark { display: inline-flex; width: 24px; height: 24px; border-radius: 50%; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; border: 1.5px solid var(--border-subtle); color: var(--text-tertiary); background: var(--surface); }
+.wkx-mark-warm { background: var(--amber); border-color: var(--amber); color: var(--text-inverse); }
+.wkx-mark-done { background: var(--fam-rail, var(--coral)); border-color: var(--fam-rail, var(--coral)); color: var(--text-inverse); }
+.wkx-mark-cur { border-color: var(--fam-deep, var(--coral-deep)); color: var(--fam-deep, var(--coral-deep)); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fam-deep, var(--coral-deep)) 22%, transparent); }
+
+.wkx-stat-ok { color: var(--sage-deep); font-weight: 800; font-size: 12px; }
+.wkx-stat-dev { color: var(--amber-deep); font-weight: 800; font-size: 10px; }
+.wkx-stat-most { font-weight: 800; font-size: 9px; white-space: nowrap; }
+
+.wkx-sfoot { display: flex; }
+.wkx-sfoot > div { flex: 1; text-align: center; padding: 9px 4px 10px; }
+.wkx-sfoot > div + div { border-left: 1px solid var(--border-subtle); }
+.wkx-sfoot .l { font-size: 8px; text-transform: uppercase; letter-spacing: .09em; color: var(--text-tertiary); font-weight: 800; }
+.wkx-sfoot .v { font-size: 12.5px; font-weight: 800; margin-top: 1px; }
+
 /* ⑤ compact steppers — scoped to the excard only (SetEditSheet's .steprow keeps
    the full-size stepper). Value 28→21px, buttons 40→29px. */
 .excard .steprow { gap: 8px; }
