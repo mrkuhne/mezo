@@ -15,12 +15,14 @@ import { setStyle } from '@/features/train/logic/setBudget'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { Icon } from '@/shared/ui/Icon'
 
-export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChange }: {
+export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChange, highlight }: {
   ex: GymExercise
   expanded: boolean
   onToggle: () => void
   onRemove: () => void
   onChange: (patch: Partial<GymExercise>) => void
+  /** Set when this exercise's budget group is over the SESSION_MUSCLE_CAP on the active day. */
+  highlight?: boolean
 }) {
   const [fineTuneOpen, setFineTuneOpen] = useState(false)
   const fam = muscleColor(ex.muscle)
@@ -28,7 +30,20 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
   const isFailure = style === 'failure'
 
   return (
-    <div className="card" style={{ borderLeft: `5px solid ${fam.rail}`, padding: 0, overflow: 'hidden' }}>
+    <div
+      className="card"
+      data-over={highlight ? 'true' : undefined}
+      style={{
+        borderLeft: `5px solid ${fam.rail}`,
+        padding: 0,
+        overflow: 'hidden',
+        ...(highlight && {
+          borderTop: '1px solid color-mix(in srgb, var(--error) 45%, transparent)',
+          borderRight: '1px solid color-mix(in srgb, var(--error) 45%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, var(--error) 45%, transparent)',
+        }),
+      }}
+    >
       <button
         type="button"
         onClick={onToggle}

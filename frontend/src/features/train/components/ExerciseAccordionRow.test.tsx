@@ -53,4 +53,20 @@ describe('ExerciseAccordionRow', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fekvenyomás/ }))
     expect(onToggle).toHaveBeenCalled()
   })
+
+  it('highlight marks the card root with data-over without disturbing the rail', () => {
+    const { container } = render(
+      <ExerciseAccordionRow ex={ex} expanded={false} onToggle={noop} onRemove={noop} onChange={noop} highlight />,
+    )
+    const card = container.querySelector('.card') as HTMLElement
+    expect(card).toHaveAttribute('data-over', 'true')
+    expect(card.style.borderLeft).toBe('5px solid var(--coral)')
+    expect(card.style.borderTop).toContain('color-mix(in srgb, var(--error) 45%, transparent)')
+  })
+
+  it('no highlight by default: card root has no data-over attribute', () => {
+    const { container } = render(<ExerciseAccordionRow ex={ex} expanded={false} onToggle={noop} onRemove={noop} onChange={noop} />)
+    const card = container.querySelector('.card')
+    expect(card).not.toHaveAttribute('data-over')
+  })
 })
