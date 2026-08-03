@@ -198,6 +198,24 @@ class FuelApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testPatchProtocolItem_shouldAllowNoOpRepin_whenSlotKeyEqualsCurrentZone() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class); // engine-placed on 'wake'
+        // Re-"move" it to its OWN current zone — a tap on the already-checked chip. Must NOT 409
+        // against the occurrence being patched itself (mezo-vx9v review finding).
+        ProtocolItemResponse patched = patchForBody("/api/fuel/protocol/items/" + created.getId(),
+            new ProtocolItemPatchRequest().slotKey("wake"),
+            auth, HttpStatus.OK, ProtocolItemResponse.class);
+        assertThat(patched.getSlotKey()).isEqualTo("wake");
+        assertThat(patched.getPinned()).isTrue();
+        assertThat(patched.getPlacementSource()).hasToString("user");
+    }
+
+    @Test
     void testPatchProtocolItem_shouldReplaceViaEngine_whenUnpinned() {
         UUID owner = ownerId();
         var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");

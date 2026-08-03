@@ -126,7 +126,9 @@ public class ProtocolService {
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "pinned").build(), HttpStatus.BAD_REQUEST);
         }
         if (request.getSlotKey() != null) {                            // manual move = pin
-            rejectDuplicate(protocol.getId(), item.getPantryItemId(), request.getSlotKey());
+            // Except this item's own id: a no-op re-pin to the occurrence's CURRENT zone must not
+            // 409 against itself (mezo-vx9v review finding — mirrors the unpin branch below).
+            rejectDuplicateExcept(protocol.getId(), item.getPantryItemId(), request.getSlotKey(), item.getId());
             item.setSlotKey(request.getSlotKey());
             item.setPinned(true);
             item.setPlacementSource(SOURCE_USER);

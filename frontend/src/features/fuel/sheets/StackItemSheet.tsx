@@ -77,16 +77,20 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
           {/* Zone picker */}
           <Eyebrow>Mozgatás másik zónába</Eyebrow>
           <div className="row gap-xs flex-wrap" style={{ margin: '8px 0 14px' }}>
-            {STACK_ZONE_ORDER.map(zone => (
-              <button
-                key={zone}
-                type="button"
-                className="chip"
-                onClick={() => { moveItem(entry.occurrenceId, zone); close() }}
-              >
-                {STACK_ZONE_LABEL[zone]}{zone === entry.persistedZone && ' ✓'}
-              </button>
-            ))}
+            {STACK_ZONE_ORDER.map(zone => {
+              const isCurrent = zone === entry.persistedZone
+              return (
+                <button
+                  key={zone}
+                  type="button"
+                  className="chip"
+                  disabled={isCurrent}
+                  onClick={isCurrent ? undefined : () => { moveItem(entry.occurrenceId, zone); close() }}
+                >
+                  {STACK_ZONE_LABEL[zone]}{isCurrent && ' ✓'}
+                </button>
+              )
+            })}
           </div>
 
           {/* Dose editor */}

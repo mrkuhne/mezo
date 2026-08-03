@@ -85,6 +85,27 @@ test('tapping a zone chip calls moveItem with that zone and closes the sheet', a
   void qc // keep referenced for future cache assertions if needed
 })
 
+test('the CURRENT zone chip is disabled — tapping it is a no-op, no mutation fires and the sheet stays open', async () => {
+  const { qc, Wrapper } = sharedWrapper()
+  let occ: ReturnType<typeof useProtocol>['occurrences'] = []
+  const onClose = vi.fn()
+  render(
+    <Wrapper>
+      <Probe onData={(o) => { occ = o }} />
+      <StackItemSheet entry={magnezEntry} onClose={onClose} />
+    </Wrapper>,
+  )
+  // magnezEntry.persistedZone is 'evening' ('Este') — the FIRST 'Este' match (DOM order) is the
+  // move-zone picker's current-zone chip; the second is the unrelated "+ Még egy bevétel" add-zone
+  // chip, which stays interactive.
+  const currentZoneChip = screen.getAllByRole('button', { name: 'Este ✓' })[0]
+  expect(currentZoneChip).toBeDisabled()
+  await userEvent.click(currentZoneChip)
+  expect(onClose).not.toHaveBeenCalled()
+  expect(occ.find(o => o.id === 'occ-magnez')).toMatchObject({ slotKey: 'evening', pinned: false })
+  void qc
+})
+
 test('editing the dose input and blurring calls setDose(occurrenceId, newValue) — the occurrence dose updates in the cache', async () => {
   const { Wrapper } = sharedWrapper()
   let occ: ReturnType<typeof useProtocol>['occurrences'] = []
