@@ -122,6 +122,35 @@ describe('protein-bound post_workout suggestion', () => {
   })
 })
 
+// ── candidate filter: category/role narrowing excludes a "better" cross-zone recipe ──
+describe('candidate filter narrows to the zone category/role', () => {
+  test('a higher-fat dinner recipe is excluded from a lunch suggestion — matching-category wins despite less fat', () => {
+    const slots: StackDaySlot[] = [
+      slot({ zone: 'lunch', time: '12:30', label: 'Ebéd', entries: [entry({ name: 'D3', persistedZone: 'lunch' })] }),
+    ]
+    const recipes: Recipe[] = [
+      recipe({ id: 'lunch-lean', category: 'lunch', macros: { kcal: 500, p: 40, c: 50, f: 10 } }), // 10g f/serving, matching category
+      recipe({ id: 'dinner-fatty', category: 'dinner', macros: { kcal: 500, p: 40, c: 50, f: 40 } }), // 40g f/serving, wrong category
+    ]
+    const result = matchMealsToStack(slots, recipes, [], [])
+    expect(result.suggestions).toHaveLength(1)
+    expect(result.suggestions[0]).toMatchObject({ zone: 'lunch', recipeId: 'lunch-lean', metric: '10g zsír / adag' })
+  })
+
+  test('a higher-protein standard-role recipe is excluded from a post_workout suggestion — role=post_workout wins', () => {
+    const slots: StackDaySlot[] = [
+      slot({ zone: 'post_workout', time: '19:00', label: 'Edzés után', entries: [entry({ name: 'Whey Protein', persistedZone: 'post_workout' })] }),
+    ]
+    const recipes: Recipe[] = [
+      recipe({ id: 'pwo-shake', role: 'post_workout', macros: { kcal: 400, p: 30, c: 20, f: 5 } }), // 30g p/serving, matching role
+      recipe({ id: 'standard-highprotein', role: 'standard', macros: { kcal: 400, p: 90, c: 20, f: 5 } }), // 90g p/serving, wrong role
+    ]
+    const result = matchMealsToStack(slots, recipes, [], [])
+    expect(result.suggestions).toHaveLength(1)
+    expect(result.suggestions[0]).toMatchObject({ zone: 'post_workout', recipeId: 'pwo-shake', metric: '30g fehérje / adag' })
+  })
+})
+
 // ── 3. suggestion cap + empty cases ──────────────────────────────────────────
 describe('suggestion cap + empty cases', () => {
   test('at most one suggestion per zone, even with many candidate recipes', () => {

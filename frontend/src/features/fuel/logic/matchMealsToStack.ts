@@ -111,6 +111,7 @@ export function matchMealsToStack(
     if (slot.zone === 'post_workout') {
       const bound = firstBoundEntry(slot.entries, PROTEIN_BOUND_NEEDLES)
       if (!bound) continue
+      // Suggestions stay within the zone's meal role — deliberate narrowing vs "highest protein overall".
       const candidates = recipes.filter(r => r.role === 'post_workout')
       const suggestion = suggestionFor(slot, candidates, 'p', 'fehérje', bound.name)
       if (suggestion) suggestions.push(suggestion)
@@ -120,6 +121,7 @@ export function matchMealsToStack(
     const bound = firstBoundEntry(slot.entries, FAT_BOUND_NEEDLES)
     if (!bound) continue
 
+    // Suggestions stay within the zone's meal category — deliberate narrowing vs "fattiest overall".
     const candidates = recipes.filter(r => r.category === slot.zone)
     const suggestion = suggestionFor(slot, candidates, 'f', 'zsír', bound.name)
     if (suggestion) suggestions.push(suggestion)
