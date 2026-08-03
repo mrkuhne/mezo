@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: done
-updated: 2026-07-29
+updated: 2026-08-03
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -112,7 +112,7 @@ notification's XP total is tracked as a separate follow-up bd issue, not fabrica
 
 [FE app-open — N3, useScheduleSnapshotWriter(), wired into AppLayout.tsx (the root route element,
  mounts exactly once per app session)]
-    buildScheduleEntries(checkins, protocolSlots)   — checkin + fuel_slot only
+    buildScheduleEntries(checkins, slots)   — checkin + fuel_slot only (slots: StackDaySlot[], mezo-vx9v)
     → PUT /api/notification/schedule { categories: [...derived from entries], entries }
     → notification_schedule (per-category full replace: soft-delete the category's live rows,
       insert the new set)
@@ -189,7 +189,7 @@ Migration: [`202607291500_..._create_notification_schedule.sql`](../../backend/s
 | `weekday smallint` | **nullable = every day** (CHECK `between 1 and 7` when present — NULL is never FALSE in SQL, so the CHECK doesn't fire); ISO 1=Mon..7=Sun |
 | `time varchar(5) not null` · `category varchar(24) not null` | |
 | `title varchar(120) not null` · `body varchar(300)` | the FE writes this copy too |
-| `deeplink varchar(200) not null` · `source varchar(24) not null` | provenance, e.g. `buildProtocol`, `checkinSlots` |
+| `deeplink varchar(200) not null` · `source varchar(24) not null` | provenance, e.g. `projectStackDay` (was `buildProtocol` — mezo-vx9v Task 9), `checkinSlots` |
 
 **Deliberately no unique index** — `idx_notification_schedule_created_by_category` is a plain index;
 a category legitimately holds many rows at once (one per weekday × time). Replace is per-category:
@@ -218,7 +218,7 @@ FE-written — pinned by `NotificationCategoryTest` against spec §6:
 | 8 | `wind_down` | OFF | 0 | no | `RitualService` `prepStartsAt` |
 | 9 | `midday` | OFF | 0 | no | **`heartbeat.midday-cron` + grace = 12:45** (preferred slot 12:30) |
 | 10 | `checkin` | OFF | 0 | **yes** | FE snapshot (`data/today/checkins.ts`) |
-| 11 | `fuel_slot` | OFF | 0 | **yes** | FE snapshot (`buildProtocol`) |
+| 11 | `fuel_slot` | OFF | 0 | **yes** | FE snapshot (`projectStackDay` — the living-protocol zone-timeline projection, was `buildProtocol` before mezo-vx9v Task 9) |
 
 **Only `gym` carries a non-zero `defaultLeadMinutes()`.** The ritual-family categories
 (`ritual`/`lights_out`/`wind_down`) resolve their windows through `RitualService`, which already owns
@@ -277,18 +277,10 @@ it, matched to what each endpoint is actually allowed to accept.
 - **Medication** (`feature/medication`) — **now wired.** `medication` reads
   `MedicationRepository` + `MedicationCycleService.derive(...)`; `retaDay == 0` (no dose logged yet)
   is treated as "no anchor today", never as cycle day zero.
-- **Fuel** ([`fuel.md`](fuel.md)) — **new seam, both directions.** Fuel's own
-  `frontend/src/features/fuel/logic/buildProtocol.ts` now exports `deriveBlocks`/
-  `deriveProtocolAnchors` (moved out of `data/fuel/timelineHooks.ts`, which re-exports `deriveBlocks`
-  for backward compatibility) as the **one canonical** derivation of "40 minutes before today's first
-  training block". Three callers share it: Fuel's own `useFuelTimeline`, this platform's
-  `useScheduleSnapshotWriter` (the `fuel_slot` schedule rows), and `NotificationsPage`'s preview
-  header — so the pre-workout stack time the Fuel/Stack page shows, the time persisted to
-  `notification_schedule`, and the time the settings preview forecasts can never quietly disagree
-  (a fix-round decision, `mezo-h4wp.6.3`).
+- **Fuel** ([`fuel.md`](fuel.md)) — **new seam, both directions; re-platformed onto the living-occurrence Stack (mezo-vx9v Task 9).** Fuel's own `frontend/src/features/fuel/logic/buildProtocol.ts` exports `deriveBlocks` (today's gym/sport/run blocks; moved out of `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) and `PRE_WORKOUT_STACK_LEAD_MIN` — the **one canonical** "40 minutes before today's first training block" offset. Three callers now share the SAME `projectStackDay({occurrences, stash, intakes, wake, bed, mealsPerDay, blocks})` projection (each composing its own hooks inline, not via `useStackDay()` — the writer needs `useSleepGoal().isPending` for its fire-once gate, `NotificationsPage` needs the raw `blocks[]` for its gym sub-line): Fuel's own `useFuelTimeline`, this platform's `useScheduleSnapshotWriter` (the `fuel_slot` schedule rows), and `NotificationsPage`'s preview header — so the pre-workout stack time the Fuel/Stack page shows, the time persisted to `notification_schedule`, and the time the settings preview forecasts can never quietly disagree (a fix-round decision, `mezo-h4wp.6.3`, superseded onto occurrences by Task 9). The retired selection-based `buildProtocol()` builder and its `deriveProtocolAnchors`-mediated anchor derivation are gone from this path; `FUEL_WINDOW_LABEL` (`notificationScheduleWriter.ts`) is now keyed by the 8 `StackZoneKey` zone keys, not the old label set.
 - **Me** ([`me.md`](me.md) §2 "`Értesítés`") — the FE consumer: the settings page owns no
   notification data itself beyond composing `usePushSubscription()` + `useNotificationPrefs()` +
-  the pure `notificationForecast.ts` + `buildProtocol`'s anchors.
+  the pure `notificationForecast.ts` + `projectStackDay`'s zoned slots.
 - **`_platform-api-backend.md`** — same contract-first pipeline + platform conventions as every
   other feature; the notification endpoint table now lists all six operations (§5c there).
 
@@ -397,8 +389,7 @@ via `onMutate`/`onError` rollback.
   the lead-chip-only-for-`gym` rule, the sub-line fallback, the sparkline + dense-window note.
 - `features/me/pages/NotificationsPage.test.tsx` — the two-section category list, per-row toggle
   wiring, the preview header's inputs.
-- `features/fuel/logic/buildProtocol.test.ts` — the extracted `deriveBlocks`/`deriveProtocolAnchors`
-  (moved from `timelineHooks.ts` — same behavior, now shared).
+- `features/fuel/logic/buildProtocol.test.ts` — trimmed to `deriveBlocks`/`deriveProtocolAnchors` since mezo-vx9v Task 9 retired `buildProtocol()` itself; `features/fuel/logic/projectStackDay.test.ts` covers the zoned-timeline projection all three notification call sites now share.
 - A real fix during implementation, worth knowing: the optimistic-update tests initially used a
   **stateless** fake PUT/GET pair, and `onSettled`'s real-mode `invalidateQueries` refetch always
   re-served the pristine seed, silently reverting the optimistic flip — fixed by making the test
@@ -535,11 +526,13 @@ via `onMutate`/`onError` rollback.
   deliberately device-owned (the browser is the source of truth for `enabled`); N2's prefs are
   server-owned data with a well-defined code-default fallback, so the normal dual-mode read pattern
   applies without exception.
-- **`deriveProtocolAnchors`/`deriveBlocks` are the one canonical derivation of "pre-workout minus 40
-  minutes"**, moved into `frontend/src/features/fuel/logic/buildProtocol.ts` (§5) specifically so
-  Fuel's own timeline, this platform's schedule writer, and the settings preview can never disagree
-  on the same slot's time. A second independent derivation of that offset is exactly the kind of
-  drift this design was shaped to avoid.
+- **`PRE_WORKOUT_STACK_LEAD_MIN`/`deriveBlocks` are the one canonical derivation of "pre-workout minus 40
+  minutes"** (`frontend/src/features/fuel/logic/buildProtocol.ts`, §5) — since mezo-vx9v Task 9, applied
+  primarily inside the shared `projectStackDay` projection rather than through the retired
+  `deriveProtocolAnchors`/`ProtocolAnchors` shape (kept, but with no production caller left). Fuel's
+  own timeline, this platform's schedule writer, and the settings preview all feed `projectStackDay`
+  the same anchors/blocks, so they can never disagree on the same slot's time — a second independent
+  derivation of that offset is exactly the kind of drift this design was shaped to avoid.
 - **Honest limits of the N3 preview/settings surface** (§2): the mockup's single "Heti terv + memoir"
   row is two real categories; the lead chip shows only for `gym`; `midday`/`memoir` sub-lines are
   fixed constants, not derived; several mockup copy specifics were dropped rather than fabricated
@@ -608,8 +601,9 @@ These rules are enforced by convention + this doc, not by a runtime check — a 
 - `frontend/src/features/me/components/{PushInstallGate,NotificationPreviewHeader,NotificationCategoryRow}.tsx`
 - `frontend/src/features/me/logic/notificationForecast.ts` — the pure `forecastToday(...)` preview computation
 
-**Cross-feature — the shared Fuel anchor derivation (§5/§9)**
-- `frontend/src/features/fuel/logic/buildProtocol.ts` — `deriveBlocks`/`deriveProtocolAnchors` (moved here from `data/fuel/timelineHooks.ts`, which re-exports `deriveBlocks` for backward compatibility)
+**Cross-feature — the shared Fuel anchor derivation + zone projection (§5/§9)**
+- `frontend/src/features/fuel/logic/buildProtocol.ts` — `deriveBlocks`/`PRE_WORKOUT_STACK_LEAD_MIN`/`deriveProtocolAnchors` (moved here from `data/fuel/timelineHooks.ts`, which re-exports `deriveBlocks` for backward compatibility; `buildProtocol()` itself retired mezo-vx9v Task 9)
+- `frontend/src/features/fuel/logic/projectStackDay.ts` — the pure occurrence→zoned-timeline projection all three notification call sites (`useFuelTimeline`, `useScheduleSnapshotWriter`, `NotificationsPage`) now share (mezo-vx9v Task 9)
 
 **Docs (link, don't duplicate)**
 - Spec: [`docs/superpowers/specs/2026-07-29-push-notifications-design.md`](../superpowers/specs/2026-07-29-push-notifications-design.md)

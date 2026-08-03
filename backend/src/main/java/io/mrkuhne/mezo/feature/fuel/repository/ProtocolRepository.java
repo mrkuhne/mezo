@@ -8,10 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 /**
- * The versioned supplement Stack/Protocol store. Single-user, single active protocol at a time:
- * {@link #findByCreatedByAndStatusAndDeletedFalse} resolves the current entry (status {@code active});
- * {@link #maxVersion} feeds the next-version bump when superseding. All finders are owner-scoped and
- * respect the soft-delete flag.
+ * The single living supplement Stack/Protocol store. Single-user, single active protocol at a
+ * time: {@link #findByCreatedByAndStatusAndDeletedFalse} resolves the current entry (status
+ * {@code active}, never superseded going forward — {@code version} bumps in place on every
+ * occurrence mutation instead); {@link #maxVersion} feeds the version to seed a freshly-created
+ * row. All finders are owner-scoped and respect the soft-delete flag.
  */
 public interface ProtocolRepository extends JpaRepository<ProtocolEntity, UUID> {
 

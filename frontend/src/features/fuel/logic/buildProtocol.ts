@@ -13,9 +13,12 @@ export interface ProtocolAnchors {
 }
 
 /** The pre-workout stack slot lands this many minutes before the day's first training block
- *  (spec §5) — the single canonical offset; `deriveProtocolAnchors` is the only place it is
- *  applied, so the Fuel/Stack page, the notification schedule writer, and the settings-screen
- *  preview can never quietly disagree on when that slot fires. */
+ *  (spec §5) — the single canonical offset. `projectStackDay` (mezo-vx9v) is now the PRIMARY
+ *  place it is applied (straight off `blocks`, for the live occurrence-based Stack timeline);
+ *  `deriveProtocolAnchors` below still applies it too, for any caller that wants a
+ *  `{wake, preWorkout, bedtime}` shape instead of the raw block list. Either way this one constant
+ *  is the sole offset, so the Fuel/Stack page, the notification schedule writer, and the
+ *  settings-screen preview can never quietly disagree on when that slot fires. */
 export const PRE_WORKOUT_STACK_LEAD_MIN = 40
 
 /** Today's real training blocks (gym / sport / run), in derivation order. Moved here (out of
