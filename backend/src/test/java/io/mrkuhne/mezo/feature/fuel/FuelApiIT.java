@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -243,5 +244,28 @@ class FuelApiIT extends ApiIntegrationTest {
         // deterministic — the DB assertion above is what actually proves persistence-not-rederivation).
         ProtocolViewResponse second = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
         assertThat(second.getActive().getItems().get(0).getSlotKey()).isEqualTo("wake");
+    }
+
+    @Test
+    void testGetProtocol_shouldSoftDeleteOverflowDuplicate_whenBackfillExhaustsAllEightZones() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        // 9 legacy NULL-slot rows for the SAME pantry item — one more than the 8 StackZone slots.
+        // NULLs are distinct under the partial unique index, so pre-vx9v duplicate rows for one
+        // pantry item can already pile up (reachable today via the still-live activate endpoint,
+        // which has no uniqueness check on selectedPantryItemIds).
+        protocolPopulator.createProtocol(owner, 1, "active", Collections.nCopies(9, kreatin.getId()));
+        HttpHeaders auth = ownerAuthHeaders();
+
+        // Must NOT 500: the 9th occurrence has no free zone left and is soft-deleted rather than
+        // persisted into a slotKey collision (would violate uq_protocol_item_zone_occurrence).
+        ProtocolViewResponse first = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(first.getActive().getItems()).hasSize(8);
+        assertThat(first.getActive().getItems())
+            .extracting(ProtocolItemResponse::getSlotKey).doesNotHaveDuplicates();
+
+        // Stable on retry — no re-derivation, no repeat crash on the same data.
+        ProtocolViewResponse second = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(second.getActive().getItems()).hasSize(8);
     }
 }

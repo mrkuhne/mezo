@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -222,12 +223,19 @@ public class ProtocolService {
      * {@link StackZone} render order then {@code itemOrder}.
      *
      * <p>Backfill collision handling: the partial unique index only protects rows that already
-     * have a {@code slotKey} — two un-backfilled legacy rows for the SAME pantry item can already
-     * coexist (Task 1 review finding). When the engine's placement for one of them would collide
-     * with a zone already taken (by another item of the same pantry item, in this same batch or
-     * already backfilled), the simplest correct fix is applied: advance to the next {@link
-     * StackZone} in canonical order (wrapping) until a free zone is found. This is cheap because
-     * legacy duplicates are rare and the backfill only ever runs once per row.
+     * have a {@code slotKey} — two (or many more) un-backfilled legacy rows for the SAME pantry
+     * item can already coexist (Task 1 review finding; reachable today even through the
+     * still-live {@code activate} endpoint, which has no uniqueness check on {@code
+     * selectedPantryItemIds}). When the engine's placement for one of them would collide with a
+     * zone already taken (by another item of the same pantry item, in this same batch or already
+     * backfilled), we advance to the next {@link StackZone} in canonical order (wrapping) until a
+     * free zone is found. When there are MORE duplicates than the 8 available zones, some of them
+     * cannot be placed at all — persisting a taken zone anyway would violate {@code
+     * uq_protocol_item_zone_occurrence} at flush and 500 every subsequent read of this row
+     * (mezo-vx9v review finding). The correct resolution mirrors what {@code addItem}/{@code
+     * patchItem} already do for a duplicate via {@code rejectDuplicate(Except)}: it IS a
+     * duplicate, so the un-placeable overflow rows are soft-deleted instead of ever being written
+     * with a colliding {@code slotKey} — never re-attempted, since the delete is itself persisted.
      */
     private List<ProtocolItemEntity> backfillAndSort(UUID protocolId) {
         List<ProtocolItemEntity> items = itemRepository.findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(protocolId);
@@ -237,8 +245,10 @@ public class ProtocolService {
                 takenZonesByItem.computeIfAbsent(item.getPantryItemId(), k -> new HashSet<>()).add(item.getSlotKey());
             }
         }
+        List<ProtocolItemEntity> resolved = new ArrayList<>();
         for (ProtocolItemEntity item : items) {
             if (item.getSlotKey() != null) {
+                resolved.add(item);
                 continue;
             }
             PantryItemEntity pantryItem = pantryItemRepository.findById(item.getPantryItemId()).orElse(null);
@@ -250,20 +260,28 @@ public class ProtocolService {
                 : placementEngine.place(pantryItem);
             Set<String> taken = takenZonesByItem.computeIfAbsent(item.getPantryItemId(), k -> new HashSet<>());
             String slotKey = resolveFreeZone(placement.slotKey(), taken);
+            if (slotKey == null) {
+                itemRepository.delete(item); // overflow duplicate — no zone left, soft-deleted, not re-tried
+                continue;
+            }
             item.setSlotKey(slotKey);
             item.setPinned(false);
             item.setPlacementSource(placement.source());
             item.setPlacementReason(placement.reasonHu());
             item.setRestDayFallback(placement.restDayFallback());
             taken.add(slotKey);
+            resolved.add(item);
         }
-        return items.stream()
+        return resolved.stream()
             .sorted(Comparator.comparingInt((ProtocolItemEntity i) -> StackZone.fromKey(i.getSlotKey()).order())
                 .thenComparing(ProtocolItemEntity::getItemOrder))
             .toList();
     }
 
-    /** The preferred zone if free, otherwise the next {@link StackZone} in canonical order (wrapping). */
+    /** The preferred zone if free, otherwise the next {@link StackZone} in canonical order
+     *  (wrapping); {@code null} when all 8 zones are already taken by this pantry item — the
+     *  caller must NOT persist a fallback to an already-taken zone (would violate the unique
+     *  index at flush). */
     private String resolveFreeZone(String preferredSlotKey, Set<String> takenSlotKeys) {
         if (!takenSlotKeys.contains(preferredSlotKey)) {
             return preferredSlotKey;
@@ -276,7 +294,7 @@ public class ProtocolService {
                 return candidate.key();
             }
         }
-        return preferredSlotKey; // all 8 zones taken by this one pantry item — keep the duplicate
+        return null; // all 8 zones taken by this one pantry item — nothing free to assign
     }
 
     /** The single living protocol row — created on first write, version-bumped on every mutation. */
