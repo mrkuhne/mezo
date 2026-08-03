@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { MesoDay } from '@/data/types'
+import type { GymExercise, MesoDay } from '@/data/types'
 import {
   budgetGroup, budgetLevel, budgetOf, daySessionBreakdown, leastLoadedDayFor, muscleBudgets,
   sessionCapWarnings, setStyle,
@@ -10,7 +10,7 @@ const ex = (muscle: string, workingSets: number, targetRIR: number) => ({
   warmupSets: 1, workingSets, repMin: 8, repMax: 10, targetRIR, type: 'compound' as const,
 })
 const plyoEx = (muscle: string, workingSets: number) => ({ ...ex(muscle, workingSets, 0), type: 'plyo' as const })
-const day = (dayKey: string, muscle: string, exercises: ReturnType<typeof ex>[]): MesoDay =>
+const day = (dayKey: string, muscle: string, exercises: GymExercise[]): MesoDay =>
   ({ day: dayKey, type: 'Push', muscle, exerciseCount: exercises.length, exercises })
 
 describe('setStyle', () => {
