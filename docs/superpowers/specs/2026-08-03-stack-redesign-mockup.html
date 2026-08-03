@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<title>Stack redesign — validated mockup (2026-08-03)</title>
+<style>
+  body { background:#0b0d10; color:#ddd; font-family:-apple-system,'Segoe UI',sans-serif; padding:24px; }
+  h2 { margin:0 0 4px; } .subtitle { color:#9aa3ad; font-size:13px; margin:0 0 20px; }
+  .split { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  .mockup { border:1px solid #2a2f36; border-radius:12px; overflow:hidden; flex:1; min-width:360px; }
+  .mockup-header { background:#1c2127; padding:8px 12px; font-size:11px; color:#9aa3ad; border-bottom:1px solid #2a2f36; }
+</style>
+</head>
+<body>
+<h2>A végleges oldal — jóváhagyásra</h2>
+<p class="subtitle">Balra az edzésnapi teljes oldal a kidolgozott étkezés-matchcsel; jobbra a pihenőnapi átcsoportosítás és az item-panel. Ez már nem választás — ellenőrzés: így épüljön meg?</p>
+
+<style>
+  .phone { width: 330px; background: #14171b; border: 1px solid #2a2f36; border-radius: 26px; padding: 16px 14px; color: #e6e4de; font-family: -apple-system, 'Segoe UI', sans-serif; margin: 0 auto; }
+  .phone * { box-sizing: border-box; }
+  .ph-over { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #8a9a80; }
+  .ph-h1 { font-size: 19px; font-weight: 700; margin: 2px 0 8px; }
+  .strip { background:#1c2127; border:1px solid #2a2f36; border-radius:12px; padding:9px 11px; margin-bottom:10px; font-size:10.5px; color:#b9c4b0; }
+  .strip b { color:#e6e4de; }
+  .zone { background: #1c2127; border: 1px solid #2a2f36; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+  .zone-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .zone-name { font-size: 11px; font-weight: 600; color: #b9c4b0; }
+  .zone-time { font-family: ui-monospace, monospace; font-size: 10px; color: #7d8790; }
+  .zone-anchor { font-size: 8.5px; color: #667080; }
+  .item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid #23282f; font-size: 12px; }
+  .item:first-of-type { border-top: none; }
+  .tick { width:16px; height:16px; border-radius:50%; border:1.5px solid #4a545e; flex:none; font-size:10px; line-height:14px; text-align:center; }
+  .tick.on { background:#33402e; border-color:#6e8a5e; color:#cfe3c2; }
+  .iname { flex: 1; }
+  .iname.done { color:#7d8790; text-decoration: line-through; }
+  .idose { font-size: 9.5px; color: #7d8790; }
+  .badge { font-size: 8px; padding: 2px 6px; border-radius: 8px; }
+  .b-auto { background: #262c33; color: #8b96a1; }
+  .b-pin { background: #33402e; color: #a9c69a; }
+  .b-warn { background: #3d3323; color: #d9b96a; }
+  .mealrow { display:flex; gap:8px; align-items:flex-start; border-top:1px solid #23282f; padding:7px 0; font-size:10.5px; }
+  .mealrow:first-of-type { border-top:none; }
+  .mr-zone { font-family: ui-monospace, monospace; font-size:9px; color:#7d8790; width:52px; flex:none; padding-top:2px; }
+  .mr-main { flex:1; }
+  .mr-main b { font-size:11px; }
+  .mr-why { color:#8b96a1; font-size:9.5px; margin-top:2px; line-height:1.4; }
+  .ok { color:#a9c69a; } .warn { color:#d9b96a; }
+  .addbtn { text-align: center; border: 1px dashed #3a4048; border-radius: 12px; padding: 9px; font-size: 11px; color: #8b96a1; margin: 6px 0 10px; }
+  .foot { background:#1c2127; border:1px solid #2a2f36; border-radius:12px; padding:9px 11px; font-size:10px; color:#9aa3ad; margin-bottom:8px; line-height:1.5; }
+  .foot h6 { margin:0 0 4px; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#8a9a80; }
+  .sheet { background:#20262d; border:1px solid #3a4048; border-radius:14px; padding:10px 12px; font-size:10.5px; margin-top:12px; }
+  .sheet h6 { margin:0 0 6px; font-size:11px; color:#e6e4de; }
+  .zpick { display:flex; flex-wrap:wrap; gap:5px; }
+  .zp { border:1px solid #3a4048; border-radius:9px; padding:4px 8px; font-size:9.5px; color:#9aa3ad; }
+  .zp.rec { border-color:#6e8a5e; color:#cfe3c2; }
+  .caption { font-size:11px; color:#888; margin:8px 0 16px; text-align:center; }
+</style>
+
+<div class="split">
+
+  <div class="mockup">
+    <div class="mockup-header">Edzésnap — a teljes oldal</div>
+    <div class="mockup-body" style="background:#0e1114; padding:16px 8px;">
+      <div class="phone">
+        <div class="ph-over">Fuel · Stack</div>
+        <div class="ph-h1">Napi protokoll</div>
+        <div class="strip"><b>Szerda · edzésnap 17:30</b> · ébredés 05:50 · lefekvés 23:00 · 7 item, 1 📌 · minden változás automatikusan mentve</div>
+
+        <div class="zone">
+          <div class="zone-head"><span class="zone-name">Ébredés</span><span class="zone-time">05:50</span></div>
+          <div class="item"><span class="tick on">✓</span><span class="iname done">Kreatin <span class="idose">5g</span></span><span class="badge b-auto">auto</span></div>
+          <div class="item"><span class="tick on">✓</span><span class="iname done">Kávé <span class="idose">espresso</span></span><span class="badge b-auto">auto</span></div>
+        </div>
+        <div class="zone">
+          <div class="zone-head"><span class="zone-name">Ebéd</span><span class="zone-time">12:30</span><span class="zone-anchor">étkezéshez kötve</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">D3 + K2 <span class="idose">4000 IU</span></span><span class="badge b-auto">auto</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">Ashwagandha <span class="idose">600mg</span></span><span class="badge b-pin">📌</span></div>
+        </div>
+        <div class="zone">
+          <div class="zone-head"><span class="zone-name">Edzés előtt</span><span class="zone-time">16:50</span><span class="zone-anchor">gym −40p</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">PWO stack <span class="idose">1 adag</span></span><span class="badge b-auto">auto</span></div>
+        </div>
+        <div class="zone">
+          <div class="zone-head"><span class="zone-name">Este</span><span class="zone-time">21:00</span><span class="zone-anchor">lefekvés −2h</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">Magnézium-glicinát <span class="idose">400mg</span></span><span class="badge b-auto">auto</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">Omega-3 <span class="idose">2 kapszula</span></span><span class="badge b-auto">auto</span></div>
+        </div>
+
+        <div class="addbtn">+ Hozzáadás a Kamrából</div>
+
+        <div class="foot">
+          <h6>Étkezés-match</h6>
+          <div class="mealrow">
+            <span class="mr-zone">Ebéd 12:30</span>
+            <div class="mr-main"><b>Javaslat: Csirkés quinoa-bowl</b> <span class="idose">32g zsír / adag</span>
+              <div class="mr-why">D3+K2 zsírral 3–4× jobban szívódik → a könyvtárad legjobb zsír-hordozója erre az ablakra.</div>
+            </div>
+          </div>
+          <div class="mealrow">
+            <span class="mr-zone">Vacsora 19:00</span>
+            <div class="mr-main"><b class="ok">✓ Lazacos tészta — logolva</b> <span class="idose">28g zsír</span>
+              <div class="mr-why ok">Az Omega-3-at jó étkezéshez vetted — felszívódás rendben.</div>
+            </div>
+          </div>
+          <div class="mealrow">
+            <span class="mr-zone">Ebéd (tegnap)</span>
+            <div class="mr-main"><b class="warn">⚠ Zöldsaláta — 6g zsír</b>
+              <div class="mr-why warn">A D3 zsíros étkezést kér — legközelebb tedd zsírosabb fogás mellé, vagy mozgasd vacsorára.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="foot"><h6>Miért így</h6>Mg-glicinát lefekvés −2h → deep sleep · koffein-cutoff 14:00 · PWO −40p → plazma-csúcs edzéskezdésre.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Pihenőnap + item-panel</div>
+    <div class="mockup-body" style="background:#0e1114; padding:16px 8px;">
+      <div class="phone">
+        <div class="strip"><b>Vasárnap · pihenőnap</b> · ébredés 07:30 · lefekvés 23:00 · 7 item, 1 📌</div>
+
+        <div class="zone">
+          <div class="zone-head"><span class="zone-name">Ébredés</span><span class="zone-time">07:30</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">Kreatin <span class="idose">5g</span></span><span class="badge b-auto">auto</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">Kávé <span class="idose">espresso</span></span><span class="badge b-auto">auto</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">PWO stack</span><span class="badge b-warn">ma nincs edzés → kimarad</span></div>
+        </div>
+        <div class="zone">
+          <div class="zone-head"><span class="zone-name">Ebéd</span><span class="zone-time">13:00</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">D3 + K2</span><span class="badge b-auto">auto</span></div>
+          <div class="item"><span class="tick"></span><span class="iname">Ashwagandha</span><span class="badge b-pin">📌</span></div>
+        </div>
+        <div class="caption">Edzéshez kötött zóna ma nincs → a kreatin marad reggel (pihenőnapon is kell), a pump-stack jelölve kimarad. Holnap magától visszaáll.</div>
+
+        <div class="sheet">
+          <h6>Ashwagandha 600mg</h6>
+          <div style="color:#9aa3ad; margin-bottom:6px;">📌 Ide raktad kézzel (Ebéd) · a motor javaslata: Este<br><u>Vissza autóra</u> — újra a motor dönt</div>
+          <div class="zpick"><span class="zp">Ébredés</span><span class="zp">Reggeli</span><span class="zp">Edzés előtt</span><span class="zp">Edzés után</span><span class="zp rec">Ebéd ✓</span><span class="zp">Vacsora</span><span class="zp rec">Este ★</span><span class="zp">Lefekvés</span></div>
+          <div style="color:#667080; margin-top:6px; font-size:9px;">★ = motor-javaslat · indoklás: „GABA-moduláló, kortizol-csökkentő — estére időzítve az alvás-onsetet támogatja."</div>
+          <div style="border-top:1px solid #3a4048; margin-top:8px; padding-top:8px; color:#c97a6f; font-size:10px;">Eltávolítás a stackből</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="font-size:12px; color:#888;">A részletes technikai design a terminálban. Ha a képen minden stimmel, ott hagyd jóvá — ha valami nem, írd meg, mit változtassak.</p>
+
+</body>
+</html>
