@@ -23,11 +23,12 @@ ingest.
 - [QQRT](concepts/qqrt.md) — Quantity·Quality·Regularity·Timing; the four legs and how each maps to a mezo surface. `confidence: medium`.
 - [Sleep Debunks](concepts/sleep-debunks.md) — the myth list (smart-wake, blue light, magnesium, melatonin, Z-drugs) mezo deliberately builds nothing on. `confidence: medium`.
 - [Morning Routine (Ethier six recs)](concepts/morning-routine.md) — the six morning recs → their mezo habits; the Walker/Ethier division of labor. `confidence: medium`.
+- [Program-Design Rules (RP·Helms·Nippard·Ethier)](concepts/program-design-rules.md) — 1-3 gyakorlat/izom/edzés, 2-4 szett/gyakorlat, heti 2-5 variancia, rep-zóna 25/50/25, MEV/MAV/MRV tábla; a guided-building epic (mezo-oyhy) szabálybázisa. `confidence: medium`.
 - [Set-Volume Landmarks](concepts/set-volume-landmarks.md) — failure (5–12 set/hét) vs volume (12–20) styles, ~11 set/session cap, frequency fix; the source numbers behind the Train set-budget layer (mezo-7rdg). `confidence: medium`.
 
 ## Comparisons
 
-_No pages yet — filed on first ingest._
+- [Plan-builder guidance UX](comparisons/plan-builder-guidance-ux.md) — RP app vs Alpha Progression vs Hevy vs Juggernaut vs Fitbod terv-építési guidance; a piaci rés, amit a mezo befoglalhat. `confidence: medium`.
 
 ## Queries
 
