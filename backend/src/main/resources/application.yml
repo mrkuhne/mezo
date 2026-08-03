@@ -733,9 +733,13 @@ mezo:
       compound: 5.0           # compound lifts progress in 5 kg jumps
       isolation: 2.5          # isolation lifts in 2.5 kg jumps
     default-warmup-sets: 2
-    warmup-ramp:
-      - { pct: 0.50, reps-factor: 1.0 }   # 50% × repMax
-      - { pct: 0.75, reps-factor: 0.5 }   # 75% × ⌈repMax/2⌉
+    # Count-keyed absolute-rep warmup ladders (mezo-dnln) — keyed by warmupSets count; each rung
+    # is a %working-weight + absolute rep count. Counts above 3 prepend (n-3) repeats of the
+    # 3-ladder's first rung ahead of the full 3-ladder (see SetRecommendationService).
+    warmup-ladders:
+      1: [ { pct: 0.70, reps: 4 } ]
+      2: [ { pct: 0.50, reps: 8 }, { pct: 0.75, reps: 3 } ]
+      3: [ { pct: 0.50, reps: 8 }, { pct: 0.70, reps: 4 }, { pct: 0.90, reps: 2 } ]
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     step: 2                 # sets added per productive week

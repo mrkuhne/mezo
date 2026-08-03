@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import type { MesoDay } from '@/data/types'
+import type { GymExercise, MesoDay } from '@/data/types'
 import {
-  budgetGroup, budgetLevel, budgetOf, muscleBudgets, sessionCapWarnings, setStyle,
+  budgetGroup, budgetLevel, budgetOf, daySessionBreakdown, leastLoadedDayFor, muscleBudgets,
+  sessionCapWarnings, setStyle,
 } from '@/features/train/logic/setBudget'
 
 const ex = (muscle: string, workingSets: number, targetRIR: number) => ({
   id: `${muscle}-${workingSets}-${targetRIR}-${Math.random()}`, name: 'X', muscle,
   warmupSets: 1, workingSets, repMin: 8, repMax: 10, targetRIR, type: 'compound' as const,
 })
-const day = (dayKey: string, muscle: string, exercises: ReturnType<typeof ex>[]): MesoDay =>
+const plyoEx = (muscle: string, workingSets: number) => ({ ...ex(muscle, workingSets, 0), type: 'plyo' as const })
+const day = (dayKey: string, muscle: string, exercises: GymExercise[]): MesoDay =>
   ({ day: dayKey, type: 'Push', muscle, exerciseCount: exercises.length, exercises })
 
 describe('setStyle', () => {
@@ -74,5 +76,44 @@ describe('sessionCapWarnings', () => {
     const bad = [day('H', 'shoulder', [ex('shoulder-side', 6, 2), ex('shoulder-front', 6, 2)])] // 12
     expect(sessionCapWarnings(ok)).toHaveLength(0)
     expect(sessionCapWarnings(bad)).toEqual([{ day: 'H', group: 'shoulder', label: 'Váll', sets: 12 }])
+  })
+})
+
+describe('plyo exclusion (mezo-0znc)', () => {
+  it('plyo sets leave budget math but are reported as plyoSets', () => {
+    const days = [day('H', 'quad', [ex('quad', 9, 0), plyoEx('quad', 10)])]
+    const rows = muscleBudgets(days)
+    expect(rows[0]).toMatchObject({ group: 'quad', workingSets: 9, plyoSets: 10 })
+    expect(rows[0].budget).toBeCloseTo(9 / 12)
+    expect(rows[0].level).toBe('ok')
+  })
+  it('session cap ignores plyo sets', () => {
+    const days = [day('H', 'quad', [ex('quad', 9, 0), plyoEx('quad', 10)])]
+    expect(sessionCapWarnings(days)).toHaveLength(0)
+  })
+  it('plyo-only group emits no budget row', () => {
+    const days = [day('H', 'quad', [plyoEx('quad', 6)])]
+    expect(muscleBudgets(days)).toHaveLength(0)
+  })
+})
+
+describe('daySessionBreakdown', () => {
+  it('aggregates the day per group with over flag and plyo split', () => {
+    const d = day('H', 'shoulder', [ex('shoulder-side', 6, 0), ex('shoulder-front', 6, 0), plyoEx('quad', 4)])
+    const rows = daySessionBreakdown(d)
+    expect(rows[0]).toMatchObject({ group: 'shoulder', sets: 12, over: true })
+    expect(rows[1]).toMatchObject({ group: 'quad', sets: 0, plyoSets: 4, over: false })
+  })
+})
+
+describe('leastLoadedDayFor', () => {
+  it('names the other training day with the fewest sets for the group', () => {
+    const days = [
+      day('H', 'shoulder', [ex('shoulder-side', 12, 0)]),
+      day('Sze', 'shoulder', [ex('shoulder-front', 4, 0)]),
+      day('K', '', []),
+    ]
+    expect(leastLoadedDayFor(days, 'shoulder', 'H')).toBe('Sze')
+    expect(leastLoadedDayFor([days[0], days[2]], 'shoulder', 'H')).toBeNull()
   })
 })

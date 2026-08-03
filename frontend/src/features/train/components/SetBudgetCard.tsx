@@ -89,6 +89,7 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                     <span style={{ fontWeight: 700, fontSize: 13.5 }}>{row.label}</span>
                     <span className="label-mono" style={{ fontSize: 10.5 }}>
                       {p}% · {setStyleSummary(row.failureSets, row.volumeSets)}
+                      {row.plyoSets > 0 && <span style={{ color: 'var(--text-tertiary)' }}> +{row.plyoSets} plyo</span>}
                     </span>
                   </div>
                   <div style={{ height: 8.5, borderRadius: 999, background: 'var(--surface-2)', overflow: 'hidden' }}>

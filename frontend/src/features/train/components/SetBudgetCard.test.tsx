@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { MuscleBudgetRow, SessionCapWarning } from '@/features/train/logic/setBudget'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 
-const over: MuscleBudgetRow = { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', failureSets: 8, volumeSets: 8, workingSets: 16, budget: 8 / 12 + 8 / 20, level: 'over' }
-const ok: MuscleBudgetRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', failureSets: 0, volumeSets: 8, workingSets: 8, budget: 0.4, level: 'ok' }
+const over: MuscleBudgetRow = { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', failureSets: 8, volumeSets: 8, workingSets: 16, plyoSets: 0, budget: 8 / 12 + 8 / 20, level: 'over' }
+const ok: MuscleBudgetRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', failureSets: 0, volumeSets: 8, workingSets: 8, plyoSets: 0, budget: 0.4, level: 'ok' }
 const cap: SessionCapWarning = { day: 'H', group: 'shoulder', label: 'Váll', sets: 13 }
 
 describe('SetBudgetCard', () => {
@@ -23,5 +23,10 @@ describe('SetBudgetCard', () => {
     render(<SetBudgetCard budgets={[ok]} capWarnings={[]} />)
     fireEvent.click(screen.getByRole('button', { name: /szet-büdzsé/i }))
     expect(screen.getByText(/0🔥\+8🌿|8🌿/)).toBeInTheDocument()
+  })
+  it('expanded: a row with plyoSets shows the "+n plyo" suffix', () => {
+    const withPlyo: MuscleBudgetRow = { ...ok, plyoSets: 10 }
+    render(<SetBudgetCard budgets={[withPlyo]} capWarnings={[]} defaultOpen />)
+    expect(screen.getByText(/\+10 plyo/)).toBeInTheDocument()
   })
 })

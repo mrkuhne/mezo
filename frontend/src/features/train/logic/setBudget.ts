@@ -10,6 +10,7 @@
 // color regions (Kar/Láb would over-merge), coarser than the 21 heads.
 // ============================================================
 import type { MesoDay } from '@/data/types'
+import { isOffDay } from '@/features/train/logic/offDay'
 
 export type SetStyle = 'failure' | 'volume'
 export const FAILURE_WEEKLY_CAP = 12
@@ -60,6 +61,8 @@ export interface MuscleBudgetRow {
   failureSets: number
   volumeSets: number
   workingSets: number
+  /** Plyo sets don't count toward the budget — reported separately for visibility. */
+  plyoSets: number
   /** 1 = 100% of the weekly budget. */
   budget: number
   level: BudgetLevel
@@ -73,27 +76,30 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
       if (!group) continue
       let row = acc.get(group)
       if (!row) {
-        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, budget: 0, level: 'ok' }
+        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, plyoSets: 0, budget: 0, level: 'ok' }
         acc.set(group, row)
       }
+      if (ex.type === 'plyo') { row.plyoSets += ex.workingSets; continue }
       if (setStyle(ex.targetRIR) === 'failure') row.failureSets += ex.workingSets
       else row.volumeSets += ex.workingSets
       row.workingSets += ex.workingSets
     }
   }
   return [...acc.values()]
+    .filter((r) => r.workingSets > 0)
     .map((r) => { const budget = budgetOf(r.failureSets, r.volumeSets); return { ...r, budget, level: budgetLevel(budget) } })
     .sort((a, b) => b.budget - a.budget || a.group.localeCompare(b.group))
 }
 
 export interface SessionCapWarning { day: string; group: string; label: string; sets: number }
 
-/** Days where one muscle group exceeds SESSION_MUSCLE_CAP working sets in a single session. */
+/** Days where one muscle group exceeds SESSION_MUSCLE_CAP working sets in a single session (plyo excluded). */
 export function sessionCapWarnings(days: MesoDay[]): SessionCapWarning[] {
   const out: SessionCapWarning[] = []
   for (const d of days) {
     const perGroup = new Map<string, number>()
     for (const ex of d.exercises) {
+      if (ex.type === 'plyo') continue
       const group = budgetGroup(ex.muscle)
       if (!group) continue
       perGroup.set(group, (perGroup.get(group) ?? 0) + ex.workingSets)
@@ -103,4 +109,61 @@ export function sessionCapWarnings(days: MesoDay[]): SessionCapWarning[] {
     }
   }
   return out
+}
+
+export interface DayGroupRow {
+  group: string
+  label: string
+  /** Representative catalog muscle key seen for the group on this day — feed muscleColor(). */
+  colorMuscle: string
+  sets: number
+  plyoSets: number
+  over: boolean
+}
+
+/** Per-group set totals for a single day, plyo split out; includes plyo-only groups at sets: 0. */
+export function daySessionBreakdown(day: MesoDay): DayGroupRow[] {
+  const acc = new Map<string, DayGroupRow>()
+  for (const ex of day.exercises) {
+    const group = budgetGroup(ex.muscle)
+    if (!group) continue
+    let row = acc.get(group)
+    if (!row) {
+      row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, sets: 0, plyoSets: 0, over: false }
+      acc.set(group, row)
+    }
+    if (ex.type === 'plyo') row.plyoSets += ex.workingSets
+    else row.sets += ex.workingSets
+  }
+  return [...acc.values()]
+    .map((r) => ({ ...r, over: r.sets > SESSION_MUSCLE_CAP }))
+    .sort((a, b) => b.sets - a.sets || a.group.localeCompare(b.group))
+}
+
+/**
+ * Non-off training day with the fewest non-plyo working sets for `group`, excluding `excludeDay`.
+ * Ties broken by fewest total (non-plyo) sets that day, then original day order. Null when no
+ * other training day exists.
+ */
+export function leastLoadedDayFor(days: MesoDay[], group: string, excludeDay: string): string | null {
+  const candidates = days
+    .map((d, index) => ({ d, index }))
+    .filter(({ d }) => d.day !== excludeDay && !isOffDay(d) && d.exercises.length > 0)
+  if (candidates.length === 0) return null
+
+  const loadOf = (d: MesoDay) => {
+    let groupSets = 0
+    let totalSets = 0
+    for (const ex of d.exercises) {
+      if (ex.type === 'plyo') continue
+      totalSets += ex.workingSets
+      if (budgetGroup(ex.muscle) === group) groupSets += ex.workingSets
+    }
+    return { groupSets, totalSets }
+  }
+
+  const best = candidates
+    .map(({ d, index }) => ({ day: d.day, index, ...loadOf(d) }))
+    .sort((a, b) => a.groupSets - b.groupSets || a.totalSets - b.totalSets || a.index - b.index)[0]
+  return best.day
 }

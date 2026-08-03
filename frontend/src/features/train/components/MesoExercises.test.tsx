@@ -67,7 +67,7 @@ test('picking an exercise appends it to the open day', async () => {
 
 test('adding an exercise persists the day list in real mode (PUT with day id)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false') // override the file-level mock pin
-  const puts: { url: string; body: { name: string; catalogId?: string; targetRIR: number }[] }[] = []
+  const puts: { url: string; body: { name: string; catalogId?: string; targetRIR: number; warmupSets: number }[] }[] = []
   const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
   const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
   server.use(
@@ -86,7 +86,7 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
       ]),
     ),
     http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request, params }) => {
-      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; catalogId?: string; targetRIR: number }[] })
+      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; catalogId?: string; targetRIR: number; warmupSets: number }[] })
       return HttpResponse.json({ id: params.dayId, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 2, exercises: [] })
     }),
   )
@@ -105,7 +105,9 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
   const dialog = screen.getByRole('dialog')
   await userEvent.click(within(dialog).getByText('Hip Thrust'))
 
-  await waitFor(() => expect(puts).toHaveLength(1))
+  // MesoEditor's add-path auto-expand effect (mezo-dnln) applies the adaptive
+  // warmup suggestion right after the add, firing a SECOND PUT — wait for both.
+  await waitFor(() => expect(puts).toHaveLength(2))
   expect(puts[0].url).toBe(`${MESO_ID}/${DAY_ID}`)
   expect(puts[0].body.map((e) => e.name)).toEqual(['Chest Supported Row', 'Hip Thrust'])
   // The picked item carries the catalog uuid; the pre-existing row stays unlinked.
@@ -115,6 +117,12 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
   // pre-existing row keeps its own RIR.
   expect(puts[0].body[1].targetRIR).toBe(2)
   expect(puts[0].body[0].targetRIR).toBe(1)
+  // Hip Thrust (glute, compound) opens a fresh budget group on this day (the
+  // pre-existing row is 'back') → suggestedWarmupSets = 3, overriding
+  // libraryToGymExercise's default 2 via the second PUT.
+  expect(puts[1].url).toBe(`${MESO_ID}/${DAY_ID}`)
+  expect(puts[1].body.map((e) => e.name)).toEqual(['Chest Supported Row', 'Hip Thrust'])
+  expect(puts[1].body[1].warmupSets).toBe(3)
 })
 
 test('reordering a day exercise via ▲ persists the new order (PUT) in real mode', async () => {

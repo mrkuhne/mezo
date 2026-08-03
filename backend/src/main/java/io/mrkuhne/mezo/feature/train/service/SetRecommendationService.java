@@ -87,14 +87,16 @@ public class SetRecommendationService {
         List<PrescribedSet> sets = new ArrayList<>();
         // Warmup rows are emitted even with no base weight (first session, no anchor): the FE
         // relies on them to label B1/B2 and to suppress RIR — only the target weight stays null.
-        for (int i = 0; i < ex.getWarmupSets(); i++) {
-            HypertrophyProperties.Ramp r = props.warmupRamp().get(Math.min(i, props.warmupRamp().size() - 1));
-            sets.add(PrescribedSet.builder()
-                .kind(PrescribedSet.KindEnum.WARMUP)
-                .targetWeightKg(base == null ? null : roundClamp(base.multiply(BigDecimal.valueOf(r.pct()))))
-                .targetReps(Math.max(1, (int) Math.round(ex.getRepMax() * r.repsFactor())))
-                .targetRIR(null)
-                .build());
+        int warmupSets = ex.getWarmupSets();
+        if (warmupSets > 0) {
+            for (HypertrophyProperties.Ramp r : warmupLadder(warmupSets)) {
+                sets.add(PrescribedSet.builder()
+                    .kind(PrescribedSet.KindEnum.WARMUP)
+                    .targetWeightKg(base == null ? null : roundClamp(base.multiply(BigDecimal.valueOf(r.pct()))))
+                    .targetReps(r.reps())
+                    .targetRIR(null)
+                    .build());
+            }
         }
         for (int j = 0; j < effectiveWorkingSets; j++) {
             sets.add(PrescribedSet.builder()
@@ -119,6 +121,24 @@ public class SetRecommendationService {
                 .comparing((ExerciseSetEntity s) -> s.getWeightKg() != null ? s.getWeightKg() : BigDecimal.valueOf(-1))
                 .thenComparing(ExerciseSetEntity::getReps))
             .orElse(null);
+    }
+
+    /**
+     * Count-keyed warmup ladder (mezo-dnln): counts 1-3 map straight to their configured ladder;
+     * counts above 3 prepend {@code n - 3} repeats of the 3-ladder's first rung ahead of the full
+     * 3-ladder, preserving its ascending order.
+     */
+    private List<HypertrophyProperties.Ramp> warmupLadder(int n) {
+        if (n <= 3) {
+            return props.warmupLadders().get(n);
+        }
+        List<HypertrophyProperties.Ramp> ladder3 = props.warmupLadders().get(3);
+        List<HypertrophyProperties.Ramp> extended = new ArrayList<>(ladder3.size() + n - 3);
+        for (int i = 0; i < n - 3; i++) {
+            extended.add(ladder3.get(0));
+        }
+        extended.addAll(ladder3);
+        return extended;
     }
 
     private BigDecimal roundClamp(BigDecimal x) {

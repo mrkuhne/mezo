@@ -53,4 +53,40 @@ describe('ExerciseAccordionRow', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fekvenyomás/ }))
     expect(onToggle).toHaveBeenCalled()
   })
+
+  it('highlight marks the card root with data-over without disturbing the rail', () => {
+    const { container } = render(
+      <ExerciseAccordionRow ex={ex} expanded={false} onToggle={noop} onRemove={noop} onChange={noop} highlight />,
+    )
+    const card = container.querySelector('.card') as HTMLElement
+    expect(card).toHaveAttribute('data-over', 'true')
+    expect(card.style.borderLeft).toBe('5px solid var(--coral)')
+    expect(card.style.borderTop).toContain('color-mix(in srgb, var(--error) 45%, transparent)')
+  })
+
+  it('no highlight by default: card root has no data-over attribute', () => {
+    const { container } = render(<ExerciseAccordionRow ex={ex} expanded={false} onToggle={noop} onRemove={noop} onChange={noop} />)
+    const card = container.querySelector('.card')
+    expect(card).not.toHaveAttribute('data-over')
+  })
+
+  it('shows the warmup suggestion chip when it differs from the stored count, and tapping it applies the suggestion', () => {
+    const onChange = vi.fn()
+    render(
+      <ExerciseAccordionRow ex={ex} expanded onToggle={noop} onRemove={noop} onChange={onChange} suggestedWarmup={3} />,
+    )
+    expect(screen.getByText(/↺ javaslat: 3/)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Fekvenyomás · bemelegítés javaslat alkalmazása'))
+    expect(onChange).toHaveBeenCalledWith({ warmupSets: 3 })
+  })
+
+  it('no chip when the suggestion equals the stored warmup count', () => {
+    render(<ExerciseAccordionRow ex={ex} expanded onToggle={noop} onRemove={noop} onChange={noop} suggestedWarmup={ex.warmupSets} />)
+    expect(screen.queryByText(/javaslat/)).not.toBeInTheDocument()
+  })
+
+  it('no chip when suggestedWarmup is left undefined', () => {
+    render(<ExerciseAccordionRow ex={ex} expanded onToggle={noop} onRemove={noop} onChange={noop} />)
+    expect(screen.queryByText(/javaslat/)).not.toBeInTheDocument()
+  })
 })

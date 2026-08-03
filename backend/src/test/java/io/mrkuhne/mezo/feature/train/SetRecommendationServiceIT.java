@@ -59,9 +59,94 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         assertThat(p.sets()).allSatisfy(s -> assertThat(s.getTargetWeightKg()).isNull());
         var warm = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP).toList();
         assertThat(warm).hasSize(2);
-        // reps still ramp off repMax (8): 1.0 -> 8, 0.5 -> 4; warmups never carry a RIR target
+        // count-keyed ladder for n=2: [50%x8, 75%x3] — absolute reps, not repMax-derived
+        assertThat(warm.get(0).getTargetReps()).isEqualTo(8);
+        assertThat(warm.get(1).getTargetReps()).isEqualTo(3);
+        assertThat(warm).allSatisfy(s -> assertThat(s.getTargetRIR()).isNull());
+    }
+
+    @Test
+    void testPrescribe_shouldRampThreeRungs_whenWarmupSetsIsThree() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setAnchorWeightKg(BigDecimal.valueOf(100));
+        ex.setWarmupSets(3);
+        train.save(ex);
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        var warm = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP).toList();
+        assertThat(warm).hasSize(3);
+        assertThat(warm.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(50));
+        assertThat(warm.get(0).getTargetReps()).isEqualTo(8);
+        assertThat(warm.get(1).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(70));
+        assertThat(warm.get(1).getTargetReps()).isEqualTo(4);
+        assertThat(warm.get(2).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(90));
+        assertThat(warm.get(2).getTargetReps()).isEqualTo(2);
+        assertThat(warm).allSatisfy(s -> assertThat(s.getTargetRIR()).isNull());
+    }
+
+    @Test
+    void testPrescribe_shouldEmitSingleRung_whenWarmupSetsIsOne() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setAnchorWeightKg(BigDecimal.valueOf(100));
+        ex.setWarmupSets(1);
+        train.save(ex);
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        var warm = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP).toList();
+        assertThat(warm).hasSize(1);
+        assertThat(warm.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(70));
+        assertThat(warm.get(0).getTargetReps()).isEqualTo(4);
+    }
+
+    @Test
+    void testPrescribe_shouldPrependRepeatedFirstRung_whenWarmupSetsExceedsThree() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setAnchorWeightKg(BigDecimal.valueOf(100));
+        ex.setWarmupSets(4);
+        train.save(ex);
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        var warm = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP).toList();
+        assertThat(warm).hasSize(4);
+        assertThat(warm.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(50));
+        assertThat(warm.get(0).getTargetReps()).isEqualTo(8);
+        assertThat(warm.get(1).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(50));
+        assertThat(warm.get(1).getTargetReps()).isEqualTo(8);
+        assertThat(warm.get(2).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(70));
+        assertThat(warm.get(2).getTargetReps()).isEqualTo(4);
+        assertThat(warm.get(3).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(90));
+        assertThat(warm.get(3).getTargetReps()).isEqualTo(2);
+    }
+
+    @Test
+    void testPrescribe_shouldEmitNullWeightAbsoluteReps_whenBaseNullAndWarmupSetsIsThree() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setWarmupSets(3);
+        train.save(ex);
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        var warm = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP).toList();
+        assertThat(warm).hasSize(3);
+        assertThat(warm).allSatisfy(s -> assertThat(s.getTargetWeightKg()).isNull());
         assertThat(warm.get(0).getTargetReps()).isEqualTo(8);
         assertThat(warm.get(1).getTargetReps()).isEqualTo(4);
+        assertThat(warm.get(2).getTargetReps()).isEqualTo(2);
         assertThat(warm).allSatisfy(s -> assertThat(s.getTargetRIR()).isNull());
     }
 

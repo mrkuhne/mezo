@@ -41,4 +41,60 @@ describe('MesoEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
     expect(onAddClick).toHaveBeenCalledWith('H')
   })
+
+  it('renders the active day breakdown card (H chest 12/11) and highlights its over rows', () => {
+    render(<MesoEditor days={days} {...props} />)
+    expect(screen.getByText(/12 \/ 11/)).toBeInTheDocument()
+    const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.card')
+    const rowB = screen.getByRole('button', { name: /Gyak b · szerkesztés/ }).closest('.card')
+    expect(rowA).toHaveAttribute('data-over', 'true')
+    expect(rowB).toHaveAttribute('data-over', 'true')
+  })
+
+  it('switching to day Cs shows its own breakdown (13/11), the suggestDay clause, and highlights the over exercise', () => {
+    render(<MesoEditor days={days} {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Cs ·/ }))
+    expect(screen.getByText(/13 \/ 11/)).toBeInTheDocument()
+    expect(screen.getByText(/\(pl\. H\)/)).toBeInTheDocument()
+    const rowC = screen.getByRole('button', { name: /Gyak c · szerkesztés/ }).closest('.card')
+    expect(rowC).toHaveAttribute('data-over', 'true')
+  })
+
+  it('off day (K) renders no breakdown card', () => {
+    render(<MesoEditor days={days} {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: /^K ·/ }))
+    expect(screen.queryByText(/izmonként/)).not.toBeInTheDocument()
+  })
+
+  it('adding a new exercise applies its suggested warmup count once (add-path override)', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<MesoEditor days={days} {...props} onChange={onChange} />)
+    const newEx = {
+      id: 'z', name: 'Uj gyakorlat', muscle: 'chest-mid', warmupSets: 2, workingSets: 3,
+      repMin: 6, repMax: 8, targetRIR: 2, type: 'compound' as const,
+    }
+    const nextDays = days.map((d) => (d.day === 'H' ? { ...d, exercises: [...d.exercises, newEx] } : d))
+    rerender(<MesoEditor days={nextDays} {...props} onChange={onChange} />)
+    // day H already has two chest compounds ('a','b') → the group is hit → the new
+    // compound's suggestion is 1, which differs from its default warmupSets 2.
+    expect(onChange).toHaveBeenCalledWith('H', 'z', { warmupSets: 1 })
+  })
+
+  it('accordion shows the warmup suggestion chip when it differs from the stored count, and tapping it applies it', () => {
+    const onChange = vi.fn()
+    const customDays: MesoDay[] = [
+      {
+        day: 'H', type: 'Push A', muscle: 'chest', exerciseCount: 2, current: true,
+        exercises: [
+          { id: 'a', name: 'Gyak a', muscle: 'chest-mid', warmupSets: 1, workingSets: 6, repMin: 8, repMax: 10, targetRIR: 0, type: 'compound' },
+          { id: 'b', name: 'Gyak b', muscle: 'chest-upper', warmupSets: 2, workingSets: 6, repMin: 8, repMax: 10, targetRIR: 0, type: 'compound' },
+        ],
+      },
+    ]
+    render(<MesoEditor days={customDays} {...props} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /Gyak b · szerkesztés/ }))
+    expect(screen.getByText(/↺ javaslat: 1/)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Gyak b · bemelegítés javaslat alkalmazása'))
+    expect(onChange).toHaveBeenCalledWith('H', 'b', { warmupSets: 1 })
+  })
 })

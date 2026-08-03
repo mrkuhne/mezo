@@ -16,11 +16,13 @@ import { useEffect, useRef, useState } from 'react'
 import type { GymExercise, MesoDay } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
+import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 import { ExerciseAccordionRow } from '@/features/train/components/ExerciseAccordionRow'
 import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
-import { muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
+import { budgetGroup, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
 
 interface MesoEditorProps {
   days: MesoDay[]
@@ -54,8 +56,21 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
   const overBudgets = budgets.filter((b) => b.level === 'over')
   const warningCount = overBudgets.length + capWarnings.length
 
+  // Active-day-level breakdown (Task 1's daySessionBreakdown) — locality
+  // companion to the week-level SetBudgetCard below it; both stay visible.
+  const dayRows = daySessionBreakdown(day)
+  const dayOverRows = dayRows.filter((r) => r.over)
+  const dayWarnings = dayOverRows.map((r) => ({
+    label: r.label,
+    sets: r.sets,
+    suggestDay: leastLoadedDayFor(days, r.group, day.day),
+  }))
+  const overGroups = new Set(dayOverRows.map((r) => r.group))
+
   // Auto-expand: when the active day gains an id absent from the mount-time
-  // baseline (a freshly added exercise), expand it.
+  // baseline (a freshly added exercise), expand it — AND, once, apply its
+  // adaptive warmup suggestion when it differs from the stored default
+  // (libraryToGymExercise seeds warmupSets: 2 for every pick).
   useEffect(() => {
     if (!day) return
     const seen = knownIds.current
@@ -65,7 +80,14 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
       if (!seen.has(e.id)) newId = e.id
       seen.add(e.id)
     }
-    if (newId) setExpandedId(newId)
+    if (newId) {
+      setExpandedId(newId)
+      const newEx = day.exercises.find((e) => e.id === newId)
+      const suggestion = suggestedWarmupSets(day, newId)
+      if (newEx && suggestion !== newEx.warmupSets) {
+        onChange(day.day, newId, { warmupSets: suggestion })
+      }
+    }
   }, [day])
 
   if (!day) return null
@@ -153,6 +175,8 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
         warningCount={warningCount}
       />
 
+      <DayBreakdownCard rows={dayRows} warnings={dayWarnings} />
+
       <SetBudgetCard budgets={budgets} capWarnings={capWarnings} defaultOpen={warningCount > 0} />
 
       {off ? (
@@ -178,6 +202,8 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
                 onToggle={() => setExpandedId((cur) => (cur === e.id ? null : e.id))}
                 onRemove={() => onRemove(day.day, e.id)}
                 onChange={(patch) => onChange(day.day, e.id, patch)}
+                highlight={e.type !== 'plyo' && overGroups.has(budgetGroup(e.muscle) ?? '')}
+                suggestedWarmup={suggestedWarmupSets(day, e.id)}
               />
             )}
           />
