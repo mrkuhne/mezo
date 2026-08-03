@@ -181,6 +181,23 @@ describe('useFuelTimeline (real mode)', () => {
         http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithSettings])),
         http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
         http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: stashFixture })),
+        // A living-protocol occurrence for kreatin at the wake zone (mezo-vx9v Task 9 — the
+        // "Mai" timeline now projects `occurrences`, not a selection-derived buildProtocol).
+        http.get(`${API_BASE}/api/fuel/protocol`, () =>
+          HttpResponse.json({
+            active: {
+              id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active',
+              selectedPantryItemIds: ['kreatin'], confidence: 0.9,
+              items: [
+                {
+                  id: 'occ-kreatin', pantryItemId: 'kreatin', slotKey: 'wake', dose: '5g',
+                  pinned: false, placementSource: 'rule', placementReason: null,
+                },
+              ],
+            },
+            history: [],
+          }),
+        ),
         http.get(`${API_BASE}/api/fuel/intake/:date`, () =>
           HttpResponse.json({ intakes: [{ id: 'i1', pantryItemId: 'kreatin', takenAt: '2026-07-02T05:40:00Z', takenDate: '2026-07-02', dose: '5g' }] }),
         ),

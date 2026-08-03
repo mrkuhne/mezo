@@ -579,30 +579,6 @@ export interface ReplanScenario {
   tools: { type: ToolType; name: string }[]
   confidence: number
 }
-// --- Fuel · Stack protocol builder ---
-export interface ProtocolSlotItem { refId: string; name: string; dose: string; color: string }
-export interface ProtocolSlotData {
-  time: string
-  window: string
-  kind: string
-  kindColor: string
-  relatedTo?: string
-  items: ProtocolSlotItem[]
-  reasoning: string
-  primary: boolean
-}
-export interface Reasoning {
-  kind: 'physiology' | 'timing' | 'interaction' | 'sleep'
-  text: string
-  evidence?: string
-}
-export interface MealMatch { recipeId: string; slot: string; reason: string }
-export interface BuiltProtocol {
-  slots: ProtocolSlotData[]
-  reasoning: Reasoning[]
-  mealMatches: MealMatch[]
-}
-
 // --- Tudás (knowledge) ---
 // V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'

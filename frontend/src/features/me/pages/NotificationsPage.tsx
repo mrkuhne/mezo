@@ -5,6 +5,8 @@ import {
   useCheckins,
   useStack,
   useProtocol,
+  useIntakes,
+  useFuelSettings,
   useSleepGoal,
   useTrain,
   useRunning,
@@ -17,7 +19,8 @@ import { NotificationCategoryRow } from '@/features/me/components/NotificationCa
 import { Toggle } from '@/shared/ui/Toggle'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { buildProtocol, deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
+import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
 import { buildScheduleEntries } from '@/data/notification/notificationScheduleWriter'
 import { forecastToday, type NotificationForecastAnchors } from '@/features/me/logic/notificationForecast'
 import { localDateString } from '@/shared/lib/dates'
@@ -109,20 +112,14 @@ export function NotificationsPage() {
   // unconditionally, before the install-gate's early return, per the rules of hooks. ─────────
   const { checkins } = useCheckins()
   const { stash } = useStack()
-  const { selectedIds } = useProtocol()
+  const { occurrences } = useProtocol()
+  const intakes = useIntakes(localDateString())
+  const { settings } = useFuelSettings()
   const { goal: sleepGoal } = useSleepGoal()
   const { gymSchedule, sport } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { data: ritualDay } = useRitualDay(localDateString())
   const { cycle: medicationCycle } = useMedication()
-
-  const protocolSelection = selectedIds ?? stash.filter((s) => s.type !== 'medication').map((s) => s.id)
-  // The CANONICAL anchors (fix round 1, mezo-h4wp.6.3 review) — same function the app-open
-  // writer and useFuelTimeline use, so the pre-workout time this page shows in the forecast can
-  // never disagree with what gets persisted to notification_schedule.
-  const protocolAnchors = deriveProtocolAnchors(gymSchedule, sport, activeRunningBlock, sleepGoal.wakeTime, sleepGoal.bedTime)
-  const protocolSlots = buildProtocol(protocolSelection, stash, protocolAnchors).slots
-  const scheduleEntries = buildScheduleEntries(checkins, protocolSlots)
 
   // Today's earliest gym/sport block (AnchorResolver's `gym` category anchors on
   // gym_schedule_slot + sport_schedule_slot only — never a running block). `null` = nothing
@@ -132,6 +129,16 @@ export function NotificationsPage() {
   const gymBlock = blocks
     .filter((b) => b.kind === 'gym' || b.kind === 'sport')
     .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0))[0] ?? null
+
+  // The occurrence-based projection (mezo-vx9v Task 9) — the SAME `projectStackDay` composition
+  // the "Mai" timeline and the Stack page use, fed this page's own already-fetched sources, so
+  // the pre-workout time this page shows in the forecast can never disagree with what gets
+  // persisted to notification_schedule.
+  const protocolSlots = projectStackDay({
+    occurrences, stash, intakes, wake: sleepGoal.wakeTime, bed: sleepGoal.bedTime,
+    mealsPerDay: settings.mealsPerDay, blocks,
+  })
+  const scheduleEntries = buildScheduleEntries(checkins, protocolSlots)
 
   const forecastAnchors: NotificationForecastAnchors = {
     wake: sleepGoal.wakeTime,
@@ -152,7 +159,10 @@ export function NotificationsPage() {
     gymBlock,
     medicationDay: medicationCycle.retaDay > 0,
     retaDay: medicationCycle.retaDay,
-    fuelSlotCount: protocolSlots.length,
+    // A zone whose every entry is rest-day-skipped never renders as a stack card (mirrors
+    // buildDayPlan's FuelSlot mapper) — the count the user reads here must match what actually
+    // shows up in the "Mai" timeline, not the raw zone count.
+    fuelSlotCount: protocolSlots.filter((s) => s.entries.some((e) => !e.skippedToday)).length,
     todayHu: WEEKDAY_HU[new Date().getDay()],
   }
 
