@@ -26,6 +26,46 @@ paths:
         '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolViewResponse' } } } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/protocol/items:
+    post:
+      tags: [Fuel]
+      operationId: addProtocolItem
+      summary: Add an occurrence to the living protocol (engine places it when slotKey omitted)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemCreateRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Pantry item not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: Duplicate occurrence in that zone, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/protocol/items/{id}:
+    patch:
+      tags: [Fuel]
+      operationId: patchProtocolItem
+      summary: Move (pin), re-dose or unpin (engine re-places) one occurrence
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemPatchRequest' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: Duplicate occurrence in that zone, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Fuel]
+      operationId: deleteProtocolItem
+      summary: Remove one occurrence (soft delete)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/fuel/intake/{date}:
     get:
       tags: [Fuel]
@@ -80,6 +120,33 @@ components:
         confidence: { type: number }
         lastReplanReason: { type: string }
         selectedPantryItemIds: { type: array, items: { type: string, format: uuid } }
+        items: { type: array, items: { $ref: '#/components/schemas/ProtocolItemResponse' } }
+    ProtocolItemResponse:
+      type: object
+      required: [id, pantryItemId, slotKey, pinned, placementSource]
+      properties:
+        id: { type: string, format: uuid }
+        pantryItemId: { type: string, format: uuid }
+        slotKey: { type: string }
+        dose: { type: string }
+        pinned: { type: boolean }
+        placementSource: { type: string, enum: [rule, llm, user, fallback] }
+        placementReason: { type: string }
+        restDayFallback: { type: string, description: "'skip' or a zone key; absent = FE default" }
+        dailyTotalHint: { type: string, description: 'Rule-table daily-total hint (derived, not stored)' }
+    ProtocolItemCreateRequest:
+      type: object
+      required: [pantryItemId]
+      properties:
+        pantryItemId: { type: string, format: uuid }
+        slotKey: { type: string, pattern: '^(wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime)$' }
+        dose: { type: string, maxLength: 60 }
+    ProtocolItemPatchRequest:
+      type: object
+      properties:
+        slotKey: { type: string, pattern: '^(wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime)$' }
+        dose: { type: string, maxLength: 60 }
+        pinned: { type: boolean, description: 'false = unpin, the engine re-places; true only alongside slotKey' }
     ProtocolViewResponse:
       type: object
       required: [history]

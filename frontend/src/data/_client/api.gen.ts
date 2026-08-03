@@ -1274,6 +1274,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/protocol/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an occurrence to the living protocol (engine places it when slotKey omitted) */
+        post: operations["addProtocolItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/protocol/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one occurrence (soft delete) */
+        delete: operations["deleteProtocolItem"];
+        options?: never;
+        head?: never;
+        /** Move (pin), re-dose or unpin (engine re-places) one occurrence */
+        patch: operations["patchProtocolItem"];
+        trace?: never;
+    };
     "/api/fuel/intake/{date}": {
         parameters: {
             query?: never;
@@ -4093,6 +4128,35 @@ export interface components {
             confidence?: number;
             lastReplanReason?: string;
             selectedPantryItemIds: string[];
+            items?: components["schemas"]["ProtocolItemResponse"][];
+        };
+        ProtocolItemResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            pantryItemId: string;
+            slotKey: string;
+            dose?: string;
+            pinned: boolean;
+            /** @enum {string} */
+            placementSource: "rule" | "llm" | "user" | "fallback";
+            placementReason?: string;
+            /** @description 'skip' or a zone key; absent = FE default */
+            restDayFallback?: string;
+            /** @description Rule-table daily-total hint (derived, not stored) */
+            dailyTotalHint?: string;
+        };
+        ProtocolItemCreateRequest: {
+            /** Format: uuid */
+            pantryItemId: string;
+            slotKey?: string;
+            dose?: string;
+        };
+        ProtocolItemPatchRequest: {
+            slotKey?: string;
+            dose?: string;
+            /** @description false = unpin, the engine re-places; true only alongside slotKey */
+            pinned?: boolean;
         };
         ProtocolViewResponse: {
             active?: components["schemas"]["ProtocolResponse"];
@@ -8933,6 +8997,166 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addProtocolItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolItemCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtocolItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Pantry item not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Duplicate occurrence in that zone */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteProtocolItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    patchProtocolItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolItemPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtocolItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Duplicate occurrence in that zone */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
