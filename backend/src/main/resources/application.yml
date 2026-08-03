@@ -211,6 +211,11 @@ mezo:
     # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
     fuel-settings:
       enabled: true
+    # Stack placement LLM fallback (mezo-vx9v) — zone suggestion for supplements the rule
+    # table does not know; needs the companion switch too (CompanionLlm bean), otherwise
+    # placement degrades to the deterministic 'fallback' zone.
+    stack-placement-llm:
+      enabled: true
     # Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
     # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
     gamification:
