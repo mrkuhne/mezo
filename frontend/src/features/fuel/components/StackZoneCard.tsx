@@ -7,12 +7,17 @@ import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectS
 // ZoneSlotRow for the consumption idiom this mirrors) so the Stack page reads as the SAME
 // zone-timeline language as FuelMaiPage, just with a tick-to-log row instead of a log/AI pair.
 //
-// Badge precedence: a user pin always wins (📌); otherwise a rest-day regroup badges 'ma nincs
-// edzés' (+ '→ kimarad' when the occurrence is fully skipped today, not just displaced to a
-// fallback zone); a normally rule/llm-placed occurrence badges 'auto'.
+// Badge precedence: today's rest-day regroup wins FIRST — 'ma nincs edzés' (+ '→ kimarad' when the
+// occurrence is fully skipped today, not just displaced to a fallback zone) — because a pinned
+// pre_workout/post_workout occurrence can be BOTH `pinned: true` AND `displacedToday`/`skippedToday`
+// on a rest day (projectStackDay copies `pinned` straight through, independent of the skip/displace
+// branch — see projectStackDay.test.ts's 'null fallback on a pinned pre_workout occurrence...'
+// case); showing '📌' there would silently hide the one piece of information the row most needs to
+// explain today ("this isn't where you pinned it — there's no training today"). Only when NEITHER
+// applies does a user pin badge '📌'; a normally rule/llm-placed occurrence badges 'auto'.
 function badgeFor(entry: StackDayEntry): string {
-  if (entry.pinned) return '📌'
   if (entry.displacedToday || entry.skippedToday) return 'ma nincs edzés' + (entry.skippedToday ? ' → kimarad' : '')
+  if (entry.pinned) return '📌'
   return 'auto'
 }
 

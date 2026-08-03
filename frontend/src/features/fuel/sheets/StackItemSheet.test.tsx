@@ -85,6 +85,25 @@ test('tapping a zone chip calls moveItem with that zone and closes the sheet', a
   void qc // keep referenced for future cache assertions if needed
 })
 
+test('editing the dose input and blurring calls setDose(occurrenceId, newValue) — the occurrence dose updates in the cache', async () => {
+  const { Wrapper } = sharedWrapper()
+  let occ: ReturnType<typeof useProtocol>['occurrences'] = []
+  render(
+    <Wrapper>
+      <Probe onData={(o) => { occ = o }} />
+      <StackItemSheet entry={magnezEntry} onClose={() => {}} />
+    </Wrapper>,
+  )
+  const doseInput = screen.getByLabelText('Dózis')
+  expect(doseInput).toHaveValue('300mg')
+  await userEvent.clear(doseInput)
+  await userEvent.type(doseInput, '600mg')
+  await userEvent.tab() // moves focus away → fires the input's onBlur
+  await waitFor(() =>
+    expect(occ.find(o => o.id === 'occ-magnez')?.dose).toBe('600mg'),
+  )
+})
+
 test('+ Még egy bevétel adds a second occurrence for the same pantry item', async () => {
   const { Wrapper } = sharedWrapper()
   let occ: ReturnType<typeof useProtocol>['occurrences'] = []

@@ -96,6 +96,19 @@ describe('FuelStackPage (mock mode)', () => {
     renderView()
     expect(screen.getByText('Miért így')).toBeInTheDocument()
   })
+
+  // Page-level smoke test (review finding, mezo-vx9v Task 8): the seed occurrences DO yield a
+  // non-empty matchMealsToStack() result on this page — d3k2/omega3 (lunch, fat-bound) + the seed
+  // lunch meal (f:18 >= FAT_OK_G:15) — so the wiring itself (useRecipes/useFuelDay(today/yesterday)
+  // → matchMealsToStack → StackMealMatch) is covered here, not just StackMealMatch's own
+  // component-level fixture tests (StackMealMatch.test.tsx).
+  test('the meal-match section renders a real suggestion + verdict from the seed data', () => {
+    renderView()
+    expect(screen.getByText('Étkezés-egyeztetés')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Csirke + édesburgonya + spenót' })
+    expect(link).toHaveAttribute('href', '/fuel/recipes/rec-2')
+    expect(screen.getAllByText('✓').length).toBeGreaterThan(0)
+  })
 })
 
 describe('FuelStackPage (real mode)', () => {
