@@ -24,7 +24,7 @@ export interface ProtocolAnchors {
  *  (spec §5) — the single canonical offset; `deriveProtocolAnchors` is the only place it is
  *  applied, so the Fuel/Stack page, the notification schedule writer, and the settings-screen
  *  preview can never quietly disagree on when that slot fires. */
-const PRE_WORKOUT_STACK_LEAD_MIN = 40
+export const PRE_WORKOUT_STACK_LEAD_MIN = 40
 
 /** Today's real training blocks (gym / sport / run), in derivation order. Moved here (out of
  *  `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) so it can be
