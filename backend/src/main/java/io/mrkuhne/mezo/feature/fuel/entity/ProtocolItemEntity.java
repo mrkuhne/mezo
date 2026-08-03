@@ -45,4 +45,29 @@ public class ProtocolItemEntity extends OwnedEntity {
     @NotNull
     @Column(name = "item_order", nullable = false)
     private Integer itemOrder;
+
+    /** Canonical zone key — NULL on pre-mezo-vx9v rows until the lazy read-backfill runs. */
+    @Column(name = "slot_key")
+    private String slotKey;
+
+    /** Per-occurrence dose override; NULL = inherit the pantry item's default dose. */
+    @Column(name = "dose")
+    private String dose;
+
+    /** True when the user chose/moved the zone — the engine never overwrites a pinned zone. */
+    @Column(name = "pinned", nullable = false)
+    private boolean pinned;
+
+    /** rule | llm | user | fallback (CHECK-guarded). */
+    @NotNull
+    @Column(name = "placement_source", nullable = false)
+    private String placementSource = "rule";
+
+    /** One Hungarian sentence: why this zone. */
+    @Column(name = "placement_reason")
+    private String placementReason;
+
+    /** Rest-day behaviour for training zones: 'skip' or a fallback zone key; NULL = FE default. */
+    @Column(name = "rest_day_fallback")
+    private String restDayFallback;
 }
