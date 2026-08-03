@@ -117,3 +117,46 @@ describe('leastLoadedDayFor', () => {
     expect(leastLoadedDayFor([days[0], days[2]], 'shoulder', 'H')).toBeNull()
   })
 })
+
+describe('optimal zone (mezo-oyhy.1)', () => {
+  it('flags under strictly below the group MEV', () => {
+    const under = muscleBudgets([day('H', 'arms', [ex('biceps-long', 7, 0)])])
+    const atMev = muscleBudgets([day('H', 'arms', [ex('biceps-long', 8, 0)])])
+    expect(under[0].level).toBe('under')
+    expect(under[0].setsToZone).toBe(1)
+    expect(atMev[0].level).toBe('ok')
+    expect(atMev[0].setsToZone).toBe(0)
+  })
+
+  it('projects zoneStart onto the budget scale with the group style mix', () => {
+    const volume = muscleBudgets([day('H', 'chest', [ex('chest-mid', 5, 2)])])
+    expect(volume[0].zoneStart).toBeCloseTo(4 / 20) // pure volume: MEV 4 of cap 20
+    const failure = muscleBudgets([day('H', 'chest', [ex('chest-mid', 5, 0)])])
+    expect(failure[0].zoneStart).toBeCloseTo(4 / 12) // pure failure: MEV 4 of cap 12
+    const mixed = muscleBudgets([day('H', 'chest', [ex('chest-mid', 6, 0), ex('chest-upper', 4, 2)])])
+    expect(mixed[0].budget).toBeCloseTo(0.7) // 6/12 + 4/20
+    expect(mixed[0].zoneStart).toBeCloseTo(0.28) // 0.7 × 4/10
+  })
+
+  it('compares MEV against non-plyo sets only', () => {
+    const rows = muscleBudgets([day('H', 'quad', [ex('quad', 3, 0), plyoEx('quad', 10)])])
+    expect(rows[0].level).toBe('under') // 3 < quad MEV 4 — plyo does not rescue it
+  })
+
+  it('traps and core have no lower bound and never go under', () => {
+    const rows = muscleBudgets([day('H', 'back', [ex('traps', 1, 0)])])
+    expect(rows[0]).toMatchObject({ level: 'ok', mev: null, zoneStart: null, setsToZone: 0 })
+  })
+
+  it('suggests the least-loaded training day for an under group', () => {
+    const days = [
+      day('H', 'arms', [ex('biceps-long', 3, 0), ex('chest-mid', 6, 0)]),
+      day('Csü', 'chest', [ex('chest-mid', 2, 0)]),
+    ]
+    const bi = muscleBudgets(days).find((r) => r.group === 'biceps')!
+    expect(bi.level).toBe('under')
+    expect(bi.suggestedDay).toBe('Csü')
+    const inZone = muscleBudgets(days).find((r) => r.group === 'chest')!
+    expect(inZone.suggestedDay).toBeNull()
+  })
+})

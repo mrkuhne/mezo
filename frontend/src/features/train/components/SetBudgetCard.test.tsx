@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { MuscleBudgetRow, SessionCapWarning } from '@/features/train/logic/setBudget'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 
-const over: MuscleBudgetRow = { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', failureSets: 8, volumeSets: 8, workingSets: 16, plyoSets: 0, budget: 8 / 12 + 8 / 20, level: 'over' }
-const ok: MuscleBudgetRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', failureSets: 0, volumeSets: 8, workingSets: 8, plyoSets: 0, budget: 0.4, level: 'ok' }
+const over: MuscleBudgetRow = { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', failureSets: 8, volumeSets: 8, workingSets: 16, plyoSets: 0, budget: 8 / 12 + 8 / 20, level: 'over', mev: 4, zoneStart: (8 / 12 + 8 / 20) * 4 / 16, setsToZone: 0, suggestedDay: null }
+const ok: MuscleBudgetRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', failureSets: 0, volumeSets: 8, workingSets: 8, plyoSets: 0, budget: 0.4, level: 'ok', mev: 4, zoneStart: 0.2, setsToZone: 0, suggestedDay: null }
 const cap: SessionCapWarning = { day: 'H', group: 'shoulder', label: 'Váll', sets: 13 }
 
 describe('SetBudgetCard', () => {
