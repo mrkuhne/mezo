@@ -1,0 +1,119 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  .mz { --canvas:#FBF6EF; --s1:#FFFFFF; --s2:#F4EBDF; --s3:#EFE5D8; --ink:#2B2118; --ink2:#5F5346; --ink3:#8A7A6A;
+        --coral:#FF6B4A; --coral-deep:#C4622F; --amber:#FFB347; --amber-deep:#9A6A12; --sage:#7FA48A; --sage-deep:#5F7A52;
+        --lav:#9B8FC4; --lav-deep:#7A6DA8; --rose:#E27A8B; --sky:#6FA7D8;
+        --wash-lav:#EEEBF6; --wash-amber:#FFF3E4;
+        --bs: rgba(43,33,24,.08); }
+  .phone { width: 360px; background: var(--canvas); border-radius: 28px; border: 6px solid #2B2118;
+           padding: 14px 12px 18px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink);
+           box-shadow: 0 8px 30px rgba(43,33,24,.18); flex-shrink: 0; }
+  .phone * { box-sizing: border-box; }
+  .wktop { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .backp { width:30px; height:30px; border-radius:10px; background:var(--s2); display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .mono { font-family:'JetBrains Mono'; }
+  .card { background:linear-gradient(180deg, var(--wash-lav) 0%, var(--s1) 48%); border:1px solid var(--bs); border-left:5px solid var(--lav);
+          border-radius:20px; padding:14px 14px 12px; box-shadow:0 2px 10px rgba(43,33,24,.06); position:relative; overflow:hidden; }
+  .glow { position:absolute; top:-28px; right:-18px; width:110px; height:110px; border-radius:50%; background:radial-gradient(circle, #9B8FC440, transparent 70%); }
+  .exo { font-size:9px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; color:var(--lav-deep); }
+  .statstrip { display:flex; background:rgba(255,255,255,.75); border:1px solid var(--bs); border-radius:14px; margin-top:10px; overflow:hidden; }
+  .statcell { flex:1; padding:8px 4px 7px; text-align:center; }
+  .statcell + .statcell { border-left:1px solid var(--bs); }
+  .statcell .l { font-size:8px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink3); font-weight:800; }
+  .statcell .v { font-size:13px; font-weight:800; margin-top:2px; }
+  .subrow { display:flex; align-items:center; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--bs); font-size:11px; color:var(--ink2); }
+  .setdots { display:flex; gap:6px; margin-top:10px; align-items:center; }
+  .sdot { width:24px; height:24px; border-radius:50%; border:1.5px solid var(--bs); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; color:var(--ink3); }
+  .steppers { display:flex; gap:8px; margin-top:10px; }
+  .stp { flex:1; background:#fff; border:1px solid var(--bs); border-radius:14px; padding:7px 10px; text-align:center; }
+  .stp .lbl { font-size:8.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink3); font-weight:700; }
+  .stp .val { font-family:'Bricolage Grotesque'; font-size:21px; font-weight:800; margin:1px 0; }
+  .stp .pm { display:flex; justify-content:space-between; align-items:center; }
+  .stp .pm span { width:29px; height:29px; border-radius:10px; background:var(--s2); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--coral-deep); }
+  .rirrow { display:flex; gap:5px; margin-top:8px; align-items:center; }
+  .rirp { width:34px; text-align:center; padding:5px 0; border-radius:9px; background:var(--s2); font-size:11px; font-weight:700; color:var(--ink3); }
+  .rirp.on { background:var(--lav-deep); color:#fff; }
+  .cta { margin-top:11px; border-radius:15px; text-align:center; padding:13px; font-weight:800; font-size:14px; color:#fff;
+         background:linear-gradient(135deg, var(--lav), var(--lav-deep)); box-shadow:0 4px 14px #9B8FC466; }
+  .zonenote { font-size:11px; line-height:1.55; color:var(--ink2); }
+  .zn { display:flex; gap:8px; margin-bottom:8px; align-items:flex-start; }
+  .zn b.num { flex:none; width:20px; height:20px; border-radius:50%; background:#2B2118; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; }
+</style>
+
+<h2>B-variáns v2 — tagolt felső zóna, kisebb kontrollok</h2>
+<p class="subtitle">A chip-leves helyett <b>címkézett stat-sáv</b> (3 cella: Stílus · Rep-cél · Szett), a múlt-hét/javaslat saját elválasztott sora, a stepperek és a RIR-pillek ~25%-kal kisebbek. Kattints az optionre, ha így jó — vagy írd, mit mozgassak.</p>
+
+<div style="display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; justify-content:center; margin-top:20px;">
+
+  <div class="phone mz">
+    <div class="wktop"><span class="backp">‹</span><div style="flex:1;"><b style="font-family:'Bricolage Grotesque';font-size:14px;">Upper Body A</b><div class="mono" style="font-size:9px;color:var(--ink3);">3/8 gyakorlat · 7/18 szett</div></div><span class="backp">⋯</span></div>
+    <div style="display:flex; gap:3px; height:7px; border-radius:4px; overflow:hidden; margin-bottom:12px;">
+      <span style="flex:3; background:var(--sky);"></span><span style="flex:3; background:var(--sky); opacity:.45;"></span>
+      <span style="flex:2; background:var(--lav);"></span><span style="flex:2; background:var(--lav); opacity:.25;"></span>
+      <span style="flex:2; background:var(--rose); opacity:.25;"></span><span style="flex:2; background:var(--rose); opacity:.25;"></span>
+    </div>
+
+    <div class="card">
+      <div class="glow"></div>
+
+      <!-- ① fejléc -->
+      <div class="exo">3/8 · Váll (első) · compound</div>
+      <h2 style="font-family:'Bricolage Grotesque'; font-size:23px; margin:2px 0 0;">Overhead Press</h2>
+
+      <!-- ② stat-sáv: három címkézett cella -->
+      <div class="statstrip">
+        <div class="statcell"><div class="l">Stílus</div><div class="v" style="color:var(--coral-deep);">🔥 Failure</div></div>
+        <div class="statcell"><div class="l">Rep-cél</div><div class="v mono">6–8</div></div>
+        <div class="statcell"><div class="l">Szett</div><div class="v mono">2/3</div></div>
+      </div>
+
+      <!-- ③ múlt + javaslat: saját sor -->
+      <div class="subrow">
+        <span style="color:var(--ink3);">múlt héten:</span><span class="mono" style="font-weight:700;">42,5 kg × 7 @1</span>
+        <span style="flex:1;"></span>
+        <span style="color:var(--sage-deep); font-weight:800;">↗ ma: 45 kg</span>
+      </div>
+
+      <!-- ④ szett-pöttyök -->
+      <div class="setdots">
+        <span class="sdot" style="background:var(--amber);border-color:var(--amber);color:#fff;">B1</span>
+        <span class="sdot" style="background:var(--lav);border-color:var(--lav);color:#fff;">1</span>
+        <span class="sdot" style="border-color:var(--lav-deep); color:var(--lav-deep); box-shadow:0 0 0 3px #9B8FC433;">2</span>
+        <span class="sdot">3</span>
+        <span class="mono" style="font-size:9px; color:var(--ink3); margin-left:4px;">B1 = 50% · 22,5 ✓</span>
+      </div>
+
+      <!-- ⑤ kompakt stepperek -->
+      <div class="steppers">
+        <div class="stp"><div class="lbl">Súly (kg)</div><div class="pm"><span>−</span><div class="val">45</div><span>+</span></div></div>
+        <div class="stp"><div class="lbl">Ismétlés</div><div class="pm"><span>−</span><div class="val" style="color:var(--lav-deep);">7</div><span>+</span></div></div>
+      </div>
+
+      <!-- ⑥ kisebb RIR + inline hint -->
+      <div class="rirrow">
+        <span style="font-size:10px;color:var(--ink3);font-weight:700;">RIR</span>
+        <span class="rirp on">0</span><span class="rirp">1</span><span class="rirp">2</span><span class="rirp">3</span>
+        <span style="flex:1;"></span>
+        <span style="font-size:9.5px; color:var(--amber-deep); font-weight:700;">🔥 bukásig!</span>
+      </div>
+
+      <div class="cta">Szett kész ✓ <span style="opacity:.8; font-weight:600; font-size:12px;">· pihenő 2:00</span></div>
+    </div>
+  </div>
+
+  <div style="max-width:330px;">
+    <div class="option" data-choice="OK" onclick="toggleSelect(this)" style="margin-bottom:14px;">
+      <div class="letter">✓</div>
+      <div class="content"><h3>Így jó — mehet a spec</h3><p>A v2 szerkezettel indul a fejlesztés.</p></div>
+    </div>
+    <div class="zonenote">
+      <div class="zn"><b class="num">1</b><span><b>Fejléc</b> — sorszám + izom + típus egy eyebrow-ban, alatta csak a név. Semmi más.</span></div>
+      <div class="zn"><b class="num">2</b><span><b>Stat-sáv</b> — a három kulcsinfó címkézett cellákban (Stílus · Rep-cél · Szett), elválasztókkal. Volume-gyakorlatnál: 🌿 Volume (sage) · RIR 2.</span></div>
+      <div class="zn"><b class="num">3</b><span><b>Múlt + javaslat</b> — saját sor, felső elválasztóval: balra a múlt heti top szett, jobbra a mai javaslat sage-ben.</span></div>
+      <div class="zn"><b class="num">4</b><span><b>Szett-pöttyök</b> — B1 amber + % címke, munkaszettek izomszínben.</span></div>
+      <div class="zn"><b class="num">5</b><span><b>Stepperek</b> — érték 28→21px, gombok 34→29px (még bőven tap-barát).</span></div>
+      <div class="zn"><b class="num">6</b><span><b>RIR</b> — fix szélességű kisebb pillek (34px), a "bukásig" hint ugyanabban a sorban jobbra.</span></div>
+    </div>
+  </div>
+</div>
