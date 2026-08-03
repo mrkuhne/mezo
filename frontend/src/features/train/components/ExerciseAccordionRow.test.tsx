@@ -69,4 +69,24 @@ describe('ExerciseAccordionRow', () => {
     const card = container.querySelector('.card')
     expect(card).not.toHaveAttribute('data-over')
   })
+
+  it('shows the warmup suggestion chip when it differs from the stored count, and tapping it applies the suggestion', () => {
+    const onChange = vi.fn()
+    render(
+      <ExerciseAccordionRow ex={ex} expanded onToggle={noop} onRemove={noop} onChange={onChange} suggestedWarmup={3} />,
+    )
+    expect(screen.getByText(/↺ javaslat: 3/)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Fekvenyomás · bemelegítés javaslat alkalmazása'))
+    expect(onChange).toHaveBeenCalledWith({ warmupSets: 3 })
+  })
+
+  it('no chip when the suggestion equals the stored warmup count', () => {
+    render(<ExerciseAccordionRow ex={ex} expanded onToggle={noop} onRemove={noop} onChange={noop} suggestedWarmup={ex.warmupSets} />)
+    expect(screen.queryByText(/javaslat/)).not.toBeInTheDocument()
+  })
+
+  it('no chip when suggestedWarmup is left undefined', () => {
+    render(<ExerciseAccordionRow ex={ex} expanded onToggle={noop} onRemove={noop} onChange={noop} />)
+    expect(screen.queryByText(/javaslat/)).not.toBeInTheDocument()
+  })
 })

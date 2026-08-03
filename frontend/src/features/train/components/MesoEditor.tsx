@@ -22,6 +22,7 @@ import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 import { budgetGroup, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
 
 interface MesoEditorProps {
   days: MesoDay[]
@@ -67,7 +68,9 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
   const overGroups = new Set(dayOverRows.map((r) => r.group))
 
   // Auto-expand: when the active day gains an id absent from the mount-time
-  // baseline (a freshly added exercise), expand it.
+  // baseline (a freshly added exercise), expand it — AND, once, apply its
+  // adaptive warmup suggestion when it differs from the stored default
+  // (libraryToGymExercise seeds warmupSets: 2 for every pick).
   useEffect(() => {
     if (!day) return
     const seen = knownIds.current
@@ -77,7 +80,14 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
       if (!seen.has(e.id)) newId = e.id
       seen.add(e.id)
     }
-    if (newId) setExpandedId(newId)
+    if (newId) {
+      setExpandedId(newId)
+      const newEx = day.exercises.find((e) => e.id === newId)
+      const suggestion = suggestedWarmupSets(day, newId)
+      if (newEx && suggestion !== newEx.warmupSets) {
+        onChange(day.day, newId, { warmupSets: suggestion })
+      }
+    }
   }, [day])
 
   if (!day) return null
@@ -193,6 +203,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
                 onRemove={() => onRemove(day.day, e.id)}
                 onChange={(patch) => onChange(day.day, e.id, patch)}
                 highlight={e.type !== 'plyo' && overGroups.has(budgetGroup(e.muscle) ?? '')}
+                suggestedWarmup={suggestedWarmupSets(day, e.id)}
               />
             )}
           />
