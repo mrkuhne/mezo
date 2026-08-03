@@ -31,8 +31,16 @@ public class PlacementEngine {
 
     static final String FALLBACK_ZONE = "breakfast";
     static final String FALLBACK_REASON = "Bizonytalan besorolás — helyezd át, ha máskor szeded.";
-    private static final String SYSTEM_PROMPT = """
-        You classify a dietary supplement into ONE daily intake zone.
+
+    /** First word of the system prompt — FakeCompanionLlm mirrors it (literal, no import back;
+     *  companion already depends on fuel one-way via StackPlacementLlmAdapter — mirroring the
+     *  marker as a literal, like every other cross-feature marker in FakeCompanionLlm, keeps that
+     *  test double consistent and self-healing: a drifted mirror falls through to the generic
+     *  echo, which is unparseable, so PlacementEngineLlmIT fails loudly instead of silently). */
+    public static final String SYSTEM_PROMPT_MARKER = "KAMRA-ELHELYEZES-FELADAT";
+
+    private static final String SYSTEM_PROMPT = SYSTEM_PROMPT_MARKER + """
+        : You classify a dietary supplement into ONE daily intake zone.
         Answer with STRICT JSON only: {"slotKey":"<zone>","reasonHu":"<one Hungarian sentence>"}
         Allowed slotKey values: wake, breakfast, pre_workout, post_workout, lunch, dinner, evening, bedtime.
         The reason must be one short Hungarian sentence explaining why that zone is optimal.""";
