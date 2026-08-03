@@ -81,3 +81,10 @@ New pure helper `suggestedWarmupSets(day: MesoDay, exId: string): number` in
   rounding, absolute reps, >3 repeat rule, null-base rows. Full suite stays CI's job.
 - Docs: train.md §4 (budget: plyo exclusion + daily breakdown), §4.4/recommendation (new ladder),
   file map; lint-docs.
+
+## Implementation reality notes
+
+- **Warm-up weight rounding is HALF_UP, not round-down.** The shipped ladder reuses the
+  pre-existing backend `roundClamp` (`SetRecommendationService.java:144-148`, `RoundingMode.HALF_UP`
+  to 2.5 kg) rather than the research tip's round-down — app-internal consistency with
+  working-weight rounding wins. The mock seed's warm-up rows mirror the same HALF_UP values.

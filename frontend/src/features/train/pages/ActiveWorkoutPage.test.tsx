@@ -222,7 +222,7 @@ test('mock mode: the giant steppers pre-fill the current set from the prescribed
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1: warmups are sets 1-2 (52.5×8, 77.5×3), working sets are 105×10.
+  // ex1: warmups are sets 1-2 (52.5×8, 80×3), working sets are 105×10.
   await screen.findByRole('button', { name: 'Súly növelése' }) // wait for the active phase
   expect(container.querySelector('.steprow')).toHaveTextContent('52,5') // first warmup target
   expect(container.querySelector('.steprow')).toHaveTextContent('8')
@@ -310,7 +310,7 @@ test('mock mode: a deviated working-set weight carries into the next working set
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByText('Szett kész ✓')) // B1 (52.5)
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
-  await user.click(screen.getByText('Szett kész ✓')) // B2 (77.5)
+  await user.click(screen.getByText('Szett kész ✓')) // B2 (80)
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await screen.findByText('RIR') // the first working set is on deck
   expect(container.querySelector('.steprow')).toHaveTextContent('105') // engine seeds working 1
