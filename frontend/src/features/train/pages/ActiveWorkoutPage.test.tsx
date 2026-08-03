@@ -168,9 +168,10 @@ test('mock mode: the set-dots note shows the last logged warmup\'s percent label
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
   expect(container.querySelector('.wkx-setdots-note')).toBeNull()
-  // ex1 B1: 52.5 kg target vs the first working target 105 kg -> 50%.
+  // ex1 B1: 52.5 kg target vs the first working target 105 kg -> 50%. The kg is
+  // hu-HU formatted (final-review fix, mezo-8xmf) like the rest of the card's numbers.
   await user.click(screen.getByText('Szett kész ✓'))
-  expect(await screen.findByText('B1 = 50% · 52.5 ✓')).toBeInTheDocument()
+  expect(await screen.findByText('B1 = 50% · 52,5 ✓')).toBeInTheDocument()
 })
 
 test('the wk-top header shows the workout title, the gyakorlat/szett counter, an exercise dot per exercise and the Vissza + ⋯ buttons', async () => {
@@ -704,6 +705,14 @@ test('reordering remaining exercises changes which exercise comes next', async (
   expect(dots[2]).toHaveClass('cur') // Cable Pull-Around: now current
 })
 
+// The Szett stat-cell's value (e.g. "0/3") — helper so callers don't hand-roll the
+// wkx-statcell/wkx-statlabel traversal.
+function szettCellValue(container: HTMLElement): string | null {
+  const cells = Array.from(container.querySelectorAll('.wkx-statcell'))
+  const cell = cells.find((c) => c.querySelector('.wkx-statlabel')?.textContent === 'Szett')
+  return cell?.querySelector('.wkx-statvalue')?.textContent ?? null
+}
+
 test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6', async () => {
   const user = userEvent.setup()
   const { container } = setup()
@@ -712,6 +721,10 @@ test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6',
   // v4 (mezo-8xmf): the set-list table row count is the "Working"/"Bemel." tag
   // count's replacement — count rows by their aria-label instead.
   expect(screen.getAllByRole('button', { name: /working szett szerkesztése/ })).toHaveLength(3) // 3 planned working rows
+  // Szett stat-cell (final-review fix, mezo-8xmf): denominator must track the LIVE
+  // working-slot count, not the static `current.workingSets` — before the extra set
+  // it reads the planned 0/3.
+  expect(szettCellValue(container)).toBe('0/3')
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
   const dots = container.querySelectorAll('.setdots .sd')
@@ -722,6 +735,8 @@ test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6',
   // fix, mezo-8141 — Finding 2); the planned dots stay plain.
   expect(dots[5]).toHaveClass('extra')
   expect(dots[0]).not.toHaveClass('extra')
+  // Denominator now reflects the 4th live working slot — 0/4, not the stale 0/3.
+  expect(szettCellValue(container)).toBe('0/4')
 })
 
 test('⋯ Kihagyás advances to the next exercise without opening the debrief', async () => {

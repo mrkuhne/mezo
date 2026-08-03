@@ -33,12 +33,13 @@ describe('warmupPctLabel', () => {
     const ex: LoggedWorkoutExercise = {
       ...baseExercise,
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 24, targetReps: 12, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 12.2, targetReps: 12, targetRIR: null },
         { kind: 'working', targetWeightKg: 50, targetReps: 10, targetRIR: 2 },
       ],
     }
-    // 24/50 × 100 = 48 → 48 (exact, no rounding surprise)
-    expect(warmupPctLabel(ex, 0)).toBe('B1 = 48% · 24')
+    // 12.2/50 × 100 = 24.4 → rounds down to 24. The kg is hu-HU formatted
+    // (final-review fix, mezo-8xmf) like the rest of the card's numbers.
+    expect(warmupPctLabel(ex, 0)).toBe('B1 = 24% · 12,2')
   })
   it('null when prescribedSets is null', () => {
     expect(warmupPctLabel({ ...baseExercise, prescribedSets: null }, 0)).toBeNull()

@@ -903,6 +903,11 @@ function ActiveWorkoutSession({
   const muscleLabel = MUSCLE_LABELS[current.muscle] ?? current.muscle
   const cardStyle = setStyle(current.targetRIR)
   const doneWorkingSets = Math.max(0, cursor - warmupCount)
+  // Live working-slot count (mezo-8xmf final review): the Szett stat-cell denominator must
+  // track the SESSION's live prescription like the numerator above, not the static
+  // `current.workingSets` — otherwise a ＋Szett extra set shows `4/3` and a removed working
+  // slot sticks at `/3`.
+  const liveWorkingSetCount = Math.max(0, currentSetCount - warmupCount)
   const firstWorkingTargetKg = (session.prescribed[current.id] ?? [])
     .find((p) => p.kind === 'working' && p.targetWeightKg != null)?.targetWeightKg ?? null
   const lastWarmupIdx = lastLoggedWarmupIdx(session, current.id, cursor)
@@ -1208,7 +1213,7 @@ function ActiveWorkoutSession({
             </div>
             <div className="wkx-statcell">
               <div className="wkx-statlabel">Szett</div>
-              <div className="wkx-statvalue mono">{doneWorkingSets}/{current.workingSets}</div>
+              <div className="wkx-statvalue mono">{doneWorkingSets}/{liveWorkingSetCount}</div>
             </div>
           </div>
 

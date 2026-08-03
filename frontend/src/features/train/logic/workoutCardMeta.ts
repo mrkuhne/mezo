@@ -23,7 +23,7 @@ export function warmupPctLabel(ex: LoggedWorkoutExercise, warmupIdx: number): st
   if (!firstWorking || firstWorking.targetWeightKg == null) return null
 
   const pct = Math.round((warmup.targetWeightKg / firstWorking.targetWeightKg) * 100)
-  return `B${warmupIdx + 1} = ${pct}% · ${warmup.targetWeightKg}`
+  return `B${warmupIdx + 1} = ${pct}% · ${warmup.targetWeightKg.toLocaleString('hu-HU')}`
 }
 
 /** Rep-range status of one logged set: warmups are always `'ok'`; working sets are `'ok'` inside `[repMin, repMax]` (inclusive), else `'below'`/`'above'`. */
