@@ -354,8 +354,8 @@ export const workout: WorkoutPlan = {
       sets: 5,
       rationale: 'Múlt hét 9 × 102.5 kg → +2.5 kg',
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
-        { kind: 'warmup', targetWeightKg: 77.5, targetReps: 5, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 52.5, targetReps: 8, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 77.5, targetReps: 3, targetRIR: null },
         { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
         { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
         { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
@@ -369,8 +369,8 @@ export const workout: WorkoutPlan = {
       sets: 5,
       rationale: 'Múlt hét 11 × 72 kg → +2.5 kg',
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 37.5, targetReps: 12, targetRIR: null },
-        { kind: 'warmup', targetWeightKg: 55, targetReps: 6, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 35, targetReps: 8, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 55, targetReps: 3, targetRIR: null },
         { kind: 'working', targetWeightKg: 74.5, targetReps: 12, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 74.5, targetReps: 12, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 74.5, targetReps: 12, targetRIR: 1 },
@@ -384,7 +384,7 @@ export const workout: WorkoutPlan = {
       sets: 4,
       rationale: 'Múlt hét 13 × 22 kg → cél 15 ism.',
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 12.5, targetReps: 15, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 15, targetReps: 4, targetRIR: null },
         { kind: 'working', targetWeightKg: 22, targetReps: 15, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 22, targetReps: 15, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 22, targetReps: 15, targetRIR: 1 },
@@ -398,7 +398,7 @@ export const workout: WorkoutPlan = {
       sets: 4,
       rationale: 'Múlt hét 11 × 18 kg → cél 12 ism.',
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 10, targetReps: 12, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 12.5, targetReps: 4, targetRIR: null },
         { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
@@ -411,7 +411,7 @@ export const workout: WorkoutPlan = {
       sets: 4,
       rationale: 'Múlt hét 17 × 27 kg → cél 20 ism.',
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 15, targetReps: 18, targetRIR: null },
+        { kind: 'warmup', targetWeightKg: 17.5, targetReps: 4, targetRIR: null },
         { kind: 'working', targetWeightKg: 27, targetReps: 20, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 27, targetReps: 20, targetRIR: 1 },
         { kind: 'working', targetWeightKg: 27, targetReps: 20, targetRIR: 1 },

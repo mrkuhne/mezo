@@ -222,10 +222,10 @@ test('mock mode: the giant steppers pre-fill the current set from the prescribed
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1: warmups are sets 1-2 (52.5×10, 77.5×5), working sets are 105×10.
+  // ex1: warmups are sets 1-2 (52.5×8, 77.5×3), working sets are 105×10.
   await screen.findByRole('button', { name: 'Súly növelése' }) // wait for the active phase
   expect(container.querySelector('.steprow')).toHaveTextContent('52,5') // first warmup target
-  expect(container.querySelector('.steprow')).toHaveTextContent('10')
+  expect(container.querySelector('.steprow')).toHaveTextContent('8')
 })
 
 test('the kind chip under the set-dots is gone — the dots alone carry warmup/working (mezo-xt65)', async () => {
@@ -525,7 +525,7 @@ test('the giant Súly/Ismétlés steppers increment by their step on tap', async
   await user.click(screen.getByRole('button', { name: 'Súly növelése' }))
   expect(container.querySelector('.steprow')).toHaveTextContent('55') // +2.5 kg
   await user.click(screen.getByRole('button', { name: 'Ismétlés növelése' }))
-  expect(container.querySelector('.steprow')).toHaveTextContent('11') // +1 rep
+  expect(container.querySelector('.steprow')).toHaveTextContent('9') // +1 rep
 })
 
 test('reordering remaining exercises changes which exercise comes next', async () => {
@@ -1499,7 +1499,7 @@ test('mock mode: a logged set row opens the edit sheet, and saving rewrites the 
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByText('Szett kész ✓')) // B1: prescribed 52.5 kg × 10
+  await user.click(screen.getByText('Szett kész ✓')) // B1: prescribed 52.5 kg × 8
   const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
   if (skipRest) await user.click(skipRest)
 
@@ -1512,7 +1512,7 @@ test('mock mode: a logged set row opens the edit sheet, and saving rewrites the 
   // Fix round 1 (I3): assert the EXACT rewritten label, not just "it changed" — a save
   // that silently wrote the wrong field (or the wrong index) would still pass a mere
   // inequality check.
-  expect(firstRow().getAttribute('aria-label')).toBe('B1 bemelegítő szett szerkesztése — 52.5 kg × 11')
+  expect(firstRow().getAttribute('aria-label')).toBe('B1 bemelegítő szett szerkesztése — 52.5 kg × 9')
 })
 
 test('mock mode: logging a set that earns no medal still binds its server id (the row stays tappable)', async () => {
