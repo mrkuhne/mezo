@@ -1,0 +1,164 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  .mz { --canvas:#FBF6EF; --s1:#FFFFFF; --s2:#F4EBDF; --s3:#EFE5D8; --ink:#2B2118; --ink2:#5F5346; --ink3:#8A7A6A;
+        --coral:#FF6B4A; --coral-deep:#C4622F; --amber:#FFB347; --amber-deep:#9A6A12; --sage:#7FA48A; --sage-deep:#5F7A52;
+        --lav:#9B8FC4; --lav-deep:#7A6DA8; --rose:#E27A8B; --rose-deep:#B14B5E; --sky:#6FA7D8; --sky-deep:#3E6E9E; --err:#D9534F;
+        --wash-coral:#FFEDE6; --wash-sky:#E7F0F8; --wash-lav:#EEEBF6; --wash-rose:#FBE9EC; --wash-sage:#EAF0E3; --wash-amber:#FFF3E4;
+        --bs: rgba(43,33,24,.08); }
+  .phone { width: 360px; background: var(--canvas); border-radius: 28px; border: 6px solid #2B2118;
+           padding: 14px 12px 18px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink);
+           box-shadow: 0 8px 30px rgba(43,33,24,.18); flex-shrink: 0; }
+  .phone * { box-sizing: border-box; }
+  .daytabs { display:flex; gap:4px; margin-bottom:12px; }
+  .daytab { flex:1; text-align:center; font-size:10px; font-weight:600; padding:7px 0; border-radius:10px; color:var(--ink3); background:var(--s2); position:relative; }
+  .daytab.on { background: var(--coral); color:#fff; }
+  .daytab.off { opacity:.45; }
+  .warndot { position:absolute; top:-3px; right:-2px; width:8px; height:8px; border-radius:50%; background:var(--err); border:1.5px solid var(--canvas); }
+  .hero { border-radius:18px; border:1px solid var(--bs); padding:14px; margin-bottom:10px;
+          background: linear-gradient(180deg, var(--wash-amber) 0%, var(--s1) 100%); }
+  .eyebrow { font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:var(--coral-deep); font-weight:800; }
+  .heronum { font-family:'Bricolage Grotesque'; font-size:34px; font-weight:800; line-height:1; }
+  .mono { font-family:'JetBrains Mono'; }
+  .minirow { display:flex; align-items:center; gap:8px; }
+  .grow { flex:1; }
+  .card { background:var(--s1); border:1px solid var(--bs); border-radius:18px; padding:13px 14px; margin-bottom:10px; box-shadow:0 1px 4px rgba(43,33,24,.05); }
+  .rail { width:5px; align-self:stretch; border-radius:3px; }
+  .bar { height:8px; border-radius:4px; background:var(--s3); overflow:hidden; position:relative; margin-top:4px; }
+  .bar > i { display:block; height:100%; border-radius:4px; }
+  .capline { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ink3); opacity:.5; }
+  .mpill { font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; }
+  .warnline { display:flex; gap:7px; align-items:flex-start; background:#FFF3E4; border:1px solid #9A6A1235; color:var(--amber-deep);
+              border-radius:12px; padding:8px 10px; font-size:10.5px; font-weight:600; line-height:1.4; margin-top:9px; }
+  .budrow { display:flex; align-items:center; gap:10px; padding:7px 0; }
+  .budrow + .budrow { border-top:1px solid var(--bs); }
+  .tabsw { display:flex; background:var(--s2); border-radius:999px; padding:3px; margin-bottom:10px; }
+  .tabsw span { flex:1; text-align:center; padding:6px 0; font-size:11px; font-weight:800; border-radius:999px; color:var(--ink3); }
+  .tabsw .on { background:var(--s1); color:var(--coral-deep); box-shadow:0 1px 3px rgba(43,33,24,.12); }
+  .exmini { border-radius:14px; border:1px solid var(--bs); background:var(--s1); padding:9px 12px; margin-bottom:7px; display:flex; align-items:center; gap:8px; }
+  .caret { color:var(--ink3); font-size:11px; }
+</style>
+
+<h2>Aznapi bontás — hol a baj a MAI edzésben?</h2>
+<p class="subtitle">A gond: a session-cap warningok a heti kártya kinyitott állapotának alján bújnak meg, és a "9 jelzés" nem mondja meg, ma melyik izomcsoport lépi túl a 11-et. Mindkét variáns a te valós adataiddal számol (Upper Body A · 26 szett · Váll ma 12). Kattints a nyerőre!</p>
+
+<div style="display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; justify-content:center; margin-top:20px;">
+
+  <!-- ============ A: KÜLÖN "MA" KÁRTYA ============ -->
+  <div style="max-width:380px;">
+    <div class="option" data-choice="A" onclick="toggleSelect(this)" style="margin-bottom:12px;">
+      <div class="letter">A</div>
+      <div class="content"><h3>Külön „Ma" kártya a hero alatt</h3><p>A hero alatt mindig látszik a MAI nap izmonkénti bontása a 11-es plafonhoz mérve (jelölt cap-vonallal), a túllépés warning-sorral. A heti büdzsé-kártya változatlanul alatta. Mindkét szint mindig látható — cserébe magasabb a fejléc.</p></div>
+    </div>
+    <div class="phone mz">
+      <div class="daytabs"><span class="daytab on">HÉT<span class="warndot"></span></span><span class="daytab">KEDD<span class="warndot"></span></span><span class="daytab">SZE</span><span class="daytab">CSÜ<span class="warndot"></span></span><span class="daytab">PÉN</span><span class="daytab off">SZO</span></div>
+
+      <div class="hero">
+        <div class="eyebrow" style="color:var(--amber-deep);">Upper Body A</div>
+        <div class="minirow" style="margin-top:4px;">
+          <span class="heronum">26</span><span style="font-size:12px;font-weight:700;color:var(--ink2);">szett ma</span>
+          <span class="grow"></span><span class="mono" style="font-size:10px;color:var(--ink3);">8 gyakorlat</span>
+        </div>
+        <div class="minirow" style="margin-top:8px; padding-top:8px; border-top:1px solid var(--bs);">
+          <span style="font-size:11px;color:var(--ink2);" class="grow">Heti terhelés: <b>142 szett</b> · 5 edzésnap</span>
+          <span class="mono" style="font-size:10px;color:#B03A36;font-weight:700;">⚠ 9 jelzés</span>
+        </div>
+      </div>
+
+      <!-- ÚJ: MA kártya -->
+      <div class="card" style="border-color:#9A6A1240;">
+        <div class="minirow" style="margin-bottom:6px;">
+          <span class="eyebrow">Ma · izmonként</span><span class="grow"></span>
+          <span class="mono" style="font-size:9px;color:var(--ink3);">max 11 szett/izom</span>
+        </div>
+
+        <div class="budrow"><span class="rail" style="background:var(--lav);"></span>
+          <div class="grow">
+            <div class="minirow"><span style="font-weight:700;font-size:12.5px;">Váll</span><span class="grow"></span><span class="mono" style="font-size:10px;color:#B03A36;font-weight:700;">12 / 11 ⚠</span></div>
+            <div class="bar"><i style="width:100%;background:linear-gradient(90deg,var(--lav),var(--err));"></i><span class="capline" style="left:91%;"></span></div>
+          </div>
+        </div>
+        <div class="budrow"><span class="rail" style="background:var(--sky);"></span>
+          <div class="grow">
+            <div class="minirow"><span style="font-weight:700;font-size:12.5px;">Hát</span><span class="grow"></span><span class="mono" style="font-size:10px;color:var(--ink2);">8 / 11</span></div>
+            <div class="bar"><i style="width:73%;background:var(--sky);"></i><span class="capline" style="left:91%;"></span></div>
+          </div>
+        </div>
+        <div class="budrow"><span class="rail" style="background:var(--rose);"></span>
+          <div class="grow">
+            <div class="minirow"><span style="font-weight:700;font-size:12.5px;">Bicepsz</span><span class="grow"></span><span class="mono" style="font-size:10px;color:var(--ink2);">6 / 11</span></div>
+            <div class="bar"><i style="width:55%;background:var(--rose);"></i><span class="capline" style="left:91%;"></span></div>
+          </div>
+        </div>
+
+        <div class="warnline">⚠ <span><b>Váll: ma 12 szett</b> — 11 fölött nincs kimutatható plusz. Vigyél át 1+ szettet egy másik napra (pl. SZE)!</span></div>
+      </div>
+
+      <!-- Heti büdzsé változatlanul -->
+      <div class="card">
+        <div class="minirow"><span class="eyebrow" style="color:var(--ink3);">Heti szet-büdzsé</span><span class="grow"></span><span class="caret">▾</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;">
+          <span class="mpill" style="background:#D9534F1a;color:#B03A36;">Comb 242%</span>
+          <span class="mpill" style="background:#D9534F1a;color:#B03A36;">Váll 233%</span>
+          <span class="mpill" style="background:var(--wash-amber);color:var(--amber-deep);">Core 75%</span>
+          <span class="mpill" style="background:var(--wash-sage);color:var(--sage-deep);">Mell 50%</span>
+        </div>
+      </div>
+
+      <div class="exmini"><div class="grow"><b style="font-family:'Bricolage Grotesque';font-size:13px;">Pull-Up</b> <span class="mpill" style="background:var(--wash-sky);color:var(--sky-deep);font-size:8.5px;">HÁT</span></div><span class="mpill" style="background:var(--wash-coral);color:var(--coral-deep);">🔥 4×6–8</span><span class="caret">▾</span></div>
+    </div>
+  </div>
+
+  <!-- ============ B: MA/HÉT VÁLTÓ EGY KÁRTYÁBAN ============ -->
+  <div style="max-width:380px;">
+    <div class="option" data-choice="B" onclick="toggleSelect(this)" style="margin-bottom:12px;">
+      <div class="letter">B</div>
+      <div class="content"><h3>Egy kártya, Ma/Hét váltóval</h3><p>A büdzsé-kártya kap egy Ma ↔ Hét szegmens-váltót — alapból a MA nézet nyílik (ha az aktív napon van cap-sértés), a heti pillek a Hét fülön. Kompaktabb, egy kártya — cserébe a két szint nem látszik egyszerre.</p></div>
+    </div>
+    <div class="phone mz">
+      <div class="daytabs"><span class="daytab on">HÉT<span class="warndot"></span></span><span class="daytab">KEDD<span class="warndot"></span></span><span class="daytab">SZE</span><span class="daytab">CSÜ<span class="warndot"></span></span><span class="daytab">PÉN</span><span class="daytab off">SZO</span></div>
+
+      <div class="hero">
+        <div class="eyebrow" style="color:var(--amber-deep);">Upper Body A</div>
+        <div class="minirow" style="margin-top:4px;">
+          <span class="heronum">26</span><span style="font-size:12px;font-weight:700;color:var(--ink2);">szett ma</span>
+          <span class="grow"></span><span class="mono" style="font-size:10px;color:var(--ink3);">8 gyakorlat</span>
+        </div>
+        <div class="minirow" style="margin-top:8px; padding-top:8px; border-top:1px solid var(--bs);">
+          <span style="font-size:11px;color:var(--ink2);" class="grow">Heti terhelés: <b>142 szett</b> · 5 edzésnap</span>
+          <span class="mono" style="font-size:10px;color:#B03A36;font-weight:700;">⚠ 9 jelzés</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tabsw"><span class="on">Ma · 3 izom</span><span>Hét · büdzsé</span></div>
+
+        <div class="budrow"><span class="rail" style="background:var(--lav);"></span>
+          <div class="grow">
+            <div class="minirow"><span style="font-weight:700;font-size:12.5px;">Váll</span><span class="grow"></span><span class="mono" style="font-size:10px;color:#B03A36;font-weight:700;">12 / 11 ⚠</span></div>
+            <div class="bar"><i style="width:100%;background:linear-gradient(90deg,var(--lav),var(--err));"></i><span class="capline" style="left:91%;"></span></div>
+          </div>
+        </div>
+        <div class="budrow"><span class="rail" style="background:var(--sky);"></span>
+          <div class="grow">
+            <div class="minirow"><span style="font-weight:700;font-size:12.5px;">Hát</span><span class="grow"></span><span class="mono" style="font-size:10px;color:var(--ink2);">8 / 11</span></div>
+            <div class="bar"><i style="width:73%;background:var(--sky);"></i><span class="capline" style="left:91%;"></span></div>
+          </div>
+        </div>
+        <div class="budrow"><span class="rail" style="background:var(--rose);"></span>
+          <div class="grow">
+            <div class="minirow"><span style="font-weight:700;font-size:12.5px;">Bicepsz</span><span class="grow"></span><span class="mono" style="font-size:10px;color:var(--ink2);">6 / 11</span></div>
+            <div class="bar"><i style="width:55%;background:var(--rose);"></i><span class="capline" style="left:91%;"></span></div>
+          </div>
+        </div>
+
+        <div class="warnline">⚠ <span><b>Váll: ma 12 szett</b> — 11 fölött nincs kimutatható plusz. Vigyél át 1+ szettet egy másik napra (pl. SZE)!</span></div>
+      </div>
+
+      <div class="exmini"><div class="grow"><b style="font-family:'Bricolage Grotesque';font-size:13px;">Pull-Up</b> <span class="mpill" style="background:var(--wash-sky);color:var(--sky-deep);font-size:8.5px;">HÁT</span></div><span class="mpill" style="background:var(--wash-coral);color:var(--coral-deep);">🔥 4×6–8</span><span class="caret">▾</span></div>
+      <div class="exmini"><div class="grow"><b style="font-family:'Bricolage Grotesque';font-size:13px;">Overhead Press</b> <span class="mpill" style="background:var(--wash-lav);color:var(--lav-deep);font-size:8.5px;">VÁLL</span></div><span class="mpill" style="background:var(--wash-coral);color:var(--coral-deep);">🔥 4×6–8</span><span class="caret">▾</span></div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px;">Mindkét variánsban közös extra: az érintett gyakorlatok (a túllépő izom sorai) halvány piros keretet kapnának a listában, hogy lásd, MELYIK sorokból jön a 12 szett — és a warning konkrét átcsoportosítási javaslatot ad (a legkevésbé terhelt kompatibilis napot nevezi meg).</p>
