@@ -81,14 +81,17 @@ test('the Saját header chip opens the custom workout sheet (mezo-ws2x)', () => 
   expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
 })
 
-// Muscle-week (mezo-ly27) — region grid on the meta card + tap → MuscleWeekSheet.
-test('meta card shows the region-grouped muscle grid', () => {
+// Live zone grid (mezo-oyhy.7) — group-level mini bars on the meta card + tap → MuscleWeekSheet.
+test('meta card shows the live zone mini grid (mezo-oyhy.7)', () => {
   renderView()
   const card = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
-  // The mock meso trains ham/glute/calf → the sage region label "Láb" is on the card.
-  expect(within(card).getByText('Láb')).toBeInTheDocument()
-  // Pills carry "{label} {sets}" — the back-wide pill (Lat Pulldown, 3 working sets).
-  expect(within(card).getByText(/^Hát \(széles\) \d+$/)).toBeInTheDocument()
+  // Group-level rows now (budget groups, not per-head pills); mock week has no
+  // completed instances → done is 0 for every group.
+  expect(within(card).getByText('Hát')).toBeInTheDocument()
+  expect(within(card).getAllByText(/^0\/\d+( [⚠↓])?$/).length).toBeGreaterThan(0)
+  // Live stats: the Szetek/Gym napok subs flipped to done/plan phrasing.
+  expect(within(card).getByText('kész / heti terv')).toBeInTheDocument()
+  expect(within(card).getByText('kész / hét')).toBeInTheDocument()
 })
 
 test('tapping the meta card opens the MuscleWeekSheet', () => {
@@ -97,7 +100,7 @@ test('tapping the meta card opens the MuscleWeekSheet', () => {
   expect(screen.getByRole('heading', { name: 'Heti izomterhelés' })).toBeInTheDocument()
 })
 
-test('an over-budget muscle pill shows the warning icon in error color (mezo-7rdg)', () => {
+test('an over-budget group cell shows ⚠ in error color (mezo-oyhy.7)', () => {
   daysOverride = [{
     day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 2,
     exercises: [
@@ -107,9 +110,8 @@ test('an over-budget muscle pill shows the warning icon in error color (mezo-7rd
   }]
   renderView()
   const card = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
-  const pill = within(card).getByText(/^Mell \d+ ⚠$/)
-  expect(pill).toBeInTheDocument()
-  expect(pill).toHaveStyle({ color: 'var(--error)' })
+  const numeric = within(card).getByText(/^0\/16 ⚠$/)
+  expect(numeric).toHaveStyle({ color: 'var(--error)' })
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the GymSkeleton (role="status")
