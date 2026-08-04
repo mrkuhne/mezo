@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { muscleColor } from '@/features/train/logic/muscleColors'
+import { ZoneTrack } from '@/features/train/components/ZoneTrack'
 import type { MuscleBudgetRow, SessionCapWarning } from '@/features/train/logic/setBudget'
 
 interface SetBudgetCardProps {
@@ -82,11 +83,6 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
           {budgets.map((row) => {
             const fam = muscleColor(row.colorMuscle)
             const p = pct(row.budget)
-            const fillWidth = Math.min(100, p)
-            const fillBackground =
-              row.level === 'over' ? 'linear-gradient(90deg, var(--coral), var(--error))'
-              : row.level === 'under' ? 'var(--text-tertiary)'
-              : fam.rail
             return (
               <div key={row.group} className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ width: 5, height: 34, borderRadius: 2, background: fam.rail, flexShrink: 0 }} />
@@ -98,19 +94,14 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                       {row.plyoSets > 0 && <span style={{ color: 'var(--text-tertiary)' }}> +{row.plyoSets} plyo</span>}
                     </span>
                   </div>
-                  <div style={{ position: 'relative', height: 8.5, borderRadius: 999, background: 'var(--surface-2)', overflow: 'hidden' }}>
-                    {row.zoneStart !== null && (
-                      <div
-                        data-testid={`zone-${row.group}`}
-                        style={{
-                          position: 'absolute', top: 0, bottom: 0, right: 0,
-                          left: `${Math.min(100, Math.round(row.zoneStart * 100))}%`,
-                          background: 'color-mix(in srgb, var(--sage) 28%, transparent)',
-                        }}
-                      />
-                    )}
-                    <div style={{ position: 'relative', height: '100%', width: `${fillWidth}%`, borderRadius: 999, background: fillBackground }} />
-                  </div>
+                  <ZoneTrack
+                    zoneStart={row.zoneStart}
+                    segments={[{ pct: Math.min(1, row.budget), kind: row.level === 'over' ? 'overflow' : 'solid' }]}
+                    color={row.level === 'under'
+                      ? { rail: 'var(--text-tertiary)', deep: 'var(--text-tertiary)' }
+                      : { rail: fam.rail, deep: fam.deep }}
+                    zoneTestId={`zone-${row.group}`}
+                  />
                   {row.level === 'under' ? (
                     <span style={{ fontSize: 10.5, color: 'var(--text-tertiary)' }}>↓ MEV alatt — még +{row.setsToZone} szett a zónáig</span>
                   ) : row.zoneStart !== null && row.level !== 'over' ? (
