@@ -95,7 +95,8 @@ export function FuelStackPage() {
         </div>
       ) : (
         slots.map(slot => (
-          <StackZoneCard key={slot.zone} slot={slot} onToggleTaken={onToggleTaken} onOpenEntry={setOpenEntry} />
+          // key carries the time too — the stim-aware split (mezo-j6c9) can emit two pre_workout slots
+          <StackZoneCard key={`${slot.zone}-${slot.time}`} slot={slot} onToggleTaken={onToggleTaken} onOpenEntry={setOpenEntry} />
         ))
       )}
 
