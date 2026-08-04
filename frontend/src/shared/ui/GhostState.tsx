@@ -26,7 +26,8 @@ export function GhostState({ message, ctaLabel, onCta, lines = 3 }: {
         ))}
       </div>
       <div className="col gap-sm mt-md" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)' }}>{message}</p>
+        {/* DS empty-state subtitle voice: Fraunces italic (design-system-mezo.html §Full-page states) */}
+        <p style={{ fontFamily: 'var(--ff-serif)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{message}</p>
         {ctaLabel && onCta && <CtaPrimary onClick={onCta}>{ctaLabel}</CtaPrimary>}
       </div>
     </div>
