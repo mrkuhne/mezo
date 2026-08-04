@@ -3,7 +3,7 @@
 // blocks, rest-day zone regrouping (skip / displace, persistedZone preserved), and per-occurrence
 // taken-state resolution (incl. the legacy null-slotKey intake fallback). Pure, no React.
 
-import { projectStackDay, resolveTakenKeys } from '@/features/fuel/logic/projectStackDay'
+import { isStimFreeName, projectStackDay, resolveTakenKeys } from '@/features/fuel/logic/projectStackDay'
 import { PRE_WORKOUT_STACK_LEAD_MIN } from '@/features/fuel/logic/buildProtocol'
 import { STACK_ZONE_LABEL, STACK_ZONE_ORDER } from '@/data/fuel/stackZones'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
@@ -225,6 +225,140 @@ describe('rest day regrouping (no training blocks today)', () => {
     expect(result.find(s => s.zone === 'pre_workout')).toBeUndefined()
     expect(result.find(s => s.zone === 'post_workout')).toBeUndefined()
   })
+})
+
+// ── 3a. stim-aware pre-workout split (mezo-j6c9) ─────────────────────────────
+describe('stim-aware pre-workout split on a multi-block day (mezo-j6c9)', () => {
+  // Morning gym + evening volleyball — the day this feature exists for.
+  const blocks: PlannerBlock[] = [
+    { kind: 'gym', time: '07:30', durationMin: 60, label: 'Pull A' },
+    { kind: 'sport', time: '18:30', durationMin: 90, label: 'Röplabda' },
+  ]
+  const stash = [
+    stashLite('origin-pwo', 'Origin PWO'),
+    stashLite('stimfree-pwo', 'Stim-Free Pre-Workout'),
+    stashLite('kreatin', 'Kreatin'),
+  ]
+  const base = {
+    stash,
+    intakes: [] as Intake[],
+    wake: '05:50',
+    bed: '23:00',
+    mealsPerDay: 4,
+    blocks,
+  }
+  const bothPwo: ProtocolOccurrence[] = [
+    occ({ id: 'o-pwo', pantryItemId: 'origin-pwo', slotKey: 'pre_workout', restDayFallback: 'skip' }),
+    occ({ id: 'o-sf', pantryItemId: 'stimfree-pwo', slotKey: 'pre_workout', restDayFallback: 'skip' }),
+    occ({ id: 'o-wake', pantryItemId: 'kreatin', slotKey: 'wake' }),
+  ]
+
+  test('both kinds present: two adjacent pre_workout slots — regular at first block −40, stim-free at last block −40', () => {
+    const result = projectStackDay({ ...base, occurrences: bothPwo })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    expect(pre).toHaveLength(2)
+    expect(pre[0].time).toBe(toHHmm(toMin('07:30') - PRE_WORKOUT_STACK_LEAD_MIN)) // 06:50
+    expect(pre[1].time).toBe(toHHmm(toMin('18:30') - PRE_WORKOUT_STACK_LEAD_MIN)) // 17:50
+    expect(pre[0].entries.map(e => e.pantryItemId)).toEqual(['origin-pwo'])
+    expect(pre[1].entries.map(e => e.pantryItemId)).toEqual(['stimfree-pwo'])
+    // Adjacent in the emitted array — the split stays one visual group.
+    const idx = result.findIndex(s => s.zone === 'pre_workout')
+    expect(result[idx + 1].zone).toBe('pre_workout')
+  })
+
+  test('both slots keep the pre_workout zone key + label; anchorNote names each block', () => {
+    const result = projectStackDay({ ...base, occurrences: bothPwo })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    for (const s of pre) expect(s.label).toBe(STACK_ZONE_LABEL.pre_workout)
+    expect(pre[0].anchorNote).toBe(`Pull A · edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`)
+    expect(pre[1].anchorNote).toBe(`Röplabda · edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`)
+    for (const s of pre) for (const e of s.entries) expect(e.persistedZone).toBe('pre_workout')
+  })
+
+  test('only regular pwo: single slot at the first block, block named in the note, no phantom second slot', () => {
+    const result = projectStackDay({
+      ...base,
+      occurrences: [occ({ id: 'o-pwo', pantryItemId: 'origin-pwo', slotKey: 'pre_workout' })],
+    })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    expect(pre).toHaveLength(1)
+    expect(pre[0].time).toBe('06:50')
+    expect(pre[0].anchorNote).toBe(`Pull A · edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`)
+  })
+
+  test('only stim-free pwo: single slot anchored to the LAST block', () => {
+    const result = projectStackDay({
+      ...base,
+      occurrences: [occ({ id: 'o-sf', pantryItemId: 'stimfree-pwo', slotKey: 'pre_workout' })],
+    })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    expect(pre).toHaveLength(1)
+    expect(pre[0].time).toBe('17:50')
+    expect(pre[0].anchorNote).toBe(`Röplabda · edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`)
+  })
+
+  test('single-block day: no split — stim-free anchors to the one block with the plain note (pre-mezo-j6c9 behavior)', () => {
+    const result = projectStackDay({
+      ...base,
+      blocks: [{ kind: 'gym', time: '17:30', durationMin: 60, label: 'Gym' }],
+      occurrences: bothPwo,
+    })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    expect(pre).toHaveLength(1)
+    expect(pre[0].time).toBe(toHHmm(toMin('17:30') - PRE_WORKOUT_STACK_LEAD_MIN))
+    expect(pre[0].anchorNote).toBe(`edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`)
+    expect(pre[0].entries.map(e => e.pantryItemId)).toEqual(['origin-pwo', 'stimfree-pwo'])
+  })
+
+  test('two blocks at the SAME time: no split (concurrent gym + sport is one training envelope)', () => {
+    const result = projectStackDay({
+      ...base,
+      blocks: [
+        { kind: 'gym', time: '18:00', durationMin: 60, label: 'Gym' },
+        { kind: 'sport', time: '18:00', durationMin: 90, label: 'Röplabda' },
+      ],
+      occurrences: bothPwo,
+    })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    expect(pre).toHaveLength(1)
+    expect(pre[0].anchorNote).toBe(`edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`)
+  })
+
+  test('taken resolves per zone key on the split slots too (intake slotKey pre_workout ticks the stim-free entry)', () => {
+    const result = projectStackDay({
+      ...base,
+      occurrences: bothPwo,
+      intakes: [intake({ pantryItemId: 'stimfree-pwo', slotKey: 'pre_workout' })],
+    })
+    const pre = result.filter(s => s.zone === 'pre_workout')
+    expect(pre[0].entries[0].taken).toBe(false) // origin-pwo
+    expect(pre[1].entries[0].taken).toBe(true) // stimfree-pwo
+  })
+
+  test('rest day: the stim-free occurrence regroups exactly like any pre_workout occurrence (skip fallback honored)', () => {
+    const result = projectStackDay({ ...base, blocks: [], occurrences: bothPwo })
+    expect(result.find(s => s.zone === 'pre_workout')).toBeUndefined()
+    const entry = result.find(s => s.zone === 'breakfast')?.entries.find(e => e.pantryItemId === 'stimfree-pwo')
+    expect(entry).toMatchObject({ skippedToday: true, persistedZone: 'pre_workout' })
+  })
+})
+
+describe('isStimFreeName', () => {
+  test.each([
+    'Stim-Free Pre-Workout',
+    'STIM FREE PWO',
+    'StimFree Pump',
+    'Koffeinmentes pre-workout',
+    'Koffein-mentes edzés előtti',
+    'Caffeine Free PWO',
+    'Caffeine-Free Booster',
+    'Stimulánsmentes formula',
+  ])('matches %s', name => expect(isStimFreeName(name)).toBe(true))
+
+  test.each(['Origin PWO', 'Citrullin-malát', 'AAKG', 'Pump Booster', 'Kreatin'])(
+    'does NOT match %s (naturally caffeine-free ≠ claimed stim-free)',
+    name => expect(isStimFreeName(name)).toBe(false),
+  )
 })
 
 // ── 3b. weightKg → peri-workout snack cascade (mezo-vx9v Task 8 review follow-up) ────────────────
