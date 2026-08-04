@@ -71,7 +71,7 @@ The roster has 24 vegetables, 20 fruits, 20 meats, 10 fish records, 3 egg record
 | fruits | 2710832 | Mandarin, nyers |
 | meat | 2646171 | Csirkecombfilé, nyers |
 | meat | 172388 | Csirkecombfilé, sült |
-| meat | 2727566 | Csirke alsócomb bőrrel, nyers |
+| meat | 172373 | Csirke alsócomb bőrrel, nyers |
 | meat | 173612 | Csirke alsócomb bőrrel, sült |
 | meat | 171093 | Pulykamell bőrrel, nyers |
 | meat | 171492 | Pulykamell bőrrel, sült |
