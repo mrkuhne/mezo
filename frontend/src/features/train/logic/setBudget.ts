@@ -18,11 +18,22 @@ export const VOLUME_WEEKLY_CAP = 20
 export const SESSION_MUSCLE_CAP = 11
 export const NEAR_THRESHOLD = 0.85
 
+// Weekly minimum-effective set counts per budget group — lower edges of the
+// RP intermediate MEV ranges (docs/research/concepts/program-design-rules.md),
+// conservative on purpose. traps/core are intentionally absent: RP treats
+// their MEV as ~0 (indirect volume from rows/deadlifts/compounds covers them),
+// so they never trigger the under-volume signal. "Starting points, not gospel."
+// Invariant: every MEV must stay < NEAR_THRESHOLD × FAILURE_WEEKLY_CAP (≈10.2)
+// so an 'under' row can never mask a 'near'/'over' budget state.
+export const GROUP_MEV: Record<string, number> = {
+  chest: 4, back: 10, quad: 4, ham: 2, glute: 6, shoulder: 6, biceps: 8, triceps: 4, calf: 4,
+}
+
 export function setStyle(targetRIR: number): SetStyle {
   return targetRIR <= 1 ? 'failure' : 'volume'
 }
 
-export type BudgetLevel = 'ok' | 'near' | 'over'
+export type BudgetLevel = 'ok' | 'near' | 'over' | 'under'
 
 export function budgetOf(failureSets: number, volumeSets: number): number {
   return failureSets / FAILURE_WEEKLY_CAP + volumeSets / VOLUME_WEEKLY_CAP
@@ -66,6 +77,14 @@ export interface MuscleBudgetRow {
   /** 1 = 100% of the weekly budget. */
   budget: number
   level: BudgetLevel
+  /** Weekly minimum-effective sets for the group; null = no lower bound (traps/core). */
+  mev: number | null
+  /** Green-zone start on the budget scale (same 0..1 unit as budget); null when mev is. */
+  zoneStart: number | null
+  /** Non-plyo sets still missing to reach MEV; 0 when in zone or no lower bound. */
+  setsToZone: number
+  /** Least-loaded training day to add the missing sets on; only set for under rows. */
+  suggestedDay: string | null
 }
 
 export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
@@ -76,7 +95,7 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
       if (!group) continue
       let row = acc.get(group)
       if (!row) {
-        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, plyoSets: 0, budget: 0, level: 'ok' }
+        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, plyoSets: 0, budget: 0, level: 'ok', mev: null, zoneStart: null, setsToZone: 0, suggestedDay: null }
         acc.set(group, row)
       }
       if (ex.type === 'plyo') { row.plyoSets += ex.workingSets; continue }
@@ -87,7 +106,22 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
   }
   return [...acc.values()]
     .filter((r) => r.workingSets > 0)
-    .map((r) => { const budget = budgetOf(r.failureSets, r.volumeSets); return { ...r, budget, level: budgetLevel(budget) } })
+    .map((r) => {
+      const budget = budgetOf(r.failureSets, r.volumeSets)
+      const mev = GROUP_MEV[r.group] ?? null
+      const under = mev !== null && r.workingSets < mev
+      // Project the MEV set count onto the budget scale with the group's own
+      // style mix: at exactly MEV sets the bar would sit at budget × MEV / sets.
+      return {
+        ...r,
+        budget,
+        mev,
+        zoneStart: mev !== null ? Math.min(1, (budget * mev) / r.workingSets) : null,
+        setsToZone: mev !== null ? Math.max(0, mev - r.workingSets) : 0,
+        suggestedDay: under ? leastLoadedDayFor(days, r.group, '') : null,
+        level: under ? ('under' as const) : budgetLevel(budget),
+      }
+    })
     .sort((a, b) => b.budget - a.budget || a.group.localeCompare(b.group))
 }
 
