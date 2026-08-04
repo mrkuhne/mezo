@@ -15,7 +15,7 @@ export default defineConfig({
       workbox: {
         // Extend the default precache globs (js/wasm/css/html) with ico/png/svg/woff2 so
         // the self-hosted brand fonts (public/fonts/*.woff2) are precached — the app
-        // then renders Bricolage + Jakarta offline instead of falling back to system.
+        // then renders Geist + Fraunces offline instead of falling back to system.
         globPatterns: ['**/*.{js,wasm,css,html,ico,png,svg,woff2}'],
         // Web Push handlers live in their own plain file so the generateSW strategy stays
         // intact (switching to injectManifest would mean owning the whole worker for two

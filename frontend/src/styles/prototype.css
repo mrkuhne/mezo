@@ -1,35 +1,238 @@
-/* ===== Mezo prototype · Design tokens (Deep Current v2) ===== */
+/* ===== Mezo design tokens — Exist Zen "Mezo Edition" (DS-migration P1, mezo-setx.2) =====
+   Normative source: docs/references/design-system-mezo.html + ADR 0018.
+   Architecture: (1) the DS token block below is the ONLY place literals live;
+   (2) the Pulse dark block overrides the same names token-level (components never
+   branch on theme); (3) every legacy Napív/Deep-Current token further down is an
+   ALIAS onto a DS token (the proven Napív swap technique) so unmigrated call sites
+   keep rendering in-family until their page's sweep phase retires them (P9). */
 
 :root {
-  /* Legacy Deep-Current tokens — re-pointed onto the Napív palette (S8, spec §3.1:
-     "domain-accent mapping replaces --cat-* 1:1").
-     Kept as aliases so un-migrated call sites render in-family; new code uses Napív tokens.
-     Alias architecture (single explanation, applies to every legacy alias below): each alias
-     points at a Napív token. That Napív token is themed — light here in :root, dark in the
-     Pulse block — so the alias follows the theme automatically. This is why the dark override
-     block for these legacy aliases is EMPTY: overriding them would break the swap. */
+  /* ─── Brand ramps · bg → soft → base → hover → deep ───
+     Coral base fails AA as text (2.8:1) — text/links use hover/deep (ADR 0018). */
+  --primary-bg:    #FFF4EF;
+  --primary-soft:  #FFDFD3;
+  --primary-base:  #FF6B4A;
+  --primary-hover: #E05535;
+  --primary-deep:  #A84A26;
 
-  /* Canvas / surfaces — warmed to Napív */
-  --canvas: #FBF6EF;
-  --surface-1: #FFFFFF;
-  --surface-2: #F4EBDF;
-  --surface-3: #EFE5D8;
+  --secondary-bg:    #F1EBE2;
+  --secondary-soft:  #8A7A6A;
+  --secondary-base:  #5F5346;
+  --secondary-hover: #2B2118;
+  --secondary-deep:  #1A140E;
+
+  --accent-bg:    #FDF8EC;
+  --accent-soft:  #FAECC8;
+  --accent-base:  #D4A853;
+  --accent-hover: #B8902E;
+  --accent-deep:  #8E6E1F;
+
+  /* ─── Status ramps ─── */
+  --success-bg:    #EEF5EC;
+  --success-soft:  #D8E6D4;
+  --success-base:  #6B8A5D;
+  --success-hover: #4A6A3D;
+  --success-deep:  #2D4D2A;
+
+  --warning-bg:    #FEF6E2;
+  --warning-soft:  #F6DC8A;
+  --warning-base:  #C9971A;
+  --warning-hover: #8A6918;
+  --warning-deep:  #5E480F;
+
+  --error-bg:    #FDF0EC;
+  --error-soft:  #F5D5CC;
+  --error-base:  #C4634B;
+  --error-hover: #A4503C;
+  --error-deep:  #7A3A28;
+
+  /* ─── Surfaces · text ─── */
+  --surface-page:     #FBF6EF;
+  --surface-card:     #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-recess:   rgba(43, 33, 24, 0.05);
+
+  --text-primary:   #2B2118;
+  --text-secondary: #5F5346;
+  --text-muted:     #8A7A6A;
+  --text-disabled:  #A5978A;
+  --text-inverse:   #FFFFFF;
+
+  --divider: rgba(43, 33, 24, 0.10);
+
+  /* ─── Data-viz band · outside the UI role cap (charts/rings/icons/heatmaps ONLY) ─── */
+  --macro-calories: #C44B3D;
+  --macro-protein:  #E26B67;
+  --macro-carbs:    #D49245;
+  --macro-fat:      #C4A020;
+  --macro-fiber:    #6BA24A;
+  --macro-sugar:    #C97A9D;
+  --macro-salt:     #7A7088;
+
+  --dv-coral: #FF6B4A;   /* Train (in UI chrome coral always = primary) */
+  --dv-sage:  #7FA48A;   /* Fuel */
+  --dv-lav:   #9B8FC4;   /* Sleep · Me */
+  --dv-rose:  #E27A8B;   /* Sport */
+  --dv-sky:   #6FA7D8;   /* Futás */
+  --dv-amber: #FFB347;   /* streak · reward moments */
+
+  /* ─── Primary CTA gradient — ONE definition (Rule 9) ─── */
+  --cta-g1: #FF7A55;
+  --cta-g2: #FF5B36;
+  --gradient-cta: linear-gradient(135deg, var(--cta-g1), var(--cta-g2));
+  --shadow-cta: 0 8px 20px rgba(255, 91, 54, 0.35);
+
+  /* ─── Halos · page-top ambient gradients ─── */
+  --halo-amber:  radial-gradient(ellipse at 50% 30%, rgba(212,168,83,0.32) 0%, rgba(251,246,239,0) 55%);
+  --halo-sage:   radial-gradient(ellipse at 50% 30%, rgba(154,184,143,0.30) 0%, rgba(244,208,111,0.10) 30%, rgba(251,246,239,0) 60%);
+  --halo-rose:   radial-gradient(ellipse at 50% 30%, rgba(231,134,110,0.20) 0%, rgba(251,246,239,0) 55%);
+  --halo-blue:   radial-gradient(ellipse at 50% 30%, rgba(107,176,209,0.30) 0%, rgba(251,246,239,0) 60%);
+  --halo-violet: radial-gradient(ellipse at 50% 30%, rgba(154,95,196,0.24) 0%, rgba(251,246,239,0) 60%);
+
+  /* ─── Spacing — every step divisible by 4 (MOBILE_UX §4.1) ─── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 40px;
+  --sp-8: 48px;
+  --sp-9: 64px;
+
+  /* ─── Radius — DS scale (the old slots re-tuned: sm 8→6, md 12→10, lg 16→14,
+     xl 20→18, 2xl 24→22; r-3xl is new for sheets) ─── */
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-xl:  18px;
+  --r-2xl: 22px;
+  --r-3xl: 28px;
+  --r-full: 9999px;
+
+  /* ─── Shadows ─── */
+  --shadow-xs: 0 1px 2px rgba(43, 33, 24, 0.04);
+  --shadow-sm: 0 2px 6px rgba(43, 33, 24, 0.06);
+  --shadow-md: 0 4px 14px rgba(43, 33, 24, 0.10);
+  --shadow-lg: 0 8px 24px rgba(43, 33, 24, 0.12);
+  --shadow-xl: 0 16px 40px rgba(43, 33, 24, 0.18);
+  --shadow-accent: 0 8px 22px rgba(184, 144, 46, 0.40);
+  --shadow-focus: 0 0 0 3px rgba(255, 107, 74, 0.32);
+
+  /* ─── Motion ─── */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ─── Z-index ladder ─── */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-bottomnav: 30;
+  --z-fab: 40;
+  --z-sheet: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+
+  /* ─── Fonts (ADR 0018 D2: Geist + Fraunces; Bricolage/Jakarta retired) ─── */
+  --ff-display: 'Geist', system-ui, sans-serif;
+  --ff-body:    'Geist', -apple-system, system-ui, sans-serif;
+  --ff-serif:   'Fraunces', Georgia, serif;
+  --ff-mono:    'Geist Mono', monospace;
+}
+
+/* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
+   The ramp inverts its text logic in dark: bg/soft darken into tinted graphite,
+   base LIFTS, and deep lifts LIGHTER than base — "deep" stays the stop you write
+   text with in both themes (never reuse a light deep on graphite). */
+:root[data-theme="dark"] {
+  --primary-bg:    #33231D;
+  --primary-soft:  #4A2E24;
+  --primary-base:  #FF7E5C;
+  --primary-hover: #FF9377;
+  --primary-deep:  #F0966B;
+
+  --secondary-bg:    #2A2521;
+  --secondary-soft:  #8A7A6A;
+  --secondary-base:  #B7A899;
+  --secondary-hover: #F5EFE6;
+  --secondary-deep:  #FAF6EF;
+
+  --accent-bg:    #2E2718;
+  --accent-soft:  #3E3420;
+  --accent-base:  #E3B565;
+  --accent-hover: #EFC57F;
+  --accent-deep:  #F2D094;
+
+  --success-bg:    #1F2A1F;
+  --success-soft:  #2A3A2A;
+  --success-base:  #8FB49A;
+  --success-hover: #9FC0A8;
+  --success-deep:  #A9C79A;
+
+  --warning-bg:    #332B16;
+  --warning-soft:  #453A1E;
+  --warning-base:  #FFBE60;
+  --warning-hover: #FFCB7E;
+  --warning-deep:  #F6D492;
+
+  --error-bg:    #33201C;
+  --error-soft:  #452A24;
+  --error-base:  #F08A85;
+  --error-hover: #F5A19D;
+  --error-deep:  #F7B3AE;
+
+  --surface-page:     #191614;
+  --surface-card:     #221E1B;
+  --surface-elevated: #2A2521;
+  --surface-recess:   rgba(245, 239, 230, 0.05);
+
+  --text-primary:   #F5EFE6;
+  --text-secondary: #B7A899;
+  --text-muted:     #8A7A6A;
+  --text-disabled:  #5E5348;
+  --text-inverse:   #191614;
+
+  --divider: rgba(245, 239, 230, 0.07);
+
+  --dv-coral: #FF7E5C;
+  --dv-sage:  #8FB49A;
+  --dv-lav:   #AB9FD2;
+  --dv-rose:  #E98D9D;
+  --dv-sky:   #7FB2DE;
+  --dv-amber: #FFBE60;
+
+  --cta-g1: #FF8A66;
+  --cta-g2: #FF6B47;
+
+  --shadow-focus: 0 0 0 3px rgba(255, 126, 92, 0.38);
+}
+
+/* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
+   Aliases only; each resolves against a THEMED DS token, so the dark override
+   block below carries only the few literals with no DS slot. Retired in P9. */
+:root {
+  /* Canvas / surfaces */
+  --canvas: var(--surface-page);
+  --surface-1: var(--surface-card);
+  --surface-2: var(--secondary-bg);
+  --surface-3: #EFE5D8;                    /* no DS slot — literal, dies in P9 */
   --surface-glass: rgba(0, 0, 0, 0.03);
 
-  --border-subtle: rgba(43, 33, 24, 0.08);
+  --border-subtle: var(--divider);
   --border-strong: rgba(43, 33, 24, 0.18);
 
-  /* Text — warm ink */
-  --text-primary: #2B2118;
-  --text-secondary: #5F5346;
-  --text-tertiary: #8A7A6A;
-  --text-quaternary: #A5978A;
-  --text-inverse: #FFFFFF;
+  /* Text — the primary/secondary/inverse names ARE the DS names already */
+  --text-tertiary: var(--text-muted);
+  --text-quaternary: var(--text-disabled);
 
-  /* Semantic — re-pointed onto Napív (aliases; error stays a literal red) */
+  /* Semantic — resolve through the Napív aliases further down */
   --success: var(--sage-deep);
   --warning: var(--amber-deep);
-  --error: #D9534F;              /* stays a true red; Napív has no error hue */
+  --error: var(--error-base);
   --info: var(--sky);
 
   /* Pattern category palette — re-pointed onto Napív domain accents (1:1, spec §3.1) */
@@ -44,7 +247,7 @@
   --tool-compute: var(--amber-deep);
   --tool-write:   var(--coral);
 
-  /* Sleep-phase accents (mezo-fk9a) — aliases onto Napív, so the dark swap carries them. */
+  /* Sleep-phase accents (mezo-fk9a) — aliases, so the dark swap carries them. */
   --ph-deep:  var(--lav-deep);
   --ph-light: var(--sky);
   --ph-rem:   var(--rose);
@@ -60,48 +263,25 @@
   --anchor-accent:  #B45309;
   --anchor-text:    #3A2A1A;
 
-  /* Fonts */
-  --ff-display: "Bricolage Grotesque", sans-serif;
-  --ff-body:    "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
-  --ff-mono:    "JetBrains Mono", monospace;
+  /* Legacy spacing names → DS scale (values identical except --sp-xl: the DS
+     scale has no 20px slot, so it stays a literal until its call sites migrate) */
+  --sp-xs: var(--sp-1);  --sp-sm: var(--sp-2);  --sp-md: var(--sp-3);
+  --sp-lg: var(--sp-4);  --sp-xl: 20px;         --sp-2xl: var(--sp-5);
+  --sp-3xl: var(--sp-6); --sp-4xl: var(--sp-7); --sp-5xl: var(--sp-9);
 
-  /* Spacing 8pt (unchanged) */
-  --sp-xs: 4px;  --sp-sm: 8px;  --sp-md: 12px;
-  --sp-lg: 16px; --sp-xl: 20px; --sp-2xl: 24px;
-  --sp-3xl: 32px; --sp-4xl: 40px; --sp-5xl: 64px;
-
-  /* Radii (unchanged slots) */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
-  --r-xl: 20px; --r-2xl: 24px; --r-full: 9999px;
-
+  /* Desktop phone-frame backdrop (outside the DS scope — the app shell chrome) */
   --page-bg: #E6E1D8;
   --card-elevation: drop-shadow(0 1px 2px rgba(43, 33, 24, 0.06)) drop-shadow(0 4px 10px rgba(43, 33, 24, 0.07));
   --card-border: rgba(43, 33, 24, 0.10);
   --page-glow: #F0EBE2;
 }
 
-/* ===== Dark theme — Pulse (warm graphite; spec §3.1 dark direction B, S8) =====
-   Only literal canvas/surface/ink/border/error values are overridden here. Every legacy
-   token that became a :root alias (--cat-*, --info, --success, --warning,
-   --tool-*, --reta-*) is intentionally ABSENT — it resolves against the
-   dark Napív accents (defined in the Pulse accents block below). That is the palette swap. */
+/* Legacy dark literals — ONLY the bridge tokens with no DS slot. Every alias
+   above resolves against the Pulse DS block and needs no line here. */
 :root[data-theme="dark"] {
-  --canvas: #191614;
-  --surface-1: #221E1B;
-  --surface-2: #2A2521;
   --surface-3: #332D27;
   --surface-glass: rgba(245, 239, 230, 0.05);
-
-  --border-subtle: rgba(245, 239, 230, 0.07);
   --border-strong: rgba(245, 239, 230, 0.14);
-
-  --text-primary: #F5EFE6;
-  --text-secondary: #B7A899;
-  --text-tertiary: #8A7A6A;
-  --text-quaternary: #5E5348;
-  --text-inverse: #191614;
-
-  --error: #F08A85;
 
   /* AnchorMode (kept: --anchor-accent has JS consumers — VulnerabilityCard, train.ts) */
   --anchor-canvas:  #14110E;
@@ -1071,45 +1251,37 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 @keyframes progress-mbar-grow { from { width: 0; } to { width: var(--w); } }
 @media (prefers-reduced-motion: reduce) { .progress-mfill { animation: none; } }
 
-/* ===== Napív tokens (2026-07-13 redesign, spec: 2026-07-13-napiv-frontend-redesign-design.md) ===== */
+/* ===== Napív tokens → DS alias bridge (P1, mezo-setx.2) =====
+   The 2026-07-13 Napív palette IS the DS palette's ancestor — every name below
+   now aliases its DS token (both themes resolve through the Pulse block).
+   Two intentional value shifts: --coral-deep #C4622F → primary-deep #A84A26
+   (the old value fails AA as text, ADR 0018) and --sage-deep #5F7A52 →
+   success-hover #4A6A3D (same role, ramp-exact). --lav-deep keeps literals
+   (lavender is demoted to data-viz; no DS slot). --cta-g1/g2 moved up into the
+   DS block. The --np-* shadow/ease literals stay: the Sheet + card motion
+   timing is battle-tested machinery, restyled only when P2 touches it. */
 :root {
-  --surface: #FFFFFF;
-  --warm: #F4EBDF;
-  --line: #EFE5D8;
-  --ink: #2B2118;
-  --sub: #8A7A6A;
-  --faint: #A5978A;
-  --coral: #FF6B4A;      --coral-deep: #C4622F;
-  --amber: #FFB347;
-  --sage: #7FA48A;       --sage-deep: #5F7A52;
-  --lav: #9B8FC4;        --lav-deep: #7A6DA8;
-  --rose: #E27A8B;
-  --sky: #6FA7D8;
-  --cta-g1: #FF7A55; --cta-g2: #FF5B36;   /* primary CTA gradient stops */
+  --surface: var(--surface-card);
+  --warm: var(--secondary-bg);
+  --line: var(--divider);
+  --ink: var(--text-primary);
+  --sub: var(--text-secondary);
+  --faint: var(--text-disabled);
+  --coral: var(--primary-base);  --coral-deep: var(--primary-deep);
+  --amber: var(--dv-amber);
+  --sage: var(--dv-sage);        --sage-deep: var(--success-hover);
+  --lav: var(--dv-lav);          --lav-deep: #7A6DA8;
+  --rose: var(--dv-rose);
+  --sky: var(--dv-sky);
   --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
   --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
   --np-ease-ios: cubic-bezier(.32,.72,0,1);
   --np-ease-spring: cubic-bezier(.34,1.4,.44,1);
 }
 
-/* Pulse dark (spec §7 S8): warm-graphite neutrals + accents lifted for the graphite canvas.
-   Neutrals mirror the legacy surface/text scale in Block A; accents stay in-family but glow. */
+/* Pulse dark — only the tokens that stayed literal above need dark values. */
 :root[data-theme="dark"] {
-  --surface: #221E1B;
-  --warm: #2A2521;
-  --line: rgba(245, 239, 230, 0.08);
-  --ink: #F5EFE6;
-  --sub: #B7A899;
-  --faint: #8A7A6A;
-
-  /* Pulse accents — same family, lifted for the graphite canvas */
-  --coral: #FF7E5C; --coral-deep: #F0966B;
-  --amber: #FFBE60; /* --amber-deep dark already exists (S7, #E3B565) */
-  --sage: #8FB49A; --sage-deep: #A9C79A;
-  --lav: #AB9FD2; --lav-deep: #B9ACD9;
-  --rose: #E98D9D; --sky: #7FB2DE;
-  --cta-g1: #FF8A66; --cta-g2: #FF6B47;   /* primary CTA gradient stops (Pulse) */
-
+  --lav-deep: #B9ACD9;
   --np-shadow-card: 0 2px 4px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
   --np-shadow-row: 0 8px 20px rgba(0,0,0,.3);
 }
@@ -1828,8 +2000,9 @@ button.itemrow { cursor: pointer; }
 
 /* ===== Napív S7 — Me accent vocabulary (spec §4.6) ===== */
 .pghead-np.lav .over { color: var(--lav-deep); }
-:root { --amber-deep: #9A6A12; }
-:root[data-theme="dark"] { --amber-deep: #E3B565; }
+/* P1: was #9A6A12 / dark #E3B565 — the accent ramp's text-safe stop is the
+   same role (light #8E6E1F, dark lifts to #F2D094), so it aliases like the rest. */
+:root { --amber-deep: var(--accent-deep); }
 
 /* ===== Napív kcal gauge (Fuel Mai, spec §4.4) ===== */
 .gauge { position: relative; display: flex; flex-direction: column; align-items: center; }
