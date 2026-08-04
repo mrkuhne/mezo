@@ -2,22 +2,34 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildScheduleEntries, useScheduleSnapshotWriter } from '@/data/notification/notificationScheduleWriter'
 import { isMockMode } from '@/data/_client/mode'
-import type { CheckinSlot, GymSchedule, ProtocolSlotData, SupplementStashItem } from '@/data/types'
+import type { CheckinSlot, GymSchedule, ProtocolOccurrence, SupplementStashItem } from '@/data/types'
+import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 
 const CHECKINS: Pick<CheckinSlot, 'time'>[] = [
   { time: '06:30' }, { time: '10:00' }, { time: '14:00' }, { time: '20:00' },
 ]
 
-function fuelSlot(overrides: Partial<ProtocolSlotData> = {}): ProtocolSlotData {
+function stackEntry(over: Partial<StackDayEntry> & { pantryItemId: string; name: string }): StackDayEntry {
   return {
-    time: '06:50',
-    window: 'wake',
-    kind: 'morning',
-    kindColor: 'var(--text-secondary)',
-    items: [{ refId: 'kreatin-1', name: 'Kreatin', dose: '5g vízben', color: 'var(--coral)' }],
-    reasoning: 'reasoning text',
-    primary: false,
-    ...overrides,
+    occurrenceId: `occ-${over.pantryItemId}`,
+    persistedZone: 'wake',
+    dose: null,
+    pinned: false,
+    placementSource: 'rule',
+    reason: null,
+    dailyTotalHint: null,
+    skippedToday: false,
+    displacedToday: false,
+    taken: false,
+    ...over,
+  }
+}
+function stackSlot(over: Partial<StackDaySlot> & { zone: StackDaySlot['zone']; time: string }): StackDaySlot {
+  return {
+    label: 'w',
+    anchorNote: null,
+    entries: [stackEntry({ pantryItemId: 'kreatin-1', name: 'Kreatin', dose: '5g vízben' })],
+    ...over,
   }
 }
 
@@ -46,30 +58,37 @@ describe('buildScheduleEntries (pure)', () => {
     for (const link of deeplinks) expect(link.startsWith('/today')).toBe(true) // still the same route
   })
 
-  it('emits one fuel_slot entry per buildProtocol slot, deeplinking to /fuel/stack', () => {
-    const entries = buildScheduleEntries([], [fuelSlot({ time: '17:00', window: 'T-40min' })])
+  it('emits one fuel_slot entry per projectStackDay slot, deeplinking to /fuel/stack', () => {
+    const entries = buildScheduleEntries([], [stackSlot({ zone: 'pre_workout', time: '17:00' })])
     expect(entries).toHaveLength(1)
     const [entry] = entries
     expect(entry.category).toBe('fuel_slot')
     expect(entry.weekday).toBeNull()
     expect(entry.deeplink).toBe('/fuel/stack')
-    expect(entry.source).toBe('buildProtocol')
+    expect(entry.source).toBe('projectStackDay')
     expect(entry.time).toBe('17:00')
     expect(entry.title).toContain('Stack')
     expect(entry.body).toContain('Kreatin')
   })
 
   it('only ever emits checkin/fuel_slot categories — never a backend-native one', () => {
-    const entries = buildScheduleEntries(CHECKINS, [fuelSlot(), fuelSlot({ time: '21:00', window: 'T-2h sleep' })])
+    const entries = buildScheduleEntries(CHECKINS, [
+      stackSlot({ zone: 'wake', time: '06:50' }),
+      stackSlot({ zone: 'evening', time: '21:00' }),
+    ])
     const categories = new Set(entries.map((e) => e.category))
     expect(categories).toEqual(new Set(['checkin', 'fuel_slot']))
   })
 
   it('every entry title/body stays within the wire limits (120/300 chars) even with many stack items', () => {
-    const manyItems = Array.from({ length: 20 }, (_, i) => ({
-      refId: `item-${i}`, name: `Szuperhosszú-tápkiegészítő-tétel-neve-${i}`, dose: '250 mg kapszula, naponta kétszer', color: 'var(--coral)',
-    }))
-    const entries = buildScheduleEntries([], [fuelSlot({ items: manyItems })])
+    const manyEntries = Array.from({ length: 20 }, (_, i) =>
+      stackEntry({
+        pantryItemId: `item-${i}`,
+        name: `Szuperhosszú-tápkiegészítő-tétel-neve-${i}`,
+        dose: '250 mg kapszula, naponta kétszer',
+      }),
+    )
+    const entries = buildScheduleEntries([], [stackSlot({ zone: 'wake', time: '06:50', entries: manyEntries })])
     expect(entries[0].title.length).toBeLessThanOrEqual(120)
     expect((entries[0].body ?? '').length).toBeLessThanOrEqual(300)
   })
@@ -78,9 +97,29 @@ describe('buildScheduleEntries (pure)', () => {
     expect(buildScheduleEntries([], [])).toEqual([])
   })
 
-  it('a fuel slot with no items still gets an honest, non-empty body (never a blank push)', () => {
-    const entries = buildScheduleEntries([], [fuelSlot({ items: [] })])
-    expect(entries[0].body).toBeTruthy()
+  // Mirrors buildDayPlan's FuelSlot mapper (mezo-vx9v Task 9): a zone whose every entry is
+  // rest-day-skipped is dropped entirely rather than turned into a blank-body push.
+  it('a stack slot whose entries are ALL skipped today emits no fuel_slot notification', () => {
+    const entries = buildScheduleEntries([], [
+      stackSlot({ zone: 'breakfast', time: '06:20', entries: [stackEntry({ pantryItemId: 'pwo', name: 'PWO', skippedToday: true })] }),
+    ])
+    expect(entries).toEqual([])
+  })
+
+  it('a skipped entry is excluded from the body but a slot with at least one live entry still fires', () => {
+    const entries = buildScheduleEntries([], [
+      stackSlot({
+        zone: 'breakfast',
+        time: '06:20',
+        entries: [
+          stackEntry({ pantryItemId: 'pwo', name: 'PWO', skippedToday: true }),
+          stackEntry({ pantryItemId: 'whey', name: 'Whey', dose: '20g' }),
+        ],
+      }),
+    ])
+    expect(entries).toHaveLength(1)
+    expect(entries[0].body).toContain('Whey')
+    expect(entries[0].body).not.toContain('PWO')
   })
 })
 
@@ -88,6 +127,8 @@ describe('buildScheduleEntries (pure)', () => {
 const hooks = vi.hoisted(() => ({
   useStack: vi.fn(),
   useProtocol: vi.fn(),
+  useIntakes: vi.fn(),
+  useFuelSettings: vi.fn(),
   useSleepGoal: vi.fn(),
   useTrain: vi.fn(),
   useRunning: vi.fn(),
@@ -95,6 +136,10 @@ const hooks = vi.hoisted(() => ({
 vi.mock('@/data/fuel/stackHooks', () => ({
   useStack: hooks.useStack,
   useProtocol: hooks.useProtocol,
+  useIntakes: hooks.useIntakes,
+}))
+vi.mock('@/data/fuel/fuelSettingsHooks', () => ({
+  useFuelSettings: hooks.useFuelSettings,
 }))
 vi.mock('@/data/me/sleepHooks', () => ({
   useSleepGoal: hooks.useSleepGoal,
@@ -116,12 +161,24 @@ const STASH: SupplementStashItem[] = [
     id: 'kreatin-1', name: 'Kreatin monohidrát', brand: 'Test', type: 'supplement', category: 'test',
     dose: '5g', form: 'por', stock: 30, stockUnit: 'adag', protocol: 'daily', timing: 'wake', taken: false,
   },
-  // AAKG matches buildProtocol's pre-workout basket (find('aakg')) — without an item in that
-  // basket, buildProtocol never emits a 'pre-workout' slot at all, so the gym-anchored-time
-  // pinning tests below need this to have anything to assert on.
   {
     id: 'aakg-1', name: 'AAKG · L-Arginine', brand: 'Test', type: 'supplement', category: 'test',
     dose: '3g', form: 'por', stock: 30, stockUnit: 'adag', protocol: 'daily', timing: 'pre-workout', taken: false,
+  },
+]
+
+// kreatin at wake (always renders) + AAKG pinned to pre_workout with an explicit 'skip' rest-day
+// fallback — on a training day it anchors to the gym time; on a rest day the zone is absent
+// altogether (no pre_workout StackDaySlot at all — projectStackDay never emits it when there are
+// no training blocks), which is the behavior the rest-day test below pins.
+const OCCURRENCES: ProtocolOccurrence[] = [
+  {
+    id: 'occ-kreatin', pantryItemId: 'kreatin-1', slotKey: 'wake', dose: null, pinned: false,
+    placementSource: 'rule', placementReason: null, restDayFallback: null, dailyTotalHint: null,
+  },
+  {
+    id: 'occ-aakg', pantryItemId: 'aakg-1', slotKey: 'pre_workout', dose: null, pinned: false,
+    placementSource: 'rule', placementReason: null, restDayFallback: 'skip', dailyTotalHint: null,
   },
 ]
 
@@ -130,14 +187,16 @@ const GYM_TODAY: GymSchedule = {
 }
 
 function stubHooks(opts: {
-  selectedIds?: string[] | null
+  occurrences?: ProtocolOccurrence[]
   sleepGoalPending?: boolean
   wakeTime?: string
   bedTime?: string
   gymSchedule?: GymSchedule | null
 } = {}) {
   hooks.useStack.mockReturnValue({ stash: STASH })
-  hooks.useProtocol.mockReturnValue({ protocol: {}, selectedIds: opts.selectedIds ?? ['kreatin-1', 'aakg-1'] })
+  hooks.useProtocol.mockReturnValue({ protocol: {}, occurrences: opts.occurrences ?? OCCURRENCES })
+  hooks.useIntakes.mockReturnValue([])
+  hooks.useFuelSettings.mockReturnValue({ settings: { mealsPerDay: 4, caffeineCutoff: '14:00' } })
   hooks.useSleepGoal.mockReturnValue({
     goal: { wakeTime: opts.wakeTime ?? '06:30', bedTime: opts.bedTime ?? '22:30' },
     isPending: opts.sleepGoalPending ?? false,
@@ -151,6 +210,8 @@ afterEach(() => {
   putSchedule.mockReset()
   hooks.useStack.mockReset()
   hooks.useProtocol.mockReset()
+  hooks.useIntakes.mockReset()
+  hooks.useFuelSettings.mockReset()
   hooks.useSleepGoal.mockReset()
   hooks.useTrain.mockReset()
   hooks.useRunning.mockReset()
@@ -205,9 +266,10 @@ describe('useScheduleSnapshotWriter', () => {
     expect(putSchedule).toHaveBeenCalledTimes(1)
   })
 
-  // Fix round 1 (mezo-h4wp.6.3 review): pins the real bug — without deriveProtocolAnchors, the
-  // writer called buildProtocol with only {wake, bedtime}, so the persisted fuel_slot pre-workout
-  // time silently used the wake+60 rest-day fallback on every training day.
+  // Fix round 1 (mezo-h4wp.6.3 review) pinned the real bug: without a canonical pre-workout
+  // derivation, the writer put the persisted fuel_slot pre-workout time hours off the real gym
+  // time. mezo-vx9v Task 9 moves the derivation onto `projectStackDay` (fed the day's real
+  // `blocks`) — this test re-pins the same guarantee on the new path.
   it('real mode: with a gym scheduled today, the persisted pre-workout fuel_slot time is anchored to the gym time, not wake + 60', async () => {
     if (isMockMode()) return
     stubHooks({ gymSchedule: GYM_TODAY, wakeTime: '06:30' })
@@ -217,11 +279,15 @@ describe('useScheduleSnapshotWriter', () => {
 
     const { entries } = putSchedule.mock.calls[0][0]
     const preWorkout = entries.find((e: { time: string }) => e.time === '16:20')
-    expect(preWorkout).toBeDefined() // 17:00 gym − 40min — the canonical deriveProtocolAnchors offset
+    expect(preWorkout).toBeDefined() // 17:00 gym − 40min — the canonical PRE_WORKOUT_STACK_LEAD_MIN offset
+    expect(preWorkout.title).toContain('edzés előtti')
     expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(false) // the wake+60 bug this pins
   })
 
-  it('real mode: with no training scheduled today, the fuel_slot pre-workout time falls back exactly as buildProtocol intends', async () => {
+  // Rest-day semantics changed in Task 9: a pre_workout occurrence with restDayFallback:'skip'
+  // no longer falls back to a fabricated wake+60 slot — the zone simply doesn't exist today
+  // (projectStackDay never emits a pre_workout StackDaySlot when there are no training blocks).
+  it('real mode: with no training scheduled today, the pre-workout fuel_slot is absent — a rest-day skip, not a wake+60 fallback', async () => {
     if (isMockMode()) return
     stubHooks({ gymSchedule: null, wakeTime: '06:30' })
     putSchedule.mockResolvedValue(undefined)
@@ -229,8 +295,7 @@ describe('useScheduleSnapshotWriter', () => {
     await waitFor(() => expect(putSchedule).toHaveBeenCalledTimes(1))
 
     const { entries } = putSchedule.mock.calls[0][0]
-    // No gym today → deriveProtocolAnchors leaves preWorkout undefined → buildProtocol's own
-    // documented rest-day fallback (wake + 60) applies, honestly, not a bug.
-    expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(true)
+    expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(false) // no fabricated wake+60 fallback
+    expect(entries.some((e: { title: string }) => e.title.includes('edzés előtti'))).toBe(false) // PWO zone is absent
   })
 })

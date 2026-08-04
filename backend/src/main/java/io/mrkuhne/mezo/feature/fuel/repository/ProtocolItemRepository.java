@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.fuel.repository;
 
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -13,4 +14,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ProtocolItemRepository extends JpaRepository<ProtocolItemEntity, UUID> {
 
     List<ProtocolItemEntity> findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(UUID protocolId);
+
+    Optional<ProtocolItemEntity> findByProtocolIdAndPantryItemIdAndSlotKeyAndDeletedFalse(
+        UUID protocolId, UUID pantryItemId, String slotKey);
 }

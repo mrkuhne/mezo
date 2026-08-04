@@ -53,10 +53,13 @@ tags:
   - name: Progression
   - name: Fuel
     description: >
-      Fuel-owned protocol + supplement-intake endpoints. The protocol persists
-      ONLY the selected pantry-item ids + version metadata (ADR/spec 2026-07-02)
-      — timing slots are recomputed by the FE buildProtocol. supplement_intake
-      is an append-only taken-ledger FK-ing pantry_item (ADR 0005).
+      Fuel-owned protocol + supplement-intake endpoints. The protocol is a
+      LIVING set of occurrences (one protocol_item row per pantry-item/zone
+      placement, each carrying its own slotKey/dose/pin state) — there is no
+      whole-selection activate step; occurrences are added/moved/re-dosed/
+      unpinned/removed individually and the engine places a new occurrence's
+      zone when slotKey is omitted (mezo-vx9v). supplement_intake is an
+      append-only taken-ledger FK-ing pantry_item (ADR 0005).
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
   - name: CompanionStream
@@ -3322,26 +3325,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/fuel/protocol/items:
     post:
       tags:
         - Fuel
-      operationId: activateProtocol
+      operationId: addProtocolItem
       summary: >-
-        Activate a new protocol version from the current selection (previous
-        active superseded)
+        Add an occurrence to the living protocol (engine places it when slotKey
+        omitted)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProtocolActivateRequest'
+              $ref: '#/components/schemas/ProtocolItemCreateRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProtocolViewResponse'
+                $ref: '#/components/schemas/ProtocolItemResponse'
         '400':
           description: Validation error
           content:
@@ -3350,6 +3354,95 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Pantry item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Duplicate occurrence in that zone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/fuel/protocol/items/{id}':
+    patch:
+      tags:
+        - Fuel
+      operationId: patchProtocolItem
+      summary: 'Move (pin), re-dose or unpin (engine re-places) one occurrence'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolItemPatchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolItemResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Duplicate occurrence in that zone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Fuel
+      operationId: deleteProtocolItem
+      summary: Remove one occurrence (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
           content:
             application/json:
               schema:
@@ -10197,7 +10290,7 @@ components:
         - version
         - builtAt
         - status
-        - selectedPantryItemIds
+        - items
       properties:
         id:
           type: string
@@ -10216,11 +10309,74 @@ components:
           type: number
         lastReplanReason:
           type: string
-        selectedPantryItemIds:
+        items:
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: '#/components/schemas/ProtocolItemResponse'
+    ProtocolItemResponse:
+      type: object
+      required:
+        - id
+        - pantryItemId
+        - slotKey
+        - pinned
+        - placementSource
+      properties:
+        id:
+          type: string
+          format: uuid
+        pantryItemId:
+          type: string
+          format: uuid
+        slotKey:
+          type: string
+        dose:
+          type: string
+        pinned:
+          type: boolean
+        placementSource:
+          type: string
+          enum:
+            - rule
+            - llm
+            - user
+            - fallback
+        placementReason:
+          type: string
+        restDayFallback:
+          type: string
+          description: '''skip'' or a zone key; absent = FE default'
+        dailyTotalHint:
+          type: string
+          description: 'Rule-table daily-total hint (derived, not stored)'
+    ProtocolItemCreateRequest:
+      type: object
+      required:
+        - pantryItemId
+      properties:
+        pantryItemId:
+          type: string
+          format: uuid
+        slotKey:
+          type: string
+          pattern: >-
+            ^(wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime)$
+        dose:
+          type: string
+          maxLength: 60
+    ProtocolItemPatchRequest:
+      type: object
+      properties:
+        slotKey:
+          type: string
+          pattern: >-
+            ^(wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime)$
+        dose:
+          type: string
+          maxLength: 60
+        pinned:
+          type: boolean
+          description: 'false = unpin, the engine re-places; true only alongside slotKey'
     ProtocolViewResponse:
       type: object
       required:
@@ -10232,19 +10388,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProtocolHistoryEntry'
-    ProtocolActivateRequest:
-      type: object
-      required:
-        - selectedPantryItemIds
-      properties:
-        selectedPantryItemIds:
-          type: array
-          minItems: 1
-          items:
-            type: string
-            format: uuid
-        reason:
-          type: string
     IntakeRequest:
       type: object
       required:

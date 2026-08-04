@@ -169,7 +169,7 @@ test('hides the Replan CTA in real mode even with an active protocol — no fabr
   server.use(
     http.get(`${API_BASE}/api/fuel/protocol`, () =>
       HttpResponse.json({
-        active: { id: 'p1', version: 1, builtAt: '2026-07-05T06:00:00Z', status: 'active', confidence: 0.9, selectedPantryItemIds: [] },
+        active: { id: 'p1', version: 1, builtAt: '2026-07-05T06:00:00Z', status: 'active', confidence: 0.9, items: [] },
         history: [{ version: 1, builtAt: '2026-07-05T06:00:00Z' }],
       }),
     ),

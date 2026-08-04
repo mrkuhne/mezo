@@ -5,13 +5,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.IntakeListResponse;
 import io.mrkuhne.mezo.api.dto.IntakeRequest;
 import io.mrkuhne.mezo.api.dto.IntakeResponse;
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemPatchRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
 import io.mrkuhne.mezo.api.dto.ProtocolViewResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
+import io.mrkuhne.mezo.feature.fuel.repository.ProtocolItemRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -23,14 +29,17 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * HTTP-level contract IT for the Fuel "Stack/Protocol" slice — drives the generated {@code FuelApi}
- * over the real stack. Proves the protocol round-trip (activate → read → re-activate bumps the
- * version), the intake ledger round-trip (log → per-day read → soft-delete), and the two error
- * contracts (unauthenticated → 401, empty selection → 400).
+ * over the real stack. Proves the living-protocol round-trip (add → read → add+patch bumps the
+ * version further), the occurrence CRUD (add/patch/delete, incl. engine placement, user pinning,
+ * duplicate-zone 409, and legacy-row backfill), the intake ledger round-trip (log → per-day read →
+ * soft-delete), and the error contracts (unauthenticated → 401, missing required field → 400).
  */
 class FuelApiIT extends ApiIntegrationTest {
 
     @Autowired private PantryItemPopulator pantryPop;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private ProtocolPopulator protocolPopulator;
+    @Autowired private ProtocolItemRepository protocolItemRepository;
 
     /** Find-or-create yields the demodata-seeded owner's id — the principal behind ownerAuthHeaders(). */
     private UUID ownerId() {
@@ -38,32 +47,40 @@ class FuelApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testProtocol_shouldRoundTripAndBumpVersion_whenActivatedTwice() {
+    void testProtocol_shouldRoundTripAndBumpVersionFurther_whenItemAddedThenPatched() {
         UUID owner = ownerId();
         PantryItemEntity s1 = pantryPop.createSupplement(owner, "Kreatin");
+        HttpHeaders auth = ownerAuthHeaders();
 
-        // POST activates v1 from the supplement selection -> 201 + active.version == 1
-        ProtocolViewResponse created = postForBody("/api/fuel/protocol",
-            new ProtocolActivateRequest().selectedPantryItemIds(List.of(s1.getId())),
-            ownerAuthHeaders(), HttpStatus.CREATED, ProtocolViewResponse.class);
-        assertThat(created.getActive()).isNotNull();
-        assertThat(created.getActive().getVersion()).isEqualTo(1);
-        assertThat(created.getActive().getSelectedPantryItemIds()).containsExactly(s1.getId());
+        // POST /items lazily creates the living protocol and adds one occurrence -> 201
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(s1.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
 
-        // GET returns the same active v1
-        ProtocolViewResponse fetched = getForBody("/api/fuel/protocol",
-            ownerAuthHeaders(), HttpStatus.OK, ProtocolViewResponse.class);
-        assertThat(fetched.getActive()).isNotNull();
-        assertThat(fetched.getActive().getVersion()).isEqualTo(1);
-        assertThat(fetched.getActive().getSelectedPantryItemIds()).containsExactly(s1.getId());
+        // GET returns the active protocol carrying that one item
+        ProtocolViewResponse afterAdd = getForBody("/api/fuel/protocol",
+            auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(afterAdd.getActive()).isNotNull();
+        int versionAfterAdd = afterAdd.getActive().getVersion();
+        assertThat(afterAdd.getActive().getItems())
+            .extracting(ProtocolItemResponse::getPantryItemId).containsExactly(s1.getId());
 
-        // Second POST supersedes v1 and bumps to version 2
+        // A second occurrence + a patch on the first bumps the version further — the living
+        // protocol's touch() replaces the old whole-selection re-activate as the bump mechanism.
         PantryItemEntity s2 = pantryPop.createSupplement(owner, "Omega-3");
-        ProtocolViewResponse reactivated = postForBody("/api/fuel/protocol",
-            new ProtocolActivateRequest().selectedPantryItemIds(List.of(s1.getId(), s2.getId())),
-            ownerAuthHeaders(), HttpStatus.CREATED, ProtocolViewResponse.class);
-        assertThat(reactivated.getActive().getVersion()).isEqualTo(2);
-        assertThat(reactivated.getActive().getSelectedPantryItemIds()).containsExactly(s1.getId(), s2.getId());
+        postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(s2.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        patchForBody("/api/fuel/protocol/items/" + created.getId(),
+            new ProtocolItemPatchRequest().dose("3g"),
+            auth, HttpStatus.OK, ProtocolItemResponse.class);
+
+        ProtocolViewResponse afterPatch = getForBody("/api/fuel/protocol",
+            auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(afterPatch.getActive().getVersion()).isGreaterThan(versionAfterAdd);
+        assertThat(afterPatch.getActive().getItems())
+            .extracting(ProtocolItemResponse::getPantryItemId)
+            .containsExactlyInAnyOrder(s1.getId(), s2.getId());
     }
 
     @Test
@@ -108,13 +125,174 @@ class FuelApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testActivateProtocol_shouldReturn400_whenSelectionEmpty() {
+    void testAddProtocolItem_shouldReturn400_whenPantryItemIdMissing() {
         ownerId();
-        // Empty selection fails the contract's @Size(min=1) bean validation on the request body
-        // (intercepted before the service), surfacing the FIELD SystemMessage contract as a 400.
-        ResponseEntity<String> res = exchangeForResponse(HttpMethod.POST, "/api/fuel/protocol",
-            new ProtocolActivateRequest().selectedPantryItemIds(List.of()), ownerAuthHeaders());
+        // A missing required field fails the contract's `required` bean validation on the request
+        // body (intercepted before the service), surfacing the FIELD SystemMessage contract as a 400
+        // — the occurrence-op equivalent of the retired activate endpoint's empty-selection 400.
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.POST, "/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest(), ownerAuthHeaders());
         assertThat(res.getStatusCode().value()).isEqualTo(400);
-        assertHasFieldError(res.getBody(), "selectedPantryItemIds", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(res.getBody(), "pantryItemId", "VALIDATION_REQUIRED_FIELD");
+    }
+
+    @Test
+    void testAddProtocolItem_shouldEnginePlaceAndPersist_whenSlotKeyOmitted() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        assertThat(created.getSlotKey()).isEqualTo("wake");
+        assertThat(created.getPinned()).isFalse();
+        assertThat(created.getPlacementSource()).hasToString("rule");
+        assertThat(created.getDailyTotalHint()).contains("15–20g");
+        ProtocolViewResponse view = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(view.getActive().getItems()).hasSize(1);
+    }
+
+    @Test
+    void testAddProtocolItem_shouldPinUserPlacement_whenSlotKeyGiven() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()).slotKey("evening"),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        assertThat(created.getSlotKey()).isEqualTo("evening");
+        assertThat(created.getPinned()).isTrue();
+        assertThat(created.getPlacementSource()).hasToString("user");
+        assertThat(created.getPlacementReason()).isNotBlank();
+    }
+
+    @Test
+    void testAddProtocolItem_shouldReturn409_whenDuplicateZoneOccurrence() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        // First add lands on 'wake' via the rule table (no slotKey given).
+        postForBody("/api/fuel/protocol/items", new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        // Second add for the SAME item, again engine-placed -> lands on 'wake' again -> 409.
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.POST, "/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()), auth);
+        assertThat(res.getStatusCode().value()).isEqualTo(409);
+        assertHasRequestError(res.getBody(), "FUEL_PROTOCOL_ITEM_DUPLICATE");
+    }
+
+    @Test
+    void testPatchProtocolItem_shouldMoveAndPin_whenSlotKeyPatched() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        ProtocolItemResponse patched = patchForBody("/api/fuel/protocol/items/" + created.getId(),
+            new ProtocolItemPatchRequest().slotKey("lunch"),
+            auth, HttpStatus.OK, ProtocolItemResponse.class);
+        assertThat(patched.getSlotKey()).isEqualTo("lunch");
+        assertThat(patched.getPinned()).isTrue();
+        assertThat(patched.getPlacementSource()).hasToString("user");
+    }
+
+    @Test
+    void testPatchProtocolItem_shouldAllowNoOpRepin_whenSlotKeyEqualsCurrentZone() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class); // engine-placed on 'wake'
+        // Re-"move" it to its OWN current zone — a tap on the already-checked chip. Must NOT 409
+        // against the occurrence being patched itself (mezo-vx9v review finding).
+        ProtocolItemResponse patched = patchForBody("/api/fuel/protocol/items/" + created.getId(),
+            new ProtocolItemPatchRequest().slotKey("wake"),
+            auth, HttpStatus.OK, ProtocolItemResponse.class);
+        assertThat(patched.getSlotKey()).isEqualTo("wake");
+        assertThat(patched.getPinned()).isTrue();
+        assertThat(patched.getPlacementSource()).hasToString("user");
+    }
+
+    @Test
+    void testPatchProtocolItem_shouldReplaceViaEngine_whenUnpinned() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        // Pin it away from its rule-table home ('wake') first.
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()).slotKey("lunch"),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        assertThat(created.getPinned()).isTrue();
+        ProtocolItemResponse patched = patchForBody("/api/fuel/protocol/items/" + created.getId(),
+            new ProtocolItemPatchRequest().pinned(false),
+            auth, HttpStatus.OK, ProtocolItemResponse.class);
+        assertThat(patched.getSlotKey()).isEqualTo("wake");
+        assertThat(patched.getPinned()).isFalse();
+        assertThat(patched.getPlacementSource()).hasToString("rule");
+    }
+
+    @Test
+    void testDeleteProtocolItem_shouldSoftDelete_whenOwned() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        HttpHeaders auth = ownerAuthHeaders();
+        ProtocolItemResponse created = postForBody("/api/fuel/protocol/items",
+            new ProtocolItemCreateRequest().pantryItemId(kreatin.getId()),
+            auth, HttpStatus.CREATED, ProtocolItemResponse.class);
+        deleteAndExpect("/api/fuel/protocol/items/" + created.getId(), auth, HttpStatus.NO_CONTENT);
+        ProtocolViewResponse view = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(view.getActive().getItems()).isEmpty();
+    }
+
+    @Test
+    void testGetProtocol_shouldBackfillLegacyItems_whenSlotKeyNull() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        // Legacy shape: a protocol_item row with no slot_key (pre-mezo-vx9v).
+        var protocol = protocolPopulator.createProtocol(owner, 1, "active", List.of(kreatin.getId()));
+        HttpHeaders auth = ownerAuthHeaders();
+
+        ProtocolViewResponse first = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(first.getActive().getItems()).hasSize(1);
+        assertThat(first.getActive().getItems().get(0).getSlotKey()).isEqualTo("wake");
+        assertThat(first.getActive().getItems().get(0).getPlacementSource()).hasToString("rule");
+
+        // Persisted, not just re-derived on read: the DB row itself now carries the backfilled zone.
+        List<ProtocolItemEntity> persisted =
+            protocolItemRepository.findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(protocol.getId());
+        assertThat(persisted).singleElement().satisfies(item -> {
+            assertThat(item.getSlotKey()).isEqualTo("wake");
+            assertThat(item.getPlacementSource()).isEqualTo("rule");
+        });
+
+        // Second GET returns the same result (would still match if re-derived, since the engine is
+        // deterministic — the DB assertion above is what actually proves persistence-not-rederivation).
+        ProtocolViewResponse second = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(second.getActive().getItems().get(0).getSlotKey()).isEqualTo("wake");
+    }
+
+    @Test
+    void testGetProtocol_shouldSoftDeleteOverflowDuplicate_whenBackfillExhaustsAllEightZones() {
+        UUID owner = ownerId();
+        var kreatin = pantryPop.createSupplement(owner, "Kreatin monohidrát");
+        // 9 legacy NULL-slot rows for the SAME pantry item — one more than the 8 StackZone slots.
+        // NULLs are distinct under the partial unique index, so pre-vx9v duplicate rows for one
+        // pantry item could already pile up — a historical artifact of the now-removed
+        // whole-selection activate endpoint, which had no uniqueness check on its selection.
+        protocolPopulator.createProtocol(owner, 1, "active", Collections.nCopies(9, kreatin.getId()));
+        HttpHeaders auth = ownerAuthHeaders();
+
+        // Must NOT 500: the 9th occurrence has no free zone left and is soft-deleted rather than
+        // persisted into a slotKey collision (would violate uq_protocol_item_zone_occurrence).
+        ProtocolViewResponse first = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(first.getActive().getItems()).hasSize(8);
+        assertThat(first.getActive().getItems())
+            .extracting(ProtocolItemResponse::getSlotKey).doesNotHaveDuplicates();
+
+        // Stable on retry — no re-derivation, no repeat crash on the same data.
+        ProtocolViewResponse second = getForBody("/api/fuel/protocol", auth, HttpStatus.OK, ProtocolViewResponse.class);
+        assertThat(second.getActive().getItems()).hasSize(8);
     }
 }

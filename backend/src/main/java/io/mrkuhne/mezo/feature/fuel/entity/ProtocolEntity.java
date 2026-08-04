@@ -16,10 +16,13 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 /**
- * A versioned supplement Stack/Protocol (Fuel). Persists ONLY the selection + version metadata —
- * timing slots are recomputed by the FE {@code buildProtocol}, so there is no slot snapshot here.
- * Single active protocol per user (partial unique index {@code uq_protocol_active_per_user});
- * superseding bumps {@code version} and flips the prior row's {@code status} to {@code superseded}.
+ * A single living supplement Stack/Protocol (Fuel) — one row per user, holding only version/build
+ * metadata; the timing/zone occurrences live on {@code protocol_item} rows, not here (no slot
+ * snapshot on this entity). Single active protocol per user (partial unique index
+ * {@code uq_protocol_active_per_user}); {@code version} bumps IN PLACE on every occurrence mutation
+ * (add/patch/delete an item) — there is no whole-selection (re)activate step anymore, so
+ * {@code status} stays {@code active} for the life of the row. Any {@code superseded} row in the
+ * table is legacy history from the pre-mezo-vx9v activate model, never written going forward.
  *
  * <p>{@code createdBy}, {@code is_deleted} and {@code created_at} come from {@link OwnedEntity}.
  * There is no {@code updated_at} column, hence no {@code @UpdateTimestamp} field.

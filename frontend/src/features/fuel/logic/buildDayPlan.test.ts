@@ -7,14 +7,15 @@ import {
   pickRecipe,
   placeWindows,
   splitBudget,
-  PROTOCOL_KIND,
+  ZONE_FUEL_KIND,
   type DayBudget,
   type DayPlanInput,
   type Macro4,
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelPlanToday, MealItemLine, ProtocolSlotData, Recipe } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, MealItemLine, Recipe } from '@/data/types'
+import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
@@ -55,13 +56,26 @@ function recipe(over: Partial<Recipe> & { id: string; category: Recipe['category
     ...over,
   }
 }
-function proto(over: Partial<ProtocolSlotData> & { kind: string; time: string }): ProtocolSlotData {
+function stackEntry(over: Partial<StackDayEntry> & { pantryItemId: string; name: string }): StackDayEntry {
   return {
-    window: 'w',
-    kindColor: '#fff',
-    items: [],
-    reasoning: 'why',
-    primary: false,
+    occurrenceId: `occ-${over.pantryItemId}`,
+    persistedZone: 'wake',
+    dose: null,
+    pinned: false,
+    placementSource: 'rule',
+    reason: null,
+    dailyTotalHint: null,
+    skippedToday: false,
+    displacedToday: false,
+    taken: false,
+    ...over,
+  }
+}
+function stackSlot(over: Partial<StackDaySlot> & { zone: StackDaySlot['zone']; time: string }): StackDaySlot {
+  return {
+    label: 'w',
+    anchorNote: null,
+    entries: [],
     ...over,
   }
 }
@@ -77,7 +91,6 @@ function baseInput(over: Partial<DayPlanInput> = {}): DayPlanInput {
     meals: [],
     recipes: [],
     protocolSlots: [],
-    intakes: [],
     caffeineCutoff: '14:00',
     nowHHmm: '12:00',
     ...over,
@@ -332,20 +345,51 @@ test('done meal/snack slots carry the FULL logged-meal totals — nothing logged
   expect({ kcal: sum('kcal'), p: sum('p'), c: sum('c'), f: sum('f') }).toEqual(expected)
 })
 
-// ── protocol + intake pips ───────────────────────────────────────────────────
-test('protocol slots map kinds onto FuelKind and set item done-state from intakes', () => {
-  expect(PROTOCOL_KIND).toMatchObject({ morning: 'wake', 'pre-fuel': 'snack', 'pre-workout': 'preworkout', 'fat-bound': 'midday', evening: 'evening' })
-  const p = proto({
-    kind: 'evening',
+// ── protocol (stack-day) zones ───────────────────────────────────────────────
+test('protocol slots map zones onto FuelKind and carry done-state straight from the entry\'s `taken`', () => {
+  expect(ZONE_FUEL_KIND).toMatchObject({
+    wake: 'wake', breakfast: 'snack', pre_workout: 'preworkout', post_workout: 'snack',
+    lunch: 'midday', dinner: 'evening', evening: 'evening', bedtime: 'evening',
+  })
+  const slot = stackSlot({
+    zone: 'evening',
     time: '21:00',
-    items: [
-      { refId: 'mg', name: 'Magnézium', dose: '300mg', color: '#f' },
-      { refId: 'omega', name: 'Omega-3', dose: '2g', color: '#f' },
+    label: 'Este',
+    entries: [
+      stackEntry({ pantryItemId: 'mg', name: 'Magnézium', dose: '300mg', taken: true }),
+      stackEntry({ pantryItemId: 'omega', name: 'Omega-3', dose: '2g', taken: false }),
     ],
   })
-  const plan = buildDayPlan(baseInput({ protocolSlots: [p], intakes: [{ id: 'i1', pantryItemId: 'mg', takenAt: 'x', dose: null, slotKey: null }] }))
-  const slot = plan.slots.find(s => s.kind === 'evening')!
-  expect(slot.items!.map(it => it.done)).toEqual([true, false]) // mg taken, omega not
+  const plan = buildDayPlan(baseInput({ protocolSlots: [slot] }))
+  const found = plan.slots.find(s => s.kind === 'evening')!
+  expect(found.label).toBe('Este stack')
+  expect(found.items!.map(it => it.done)).toEqual([true, false]) // mg taken, omega not
+})
+test('a protocol slot with a skipped entry drops that item from the rendered stack card', () => {
+  const slot = stackSlot({
+    zone: 'evening',
+    time: '21:00',
+    label: 'Este',
+    entries: [
+      stackEntry({ pantryItemId: 'mg', name: 'Magnézium', taken: true }),
+      stackEntry({ pantryItemId: 'pwo', name: 'PWO', skippedToday: true }),
+    ],
+  })
+  const plan = buildDayPlan(baseInput({ protocolSlots: [slot] }))
+  const found = plan.slots.find(s => s.kind === 'evening')!
+  expect(found.items).toHaveLength(1) // the skipped entry never renders as an item pip
+  expect(found.items![0].label).toContain('Magnézium')
+})
+test('a protocol slot whose entries are ALL skipped is dropped entirely — never an empty stack card', () => {
+  const slot = stackSlot({
+    zone: 'breakfast',
+    time: '06:20',
+    label: 'Reggeli',
+    entries: [stackEntry({ pantryItemId: 'pwo', name: 'PWO', skippedToday: true })],
+  })
+  const plan = baseInput({ protocolSlots: [slot] })
+  const built = buildDayPlan(plan)
+  expect(built.slots.some(s => s.label === 'Reggeli stack')).toBe(false)
 })
 
 // ── blocks render as workout/sport slots ─────────────────────────────────────
@@ -393,7 +437,7 @@ test('a gym block with unknown duration reports end "—" / duration 0 in the to
 //  classifies each window's state, it never moves a window. See the fixed-plan state tests below.)
 describe('slot identity + determinism (mezo-53su)', () => {
   // Baseline inputs used across the cases: wake 06:00, bed 23:00 -> eatingStart 06:45, kitchenClose 21:30.
-  const base = { wake: '06:00', bed: '23:00', mealsPerDay: 4, blocks: [], budget: NO_BUDGET, meals: [], recipes: [], protocolSlots: [], intakes: [], caffeineCutoff: '14:00' }
+  const base = { wake: '06:00', bed: '23:00', mealsPerDay: 4, blocks: [], budget: NO_BUDGET, meals: [], recipes: [], protocolSlots: [], caffeineCutoff: '14:00' }
 
   it('meal slots carry their slotKey; block slots do not', () => {
     const plan = buildDayPlan({ ...base, blocks: [{ kind: 'gym', label: 'Pull', time: '07:30', durationMin: 60 }], nowHHmm: '06:00' })

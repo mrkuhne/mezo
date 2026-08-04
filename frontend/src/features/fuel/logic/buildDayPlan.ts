@@ -27,17 +27,17 @@ import {
   toMin,
 } from '@/data/fuel/fuelConfig'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
-import type { Intake } from '@/data/fuel/fuelApi'
 import type {
   FuelKind,
   FuelMeal,
   FuelPlanToday,
   FuelSlot,
   MacroSet,
-  ProtocolSlotData,
   Recipe,
   SlotItem,
+  StackZoneKey,
 } from '@/data/types'
+import type { StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 
 // ── Public interfaces ────────────────────────────────────────────────────────
 export interface PlannerBlock {
@@ -56,8 +56,7 @@ export interface DayPlanInput {
   budget: DayBudget
   meals: FuelMeal[]
   recipes: Recipe[]
-  protocolSlots: ProtocolSlotData[]
-  intakes: Intake[]
+  protocolSlots: StackDaySlot[]
   caffeineCutoff: string
   nowHHmm: string
 }
@@ -240,7 +239,7 @@ export function splitBudget(budget: Macro4, windows: PlannedWindow[]): Macro4[] 
 }
 
 // ── recipe fit ───────────────────────────────────────────────────────────────
-function perServing(r: Recipe): Macro4 {
+export function perServing(r: Recipe): Macro4 {
   const s = r.servings || 1
   return { kcal: r.macros.kcal / s, p: r.macros.p / s, c: r.macros.c / s, f: r.macros.f / s }
 }
@@ -263,20 +262,16 @@ export function pickRecipe(category: SlotKey, budget: Macro4, recipes: Recipe[])
 }
 
 // ── protocol slot mapping ────────────────────────────────────────────────────
-/** `ProtocolSlotData.kind` (from buildProtocol) → `FuelKind`. */
-export const PROTOCOL_KIND: Record<string, FuelKind> = {
-  morning: 'wake',
-  'pre-fuel': 'snack',
-  'pre-workout': 'preworkout',
-  'fat-bound': 'midday',
+/** `StackDaySlot.zone` (from `projectStackDay`) → `FuelKind`. */
+export const ZONE_FUEL_KIND: Record<StackZoneKey, FuelKind> = {
+  wake: 'wake',
+  breakfast: 'snack',
+  pre_workout: 'preworkout',
+  post_workout: 'snack',
+  lunch: 'midday',
+  dinner: 'evening',
   evening: 'evening',
-}
-const PROTOCOL_LABEL: Partial<Record<FuelKind, string>> = {
-  wake: 'Ébresztő',
-  snack: 'Pre-workout snack',
-  preworkout: 'Pre-workout stack',
-  midday: 'Délutáni stack',
-  evening: 'Esti stack',
+  bedtime: 'evening',
 }
 
 /** Local wall-clock 'HH:mm' from a logged-at instant. Parsed via `new Date` so a UTC-serialized
@@ -291,10 +286,9 @@ function hhmmFromLoggedAt(iso: string, fallback: string): string {
 
 // ── buildDayPlan ─────────────────────────────────────────────────────────────
 export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
-  const { wake, bed, mealsPerDay, blocks, budget, meals, recipes, protocolSlots, intakes, nowHHmm } = input
+  const { wake, bed, mealsPerDay, blocks, budget, meals, recipes, protocolSlots, nowHHmm } = input
   const now = toMin(nowHHmm)
   const kitchenCloseMin = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
-  const intakeRefs = new Set(intakes.map(i => i.pantryItemId))
 
   // 1. Windows + per-slot budgets.
   const windows = placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
@@ -375,27 +369,29 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     }
   }
 
-  // 4. Supplement (protocol) slots — item pips done via intakes; slot done when every item taken.
-  const protoSlots: FuelSlot[] = protocolSlots.map(p => {
-    const kind = PROTOCOL_KIND[p.kind] ?? 'midday'
-    const items: SlotItem[] = p.items.map(it => ({
-      type: 'supplement',
-      refId: it.refId,
-      label: it.dose ? `${it.name} · ${it.dose}` : it.name,
-      done: intakeRefs.has(it.refId),
-      primary: p.primary || undefined,
-    }))
-    const done = items.length > 0 && items.every(it => it.done)
-    return {
-      time: p.time,
-      kind,
-      label: PROTOCOL_LABEL[kind] ?? p.window,
-      state: done ? 'done' : 'pending',
-      items,
-      mezoNote: p.reasoning,
-      windowTip: p.relatedTo,
-    }
-  })
+  // 4. Supplement (protocol) slots — item done-state arrives straight from `projectStackDay`'s
+  //    per-occurrence `taken`; a rest-day-skipped entry is dropped from the slot, and a zone left
+  //    with zero (all-skipped) entries never renders as an empty stack card.
+  const protoSlots: FuelSlot[] = protocolSlots
+    .map((s): FuelSlot => {
+      const items: SlotItem[] = s.entries.filter(e => !e.skippedToday).map(e => ({
+        type: 'supplement',
+        refId: e.pantryItemId,
+        label: e.dose ? `${e.name} · ${e.dose}` : e.name,
+        done: e.taken,
+      }))
+      const done = items.length > 0 && items.every(it => it.done)
+      return {
+        time: s.time,
+        kind: ZONE_FUEL_KIND[s.zone],
+        label: `${s.label} stack`,
+        state: done ? 'done' : 'pending',
+        items,
+        mezoNote: s.entries.find(e => e.reason)?.reason ?? undefined,
+        windowTip: s.anchorNote ?? undefined,
+      }
+    })
+    .filter(s => s.items!.length > 0)
 
   // 5. Training block slots — gym → workout, sport/run → sport; done once (start+duration) has passed.
   const blockSlots: FuelSlot[] = blocks.map(b => {

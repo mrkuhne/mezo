@@ -4,7 +4,9 @@ import io.mrkuhne.mezo.api.controller.FuelApi;
 import io.mrkuhne.mezo.api.dto.IntakeListResponse;
 import io.mrkuhne.mezo.api.dto.IntakeRequest;
 import io.mrkuhne.mezo.api.dto.IntakeResponse;
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemPatchRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
 import io.mrkuhne.mezo.api.dto.ProtocolViewResponse;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
@@ -28,11 +30,6 @@ public class FuelController implements FuelApi {
     }
 
     @Override
-    public ProtocolViewResponse activateProtocol(ProtocolActivateRequest protocolActivateRequest) {
-        return protocolService.activate(currentUserId.get(), protocolActivateRequest);
-    }
-
-    @Override
     public IntakeListResponse listIntakes(LocalDate date) {
         return intakeService.listForDay(currentUserId.get(), date);
     }
@@ -45,5 +42,20 @@ public class FuelController implements FuelApi {
     @Override
     public void deleteIntake(UUID id) {
         intakeService.deleteIntake(currentUserId.get(), id);
+    }
+
+    @Override
+    public ProtocolItemResponse addProtocolItem(ProtocolItemCreateRequest protocolItemCreateRequest) {
+        return protocolService.addItem(currentUserId.get(), protocolItemCreateRequest);
+    }
+
+    @Override
+    public ProtocolItemResponse patchProtocolItem(UUID id, ProtocolItemPatchRequest protocolItemPatchRequest) {
+        return protocolService.patchItem(currentUserId.get(), id, protocolItemPatchRequest);
+    }
+
+    @Override
+    public void deleteProtocolItem(UUID id) {
+        protocolService.deleteItem(currentUserId.get(), id);
     }
 }

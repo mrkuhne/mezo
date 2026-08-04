@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.api.dto.PantryStock;
+import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
 import io.mrkuhne.mezo.api.dto.ProtocolResponse;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
@@ -35,7 +36,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -224,7 +224,8 @@ public class FuelTools {
         int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
         LocalDate today = LocalDate.now();
         LocalDate from = today.minusDays(d - 1L);
-        Set<UUID> protocolItems = new HashSet<>(active.getSelectedPantryItemIds());
+        Set<UUID> protocolItems = active.getItems().stream()
+                .map(ProtocolItemResponse::getPantryItemId).collect(Collectors.toSet());
         Map<LocalDate, Set<UUID>> takenByDay = supplementIntakeRepository
                 .findByCreatedByAndDeletedFalseAndTakenDateGreaterThanEqualOrderByTakenDateAscTakenAtAsc(userId, from)
                 .stream()
@@ -275,14 +276,16 @@ public class FuelTools {
         return b.toString();
     }
 
-    /** scope=supplements (mezo-xixu) — the active protocol's item names (from {@code selectedPantryItemIds},
-     *  already itemOrder-sorted by {@link ProtocolService#getView}), capped at 5 like the other list tools. */
+    /** scope=supplements (mezo-xixu) — the active protocol's item names (distinct {@code
+     *  items[].pantryItemId}, zone-sorted by {@link ProtocolService#getView}, not itemOrder),
+     *  capped at 5 like the other list tools. */
     private String renderProtocolSupplements(UUID userId, ToolContext toolContext) {
         ProtocolResponse active = protocolService.getView(userId).getActive();
         if (active == null) {
             return "Protokoll szupplementjei: nincs aktív protokoll";
         }
-        List<UUID> ids = active.getSelectedPantryItemIds();
+        List<UUID> ids = active.getItems().stream()
+                .map(ProtocolItemResponse::getPantryItemId).distinct().toList();
         Map<UUID, String> names = pantryStashNames(userId);
         StringBuilder b = new StringBuilder("Protokoll szupplementjei (v").append(active.getVersion())
                 .append("): ").append(ids.size()).append(" elem");

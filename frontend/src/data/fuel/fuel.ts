@@ -1,5 +1,6 @@
 import type {
   FuelDay, SupplementStashItem, Protocol, FuelMeal, FuelSlot, MealItemLine, MealDimension,
+  ProtocolOccurrence, StackZoneKey, StackPlacementSource,
 } from '@/data/types'
 import { localDateString } from '@/shared/lib/dates'
 
@@ -479,6 +480,71 @@ export const supplementsStash: SupplementStashItem[] = [
     taken: true,
   },
 ]
+
+// --- Fuel · Stack occurrences (living protocol, mezo-vx9v) ---
+// One occurrence per non-medication stash item (reta excluded — the protocol only ever holds
+// supplements/stimulants). Mirrors PlacementRules.RULES (backend/.../feature/fuel/service/
+// PlacementRules.java) — the FULL rule-table + timing-hint pass the backend ran once to seed
+// these placements; `mockPlaceOccurrence` below only mirrors the timing-hint stage (the mock's
+// runtime placement path for newly-added items has no name-rule table or LLM).
+function occ(
+  refId: string,
+  slotKey: StackZoneKey,
+  source: StackPlacementSource,
+  reason: string,
+  hint: string | null = null,
+  restDay: StackZoneKey | 'skip' | null = null,
+): ProtocolOccurrence {
+  return {
+    id: `occ-${refId}`,
+    pantryItemId: refId,
+    slotKey,
+    dose: null,
+    pinned: false,
+    placementSource: source,
+    placementReason: reason,
+    restDayFallback: restDay,
+    dailyTotalHint: hint,
+  }
+}
+
+export const protocolOccurrences: ProtocolOccurrence[] = [
+  occ('kreatin', 'wake', 'rule', 'Kreatin ébredés után vízben — a napi konzisztencia számít.',
+      'ajánlott napi összmennyiség 15–20g — érdemes 3-4 bevételre osztani'),
+  occ('kohi', 'wake', 'rule', 'Koffein a nap elején — bőven a 14:00-s cutoff előtt.'),
+  occ('tastydose', 'wake', 'rule', 'Koffein a nap elején — bőven a 14:00-s cutoff előtt.'),
+  occ('origin-pwo', 'pre_workout', 'rule',
+      'Pump-stack ~40 perccel edzés előtt — plazmacsúcs edzéskezdésre; pihenőnapon kimarad.', null, 'skip'),
+  occ('whey', 'post_workout', 'rule', 'Fehérje az edzés utáni ablakban — pihenőnapon reggelihez.', null, 'breakfast'),
+  occ('d3k2', 'lunch', 'rule', 'Zsírban oldódó — zsíros étkezéssel 3–4× jobb a felszívódás.'),
+  occ('omega3', 'lunch', 'rule', 'Zsírban oldódó — zsíros étkezéssel 3–4× jobb a felszívódás.'),
+  occ('magnez', 'evening', 'rule', 'Magnézium este — GABA-moduláció, mélyalvás-támogatás.'),
+]
+
+/** Mirrors PlacementRules.zoneForTiming's timing-hint pass (backend/.../PlacementRules.java) —
+ *  the mock's runtime placement path for `useProtocolActions().addItem`/`unpinItem` when no
+ *  explicit slotKey is given. Deliberately skips the name-substring rule table + LLM stages
+ *  (the mock has neither) — falls straight to the honest breakfast/fallback zone. */
+export function mockPlaceOccurrence(
+  item: SupplementStashItem,
+): Pick<ProtocolOccurrence, 'slotKey' | 'placementSource' | 'placementReason'> {
+  const zone = zoneForTiming(item.timing)
+  if (zone) {
+    return { slotKey: zone, placementSource: 'rule', placementReason: 'A Kamra-item ajánlott időzítése alapján.' }
+  }
+  return { slotKey: 'breakfast', placementSource: 'fallback', placementReason: 'Bizonytalan besorolás — helyezd át, ha máskor szeded.' }
+}
+
+function zoneForTiming(timing: string): StackZoneKey | null {
+  switch (timing) {
+    case 'morning': return 'wake'
+    case 'midday': return 'lunch'
+    case 'evening': return 'evening'
+    case 'dinner': return 'dinner'
+    case 'pre-workout': return 'pre_workout'
+    default: return timing.startsWith('weekly') ? 'wake' : null
+  }
+}
 
 export const protocol: Protocol = {
   version: 3,

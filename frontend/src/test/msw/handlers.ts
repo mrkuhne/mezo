@@ -850,22 +850,13 @@ export const handlers = [
     )
   }),
 
-  // Fuel Stack/Protocol (mezo-09g) — honest-empty defaults; tests override with server.use().
-  // GET protocol → no active protocol yet (ghost); GET intake/:date → no intakes; POST protocol
-  // echoes the posted selection as a v1 active ProtocolViewResponse; POST intake echoes a row;
-  // DELETE intake entry → 204.
+  // Fuel Stack/Protocol (mezo-09g, mezo-vx9v) — honest-empty defaults; tests override with
+  // server.use(). GET protocol → no active protocol yet (ghost); GET intake/:date → no intakes;
+  // POST intake echoes a row; DELETE intake entry → 204. Occurrence ops (POST/PATCH/DELETE
+  // /api/fuel/protocol/items[/:id]) have no default — every test exercising them supplies its own
+  // server.use() handler.
   http.get(`${API_BASE}/api/fuel/protocol`, () => HttpResponse.json({ history: [] })),
   http.get(`${API_BASE}/api/fuel/intake/:date`, () => HttpResponse.json({ intakes: [] })),
-  http.post(`${API_BASE}/api/fuel/protocol`, async ({ request }) => {
-    const body = (await request.json()) as { selectedPantryItemIds: string[]; reason?: string }
-    return HttpResponse.json({
-      active: {
-        id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active',
-        confidence: 0.9, selectedPantryItemIds: body.selectedPantryItemIds,
-      },
-      history: [{ version: 1, builtAt: '2026-07-02T06:00:00Z', reason: body.reason }],
-    })
-  }),
   http.post(`${API_BASE}/api/fuel/intake`, async ({ request }) => {
     const body = (await request.json()) as { pantryItemId: string; dose?: string; slotKey?: string }
     return HttpResponse.json(

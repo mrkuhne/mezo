@@ -76,6 +76,26 @@ public class PantryItemPopulator {
         return repository.saveAndFlush(e);
     }
 
+    /** A supplement row with an explicit timing override (including {@code null}) — for
+     *  zone-placement tests that need to bypass the default 'morning' timing hint (mezo-vx9v),
+     *  e.g. an unknown-name fixture whose timing must also be unset to reach the LLM/fallback path. */
+    public PantryItemEntity createSupplement(UUID owner, String name, String timing) {
+        PantryItemEntity e = new PantryItemEntity();
+        e.setCreatedBy(owner);
+        e.setKind("supplement");
+        e.setName(name);
+        e.setBrand("MyProtein");
+        e.setSource("myprotein.hu");
+        e.setCategory("supplement"); // valid ck_pantry_item_category enum value
+        e.setDose("5g");
+        e.setForm("por");
+        e.setProtocol("Naponta egy adag");
+        e.setTiming(timing);
+        e.setStockQty(new BigDecimal("86"));
+        e.setStockUnit("adag");
+        return repository.saveAndFlush(e);
+    }
+
     /** A stim row (kind='stim') — the caffeine-timing fixture (habit stim-intake tests). Copy of
      *  {@code createSupplement} with only {@code kind} changed; category enum stays valid. */
     public PantryItemEntity createStim(UUID owner, String name) {
