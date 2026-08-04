@@ -5,6 +5,54 @@
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
    `inline` => utilities emit var(--…) refs, so [data-theme="dark"] flips them live. */
 @theme inline {
+  /* ─── DS ramps (Mezo Edition, P1 mezo-setx.2) ─── */
+  --color-primary-bg: var(--primary-bg);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary: var(--primary-base);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-deep: var(--primary-deep);
+
+  --color-secondary-bg: var(--secondary-bg);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary: var(--secondary-base);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-deep: var(--secondary-deep);
+
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent: var(--accent-base);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-deep: var(--accent-deep);
+
+  --color-success-bg: var(--success-bg);
+  --color-success-soft: var(--success-soft);
+  --color-success-hover: var(--success-hover);
+  --color-success-deep: var(--success-deep);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-hover: var(--warning-hover);
+  --color-warning-deep: var(--warning-deep);
+  --color-error-bg: var(--error-bg);
+  --color-error-soft: var(--error-soft);
+  --color-error-hover: var(--error-hover);
+  --color-error-deep: var(--error-deep);
+
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-recess: var(--surface-recess);
+  --color-divider: var(--divider);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+
+  --color-dv-coral: var(--dv-coral);
+  --color-dv-sage: var(--dv-sage);
+  --color-dv-lav: var(--dv-lav);
+  --color-dv-rose: var(--dv-rose);
+  --color-dv-sky: var(--dv-sky);
+  --color-dv-amber: var(--dv-amber);
+
+  /* ─── Legacy names (resolve through the prototype.css alias bridge) ─── */
   --color-canvas: var(--canvas);
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
@@ -51,6 +99,7 @@
 
   --font-display: var(--ff-display);
   --font-body: var(--ff-body);
+  --font-serif: var(--ff-serif);
   --font-mono: var(--ff-mono);
 }
 

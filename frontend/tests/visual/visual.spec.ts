@@ -30,7 +30,7 @@ import { test, expect } from '@playwright/test'
  *    Harvest CountUp renders its final value immediately, np-anim/rz-pop settle visible.
  *    Today's own `.faceswap` family is neutralized the same way, asserted by
  *    features/today/todayReducedMotion.test.ts.
- *  - wait for `document.fonts.ready` → the self-hosted fonts (Bricolage + Jakarta) are in
+ *  - wait for `document.fonts.ready` → the self-hosted fonts (Geist + Fraunces) are in
  *    before the pixel compare, else the first paint uses fallback metrics.
  */
 /** `[name, path, frozenTime?]` — the third slot overrides the default frozen clock. */
