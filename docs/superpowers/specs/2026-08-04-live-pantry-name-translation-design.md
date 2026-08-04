@@ -1,7 +1,7 @@
 # Live pantry name translation design
 
-**Issue:** `mezo-8t51`  
-**Date:** 2026-08-04  
+**Issue:** `mezo-8t51`
+**Date:** 2026-08-04
 **Scope:** production data maintenance
 
 ## Goal
