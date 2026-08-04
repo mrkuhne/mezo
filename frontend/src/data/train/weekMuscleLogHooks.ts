@@ -1,7 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { localDateString } from '@/shared/lib/dates'
-import { useWeekWorkouts } from '@/data/train/workoutDetailHooks'
+import { useWeekWorkouts, weekWorkoutsQueryKey } from '@/data/train/workoutDetailHooks'
 import { trainApi, type WorkoutDetailResponse, type WorkoutSummaryResponse } from '@/data/train/trainApi'
 
 /**
@@ -19,13 +18,12 @@ export function useWeekMuscleLog(): {
   pending: boolean
 } {
   const mock = isMockMode()
-  // Track the summary query to know when the week is loaded
-  const now = new Date()
-  const mondayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
-  const monday = localDateString(mondayDate)
+  // Track the summary query to know when the week is loaded. Must stay
+  // `enabled: false` with no queryFn — useWeekWorkouts owns fetching this key;
+  // this is a read-only observer into the shared cache entry.
   const summaryQuery = useQuery<WorkoutSummaryResponse[]>({
-    queryKey: ['train', 'weekWorkouts', monday],
-    enabled: false, // Disabled here; useWeekWorkouts owns this query
+    queryKey: weekWorkoutsQueryKey().key,
+    enabled: false,
   })
   const { workouts } = useWeekWorkouts()
   const completedSummaries = workouts.filter((w) => w.status === 'completed')

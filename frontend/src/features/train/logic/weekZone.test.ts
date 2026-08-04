@@ -134,4 +134,13 @@ describe('segments', () => {
       { pct: expect.closeTo(0.25, 5), kind: 'ghost' },
     ])
   })
+  it('gymSegments: done-alone over budget (doneBudget > 1) reports a single capped overflow segment', () => {
+    const rows = weekZoneRows({
+      plannedDays: [day('Hét', [ex('chest-mid', 5, 2)])],
+      // 13 failure-style logged sets (RIR 0) → doneBudget 13/12 ≈ 1.083, no today plan.
+      completed: [detail([{ muscle: 'chest', setRirs: Array.from({ length: 13 }, () => 0) }])],
+    })
+    expect(rows[0].doneBudget).toBeCloseTo(13 / 12)
+    expect(gymSegments(rows[0])).toEqual([{ pct: 1, kind: 'overflow' }])
+  })
 })

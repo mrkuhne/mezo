@@ -22,7 +22,14 @@ export function ZoneMiniGrid({ rows }: { rows: WeekZoneRow[] }) {
           <div key={row.group}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
               <span style={{ fontWeight: 700, fontSize: 10.5 }}>{row.label}</span>
-              <span className="label-mono" style={{ fontSize: 9, color: planOver ? 'var(--error)' : 'var(--text-tertiary)' }}>
+              <span
+                className="label-mono"
+                style={{ fontSize: 9, color: planOver ? 'var(--error)' : 'var(--text-tertiary)' }}
+                {...(planOver ? {
+                  title: 'Heti szet-keret túllépve',
+                  'aria-label': `${row.label} ${numeric} · Heti szet-keret túllépve`,
+                } : {})}
+              >
                 {numeric}
               </span>
             </div>

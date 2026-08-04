@@ -20,6 +20,8 @@ describe('ZoneMiniGrid', () => {
     render(<ZoneMiniGrid rows={[row({ plannedSets: 16, planBudget: 8 / 12 + 8 / 20 })]} />)
     const numeric = screen.getByText(/^4\/16 ⚠$/)
     expect(numeric).toHaveStyle({ color: 'var(--error)' })
+    expect(numeric).toHaveAttribute('title', 'Heti szet-keret túllépve')
+    expect(numeric).toHaveAttribute('aria-label', 'Mell 4/16 ⚠ · Heti szet-keret túllépve')
   })
   it('marks a plan under its MEV with ↓', () => {
     render(<ZoneMiniGrid rows={[row({ group: 'ham', label: 'Hamstring', mev: 2, plannedSets: 1, doneSets: 0, planBudget: 0.05 })]} />)
