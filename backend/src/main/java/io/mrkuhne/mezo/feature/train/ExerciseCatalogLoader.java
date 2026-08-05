@@ -43,7 +43,7 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
     /** One catalog row as authored in content/exercise-catalog.json. */
     public record CatalogJsonItem(
         String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue,
-        String videoUrl) {}
+        String videoUrl, String imageStartUrl, String imageEndUrl) {}
 
     // Same self-invocation note as TrainSeedData: startup enters via run(String...), the IT
     // calls run() through the proxy — both overloads carry @Transactional.
@@ -85,6 +85,14 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             // Seed a JSON demo only when provided AND the row has none — never clobber a user video.
             if (item.videoUrl() != null && e.getVideoUrl() == null) {
                 e.setVideoUrl(item.videoUrl());
+            }
+            // Same rule for the demo stills (mezo-8xdl.1): a redeploy must not overwrite an image
+            // the user attached in-app. The two frames are seeded independently.
+            if (item.imageStartUrl() != null && e.getImageStartUrl() == null) {
+                e.setImageStartUrl(item.imageStartUrl());
+            }
+            if (item.imageEndUrl() != null && e.getImageEndUrl() == null) {
+                e.setImageEndUrl(item.imageEndUrl());
             }
             repository.save(e);
         }

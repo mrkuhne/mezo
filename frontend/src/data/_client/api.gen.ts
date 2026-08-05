@@ -267,6 +267,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/exercises/{id}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set/clear the demo stills on any catalog exercise (master or user) */
+        put: operations["setExerciseImages"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/exercise-records": {
         parameters: {
             query?: never;
@@ -2743,6 +2760,10 @@ export interface components {
             catalogId?: string;
             /** @description Effective YouTube demo URL resolved from the linked catalog row (null when none) */
             videoUrl?: string | null;
+            /** @description Demo still (start position) resolved from the linked catalog row (null when none) */
+            imageStartUrl?: string | null;
+            /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
+            imageEndUrl?: string | null;
         };
         MesocycleCreateRequest: {
             title: string;
@@ -2804,6 +2825,10 @@ export interface components {
             stim: number;
             fatigue: number;
             videoUrl?: string | null;
+            /** @description Demo still (start position); null when the exercise has no image */
+            imageStartUrl?: string | null;
+            /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
+            imageEndUrl?: string | null;
             /** @description true when created_by == the current user (user-authored row) */
             editable: boolean;
         };
@@ -2816,10 +2841,19 @@ export interface components {
             stim: number;
             fatigue: number;
             videoUrl?: string | null;
+            imageStartUrl?: string | null;
+            imageEndUrl?: string | null;
         };
         CatalogVideoRequest: {
             /** @description A YouTube watch/short URL, or null to clear the demo */
             videoUrl?: string | null;
+        };
+        /** @description Demo stills for a catalog exercise. Either field null clears that frame. Values are same-origin vendored paths (/exercises/{slug}-a.jpg) or an absolute http(s) URL. */
+        CatalogImagesRequest: {
+            /** @description Start-position still, or null to clear */
+            imageStartUrl?: string | null;
+            /** @description End-position still, or null to clear */
+            imageEndUrl?: string | null;
         };
         /** @description One logged set as a record reference; weightKg absent on bodyweight sets */
         RecordSetRef: {
@@ -2924,6 +2958,10 @@ export interface components {
             warning?: string;
             /** @description Effective YouTube demo URL resolved from the linked catalog row (null when none) */
             videoUrl?: string | null;
+            /** @description Demo still (start position) resolved from the linked catalog row (null when none) */
+            imageStartUrl?: string | null;
+            /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
+            imageEndUrl?: string | null;
             /** @description durable per-exercise note */
             note?: string | null;
             lastWeek?: components["schemas"]["LastWeekRef"];
@@ -6059,6 +6097,59 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CatalogVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseCatalogItem"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setExerciseImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogImagesRequest"];
             };
         };
         responses: {
