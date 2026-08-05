@@ -33,6 +33,20 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     expect(evening.title).toBe('Esti rutin')
   })
 
+  it('every catalog def satisfies mode MANUAL ⟺ metric "manual" — no backend-unproducible combo', () => {
+    // caffeine_cutoff/kitchen_close are MANUAL in the mock catalog (mockHabitDay's deliberate
+    // playability deviation) but their CATALOG_META metric mirrors the real DERIVED seed
+    // (no_stim_after/last_meal_before) — the real backend can never produce MANUAL+a-real-metric
+    // (MANUAL always forces metric to "manual"), so every def here must satisfy the same invariant.
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitCatalog(), { wrapper: Wrapper })
+    const allDefs = result.current.catalog.chains.flatMap((c) => c.defs)
+    expect(allDefs.length).toBeGreaterThan(0)
+    for (const d of allDefs) {
+      expect(d.mode === 'MANUAL').toBe(d.metric === 'manual')
+    }
+  })
+
   it('createChain appends a chain with a generated key + the given daypart to the cache', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
@@ -70,20 +84,66 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     })
   })
 
-  it('deleteChain removes it', async () => {
+  it('deleteChain throws HABIT_CHAIN_SEED for a seed chain — mirrors the backend 409 guard (was: silently removed a 9-def seed chain)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
       () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
       { wrapper: Wrapper },
     )
-    const morningId = result.current.catalog.catalog.chains.find((c) => c.chainKey === 'MORNING')!.id
+    const morning = result.current.catalog.catalog.chains.find((c) => c.chainKey === 'MORNING')!
+    expect(morning.defs.length).toBeGreaterThan(0) // the seed chain this used to wrongly delete
 
     await act(async () => {
-      await result.current.actions.deleteChain(morningId)
+      await expect(result.current.actions.deleteChain(morning.id)).rejects.toThrow('HABIT_CHAIN_SEED')
+    })
+    // The guard rejected the write — the seed chain and its defs are still in the cache.
+    expect(result.current.catalog.catalog.chains.some((c) => c.id === morning.id)).toBe(true)
+    expect(result.current.catalog.catalog.chains).toHaveLength(2)
+  })
+
+  it('deleteChain removes an empty custom chain (the passing path the seed guard does not block)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    await act(async () => {
+      await result.current.actions.createChain({ title: 'Munkanap rutin', daypart: 'DAY' })
+    })
+    await waitFor(() => expect(result.current.catalog.catalog.chains).toHaveLength(3))
+    const created = result.current.catalog.catalog.chains.find((c) => c.title === 'Munkanap rutin')!
+    expect(created.defs).toEqual([]) // empty — the NOT_EMPTY guard does not apply
+
+    await act(async () => {
+      await result.current.actions.deleteChain(created.id)
     })
     await waitFor(() =>
-      expect(result.current.catalog.catalog.chains.some((c) => c.id === morningId)).toBe(false))
-    expect(result.current.catalog.catalog.chains).toHaveLength(1)
+      expect(result.current.catalog.catalog.chains.some((c) => c.id === created.id)).toBe(false))
+    expect(result.current.catalog.catalog.chains).toHaveLength(2)
+  })
+
+  it('deleteChain throws HABIT_CHAIN_NOT_EMPTY for a non-empty custom chain', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    await act(async () => {
+      await result.current.actions.createChain({ title: 'Munkanap rutin', daypart: 'DAY' })
+    })
+    await waitFor(() => expect(result.current.catalog.catalog.chains).toHaveLength(3))
+    const created = () => result.current.catalog.catalog.chains.find((c) => c.title === 'Munkanap rutin')!
+    await act(async () => {
+      await result.current.actions.createDef({
+        chainKey: created().chainKey, title: 'Napi olvasás', mode: 'MANUAL', skillKey: 'learning', xp: 5,
+      })
+    })
+    await waitFor(() => expect(created().defs).toHaveLength(1))
+
+    await act(async () => {
+      await expect(result.current.actions.deleteChain(created().id)).rejects.toThrow('HABIT_CHAIN_NOT_EMPTY')
+    })
+    expect(result.current.catalog.catalog.chains.some((c) => c.id === created().id)).toBe(true)
   })
 
   it('reorderChain reorders the cached defs and renumbers their positions', async () => {
@@ -104,6 +164,43 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
       expect(updated.defs.map((d) => d.id)).toEqual(reversed)
       expect(updated.defs.map((d) => d.position)).toEqual(reversed.map((_, i) => i + 1))
     })
+  })
+
+  it('reorderChain throws HABIT_REORDER_MISMATCH when defIds is not an exact permutation (stale/partial list)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const morning = result.current.catalog.catalog.chains.find((c) => c.chainKey === 'MORNING')!
+    const staleList = morning.defs.slice(1).map((d) => d.id) // missing the first def — a stale read
+
+    await act(async () => {
+      await expect(result.current.actions.reorderChain(morning.id, staleList))
+        .rejects.toThrow('HABIT_REORDER_MISMATCH')
+    })
+    // The guard rejected the write — every def is still there, none silently dropped.
+    const stillMorning = result.current.catalog.catalog.chains.find((c) => c.chainKey === 'MORNING')!
+    expect(stillMorning.defs).toHaveLength(morning.defs.length)
+  })
+
+  it('updateDef({chainKey}) to an unknown chain throws HABIT_DEF_UNKNOWN_CHAIN (was: the def silently vanished)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const target = result.current.catalog.catalog.chains
+      .find((c) => c.chainKey === 'MORNING')!.defs.find((d) => d.habitKey === 'morning_sunlight')!
+
+    await act(async () => {
+      await expect(result.current.actions.updateDef(target.id, { chainKey: 'chain_doesnotexist' }))
+        .rejects.toThrow('HABIT_DEF_UNKNOWN_CHAIN')
+    })
+    // The guard rejected the write — the def is still in its original chain, not vanished.
+    const stillThere = result.current.catalog.catalog.chains
+      .find((c) => c.chainKey === 'MORNING')!.defs.find((d) => d.id === target.id)
+    expect(stillThere).toBeDefined()
   })
 })
 

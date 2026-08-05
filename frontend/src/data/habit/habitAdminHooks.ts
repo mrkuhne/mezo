@@ -167,29 +167,39 @@ function mockUpdateChain(qc: ReturnType<typeof useQueryClient>, id: string, patc
 }
 
 function mockDeleteChain(qc: ReturnType<typeof useQueryClient>, id: string) {
-  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, (prev) => {
-    const base = prev ?? mockHabitCatalog
-    return { chains: base.chains.filter((c) => c.id !== id) }
-  })
+  const base = qc.getQueryData<HabitCatalog>(HABIT_CATALOG_KEY) ?? mockHabitCatalog
+  const chain = base.chains.find((c) => c.id === id)
+  if (!chain) return undefined // unknown id — nothing to delete, no real-mode 404 mirrored here
+  // Mirrors HabitAdminService.deleteChain's two 409 guards (seed-chain check BEFORE the
+  // empty-chain check, same order as the backend): silently dropping either would let the
+  // editor delete a chain the real API would reject outright.
+  if (chain.chainKey === 'MORNING' || chain.chainKey === 'EVENING') {
+    throw new Error('HABIT_CHAIN_SEED')
+  }
+  if (chain.defs.length > 0) {
+    throw new Error('HABIT_CHAIN_NOT_EMPTY')
+  }
+  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, { chains: base.chains.filter((c) => c.id !== id) })
   return undefined
 }
 
 function mockReorderChain(qc: ReturnType<typeof useQueryClient>, id: string, defIds: string[]) {
-  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, (prev) => {
-    const base = prev ?? mockHabitCatalog
-    return {
-      chains: base.chains.map((c) => {
-        if (c.id !== id) return c
-        const byId = new Map(c.defs.map((d) => [d.id, d]))
-        const reordered = defIds
-          .map((defId, i) => {
-            const d = byId.get(defId)
-            return d ? { ...d, position: i + 1 } : undefined
-          })
-          .filter((d): d is HabitDefInfo => d !== undefined)
-        return { ...c, defs: reordered }
-      }),
-    }
+  const base = qc.getQueryData<HabitCatalog>(HABIT_CATALOG_KEY) ?? mockHabitCatalog
+  const chain = base.chains.find((c) => c.id === id)
+  if (!chain) return undefined // unknown chain id — no-op, no real-mode 404 mirrored here
+  const liveIds = new Set(chain.defs.map((d) => d.id))
+  const requestedIds = new Set(defIds)
+  const isExactPermutation = defIds.length === liveIds.size && [...liveIds].every((defId) => requestedIds.has(defId))
+  if (!isExactPermutation) {
+    // Mirrors HabitAdminService.reorder's SystemMessage.error("HABIT_REORDER_MISMATCH") 400 — a
+    // stale/partial defIds list (e.g. a def created/deleted since the list was read) must fail
+    // the write, not silently drop the defs missing from the request.
+    throw new Error('HABIT_REORDER_MISMATCH')
+  }
+  const byId = new Map(chain.defs.map((d) => [d.id, d]))
+  const reordered = defIds.map((defId, i) => ({ ...byId.get(defId)!, position: i + 1 }))
+  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {
+    chains: base.chains.map((c) => (c.id === id ? { ...c, defs: reordered } : c)),
   })
   return undefined
 }
@@ -222,35 +232,40 @@ function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCre
 }
 
 function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch: HabitDefUpdateInput) {
-  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, (prev) => {
-    const base = prev ?? mockHabitCatalog
-    const found = findDef(base, id)
-    if (!found) return base
-    const { chain: fromChain, def } = found
-    const updated: HabitDefInfo = { ...def, ...patch }
-    const targetChainKey = patch.chainKey ?? fromChain.chainKey
-    if (targetChainKey === fromChain.chainKey) {
-      return {
-        chains: base.chains.map((c) =>
-          c.chainKey === fromChain.chainKey
-            ? { ...c, defs: c.defs.map((d) => (d.id === id ? updated : d)) }
-            : c),
-      }
-    }
-    // Cross-chain move (updateDef with a new chainKey): pull the def out of its old chain and
-    // append it to the target chain — mirrors HabitAdminService.updateDef's reassignment.
-    return {
-      chains: base.chains.map((c) => {
-        if (c.chainKey === fromChain.chainKey) return { ...c, defs: c.defs.filter((d) => d.id !== id) }
-        if (c.chainKey === targetChainKey) {
-          return {
-            ...c,
-            defs: [...c.defs, { ...updated, chainKey: targetChainKey, position: patch.position ?? c.defs.length + 1 }],
-          }
+  const base = qc.getQueryData<HabitCatalog>(HABIT_CATALOG_KEY) ?? mockHabitCatalog
+  const found = findDef(base, id)
+  if (!found) return undefined
+  const { chain: fromChain, def } = found
+  const updated: HabitDefInfo = { ...def, ...patch }
+  const targetChainKey = patch.chainKey ?? fromChain.chainKey
+  if (targetChainKey === fromChain.chainKey) {
+    qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {
+      chains: base.chains.map((c) =>
+        c.chainKey === fromChain.chainKey
+          ? { ...c, defs: c.defs.map((d) => (d.id === id ? updated : d)) }
+          : c),
+    })
+    return undefined
+  }
+  // Cross-chain move (updateDef with a new chainKey): pull the def out of its old chain and
+  // append it to the target chain — mirrors HabitAdminService.updateDef's reassignment.
+  const targetChain = base.chains.find((c) => c.chainKey === targetChainKey)
+  if (!targetChain) {
+    // Mirrors HabitAdminService.updateDef's SystemMessage.error("HABIT_DEF_UNKNOWN_CHAIN") 400 —
+    // reassigning to a chainKey that doesn't exist must fail the write, not silently vanish the def.
+    throw new Error('HABIT_DEF_UNKNOWN_CHAIN')
+  }
+  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {
+    chains: base.chains.map((c) => {
+      if (c.chainKey === fromChain.chainKey) return { ...c, defs: c.defs.filter((d) => d.id !== id) }
+      if (c.chainKey === targetChainKey) {
+        return {
+          ...c,
+          defs: [...c.defs, { ...updated, chainKey: targetChainKey, position: patch.position ?? c.defs.length + 1 }],
         }
-        return c
-      }),
-    }
+      }
+      return c
+    }),
   })
   return undefined
 }

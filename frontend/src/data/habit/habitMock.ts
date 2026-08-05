@@ -96,7 +96,12 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
     why: h.why,
     anchorCopy: h.anchorCopy,
     mode: h.mode,
-    metric: meta.metric,
+    // caffeine_cutoff/kitchen_close are MANUAL here per mockHabitDay's own deliberate
+    // playability deviation (see its doc comment above) even though CATALOG_META's metric for
+    // them mirrors the real seed's DERIVED value (no_stim_after/last_meal_before). The backend
+    // can never produce MANUAL+a-real-metric (MANUAL always forces metric to "manual"), so
+    // mock-internal consistency wins here: force "manual" whenever the mock day says MANUAL.
+    metric: h.mode === 'MANUAL' ? 'manual' : meta.metric,
     skillKey: meta.skillKey,
     xp: h.xp,
     linkUrl: h.linkUrl ?? null,
