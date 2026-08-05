@@ -24,7 +24,7 @@ export const CHECKIN_DIMS: CheckinDim[] = [
     id: 'energy',
     label: 'Energia',
     sub: 'Mennyi van benned ebben a pillanatban',
-    color: 'var(--coral)',
+    color: 'var(--dv-coral)',
     lowLabel: 'Üres',
     highLabel: 'Tele',
   },
@@ -32,7 +32,7 @@ export const CHECKIN_DIMS: CheckinDim[] = [
     id: 'stress',
     label: 'Stressz',
     sub: 'Mennyire vagy feszült most',
-    color: 'var(--warning)',
+    color: 'var(--warning-base)',
     lowLabel: 'Nyugodt',
     highLabel: 'Túlfeszült',
   },
@@ -40,7 +40,7 @@ export const CHECKIN_DIMS: CheckinDim[] = [
     id: 'body',
     label: 'Testi',
     sub: 'Hogy érzed magad fizikailag',
-    color: 'var(--cat-tendency)',
+    color: 'var(--dv-rose)',
     lowLabel: 'Lerakva',
     highLabel: 'Friss',
   },
@@ -48,7 +48,7 @@ export const CHECKIN_DIMS: CheckinDim[] = [
     id: 'mental',
     label: 'Mentális tisztaság',
     sub: 'Mennyire tiszta a fej',
-    color: 'var(--info)',
+    color: 'var(--dv-sky)',
     lowLabel: 'Köd',
     highLabel: 'Éles',
   },
@@ -122,9 +122,9 @@ export function CheckInSheet({
         {[0, 1, 2, 3, 4].map(i => (
           <div key={i} style={{
             flex: 1, height: 3,
-            background: i <= step ? 'var(--coral)' : 'var(--surface-2)',
+            background: i <= step ? 'var(--primary-base)' : 'var(--surface-recess)',
             transition: 'background 0.3s ease',
-            boxShadow: i === step ? '0 0 6px var(--coral)' : 'none',
+            boxShadow: i === step ? '0 0 6px var(--primary-base)' : 'none',
           }} />
         ))}
       </div>
@@ -133,14 +133,14 @@ export function CheckInSheet({
       {!isLast && (
         <div className="col gap-lg">
           <div className="col gap-xs">
-            <span className="label-mono" style={{ color: dim.color, fontSize: 9 }}>
+            <span className="label-mono" style={{ color: dim.color }}>
               {String(step + 1).padStart(2, '0')} / 04 · {dim.label}
             </span>
             <div style={{
               fontFamily: 'var(--ff-display)',
-              fontSize: 22, fontWeight: 600,
-              lineHeight: 1.2, color: 'var(--text-primary)',
-              textTransform: 'uppercase', letterSpacing: '0.005em',
+              fontSize: 18, fontWeight: 600,
+              lineHeight: 1.25, color: 'var(--text-primary)',
+              textTransform: 'uppercase', letterSpacing: '0.02em',
               marginTop: 6,
             }}>
               {dim.sub}
@@ -151,14 +151,14 @@ export function CheckInSheet({
           <div className="col" style={{ alignItems: 'center', padding: '12px 0 4px' }}>
             <div style={{
               fontFamily: 'var(--ff-display)',
-              fontSize: 80, fontWeight: 600,
+              fontSize: 56, fontWeight: 200, letterSpacing: '-0.04em',
               lineHeight: 1, color: dim.color,
-              textShadow: '0 0 24px ' + dim.color + '40',
-              transition: 'color 0.2s ease',
+              textShadow: `0 0 24px color-mix(in srgb, ${dim.color} 25%, transparent)`,
+              transition: 'color var(--duration-normal) var(--ease-out)',
             }}>
               {values[dim.id]}
             </div>
-            <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 4 }}>
+            <span className="label-mono" style={{ color: 'var(--text-muted)', marginTop: 4 }}>
               / 10
             </span>
           </div>
@@ -178,16 +178,16 @@ export function CheckInSheet({
                     key={n}
                     onClick={() => handleSetValue(n)}
                     style={{
-                      padding: '12px 0',
-                      background: active ? dim.color : filled ? dim.color + '33' : 'var(--surface-2)',
-                      border: '1px solid ' + (active ? dim.color : filled ? dim.color + '59' : 'var(--border-subtle)'),
-                      color: active ? 'var(--text-inverse)' : filled ? dim.color : 'var(--text-tertiary)',
+                      padding: '14px 0', minHeight: 44,
+                      background: active ? dim.color : filled ? `color-mix(in srgb, ${dim.color} 20%, transparent)` : 'var(--surface-recess)',
+                      border: '1px solid ' + (active ? dim.color : filled ? `color-mix(in srgb, ${dim.color} 35%, transparent)` : 'var(--divider)'),
+                      color: active ? 'var(--text-inverse)' : filled ? dim.color : 'var(--text-muted)',
                       fontFamily: 'var(--ff-display)',
                       fontSize: 13, fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      clipPath: 'polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px)',
-                      boxShadow: active ? '0 0 12px ' + dim.color + '80' : 'none',
+                      transition: 'all var(--duration-fast) var(--ease-out)',
+                      borderRadius: 'var(--r-sm)',
+                      boxShadow: active ? `0 0 12px color-mix(in srgb, ${dim.color} 50%, transparent)` : 'none',
                     }}
                   >
                     {n}
@@ -196,8 +196,8 @@ export function CheckInSheet({
               })}
             </div>
             <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{dim.lowLabel}</span>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{dim.highLabel}</span>
+              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{dim.lowLabel}</span>
+              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{dim.highLabel}</span>
             </div>
           </div>
 
@@ -222,9 +222,9 @@ export function CheckInSheet({
             <span className="eyebrow brand">Megvan · összegzés</span>
             <div style={{
               fontFamily: 'var(--ff-display)',
-              fontSize: 22, fontWeight: 600,
-              lineHeight: 1.2, color: 'var(--text-primary)',
-              textTransform: 'uppercase', letterSpacing: '0.005em',
+              fontSize: 18, fontWeight: 600,
+              lineHeight: 1.25, color: 'var(--text-primary)',
+              textTransform: 'uppercase', letterSpacing: '0.02em',
               marginTop: 6,
             }}>
               Bármi még amit szeretnél?
@@ -241,8 +241,8 @@ export function CheckInSheet({
                 style={{ padding: 12, textAlign: 'left', background: 'var(--surface-1)' }}
               >
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="label-mono" style={{ fontSize: 9, color: d.color }}>{d.label}</span>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, color: d.color, lineHeight: 1 }}>
+                  <span className="label-mono" style={{ color: d.color }}>{d.label}</span>
+                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: d.color, lineHeight: 1 }}>
                     {values[d.id]}
                   </span>
                 </div>
@@ -256,20 +256,20 @@ export function CheckInSheet({
           {/* Optional free note */}
           <div className="col gap-sm">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <span className="label-mono" style={{ fontSize: 9 }}>Egy mondat · opcionális</span>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{note.length}/200</span>
+              <label htmlFor="checkin-note" className="label-mono">Egy mondat · opcionális</label>
+              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{note.length}/200</span>
             </div>
+            {/* the decorative mic chip is gone (mezo-setx.5.5) — a control that does
+                nothing is the ItemRow doctrine's dead button, not a form affordance */}
             <div className="card" style={{ padding: 10, display: 'flex', gap: 8 }}>
-              <button className="chip" style={{ padding: '6px 8px', alignSelf: 'flex-start' }}>
-                <Icon name="mic" size={11} />
-              </button>
               <textarea
+                id="checkin-note"
                 value={note}
                 onChange={e => setNote(e.target.value.slice(0, 200))}
                 placeholder='pl. "tegnap volleyball után még izomláz" · "fejes meeting előtt"'
                 style={{
                   flex: 1, minHeight: 50, resize: 'none',
-                  fontSize: 13, color: 'var(--text-primary)',
+                  fontSize: 16, color: 'var(--text-primary)',
                   lineHeight: 1.45,
                 }}
               />
@@ -325,18 +325,18 @@ function CheckInObservation({ values }: { values: CheckinValues; slot?: CheckinS
     }
   }, [values])
 
-  const accent = obs.tone === 'concern' ? 'var(--warning)' : obs.tone === 'good' ? 'var(--coral)' : 'var(--text-secondary)'
+  const accent = obs.tone === 'concern' ? 'var(--warning-hover)' : obs.tone === 'good' ? 'var(--primary-deep)' : 'var(--text-secondary)'
   return (
     <div className="card" style={{
       padding: 12,
-      background: obs.tone === 'good' ? 'color-mix(in srgb, var(--coral) 5%, transparent)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.05)' : 'var(--surface-1)',
-      borderColor: obs.tone === 'good' ? 'var(--line)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.25)' : 'var(--border-subtle)',
+      background: obs.tone === 'good' ? 'var(--primary-bg)' : obs.tone === 'concern' ? 'var(--warning-bg)' : 'var(--surface-card)',
+      borderColor: obs.tone === 'good' ? 'var(--primary-soft)' : obs.tone === 'concern' ? 'var(--warning-soft)' : 'var(--divider)',
     }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         <Icon name="sparkle" size={12} color={accent} />
         <div className="col flex-1">
-          <span className="label-mono" style={{ fontSize: 9, color: accent }}>Mezo · azonnali olvasat</span>
-          <p style={{ fontSize: 12, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>{obs.msg}</p>
+          <span className="label-mono" style={{ color: accent }}>Mezo · azonnali olvasat</span>
+          <p style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>{obs.msg}</p>
         </div>
       </div>
     </div>

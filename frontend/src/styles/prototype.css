@@ -2248,8 +2248,8 @@ button.itemrow { cursor: pointer; }
 /* ===== Daily intention (mezo-a686) =====
    The full-card `.intent*` banner retired with the daypart faces (mezo-j7u4): the creed became
    the one-line `.creedchip` below and the foci moved into the face's TodoCard/hero rows.
-   `.intent-creed` survives because `IntentionSheet` still quotes the creed with it. */
-.intent-creed { font: 500 13.5px/1.45 var(--ff-body); color: var(--sub); font-style: italic; }
+   `.intent-creed` retired in mezo-setx.5.5 — IntentionSheet's creed quote wears the
+   DS `.shcreed` Fraunces meta-voice callout now (sheet form family, above the .vuln block). */
 
 /* ===== Intention creed chip (mezo-j7u4) ===== */
 .creedchip { margin: 0 24px 16px; padding: 12px 14px; border-radius: var(--r-lg);
@@ -2299,6 +2299,16 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   color: var(--text-muted); margin-top: 2px; }
 /* Today's „Ma eddig" placement (FaceMorning) */
 .today-stats { margin: 0 24px 16px; }
+
+/* ===== Sheet form fields — the DS form composition for the Today sheets (mezo-setx.5.5):
+   visible label over a bordered 16px field (Rule 17 + the input-size floor), focus ring
+   from the shared token. `.shcreed` is the creed quote's Fraunces meta-voice callout. ===== */
+.shlabel { font: 500 14px/1.5 var(--ff-body); color: var(--text-secondary); }
+.shta { width: 100%; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid var(--divider);
+  background: var(--surface-card); color: var(--text-primary); font: 400 16px/1.45 var(--ff-body); resize: none; }
+.shta:focus-visible { border-color: var(--primary-base); box-shadow: var(--shadow-focus); }
+.shcreed { padding: 10px 12px; border-radius: var(--r-md); background: var(--wash-lav);
+  font: italic 500 14px/1.45 var(--ff-serif); color: var(--lav-deep); }
 
 /* ===== VulnerabilityCard — the coral info-Alert tone notice (mezo-setx.5.1) ===== */
 .vuln { margin: 0 24px 16px; padding: 12px 14px; border-radius: var(--r-lg);
