@@ -878,6 +878,8 @@ export const handlers = [
   http.put(`${API_BASE}/api/fuel/slot-templates/:dayType`, async ({ params, request }) =>
     HttpResponse.json({ dayType: params.dayType, ...(await request.json() as object) })),
   http.delete(`${API_BASE}/api/fuel/slot-templates/:dayType`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/fuel/slot-templates/evaluate`, () =>
+    HttpResponse.json({ verdict: 'ok', summary: 'Teszt értékelés.', suggestions: [] })),
 
   // Companion chat (V0.4) — fixtures mirror the mock seed (initialChat) so page/hook tests
   // assert the same strings in both modes. Tests exercise switch-off by overriding the

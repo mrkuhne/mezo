@@ -1,10 +1,30 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type { SlotAnchor, SlotTemplate, SlotTemplateDayType, SlotTemplateRow } from '@/data/types'
+import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 
 type SlotWire = components['schemas']['SlotTemplateSlot']
 type ListWire = components['schemas']['SlotTemplateListResponse']
 type PutWire = components['schemas']['SlotTemplateRequest']
+type EvaluateReqWire = components['schemas']['SlotPlanEvaluateRequest']
+type EvaluateResWire = components['schemas']['SlotPlanEvaluateResponse']
+
+/** Mezo's qualitative read on a custom slot split (mezo-7102 Task 12) — the `coachApi.ts`
+ *  precedent: the verdict type is declared here, alongside the wire mapping. */
+export interface SlotPlanVerdict {
+  verdict: 'ok' | 'adjust'
+  summary: string
+  suggestions: { slotLabel?: string; text: string }[]
+}
+
+export interface SlotPlanEvaluateInput {
+  dayType: SlotTemplateDayType
+  rows: SlotTemplateRow[]
+  resolvedTimes: { label: string; time: string }[]
+  budget: { kcal: number; p: number; c: number; f: number }
+  balanceKcal: number
+  blocks: PlannerBlock[]
+}
 
 const fromAnchor = (w: SlotWire): SlotAnchor =>
   w.anchorType === 'fixed'
@@ -31,4 +51,18 @@ export const slotTemplateApi = {
     }).then(() => undefined),
   remove: (dayType: SlotTemplateDayType): Promise<void> =>
     apiFetch(`/api/fuel/slot-templates/${dayType}`, { method: 'DELETE' }).then(() => undefined),
+  /** Ephemeral — no cache entry, nothing to invalidate; a fresh read of the current draft every
+   *  call. 405 (flag off) / 503 (companion off) surface as an `ApiError` the caller degrades on. */
+  evaluate: (input: SlotPlanEvaluateInput): Promise<SlotPlanVerdict> =>
+    apiFetch<EvaluateResWire>('/api/fuel/slot-templates/evaluate', {
+      method: 'POST',
+      body: JSON.stringify({
+        dayType: input.dayType,
+        slots: input.rows.map(toWireSlot),
+        resolvedTimes: input.resolvedTimes,
+        budget: input.budget,
+        balanceKcal: input.balanceKcal,
+        blocks: input.blocks.map(b => ({ kind: b.kind, time: b.time, durationMin: b.durationMin })),
+      } satisfies EvaluateReqWire),
+    }).then(r => ({ verdict: r.verdict, summary: r.summary, suggestions: r.suggestions })),
 }

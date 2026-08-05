@@ -165,6 +165,43 @@ test('real mode cold mount: a delayed GET resolving to a saved template lands in
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
 })
 
+// mezo-7102 Task 12: Mezo's qualitative "olvasat" on the current draft.
+test('mock mode: Mezo értékelése shows the canned verdict card', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Mezo értékelése' }))
+
+  expect(await screen.findByText(/A felosztás illik a célodhoz/, {}, { timeout: 3000 })).toBeInTheDocument()
+})
+
+test('real mode: a 503 from the evaluate endpoint shows the honest-degrade note and leaves Mentés enabled', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.post(`${API_BASE}/api/fuel/slot-templates/evaluate`, () => new HttpResponse(null, { status: 503 })),
+  )
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Mezo értékelése' }))
+
+  expect(await screen.findByText(/Az AI-értékelés most nem elérhető/, {}, { timeout: 3000 })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+})
+
+test('mock mode: editing a row after a successful evaluate clears the verdict card', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Mezo értékelése' }))
+  expect(await screen.findByText(/A felosztás illik a célodhoz/, {}, { timeout: 3000 })).toBeInTheDocument()
+
+  const nameInputs = screen.getAllByLabelText('Slot neve')
+  await userEvent.type(nameInputs[0], '!')
+
+  expect(screen.queryByText(/A felosztás illik a célodhoz/)).not.toBeInTheDocument()
+})
+
 test('real mode: Mentés PUTs the flattened wire body (fixed anchor)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   let captured: { dayType: string; body: { slots: Record<string, unknown>[] } } | null = null
