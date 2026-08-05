@@ -97,4 +97,9 @@ describe('MesoEditor', () => {
     fireEvent.click(screen.getByLabelText('Gyak b · bemelegítés javaslat alkalmazása'))
     expect(onChange).toHaveBeenCalledWith('H', 'b', { warmupSets: 1 })
   })
+
+  it('renders the Struktúra lint card (mezo-oyhy.2)', () => {
+    render(<MesoEditor days={days} {...props} />)
+    expect(screen.getByRole('button', { name: /Struktúra/i })).toBeInTheDocument()
+  })
 })

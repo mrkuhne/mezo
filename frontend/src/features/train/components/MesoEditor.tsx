@@ -20,8 +20,10 @@ import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 import { ExerciseAccordionRow } from '@/features/train/components/ExerciseAccordionRow'
 import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
+import { StructureLintCard } from '@/features/train/components/StructureLintCard'
 import { budgetGroup, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { structureLint } from '@/features/train/logic/structureLint'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
 
 interface MesoEditorProps {
@@ -52,6 +54,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
 
   const budgets = muscleBudgets(days)
   const capWarnings = sessionCapWarnings(days)
+  const lintFindings = structureLint(days)
   const warningDays = new Set(capWarnings.map((w) => w.day))
   const overBudgets = budgets.filter((b) => b.level === 'over')
   const warningCount = overBudgets.length + capWarnings.length
@@ -178,6 +181,8 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
       <DayBreakdownCard rows={dayRows} warnings={dayWarnings} />
 
       <SetBudgetCard budgets={budgets} capWarnings={capWarnings} defaultOpen={warningCount > 0} />
+
+      <StructureLintCard findings={lintFindings} />
 
       {off ? (
         <div className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
