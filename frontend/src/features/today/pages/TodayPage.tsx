@@ -358,7 +358,7 @@ export function TodayPage() {
             open={open} done={done} doneXp={doneXp} chain={chain}
             briefing={briefing ?? resolveBriefing(scenario.dayState)}
             briefingDemo={briefingDemo}
-            briefingFacts={stats.map((s) => `${s.label} ${s.value}${s.unit ?? ''}`)}
+            stats={stats}
             later={later} growth={growth} fuelNote={fuelNote} habitPending={habitPending}
             onAct={act} onFace={selectFace}
           />
