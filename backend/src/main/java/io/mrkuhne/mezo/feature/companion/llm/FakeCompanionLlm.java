@@ -183,6 +183,16 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern STACK_PLACEMENT_SENTINEL =
             Pattern.compile("\\[fake-stack-placement:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of SlotPlanEvaluationService.SYSTEM_PROMPT_MARKER (feature/fuel) — LITERAL, not an
+     *  import, same drift-safety rationale as every other mirror here. */
+    public static final String SLOT_PLAN_MARKER_MIRROR = "SLOT-TERV-ERTEKELES";
+
+    /** Scripted slot-plan evaluation (mezo-7102): {@code [fake-slot-plan:{…}]} planted in a SLOT
+     *  LABEL (the prompt's user message). Default = one valid minimal 'ok' verdict so the
+     *  un-scripted happy path still resolves via the LLM branch. */
+    public static final Pattern SLOT_PLAN_SENTINEL =
+            Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -257,6 +267,12 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = one valid minimal placement so the un-scripted happy path resolves via LLM
             return m.find() ? m.group(1)
                     : "{\"slotKey\":\"evening\",\"reasonHu\":\"Teszt indoklás.\"}";
+        }
+        if (systemPrompt.startsWith(SLOT_PLAN_MARKER_MIRROR)) {
+            Matcher m = SLOT_PLAN_SENTINEL.matcher(userMessage);
+            // default = valid minimal 'ok' verdict so the un-scripted happy path still resolves
+            return m.find() ? m.group(1)
+                    : "{\"verdict\":\"ok\",\"summary\":\"Teszt értékelés.\",\"suggestions\":[]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

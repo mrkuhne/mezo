@@ -1394,6 +1394,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/slot-templates/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gated LLM judgement of a (draft) slot split against the goal balance + training placement */
+        post: operations["evaluateSlotPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation": {
         parameters: {
             query?: never;
@@ -4245,6 +4262,39 @@ export interface components {
         };
         SlotTemplateListResponse: {
             templates: components["schemas"]["SlotTemplateResponse"][];
+        };
+        ResolvedSlotTime: {
+            label: string;
+            time: string;
+        };
+        SlotPlanBudget: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        SlotPlanBlock: {
+            kind: string;
+            time: string;
+            durationMin?: number | null;
+        };
+        SlotPlanSuggestion: {
+            slotLabel?: string;
+            text: string;
+        };
+        SlotPlanEvaluateRequest: {
+            dayType: string;
+            slots: components["schemas"]["SlotTemplateSlot"][];
+            resolvedTimes?: components["schemas"]["ResolvedSlotTime"][];
+            budget: components["schemas"]["SlotPlanBudget"];
+            balanceKcal: number;
+            blocks?: components["schemas"]["SlotPlanBlock"][];
+        };
+        SlotPlanEvaluateResponse: {
+            /** @enum {string} */
+            verdict: "ok" | "adjust";
+            summary: string;
+            suggestions: components["schemas"]["SlotPlanSuggestion"][];
         };
         ConversationResponse: {
             /** Format: uuid */
@@ -9397,6 +9447,57 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    evaluateSlotPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotPlanEvaluateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotPlanEvaluateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description AI evaluation unavailable (slot-template-ai/companion switch off) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
