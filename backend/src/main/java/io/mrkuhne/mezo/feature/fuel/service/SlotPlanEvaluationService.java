@@ -81,12 +81,15 @@ public class SlotPlanEvaluationService {
             SlotPlanEvaluateResponse response = objectMapper.readValue(json, SlotPlanEvaluateResponse.class);
             // Strict-JSON contract: a null/blank verdict or summary is a parse failure, not a valid
             // "empty" answer — degrade the same way as an unparseable payload (the sibling
-            // MealAiDraftService/MealCoachService/RecipeBreakdownProseService null-guard idiom).
+            // MealAiDraftService/MealCoachService/RecipeBreakdownProseService idiom using SystemRuntimeErrorException).
             if (response.getVerdict() == null || response.getSummary() == null || response.getSummary().isBlank()) {
-                throw new IllegalStateException("Slot-plan evaluation answer missing verdict/summary: " + json);
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.error("FUEL_SLOT_TEMPLATE_LLM_UNAVAILABLE").build(), HttpStatus.SERVICE_UNAVAILABLE);
             }
             response.setSuggestions(normalizeSuggestions(response.getSuggestions()));
             return response;
+        } catch (SystemRuntimeErrorException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("Slot-plan evaluation failed: {}", e.getMessage(), e);
             throw new SystemRuntimeErrorException(
