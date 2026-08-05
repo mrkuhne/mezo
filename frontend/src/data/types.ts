@@ -46,6 +46,22 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Meal-slot templates (mezo-7102) — per-day-type anchor plan the planner replays onto a real day. */
+export type SlotTemplateDayType = 'rest' | 'training_am' | 'training_pm'
+export type SlotAnchor =
+  | { type: 'fixed'; time: string }
+  | { type: 'wake' | 'training_start' | 'training_end' | 'bed'; offsetMin: number }
+export interface SlotTemplateRow {
+  label: string
+  slotKind: MealSlot        // 'breakfast' | 'lunch' | 'dinner' | 'snack' (types.ts:68)
+  role: RecipeRole          // 'standard' | 'pre_workout' | 'post_workout' (types.ts:281)
+  anchor: SlotAnchor
+  budgetPct: number
+}
+export interface SlotTemplate {
+  dayType: SlotTemplateDayType
+  slots: SlotTemplateRow[]
+}
 export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
 export type ToolType = 'read' | 'compute' | 'write'
 export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context' | 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; label: string; weight: number; score: number; color: string; detail: string }
