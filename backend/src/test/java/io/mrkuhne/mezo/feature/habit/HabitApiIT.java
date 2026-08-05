@@ -18,8 +18,8 @@ class HabitApiIT extends ApiIntegrationTest {
         HabitDayResponse day = getForBody("/api/habit/day/" + LocalDate.now(),
             ownerAuthHeaders(), HttpStatus.OK, HabitDayResponse.class);
         assertThat(day.getHabits()).hasSize(15);
-        assertThat(day.getHabits()).filteredOn(h -> "MORNING".equals(h.getChain().getValue())).hasSize(9);
-        assertThat(day.getHabits()).filteredOn(h -> "EVENING".equals(h.getChain().getValue())).hasSize(6);
+        assertThat(day.getHabits()).filteredOn(h -> "MORNING".equals(h.getChain())).hasSize(9);
+        assertThat(day.getHabits()).filteredOn(h -> "EVENING".equals(h.getChain())).hasSize(6);
     }
 
     @Test
