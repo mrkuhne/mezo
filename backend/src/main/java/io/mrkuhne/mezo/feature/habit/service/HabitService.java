@@ -63,19 +63,21 @@ public class HabitService {
 
     @Transactional
     public HabitDayResponse getDay(UUID userId, LocalDate date) {
+        // The one catalog bootstrap call for this whole request (mezo-n5e9.1 review finding 1):
+        // its result feeds ensureRows/closeStaleRows below, so neither needs to call it again.
+        List<HabitDefEntity> defs = catalogService.ensureCatalog(userId);
         List<HabitDayEntity> rows = repository.findByCreatedByAndHabitDate(userId, date);
         if (rows.isEmpty() && date.equals(LocalDate.now())) {
-            rows = ensureRows(userId, date);
+            rows = ensureRows(userId, date, defs);
         }
         List<LevelUpResult> levelUps = new ArrayList<>();
         if (date.equals(LocalDate.now())) {
-            closePast(userId, date);
+            closeStaleRows(userId, staleRows(userId, date), date);
             levelUps.addAll(evaluateIntraday(userId, rows));
         }
         Map<String, Integer> strengths = strengthByKey(userId, date);
         Map<String, HabitDayEntity> byKey = new HashMap<>();
         rows.forEach(r -> byKey.put(r.getHabitKey(), r));
-        List<HabitDefEntity> defs = catalogService.ensureCatalog(userId);
         Map<UUID, String> chainKeyById = chainKeyById(userId);
         return HabitDayResponse.builder()
             .date(date)
@@ -160,12 +162,28 @@ public class HabitService {
             .build();
     }
 
-    /** Close every pending row older than today; the cron and the today-read both call this. */
+    /**
+     * Close every pending row older than today; the nightly cron ({@code HabitJob}) and direct
+     * callers use this entry point. The today-read ({@code getDay}) inlines the same
+     * {@code staleRows}/{@code closeStaleRows} pair instead, since it has already ensured the
+     * catalog itself (mezo-n5e9.1 review finding 1 — avoids a second bootstrap call per request).
+     */
     @Transactional
     public void closePast(UUID userId, LocalDate today) {
+        List<HabitDayEntity> stale = staleRows(userId, today);
+        if (stale.isEmpty()) {
+            return; // a user who never touched habits gets zero writes (mezo-n5e9.1 review finding 3)
+        }
         catalogService.ensureCatalog(userId); // closePast/HabitJob can run for a never-bootstrapped user
-        List<HabitDayEntity> stale = repository
+        closeStaleRows(userId, stale, today);
+    }
+
+    private List<HabitDayEntity> staleRows(UUID userId, LocalDate today) {
+        return repository
             .findByCreatedByAndStatusAndHabitDateBefore(userId, HabitDayEntity.STATUS_PENDING, today);
+    }
+
+    private void closeStaleRows(UUID userId, List<HabitDayEntity> stale, LocalDate today) {
         for (HabitDayEntity row : stale) {
             HabitDefEntity def = catalogService.byKey(userId, row.getHabitKey()).orElse(null);
             if (def == null) {
@@ -234,12 +252,16 @@ public class HabitService {
     }
 
     private List<HabitDayEntity> ensureRows(UUID userId, LocalDate date) {
+        return ensureRows(userId, date, catalogService.ensureCatalog(userId));
+    }
+
+    private List<HabitDayEntity> ensureRows(UUID userId, LocalDate date, List<HabitDefEntity> defs) {
         List<HabitDayEntity> existing = repository.findByCreatedByAndHabitDate(userId, date);
         if (!existing.isEmpty()) {
             return existing;
         }
         try {
-            List<HabitDayEntity> fresh = catalogService.ensureCatalog(userId).stream().map(def -> {
+            List<HabitDayEntity> fresh = defs.stream().map(def -> {
                 HabitDayEntity e = new HabitDayEntity();
                 e.setCreatedBy(userId);
                 e.setHabitDate(date);

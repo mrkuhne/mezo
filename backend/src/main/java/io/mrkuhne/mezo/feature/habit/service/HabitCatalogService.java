@@ -7,9 +7,11 @@ import io.mrkuhne.mezo.feature.habit.repository.HabitChainRepository;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDefRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,8 +85,13 @@ public class HabitCatalogService {
                 byKey.put(seed.key(), chainRepository.saveAndFlush(c));
             }
         }
+        // ONE query for every key ever imported (live or soft-deleted) — not an O(seed-size)
+        // per-def native COUNT probe (mezo-n5e9.1 review finding 1). No "skip everything if any
+        // defs exist" short-circuit: every seed def is still checked individually against this
+        // set, so a future seed-JSON addition keeps importing for existing users.
+        Set<String> everImported = new HashSet<>(defRepository.findAllKeysEver(userId));
         for (HabitCatalog.HabitDef def : seedCatalog.all()) {
-            if (defRepository.countEverByCreatedByAndHabitKey(userId, def.key()) == 0) {
+            if (!everImported.contains(def.key())) {
                 HabitDefEntity e = new HabitDefEntity();
                 e.setCreatedBy(userId);
                 e.setHabitKey(def.key());

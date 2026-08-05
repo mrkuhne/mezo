@@ -6,8 +6,10 @@ import io.mrkuhne.mezo.feature.habit.entity.HabitDefEntity;
 import io.mrkuhne.mezo.feature.habit.repository.HabitChainRepository;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDefRepository;
 import io.mrkuhne.mezo.feature.habit.service.HabitCatalogService;
+import io.mrkuhne.mezo.feature.habit.service.HabitService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class HabitCatalogBootstrapIT extends AbstractIntegrationTest {
 
     @Autowired private HabitCatalogService catalogService;
+    @Autowired private HabitService habitService;
     @Autowired private HabitChainRepository chainRepository;
     @Autowired private HabitDefRepository defRepository;
     @Autowired private UserPopulator userPopulator;
@@ -68,5 +71,17 @@ class HabitCatalogBootstrapIT extends AbstractIntegrationTest {
         catalogService.ensureCatalog(owner);
         assertThat(catalogService.byKey(owner, "morning_sunlight")).isPresent();
         assertThat(catalogService.byKey(owner, "nope")).isEmpty();
+    }
+
+    @Test
+    void testClosePast_shouldNotBootstrapCatalog_whenUserHasNoHabitDayRows() {
+        UUID owner = userPopulator.createUser("habit-boot5@test.hu").getId();
+
+        habitService.closePast(owner, LocalDate.now());
+
+        // Zero stale rows -> zero writes: a user who never touched habits stays untouched
+        // (mezo-n5e9.1 review finding 3 — the nightly cron must not materialize catalogs for
+        // users who never used habits).
+        assertThat(chainRepository.findByCreatedByAndDeletedFalseOrderByPositionAsc(owner)).isEmpty();
     }
 }
