@@ -117,9 +117,8 @@ describe('HabitEditSheet — edit', () => {
     })
   })
 
-  it('a danger-styled "Habit törlése" button calls deleteDef with the def id, then closes', () => {
-    const onClose = vi.fn()
-    render(<HabitEditSheet chainKey="MORNING" def={EDIT_DEF} onClose={onClose} />)
+  it('a danger-styled "Habit törlése" button calls deleteDef with the def id', () => {
+    render(<HabitEditSheet chainKey="MORNING" def={EDIT_DEF} onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /habit törlése/i }))
     expect(deleteDef).toHaveBeenCalledWith('def-1')
   })
