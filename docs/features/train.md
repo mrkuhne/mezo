@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-08-03
+updated: 2026-08-05
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -45,7 +45,7 @@ Train is the largest mezo domain: a seven-tab area for planning and executing st
 
 ## 2. User-facing behavior
 
-**Since the gamified-header slice (`mezo-k7rn`, 2026-07-18), `TrainSection` renders the shared `AppHero` identity/progression header** — every Train sub-page inherits it exactly like the pre-existing `.pghead-np` per-page headers below it. **Since the compact-header redesign the same afternoon (`mezo-ugqb`), `TrainSection` also passes a `SubNavDropdown` as `AppHero`'s `utilities` prop** (`TrainSection.tsx` — `items={TRAIN_TABS}`, `accent="var(--coral-deep)"`); Train's sub-nav is no longer its own row/component, just this one prop. `AppHero` itself is domain-free platform chrome (avatar + XP ring/level badge, equipped title, label-less 🔥/⚡/🪙 counters). See [growth.md](growth.md) for the account-progression domain and [`_platform-design-system.md` §1a](_platform-design-system.md) for the `.apphero`/`SubNavDropdown` CSS families.
+**Since the gamified-header slice (`mezo-k7rn`, 2026-07-18), `TrainSection` renders the shared `AppHero` identity/progression header** — every Train sub-page inherits it exactly like the pre-existing `.pghead-np` per-page headers below it. **Since the compact-header redesign the same afternoon (`mezo-ugqb`), `TrainSection` also passes a `SubNavDropdown` as `AppHero`'s `utilities` prop** (`TrainSection.tsx` — `items={TRAIN_TABS}`, `accent="var(--primary-deep)"` (DS pass `mezo-setx.6.1` — coral in UI chrome = primary)); Train's sub-nav is no longer its own row/component, just this one prop. `AppHero` itself is domain-free platform chrome (avatar + XP ring/level badge, equipped title, label-less 🔥/⚡/🪙 counters). See [growth.md](growth.md) for the account-progression domain and [`_platform-design-system.md` §1a](_platform-design-system.md) for the `.apphero`/`SubNavDropdown` CSS families.
 
 The sub-nav (`TRAIN_TABS`, `frontend/src/features/train/pages/tabs.ts`, rendered via the shared `SubNavDropdown`) has seven tabs: **`Mai`** (`/train`), **`Heti`** (`/train/week` — the detailed weekly agenda split out of Mai, `mezo-9bbc`, see §2), **`Gym`** (`/train/gym`), **`Sport`** (`/train/sport`), **`Futás`** (`/train/futas`), **`Gyakorlatok`** (`/train/exercises`), **`Mesociklusok`** (`/train/mesocycles`). Six full-screen sibling routes have no sub-nav: active workout (`/train/session`), the done-day review (`/train/review/:workoutId`, `WorkoutReviewPage`), mesocycle planner/builder (`/train/mesocycles/new`, `/train/mesocycles/:id`), the running-block builder (`/train/futas/:id`), and the **custom-workout composer** (`/train/custom/new`, `/train/custom/:id`, `CustomWorkoutBuilderPage` — `mezo-ws2x`, see the `Saját edzés` subsection below). **Since Napiv S4 (`mezo-8141`) the tab label reads `Gym` (was `GYM`)** — a copy-only change (the route/id are untouched). **`TrainSubNav.tsx` and the `.np-pills`/`.np-pill` pill-nav CSS it rendered are deleted (compact-header redesign, `mezo-ugqb`)** — the chip shows the active tab's label (`"Gym ▾"`) and tapping it opens a popover menu instead of a pill row; see [`_platform-design-system.md`](_platform-design-system.md) §3/§5 for the primitive. **Every Train page still opens with a `.pghead-np` page-head** (an `.over` eyebrow line + `h1`, optionally a `.pgact-np` pill action chip) in place of the generic `.page-header`/`Eyebrow`/`PageTitle` idiom described in the design-system doc.
 
@@ -459,7 +459,7 @@ Both modes and both layers must stay green.
 - `frontend/src/features/train/logic/restTimer.ts` — pure `restSecondsFor(type)` (150s compound / 90s else, hardcoded) + `fmtMMSS` — the only place the rest duration is decided
 
 **FE — screens / views**
-- `frontend/src/features/train/pages/{TrainSection,tabs}.{tsx,ts}` — shell + sub-nav data; `TrainSection.tsx` mounts the cross-feature `AppHero` with a `SubNavDropdown` (fed by `TRAIN_TABS`, `--coral-deep` accent) as its `utilities` prop (`mezo-k7rn` + compact-header redesign `mezo-ugqb` — see §2/§5). **`TrainSubNav.tsx` is deleted.**
+- `frontend/src/features/train/pages/{TrainSection,tabs}.{tsx,ts}` — shell + sub-nav data; `TrainSection.tsx` mounts the cross-feature `AppHero` with a `SubNavDropdown` (fed by `TRAIN_TABS`, `--primary-deep` accent since `mezo-setx.6.1`) as its `utilities` prop (`mezo-k7rn` + compact-header redesign `mezo-ugqb` — see §2/§5). **`TrainSubNav.tsx` is deleted.**
 - `frontend/src/features/train/pages/{TrainTodayPage,TrainWeekPage,GymPage,SportPage,RunningPage,ExercisesPage,MesocycleLibraryPage,WorkoutReviewPage}.tsx` (`TrainWeekPage` = the detailed weekly agenda at `/train/week` split out of `TrainTodayPage`, `mezo-9bbc`, §2; `WorkoutReviewPage` = the done-day read-only review at `/train/review/:workoutId`, `mezo-cd8s`)
 - `frontend/src/features/train/pages/MesoOverviewPage.tsx` — read-only `Mezociklus áttekintő` volume-arc overview at `/train/mesocycles/:id/overview` (Progressive Overload Plan 2 Phase B, `mezo-hi9m`; see §2)
 - `frontend/src/features/train/pages/MedalsPage.tsx` — the medal cabinet at `/train/medals`, with a **`Medálok`** entry in `pages/tabs.ts` (`mezo-wp6n`, §2 `Medálok`)
