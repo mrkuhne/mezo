@@ -193,6 +193,17 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SLOT_PLAN_SENTINEL =
             Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Scripted habit suggestions (mezo-n5e9.3): {@code [fake-habit-suggest:[…]]} planted anywhere
+     *  in the adapter's context text (ITs use the request's {@code chainKey}, which — unlike
+     *  {@code hint} — carries no contract length cap) — GREEDY array alternative (like {@code
+     *  QUEST_FLAVOR_SENTINEL}), PLUS a raw-text fallback alternative so a deliberately broken
+     *  payload (e.g. {@code [fake-habit-suggest:not-json]}) still matches and reaches the caller's
+     *  JSON parser verbatim, exercising the degrade-to-empty path instead of silently falling
+     *  through to the default. Default = one valid minimal suggestion so the un-scripted happy
+     *  path still resolves via the LLM branch. */
+    public static final Pattern SUGGEST_SENTINEL =
+            Pattern.compile("\\[fake-habit-suggest:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -273,6 +284,13 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = valid minimal 'ok' verdict so the un-scripted happy path still resolves
             return m.find() ? m.group(1)
                     : "{\"verdict\":\"ok\",\"summary\":\"Teszt értékelés.\",\"suggestions\":[]}";
+        }
+        if (systemPrompt.startsWith(HabitSuggestLlmAdapter.SUGGEST_MARKER)) {
+            Matcher m = SUGGEST_SENTINEL.matcher(userMessage);
+            // default = one valid minimal suggestion so the un-scripted happy path still resolves
+            return m.find() ? m.group(1)
+                    : "[{\"title\":\"Fake szokás\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
+                            + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

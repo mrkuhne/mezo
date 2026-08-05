@@ -28,7 +28,8 @@ public record CompanionProperties(
     @NotNull @Valid Summary summary,
     @NotNull @Valid Recall recall,
     @NotNull @Valid Patterns patterns,
-    @NotNull @Valid Hypotheses hypotheses
+    @NotNull @Valid Hypotheses hypotheses,
+    @NotNull @Valid HabitSuggest habitSuggest
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -112,6 +113,13 @@ public record CompanionProperties(
         @DecimalMin("0.0") @DecimalMax("1.0") double keepThreshold,
         /** Score at/above which a borderline hypothesis gets ONE revise+re-critique pass (§4.7: 0.50). */
         @DecimalMin("0.0") @DecimalMax("1.0") double reviseThreshold
+    ) {}
+
+    /** AI habit suggester (mezo-n5e9.3, ADR 0019) — smart-model propose-only chain-fill suggestions. */
+    public record HabitSuggest(
+        /** Max suggestions the adapter asks the model for / returns (HabitAiService's own
+         *  sanitize step is a defensive bounds check, not a count clamp). */
+        @Min(1) @Max(20) int maxSuggestions
     ) {}
 
     /** V3.1 nightly statistical pattern engine — Pearson over the metric-pair catalog. */
