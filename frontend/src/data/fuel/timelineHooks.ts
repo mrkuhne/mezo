@@ -19,6 +19,7 @@ import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { useRecipes } from '@/data/fuel/recipeHooks'
 import { useProtocol, useStack, useIntakes } from '@/data/fuel/stackHooks'
 import { useFuelSettings } from '@/data/fuel/fuelSettingsHooks'
+import { useSlotTemplates } from '@/data/fuel/slotTemplateHooks'
 import { useGoal } from '@/data/me/goalHooks'
 import { useBiometricProfile } from '@/data/me/biometricHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
@@ -28,6 +29,7 @@ import { buildDayPlan, deriveDailyBudget } from '@/features/fuel/logic/buildDayP
 import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
 import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
+import { resolveDayType } from '@/features/fuel/logic/resolveDayType'
 import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
@@ -75,6 +77,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
+  const { templates } = useSlotTemplates() // Per-day-type meal-slot templates (mezo-7102)
 
   // ── Composition (both modes) ─────────────────────────────────────────────────
   // The wake/bed day-anchor is owned by the sleep goal (mezo-dbsr, spec D3) — always set
@@ -84,6 +87,12 @@ export function useFuelTimeline(date: string = localDateString()) {
   const mealsPerDay = settings.mealsPerDay
 
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
+
+  // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
+  // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged
+  // placeWindows/splitBudget path).
+  const dayType = resolveDayType(blocks)
+  const template = templates.find(t => t.dayType === dayType) ?? null
 
   // Dynamic energy inputs (mezo-1oy5 / mezo-eujg): current weigh-in drives the MET activity burn +
   // the BMR floor; BMR×neat is the lifestyle maintenance and the segment's explicit
@@ -114,7 +123,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const plan = buildDayPlan({
     wake, bed, mealsPerDay, blocks, budget, weightKg,
     meals: fuel.meals, recipes, protocolSlots,
-    caffeineCutoff: settings.caffeineCutoff, nowHHmm,
+    caffeineCutoff: settings.caffeineCutoff, nowHHmm, template,
   })
 
   // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
@@ -131,6 +140,10 @@ export function useFuelTimeline(date: string = localDateString()) {
   })
 
   // wake/bed/nowHHmm are returned so view-side zone math never re-derives the day anchor and never
-  // reads the wall clock itself (mock mode must stay deterministic — MOCK_NOW_HHMM). Additive.
-  return { plan, budget, blocks, weightKg, energyBreakdown, wake, bed, nowHHmm, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
+  // reads the wall clock itself (mock mode must stay deterministic — MOCK_NOW_HHMM). dayType/template
+  // (mezo-7102) are returned too, additively, so a settings preview can show which template drove today.
+  return {
+    plan, budget, blocks, weightKg, energyBreakdown, wake, bed, nowHHmm, dayType, template,
+    getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals),
+  }
 }

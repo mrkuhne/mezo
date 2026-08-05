@@ -1359,6 +1359,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/slot-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All meal-slot templates of the owner (0-3 rows, one per day type) */
+        get: operations["listSlotTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/slot-templates/{dayType}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Whole-document upsert of one day type's template */
+        put: operations["putSlotTemplate"];
+        post?: never;
+        /** Delete one day type's template (revert to the automatic recommendation) */
+        delete: operations["deleteSlotTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation": {
         parameters: {
             query?: never;
@@ -4286,6 +4321,28 @@ export interface components {
         };
         IntakeListResponse: {
             intakes: components["schemas"]["IntakeResponse"][];
+        };
+        SlotTemplateSlot: {
+            label: string;
+            slotKind: string;
+            role: string;
+            anchorType: string;
+            /** @description Required when anchorType=fixed */
+            time?: string;
+            /** @description Required for relative anchors, signed */
+            offsetMin?: number;
+            budgetPct: number;
+        };
+        SlotTemplateRequest: {
+            slots: components["schemas"]["SlotTemplateSlot"][];
+        };
+        SlotTemplateResponse: {
+            /** @enum {string} */
+            dayType: "rest" | "training_am" | "training_pm";
+            slots: components["schemas"]["SlotTemplateSlot"][];
+        };
+        SlotTemplateListResponse: {
+            templates: components["schemas"]["SlotTemplateResponse"][];
         };
         ConversationResponse: {
             /** Format: uuid */
@@ -9375,6 +9432,117 @@ export interface operations {
             header?: never;
             path: {
                 id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listSlotTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTemplateListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putSlotTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dayType: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTemplateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteSlotTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dayType: string;
             };
             cookie?: never;
         };
