@@ -91,6 +91,38 @@ paths:
         '204': { description: Deleted }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/slot-templates:
+    get:
+      tags: [Fuel]
+      operationId: listSlotTemplates
+      summary: All meal-slot templates of the owner (0-3 rows, one per day type)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SlotTemplateListResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/slot-templates/{dayType}:
+    put:
+      tags: [Fuel]
+      operationId: putSlotTemplate
+      summary: Whole-document upsert of one day type's template
+      parameters:
+        - { name: dayType, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SlotTemplateRequest' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SlotTemplateResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Fuel]
+      operationId: deleteSlotTemplate
+      summary: Delete one day type's template (revert to the automatic recommendation)
+      parameters:
+        - { name: dayType, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     ProtocolHistoryEntry:
@@ -168,3 +200,30 @@ components:
       required: [intakes]
       properties:
         intakes: { type: array, items: { $ref: '#/components/schemas/IntakeResponse' } }
+    SlotTemplateSlot:
+      type: object
+      required: [label, slotKind, role, anchorType, budgetPct]
+      properties:
+        label: { type: string, maxLength: 40 }
+        slotKind: { type: string, pattern: '^(breakfast|lunch|dinner|snack)$' }
+        role: { type: string, pattern: '^(standard|pre_workout|post_workout)$' }
+        anchorType: { type: string, pattern: '^(fixed|wake|training_start|training_end|bed)$' }
+        time: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'Required when anchorType=fixed' }
+        offsetMin: { type: integer, minimum: -720, maximum: 720, description: 'Required for relative anchors, signed' }
+        budgetPct: { type: integer, minimum: 1, maximum: 100 }
+    SlotTemplateRequest:
+      type: object
+      required: [slots]
+      properties:
+        slots: { type: array, items: { $ref: '#/components/schemas/SlotTemplateSlot' }, minItems: 2, maxItems: 8 }
+    SlotTemplateResponse:
+      type: object
+      required: [dayType, slots]
+      properties:
+        dayType: { type: string, enum: [rest, training_am, training_pm] }
+        slots: { type: array, items: { $ref: '#/components/schemas/SlotTemplateSlot' } }
+    SlotTemplateListResponse:
+      type: object
+      required: [templates]
+      properties:
+        templates: { type: array, items: { $ref: '#/components/schemas/SlotTemplateResponse' } }
