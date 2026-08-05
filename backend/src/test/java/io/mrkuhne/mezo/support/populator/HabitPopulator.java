@@ -27,7 +27,17 @@ public class HabitPopulator {
         }).toList();
     }
 
+    /**
+     * A single {@code habit_day} row at an explicit status, for a caller-chosen key/date — the
+     * "just this one row" seam {@link #pendingDay} doesn't cover. Ensures the owner's catalog
+     * first (mirrors {@link #pendingDay}): a raw insert with no catalog behind it made
+     * {@code HabitService#summary}'s {@code perfectDays}/`activeForChainKey` reads see zero keys
+     * for that chain once {@code summary} stopped implicitly bootstrapping (mezo-n5e9.1 review
+     * finding 3) — CI caught this in {@code ContextSnapshotAssemblerIT}/{@code
+     * CompanionToolsRenderIT}, both of which render habit state through {@code summary}.
+     */
     public HabitDayEntity row(UUID owner, LocalDate date, String key, String status) {
+        catalogService.ensureCatalog(owner);
         HabitDayEntity e = new HabitDayEntity();
         e.setCreatedBy(owner);
         e.setHabitDate(date);
