@@ -592,6 +592,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: var(--surface-glass);
   backdrop-filter: blur(16px);
 }
+/* A deactivated-but-still-editable card (the routine editor's inactive chains, mezo-n5e9.2):
+   dimmed, not disabled — every control inside stays interactive. */
+.card.is-inert { opacity: .55; }
 
 /* Napív inset radii — successors of the retired notch-* tokens for non-card elements (mezo-x3x0) */
 .rad-12 { border-radius: 12px; }

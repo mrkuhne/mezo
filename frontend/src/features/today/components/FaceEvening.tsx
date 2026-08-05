@@ -6,6 +6,7 @@
 // The retrospective list IS this face's done surface, so — unlike the morning
 // and day faces — no `DoneFold` is mounted here (it would repeat the same rows).
 // ============================================================
+import { ChainCelebrations, type ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { RitualCard } from '@/features/today/components/RitualCard'
@@ -15,7 +16,6 @@ import { ItemRow } from '@/shared/ui/ItemRow'
 import type { CompanionNote } from '@/data/types'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
-import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 import { useWindDownPhase } from '@/features/today/logic/useWindDownPhase'
 
 /** The two rows the `RitualCard` hero above the list already owns — showing either of
@@ -35,17 +35,18 @@ const OWNED_BY_RITUAL_HERO = new Set(['habit:evening_ritual'])
 const OWNED_BY_WIND_DOWN_BANNER = 'habit:wind_down'
 
 export function FaceEvening({
-  open, done, doneXp, dayXp, chain, note, growth, fuelNote, habitPending, onAct,
+  open, done, doneXp, dayXp, celebrations, note, growth, fuelNote, habitPending, onAct,
 }: {
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
   /** Total XP earned today across every source — the retrospective's headline. */
   dayXp: number
-  /** Evening-chain progress — this face owns it, so it fires its completion toast.
-   *  Unlike the morning face there is no chain hero: every evening step already renders
-   *  as an actionable `TodoCard` row, so nothing needs promoting or de-duplicating. */
-  chain: { done: number; total: number }
+  /** Every ACTIVE EVENING-daypart chain's progress (mezo-n5e9.4) — this face owns them, so it
+   *  fires their completion toasts. Unlike the morning face there is no chain hero: every
+   *  evening step already renders as an actionable `TodoCard` row, so nothing needs promoting
+   *  or de-duplicating. */
+  celebrations: ChainCelebrationInput[]
   note: CompanionNote | null
   /** Quest summary + the route into quest management (TodoCard's header). */
   growth?: GrowthTodaySummary | null
@@ -63,9 +64,9 @@ export function FaceEvening({
     i.source !== 'ritual'
     && !OWNED_BY_RITUAL_HERO.has(i.id)
     && !(bannerOwnsWindDown && i.id === OWNED_BY_WIND_DOWN_BANNER))
-  useChainCelebration(chain.total > 0 && chain.done === chain.total, '🌙 Tökéletes este')
   return (
     <>
+      <ChainCelebrations chains={celebrations} />
       <WindDownBanner />
       <RitualCard />
       <TodoCard

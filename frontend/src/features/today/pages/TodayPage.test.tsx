@@ -1,9 +1,16 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { HABIT_CATALOG_KEY } from '@/data/habit/habitAdminHooks'
+import type { HabitDay } from '@/data/habit/habitApi'
+import { mockHabitCatalog, mockHabitDay } from '@/data/habit/habitMock'
+import { localDateString } from '@/shared/lib/dates'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
+import type { HabitChainInfo, HabitItem } from '@/data/types'
 
 const at = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number)
@@ -396,5 +403,85 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
     renderToday()
     fireEvent.click(screen.getAllByRole('button', { name: /ugrás a napszakára$/ })[0])
     expect(screen.getByRole('tab', { selected: true })).not.toHaveAccessibleName(/^Reggel/)
+  })
+})
+
+/**
+ * Per-chain celebrations (mezo-n5e9.4 — the Task 2 review carry-over): `chainProgress` used to
+ * literal-filter `h.chain === 'MORNING'/'EVENING'`, so a custom chain from the routine editor
+ * would get Today rows but no completion toast. These tests render against a bespoke
+ * QueryClient (not the shared `QueryWrapper`) so the `habitCatalog`/`habitDay` caches can be
+ * pre-seeded with a custom DAY chain before mount — `renderToday`'s fresh-per-call client has no
+ * seeding hook of its own.
+ */
+describe('TodayPage — per-chain celebrations (mezo-n5e9.4)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
+
+  let off: (() => void) | null = null
+  const listen = () => {
+    const seen: ToastMessage[] = []
+    off = onToast((t) => seen.push(t))
+    return seen
+  }
+  afterEach(() => { off?.(); off = null })
+
+  function renderWithClient(qc: QueryClient, path: string) {
+    return render(
+      <QueryClientProvider client={qc}>
+        <LevelUpProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <TodayPage />
+          </MemoryRouter>
+        </LevelUpProvider>
+      </QueryClientProvider>,
+    )
+  }
+
+  test('the seed morning chain still celebrates with its exact fixed copy on completion', () => {
+    clockAt('09:12')
+    const today = localDateString()
+    const seen = listen()
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const allMorningDone: HabitDay = {
+      habits: mockHabitDay.map((h) => (h.chain === 'MORNING' ? { ...h, status: 'done' as const } : h)),
+      levelUps: [],
+    }
+    qc.setQueryData(['habitDay', today], allMorningDone)
+
+    renderWithClient(qc, '/today?dp=reggel')
+
+    expect(seen).toEqual([{ kind: 'success', text: '🌅 Tökéletes reggel' }])
+  })
+
+  test('a custom DAY chain completing fires its own ✨ toast — the seed chains stay silent', () => {
+    clockAt('13:42')
+    const today = localDateString()
+    const seen = listen()
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+    const customChain: HabitChainInfo = {
+      id: 'chain-day-custom', chainKey: 'DAY_CUSTOM', title: 'Déli szünet', daypart: 'DAY',
+      position: 3, isActive: true,
+      defs: [{
+        id: 'def-day1', habitKey: 'day_habit_1', chainKey: 'DAY_CUSTOM', position: 1,
+        title: 'Déli levegőzés', why: null, anchorCopy: null, mode: 'MANUAL', metric: 'manual',
+        skillKey: 'mindfulness', xp: 5, linkUrl: null, isActive: true,
+      }],
+    }
+    qc.setQueryData(HABIT_CATALOG_KEY, { chains: [...mockHabitCatalog.chains, customChain] })
+
+    const customHabit: HabitItem = {
+      key: 'day_habit_1', chain: 'DAY_CUSTOM', position: 1, title: 'Déli levegőzés',
+      why: 'ok', anchorCopy: 'delben', mode: 'MANUAL', status: 'done',
+      doneAt: '2026-05-21T12:00:00Z', xp: 5, strengthPct: null,
+    }
+    const day: HabitDay = { habits: [...mockHabitDay, customHabit], levelUps: [] }
+    qc.setQueryData(['habitDay', today], day)
+
+    renderWithClient(qc, '/today?dp=nap')
+
+    // Neither seed chain is complete in the unmodified mock day, so ONLY the custom chain toasts.
+    expect(seen).toEqual([{ kind: 'success', text: '✨ Déli szünet kész' }])
   })
 })

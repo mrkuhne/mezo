@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useHabitCatalog, useHabitDay, useHabitSummary } from '@/data/hooks'
 import type { HabitChainInfo, HabitDaypart, HabitItem } from '@/data/types'
 import { localDateString } from '@/shared/lib/dates'
@@ -19,6 +20,7 @@ const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀
  * - EMPTY past day: a quiet ghost.
  */
 export function RoutinesTab() {
+  const navigate = useNavigate()
   const today = localDateString()
   const [date, setDate] = useState(today)
   const isToday = date === today
@@ -86,7 +88,18 @@ export function RoutinesTab() {
 
   return (
     <div className="col gap-md">
-      <DayNavigator date={date} maxDate={today} onChange={setDate} />
+      <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
+          <DayNavigator date={date} maxDate={today} onChange={setDate} />
+        </div>
+        {/* Editor entry — today view only (mezo-n5e9.2/.4): a past-day view stays
+            read-only-clean, since it is looking at history, not the live catalog. */}
+        {isToday && (
+          <button type="button" className="cta-ghost" onClick={() => navigate('/me/routines/edit')}>
+            <span aria-hidden="true">✏️</span> Szerkesztés
+          </button>
+        )}
+      </div>
       {isToday ? (
         <>
           <div className="row" style={{ gap: 12 }}>

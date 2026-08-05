@@ -1,8 +1,23 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoutinesTab } from '@/features/me/components/RoutinesTab'
 import { localDateString } from '@/shared/lib/dates'
 import type { HabitChainInfo } from '@/data/types'
+
+// RoutinesTab now navigates (the "Szerkesztés" entry button), so every render needs Router
+// context — a probe route stands in for RoutineEditorPage (the "real navigation" idiom,
+// GoalMiniCard.test.tsx's renderMini).
+function renderTab() {
+  return render(
+    <MemoryRouter initialEntries={['/me/growth']}>
+      <Routes>
+        <Route path="/me/growth" element={<RoutinesTab />} />
+        <Route path="/me/routines/edit" element={<div data-testid="edit-probe" />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
 
 const habitsToday = [
   { key: 'wake_on_time', chain: 'MORNING', title: 'Ébredés időben', status: 'done', xp: 5 },
@@ -47,7 +62,7 @@ beforeEach(() => {
 
 describe('RoutinesTab', () => {
   it('today: shows the 30-day perfect-day counters + per-habit strength bars', () => {
-    const { container } = render(<RoutinesTab />)
+    const { container } = renderTab()
     expect(screen.getByText('Tökéletes reggelek')).toBeInTheDocument()
     expect(screen.getByText('22')).toBeInTheDocument()
     // today keeps the strength rows (percentage + bar)
@@ -56,7 +71,7 @@ describe('RoutinesTab', () => {
   })
 
   it('navigating to a past day queries that date and shows the day-summary chip (no counters, no strength)', () => {
-    const { container } = render(<RoutinesTab />)
+    const { container } = renderTab()
     fireEvent.click(screen.getByRole('button', { name: /előző nap/i }))
     const yesterday = screen.getByRole('button', { name: /dátum kiválasztása/i })
     expect(useHabitDay).toHaveBeenCalledWith(expect.not.stringMatching(localDateString()))
@@ -68,7 +83,7 @@ describe('RoutinesTab', () => {
   })
 
   it('empty past day: shows the quiet ghost', () => {
-    render(<RoutinesTab />)
+    renderTab()
     useHabitDay.mockReturnValue({ habits: [] })
     fireEvent.click(screen.getByRole('button', { name: /előző nap/i }))
     expect(screen.getByText(/Nincs rutinadat erre a napra/i)).toBeInTheDocument()
@@ -77,7 +92,7 @@ describe('RoutinesTab', () => {
 
 describe('RoutinesTab — catalog-driven chains (mezo-n5e9.2)', () => {
   it('the seed-only catalog renders exactly the previous two cards, titled from the catalog', () => {
-    render(<RoutinesTab />)
+    renderTab()
     expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
     expect(screen.getByText('Esti rutin')).toBeInTheDocument()
     // The retired hardcoded card labels are gone — the ONLY user-visible copy change.
@@ -101,7 +116,7 @@ describe('RoutinesTab — catalog-driven chains (mezo-n5e9.2)', () => {
     useHabitDay.mockReturnValue({
       habits: [...habitsToday, { key: 'stretch', chain: 'chain_daytest', title: 'Nyújtás', status: 'pending', xp: 5 }],
     })
-    render(<RoutinesTab />)
+    renderTab()
     expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
     expect(screen.getByText('Esti rutin')).toBeInTheDocument()
     expect(screen.getByText('Napközbeni rutin')).toBeInTheDocument()
@@ -121,7 +136,21 @@ describe('RoutinesTab — catalog-driven chains (mezo-n5e9.2)', () => {
       },
       isPending: false,
     })
-    render(<RoutinesTab />)
+    renderTab()
     expect(screen.queryByText('Régi rutin')).not.toBeInTheDocument()
+  })
+})
+
+describe('RoutinesTab — routine editor entry (mezo-n5e9.2 / mezo-n5e9.4)', () => {
+  it('the today view offers a Szerkesztés button that navigates to the editor', () => {
+    renderTab()
+    fireEvent.click(screen.getByRole('button', { name: /szerkesztés/i }))
+    expect(screen.getByTestId('edit-probe')).toBeInTheDocument()
+  })
+
+  it('a past-day view has no Szerkesztés entry (read-only-clean)', () => {
+    renderTab()
+    fireEvent.click(screen.getByRole('button', { name: /előző nap/i }))
+    expect(screen.queryByRole('button', { name: /szerkesztés/i })).not.toBeInTheDocument()
   })
 })
