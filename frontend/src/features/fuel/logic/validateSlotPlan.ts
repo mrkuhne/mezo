@@ -73,6 +73,19 @@ export function validateSlotPlan(
   if (rows.length > MAX_TEMPLATE_SLOTS) {
     errors.push({ code: 'too_many', text: `Legfeljebb ${MAX_TEMPLATE_SLOTS} étkezési ablak lehet egy tervben.` })
   }
+  // mezo-4ghd fix 1: mirrors the wire's `SlotTemplateSlot.label` `maxLength: 40` (api/openapi.yml)
+  // — today an over-40-char label passes this tier-1 pass, then 400s on PUT/evaluate with a
+  // misleading error. An all-whitespace label is equally unrepresentable (the contract requires
+  // the field, but a blank name saves nothing usable), so it errors here too. One issue per
+  // offending row — not just the first — so a multi-row problem doesn't hide behind one message.
+  for (const r of rows) {
+    const trimmed = r.label.trim()
+    if (trimmed.length === 0) {
+      errors.push({ code: 'label_length', text: 'Van egy névtelen (üres nevű) étkezési ablak — adj neki nevet.' })
+    } else if (r.label.length > 40) {
+      errors.push({ code: 'label_length', text: `„${r.label}" neve túl hosszú — legfeljebb 40 karakter lehet.` })
+    }
+  }
   const outOfSpan = ctx.rawTimes
     ? ctx.rawTimes.some(t => t != null && (t < wakeMin || t > bedMin))
     : unwrapped.some(w => w.time < wakeMin || w.time > bedMin)
