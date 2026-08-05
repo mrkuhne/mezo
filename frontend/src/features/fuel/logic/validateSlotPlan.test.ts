@@ -68,6 +68,42 @@ test('too_many: more than MAX_TEMPLATE_SLOTS (8) rows is an error', () => {
   expect(warnings).toEqual([])
 })
 
+// mezo-4ghd fix 1: mirrors the wire's SlotTemplateSlot.label maxLength:40 (api/openapi.yml) —
+// today an over-40-char label passes tier-1, then 400s on PUT/evaluate with a misleading error.
+test('label_length: a whitespace-only label is an error naming it as unnamed', () => {
+  const rows = [
+    row({ label: '   ', anchor: fixed('07:00'), budgetPct: 30 }),
+    row({ label: 'Ebéd', anchor: fixed('13:00'), budgetPct: 40 }),
+    row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
+  ]
+  const { errors, warnings } = validateSlotPlan(rows, validCompiled, baseCtx)
+  expect(errors).toEqual([{ code: 'label_length', text: 'Van egy névtelen (üres nevű) étkezési ablak — adj neki nevet.' }])
+  expect(warnings).toEqual([])
+})
+
+test('label_length: a label over 40 characters is an error naming the offending label', () => {
+  const longLabel = 'A'.repeat(41)
+  const rows = [
+    row({ label: longLabel, anchor: fixed('07:00'), budgetPct: 30 }),
+    row({ label: 'Ebéd', anchor: fixed('13:00'), budgetPct: 40 }),
+    row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
+  ]
+  const { errors, warnings } = validateSlotPlan(rows, validCompiled, baseCtx)
+  expect(errors).toEqual([{ code: 'label_length', text: `„${longLabel}" neve túl hosszú — legfeljebb 40 karakter lehet.` }])
+  expect(warnings).toEqual([])
+})
+
+test('label_length: a 40-character label (exactly at the wire cap) is fine', () => {
+  const exactLabel = 'A'.repeat(40)
+  const rows = [
+    row({ label: exactLabel, anchor: fixed('07:00'), budgetPct: 30 }),
+    row({ label: 'Ebéd', anchor: fixed('13:00'), budgetPct: 40 }),
+    row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
+  ]
+  const { errors } = validateSlotPlan(rows, validCompiled, baseCtx)
+  expect(errors.map(e => e.code)).not.toContain('label_length')
+})
+
 test('out_of_span: a compiled window resolving before wake is an error', () => {
   const compiled = [
     win(300, { label: 'Reggeli', budgetPct: 30 }), // 05:00 — before wake (06:00/360)

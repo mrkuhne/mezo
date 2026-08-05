@@ -70,6 +70,103 @@ test('Testreszabás forks the recommendation into editable rows; an off-Σ pct s
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
 })
 
+// mezo-4ghd fix 1: mirrors the wire's SlotTemplateSlot.label maxLength:40 — an empty/whitespace
+// label is a save-blocking tier-1 error (label_length), and the input itself hard-caps at 40 chars.
+test('an emptied label shows the label_length error and disables Mentés', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+
+  const nameInputs = await screen.findAllByLabelText('Slot neve')
+  expect(nameInputs[0]).toHaveAttribute('maxLength', '40')
+  await userEvent.clear(nameInputs[0])
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('névtelen')
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
+})
+
+// mezo-4ghd fix 2: Budget % commits as a clamped integer (wire: integer 1..100, parseInt
+// semantics) — verified via the always-rendered Σ BUDGET pill, which reflects the committed
+// (not the raw typed) row values.
+test('Budget % commits a clamped integer: "12.5" truncates to 12, "0" clamps to 1', async () => {
+  const qc = newQc()
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => useSlotTemplateActions(), { wrapper })
+  await act(() => result.current.putTemplate(SAMPLE)) // Reggeli 40% / Ebéd 60%
+
+  renderPage(qc)
+  const pctInputs = await screen.findAllByLabelText('Budget %')
+
+  await userEvent.clear(pctInputs[0])
+  await userEvent.type(pctInputs[0], '12.5')
+  expect(await screen.findByText('72%')).toBeInTheDocument() // 12 (truncated) + 60
+
+  await userEvent.clear(pctInputs[1])
+  await userEvent.type(pctInputs[1], '0')
+  expect(await screen.findByText('13%')).toBeInTheDocument() // 12 + 1 (clamped)
+})
+
+// mezo-4ghd fix 3: the relative-anchor "Eltolás perc" input clamps its committed value into the
+// wire's [-720, 720] bounds.
+test('Eltolás perc clamps its committed value to ±720', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+
+  const anchorSelects = screen.getAllByLabelText('Horgony')
+  await userEvent.selectOptions(anchorSelects[0], 'wake')
+  const offsetInput = await screen.findByLabelText('Eltolás perc')
+
+  await userEvent.clear(offsetInput)
+  await userEvent.type(offsetInput, '900')
+  await waitFor(() => expect(offsetInput).toHaveValue('720'))
+
+  await userEvent.clear(offsetInput)
+  await userEvent.type(offsetInput, '-900')
+  await waitFor(() => expect(offsetInput).toHaveValue('-720'))
+})
+
+// mezo-4ghd fix 4: forking before the slot-templates GET resolves in real mode used to be able to
+// clobber a saved template that lands late (the `!forked` late-arrival sync never re-fires once a
+// fork has already set `forked=true`). Disabling Testreszabás while the GET is pending closes it
+// at the source.
+test('real mode: Testreszabás is disabled while the slot-templates GET is pending', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/fuel/slot-templates`, async () => {
+      await new Promise((r) => setTimeout(r, 50))
+      return HttpResponse.json({ templates: [] })
+    }),
+  )
+  const qc = newQc()
+  renderPage(qc)
+
+  expect(await screen.findByRole('button', { name: /Testreszabás/ })).toBeDisabled()
+  await waitFor(() => expect(screen.getByRole('button', { name: /Testreszabás/ })).toBeEnabled())
+})
+
+// mezo-4ghd fix 5: switching the day-type tab used to unconditionally reset `rows`/`forked`,
+// silently discarding an unsaved fork/edit. A per-day-type draft now survives the round trip.
+test('a fork + edit on one day type survives switching away and back', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+
+  const nameInputs = await screen.findAllByLabelText('Slot neve')
+  await userEvent.clear(nameInputs[0])
+  await userEvent.type(nameInputs[0], 'Egyedi Reggeli')
+
+  await userEvent.click(screen.getByRole('tab', { name: 'Reggeli edzés' }))
+  // training_am has no saved/forked template yet — the read-only recommended preview, not the
+  // (unrelated) editor.
+  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('tab', { name: 'Pihenőnap' }))
+  expect(await screen.findByDisplayValue('Egyedi Reggeli')).toBeInTheDocument()
+})
+
 test('fork + Mentés saves the template to the cache and navigates back', async () => {
   const qc = newQc()
   const wrapper = ({ children }: { children: ReactNode }) => (
