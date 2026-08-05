@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.MealSlotTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
 import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
@@ -83,7 +84,7 @@ import org.springframework.context.annotation.Import;
     CheckInPopulator.class,
     PantryItemPopulator.class, PantryImportPopulator.class,
     RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
-    FuelSettingsPopulator.class,
+    FuelSettingsPopulator.class, MealSlotTemplatePopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,

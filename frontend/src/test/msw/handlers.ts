@@ -872,6 +872,13 @@ export const handlers = [
   http.put(`${API_BASE}/api/fuel/settings`, async ({ request }) =>
     HttpResponse.json(await request.json())),
 
+  // Fuel meal-slot templates (mezo-7102) — honest-empty default list; PUT echoes the
+  // saved body under the path dayType, DELETE is a plain 204. Tests override with server.use().
+  http.get(`${API_BASE}/api/fuel/slot-templates`, () => HttpResponse.json({ templates: [] })),
+  http.put(`${API_BASE}/api/fuel/slot-templates/:dayType`, async ({ params, request }) =>
+    HttpResponse.json({ dayType: params.dayType, ...(await request.json() as object) })),
+  http.delete(`${API_BASE}/api/fuel/slot-templates/:dayType`, () => new HttpResponse(null, { status: 204 })),
+
   // Companion chat (V0.4) — fixtures mirror the mock seed (initialChat) so page/hook tests
   // assert the same strings in both modes. Tests exercise switch-off by overriding the
   // conversation list with a 404 (server.use).

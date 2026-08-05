@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -11,8 +12,13 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 const renderSheet = (onClose = vi.fn()) => {
-  render(<QueryWrapper><FuelSettingsSheet onClose={onClose} /></QueryWrapper>)
+  render(<MemoryRouter><QueryWrapper><FuelSettingsSheet onClose={onClose} /></QueryWrapper></MemoryRouter>)
   return onClose
+}
+
+const LocationProbe = () => {
+  const loc = useLocation()
+  return <div data-testid="location">{loc.pathname}</div>
 }
 
 describe('FuelSettingsSheet', () => {
@@ -36,6 +42,24 @@ describe('FuelSettingsSheet', () => {
     fireEvent.change(screen.getByLabelText('Koffein-cutoff'), { target: { value: '13:00' } })
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
     await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  test('navigates to /fuel/slots when clicking Étkezési ablakok szerkesztése', async () => {
+    const onClose = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/fuel']}>
+        <Routes>
+          <Route path="/fuel" element={<QueryWrapper><FuelSettingsSheet onClose={onClose} /></QueryWrapper>} />
+          <Route path="/fuel/slots" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    // click the button to trigger close + navigate
+    const button = screen.getByRole('button', { name: 'Étkezési ablakok szerkesztése' })
+    expect(button).toBeInTheDocument()
+    await userEvent.click(button)
+    // close() is called immediately, navigate() happens immediately; location changes before animation completes
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/fuel/slots'))
   })
 })
 

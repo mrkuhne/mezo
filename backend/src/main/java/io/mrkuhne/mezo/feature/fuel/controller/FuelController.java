@@ -8,8 +8,12 @@ import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemPatchRequest;
 import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
 import io.mrkuhne.mezo.api.dto.ProtocolViewResponse;
+import io.mrkuhne.mezo.api.dto.SlotTemplateListResponse;
+import io.mrkuhne.mezo.api.dto.SlotTemplateRequest;
+import io.mrkuhne.mezo.api.dto.SlotTemplateResponse;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
+import io.mrkuhne.mezo.feature.fuel.service.SlotTemplateService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -22,6 +26,7 @@ public class FuelController implements FuelApi {
 
     private final ProtocolService protocolService;
     private final IntakeService intakeService;
+    private final SlotTemplateService slotTemplateService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -57,5 +62,20 @@ public class FuelController implements FuelApi {
     @Override
     public void deleteProtocolItem(UUID id) {
         protocolService.deleteItem(currentUserId.get(), id);
+    }
+
+    @Override
+    public SlotTemplateListResponse listSlotTemplates() {
+        return slotTemplateService.list(currentUserId.get());
+    }
+
+    @Override
+    public SlotTemplateResponse putSlotTemplate(String dayType, SlotTemplateRequest slotTemplateRequest) {
+        return slotTemplateService.put(currentUserId.get(), dayType, slotTemplateRequest);
+    }
+
+    @Override
+    public void deleteSlotTemplate(String dayType) {
+        slotTemplateService.delete(currentUserId.get(), dayType);
     }
 }

@@ -27,6 +27,7 @@ import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
 import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
+import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { InsightsSection } from '@/features/insights/pages/InsightsSection'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
@@ -96,6 +97,9 @@ export const routes: RouteObject[] = [
       { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
+      // Meal-slot template editor (mezo-7102) — a full page, same sibling idiom as the recipe
+      // editor above (no Fuel sub-nav chrome).
+      { path: 'fuel/slots', element: <FuelSlotsPage /> },
       {
         path: 'insights',
         element: <InsightsSection />,

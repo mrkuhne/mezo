@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { useFuelSettings, useFuelSettingsActions } from '@/data/hooks'
@@ -8,6 +9,7 @@ const LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing
 
 /** Fuel planner settings editor (mezo-53su): eating cadence + caffeine cutoff. */
 export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate()
   const { settings, isPending } = useFuelSettings()
   const { setSettings, pending } = useFuelSettingsActions()
   const [mealsPerDay, setMealsPerDay] = useState(settings.mealsPerDay)
@@ -60,6 +62,11 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
               style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', colorScheme: 'dark' }} />
           </div>
           <span style={{ fontSize: 9, color: 'var(--faint)' }}>A cutoff a Mai chipet, a nap-tervet és a koffein-habitot is állítja.</span>
+
+          <button type="button" style={ROW} className="row" aria-label="Étkezési ablakok szerkesztése" onClick={() => { close(); navigate('/fuel/slots') }}>
+            <span style={LABEL}>Étkezési ablakok</span>
+            <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>szerkesztése <span aria-hidden="true">›</span></span>
+          </button>
 
           <button type="button" className="cta-primary" disabled={busy}
             style={{ opacity: busy ? 0.5 : 1 }} onClick={() => save(close)}>
