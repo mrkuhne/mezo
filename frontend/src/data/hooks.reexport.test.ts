@@ -3,6 +3,11 @@ import * as hooks from '@/data/hooks'
 import { useFuelDay as fromFuelHooks, useMealActions as actionsFromFuelHooks } from '@/data/fuel/fuelHooks'
 import { useIntakes as useIntakesFromStackHooks } from '@/data/fuel/stackHooks'
 import { useStackDay as useStackDayFromStackDayHooks } from '@/data/fuel/stackDayHooks'
+import {
+  useSlotTemplates as useSlotTemplatesFromSlotTemplateHooks,
+  useSlotTemplateActions as useSlotTemplateActionsFromSlotTemplateHooks,
+  useSlotTemplateEvaluation as useSlotTemplateEvaluationFromSlotTemplateHooks,
+} from '@/data/fuel/slotTemplateHooks'
 
 describe('hooks.ts re-exports the dual-mode fuel-day hooks', () => {
   it('useFuelDay is the fuelHooks implementation (not the retired one-liner)', () => {
@@ -26,5 +31,17 @@ describe('hooks.ts re-exports useStackDay (mezo-vx9v Task 8)', () => {
   it('useStackContext and useStackRecommendations are retired (Task 8 dead-code removal)', () => {
     expect('useStackContext' in hooks).toBe(false)
     expect('useStackRecommendations' in hooks).toBe(false)
+  })
+})
+
+describe('hooks.ts re-exports the slot-template hooks (mezo-7102 / mezo-e6a4)', () => {
+  it('useSlotTemplates is the slotTemplateHooks implementation', () => {
+    expect(hooks.useSlotTemplates).toBe(useSlotTemplatesFromSlotTemplateHooks)
+  })
+  it('useSlotTemplateActions is the slotTemplateHooks implementation', () => {
+    expect(hooks.useSlotTemplateActions).toBe(useSlotTemplateActionsFromSlotTemplateHooks)
+  })
+  it('useSlotTemplateEvaluation is the slotTemplateHooks implementation', () => {
+    expect(hooks.useSlotTemplateEvaluation).toBe(useSlotTemplateEvaluationFromSlotTemplateHooks)
   })
 })

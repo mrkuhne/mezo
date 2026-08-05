@@ -95,6 +95,78 @@ class SlotTemplateApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testPutSlotTemplate_shouldReject_whenFixedAnchorMissingTime() {
+        SlotTemplateRequest bad = SlotTemplateRequest.builder()
+            .slots(List.of(
+                slot("Reggeli", "breakfast", "standard", "fixed", null, null, 40),
+                slot("Vacsora", "dinner", "standard", "fixed", "19:00", null, 60)))
+            .build();
+
+        String body = putForBody("/api/fuel/slot-templates/rest", bad, ownerAuthHeaders(),
+            HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "slots", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testPutSlotTemplate_shouldReject_whenRelativeAnchorMissingOffsetMin() {
+        SlotTemplateRequest bad = SlotTemplateRequest.builder()
+            .slots(List.of(
+                slot("Reggeli", "breakfast", "standard", "wake", null, null, 40),
+                slot("Vacsora", "dinner", "standard", "fixed", "19:00", null, 60)))
+            .build();
+
+        String body = putForBody("/api/fuel/slot-templates/rest", bad, ownerAuthHeaders(),
+            HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "slots", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testPutSlotTemplate_shouldRoundTripEverySlotField_whenFixedAndRelativeSlotsPersisted() {
+        HttpHeaders auth = ownerAuthHeaders();
+        SlotTemplateRequest req = SlotTemplateRequest.builder()
+            .slots(List.of(
+                slot("Ebéd", "lunch", "standard", "fixed", "13:00", null, 55),
+                slot("Pre-workout snack", "snack", "pre_workout", "training_start", null, -45, 45)))
+            .build();
+
+        putForBody("/api/fuel/slot-templates/training_pm", req, auth, HttpStatus.OK, SlotTemplateResponse.class);
+
+        SlotTemplateListResponse listed =
+            getForBody("/api/fuel/slot-templates", auth, HttpStatus.OK, SlotTemplateListResponse.class);
+        SlotTemplateResponse fetched = listed.getTemplates().stream()
+            .filter(t -> t.getDayType() == SlotTemplateResponse.DayTypeEnum.TRAINING_PM)
+            .findFirst()
+            .orElseThrow();
+        assertThat(fetched.getSlots()).hasSize(2);
+
+        SlotTemplateSlot fetchedFixed = fetched.getSlots().stream()
+            .filter(s -> "Ebéd".equals(s.getLabel()))
+            .findFirst()
+            .orElseThrow();
+        assertThat(fetchedFixed.getLabel()).isEqualTo("Ebéd");
+        assertThat(fetchedFixed.getSlotKind()).isEqualTo("lunch");
+        assertThat(fetchedFixed.getRole()).isEqualTo("standard");
+        assertThat(fetchedFixed.getAnchorType()).isEqualTo("fixed");
+        assertThat(fetchedFixed.getTime()).isEqualTo("13:00");
+        assertThat(fetchedFixed.getOffsetMin()).isNull();
+        assertThat(fetchedFixed.getBudgetPct()).isEqualTo(55);
+
+        SlotTemplateSlot fetchedRelative = fetched.getSlots().stream()
+            .filter(s -> "Pre-workout snack".equals(s.getLabel()))
+            .findFirst()
+            .orElseThrow();
+        assertThat(fetchedRelative.getLabel()).isEqualTo("Pre-workout snack");
+        assertThat(fetchedRelative.getSlotKind()).isEqualTo("snack");
+        assertThat(fetchedRelative.getRole()).isEqualTo("pre_workout");
+        assertThat(fetchedRelative.getAnchorType()).isEqualTo("training_start");
+        assertThat(fetchedRelative.getTime()).isNull();
+        assertThat(fetchedRelative.getOffsetMin()).isEqualTo(-45);
+        assertThat(fetchedRelative.getBudgetPct()).isEqualTo(45);
+    }
+
+    @Test
     void testPutSlotTemplate_shouldReject_whenDayTypeUnknown() {
         SlotTemplateRequest req = SlotTemplateRequest.builder()
             .slots(List.of(
