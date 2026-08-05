@@ -1407,14 +1407,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    Bézier itself lives on in `logic/dayArc.ts`, redrawn by the Napzárás recap under
    the dark-canvas `.rz-arc-*` rules below. */
 
-/* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
-.greet { padding: 8px 24px 0; }
-.greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
-[data-day="reggel"] .greet-day { color: var(--amber-deep); }
+/* ===== Today greeting header — the page's Hero block (DS §Hero + text-h1 role,
+   mezo-setx.5.1): eyebrow date-line over the one-per-screen 36/700 h1. The em
+   accent keeps the daypart tint (accent/lav are large-text-safe at 36/700). ===== */
+.greet { padding: 10px 24px 0; }
+.greet-day { font: 700 12px/1.4 var(--ff-body); color: var(--text-secondary); letter-spacing: .22em; text-transform: uppercase; }
+[data-day="reggel"] .greet-day { color: var(--accent-deep); }
 [data-day="este"] .greet-day { color: var(--lav-deep); }
-.greet h1 { font-family: var(--ff-display); font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; color: var(--ink); }
-.greet h1 em { font-style: normal; color: var(--coral); }
-[data-day="reggel"] .greet h1 em { color: var(--amber); }
+.greet h1 { font-family: var(--ff-display); font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-top: 4px; color: var(--text-primary); text-wrap: balance; }
+.greet h1 em { font-style: normal; color: var(--primary-hover); }
+[data-day="reggel"] .greet h1 em { color: var(--accent-base); }
 [data-day="este"] .greet h1 em { color: var(--lav-deep); }
 
 /* ===== Napív Today hero =====
@@ -1423,7 +1425,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    card language's, worn across Today, Train and Fuel. */
 .h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
 .h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
-.typetag { display: inline-block; border-radius: 999px; padding: 5px 11px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.typetag { display: inline-block; border-radius: var(--r-sm); padding: 3px 8px; font-size: 10px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; }
 .typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
 .typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .typetag-run { background: var(--wash-run); color: var(--tag-run); }
@@ -1432,18 +1434,29 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .typetag-body { background: var(--wash-sage); color: var(--sage-deep); }
 .typetag-mind { background: var(--wash-lav); color: var(--lav-deep); }
 .typetag-fuel { background: var(--wash-amber); color: var(--amber-deep); }
-.warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
-:root[data-theme="dark"] .warmstrip { color: #E8B36B; }
+/* the niggle strip — the DS warning Alert idiom, token-only (both themes flip via the ramp) */
+.warmstrip { display: flex; align-items: center; gap: 10px; background: var(--warning-bg); border: 1px solid var(--warning-soft); border-radius: var(--r-lg); padding: 10px 12px; font: 500 13px/1.45 var(--ff-body); color: var(--warning-deep); margin-top: 12px; }
 .np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
 .np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 
 /* `.np-eventrow*` retired with `VolleyballCard`, `.alt-btn` with `WorkoutTeaser`'s
    details button (mezo-j7u4): the day face's sport hero is the shared `.todaycard`. */
 
-/* ===== Napív briefing collapse (BriefingCard, spec §Task 5) ===== */
-.brief { display: flex; gap: 10px; background: var(--warm); border-radius: 20px; padding: 13px 15px; margin-top: 12px; }
-.brief-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
-.brief-more { border: 0; background: none; cursor: pointer; font: inherit; color: var(--coral-deep); font-weight: 800; white-space: nowrap; font-size: 12px; align-self: flex-end; }
+/* ===== Briefing bubble — the CoachBubble-dressed briefing (mezo-setx.5.1) =====
+   The shell is `shared/ui/CoachBubble` (`.coach-bubble`); these are its briefing-only
+   children: the collapsed clamp row, the lead/rest paragraph pair (coach voice over
+   body prose), the refs row and the meta+toggle foot. */
+.brief-bubble, .today-note { margin: 0 24px 16px; }
+.brief { display: flex; gap: 10px; align-items: flex-end; }
+.brief-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.brief-more { border: 0; background: none; cursor: pointer; font: 700 14px/1 var(--ff-body); color: var(--primary-deep); white-space: nowrap; padding: 8px 2px; align-self: flex-end; }
+.briefing-body { display: flex; flex-direction: column; gap: 10px; }
+/* the lead inherits the .cb-body coach voice; the remaining paragraphs step down to body */
+.brief-rest { font: 400 16px/1.55 var(--ff-body); letter-spacing: 0; color: var(--text-primary); }
+.brief-refs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--primary-base) 18%, transparent); }
+.brief-refs-l { font: 700 10px/1 var(--ff-body); letter-spacing: .18em; text-transform: uppercase; color: var(--primary-deep); }
+.brief-foot { display: flex; align-items: baseline; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.brief-meta { font: 600 11px/1.2 var(--ff-body); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 /* The `.beats`/`.beat*` heartbeat strip retired with `CheckInStrip` (mezo-j7u4) — the
    check-in slots are ordinary `.itemrow`s inside their face's TodoCard now. */
@@ -1505,7 +1518,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 /* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
    Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
-.metapill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: var(--sub); background: var(--warm); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.metapill { display: inline-flex; align-items: center; border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--text-secondary); background: var(--surface-recess); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ===== Napív day strip — Mai's week navigator (mezo-9bbc) ===== */
 .daystrip { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 24px 6px; }
@@ -1579,7 +1592,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* ===== Napív today session card (Mai — sport/run, mezo-lruy; K3 language mezo-9bbc) =====
    The gym hero's lighter sibling: icon shield + eyebrow → title → fact pills →
    full-width CTA, tinted per modality via --tc-accent/--tc-wash. */
-.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(150deg, var(--tc-wash), var(--surface) 78%); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(165deg, var(--tc-wash), var(--surface-card) 72%); border: 1px solid color-mix(in srgb, var(--tc-accent) 16%, transparent); border-radius: var(--r-2xl); padding: var(--sp-4); margin: 0 24px 16px; box-shadow: var(--shadow-sm); }
 .todaycard-gym { --tc-accent: var(--tag-gym); --tc-wash: var(--wash-gym); }
 .todaycard-sport { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); }
 .todaycard-cross { --tc-accent: var(--tag-cross); --tc-wash: var(--wash-cross); }
@@ -1589,152 +1602,155 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .todaycard-mind { --tc-accent: var(--lav-deep);  --tc-wash: var(--wash-lav); }
 .todaycard-fuel { --tc-accent: var(--amber-deep); --tc-wash: var(--wash-amber); }
 .todaycard.logged { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
-.todaycard-top { display: flex; align-items: flex-start; gap: 11px; }
-.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: 15px; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
-.todaycard.logged .todaycard-icon { background: var(--sage-deep); color: var(--surface); }
-.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
-.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
-.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); }
-.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--surface); }
-.todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
-.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--surface); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
+.todaycard-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: var(--r-lg); background: var(--surface-card); box-shadow: var(--shadow-xs); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
+.todaycard.logged .todaycard-icon { background: var(--success-base); color: var(--text-inverse); }
+.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.todaycard-time { font-size: 14px; font-weight: 600; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
+.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; color: var(--text-primary); }
+.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: var(--r-full); padding: 4px 10px; font-size: 10px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--tc-accent); background: var(--surface-card); border: 1px solid color-mix(in srgb, var(--tc-accent) 20%, transparent); }
+.todaycard-pills { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 12px 16px; min-height: 48px; border-radius: var(--r-full); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--tc-accent); background: var(--surface-card); border: 1px solid color-mix(in srgb, var(--tc-accent) 28%, transparent); }
 /* --- Emitted by ItemCard *children*, not by ItemCard itself (mezo-j7u4) --------------------
    The card language's prose slots: `-note` is the sentence that carries the WHY / provenance
    (RitualCard's window framing, WindDownBanner's Walker citation), `-tip*` the explanatory
    advice lines, `-rows` nests shared `ItemRow`s inside the card (the `.tdc .itemrow` idiom).
    No existing rule covers standalone card prose — `.itemrow-t2`, `.donebar-detail` and
    `.fhc-next-tx s` are all structural children of other primitives. */
-.todaycard-note { margin-top: 11px; font: 500 12px/1.55 var(--ff-body); color: var(--sub); }
-.todaycard-note b { color: var(--sage-deep); font-weight: 700; }
-.todaycard-tips { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
-.todaycard-tip { display: flex; align-items: center; gap: 10px; font: 500 12.5px/1.45 var(--ff-body); color: var(--sub); }
-.todaycard-tip b { color: var(--ink); font-weight: 700; }
-.todaycard-tip-ic { flex: none; width: 30px; height: 30px; border-radius: 10px; background: var(--surface);
+.todaycard-note { margin-top: 12px; font: 500 13px/1.55 var(--ff-body); color: var(--text-secondary); }
+.todaycard-note b { color: var(--success-hover); font-weight: 700; }
+.todaycard-tips { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.todaycard-tip { display: flex; align-items: center; gap: 10px; font: 500 13px/1.5 var(--ff-body); color: var(--text-secondary); }
+.todaycard-tip b { color: var(--text-primary); font-weight: 700; }
+.todaycard-tip-ic { flex: none; width: 30px; height: 30px; border-radius: var(--r-md); background: var(--surface-card);
   display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
 .todaycard-rows { margin-top: 10px; }
-.todaycard-rows .itemrow { margin: 0; padding: 8px 4px; background: transparent; box-shadow: none; }
+.todaycard-rows .itemrow { width: 100%; margin: 0; padding: 8px 4px; background: transparent; box-shadow: none; border-color: transparent; }
 
 /* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
-.donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: var(--wash-sage); border: 0; font-family: inherit; text-align: left; cursor: inherit; }
-.donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--sage-deep); color: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
-.donebar-txt { font-size: 12px; font-weight: 800; color: var(--sage-deep); }
-.donebar-detail { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 700; color: var(--sub); letter-spacing: 0; text-transform: none; }
+.donebar { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: var(--r-lg); background: var(--success-bg); border: 1px solid var(--success-soft); font-family: inherit; text-align: left; cursor: inherit; }
+.donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--success-base); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; }
+.donebar-txt { font-size: 13px; font-weight: 700; color: var(--success-hover); }
+.donebar-detail { display: block; margin-top: 1px; font-size: 12px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0; text-transform: none; }
 /* The tappable variant is a <button> (the whole bar opens the review / re-opens the
    log sheet) — the inherited cursor left it without a pointer (mezo-9bbc review). */
 button.donebar { cursor: pointer; }
 
-/* ===== ItemRow — the compact ItemCard sibling (mezo-jyua) ===== */
-.itemrow { --ir-a: var(--coral-deep); display: flex; align-items: center; gap: 11px; width: 100%;
-  padding: 11px 13px; border-radius: 18px; background: var(--surface); box-shadow: var(--np-shadow-row);
-  margin: 0 24px 8px; border: 0; font-family: inherit; text-align: left; }
+/* ===== ItemRow — the canonical DS ListItem (mezo-jyua; DS spec mezo-setx.5.1) =====
+   Leading 40×40 tone-tinted icon shield (domain tint on an icon = legal data-viz band)
+   → 16/600 title + 14/400 subtitle → trailing time / action pill / `↗` link.
+   56 px minimum row height; the tone accent rides the --ir-a custom property. */
+.itemrow { --ir-a: var(--primary-deep); display: flex; align-items: center; gap: var(--sp-3);
+  width: calc(100% - 48px); min-height: 56px; padding: 10px 14px; border-radius: var(--r-lg);
+  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-xs);
+  margin: 0 24px 8px; font-family: inherit; text-align: left; }
 .itemrow-gym   { --ir-a: var(--tag-gym); }
 .itemrow-sport { --ir-a: var(--tag-sport); }
 .itemrow-cross { --ir-a: var(--tag-cross); }
 .itemrow-trx   { --ir-a: var(--tag-trx); }
 .itemrow-run   { --ir-a: var(--tag-run); }
-.itemrow-body  { --ir-a: var(--sage-deep); }
+.itemrow-body  { --ir-a: var(--success-hover); }
 .itemrow-mind  { --ir-a: var(--lav-deep); }
-.itemrow-fuel  { --ir-a: var(--amber-deep); }
-.itemrow-ic { flex: none; width: 34px; height: 34px; border-radius: 12px; display: inline-flex;
-  align-items: center; justify-content: center; font-size: 15px;
-  background: color-mix(in srgb, var(--ir-a) 13%, var(--surface)); }
+.itemrow-fuel  { --ir-a: var(--accent-deep); }
+.itemrow-ic { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center; font-size: 17px;
+  background: color-mix(in srgb, var(--ir-a) 12%, var(--surface-card)); }
 .itemrow-tx { flex: 1; min-width: 0; display: block; }
-.itemrow-t1 { display: block; font-size: 13.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
-.itemrow-t2 { display: block; font-size: 10.5px; font-weight: 700; color: var(--sub); margin-top: 2px; }
-.itemrow-tm { flex: none; font-size: 11.5px; font-weight: 800; color: var(--ir-a); font-variant-numeric: tabular-nums; }
-.itemrow-act { flex: none; border-radius: 11px; padding: 8px 12px; font-size: 11px; font-weight: 800;
-  font-family: inherit; cursor: pointer; color: var(--ir-a); border: 0;
-  background: color-mix(in srgb, var(--ir-a) 11%, var(--surface)); }
-.itemrow-act.is-inert { cursor: default; color: var(--faint); background: var(--warm); }
+.itemrow-t1 { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.itemrow-t2 { display: block; font-size: 14px; font-weight: 400; color: var(--text-secondary); line-height: 1.35; margin-top: 2px; }
+.itemrow-tm { flex: none; font-size: 14px; font-weight: 600; color: var(--ir-a); font-variant-numeric: tabular-nums; }
+.itemrow-act { flex: none; border-radius: var(--r-full); padding: 9px 14px; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer; color: var(--text-primary); border: 1px solid var(--divider);
+  background: var(--surface-recess); white-space: nowrap; }
+.itemrow-act.is-inert { cursor: default; color: var(--text-disabled); background: var(--surface-recess); border-color: transparent; }
 /* Whole-row-button shape with a link: the hit area is an INNER button so the <a> is its
    sibling, never its descendant. */
-.itemrow-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px;
+.itemrow-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-3);
   background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit;
   text-align: left; cursor: pointer; }
 /* The item's own external content — sits NEXT TO the action pill, never instead of it. */
-.itemrow-link { flex: none; width: 30px; height: 30px; border-radius: 11px; display: inline-flex;
-  align-items: center; justify-content: center; text-decoration: none; font-size: 13px;
-  font-weight: 800; color: var(--ir-a); background: var(--warm); }
-.itemrow.is-done { background: transparent; box-shadow: none; }
-.itemrow.is-done .itemrow-t1 { color: var(--sub); }
-.itemrow.is-done .itemrow-ic { background: var(--sage-deep); color: var(--surface); }
+.itemrow-link { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center; text-decoration: none; font-size: 14px;
+  font-weight: 700; color: var(--ir-a); background: var(--surface-recess); }
+.itemrow.is-done { background: transparent; box-shadow: none; border-color: transparent; }
+.itemrow.is-done .itemrow-t1 { color: var(--text-secondary); }
+.itemrow.is-done .itemrow-ic { background: var(--success-base); color: var(--text-inverse); }
 button.itemrow { cursor: pointer; }
 
-/* ===== DayFaceStrip — Today's daypart navigator (mezo-j7u4) ===== */
-.dfs { display: flex; gap: 8px; padding: 6px 24px 12px; }
-.dfs-pill { flex: 1; border-radius: 16px; padding: 10px 6px 9px; text-align: center;
-  background: var(--surface); box-shadow: var(--np-shadow-row); border: 1.5px solid transparent;
-  font-family: inherit; cursor: pointer; transition: background .26s var(--np-ease-ios), border-color .26s var(--np-ease-ios); }
-.dfs-e { display: block; font-size: 15px; }
-.dfs-l { display: block; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--faint); margin-top: 3px; }
-.dfs-c { display: block; font-size: 9.5px; font-weight: 800; color: var(--sage-deep); margin-top: 2px;
+/* ===== DayFaceStrip — Today's daypart navigator (mezo-j7u4; DS tab idiom mezo-setx.5.1):
+   selected = ink-filled, the clock's face = primary ring, counters in the status voice. ===== */
+.dfs { display: flex; gap: var(--sp-2); padding: 6px 24px 14px; }
+.dfs-pill { flex: 1; min-height: 48px; border-radius: var(--r-lg); padding: 10px 6px 9px; text-align: center;
+  background: var(--surface-card); box-shadow: var(--shadow-xs); border: 1.5px solid var(--divider);
+  font-family: inherit; cursor: pointer; transition: background var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
+.dfs-e { display: block; font-size: 16px; }
+.dfs-l { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-secondary); margin-top: 3px; }
+.dfs-c { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 2px;
   font-variant-numeric: tabular-nums; }
-.dfs-pill.now { border-color: var(--coral); }
-.dfs-pill.now .dfs-l { color: var(--coral-deep); }
-.dfs-pill.sel { background: var(--ink); border-color: var(--ink); }
-.dfs-pill.sel .dfs-l { color: color-mix(in srgb, var(--surface) 72%, transparent); }
-.dfs-pill.sel .dfs-c { color: color-mix(in srgb, var(--surface) 82%, transparent); }
-.dfs-pill.sel.now { box-shadow: 0 0 0 2px var(--coral); }
+.dfs-pill.has-open .dfs-c { color: var(--success-hover); }
+.dfs-pill.now { border-color: var(--primary-base); }
+.dfs-pill.now .dfs-l { color: var(--primary-deep); }
+.dfs-pill.sel { background: var(--secondary-hover); border-color: var(--secondary-hover); }
+.dfs-pill.sel .dfs-l { color: color-mix(in srgb, var(--surface-card) 75%, transparent); }
+.dfs-pill.sel .dfs-c, .dfs-pill.sel.has-open .dfs-c { color: color-mix(in srgb, var(--surface-card) 85%, transparent); }
+.dfs-pill.sel.now { box-shadow: 0 0 0 2px var(--primary-base); }
 
 /* ===== TodoCard — the merged actionable card of a face (mezo-j7u4) ===== */
-.tdc { margin: 0 24px 12px; padding: 14px 6px 8px; border-radius: 24px; background: var(--surface);
-  box-shadow: var(--np-shadow-row); }
-.tdc-hd { display: flex; align-items: center; padding: 0 10px; margin-bottom: 9px; }
-.tdc-hd-l { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.tdc-hd-r { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
+.tdc { margin: 0 24px 16px; padding: 14px 8px 10px; border-radius: var(--r-2xl); background: var(--surface-card);
+  border: 1px solid var(--divider); box-shadow: var(--shadow-sm); }
+.tdc-hd { display: flex; align-items: center; padding: 0 10px; margin-bottom: 10px; }
+.tdc-hd-l { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+.tdc-hd-r { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--success-hover);
   font-variant-numeric: tabular-nums; }
-.tdc-bar { height: 5px; border-radius: 999px; background: var(--warm); overflow: hidden; margin: 0 10px 12px; }
-.tdc-bar i { display: block; height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, var(--coral), var(--amber)); }
+.tdc-bar { height: 6px; border-radius: var(--r-full); background: var(--surface-recess); overflow: hidden; margin: 0 10px 12px; }
+.tdc-bar i { display: block; height: 100%; border-radius: var(--r-full); background: var(--success-base); }
 /* The header's right cell as a link into quest management (mezo-j7u4 fix round 1). */
-.tdc-hd-go { text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
-.tdc-grp { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--faint); margin: 10px 10px 6px; }
+.tdc-hd-go { text-decoration: none; display: inline-flex; align-items: center; gap: 3px; color: var(--accent-deep); }
+.tdc-grp { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text-muted); margin: 12px 10px 6px; }
 /* Companion line for the plan the rows belong to — the retired fuel preview's sparkle row. */
-.tdc-note { display: flex; gap: 8px; margin: 10px 10px 4px; padding-top: 9px;
-  border-top: 1px solid var(--line); font: 500 11.5px/1.5 var(--ff-body); color: var(--sub); }
-.tdc-note b { color: var(--coral-deep); font-weight: 800; font-variant-numeric: tabular-nums; }
-/* Inside the card the rows lose the standalone row's outer margin + shadow. */
-.tdc .itemrow { margin: 0 4px 4px; box-shadow: none; background: transparent; padding: 9px; }
+.tdc-note { display: flex; gap: 8px; margin: 10px 10px 4px; padding-top: 10px;
+  border-top: 1px solid var(--divider); font: 500 13px/1.5 var(--ff-body); color: var(--text-secondary); }
+.tdc-note b { color: var(--primary-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Inside the card the rows lose the standalone row's outer margin + border + shadow. */
+.tdc .itemrow { width: calc(100% - 4px); margin: 0 2px 4px; box-shadow: none; background: transparent; border-color: transparent; padding: 8px; }
 .tdc .itemrow.is-done { background: transparent; }
 
-/* ===== FaceHeroCard extras (mezo-j7u4) ===== */
-.fhc-bar { height: 5px; border-radius: 999px; background: rgba(255,255,255,.72); margin-top: 12px; overflow: hidden; }
-.fhc-bar i { display: block; height: 100%; border-radius: 999px; background: var(--tc-accent); }
-.fhc-next { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 11px 12px;
-  border-radius: 15px; background: rgba(255,255,255,.80); }
-:root[data-theme="dark"] .fhc-next { background: rgba(255,255,255,.07); }
+/* ===== FaceHeroCard extras (mezo-j7u4) — token-only, both themes via color-mix ===== */
+.fhc-bar { height: 6px; border-radius: var(--r-full); background: color-mix(in srgb, var(--surface-card) 72%, transparent); margin-top: 12px; overflow: hidden; }
+.fhc-bar i { display: block; height: 100%; border-radius: var(--r-full); background: var(--tc-accent); }
+.fhc-next { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 11px 12px;
+  border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface-card) 80%, transparent); }
 .fhc-next-tx { flex: 1; min-width: 0; }
-.fhc-next-tx b { display: block; font-size: 13px; font-weight: 800; color: var(--ink); }
-.fhc-next-tx s { display: block; text-decoration: none; font-size: 10.5px; font-weight: 700;
-  color: var(--sub); margin-top: 1px; }
-.fhc-next-go { flex: none; border-radius: 12px; padding: 9px 14px; font-size: 11.5px; font-weight: 800;
-  font-family: inherit; cursor: pointer; border: 0; color: var(--surface); background: var(--tc-accent); }
-.fhc-next-link { flex: none; width: 32px; height: 32px; border-radius: 12px; display: inline-flex;
-  align-items: center; justify-content: center; text-decoration: none; font-size: 13px;
-  font-weight: 800; color: var(--tc-accent); background: rgba(255,255,255,.72); }
-:root[data-theme="dark"] .fhc-next-link { background: rgba(255,255,255,.10); }
+.fhc-next-tx b { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.fhc-next-tx s { display: block; text-decoration: none; font-size: 14px; font-weight: 400;
+  color: var(--text-secondary); margin-top: 2px; }
+.fhc-next-go { flex: none; border-radius: var(--r-full); padding: 10px 16px; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer; border: 0; color: var(--text-inverse); background: var(--text-primary); }
+.fhc-next-link { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center; text-decoration: none; font-size: 14px;
+  font-weight: 700; color: var(--tc-accent); background: color-mix(in srgb, var(--surface-card) 72%, transparent); }
 /* in-flight write: the CTA is withdrawn to inert copy, never left clickable (ItemRow's rule) */
-.fhc-next-go.is-inert { background: var(--warm); color: var(--faint); cursor: default; }
+.fhc-next-go.is-inert { background: var(--surface-recess); color: var(--text-disabled); cursor: default; }
 
 /* ===== DoneFold (mezo-j7u4) ===== */
-.donefold { margin: 4px 24px 12px; }
-.donefold-hd { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px;
-  border-radius: 16px; border: 1.5px dashed var(--line); background: transparent; font-family: inherit;
-  font-size: 11.5px; font-weight: 800; color: var(--sub); cursor: pointer; }
-.donefold-c { margin-left: auto; color: var(--sage-deep); font-variant-numeric: tabular-nums; }
-.donefold-ch { color: var(--faint); }
-.donefold .itemrow { margin: 6px 0 0; }
+.donefold { margin: 4px 24px 16px; }
+.donefold-hd { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 12px 14px;
+  border-radius: var(--r-lg); border: 1.5px dashed var(--divider); background: transparent; font-family: inherit;
+  font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+.donefold-c { margin-left: auto; color: var(--success-hover); font-variant-numeric: tabular-nums; }
+.donefold-ch { color: var(--text-disabled); }
+.donefold .itemrow { width: 100%; margin: 6px 0 0; }
 
 /* ===== Face section line + day XP (mezo-j7u4) ===== */
-.zoneline { display: flex; align-items: center; gap: 9px; padding: 16px 24px 8px; }
-.zoneline span { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--faint); white-space: nowrap; }
-.zoneline i { flex: 1; height: 1px; background: var(--line); }
-.dayxp { margin: 8px 24px 20px; padding: 12px 14px; border-radius: 16px; background: var(--warm);
-  font-size: 12px; font-weight: 700; color: var(--sub); text-align: center; }
-.dayxp b { color: var(--sage-deep); font-variant-numeric: tabular-nums; }
+.zoneline { display: flex; align-items: center; gap: 10px; padding: 16px 24px 8px; }
+.zoneline span { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-muted); white-space: nowrap; }
+.zoneline i { flex: 1; height: 1px; background: var(--divider); }
+.dayxp { margin: 8px 24px 20px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--surface-recess);
+  font-size: 14px; font-weight: 600; color: var(--text-secondary); text-align: center; }
+.dayxp b { color: var(--success-hover); font-variant-numeric: tabular-nums; }
 
 /* ===== Today face-swap motion (mezo-1khu) ===== */
 /* The incoming face rebuilds with the np-rise family's rhythm; direction is carried by a
@@ -1753,7 +1769,7 @@ button.itemrow { cursor: pointer; }
    .faceswap-family selector tied at (0,1,0), so the LATER (reduce-block) declaration wins
    on every longhand via normal source-order tie-break — a structural guarantee, not a
    specificity race that the next added selector could silently re-break. */
-.faceswap > * { opacity: 0; animation-duration: .5s; animation-timing-function: var(--np-ease-ios);
+.faceswap > * { opacity: 0; animation-duration: var(--duration-slow); animation-timing-function: var(--ease-out);
   animation-fill-mode: forwards; }
 .faceswap:where([data-dir="fwd"]) > * { animation-name: face-in-fwd; }
 .faceswap:where([data-dir="back"]) > * { animation-name: face-in-back; }
@@ -2234,36 +2250,60 @@ button.itemrow { cursor: pointer; }
 .intent-creed { font: 500 13.5px/1.45 var(--ff-body); color: var(--sub); font-style: italic; }
 
 /* ===== Intention creed chip (mezo-j7u4) ===== */
-.creedchip { margin: 0 24px 12px; padding: 10px 13px; border-radius: 16px;
-  background: color-mix(in srgb, var(--lav) 11%, transparent); }
-.creedchip-hd { display: flex; gap: 9px; align-items: center; }
+.creedchip { margin: 0 24px 16px; padding: 12px 14px; border-radius: var(--r-lg);
+  background: var(--wash-lav); }
+.creedchip-hd { display: flex; gap: 10px; align-items: center; }
 .creedchip-st { color: var(--lav-deep); font-size: 13px; }
-.creedchip-cnt { flex: none; font-size: 9.5px; font-weight: 800; letter-spacing: .04em;
-  color: var(--text-quaternary); font-variant-numeric: tabular-nums; }
+.creedchip-cnt { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  color: var(--text-muted); font-variant-numeric: tabular-nums; }
 /* the day's stated intentions — the `◆` prose rows the retired `.fx` list used */
-.creedchip-foci { margin-top: 9px; display: flex; flex-direction: column; gap: 6px; }
-.creedchip-fx { display: flex; gap: 8px; align-items: flex-start; font: 600 12px/1.35 var(--ff-body); color: var(--ink); }
-.creedchip-fx-mark { flex: 0 0 auto; color: var(--lav-deep); font-size: 9px; line-height: 1.6; }
-.creedchip-tx { flex: 1; min-width: 0; text-align: left; font-size: 11.5px; font-style: italic;
-  color: var(--lav-deep); line-height: 1.4; font-family: inherit; }
+.creedchip-foci { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.creedchip-fx { display: flex; gap: 8px; align-items: flex-start; font: 500 14px/1.4 var(--ff-body); color: var(--text-primary); }
+.creedchip-fx-mark { flex: 0 0 auto; color: var(--lav-deep); font-size: 9px; line-height: 1.8; }
+/* the creed is a quote — narrative meta-text, so it speaks Fraunces italic (DS text-meta-sm) */
+.creedchip-tx { flex: 1; min-width: 0; text-align: left; font: italic 500 14px/1.45 var(--ff-serif);
+  color: var(--lav-deep); }
 /* the creed text doubles as the CreedSheet opener — a button, stripped back to plain text */
 button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; }
-.creedchip-go { flex: none; font-size: 10px; font-weight: 800; color: var(--lav-deep); border: 0;
-  border-radius: 999px; padding: 5px 9px; font-family: inherit; cursor: pointer;
-  background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.creedchip-go { flex: none; font-size: 12px; font-weight: 700; color: var(--lav-deep); border: 0;
+  border-radius: var(--r-full); padding: 7px 11px; font-family: var(--ff-body); font-style: normal; cursor: pointer;
+  background: color-mix(in srgb, var(--surface-card) 70%, transparent); white-space: nowrap; }
 
-/* evening reflect */
-.reflect { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
-.reflect-q { font: 700 11.5px/1.3 var(--ff-body); color: var(--sub); margin-bottom: 8px; }
+/* evening reflect — the intention question as its own card */
+.reflect { margin: 0 24px 16px; padding: 14px; border-radius: var(--r-lg);
+  background: var(--surface-card); border: 1px solid var(--divider); }
+.reflect-q { font: 600 14px/1.4 var(--ff-body); color: var(--text-primary); margin-bottom: 10px; }
 .reflect-opts { display: flex; gap: 8px; }
 .reflect-opt {
-  flex: 1; padding: 9px 6px; border-radius: 12px; font: 700 12px/1 var(--ff-body); color: var(--sub);
-  background: var(--warm); text-align: center;
+  flex: 1; min-height: 44px; padding: 10px 6px; border: 0; border-radius: var(--r-md);
+  font: 700 13px/1 var(--ff-body); color: var(--text-secondary); font-family: inherit;
+  background: var(--surface-recess); text-align: center; cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
-.reflect-opt.on-yes { background: var(--wash-sage); color: var(--sage-deep); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sage) 45%, transparent); }
-.reflect-done { display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1.3 var(--ff-body); color: var(--sage-deep);
-  background: var(--wash-sage); padding: 8px 12px; border-radius: 12px; margin-top: 12px; }
+.reflect-opt:active { transform: scale(.97); }
+.reflect-opt.on-yes { background: var(--success-bg); color: var(--success-hover); box-shadow: inset 0 0 0 1.5px var(--success-soft); }
+.reflect-done { display: inline-flex; align-items: center; gap: 6px; font: 700 13px/1.35 var(--ff-body); color: var(--success-hover);
+  background: var(--success-bg); border: 1px solid var(--success-soft); padding: 9px 12px; border-radius: var(--r-md); }
 .reflect-done svg { width: 14px; height: 14px; }
+
+/* ===== StatStrip — the DS 3-cell glance strip (shared/ui/StatStrip, mezo-setx.5.1) ===== */
+.statstrip { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1px;
+  background: var(--divider); border: 1px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
+.statstrip-c { background: var(--surface-card); padding: 10px; text-align: center; }
+.statstrip-v { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05;
+  color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.statstrip-u { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+.statstrip-l { font-size: 9px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-muted); margin-top: 2px; }
+/* Today's „Ma eddig" placement (FaceMorning) */
+.today-stats { margin: 0 24px 16px; }
+
+/* ===== VulnerabilityCard — the coral info-Alert tone notice (mezo-setx.5.1) ===== */
+.vuln { margin: 0 24px 16px; padding: 12px 14px; border-radius: var(--r-lg);
+  background: var(--primary-bg); border: 1px solid var(--primary-soft); }
+.vuln-eyebrow { font: 700 12px/1.4 var(--ff-body); letter-spacing: .22em; text-transform: uppercase;
+  color: var(--primary-deep); }
+.vuln p { font: 500 13px/1.55 var(--ff-body); color: var(--text-primary); margin-top: 6px; }
 
 /* ===== WindDownBanner — the Today evening/night band (mezo-d71m, spec D2/D3) =====
    The dim/winddown phases wear the shared `ItemCard` since mezo-j7u4, so the light-surface

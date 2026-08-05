@@ -7,7 +7,7 @@ test('collapsed by default: shows only the first paragraph and a bővebben butto
   const { container } = render(<BriefingCard briefing={b} />)
   expect(screen.getByText(/Jó reggelt/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'bővebben' })).toBeInTheDocument()
-  expect(container.querySelector('.brief-clamp')).toBeTruthy() // the two-line clamp
+  expect(container.querySelector('.brief-clamp')).toBeTruthy() // the clamped preview
   expect(container.querySelectorAll('.toolchip').length).toBe(0)
   expect(screen.queryByText(/Confidence/)).not.toBeInTheDocument()
 })
@@ -17,7 +17,7 @@ test('clicking bővebben expands to the full card: confidence, bold via <strong>
   const { container } = render(<BriefingCard briefing={b} />)
   fireEvent.click(screen.getByRole('button', { name: 'bővebben' }))
   expect(screen.getByText(/Confidence/)).toBeInTheDocument()
-  expect(container.querySelector('.todaycard.todaycard-mind')).toBeTruthy() // the shared ItemCard shell
+  expect(container.querySelector('.coach-bubble')).toBeTruthy() // the DS CoachBubble shell
   expect(container.querySelector('.briefing-body strong')).toBeTruthy()
   expect(container.querySelectorAll('.toolchip').length).toBeGreaterThan(0)
   expect(screen.getByRole('button', { name: 'összecsuk' })).toBeInTheDocument()
@@ -59,17 +59,17 @@ test('demo mode replaces the fabricated confidence % with the honest „Demo tar
   expect(screen.queryByText(/Confidence/)).not.toBeInTheDocument()
 })
 
-test('the eyebrow tag carries briefing.eyebrow, and the card renders NO heading (its prose is the body)', () => {
+test('the bubble eyebrow carries briefing.eyebrow (fallback when empty) and renders no heading', () => {
   const { container } = render(<BriefingCard briefing={{ eyebrow: '', body: [{ type: 'p', text: 'x' }], refs: [] }} />)
   expect(screen.getByText('Mezo · reggeli briefing')).toBeInTheDocument() // empty eyebrow -> fallback
-  expect(container.querySelector('.todaycard-title')).toBeNull()
+  expect(container.querySelector('h3')).toBeNull()
+  expect(container.querySelector('.todaycard')).toBeNull() // no longer an ItemCard re-dress
 })
 
-test('caller-supplied facts render as metapills; none by default', () => {
-  const b = resolveBriefing('good')
-  const { container, rerender } = render(<BriefingCard briefing={b} />)
-  expect(container.querySelectorAll('.metapill')).toHaveLength(0)
-  rerender(<BriefingCard briefing={b} facts={['alvás 7.2h', null, 'súly 78.6']} />)
-  expect(container.querySelectorAll('.metapill')).toHaveLength(2)
-  expect(screen.getByText('alvás 7.2h')).toBeInTheDocument()
+test('expanded: the lead keeps the coach voice, the remaining paragraphs step down to body prose', () => {
+  const b = resolveBriefing('medium') // the 3-paragraph base briefing
+  const { container } = render(<BriefingCard briefing={b} />)
+  fireEvent.click(screen.getByRole('button', { name: 'bővebben' }))
+  expect(container.querySelectorAll('.brief-lead')).toHaveLength(1)
+  expect(container.querySelectorAll('.brief-rest')).toHaveLength(b.body.length - 1)
 })

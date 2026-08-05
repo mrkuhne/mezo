@@ -61,7 +61,8 @@ export function IntentionBanner({ variant }: { variant: 'chip' | 'reflect' }) {
               „{data.creed}"
             </button>
           ) : (
-            <span className="creedchip-tx" style={{ fontStyle: 'normal' }}>
+            // empty-state subtitle voice: Fraunces italic (DS text-meta-sm) — no override
+            <span className="creedchip-tx">
               Fogalmazd meg az irányt, ami a döntéseidet vezeti — egy mondat, amire minden nap ránézel.
             </span>
           )}
