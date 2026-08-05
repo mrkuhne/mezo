@@ -1,4 +1,17 @@
+// ============================================================
+// Mezo · AnchorModeView — the „rough day" full-screen recovery view, rendered by
+// TodayPage when `?day=rough` (checked BEFORE the pending gate — see TodayPage).
+// DS re-dress (mezo-setx.5.2): the muted anchor variant on the Mezo-edition
+// tokens — the companion speaks in a CoachBubble re-tinted to the calm
+// `--anchor-accent` amber (`.anch-coach`), the three anchors are ListItem-spec
+// rows, and the paused-plan note wears the Fraunces empty-state voice. The
+// shell wiring is untouched: AppLayout passes `anchor` to PhoneFrame from the
+// same `useTodayScenario().anchorMode` this view renders under.
+// The anchor rows are demo affordances (no handler yet — Phase-3 signal work);
+// behavior unchanged by the re-dress.
+// ============================================================
 import { useNavigate } from 'react-router-dom'
+import { CoachBubble } from '@/shared/ui/CoachBubble'
 import { Icon, type IconName } from '@/shared/ui/Icon'
 
 const anchors: { label: string; sub: string; icon: IconName }[] = [
@@ -10,58 +23,53 @@ const anchors: { label: string; sub: string; icon: IconName }[] = [
 export function AnchorModeView() {
   const navigate = useNavigate()
   return (
-    <>
-      <div style={{ padding: '16px 24px 6px' }}>
-        <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="row gap-sm">
-            <Icon name="anchor" size={20} color="var(--sub)" />
-            <span className="eyebrow" style={{ color: 'var(--sub)' }}>Anchor mode · csendben</span>
+    <div className="anch">
+      <div className="anch-head">
+        <div className="anch-head-row">
+          <div className="anch-head-id">
+            <Icon name="anchor" size={20} color="var(--text-secondary)" />
+            <span className="eyebrow anch-eyebrow">Anchor mode · csendben</span>
           </div>
-          <button className="chip" onClick={() => navigate('/today')} style={{ fontSize: 9 }}>
+          <button className="chip" onClick={() => navigate('/today')}>
             Kilépés
           </button>
         </div>
-        <div className="page-title" style={{ marginTop: 16, color: 'var(--ink)', lineHeight: 1.1 }}>
-          Itt vagyok.<br/>
-          <span style={{ color: 'var(--coral-deep)' }}>Lassítsunk együtt.</span>
-        </div>
+        <h1 className="page-title anch-title">
+          Itt vagyok.<br />
+          <span className="anch-accent">Lassítsunk együtt.</span>
+        </h1>
       </div>
 
-      <div style={{ padding: '24px' }}>
-        <div style={{ padding: 18, borderRadius: 20, background: 'var(--warm)' }}>
-          <p style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.6 }}>
-            Tegnap éjszaka 5.2h volt, és ezen a héten ez a harmadik ilyen. Tudom hogy érzed magad — ne a Pull Day-ről beszélgessünk most. Hanem arról ami valóban kell.
-          </p>
-        </div>
-      </div>
+      <CoachBubble eyebrow="Mezo" className="anch-coach">
+        Tegnap éjszaka 5.2h volt, és ezen a héten ez a harmadik ilyen. Tudom hogy érzed magad — ne a Pull Day-ről beszélgessünk most. Hanem arról ami valóban kell.
+      </CoachBubble>
 
-      <div style={{ padding: '0 24px' }}>
-        <div className="eyebrow mt-md" style={{ marginBottom: 12, color: 'var(--sub)' }}>Mai három horgony</div>
-        <div className="col gap-md">
+      <div className="anch-block">
+        <div className="eyebrow anch-eyebrow anch-zoneline">Mai három horgony</div>
+        <div className="anch-rows">
           {anchors.map((a, i) => (
-            <button key={i} style={{
-              padding: 16, borderRadius: 18, display: 'flex', gap: 14, alignItems: 'center',
-              background: 'var(--surface)', boxShadow: 'var(--np-shadow-row)', textAlign: 'left',
-            }}>
-              <Icon name={a.icon} size={22} color="var(--coral-deep)" />
-              <div className="col flex-1">
-                <span style={{ fontSize: 15, color: 'var(--ink)' }}>{a.label}</span>
-                <span style={{ fontSize: 12, color: 'var(--faint)', marginTop: 2 }}>{a.sub}</span>
-              </div>
-              <Icon name="check" size={18} color="var(--faint)" />
+            <button key={i} type="button" className="anch-row np-press">
+              <span className="anch-row-ic" aria-hidden="true">
+                <Icon name={a.icon} size={20} color="var(--anchor-accent)" />
+              </span>
+              <span className="anch-row-tx">
+                <span className="anch-row-t1">{a.label}</span>
+                <span className="anch-row-t2">{a.sub}</span>
+              </span>
+              <Icon name="check" size={18} color="var(--text-disabled)" />
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ padding: '24px' }}>
-        <div style={{ padding: 16, borderRadius: 16, background: 'transparent', border: '1px dashed var(--line)' }}>
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--sub)' }}>Heti terv · szünetel</span>
-          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--sub)', lineHeight: 1.5 }}>
+      <div className="anch-block">
+        <div className="anch-paused">
+          <span className="anch-paused-l">Heti terv · szünetel</span>
+          <p>
             A Pull Day és a péntek volleyball kivettem a naptárból. Amikor 3 napon át újra erőd lesz, magunktól újraindítjuk.
           </p>
         </div>
       </div>
-    </>
+    </div>
   )
 }
