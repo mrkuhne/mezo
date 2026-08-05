@@ -22,18 +22,29 @@ export function useWorkoutDetail(id: string | null) {
 }
 
 /**
+ * Mon-anchored query key for this week's workout summaries — single source of
+ * truth for both `useWeekWorkouts` and `useWeekMuscleLog`'s pending observer
+ * (mezo-oyhy.7). Keeps the Monday derivation and key shape from silently
+ * desyncing between the two call sites.
+ */
+export function weekWorkoutsQueryKey(): { key: readonly [string, string, string]; monday: string; sunday: string } {
+  const now = new Date()
+  const mondayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
+  const monday = localDateString(mondayDate)
+  const sunday = localDateString(new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + 6))
+  return { key: ['train', 'weekWorkouts', monday], monday, sunday }
+}
+
+/**
  * This Mon–Sun week's workout summaries — maps weekly-row dates to instance ids.
  * Mock mode has no persisted instances, so it serves an empty week; real mode
  * fetches the current week's range via `trainApi.listWorkouts`.
  */
 export function useWeekWorkouts() {
   const mock = isMockMode()
-  const now = new Date()
-  const mondayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
-  const monday = localDateString(mondayDate)
-  const sunday = localDateString(new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + 6))
+  const { key, monday, sunday } = weekWorkoutsQueryKey()
   const q = useQuery<WorkoutSummaryResponse[]>({
-    queryKey: ['train', 'weekWorkouts', monday],
+    queryKey: key,
     queryFn: mock ? async () => [] : () => trainApi.listWorkouts(monday, sunday),
     initialData: mock ? [] : undefined,
   })
