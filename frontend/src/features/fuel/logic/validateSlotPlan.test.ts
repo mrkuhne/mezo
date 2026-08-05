@@ -145,3 +145,67 @@ test('past_kitchen_close: a compiled window at/after bed-KITCHEN_CLOSE_OFFSET_MI
   expect(errors).toEqual([])
   expect(warnings.map(w => w.code)).toEqual(['past_kitchen_close'])
 })
+
+// ── midnight-crossing axis (mezo-7102 fix wave, finding F1) ──────────────────────────────────────
+// wake 07:00 (420) / bed 00:30 → daySpan unwraps bed to 30+1440=1470. A compiled window's
+// wall-clock time (compileTemplate's contract, post-fix) must be re-unwrapped before comparing
+// against wakeMin/bedMin — otherwise a legitimately in-span pre-midnight slot (22:30 wall-clock)
+// or a slot AT the bed boundary (00:30 wall-clock, i.e. unwrapped 1470) reads as garbage.
+test('midnight-crossing day: wall-clock compiled times are unwrapped before the span check — no false out_of_span', () => {
+  const crossCtx = { wake: '07:00', bed: '00:30', dayType: 'rest' as const, budgetKcal: 2000 }
+  const rows = [
+    row({ label: 'Reggeli', anchor: fixed('08:00'), budgetPct: 25 }),
+    row({ label: 'Ebéd', anchor: fixed('13:00'), budgetPct: 40 }),
+    row({ label: 'Vacsora', anchor: { type: 'bed', offsetMin: -120 }, budgetPct: 35 }),
+  ]
+  const compiled = [
+    win(480, { label: 'Reggeli', budgetPct: 25 }),
+    win(780, { label: 'Ebéd', budgetPct: 40 }),
+    win(1350, { label: 'Vacsora', budgetPct: 35 }), // 22:30 wall-clock — in-span pre-midnight
+  ]
+  const { errors } = validateSlotPlan(rows, compiled, crossCtx)
+  expect(errors).toEqual([])
+})
+
+// ── rawTimes: raw anchors block save even when the compiled window was clamped in-span (F2) ──────
+test('rawTimes: out_of_span fires off the RAW anchor even though the compiled (clamped) window is in-span', () => {
+  const rows = [
+    row({ label: 'Reggeli', anchor: { type: 'wake', offsetMin: -300 }, budgetPct: 30 }),
+    row({ label: 'Ebéd', anchor: fixed('13:00'), budgetPct: 40 }),
+    row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
+  ]
+  // The compiled windows are already clamped in-span — without rawTimes this would report clean.
+  const compiled = [
+    win(420, { label: 'Reggeli', budgetPct: 30 }),
+    win(780, { label: 'Ebéd', budgetPct: 40 }),
+    win(1140, { label: 'Vacsora', budgetPct: 30 }),
+  ]
+  const rawTimes = [60, 780, 1140] // wake(360) − 300 = 60, well before wakeMin(360)
+  const { errors } = validateSlotPlan(rows, compiled, { ...baseCtx, rawTimes })
+  expect(errors.map(e => e.code)).toEqual(['out_of_span'])
+})
+
+test('rawTimes: a null entry (a training-anchored row dropped on a blockless day) is skipped, not treated as out_of_span', () => {
+  const rows = [
+    row({ label: 'Reggeli', anchor: fixed('07:00'), budgetPct: 50 }),
+    row({ label: 'Pre', anchor: { type: 'training_start', offsetMin: -30 }, budgetPct: 50 }),
+  ]
+  const compiled = [win(420, { label: 'Reggeli', budgetPct: 50 })] // the training row was dropped
+  const rawTimes = [420, null]
+  const { errors } = validateSlotPlan(rows, compiled, { ...baseCtx, dayType: 'training_am', rawTimes })
+  expect(errors.map(e => e.code)).not.toContain('out_of_span')
+})
+
+test('rawTimes: past_kitchen_close fires off the RAW anchor even though the compiled (clamped) window is before kitchen close', () => {
+  const rows = [
+    row({ label: 'A', anchor: fixed('07:00'), budgetPct: 70 }),
+    row({ label: 'B', anchor: { type: 'bed', offsetMin: -10 }, budgetPct: 30 }),
+  ]
+  const compiled = [
+    win(420, { label: 'A', budgetPct: 70 }),
+    win(1200, { label: 'B', budgetPct: 30 }), // clamped in-span, before kitchenClose (1230)
+  ]
+  const rawTimes = [420, 1310] // bed(1320) − 10 = 1310, past kitchenClose (1230)
+  const { warnings } = validateSlotPlan(rows, compiled, { ...baseCtx, rawTimes })
+  expect(warnings.map(w => w.code)).toEqual(['past_kitchen_close'])
+})

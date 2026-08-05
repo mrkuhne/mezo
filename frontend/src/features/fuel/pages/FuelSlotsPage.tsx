@@ -26,7 +26,7 @@ import { useNavigate } from 'react-router-dom'
 import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTemplates } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { Icon } from '@/shared/ui/Icon'
-import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
+import { compileTemplate, resolveAnchorTimes } from '@/features/fuel/logic/compileTemplate'
 import { validateSlotPlan } from '@/features/fuel/logic/validateSlotPlan'
 import { placeWindows, splitBudget, splitBudgetPct } from '@/features/fuel/logic/buildDayPlan'
 import type { Macro4, PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
@@ -187,8 +187,12 @@ export function FuelSlotsPage() {
 
   const compiled = editing ? compileTemplate({ dayType, slots: rows }, { wake, bed, blocks: refBlocks }) : []
   const compiledBudgets = editing ? splitBudgetPct(budget, compiled) : []
+  // Raw (unclamped) anchor resolution (mezo-7102 fix wave, finding F2) — fed into validateSlotPlan
+  // so an anchor placed far outside the eating span is a save-blocking out_of_span error, not
+  // silently repaired by compileTemplate's clamp before validation ever sees it.
+  const rawTimes = editing ? resolveAnchorTimes(rows, { wake, bed, blocks: refBlocks }) : []
   const { errors, warnings } = editing
-    ? validateSlotPlan(rows, compiled, { wake, bed, dayType, budgetKcal: budget.kcal })
+    ? validateSlotPlan(rows, compiled, { wake, bed, dayType, budgetKcal: budget.kcal, rawTimes })
     : { errors: [], warnings: [] }
   const sumPct = Math.round(rows.reduce((s, r) => s + r.budgetPct, 0) * 100) / 100
 

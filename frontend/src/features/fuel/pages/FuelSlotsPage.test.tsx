@@ -85,6 +85,29 @@ test('fork + Mentés saves the template to the cache and navigates back', async 
   expect(await screen.findByTestId('location')).toHaveTextContent('/fuel')
 })
 
+// mezo-7102 fix wave, finding F2: out_of_span never fired on normal days because the page fed
+// validateSlotPlan windows ALREADY clamped by compileTemplate — an anchor placed far outside the
+// eating span was silently repaired instead of blocking save. The page now also feeds
+// `resolveAnchorTimes`'s RAW (unclamped) resolution, which out_of_span evaluates instead.
+test('a wake-anchored row resolving well before wake shows out_of_span and disables Mentés, even though the compiled window is clamped in-span', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+
+  await screen.findAllByLabelText('Slot neve')
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+
+  const anchorSelects = screen.getAllByLabelText('Horgony')
+  await userEvent.selectOptions(anchorSelects[0], 'wake')
+
+  const offsetInput = await screen.findByLabelText('Eltolás perc')
+  await userEvent.clear(offsetInput)
+  await userEvent.type(offsetInput, '-300')
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('időszakon kívülre esik')
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
+})
+
 test('an existing template loads straight into the editor with Ajánlott visszaállítása; deleting empties the cache', async () => {
   const qc = newQc()
   const wrapper = ({ children }: { children: ReactNode }) => (

@@ -1,4 +1,6 @@
 import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
+import { validateSlotPlan } from '@/features/fuel/logic/validateSlotPlan'
+import { toMin } from '@/data/fuel/fuelConfig'
 import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { SlotAnchor, SlotTemplate, SlotTemplateRow } from '@/data/types'
 
@@ -120,4 +122,38 @@ test('output is sorted by resolved time regardless of template row order', () =>
     ),
   )
   expect(out.map(w => w.label)).toEqual(['Earlier', 'Later'])
+})
+
+// ── midnight-crossing bed (mezo-7102 fix wave, finding F1) ───────────────────────────────────────
+// wake 07:00 (420) / bed 00:30 → daySpan unwraps bed to 30+1440=1470. eatingStart = 420+45=465
+// (07:45); kitchenClose = 1470-90=1380 (23:00). Before the fix, compileTemplate resolved bed/fixed
+// anchors on the RAW toMin(bed)=30 axis: kitchenClose came out −60, collapsing every clamp() to
+// −60 regardless of anchor, and validateSlotPlan (which DOES unwrap via daySpan) then fired a
+// spurious out_of_span for every template on this sleep config.
+const WAKE_CROSS = '07:00'
+const BED_CROSS = '00:30'
+
+test('midnight-crossing bed: a same-day fixed anchor (21:00) stays 21:00 — no unwrap needed, no collapse', () => {
+  const out = compileTemplate(template(row({ type: 'fixed', time: '21:00' })), { wake: WAKE_CROSS, bed: BED_CROSS, blocks: [] })
+  expect(out[0].time).toBe(toMin('21:00')) // 1260 — well within [465, 1380], no clamp
+})
+
+test('midnight-crossing bed: a fixed anchor past midnight (00:15) unwraps onto the continuous axis and clamps in-span, never negative', () => {
+  const out = compileTemplate(template(row({ type: 'fixed', time: '00:15' })), { wake: WAKE_CROSS, bed: BED_CROSS, blocks: [] })
+  // raw 00:15 (15) unwraps to 1455 (past bed's 1470 axis point minus close), clamped down to
+  // kitchenClose (1380 = 23:00) — in-span, NOT the pre-fix −60.
+  expect(out[0].time).toBeGreaterThanOrEqual(0)
+  expect(out[0].time).toBe(1380)
+})
+
+test('midnight-crossing bed: a sensible 3-slot template compiles to sane times and validateSlotPlan reports no out_of_span', () => {
+  const t: SlotTemplate = template(
+    row({ type: 'fixed', time: '08:00' }, { label: 'Reggeli', budgetPct: 25 }),
+    row({ type: 'fixed', time: '13:00' }, { label: 'Ebéd', budgetPct: 40 }),
+    row({ type: 'bed', offsetMin: -120 }, { label: 'Vacsora', slotKind: 'dinner', budgetPct: 35 }),
+  )
+  const out = compileTemplate(t, { wake: WAKE_CROSS, bed: BED_CROSS, blocks: [] })
+  expect(out.map(w => w.time)).toEqual([480, 780, 1350]) // 08:00, 13:00, 22:30 — all wall-clock, ascending
+  const { errors } = validateSlotPlan(t.slots, out, { wake: WAKE_CROSS, bed: BED_CROSS, dayType: 'rest', budgetKcal: 2000 })
+  expect(errors.map(e => e.code)).not.toContain('out_of_span')
 })
