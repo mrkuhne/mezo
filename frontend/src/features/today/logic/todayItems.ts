@@ -19,7 +19,9 @@
 import { faceOf, type DayFace, DAY_FACES } from '@/features/today/logic/dayFace'
 import { questAction } from '@/features/today/logic/questAction'
 import type { AnchorTimes } from '@/features/today/logic/windDown'
-import type { CheckinSlot, DailyQuest, FuelSlot, HabitItem, RitualDay } from '@/data/types'
+import type {
+  CheckinSlot, DailyQuest, FuelSlot, HabitChainInfo, HabitDaypart, HabitItem, RitualDay,
+} from '@/data/types'
 import type { ItemTone } from '@/shared/ui/ItemCard'
 
 export type ItemStatus = 'open' | 'done' | 'missed'
@@ -78,6 +80,11 @@ export interface TodayItemsInput {
   sessions: SessionItemInput[]
   ritual: RitualDay | null
   goal: AnchorTimes
+  /** The routine editor's live catalog (mezo-n5e9.2) — habits bucket by THEIR OWN chain's
+   *  `daypart`/`title`, not a hardcoded MORNING/EVENING map. An empty array (catalog not yet
+   *  resolved in real mode, or a stale/deleted chain) means every habit below is skipped — the
+   *  same fallback the retired hardcoded-map guard gave an unknown chain. */
+  chains: HabitChainInfo[]
 }
 
 /** Habit key ↔ quest metric pairs describing the SAME act. The habit row wins (it
@@ -106,16 +113,17 @@ const HABIT_STATUS: Record<string, ItemStatus> = { pending: 'open', done: 'done'
 const CHECKIN_STATUS: Record<string, ItemStatus> = { done: 'done', skipped: 'open', now: 'open', pending: 'open' }
 const FUEL_STATUS: Record<string, ItemStatus> = { done: 'done', missed: 'missed', now: 'open', pending: 'open' }
 
-// Widened to a `string`-keyed partial map (mezo-n5e9.2, HabitChain widening — ADR 0019): `h.chain`
-// is now a plain string, so a `Record<'MORNING'|'EVENING', X>` no longer indexes with it at the
-// type level. The `if (!face) continue` guard below is what actually enforces "unknown chain
-// skipped" at runtime; full daypart-driven bucketing off `HabitChainAdmin.daypart` is `.2`'s job.
-const CHAIN_GROUP: Partial<Record<string, string>> = { MORNING: 'Reggeli rutin', EVENING: 'Esti rutin' }
-const CHAIN_FACE: Partial<Record<string, DayFace>> = { MORNING: 'reggel', EVENING: 'este' }
+// Catalog-driven bucketing (mezo-n5e9.2) — replaces the retired hardcoded MORNING/EVENING
+// `CHAIN_GROUP`/`CHAIN_FACE` maps. A chain's `daypart` decides its face; DAY is new (the editor
+// lets a custom chain anchor to midday, which the old two-map design had no slot for).
+const DAYPART_FACE: Record<HabitDaypart, DayFace> = { MORNING: 'reggel', DAY: 'nap', EVENING: 'este' }
+const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀️', EVENING: '🌙' }
+const DAYPART_TONE: Record<HabitDaypart, ItemTone> = { MORNING: 'body', DAY: 'mind', EVENING: 'mind' }
 
 export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
-  const { quests, habits, sessions } = input
+  const { quests, habits, sessions, chains } = input
   const items: TodayItem[] = []
+  const chainByKey = new Map(chains.map((c) => [c.chainKey, c]))
 
   // ── sessions first: they own the face hero, and a quest describing the same
   //    workout must not repeat it as a row.
@@ -135,30 +143,28 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
   // ── habits: chain-bucketed, and the absorbing side of every dedup pair.
   const absorbedMetrics = new Set<string>()
   for (const h of habits) {
-    // A def in a user-created chain (`chain_xxxx`, live via the admin catalog API since
-    // mezo-n5e9.1 — `HabitChain`/`HabitItem.chain` widened to a plain `string`, mezo-n5e9.2) has
-    // no entry in this hardcoded MORNING/EVENING map. Skip the row rather than crash on
-    // `CHAIN_GROUP[h.chain]`/`CHAIN_FACE[h.chain]` being undefined (review finding 4) — full
-    // daypart-driven bucketing off `HabitChainAdmin.daypart` is `.2`'s job.
-    const face = CHAIN_FACE[h.chain]
-    if (!face) continue
+    // A stale/deleted chain (or the catalog not yet resolved — `chains: []`) has no entry in
+    // the map built above. Skip the row rather than crash on an undefined chain (replaces the
+    // mezo-n5e9.1 hardcoded-map guard — same "unknown chain skipped" semantics, now driven by
+    // the live catalog instead of a fixed MORNING/EVENING lookup).
+    const chain = chainByKey.get(h.chain)
+    if (!chain) continue
     const paired = DEDUP_PAIRS[h.key]
     const twin = paired ? quests.find((q) => q.metric === paired) : undefined
     if (twin) absorbedMetrics.add(paired)
     items.push({
       id: `habit:${h.key}`,
       source: 'habit',
-      face,
+      face: DAYPART_FACE[chain.daypart],
       status: HABIT_STATUS[h.status] ?? 'open',
-      tone: h.chain === 'MORNING' ? 'body' : 'mind',
-      emoji: h.chain === 'MORNING' ? '🌅' : '🌙',
-      // Non-null: `face` above already proved `h.chain` is a CHAIN_GROUP key (same map domain).
-      tag: CHAIN_GROUP[h.chain]!.toUpperCase(),
+      tone: DAYPART_TONE[chain.daypart],
+      emoji: DAYPART_EMOJI[chain.daypart],
+      tag: chain.title.toUpperCase(),
       title: h.title,
       subtitle: h.anchorCopy || null,
       time: null,
       xp: h.xp + (twin?.xp ?? 0),
-      group: CHAIN_GROUP[h.chain]!,
+      group: chain.title,
       action: { kind: 'habit', habit: h, label: h.mode === 'MANUAL' ? 'Pipa' : 'Logolás' },
       linkUrl: h.linkUrl ?? null,
     })

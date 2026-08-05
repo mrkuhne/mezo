@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   buildTodayItems, isFillableSlot, itemsForFace, openCountByFace,
 } from '@/features/today/logic/todayItems'
-import type { CheckinSlot, DailyQuest, FuelSlot, HabitItem, RitualDay } from '@/data/types'
+import type {
+  CheckinSlot, DailyQuest, FuelSlot, HabitChainInfo, HabitItem, RitualDay,
+} from '@/data/types'
 
 const GOAL = { wakeTime: '06:30', bedTime: '22:30' }
 
@@ -17,7 +19,18 @@ const habit = (over: Partial<HabitItem> = {}): HabitItem => ({
   why: '', anchorCopy: 'ébredés után', mode: 'MANUAL', status: 'pending', xp: 5, ...over,
 })
 
-const EMPTY = { quests: [], habits: [], checkins: [], fuelSlots: [], sessions: [], ritual: null, goal: GOAL }
+// The two seed chains (mezo-n5e9.2 — mirrors `mockHabitCatalog`): the default catalog fed to
+// every test below, so the existing MORNING/EVENING fixtures keep resolving exactly as they did
+// against the retired hardcoded `CHAIN_GROUP`/`CHAIN_FACE` maps.
+const SEED_CHAINS: HabitChainInfo[] = [
+  { id: 'chain-morning', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 1, isActive: true, defs: [] },
+  { id: 'chain-evening', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 2, isActive: true, defs: [] },
+]
+
+const EMPTY = {
+  quests: [], habits: [], checkins: [], fuelSlots: [], sessions: [], ritual: null, goal: GOAL,
+  chains: SEED_CHAINS,
+}
 
 describe('buildTodayItems — quests', () => {
   test('an offered quest is a day-wide open item on every face', () => {
@@ -77,18 +90,44 @@ describe('buildTodayItems — habits', () => {
     expect(items.map(i => i.status).sort()).toEqual(['done', 'missed', 'open'])
   })
 
-  test('the group label names the chain', () => {
+  test('the seed chains produce byte-identical groups/tags to the retired hardcoded maps', () => {
+    // Fed the two seed `HabitChainInfo`s (mirrors `mockHabitCatalog`) — same strings the retired
+    // `CHAIN_GROUP` hardcoded, now sourced from the catalog's own `title` instead.
     const items = buildTodayItems({ ...EMPTY, habits: [habit(), habit({ key: 'x', chain: 'EVENING' })] })
-    expect(items.find(i => i.face === 'reggel')?.group).toBe('Reggeli rutin')
-    expect(items.find(i => i.face === 'este')?.group).toBe('Esti rutin')
+    expect(items.find(i => i.face === 'reggel')).toMatchObject({ group: 'Reggeli rutin', tag: 'REGGELI RUTIN' })
+    expect(items.find(i => i.face === 'este')).toMatchObject({ group: 'Esti rutin', tag: 'ESTI RUTIN' })
   })
 
-  test('a habit in an unknown/custom chain does not throw and produces no row (mezo-n5e9.1 review finding 4)', () => {
+  test('a DAY-daypart custom chain lands on the nap face with its own title as group', () => {
+    const dayChain: HabitChainInfo = {
+      id: 'chain-day', chainKey: 'chain_daytest', title: 'Napközbeni szokások', daypart: 'DAY',
+      position: 3, isActive: true, defs: [],
+    }
+    const items = buildTodayItems({
+      ...EMPTY,
+      chains: [...SEED_CHAINS, dayChain],
+      habits: [habit({ key: 'custom_stretch', chain: 'chain_daytest', title: 'Nyújtás' })],
+    })
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      face: 'nap', group: 'Napközbeni szokások', tag: 'NAPKÖZBENI SZOKÁSOK',
+    })
+  })
+
+  test('a habit whose chain is missing from the catalog (stale/deleted row) does not throw and produces no row', () => {
     // `HabitItem.chain` widened to a plain string (ADR 0019, `HabitChainAdmin`'s admin API,
-    // mezo-n5e9.2) — a custom `chain_xxxx` row is reachable here at runtime with no cast needed.
+    // mezo-n5e9.1) — a custom `chain_xxxx` row is reachable here at runtime with no cast needed.
+    // Replaces the retired hardcoded-map guard: the chain lookup misses (catalog has no entry
+    // for it — a deleted chain, or the real-mode catalog not yet resolved), so the row is
+    // skipped rather than rendered with an undefined face/group.
     const custom = habit({ key: 'custom_deadbeef', chain: 'chain_abc123' })
     expect(() => buildTodayItems({ ...EMPTY, habits: [custom] })).not.toThrow()
     const items = buildTodayItems({ ...EMPTY, habits: [custom] })
+    expect(items).toHaveLength(0)
+  })
+
+  test('an empty catalog ([]) skips every habit — the real-mode "not yet resolved" fallback', () => {
+    const items = buildTodayItems({ ...EMPTY, chains: [], habits: [habit(), habit({ key: 'x', chain: 'EVENING' })] })
     expect(items).toHaveLength(0)
   })
 })

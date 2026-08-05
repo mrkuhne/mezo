@@ -9,7 +9,7 @@ import { progressionProfileMock } from '@/data/progression/progressionMock'
 import { mockQuestDay, mockQuestHistory } from '@/data/quest/questMock'
 import { mockActivities, mockActivityHistory } from '@/data/activity/activityMock'
 import { achievementsMock } from '@/data/progression/achievementsMock'
-import { mockHabitDay, mockHabitSummary } from '@/data/habit/habitMock'
+import { mockHabitCatalog, mockHabitDay, mockHabitSummary } from '@/data/habit/habitMock'
 
 // Barrel-mock the hooks the page (and, since Task 7, the DailyQuestsCard + ActivityLogCard
 // it mounts in the "Ma" block) read, so the fixtures drive the view deterministically in
@@ -24,6 +24,7 @@ const hooks = vi.hoisted(() => ({
   useActivities: vi.fn(),
   useHabitDay: vi.fn(),
   useHabitSummary: vi.fn(),
+  useHabitCatalog: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
@@ -36,6 +37,7 @@ vi.mock('@/data/hooks', async (importOriginal) => ({
   useActivities: hooks.useActivities,
   useHabitDay: hooks.useHabitDay,
   useHabitSummary: hooks.useHabitSummary,
+  useHabitCatalog: hooks.useHabitCatalog,
 }))
 
 // Pin "today" to 2026-07-12 so the mock quest/activity dates (Júl 10–11) yield
@@ -69,6 +71,7 @@ beforeEach(() => {
   hooks.useActivities.mockReturnValue({ data: mockActivities, isPending: false })
   hooks.useHabitDay.mockReturnValue({ habits: mockHabitDay, levelUps: [], mode: 'mock' })
   hooks.useHabitSummary.mockReturnValue({ data: mockHabitSummary })
+  hooks.useHabitCatalog.mockReturnValue({ catalog: mockHabitCatalog, isPending: false })
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -146,9 +149,11 @@ test('Kitüntetések tab renders both the Badges and Perks cards', async () => {
   expect(screen.getByText('3 feloldva')).toBeInTheDocument()
 })
 
-test('switching to Rutin renders the routine chains from the habit seeds', async () => {
+test('switching to Rutin renders the routine chains from the habit catalog', async () => {
+  // Card titles now come from the routine editor's catalog (mezo-n5e9.2) rather than a
+  // hardcoded "Reggeli lánc"/"Esti lánc" pair — the seed catalog's own chain titles.
   renderPage()
   await userEvent.click(screen.getByRole('tab', { name: 'Rutin' }))
-  expect(screen.getByText('Reggeli lánc')).toBeInTheDocument()
-  expect(screen.getByText('Esti lánc')).toBeInTheDocument()
+  expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
+  expect(screen.getByText('Esti rutin')).toBeInTheDocument()
 })

@@ -27,8 +27,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useActivities, useCheckins, useCompanionNote, useDailyQuests, useFuelPreview, useHabitActions,
-  useHabitDay, useIntentionActions, useIntentionDay, useQuestActions, useQuickStats, useRitualDay,
-  useSleep, useSleepGoal, useToday, useTodayScenario, useWaterActions, resolveBriefing,
+  useHabitCatalog, useHabitDay, useIntentionActions, useIntentionDay, useQuestActions,
+  useQuickStats, useRitualDay, useSleep, useSleepGoal, useToday, useTodayScenario, useWaterActions,
+  resolveBriefing,
 } from '@/data/hooks'
 import { AppHero } from '@/features/progression/components/AppHero'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -119,6 +120,10 @@ export function TodayPage() {
   const { consumeLevelUps: consumeQuestLevelUps } = useQuestActions(date)
   const { data: activities } = useActivities(date)
   const { habits, levelUps: habitLevelUps } = useHabitDay(date)
+  // The routine editor's live catalog (mezo-n5e9.2) — `buildTodayItems` looks up each habit's
+  // chain here (title/daypart) instead of a hardcoded MORNING/EVENING map. Unresolved in real
+  // mode (`{chains: []}`) means every habit is skipped below, never a crash — see todayItems.ts.
+  const { catalog: habitCatalog } = useHabitCatalog()
   const { check, pending: habitPending, consumeLevelUps: consumeHabitLevelUps } = useHabitActions(date)
   const { data: ritualDay } = useRitualDay(date)
   const { visible: fuelSlots, nextStack } = useFuelPreview()
@@ -191,6 +196,7 @@ export function TodayPage() {
   const items = useMemo(() => {
     const built = buildTodayItems({
       quests, habits, checkins, fuelSlots, ritual: ritualDay, goal: sleepGoal, sessions,
+      chains: habitCatalog.chains,
     })
     // The ItemRow doctrine, enforced for EVERY source in one place: a row keeps its action
     // only when this screen can serve it (`servableAction`), otherwise the row survives and
@@ -210,7 +216,7 @@ export function TodayPage() {
       const hint = faced.action?.kind === 'habit' ? habitHint(faced.action.habit) : null
       return { ...faced, action: null, subtitle: hint ?? faced.subtitle }
     })
-  }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, sessions, heroItemId])
+  }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, sessions, heroItemId, habitCatalog.chains])
 
   // The current face comes from the clock; `?dp=` overrides it. Absent (`null`) and
   // blank (`''`) both mean "current" — neither may fall through to a parsed value.

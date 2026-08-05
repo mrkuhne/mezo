@@ -20,11 +20,12 @@ import { gymLevelUpMock } from '@/data/progression/progressionMock'
 import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
 import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import type { LevelUpResult } from '@/data/train/trainApi'
-import type { CheckinSlot, DailyQuest, HabitItem, VolleyballSession } from '@/data/types'
+import type { CheckinSlot, DailyQuest, HabitChainInfo, HabitItem, VolleyballSession } from '@/data/types'
 
 const mocks = vi.hoisted(() => ({
   useHabitDay: vi.fn(),
   useHabitActions: vi.fn(),
+  useHabitCatalog: vi.fn(),
   useDailyQuests: vi.fn(),
   useQuestActions: vi.fn(),
   useToday: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     ...orig,
     useHabitDay: mocks.useHabitDay,
     useHabitActions: mocks.useHabitActions,
+    useHabitCatalog: mocks.useHabitCatalog,
     useDailyQuests: mocks.useDailyQuests,
     useQuestActions: mocks.useQuestActions,
     useToday: mocks.useToday,
@@ -47,6 +49,15 @@ const habit = (over: Partial<HabitItem>): HabitItem => ({
   key: 'x', chain: 'EVENING', position: 1, title: 't', why: 'w', anchorCopy: 'a',
   mode: 'DERIVED', status: 'pending', xp: 5, strengthPct: 50, ...over,
 })
+
+// The two seed chains (mezo-n5e9.2 — mirrors `mockHabitCatalog`): every fixture in this file
+// puts its habits on the literal 'MORNING'/'EVENING' chain keys, so this is the default catalog
+// `setup()` feeds `useHabitCatalog` — keeps every existing test's bucketing byte-identical to
+// the retired hardcoded MORNING/EVENING maps.
+const SEED_CHAINS: HabitChainInfo[] = [
+  { id: 'chain-morning', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 1, isActive: true, defs: [] },
+  { id: 'chain-evening', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 2, isActive: true, defs: [] },
+]
 
 /**
  * One habit per `habitAction` kind, all on the EVENING chain so every row lands in the
@@ -80,8 +91,8 @@ function LocationProbe() {
   return <div data-testid="loc">{loc.pathname}</div>
 }
 
-function renderToday(path = '/today?dp=este') {
-  return render(
+function tree(path = '/today?dp=este') {
+  return (
     <QueryWrapper>
       <LevelUpProvider>
         <MemoryRouter initialEntries={[path]}>
@@ -89,8 +100,12 @@ function renderToday(path = '/today?dp=este') {
           <LocationProbe />
         </MemoryRouter>
       </LevelUpProvider>
-    </QueryWrapper>,
+    </QueryWrapper>
   )
+}
+
+function renderToday(path = '/today?dp=este') {
+  return render(tree(path))
 }
 
 const rowOf = (title: string) => screen.getByText(title).closest('.itemrow') as HTMLElement
@@ -108,6 +123,8 @@ function setup({
   quests = [] as DailyQuest[],
   checkins = DEFAULT_CHECKINS,
   pending = false,
+  catalogChains = SEED_CHAINS,
+  catalogPending = false,
 } = {}) {
   check = vi.fn().mockResolvedValue(undefined)
   consumeHabitLevelUps = vi.fn()
@@ -116,6 +133,7 @@ function setup({
   mocks.useHabitActions.mockReturnValue({
     check, uncheck: vi.fn(), pending, consumeLevelUps: consumeHabitLevelUps,
   })
+  mocks.useHabitCatalog.mockReturnValue({ catalog: { chains: catalogChains }, isPending: catalogPending })
   mocks.useDailyQuests.mockReturnValue({
     quests, levelUps: questLevelUps, rerollsLeft: 1, date: '2026-05-21', mode: 'mock',
   })
@@ -473,5 +491,39 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     const { container } = renderToday('/today?dp=nap')
     expect(screen.getAllByRole('heading', { name: 'Volleyball' })).toHaveLength(1)
     expect(rowsOfTodoCard(container)).not.toContain('Volleyball')
+  })
+})
+
+/**
+ * Catalog-driven bucketing (mezo-n5e9.2). `buildTodayItems` now looks up each habit's chain in
+ * `useHabitCatalog()`'s live chains instead of a hardcoded MORNING/EVENING map — real mode's
+ * `{chains: []}` unresolved frame must never crash, and the habit rows must show up the moment
+ * the catalog resolves (both reads live in the same TanStack cache; TodayPage's `items` useMemo
+ * has to track `catalog.chains`, or a resolved catalog would render a stale, still-empty face).
+ */
+describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', () => {
+  test('an unresolved catalog ({chains: []}) skips every habit row without crashing', () => {
+    setup({ habits: ALL_KINDS, catalogChains: [], catalogPending: true })
+    renderToday('/today?dp=este')
+    // Every chain lookup misses while the catalog is unresolved — every habit row vanishes
+    // rather than the page throwing on an undefined chain (non-habit sources — ritual, fuel,
+    // check-ins — don't route through the catalog, so they still render normally: reaching
+    // this assertion at all is itself the no-crash proof).
+    for (const f of KIND_FIXTURES) {
+      expect(screen.queryByText(f.title)).toBeNull()
+    }
+    expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeInTheDocument()
+  })
+
+  test('habit rows appear the moment the catalog resolves — the items memo tracks catalog.chains', () => {
+    setup({ habits: ALL_KINDS, catalogChains: [], catalogPending: true })
+    const { rerender } = renderToday('/today?dp=este')
+    expect(screen.queryByText('MANUAL lánc')).toBeNull()
+
+    mocks.useHabitCatalog.mockReturnValue({ catalog: { chains: SEED_CHAINS }, isPending: false })
+    rerender(tree('/today?dp=este'))
+
+    expect(screen.getByText('MANUAL lánc')).toBeInTheDocument()
+    expect(within(rowOf('MANUAL lánc')).getByRole('button')).toHaveTextContent('Pipa')
   })
 })
