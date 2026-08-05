@@ -102,6 +102,46 @@ test('an existing template loads straight into the editor with Ajánlott vissza�
   expect(screen.queryByRole('button', { name: 'Ajánlott visszaállítása' })).not.toBeInTheDocument()
 })
 
+// Fix round 1 regression (reviewer finding 1): in real mode `useSlotTemplates()` starts pending
+// (`templates = []`), so a cold mount commits `rows = []` off a still-null `existing`. Before the
+// fix, once the delayed GET resolved to a saved template, `existing` flipped non-null but `rows`
+// never re-synced — the editor rendered the (stale) empty draft, tripping a spurious `too_few`
+// error instead of showing the saved template. The FuelSettingsSheet.test.tsx delayed-handler
+// idiom reproduces the race deterministically.
+test('real mode cold mount: a delayed GET resolving to a saved template lands in the editor, not a stale empty draft', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/fuel/slot-templates`, async () => {
+      await new Promise((r) => setTimeout(r, 50))
+      return HttpResponse.json({
+        templates: [
+          {
+            dayType: 'rest',
+            slots: [
+              { label: 'Reggeli', slotKind: 'breakfast', role: 'standard', anchorType: 'fixed', time: '07:00', budgetPct: 40 },
+              { label: 'Ebéd', slotKind: 'lunch', role: 'standard', anchorType: 'fixed', time: '13:00', budgetPct: 60 },
+            ],
+          },
+        ],
+      })
+    }),
+  )
+  const qc = newQc()
+  renderPage(qc)
+
+  // Cold frame: the GET is still pending — the recommended (read-only) view, never a broken
+  // empty editor with a too_few error.
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+
+  // Once the delayed GET resolves, the saved template's OWN rows render — not a stale empty draft.
+  expect(await screen.findByDisplayValue('Reggeli')).toBeInTheDocument()
+  expect(screen.getByDisplayValue('Ebéd')).toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Ajánlott visszaállítása' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+})
+
 test('real mode: Mentés PUTs the flattened wire body (fixed anchor)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   let captured: { dayType: string; body: { slots: Record<string, unknown>[] } } | null = null

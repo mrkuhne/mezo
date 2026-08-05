@@ -166,6 +166,18 @@ export function FuelSlotsPage() {
     setTrackedDayType(dayType)
     setRows(existing?.slots ?? [])
     setForked(Boolean(existing))
+  } else if (!forked && existing != null) {
+    // Cold-mount race (fix round 1): in real mode `useSlotTemplates()` starts pending —
+    // `templates = []` (useDualQuery's `realEmpty`) — so `existing` is null at the FIRST render
+    // and the lazy initializers above commit `rows = []`, `forked = false`. Once the GET
+    // resolves, `existing` flips non-null on a LATER render, but `rows` never re-synced,
+    // stranding an empty editor (`editing` already reads true off `existing != null`) with a
+    // spurious `too_few` error instead of the saved template. Self-terminating and never clobbers
+    // a real edit: while `!forked && existing == null` the read-only recommended view is the ONLY
+    // thing rendered (no editable inputs exist), so `rows` cannot have been touched yet — and
+    // setting `forked` true here means this branch can never fire again for this day type.
+    setForked(true)
+    setRows(existing.slots)
   }
 
   const recommendedWindows = placeWindows(wake, bed, settings.mealsPerDay, refBlocks, weightKg)
@@ -366,6 +378,21 @@ export function FuelSlotsPage() {
             {warnings.map(w => (
               <p key={w.code} style={{ fontSize: 11, color: 'var(--warning)', marginTop: 6 }}>{w.text}</p>
             ))}
+
+            {/* Normal page flow, NOT the portaled save bar (fix round 1): a saved template's
+                bar would otherwise stack THREE rows (reset + Mégse/Mentés) against the page's
+                fixed 110px bottom padding and overflow into the content. The spec doesn't
+                mandate this button live in the bar — it reads fine as the last editor action. */}
+            {existing && (
+              <button
+                className="cta-ghost"
+                aria-label="Ajánlott visszaállítása"
+                onClick={resetToRecommended}
+                style={{ width: '100%', marginTop: 14 }}
+              >
+                Ajánlott visszaállítása
+              </button>
+            )}
           </>
         )}
       </div>
@@ -375,18 +402,11 @@ export function FuelSlotsPage() {
           editable (a fork in progress, or an existing saved template) — the pure recommended
           preview has its own primary action (Testreszabás). */}
       {editing && createPortal(
-        <div className="recipe-save-bar" style={{ flexDirection: 'column', gap: 8 }}>
-          {existing && (
-            <button className="cta-ghost" aria-label="Ajánlott visszaállítása" onClick={resetToRecommended} style={{ width: '100%' }}>
-              Ajánlott visszaállítása
-            </button>
-          )}
-          <div className="row gap-sm" style={{ width: '100%' }}>
-            <button className="cta-ghost" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
-            <button className="cta-primary" disabled={errors.length > 0 || pending} onClick={save} style={{ flex: 1.8 }}>
-              <Icon name="check" size={15} /> Mentés
-            </button>
-          </div>
+        <div className="recipe-save-bar">
+          <button className="cta-ghost" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
+          <button className="cta-primary" disabled={errors.length > 0 || pending} onClick={save} style={{ flex: 1.8 }}>
+            <Icon name="check" size={15} /> Mentés
+          </button>
         </div>,
         document.querySelector('.phone-screen') ?? document.body,
       )}
