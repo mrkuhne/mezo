@@ -131,6 +131,13 @@ public class FeaturesConfiguration {
      *  deterministic 'fallback' zone. */
     public static final String STACK_PLACEMENT_LLM_SWITCH = "mezo.feature.stack-placement-llm.enabled";
 
+    /** Slot-plan AI evaluate endpoint (mezo-7102) — gates ONLY the stateless, auth-gated-only
+     *  "judge my split" LLM call over a meal-slot template (nothing persisted). The adapter bean
+     *  additionally needs COMPANION_SWITCH (both condition the same bean, array-AND'ed exactly
+     *  like STACK_PLACEMENT_LLM_SWITCH/COMPANION_SWITCH); off/absent on either degrades the
+     *  endpoint to a clean 503. */
+    public static final String SLOT_TEMPLATE_AI_SWITCH = "mezo.feature.slot-template-ai.enabled";
+
     /** Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
      *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
     public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";

@@ -60,6 +60,14 @@ tags:
       unpinned/removed individually and the engine places a new occurrence's
       zone when slotKey is omitted (mezo-vx9v). supplement_intake is an
       append-only taken-ledger FK-ing pantry_item (ADR 0005).
+  - name: FuelSlotPlan
+    description: >
+      Gated LLM "judge my split" evaluate endpoint for the meal-slot template
+      feature (mezo-7102). Own tag so the generated controller interface
+      (FuelSlotPlanApi) is separate from FuelApi — the endpoint is
+      @ConditionalOnProperty-gated independently while FuelController
+      (slot-template CRUD) stays unconditional. Stateless: nothing is persisted,
+      the request is only auth-gated.
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
   - name: CompanionStream
@@ -3620,6 +3628,45 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/fuel/slot-templates/evaluate:
+    post:
+      tags:
+        - FuelSlotPlan
+      operationId: evaluateSlotPlan
+      summary: >-
+        Gated LLM judgement of a (draft) slot split against the goal balance +
+        training placement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SlotPlanEvaluateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotPlanEvaluateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: AI evaluation unavailable (slot-template-ai/companion switch off)
           content:
             application/json:
               schema:
@@ -10747,6 +10794,105 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SlotTemplateResponse'
+    ResolvedSlotTime:
+      type: object
+      required:
+        - label
+        - time
+      properties:
+        label:
+          type: string
+          maxLength: 200
+        time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+    SlotPlanBudget:
+      type: object
+      required:
+        - kcal
+        - p
+        - c
+        - f
+      properties:
+        kcal:
+          type: integer
+        p:
+          type: integer
+        c:
+          type: integer
+        f:
+          type: integer
+    SlotPlanBlock:
+      type: object
+      required:
+        - kind
+        - time
+      properties:
+        kind:
+          type: string
+        time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+        durationMin:
+          type: integer
+          nullable: true
+    SlotPlanSuggestion:
+      type: object
+      required:
+        - text
+      properties:
+        slotLabel:
+          type: string
+          maxLength: 40
+        text:
+          type: string
+    SlotPlanEvaluateRequest:
+      type: object
+      required:
+        - dayType
+        - slots
+        - budget
+        - balanceKcal
+      properties:
+        dayType:
+          type: string
+          pattern: ^(rest|training_am|training_pm)$
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlotTemplateSlot'
+          minItems: 2
+          maxItems: 8
+        resolvedTimes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolvedSlotTime'
+        budget:
+          $ref: '#/components/schemas/SlotPlanBudget'
+        balanceKcal:
+          type: integer
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlotPlanBlock'
+    SlotPlanEvaluateResponse:
+      type: object
+      required:
+        - verdict
+        - summary
+        - suggestions
+      properties:
+        verdict:
+          type: string
+          enum:
+            - ok
+            - adjust
+        summary:
+          type: string
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlotPlanSuggestion'
     ConversationResponse:
       type: object
       required:

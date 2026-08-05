@@ -216,6 +216,11 @@ mezo:
     # placement degrades to the deterministic 'fallback' zone.
     stack-placement-llm:
       enabled: true
+    # Slot-plan AI evaluate (mezo-7102) — gated, stateless "judge my split" LLM call over a
+    # (draft) meal-slot template; nothing persisted. Needs the companion switch too (adapter
+    # bean), otherwise the endpoint answers 503.
+    slot-template-ai:
+      enabled: true
     # Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
     # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
     gamification:
