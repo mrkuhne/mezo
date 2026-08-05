@@ -41,6 +41,7 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
+import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -128,6 +129,8 @@ export const routes: RouteObject[] = [
         ],
       },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
+      // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
+      { path: 'me/routines/edit', element: <RoutineEditorPage /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen Napzárás flow (train/session idiom) — no tab-bar chrome (mezo-ilsj).

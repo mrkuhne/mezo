@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -53,7 +54,7 @@ public class TrainService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final SportSessionRepository sportSessionRepository;
-    private final CatalogVideoResolver catalogVideoResolver;
+    private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
@@ -77,13 +78,13 @@ public class TrainService {
             ? Map.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
-        Map<UUID, String> videoByCatalog = videosByCatalog(
+        Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(
             exercisesBySession.values().stream().flatMap(List::stream).toList());
 
         Map<UUID, List<MesoDay>> daysByMeso = sessions.stream()
             .filter(s -> s.getMesocycleId() != null)
             .collect(Collectors.groupingBy(WorkoutSessionEntity::getMesocycleId, LinkedHashMap::new,
-                Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), videoByCatalog),
+                Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog),
                     Collectors.toList())));
 
         return mesos.stream().map(m -> {
@@ -193,7 +194,7 @@ public class TrainService {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
-        return toDay(day, saved, videosByCatalog(saved));
+        return toDay(day, saved, mediaByCatalogOf(saved));
     }
 
     // ── Saját edzés (custom workout templates, mezo-ws2x) ─────────────────────────
@@ -214,9 +215,9 @@ public class TrainService {
                 createdBy, templates.stream().map(WorkoutSessionEntity::getId).toList());
         Map<UUID, List<ExerciseEntity>> byTemplate = exercises.stream()
             .collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
-        Map<UUID, String> videos = videosByCatalog(exercises);
+        Map<UUID, CatalogMedia> media = mediaByCatalogOf(exercises);
         return templates.stream()
-            .map(t -> toCustomWorkoutResponse(t, byTemplate.getOrDefault(t.getId(), List.of()), videos))
+            .map(t -> toCustomWorkoutResponse(t, byTemplate.getOrDefault(t.getId(), List.of()), media))
             .toList();
     }
 
@@ -264,15 +265,15 @@ public class TrainService {
             fresh.add(toExerciseEntity(createdBy, template.getId(), inputs.get(i), i));
         }
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
-        return toCustomWorkoutResponse(template, saved, videosByCatalog(saved));
+        return toCustomWorkoutResponse(template, saved, mediaByCatalogOf(saved));
     }
 
     private CustomWorkoutResponse toCustomWorkoutResponse(
-            WorkoutSessionEntity template, List<ExerciseEntity> exercises, Map<UUID, String> videos) {
+            WorkoutSessionEntity template, List<ExerciseEntity> exercises, Map<UUID, CatalogMedia> media) {
         return CustomWorkoutResponse.builder()
             .id(template.getId())
             .name(template.getType())
-            .exercises(toDay(template, exercises, videos).getExercises())
+            .exercises(toDay(template, exercises, media).getExercises())
             .build();
     }
 
@@ -325,10 +326,10 @@ public class TrainService {
             ? Map.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
-        Map<UUID, String> videoByCatalog = videosByCatalog(
+        Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(
             exercisesBySession.values().stream().flatMap(List::stream).toList());
         List<MesoDay> days = sessions.stream()
-            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), videoByCatalog)).toList();
+            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog)).toList();
         if (!volume.isEmpty()) {
             r.setVolumePerMuscle(volume);
         }
@@ -339,7 +340,7 @@ public class TrainService {
     }
 
     private MesoDay toDay(WorkoutSessionEntity s, List<ExerciseEntity> exercises,
-        Map<UUID, String> videoByCatalog) {
+        Map<UUID, CatalogMedia> mediaByCatalog) {
         return MesoDay.builder()
             .id(s.getId())
             .day(s.getDayLabel())
@@ -349,7 +350,12 @@ public class TrainService {
             .exercises(exercises.stream().map(e -> {
                 GymExercise g = mapper.toGymExercise(e);
                 if (e.getCatalogId() != null) {
-                    g.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
+                    CatalogMedia m = mediaByCatalog.get(e.getCatalogId());
+                    if (m != null) {
+                        g.setVideoUrl(m.videoUrl());
+                        g.setImageStartUrl(m.imageStartUrl());
+                        g.setImageEndUrl(m.imageEndUrl());
+                    }
                 }
                 return g;
             }).toList())
@@ -361,11 +367,11 @@ public class TrainService {
 
     /**
      * Demo-video lookup {@code catalog_id → video_url} for the given exercises. Maps the exercises to
-     * their catalog ids and delegates the single batched fetch to {@link CatalogVideoResolver}; rows
+     * their catalog ids and delegates the single batched fetch to {@link CatalogMediaResolver}; rows
      * with no linked catalog or no video are simply absent. Shared by every {@link #toDay} caller.
      */
-    private Map<UUID, String> videosByCatalog(List<ExerciseEntity> exercises) {
-        return catalogVideoResolver.resolve(exercises.stream()
+    private Map<UUID, CatalogMedia> mediaByCatalogOf(List<ExerciseEntity> exercises) {
+        return catalogMediaResolver.resolve(exercises.stream()
             .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
     }
 }

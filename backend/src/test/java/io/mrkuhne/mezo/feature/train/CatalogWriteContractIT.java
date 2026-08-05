@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest;
+import io.mrkuhne.mezo.api.dto.CatalogImagesRequest;
 import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
@@ -66,6 +67,29 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
         // box-jump is a master row ResetDatabase never cleans — clear the video so no cross-test residue.
         CatalogVideoRequest clear = CatalogVideoRequest.builder().videoUrl(null).build();
         putForBody("/api/train/exercises/" + boxJump.getId() + "/video", clear, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+    }
+
+    @Test
+    void testSetExerciseImages_shouldAttachAndClearOnMasterRow_whenOwnershipFree() {
+        HttpHeaders auth = ownerAuthHeaders();
+        ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
+            .stream().filter(e -> "box-jump".equals(e.getSlug())).findFirst().orElseThrow();
+
+        CatalogImagesRequest req = CatalogImagesRequest.builder()
+            .imageStartUrl("/exercises/box-jump-a.jpg").imageEndUrl("/exercises/box-jump-b.jpg").build();
+        ExerciseCatalogItem out = putForBody("/api/train/exercises/" + boxJump.getId() + "/images",
+            req, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(out.getImageStartUrl()).isEqualTo("/exercises/box-jump-a.jpg");
+        assertThat(out.getImageEndUrl()).isEqualTo("/exercises/box-jump-b.jpg");
+        assertThat(out.getEditable()).isFalse(); // master stays non-editable — attaching media is not authoring
+
+        // Both frames are written unconditionally, so nulls clear. Same residue reason as the video test:
+        // box-jump is a master row ResetDatabase never truncates.
+        CatalogImagesRequest clear = CatalogImagesRequest.builder().imageStartUrl(null).imageEndUrl(null).build();
+        ExerciseCatalogItem cleared = putForBody("/api/train/exercises/" + boxJump.getId() + "/images",
+            clear, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(cleared.getImageStartUrl()).isNull();
+        assertThat(cleared.getImageEndUrl()).isNull();
     }
 
     @Test

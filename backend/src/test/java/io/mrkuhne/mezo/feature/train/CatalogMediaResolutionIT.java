@@ -23,16 +23,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Verifies the demo {@code video_url} on a linked catalog row surfaces onto the workout DTOs:
- * {@code TodayExercise.videoUrl} (via {@link WorkoutService#getToday}) and {@code
- * GymExercise.videoUrl} (via {@link TrainService#listMesocycles}), resolved by
- * {@code exercise.catalog_id → exercise_catalog.video_url}. An unlinked exercise (or a linked row
- * with no video) yields a null videoUrl.
+ * Verifies the demo media on a linked catalog row surfaces onto the workout DTOs — the demo video and
+ * (since {@code mezo-8xdl.1}) the two image frames, all through ONE batched resolve:
+ * {@code TodayExercise} (via {@link WorkoutService#getToday}) and {@code GymExercise} (via
+ * {@link TrainService#listMesocycles}), resolved by {@code exercise.catalog_id → exercise_catalog}.
+ * An unlinked exercise (or a linked row with no media) yields nulls.
  */
-class CatalogVideoResolutionIT extends AbstractIntegrationTest {
+class CatalogMediaResolutionIT extends AbstractIntegrationTest {
 
     private static final String BENCH_VIDEO = "https://youtu.be/dQw4w9WgXcQ";
     private static final String SQUAT_VIDEO = "https://youtu.be/9bZkp7q19f0";
+    private static final String THRUSTER_START = "/exercises/kb-thruster-a.jpg";
+    private static final String THRUSTER_END = "/exercises/kb-thruster-b.jpg";
 
     @Autowired WorkoutService workoutService;
     @Autowired TrainService trainService;
@@ -91,6 +93,49 @@ class CatalogVideoResolutionIT extends AbstractIntegrationTest {
         assertThat(exercises).hasSize(2);
         assertThat(exercises.get(0).getVideoUrl()).isEqualTo(SQUAT_VIDEO);
         assertThat(exercises.get(1).getVideoUrl()).isNull();
+    }
+
+    @Test
+    void testGetToday_shouldResolveBothImageFrames_whenCatalogCarriesThem() {
+        UUID owner = databasePopulator.populateUser("images-today@test.local");
+        MesocycleEntity meso = train.createActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        ExerciseCatalogEntity catalog = train.createUserCatalogExercise(owner, "Kettlebell Thruster", "quad", "compound");
+        catalog.setImageStartUrl(THRUSTER_START);
+        catalog.setImageEndUrl(THRUSTER_END);
+        UUID catalogId = catalogRepository.saveAndFlush(catalog).getId();
+        ExerciseEntity ex = train.createExercise(
+            owner, day.getId(), "Kettlebell Thruster", 0, "quad", "compound", catalogId);
+        ex.setAnchorWeightKg(BigDecimal.valueOf(24));
+        train.save(ex);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        // Images resolve through the same batched fetch as the video, which stays null here.
+        assertThat(res.getExercises().get(0).getImageStartUrl()).isEqualTo(THRUSTER_START);
+        assertThat(res.getExercises().get(0).getImageEndUrl()).isEqualTo(THRUSTER_END);
+        assertThat(res.getExercises().get(0).getVideoUrl()).isNull();
+    }
+
+    @Test
+    void testListMesocycles_shouldResolveImagesPerExercise_whenCatalogLinked() {
+        UUID owner = databasePopulator.populateUser("images-meso@test.local");
+        MesocycleEntity meso = train.createMesocycle(owner, "Image meso", "active");
+        WorkoutSessionEntity day = train.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "active");
+        ExerciseCatalogEntity catalog = train.createUserCatalogExercise(owner, "Kettlebell Thruster", "quad", "compound");
+        catalog.setImageStartUrl(THRUSTER_START);
+        UUID catalogId = catalogRepository.saveAndFlush(catalog).getId();
+        train.createExercise(owner, day.getId(), "Kettlebell Thruster", 0, "quad", "compound", catalogId);
+        // Sibling with no catalog link — must stay null (no cross-contamination).
+        train.createExercise(owner, day.getId(), "Lábtolás", 1, "quad", "compound", null);
+
+        List<GymExercise> exercises = trainService.listMesocycles(owner).get(0).getDays().get(0).getExercises();
+
+        // Only the start frame was set: a half-populated pair resolves as-is, it is not dropped.
+        assertThat(exercises.get(0).getImageStartUrl()).isEqualTo(THRUSTER_START);
+        assertThat(exercises.get(0).getImageEndUrl()).isNull();
+        assertThat(exercises.get(1).getImageStartUrl()).isNull();
     }
 
     /** A user-authored catalog row carrying a demo video; returns its id. */

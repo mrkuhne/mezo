@@ -937,7 +937,10 @@ export interface DailyQuest {
 }
 
 // ── Habit engine — morning & evening routine chains (mezo-d1jb) ──────────────
-export type HabitChain = 'MORNING' | 'EVENING'
+/** Widened from `'MORNING' | 'EVENING'` (ADR 0019, mezo-n5e9.1's admin API): a chain is now a
+ *  user-editable catalog row, so `chain` carries any `chainKey` — the two seed keys or a
+ *  server-generated `chain_xxxx` custom one. `habitApi.ts`'s wire cast keeps compiling as-is. */
+export type HabitChain = string
 export type HabitMode = 'DERIVED' | 'MANUAL'
 export type HabitStatus = 'pending' | 'done' | 'missed'
 export interface HabitItem {
@@ -957,6 +960,37 @@ export interface HabitItem {
 }
 export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
 export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }
+
+// ── Habit admin catalog (routine editor, mezo-n5e9.2) — mirrors HabitChainAdmin/HabitDefAdmin.
+// The editor's full CRUD view of the catalog (config), independent of any day's evaluation.
+export type HabitDaypart = 'MORNING' | 'DAY' | 'EVENING'
+export interface HabitChainInfo {
+  id: string
+  chainKey: string
+  title: string
+  daypart: HabitDaypart
+  position: number
+  isActive: boolean
+  defs: HabitDefInfo[]
+}
+export interface HabitDefInfo {
+  id: string
+  habitKey: string
+  chainKey: string
+  position: number
+  title: string
+  why: string | null
+  anchorCopy: string | null
+  mode: HabitMode
+  metric: string
+  skillKey: string
+  xp: number
+  linkUrl: string | null
+  isActive: boolean
+}
+export interface HabitCatalog {
+  chains: HabitChainInfo[]
+}
 
 // ── Daily intention — standing creed + up to 3 daily foci + a holistic reflection (mezo-a686)
 export type Reflection = 'yes' | 'partial' | 'no'

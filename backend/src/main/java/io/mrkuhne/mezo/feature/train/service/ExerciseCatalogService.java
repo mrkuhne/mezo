@@ -47,9 +47,11 @@ public class ExerciseCatalogService {
     public ExerciseCatalogItem update(UUID currentUser, UUID id, CatalogExerciseCreateRequest req) {
         ExerciseCatalogEntity e = ownedOrThrow(currentUser, id);
         apply(e, req);
-        // UPDATE sets videoUrl unconditionally so clearing the field (null) actually removes the
-        // demo. CREATE keeps apply()'s set-only-when-present semantics (a fresh row defaults to null).
+        // UPDATE sets the media fields unconditionally so clearing one (null) actually removes it.
+        // CREATE keeps apply()'s set-only-when-present semantics (a fresh row defaults to null).
         e.setVideoUrl(req.getVideoUrl());
+        e.setImageStartUrl(req.getImageStartUrl());
+        e.setImageEndUrl(req.getImageEndUrl());
         return withEditable(repository.save(e), currentUser);
     }
 
@@ -62,6 +64,19 @@ public class ExerciseCatalogService {
     public ExerciseCatalogItem setVideo(UUID currentUser, UUID id, String videoUrl) {
         ExerciseCatalogEntity e = repository.findById(id).orElseThrow(OwnershipGuard::notFound);
         e.setVideoUrl(videoUrl);
+        return withEditable(repository.save(e), currentUser);
+    }
+
+    /**
+     * Attach/clear the demo stills on ANY row (master or user) — same ownership-free rule as
+     * {@link #setVideo}: attaching media is not authoring content. Both frames are written
+     * unconditionally, so a null clears that frame.
+     */
+    @Transactional
+    public ExerciseCatalogItem setImages(UUID currentUser, UUID id, String startUrl, String endUrl) {
+        ExerciseCatalogEntity e = repository.findById(id).orElseThrow(OwnershipGuard::notFound);
+        e.setImageStartUrl(startUrl);
+        e.setImageEndUrl(endUrl);
         return withEditable(repository.save(e), currentUser);
     }
 
@@ -85,6 +100,12 @@ public class ExerciseCatalogService {
         e.setFatigue(req.getFatigue());
         if (req.getVideoUrl() != null) {
             e.setVideoUrl(req.getVideoUrl());
+        }
+        if (req.getImageStartUrl() != null) {
+            e.setImageStartUrl(req.getImageStartUrl());
+        }
+        if (req.getImageEndUrl() != null) {
+            e.setImageEndUrl(req.getImageEndUrl());
         }
     }
 

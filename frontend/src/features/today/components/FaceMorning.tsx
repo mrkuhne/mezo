@@ -5,6 +5,7 @@
 // faces hold (the screen's actual guidance).
 // ============================================================
 import { BriefingCard } from '@/features/today/components/BriefingCard'
+import { ChainCelebrations, type ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { DoneFold } from '@/features/today/components/DoneFold'
 import { FaceHeroCard } from '@/features/today/components/FaceHeroCard'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
@@ -15,16 +16,19 @@ import type { Briefing } from '@/data/types'
 import type { DayFace } from '@/features/today/logic/dayFace'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
-import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 
 export function FaceMorning({
-  open, done, doneXp, chain, briefing, briefingDemo, stats, later, growth, fuelNote,
+  open, done, doneXp, chain, celebrations, briefing, briefingDemo, stats, later, growth, fuelNote,
   habitPending, onAct, onFace,
 }: {
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
   chain: { done: number; total: number; next: TodayItem | null }
+  /** Every ACTIVE MORNING-daypart chain's progress (mezo-n5e9.4) — not just the hero's: a
+   *  second morning chain (or a custom one) still gets its own completion toast even though
+   *  only the first-by-position chain is promoted to the hero above. */
+  celebrations: ChainCelebrationInput[]
   briefing: Briefing
   briefingDemo?: boolean
   /** The day's glance numbers („Ma eddig") — rendered as the DS StatStrip, morning face only. */
@@ -46,9 +50,9 @@ export function FaceMorning({
   // steps 2..n stay in the TodoCard under „Reggeli rutin" — so a skipped middle step can
   // still be ticked (the retired RoutineCard let any pending row be checked).
   const todo = open.filter((i) => i.id !== chain.next?.id)
-  useChainCelebration(chain.total > 0 && chain.done === chain.total, '🌅 Tökéletes reggel')
   return (
     <>
+      <ChainCelebrations chains={celebrations} />
       <FaceHeroCard
         tone="body" emoji="🌅" tag="REGGELI RUTIN"
         title={chain.next ? 'Indul a lánc' : 'Megvan a reggeled'}

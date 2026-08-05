@@ -74,6 +74,16 @@ const NEW_ROW: SlotTemplateRow = {
   budgetPct: 10,
 }
 
+// mezo-4ghd fixes 2/3: dedicated commit-normalizers passed into `NumberField`'s optional
+// `normalize` hook — the shared typing/decimal-acceptance logic in `NumberField` stays untouched
+// (per-field only, never on the bare/empty transient text so a clear-then-type sequence still
+// behaves like every other NumberField); only the VALUE handed up to the parent's `onChange` is
+// coerced. `budgetPct` is integer 1..100 on the wire (parseInt semantics — truncate, don't round,
+// so "12.5" commits 12); `offsetMin` is only clamped to the wire's ±720, no int-cast (unlike pct,
+// nothing here asked for integer-only on the offset).
+const normalizeBudgetPct = (n: number) => Math.max(1, Math.min(100, Math.trunc(n)))
+const clampOffsetMin = (n: number) => Math.max(-720, Math.min(720, n))
+
 function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) {
   return (
     <button
@@ -97,9 +107,24 @@ function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void
 // mid-typing states ("-", ".", "12.5") hold, coercing to a number on every change, and re-syncs
 // only on an EXTERNAL value change (the ± buttons) via the render-time prev-prop pattern — no
 // useEffect, so no keystroke-reset race. `allowNegative` widens the pattern for signed offsets.
+// mezo-4ghd fix round 1 (reviewer finding 2): the render-time resync above only fires when the
+// COMMITTED value changes between renders — typing "12.5" with a `normalize` in play commits 12
+// already at the "2" keystroke, so the trailing ".5" never changes `value` again and the display
+// is stuck showing "12.5" forever even though the committed/wire value is 12. `onBlur` adds a
+// second, unconditional settle point: on blur, the text always snaps to `String(value)`, so the
+// keystroke-reset-free typing experience is unchanged but the field never lingers out of sync
+// with what was actually committed once the user moves on.
 function NumberField({
-  value, onChange, label, width = 42, allowNegative = false,
-}: { value: number; onChange: (n: number) => void; label: string; width?: number; allowNegative?: boolean }) {
+  value, onChange, label, width = 42, allowNegative = false, normalize,
+}: {
+  value: number; onChange: (n: number) => void; label: string; width?: number; allowNegative?: boolean
+  /** mezo-4ghd fixes 2/3: optional per-field commit coercion (e.g. integer + range clamp) applied
+   *  to the VALUE handed to `onChange` — never to the raw typed text, so decimal entry still reads
+   *  naturally while it's being typed (see the module comment by the callers). Skipped on a bare/
+   *  empty transient (`''`, `'.'`, `'-'`, `'-.'`) so clearing-then-typing keeps behaving like every
+   *  other NumberField — only a text the user has actually committed to gets coerced. */
+  normalize?: (n: number) => number
+}) {
   const [text, setText] = useState(() => String(value))
   const [prev, setPrev] = useState(value)
   const pattern = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/
@@ -107,20 +132,23 @@ function NumberField({
   const parsed = isBareSign ? 0 : parseFloat(text)
   if (value !== prev) {
     setPrev(value)
-    if (parsed !== value) setText(String(value)) // external change (± buttons) → resync
+    if (parsed !== value) setText(String(value)) // external change (± buttons, or a `normalize` clamp) → resync
   }
   const commit = (raw: string) => {
     const cleaned = raw.replace(',', '.')
     if (cleaned !== '' && cleaned !== '-' && !pattern.test(cleaned)) return // ignore non-numeric input
     setText(cleaned)
-    const n = cleaned === '' || cleaned === '-' || cleaned === '.' ? 0 : parseFloat(cleaned)
-    onChange(Number.isFinite(n) ? n : 0)
+    const isBare = cleaned === '' || cleaned === '-' || cleaned === '.'
+    const n = isBare ? 0 : parseFloat(cleaned)
+    const committed = Number.isFinite(n) ? n : 0
+    onChange(normalize && !isBare ? normalize(committed) : committed)
   }
   return (
     <input
       inputMode="decimal"
       value={text}
       onChange={e => commit(e.target.value)}
+      onBlur={() => { if (text !== String(value)) setText(String(value)) }}
       aria-label={label}
       style={{ width, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
     />
@@ -151,7 +179,7 @@ export function FuelSlotsPage() {
   const [dayType, setDayType] = useStickyTab<SlotTemplateDayType>('fuel.slots.dayType', 'rest')
   const { blocks, budget, wake, bed, dayType: todayType, weightKg } = useFuelTimeline()
   const { settings } = useFuelSettings()
-  const { templates } = useSlotTemplates()
+  const { templates, isPending: templatesPending } = useSlotTemplates()
   const { putTemplate, deleteTemplate, pending } = useSlotTemplateActions()
   const { evaluate, pending: evalPending } = useSlotTemplateEvaluation()
 
@@ -160,15 +188,25 @@ export function FuelSlotsPage() {
 
   const [rows, setRows] = useState<SlotTemplateRow[]>(() => existing?.slots ?? [])
   const [forked, setForked] = useState<boolean>(() => Boolean(existing))
+  // Per-day-type draft retention (mezo-4ghd fix 5): switching the day-type tab used to
+  // unconditionally reset `rows`/`forked` off `existing`, silently discarding an in-progress
+  // fork/edit on the day type being left. `drafts` snapshots `{rows, forked}` per day type on the
+  // way out — but ONLY while `forked` is true: a day type that was only ever viewed read-only
+  // (never forked) has no edit worth keeping, and stashing it anyway would wrongly shadow that day
+  // type's existing-template late-arrival sync (the `else if` branch below) on a later visit.
+  const [drafts, setDrafts] = useState<Partial<Record<SlotTemplateDayType, { rows: SlotTemplateRow[]; forked: boolean }>>>({})
   // Render-time reset on a day-type switch (the AmountField "resync on external change" idiom,
   // generalized to a discrete key instead of a single prop) — the SAME useStickyTab-backed value
-  // change must drop any in-progress edit from the PREVIOUS day type and re-seed from whatever the
-  // newly selected one holds.
+  // change must drop any in-progress edit from the PREVIOUS day type and restore whatever the
+  // newly selected one holds: its draft if one was stashed, else the fresh existing/recommended
+  // default (unchanged from before drafts existed).
   const [trackedDayType, setTrackedDayType] = useState(dayType)
   if (dayType !== trackedDayType) {
+    if (forked) setDrafts(prev => ({ ...prev, [trackedDayType]: { rows, forked } }))
     setTrackedDayType(dayType)
-    setRows(existing?.slots ?? [])
-    setForked(Boolean(existing))
+    const draft = drafts[dayType]
+    setRows(draft ? draft.rows : existing?.slots ?? [])
+    setForked(draft ? draft.forked : Boolean(existing))
   } else if (!forked && existing != null) {
     // Cold-mount race (fix round 1): in real mode `useSlotTemplates()` starts pending —
     // `templates = []` (useDualQuery's `realEmpty`) — so `existing` is null at the FIRST render
@@ -225,11 +263,30 @@ export function FuelSlotsPage() {
     setRows(seedRowsFromRecommendation(recommendedWindows, recommendedBudgets))
     setForked(true)
   }
+  // mezo-4ghd fix round 1 (reviewer finding 1, CRITICAL): a stashed draft outlives the template it
+  // was seeded from. Repro: a saved template loads into the editor (`forked=true` from mount) →
+  // switching away+back stashes/restores that draft → "Ajánlott visszaállítása" deletes the
+  // server-side template but left the STALE draft sitting in `drafts[dayType]` → the next
+  // switch-away+back resurrected the deleted template's rows as an editable fork, and Mentés
+  // would silently re-create it. Both `save` and `resetToRecommended` now drop that day type's
+  // draft once its action lands — `save` because the just-saved `rows` supersede any stashed
+  // pre-save draft, `resetToRecommended` because there is no longer any template to draft from.
+  const clearDraft = (dt: SlotTemplateDayType) =>
+    setDrafts(prev => {
+      if (!(dt in prev)) return prev
+      const next = { ...prev }
+      delete next[dt]
+      return next
+    })
   const save = () => {
-    putTemplate({ dayType, slots: rows }).then(() => navigate(-1))
+    putTemplate({ dayType, slots: rows }).then(() => {
+      clearDraft(dayType)
+      navigate(-1)
+    })
   }
   const resetToRecommended = () => {
     deleteTemplate(dayType).then(() => {
+      clearDraft(dayType)
       setForked(false)
       setRows([])
     })
@@ -288,14 +345,22 @@ export function FuelSlotsPage() {
           <>
             <div className="col gap-sm" style={{ marginBottom: 12 }}>
               {recommendedWindows.map((w, i) => (
-                <div key={i} className="zcard" style={{ padding: '11px 12px' }}>
+                <div key={i} className="zcard" style={{ padding: '11px 12px', marginLeft: 0, marginRight: 0 }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
                     {toHHmm(w.time)} · {w.label} · {recommendedBudgets[i]?.kcal ?? 0} kcal
                   </span>
                 </div>
               ))}
             </div>
-            <button className="cta-primary" onClick={fork} style={{ width: '100%' }}>
+            {/* mezo-4ghd fix 4: disabled while the slot-templates GET is still pending in real mode
+                (`useDualQuery`'s cold-load window — `templates=[]`/`existing=null` regardless of
+                whether a template is actually saved). Forking here would seed `rows` from the
+                recommendation and set `forked=true`; if the GET then resolves to a saved template,
+                the late-arrival sync below (`!forked && existing != null`) can never fire again for
+                this day type — Mentés would silently overwrite the real template with the fork.
+                Mock mode resolves `isPending` synchronously (`useDualQuery`'s `initialData`), so the
+                button is never disabled there. */}
+            <button className="cta-primary" onClick={fork} disabled={templatesPending} style={{ width: '100%' }}>
               <Icon name="pencil" size={14} /> Testreszabás
             </button>
           </>
@@ -303,13 +368,14 @@ export function FuelSlotsPage() {
           <>
             <div className="col gap-sm" style={{ marginBottom: 12 }}>
               {rows.map((row, i) => (
-                <div key={i} className="zcard" style={{ padding: '11px 12px' }}>
+                <div key={i} className="zcard" style={{ padding: '11px 12px', marginLeft: 0, marginRight: 0 }}>
                   <div className="row" style={{ alignItems: 'center', gap: 8 }}>
                     <input
                       value={row.label}
                       onChange={e => updateRow(i, { label: e.target.value })}
                       aria-label="Slot neve"
                       placeholder="Slot neve"
+                      maxLength={40}
                       style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}
                     />
                     <button onClick={() => removeRow(i)} aria-label={`${row.label} törlése`} style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
@@ -359,7 +425,7 @@ export function FuelSlotsPage() {
                       ) : (
                         <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', display: 'inline-flex' }}>
                           <button
-                            onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: anchor.offsetMin - 15 } })}
+                            onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: clampOffsetMin(anchor.offsetMin - 15) } })}
                             aria-label="Csökkentés"
                             style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}
                           >−</button>
@@ -369,9 +435,10 @@ export function FuelSlotsPage() {
                             label="Eltolás perc"
                             allowNegative
                             width={46}
+                            normalize={clampOffsetMin}
                           />
                           <button
-                            onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: anchor.offsetMin + 15 } })}
+                            onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: clampOffsetMin(anchor.offsetMin + 15) } })}
                             aria-label="Növelés"
                             style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}
                           >+</button>
@@ -380,7 +447,7 @@ export function FuelSlotsPage() {
                     })()}
 
                     <div className="row" style={{ alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-                      <NumberField value={row.budgetPct} onChange={n => updateRow(i, { budgetPct: n })} label="Budget %" width={40} />
+                      <NumberField value={row.budgetPct} onChange={n => updateRow(i, { budgetPct: n })} label="Budget %" width={40} normalize={normalizeBudgetPct} />
                       <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>%</span>
                     </div>
                   </div>
@@ -409,7 +476,7 @@ export function FuelSlotsPage() {
 
             <div className="col gap-sm" style={{ marginBottom: 9 }}>
               {compiled.map((w, i) => (
-                <div key={i} className="zcard" style={{ padding: '9px 12px' }}>
+                <div key={i} className="zcard" style={{ padding: '9px 12px', marginLeft: 0, marginRight: 0 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                     {toHHmm(w.time)} · {w.label} · {compiledBudgets[i]?.kcal ?? 0} kcal · P{compiledBudgets[i]?.p ?? 0}
                   </span>
@@ -417,11 +484,13 @@ export function FuelSlotsPage() {
               ))}
             </div>
 
-            {errors.map(e => (
-              <p key={e.code} role="alert" style={{ fontSize: 11, color: 'var(--coral-deep)', marginTop: 6 }}>{e.text}</p>
+            {/* mezo-4ghd fix 6a: `${code}-${i}` keys — `code` alone collides when e.g. `label_length`,
+                `gap`, or `pre_workout_big` fire more than once for the same plan. */}
+            {errors.map((e, i) => (
+              <p key={`${e.code}-${i}`} role="alert" style={{ fontSize: 11, color: 'var(--coral-deep)', marginTop: 6 }}>{e.text}</p>
             ))}
-            {warnings.map(w => (
-              <p key={w.code} style={{ fontSize: 11, color: 'var(--warning)', marginTop: 6 }}>{w.text}</p>
+            {warnings.map((w, i) => (
+              <p key={`${w.code}-${i}`} style={{ fontSize: 11, color: 'var(--warning)', marginTop: 6 }}>{w.text}</p>
             ))}
 
             {/* "Mezo értékelése" (mezo-7102 Task 12) — an AI olvasat on the current draft,

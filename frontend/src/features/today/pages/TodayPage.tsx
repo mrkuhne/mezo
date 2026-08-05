@@ -27,8 +27,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useActivities, useCheckins, useCompanionNote, useDailyQuests, useFuelPreview, useHabitActions,
-  useHabitDay, useIntentionActions, useIntentionDay, useQuestActions, useQuickStats, useRitualDay,
-  useSleep, useSleepGoal, useToday, useTodayScenario, useWaterActions, resolveBriefing,
+  useHabitCatalog, useHabitDay, useIntentionActions, useIntentionDay, useQuestActions,
+  useQuickStats, useRitualDay, useSleep, useSleepGoal, useToday, useTodayScenario, useWaterActions,
+  resolveBriefing,
 } from '@/data/hooks'
 import { AppHero } from '@/features/progression/components/AppHero'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -58,7 +59,7 @@ import {
 import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/features/train/logic/sportKinds'
 import { localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
-import type { DailyQuest, MealSlot } from '@/data/types'
+import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
 
 const isFace = (v: string | null): v is Face => v !== null && (DAY_FACES as readonly string[]).includes(v)
 
@@ -119,6 +120,10 @@ export function TodayPage() {
   const { consumeLevelUps: consumeQuestLevelUps } = useQuestActions(date)
   const { data: activities } = useActivities(date)
   const { habits, levelUps: habitLevelUps } = useHabitDay(date)
+  // The routine editor's live catalog (mezo-n5e9.2) — `buildTodayItems` looks up each habit's
+  // chain here (title/daypart) instead of a hardcoded MORNING/EVENING map. Unresolved in real
+  // mode (`{chains: []}`) means every habit is skipped below, never a crash — see todayItems.ts.
+  const { catalog: habitCatalog } = useHabitCatalog()
   const { check, pending: habitPending, consumeLevelUps: consumeHabitLevelUps } = useHabitActions(date)
   const { data: ritualDay } = useRitualDay(date)
   const { visible: fuelSlots, nextStack } = useFuelPreview()
@@ -191,6 +196,7 @@ export function TodayPage() {
   const items = useMemo(() => {
     const built = buildTodayItems({
       quests, habits, checkins, fuelSlots, ritual: ritualDay, goal: sleepGoal, sessions,
+      chains: habitCatalog.chains,
     })
     // The ItemRow doctrine, enforced for EVERY source in one place: a row keeps its action
     // only when this screen can serve it (`servableAction`), otherwise the row survives and
@@ -210,7 +216,7 @@ export function TodayPage() {
       const hint = faced.action?.kind === 'habit' ? habitHint(faced.action.habit) : null
       return { ...faced, action: null, subtitle: hint ?? faced.subtitle }
     })
-  }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, sessions, heroItemId])
+  }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, sessions, heroItemId, habitCatalog.chains])
 
   // The current face comes from the clock; `?dp=` overrides it. Absent (`null`) and
   // blank (`''`) both mean "current" — neither may fall through to a parsed value.
@@ -308,14 +314,41 @@ export function TodayPage() {
     }
   }
 
-  const chainProgress = (which: 'MORNING' | 'EVENING') => {
-    const steps = habits.filter((h) => h.chain === which)
+  // Per-chain progress, keyed by the catalog's own `chainKey` (mezo-n5e9.4 — the Task 2 review
+  // carry-over): this used to literal-filter `h.chain === 'MORNING'/'EVENING'`, so a second
+  // morning-daypart chain or a custom chain created via the routine editor would get Today rows
+  // but no progress/celebration surface. `chainKey` is generic now — the CALLER decides which
+  // chain(s) it means, sourced from `habitCatalog.chains` below, never a hardcoded literal.
+  const chainProgress = (chainKey: string) => {
+    const steps = habits.filter((h) => h.chain === chainKey)
     return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
   }
+  // Active chains, editor order (RoutinesTab.tsx's own "ONE source of which cards render" —
+  // generalized here to drive hero selection + celebrations instead of chain cards).
+  const activeChains = [...habitCatalog.chains].filter((c) => c.isActive).sort((a, b) => a.position - b.position)
+  // Fixed copy for the two seed chains (byte-parity, mezo-n5e9.4 REQUIRED); any other chain
+  // (a custom one created via the routine editor) celebrates with its own title.
+  const chainCelebrationText = (c: HabitChainInfo): string => {
+    if (c.chainKey === 'MORNING') return '🌅 Tökéletes reggel'
+    if (c.chainKey === 'EVENING') return '🌙 Tökéletes este'
+    return `✨ ${c.title} kész`
+  }
+  // Every active chain of a daypart gets its own celebration — not just the daypart's hero
+  // chain (only the morning face has one; a second chain of any daypart still completes and
+  // toasts on its own).
+  const celebrationsFor = (daypart: HabitDaypart) =>
+    activeChains
+      .filter((c) => c.daypart === daypart)
+      .map((c) => ({ id: c.id, text: chainCelebrationText(c), ...chainProgress(c.chainKey) }))
+  // The morning face has exactly one hero slot — promoted from the first ACTIVE MORNING-daypart
+  // chain by position (was a hardcoded 'MORNING' chainKey literal). Falls back to the literal
+  // key when no MORNING chain exists (catalog not yet resolved in real mode) — chainProgress on
+  // an unknown key is just 0/0, never a crash.
+  const heroMorningChain = activeChains.find((c) => c.daypart === 'MORNING') ?? null
   // Only the chain's FIRST open step is promoted into the hero; the rest stay ordinary
   // TodoCard rows so every pending step is actionable, in order or out of it.
   const chain = {
-    ...chainProgress('MORNING'),
+    ...chainProgress(heroMorningChain?.chainKey ?? 'MORNING'),
     next: open.find((i) => i.source === 'habit' && i.face === 'reggel') ?? null,
   }
   // The preview rows of the OTHER faces. The predicate narrows the type, so `face` is a real
@@ -355,7 +388,7 @@ export function TodayPage() {
       <div className="faceswap" data-dir={dir} key={selected}>
         {selected === 'reggel' && (
           <FaceMorning
-            open={open} done={done} doneXp={doneXp} chain={chain}
+            open={open} done={done} doneXp={doneXp} chain={chain} celebrations={celebrationsFor('MORNING')}
             briefing={briefing ?? resolveBriefing(scenario.dayState)}
             briefingDemo={briefingDemo}
             stats={stats}
@@ -368,13 +401,14 @@ export function TodayPage() {
             open={open} done={done} doneXp={doneXp} hero={dayHero} note={companionNote}
             heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
             heroNote={sportToday ? volleyballNote : null}
+            celebrations={celebrationsFor('DAY')}
             later={later.filter((i) => i.face === 'este')} growth={growth} fuelNote={fuelNote}
             habitPending={habitPending} onAct={act} onFace={selectFace} onCustom={() => setCustomOpen(true)}
           />
         )}
         {selected === 'este' && (
           <FaceEvening
-            open={open} done={done} doneXp={doneXp} dayXp={dayXp} chain={chainProgress('EVENING')}
+            open={open} done={done} doneXp={doneXp} dayXp={dayXp} celebrations={celebrationsFor('EVENING')}
             note={companionNote} growth={growth} fuelNote={fuelNote} habitPending={habitPending} onAct={act}
           />
         )}
