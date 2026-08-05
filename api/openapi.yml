@@ -5121,6 +5121,27 @@ paths:
       responses:
         '204':
           description: Soft-deleted
+  /api/habit/ai/suggest:
+    post:
+      tags:
+        - Habit
+      operationId: suggestHabits
+      summary: Propose-only AI habit suggestions (smart model; the model never writes)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitSuggestRequest'
+      responses:
+        '200':
+          description: Suggestions (possibly empty when the model output was unusable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitSuggestResponse'
+        '503':
+          description: Suggester unavailable (switch off / companion off)
   '/api/intention/day/{date}':
     get:
       tags:
@@ -12309,6 +12330,51 @@ components:
           items:
             type: string
             format: uuid
+    HabitSuggestRequest:
+      type: object
+      properties:
+        chainKey:
+          type: string
+          nullable: true
+          description: Preselected chain to suggest for
+        hint:
+          type: string
+          nullable: true
+          maxLength: 200
+          description: Optional user intent (szándék)
+    HabitSuggestion:
+      type: object
+      required:
+        - title
+        - why
+        - anchorCopy
+        - skillKey
+        - xp
+        - chainKey
+      properties:
+        title:
+          type: string
+        why:
+          type: string
+        anchorCopy:
+          type: string
+        skillKey:
+          type: string
+        xp:
+          type: integer
+          minimum: 5
+          maximum: 15
+        chainKey:
+          type: string
+    HabitSuggestResponse:
+      type: object
+      required:
+        - suggestions
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HabitSuggestion'
     IntentionFocusResponse:
       type: object
       required:

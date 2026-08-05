@@ -109,6 +109,14 @@ public class FeaturesConfiguration {
     /** Nightly habit close cron (end-of-day + next-day metrics) — schedule: mezo.habit.close-cron. */
     public static final String HABIT_JOB_SWITCH = "mezo.techcore.cron.habit-job.enabled";
 
+    /** AI habit suggester (mezo-n5e9.3, ADR 0019) — gates ONLY the propose-only smart-model
+     *  suggestion endpoint; existing habit CRUD/day/summary stays on regardless. {@code
+     *  HabitAiService} itself conditions on {@link #HABIT_SWITCH} (same bean lifecycle as the
+     *  controller it's wired into); the companion-side adapter additionally needs both this AND
+     *  COMPANION_SWITCH (array-AND'ed exactly like STACK_PLACEMENT_LLM_SWITCH/COMPANION_SWITCH);
+     *  off/absent on either degrades the endpoint to a clean 503. */
+    public static final String HABIT_AI_SUGGEST_SWITCH = "mezo.feature.habit-ai-suggest.enabled";
+
     /** Daily intention (creed + foci + reflection, mezo-a686). Gates /api/intention + services. */
     public static final String INTENTION_SWITCH = "mezo.feature.intention.enabled";
 

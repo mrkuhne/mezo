@@ -2103,6 +2103,23 @@ export interface paths {
         patch: operations["updateHabitDef"];
         trace?: never;
     };
+    "/api/habit/ai/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Propose-only AI habit suggestions (smart model; the model never writes) */
+        post: operations["suggestHabits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intention/day/{date}": {
         parameters: {
             query?: never;
@@ -4980,6 +4997,23 @@ export interface components {
         };
         HabitReorderRequest: {
             defIds: string[];
+        };
+        HabitSuggestRequest: {
+            /** @description Preselected chain to suggest for */
+            chainKey?: string | null;
+            /** @description Optional user intent (szándék) */
+            hint?: string | null;
+        };
+        HabitSuggestion: {
+            title: string;
+            why: string;
+            anchorCopy: string;
+            skillKey: string;
+            xp: number;
+            chainKey: string;
+        };
+        HabitSuggestResponse: {
+            suggestions: components["schemas"]["HabitSuggestion"][];
         };
         IntentionFocusResponse: {
             /** Format: uuid */
@@ -11362,6 +11396,37 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HabitDefAdmin"];
                 };
+            };
+        };
+    };
+    suggestHabits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitSuggestRequest"];
+            };
+        };
+        responses: {
+            /** @description Suggestions (possibly empty when the model output was unusable) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitSuggestResponse"];
+                };
+            };
+            /** @description Suggester unavailable (switch off / companion off) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
