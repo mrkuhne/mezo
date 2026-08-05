@@ -165,12 +165,13 @@ public class HabitAdminService {
                 .findByCreatedByAndChainKeyAndDeletedFalse(userId, request.getChainKey())
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                     SystemMessage.error("HABIT_DEF_UNKNOWN_CHAIN").build(), HttpStatus.BAD_REQUEST));
+            // Count the target chain's live defs BEFORE reassigning chainId: def.setChainId(...)
+            // dirties the managed entity, and a query issued after that triggers JPA auto-flush,
+            // which would push the (moving) def's new chainId first and make the count include
+            // itself — an off-by-one that leaves a permanent numbering gap (review finding 1).
+            int endOfTargetChain = defRepository.findByChainIdAndDeletedFalse(target.getId()).size() + 1;
             def.setChainId(target.getId());
-            if (request.getPosition() != null) {
-                def.setPosition(request.getPosition());
-            } else {
-                def.setPosition(defRepository.findByChainIdAndDeletedFalse(target.getId()).size() + 1);
-            }
+            def.setPosition(request.getPosition() != null ? request.getPosition() : endOfTargetChain);
         } else if (request.getPosition() != null) {
             def.setPosition(request.getPosition());
         }

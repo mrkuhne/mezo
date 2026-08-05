@@ -67,6 +67,34 @@ class HabitAdminApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreateDef_shouldRejectManualMetric_whenDerived() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Hidegzuhany")
+                .mode(HabitDefCreateRequest.ModeEnum.DERIVED).metric("manual")
+                .skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_MODE_METRIC_MISMATCH");
+    }
+
+    @Test
+    void testUpdateDef_shouldMoveToEmptyCustomChain_atPositionOne() {
+        HabitCatalogResponse cat = catalog();
+        HabitDefAdmin sunlight = cat.getChains().get(0).getDefs().stream()
+            .filter(d -> d.getHabitKey().equals("morning_sunlight")).findFirst().orElseThrow();
+        HabitChainAdmin emptyChain = postForBody("/api/habit/chain",
+            HabitChainCreateRequest.builder().title("Új lánc").daypart(HabitChainCreateRequest.DaypartEnum.DAY).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitChainAdmin.class);
+
+        HabitDefAdmin moved = patchForBody("/api/habit/def/" + sunlight.getId(),
+            HabitDefUpdateRequest.builder().chainKey(emptyChain.getChainKey()).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        assertThat(moved.getChainKey()).isEqualTo(emptyChain.getChainKey());
+        assertThat(moved.getPosition()).isEqualTo(1); // empty target chain — no off-by-one from the moving def itself
+    }
+
+    @Test
     void testUpdateDef_shouldToggleInactive_andDayViewShrinks() {
         HabitCatalogResponse cat = catalog();
         HabitDefAdmin sunlight = cat.getChains().get(0).getDefs().stream()
