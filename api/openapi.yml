@@ -4877,6 +4877,159 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/habit/catalog:
+    get:
+      tags:
+        - Habit
+      operationId: getHabitCatalog
+      summary: 'Full catalog for the editor — chains with their defs, inactive included'
+      responses:
+        '200':
+          description: The catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitCatalogResponse'
+  /api/habit/chain:
+    post:
+      tags:
+        - Habit
+      operationId: createHabitChain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitChainCreateRequest'
+      responses:
+        '200':
+          description: The created chain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitChainAdmin'
+  '/api/habit/chain/{id}':
+    patch:
+      tags:
+        - Habit
+      operationId: updateHabitChain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitChainUpdateRequest'
+      responses:
+        '200':
+          description: The updated chain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitChainAdmin'
+    delete:
+      tags:
+        - Habit
+      operationId: deleteHabitChain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Soft-deleted
+  '/api/habit/chain/{id}/order':
+    put:
+      tags:
+        - Habit
+      operationId: reorderHabitChain
+      summary: Full-order replacement of the chain's def positions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitReorderRequest'
+      responses:
+        '200':
+          description: The chain with defs in the new order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitChainAdmin'
+  /api/habit/def:
+    post:
+      tags:
+        - Habit
+      operationId: createHabitDef
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitDefCreateRequest'
+      responses:
+        '200':
+          description: The created def
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitDefAdmin'
+  '/api/habit/def/{id}':
+    patch:
+      tags:
+        - Habit
+      operationId: updateHabitDef
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitDefUpdateRequest'
+      responses:
+        '200':
+          description: The updated def
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HabitDefAdmin'
+    delete:
+      tags:
+        - Habit
+      operationId: deleteHabitDef
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Soft-deleted
   '/api/intention/day/{date}':
     get:
       tags:
@@ -11599,9 +11752,7 @@ components:
           type: string
         chain:
           type: string
-          enum:
-            - MORNING
-            - EVENING
+          description: 'Chain key (seed chains: MORNING / EVENING)'
         position:
           type: integer
         title:
@@ -11706,6 +11857,209 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HabitStrength'
+    HabitChainAdmin:
+      type: object
+      required:
+        - id
+        - chainKey
+        - title
+        - daypart
+        - position
+        - isActive
+        - defs
+      properties:
+        id:
+          type: string
+          format: uuid
+        chainKey:
+          type: string
+        title:
+          type: string
+        daypart:
+          type: string
+          enum:
+            - MORNING
+            - DAY
+            - EVENING
+        position:
+          type: integer
+        isActive:
+          type: boolean
+        defs:
+          type: array
+          items:
+            $ref: '#/components/schemas/HabitDefAdmin'
+    HabitDefAdmin:
+      type: object
+      required:
+        - id
+        - habitKey
+        - chainKey
+        - position
+        - title
+        - mode
+        - metric
+        - skillKey
+        - xp
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+        habitKey:
+          type: string
+        chainKey:
+          type: string
+        position:
+          type: integer
+        title:
+          type: string
+        why:
+          type: string
+          nullable: true
+        anchorCopy:
+          type: string
+          nullable: true
+        mode:
+          type: string
+          enum:
+            - DERIVED
+            - MANUAL
+        metric:
+          type: string
+        skillKey:
+          type: string
+        xp:
+          type: integer
+        linkUrl:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+    HabitCatalogResponse:
+      type: object
+      required:
+        - chains
+      properties:
+        chains:
+          type: array
+          items:
+            $ref: '#/components/schemas/HabitChainAdmin'
+    HabitChainCreateRequest:
+      type: object
+      required:
+        - title
+        - daypart
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        daypart:
+          type: string
+          enum:
+            - MORNING
+            - DAY
+            - EVENING
+    HabitChainUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        daypart:
+          type: string
+          enum:
+            - MORNING
+            - DAY
+            - EVENING
+        position:
+          type: integer
+          minimum: 1
+        isActive:
+          type: boolean
+    HabitDefCreateRequest:
+      type: object
+      required:
+        - chainKey
+        - title
+        - mode
+        - skillKey
+        - xp
+      properties:
+        chainKey:
+          type: string
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        why:
+          type: string
+          nullable: true
+        anchorCopy:
+          type: string
+          nullable: true
+          maxLength: 120
+        mode:
+          type: string
+          enum:
+            - DERIVED
+            - MANUAL
+        metric:
+          type: string
+          description: Required for DERIVED; ignored for MANUAL (forced to "manual")
+        skillKey:
+          type: string
+        xp:
+          type: integer
+          minimum: 5
+          maximum: 15
+        linkUrl:
+          type: string
+          nullable: true
+        position:
+          type: integer
+          minimum: 1
+          description: Defaults to end of chain
+    HabitDefUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        why:
+          type: string
+          nullable: true
+        anchorCopy:
+          type: string
+          nullable: true
+          maxLength: 120
+        chainKey:
+          type: string
+        position:
+          type: integer
+          minimum: 1
+        xp:
+          type: integer
+          minimum: 5
+          maximum: 15
+        linkUrl:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+    HabitReorderRequest:
+      type: object
+      required:
+        - defIds
+      properties:
+        defIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     IntentionFocusResponse:
       type: object
       required:

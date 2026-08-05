@@ -1971,6 +1971,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/habit/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Full catalog for the editor — chains with their defs, inactive included */
+        get: operations["getHabitCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/chain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createHabitChain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/chain/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteHabitChain"];
+        options?: never;
+        head?: never;
+        patch: operations["updateHabitChain"];
+        trace?: never;
+    };
+    "/api/habit/chain/{id}/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Full-order replacement of the chain's def positions */
+        put: operations["reorderHabitChain"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/def": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createHabitDef"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/def/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteHabitDef"];
+        options?: never;
+        head?: never;
+        patch: operations["updateHabitDef"];
+        trace?: never;
+    };
     "/api/intention/day/{date}": {
         parameters: {
             query?: never;
@@ -4681,8 +4779,8 @@ export interface components {
             /** Format: uuid */
             id?: string;
             key: string;
-            /** @enum {string} */
-            chain: "MORNING" | "EVENING";
+            /** @description Chain key (seed chains: MORNING / EVENING) */
+            chain: string;
             position: number;
             title: string;
             why: string;
@@ -4723,6 +4821,77 @@ export interface components {
             perfectMorningDays30: number;
             perfectEveningDays30: number;
             habits: components["schemas"]["HabitStrength"][];
+        };
+        HabitChainAdmin: {
+            /** Format: uuid */
+            id: string;
+            chainKey: string;
+            title: string;
+            /** @enum {string} */
+            daypart: "MORNING" | "DAY" | "EVENING";
+            position: number;
+            isActive: boolean;
+            defs: components["schemas"]["HabitDefAdmin"][];
+        };
+        HabitDefAdmin: {
+            /** Format: uuid */
+            id: string;
+            habitKey: string;
+            chainKey: string;
+            position: number;
+            title: string;
+            why?: string | null;
+            anchorCopy?: string | null;
+            /** @enum {string} */
+            mode: "DERIVED" | "MANUAL";
+            metric: string;
+            skillKey: string;
+            xp: number;
+            linkUrl?: string | null;
+            isActive: boolean;
+        };
+        HabitCatalogResponse: {
+            chains: components["schemas"]["HabitChainAdmin"][];
+        };
+        HabitChainCreateRequest: {
+            title: string;
+            /** @enum {string} */
+            daypart: "MORNING" | "DAY" | "EVENING";
+        };
+        HabitChainUpdateRequest: {
+            title?: string;
+            /** @enum {string} */
+            daypart?: "MORNING" | "DAY" | "EVENING";
+            position?: number;
+            isActive?: boolean;
+        };
+        HabitDefCreateRequest: {
+            chainKey: string;
+            title: string;
+            why?: string | null;
+            anchorCopy?: string | null;
+            /** @enum {string} */
+            mode: "DERIVED" | "MANUAL";
+            /** @description Required for DERIVED; ignored for MANUAL (forced to "manual") */
+            metric?: string;
+            skillKey: string;
+            xp: number;
+            linkUrl?: string | null;
+            /** @description Defaults to end of chain */
+            position?: number;
+        };
+        HabitDefUpdateRequest: {
+            title?: string;
+            why?: string | null;
+            anchorCopy?: string | null;
+            chainKey?: string;
+            position?: number;
+            xp?: number;
+            linkUrl?: string | null;
+            isActive?: boolean;
+        };
+        HabitReorderRequest: {
+            defIds: string[];
         };
         IntentionFocusResponse: {
             /** Format: uuid */
@@ -10814,6 +10983,192 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getHabitCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The catalog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitCatalogResponse"];
+                };
+            };
+        };
+    };
+    createHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitChainCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description The created chain */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+        };
+    };
+    deleteHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Soft-deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitChainUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated chain */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+        };
+    };
+    reorderHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description The chain with defs in the new order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+        };
+    };
+    createHabitDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitDefCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description The created def */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitDefAdmin"];
+                };
+            };
+        };
+    };
+    deleteHabitDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Soft-deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateHabitDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitDefUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated def */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitDefAdmin"];
                 };
             };
         };

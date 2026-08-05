@@ -6,9 +6,10 @@ import io.mrkuhne.mezo.api.dto.HabitStrength;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
 import io.mrkuhne.mezo.feature.habit.HabitCatalog;
-import io.mrkuhne.mezo.feature.habit.HabitCatalog.HabitDef;
 import io.mrkuhne.mezo.feature.habit.config.HabitProperties;
+import io.mrkuhne.mezo.feature.habit.entity.HabitChainEntity;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDefEntity;
 import io.mrkuhne.mezo.feature.habit.mapper.HabitMapper;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.progression.ProgressionGate;
@@ -26,7 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -41,6 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
  * progression atomically with the status flip), and past pending days close quietly — kept if the
  * signal fired, else missed (no failure ceremony). Manual habits are user-checked/unchecked (same
  * day only); uncheck reverts the XP so a re-check can re-award. Gated {@code HABIT_SWITCH}.
+ *
+ * <p>Definitions come from {@link HabitCatalogService} (mezo-n5e9.1) — the DB-backed, per-user
+ * catalog that lazily bootstraps from the {@link HabitCatalog} JSON seed on first read.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,7 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class HabitService {
 
     private final HabitDayRepository repository;
-    private final HabitCatalog catalog;
+    private final HabitCatalogService catalogService;
     private final HabitEvaluator evaluator;
     private final HabitMapper mapper;
     private final ProgressionService progressionService;
@@ -58,22 +64,27 @@ public class HabitService {
 
     @Transactional
     public HabitDayResponse getDay(UUID userId, LocalDate date) {
+        // The one catalog bootstrap call for this whole request (mezo-n5e9.1 review finding 1):
+        // its result feeds ensureRows/closeStaleRows below, so neither needs to call it again.
+        List<HabitDefEntity> defs = catalogService.ensureCatalog(userId);
         List<HabitDayEntity> rows = repository.findByCreatedByAndHabitDate(userId, date);
         if (rows.isEmpty() && date.equals(LocalDate.now())) {
-            rows = ensureRows(userId, date);
+            rows = ensureRows(userId, date, defs);
         }
         List<LevelUpResult> levelUps = new ArrayList<>();
         if (date.equals(LocalDate.now())) {
-            closePast(userId, date);
-            levelUps.addAll(evaluateIntraday(rows));
+            closeStaleRows(userId, staleRows(userId, date), date);
+            levelUps.addAll(evaluateIntraday(userId, rows));
         }
         Map<String, Integer> strengths = strengthByKey(userId, date);
         Map<String, HabitDayEntity> byKey = new HashMap<>();
         rows.forEach(r -> byKey.put(r.getHabitKey(), r));
+        Map<UUID, String> chainKeyById = chainKeyById(userId);
         return HabitDayResponse.builder()
             .date(date)
-            .habits(catalog.all().stream()
-                .map(def -> mapper.toResponse(def, byKey.get(def.key()), strengths.get(def.key())))
+            .habits(defs.stream()
+                .map(def -> mapper.toResponse(def, chainKeyById.get(def.getChainId()),
+                    byKey.get(def.getHabitKey()), strengths.get(def.getHabitKey())))
                 .toList())
             .levelUps(levelUps.stream().map(levelUpResultMapper::toDto).toList())
             .build();
@@ -81,7 +92,7 @@ public class HabitService {
 
     @Transactional
     public HabitWriteResponse check(UUID userId, String key, LocalDate date) {
-        HabitDef def = requireDef(key);
+        HabitDefEntity def = requireDef(userId, key);
         requireManualToday(def, date);
         ensureRows(userId, LocalDate.now());
         HabitDayEntity row = repository
@@ -91,15 +102,16 @@ public class HabitService {
             throw conflict("HABIT_ALREADY_DONE");
         }
         List<LevelUpResult> levelUps = complete(row, def, HabitDayEntity.SOURCE_MANUAL);
+        String chainKey = chainKeyById(userId).get(def.getChainId());
         return HabitWriteResponse.builder()
-            .habit(mapper.toResponse(def, row, null))
+            .habit(mapper.toResponse(def, chainKey, row, null))
             .levelUps(levelUps.stream().map(levelUpResultMapper::toDto).toList())
             .build();
     }
 
     @Transactional
     public HabitResponse uncheck(UUID userId, String key, LocalDate date) {
-        HabitDef def = requireDef(key);
+        HabitDefEntity def = requireDef(userId, key);
         requireManualToday(def, date);
         HabitDayEntity row = repository
             .findByCreatedByAndHabitDateAndHabitKey(userId, date, key)
@@ -108,15 +120,23 @@ public class HabitService {
             || !HabitDayEntity.SOURCE_MANUAL.equals(row.getSource())) {
             throw conflict("HABIT_NOT_DONE");
         }
-        progressionService.revertHabit(userId, row.getId(), def.skillKey(), row.getXpAwarded());
+        progressionService.revertHabit(userId, row.getId(), def.getSkillKey(), row.getXpAwarded());
         row.setStatus(HabitDayEntity.STATUS_PENDING);
         row.setDoneAt(null);
         row.setXpAwarded(0);
         row.setSource(null);
         repository.save(row);
-        return mapper.toResponse(def, row, null);
+        String chainKey = chainKeyById(userId).get(def.getChainId());
+        return mapper.toResponse(def, chainKey, row, null);
     }
 
+    /**
+     * NON-bootstrapping (mezo-n5e9.1 review finding 3): a user who has never touched habits gets
+     * an honest empty/zero summary here — their catalog materializes on the first {@code getDay}
+     * read, not on a chat-driven summary probe (this is also what {@code ContextSnapshotAssembler}
+     * / {@code PracticeTools} call on every companion turn; bootstrapping 17 rows for a dormant
+     * account on every chat message was the bug).
+     */
     @Transactional(readOnly = true)
     public HabitSummaryResponse summary(UUID userId) {
         LocalDate today = LocalDate.now();
@@ -135,13 +155,13 @@ public class HabitService {
             }
         });
         return HabitSummaryResponse.builder()
-            .perfectMorningDays30(perfectDays(window, HabitCatalog.CHAIN_MORNING))
-            .perfectEveningDays30(perfectDays(window, HabitCatalog.CHAIN_EVENING))
-            .habits(catalog.all().stream().map(def -> {
-                long[] c = counts.getOrDefault(def.key(), new long[2]);
+            .perfectMorningDays30(perfectDays(userId, window, HabitCatalog.CHAIN_MORNING))
+            .perfectEveningDays30(perfectDays(userId, window, HabitCatalog.CHAIN_EVENING))
+            .habits(catalogService.activeOrderedWithoutBootstrap(userId).stream().map(def -> {
+                long[] c = counts.getOrDefault(def.getHabitKey(), new long[2]);
                 return HabitStrength.builder()
-                    .key(def.key())
-                    .strengthPct(strengths.get(def.key()))
+                    .key(def.getHabitKey())
+                    .strengthPct(strengths.get(def.getHabitKey()))
                     .done28((int) c[0])
                     .missed28((int) c[1])
                     .build();
@@ -149,19 +169,36 @@ public class HabitService {
             .build();
     }
 
-    /** Close every pending row older than today; the cron and the today-read both call this. */
+    /**
+     * Close every pending row older than today; the nightly cron ({@code HabitJob}) and direct
+     * callers use this entry point. The today-read ({@code getDay}) inlines the same
+     * {@code staleRows}/{@code closeStaleRows} pair instead, since it has already ensured the
+     * catalog itself (mezo-n5e9.1 review finding 1 — avoids a second bootstrap call per request).
+     */
     @Transactional
     public void closePast(UUID userId, LocalDate today) {
-        List<HabitDayEntity> stale = repository
+        List<HabitDayEntity> stale = staleRows(userId, today);
+        if (stale.isEmpty()) {
+            return; // a user who never touched habits gets zero writes (mezo-n5e9.1 review finding 3)
+        }
+        catalogService.ensureCatalog(userId); // closePast/HabitJob can run for a never-bootstrapped user
+        closeStaleRows(userId, stale, today);
+    }
+
+    private List<HabitDayEntity> staleRows(UUID userId, LocalDate today) {
+        return repository
             .findByCreatedByAndStatusAndHabitDateBefore(userId, HabitDayEntity.STATUS_PENDING, today);
+    }
+
+    private void closeStaleRows(UUID userId, List<HabitDayEntity> stale, LocalDate today) {
         for (HabitDayEntity row : stale) {
-            HabitDef def = catalog.byKey(row.getHabitKey()).orElse(null);
+            HabitDefEntity def = catalogService.byKey(userId, row.getHabitKey()).orElse(null);
             if (def == null) {
                 row.setStatus(HabitDayEntity.STATUS_MISSED); // stale catalog key — quiet close
                 repository.save(row);
                 continue;
             }
-            String metric = def.metric();
+            String metric = def.getMetric();
             if (HabitEvaluator.END_OF_DAY_METRICS.contains(metric)) {
                 closeByEvaluation(row, def);
             } else if (HabitEvaluator.METRIC_BED_NEXT_DAY.equals(metric)) {
@@ -179,9 +216,9 @@ public class HabitService {
         }
     }
 
-    private void closeByEvaluation(HabitDayEntity row, HabitDef def) {
-        if (!"manual".equals(def.metric())
-            && evaluator.satisfied(def.metric(), row.getCreatedBy(), row.getHabitDate())) {
+    private void closeByEvaluation(HabitDayEntity row, HabitDefEntity def) {
+        if (!"manual".equals(def.getMetric())
+            && evaluator.satisfied(def.getMetric(), row.getCreatedBy(), row.getHabitDate())) {
             complete(row, def, HabitDayEntity.SOURCE_DERIVED);
         } else {
             row.setStatus(HabitDayEntity.STATUS_MISSED); // quiet — ADR 0010
@@ -189,53 +226,75 @@ public class HabitService {
         }
     }
 
-    private List<LevelUpResult> evaluateIntraday(List<HabitDayEntity> rows) {
+    private List<LevelUpResult> evaluateIntraday(UUID userId, List<HabitDayEntity> rows) {
         List<LevelUpResult> levelUps = new ArrayList<>();
         for (HabitDayEntity row : rows) {
             if (!HabitDayEntity.STATUS_PENDING.equals(row.getStatus())) {
                 continue;
             }
-            HabitDef def = catalog.byKey(row.getHabitKey()).orElse(null);
-            if (def == null || !HabitEvaluator.INTRADAY_METRICS.contains(def.metric())
-                || "manual".equals(def.metric())) {
+            HabitDefEntity def = catalogService.byKey(userId, row.getHabitKey()).orElse(null);
+            if (def == null || !HabitEvaluator.INTRADAY_METRICS.contains(def.getMetric())
+                || "manual".equals(def.getMetric())) {
                 continue;
             }
-            if (evaluator.satisfied(def.metric(), row.getCreatedBy(), row.getHabitDate())) {
+            if (evaluator.satisfied(def.getMetric(), row.getCreatedBy(), row.getHabitDate())) {
                 levelUps.addAll(complete(row, def, HabitDayEntity.SOURCE_DERIVED));
             }
         }
         return levelUps;
     }
 
-    private List<LevelUpResult> complete(HabitDayEntity row, HabitDef def, String source) {
+    private List<LevelUpResult> complete(HabitDayEntity row, HabitDefEntity def, String source) {
         row.setStatus(HabitDayEntity.STATUS_DONE);
         row.setDoneAt(Instant.now());
-        row.setXpAwarded(def.xp());
+        row.setXpAwarded(def.getXp());
         row.setSource(source);
         repository.save(row);
         if (progressionGate.getIfAvailable() != null) {
             return List.of(progressionService.applyHabit(row.getCreatedBy(),
-                new HabitSignal(row.getId(), def.skillKey(), def.xp(), def.title(), row.getHabitDate())));
+                new HabitSignal(row.getId(), def.getSkillKey(), def.getXp(), def.getTitle(),
+                    row.getHabitDate())));
         }
         return List.of();
     }
 
     private List<HabitDayEntity> ensureRows(UUID userId, LocalDate date) {
+        return ensureRows(userId, date, catalogService.ensureCatalog(userId));
+    }
+
+    /**
+     * RECONCILES rather than short-circuits (mezo-n5e9.1 review finding 1 — critical): a def
+     * created through the admin API AFTER today's rows already materialized used to be invisible
+     * to this method (the old early-return fired on ANY existing row for the day), so
+     * {@code check()}'s unconditional call landed on a habit_key with no row and its bare
+     * {@code .orElseThrow()} 500'd. Now every active def whose {@code habit_key} has no row yet
+     * for {@code date} gets one inserted — a no-op (zero writes) on the common case where nothing
+     * changed since the day was last touched.
+     */
+    private List<HabitDayEntity> ensureRows(UUID userId, LocalDate date, List<HabitDefEntity> defs) {
         List<HabitDayEntity> existing = repository.findByCreatedByAndHabitDate(userId, date);
-        if (!existing.isEmpty()) {
+        Set<String> existingKeys = existing.stream().map(HabitDayEntity::getHabitKey)
+            .collect(Collectors.toSet());
+        List<HabitDefEntity> missing = defs.stream()
+            .filter(def -> !existingKeys.contains(def.getHabitKey()))
+            .toList();
+        if (missing.isEmpty()) {
             return existing;
         }
         try {
-            List<HabitDayEntity> fresh = catalog.all().stream().map(def -> {
+            List<HabitDayEntity> fresh = missing.stream().map(def -> {
                 HabitDayEntity e = new HabitDayEntity();
                 e.setCreatedBy(userId);
                 e.setHabitDate(date);
-                e.setHabitKey(def.key());
+                e.setHabitKey(def.getHabitKey());
                 return e;
             }).toList();
-            return repository.saveAllAndFlush(fresh);
+            List<HabitDayEntity> saved = repository.saveAllAndFlush(fresh);
+            List<HabitDayEntity> all = new ArrayList<>(existing);
+            all.addAll(saved);
+            return all;
         } catch (DataIntegrityViolationException e) {
-            // lost the race against the cron/another read — the rows exist now
+            // lost the race against the cron/another read/concurrent check — the rows exist now
             return repository.findByCreatedByAndHabitDate(userId, date);
         }
     }
@@ -260,8 +319,9 @@ public class HabitService {
         return strengths;
     }
 
-    private int perfectDays(List<HabitDayEntity> window, String chain) {
-        var keys = catalog.forChain(chain).stream().map(HabitDef::key).toList();
+    private int perfectDays(UUID userId, List<HabitDayEntity> window, String chainKey) {
+        var keys = catalogService.activeForChainKey(userId, chainKey).stream()
+            .map(HabitDefEntity::getHabitKey).toList();
         Map<LocalDate, Long> doneByDate = new HashMap<>();
         window.stream()
             .filter(r -> keys.contains(r.getHabitKey())
@@ -270,18 +330,24 @@ public class HabitService {
         return (int) doneByDate.values().stream().filter(n -> n == keys.size()).count();
     }
 
-    private HabitDef requireDef(String key) {
-        return catalog.byKey(key).orElseThrow(() -> new SystemRuntimeErrorException(
+    private HabitDefEntity requireDef(UUID userId, String key) {
+        catalogService.ensureCatalog(userId); // check/uncheck can be the very first catalog touch
+        return catalogService.byKey(userId, key).orElseThrow(() -> new SystemRuntimeErrorException(
             SystemMessage.error("HABIT_UNKNOWN").build(), HttpStatus.NOT_FOUND));
     }
 
-    private void requireManualToday(HabitDef def, LocalDate date) {
-        if (!HabitCatalog.MODE_MANUAL.equals(def.mode())) {
+    private void requireManualToday(HabitDefEntity def, LocalDate date) {
+        if (!HabitDefEntity.MODE_MANUAL.equals(def.getMode())) {
             throw conflict("HABIT_NOT_MANUAL");
         }
         if (!date.equals(LocalDate.now())) {
             throw conflict("HABIT_NOT_TODAY");
         }
+    }
+
+    private Map<UUID, String> chainKeyById(UUID userId) {
+        return catalogService.chains(userId).stream()
+            .collect(Collectors.toMap(HabitChainEntity::getId, HabitChainEntity::getChainKey));
     }
 
     private SystemRuntimeErrorException conflict(String code) {

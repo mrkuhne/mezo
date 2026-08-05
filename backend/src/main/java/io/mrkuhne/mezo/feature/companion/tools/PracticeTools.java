@@ -44,12 +44,17 @@ import java.util.stream.Collectors;
  *       (verified: {@code quest/service/TodayQuestAdapter}); deliberately NEVER
  *       {@code QuestService#getDay}, which lazily generates the day's rows and awards XP on
  *       derived-quest evaluation (not read-only).</li>
- *   <li>{@link HabitService#summary} is {@code @Transactional(readOnly = true)} (verified) — used
- *       INSTEAD of {@code HabitService#getDay}, which IS write-transactional (lazily materializes
- *       today's rows, closes stale pending days, evaluates + awards intraday habits). Trade-off:
- *       {@code summary} has no {@code date} parameter — it is always "as of today" (last 30/28
- *       days ending {@code LocalDate.now()}), so this block does NOT change with a caller-given
- *       past/future {@code date}. Documented limitation, not a bug.</li>
+ *   <li>{@link HabitService#summary} is {@code @Transactional(readOnly = true)} (verified,
+ *       re-verified mezo-n5e9.1 review finding 3 — a prior revision had it calling
+ *       {@code HabitCatalogService#ensureCatalog} twice, i.e. bootstrapping 17 catalog rows for
+ *       every dormant account on every companion turn; {@code summary} is now non-bootstrapping —
+ *       a user who never touched habits gets an honest empty summary here, and gets their catalog
+ *       on their first real {@code getDay}) — used INSTEAD of {@code HabitService#getDay}, which
+ *       IS write-transactional (lazily materializes today's rows, closes stale pending days,
+ *       evaluates + awards intraday habits). Trade-off: {@code summary} has no {@code date}
+ *       parameter — it is always "as of today" (last 30/28 days ending {@code LocalDate.now()}),
+ *       so this block does NOT change with a caller-given past/future {@code date}. Documented
+ *       limitation, not a bug.</li>
  *   <li>{@link IntentionService#getDay} is {@code @Transactional(readOnly = true)} (verified) —
  *       safe to call directly for the resolved date.</li>
  *   <li>{@link RitualService#getDay} is {@code @Transactional(readOnly = true)} (verified) — safe
