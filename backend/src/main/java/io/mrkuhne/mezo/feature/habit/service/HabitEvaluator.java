@@ -32,6 +32,9 @@ import org.springframework.stereotype.Service;
  * where a real signal exists. Unknown metric -> false (a stale catalog row can't complete).
  * Timestamp-less sources degrade to honest date-presence (spec §3 note): gym sessions have no
  * completed_at, so training_done_today counts a completed instance on the date.
+ * Since {@code mezo-u6jx}, date-presence is not a fallback but the CHOSEN semantics for the
+ * weigh-in/stim/run metrics too — the tick rewards the logged act, not the log's wall-clock
+ * timing; per-metric timing coaching lives in the habit catalog's {@code anchorCopy} instead.
  */
 @Slf4j
 @Service
