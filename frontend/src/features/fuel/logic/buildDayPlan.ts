@@ -22,10 +22,12 @@ import {
   POST_WORKOUT_SNAP_MIN,
   PRE_WORKOUT_SNAP_MIN,
   RECIPE_FIT_TOLERANCE,
+  ROLE_MACRO_MULTIPLIERS,
   SLOT_WEIGHT,
   toHHmm,
   toMin,
 } from '@/data/fuel/fuelConfig'
+import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import type {
   FuelKind,
@@ -36,6 +38,7 @@ import type {
   Recipe,
   RecipeRole,
   SlotItem,
+  SlotTemplate,
   StackZoneKey,
 } from '@/data/types'
 import type { StackDaySlot } from '@/features/fuel/logic/projectStackDay'
@@ -60,6 +63,9 @@ export interface DayPlanInput {
   protocolSlots: StackDaySlot[]
   caffeineCutoff: string
   nowHHmm: string
+  /** A per-day-type slot template (mezo-7102) — when present, windows come from `compileTemplate`
+   *  + `splitBudgetPct` instead of `placeWindows` + `splitBudget`. Absent/null keeps today's behavior. */
+  template?: SlotTemplate | null
 }
 
 export type SlotKey = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -244,6 +250,32 @@ export function splitBudget(budget: Macro4, windows: PlannedWindow[]): Macro4[] 
   return out
 }
 
+// ── splitBudgetPct ───────────────────────────────────────────────────────────
+// Template windows (mezo-7102) carry an explicit `budgetPct` (and a recipe `role`) instead of a
+// live `weight` — kcal splits straight by pct; P/C/F split by pct × the row's ROLE_MACRO_MULTIPLIERS,
+// then each macro COLUMN is renormalized so it still sums to the daily budget. Rounding drift is
+// absorbed by the largest-pct window (the `placeWindows`/`splitBudget` dinner-absorbs principle,
+// generalized: dinner is usually the biggest slot, but a template's biggest slot may be any row).
+export function splitBudgetPct(budget: Macro4, windows: PlannedWindow[]): Macro4[] {
+  const totalPct = windows.reduce((s, w) => s + (w.budgetPct ?? 0), 0) || 1
+  const share = (w: PlannedWindow) => (w.budgetPct ?? 0) / totalPct
+  // kcal: straight pct
+  const out = windows.map(w => ({ kcal: Math.round(budget.kcal * share(w)), p: 0, c: 0, f: 0 }) as Macro4)
+  // p/c/f: pct share × role multiplier, then normalize the column so Σ === budget[k]
+  for (const k of ['p', 'c', 'f'] as const) {
+    const raw = windows.map(w => share(w) * (ROLE_MACRO_MULTIPLIERS[w.role ?? 'standard'][k]))
+    const rawSum = raw.reduce((s, x) => s + x, 0) || 1
+    windows.forEach((_, i) => { out[i][k] = Math.round((budget[k] * raw[i]) / rawSum) })
+  }
+  // absorb drift per macro into the largest-pct slot (the dinner-absorbs principle)
+  const bigIdx = windows.reduce((bi, w, i) => ((w.budgetPct ?? 0) > (windows[bi].budgetPct ?? 0) ? i : bi), 0)
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    const sum = out.reduce((s, b) => s + b[k], 0)
+    out[bigIdx][k] += budget[k] - sum
+  }
+  return out
+}
+
 // ── recipe fit ───────────────────────────────────────────────────────────────
 export function perServing(r: Recipe): Macro4 {
   const s = r.servings || 1
@@ -296,9 +328,12 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   const now = toMin(nowHHmm)
   const kitchenCloseMin = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
 
-  // 1. Windows + per-slot budgets.
-  const windows = placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
-  const budgets = splitBudget(budget, windows)
+  // 1. Windows + per-slot budgets. A template (mezo-7102) replaces the live placement/weight split
+  //    with a replayed anchor plan + its explicit pct split; absent/null keeps today's behavior.
+  const windows = input.template
+    ? compileTemplate(input.template, { wake, bed, blocks })
+    : placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
+  const budgets = input.template ? splitBudgetPct(budget, windows) : splitBudget(budget, windows)
 
   // 2. Logged meals grouped by slotKey, each group sorted by loggedAt (multi-snack fills in time order).
   const loggedByKey: Record<SlotKey, FuelMeal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }

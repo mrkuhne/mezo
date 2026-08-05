@@ -7,6 +7,7 @@ import {
   pickRecipe,
   placeWindows,
   splitBudget,
+  splitBudgetPct,
   ZONE_FUEL_KIND,
   type DayBudget,
   type DayPlanInput,
@@ -14,7 +15,7 @@ import {
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelPlanToday, MealItemLine, Recipe } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, MealItemLine, Recipe, SlotTemplate, SlotTemplateRow } from '@/data/types'
 import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
@@ -185,6 +186,62 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
   }
 })
 
+// ── splitBudgetPct (mezo-7102, template windows) ─────────────────────────────
+const pctWindow = (over: Partial<PlannedWindow> & { budgetPct: number }): PlannedWindow => ({
+  slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, ...over,
+})
+test('splitBudgetPct: all-standard-role windows sum EXACTLY to the daily budget per macro (25/25/25/25)', () => {
+  const windows = [25, 25, 25, 25].map(pct => pctWindow({ budgetPct: pct }))
+  const daily: Macro4 = { kcal: 2000, p: 200, c: 200, f: 100 }
+  const out = splitBudgetPct(daily, windows)
+  // role multipliers are all 1 for 'standard' → this is a straight proportional split (no skew).
+  expect(out).toEqual([
+    { kcal: 500, p: 50, c: 50, f: 25 },
+    { kcal: 500, p: 50, c: 50, f: 25 },
+    { kcal: 500, p: 50, c: 50, f: 25 },
+    { kcal: 500, p: 50, c: 50, f: 25 },
+  ])
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
+  }
+})
+test('splitBudgetPct: rounding drift is absorbed by the LARGEST-pct window, not the first one', () => {
+  // pct [20, 50, 30] — index 1 is the largest pct, and must absorb the drift even though it is
+  // neither first nor last. f: 0.2·13=2.6→3, 0.5·13=6.5→7, 0.3·13=3.9→4 naive sum=14 ≠ 13.
+  const windows = [
+    pctWindow({ budgetPct: 20, label: 'A' }),
+    pctWindow({ budgetPct: 50, label: 'B' }),
+    pctWindow({ budgetPct: 30, label: 'C' }),
+  ]
+  const daily: Macro4 = { kcal: 1000, p: 100, c: 100, f: 13 }
+  const out = splitBudgetPct(daily, windows)
+  expect(out).toEqual([
+    { kcal: 200, p: 20, c: 20, f: 3 },
+    { kcal: 500, p: 50, c: 50, f: 6 }, // absorbs the -1 drift (naive round would be 7)
+    { kcal: 300, p: 30, c: 30, f: 4 },
+  ])
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
+  }
+})
+test('splitBudgetPct: a pre_workout slot gets more carbs and less protein/fat than a standard slot at the same pct', () => {
+  const windows: PlannedWindow[] = [
+    pctWindow({ budgetPct: 50, role: 'standard', label: 'Standard' }),
+    pctWindow({ budgetPct: 50, role: 'pre_workout', label: 'PreWorkout' }),
+  ]
+  const daily: Macro4 = { kcal: 2000, p: 150, c: 200, f: 60 }
+  const out = splitBudgetPct(daily, windows)
+  const [standard, preWorkout] = out
+  expect(preWorkout.c).toBeGreaterThan(standard.c)
+  expect(preWorkout.p).toBeLessThan(standard.p)
+  expect(preWorkout.f).toBeLessThan(standard.f)
+  expect(standard).toEqual({ kcal: 1000, p: 100, c: 77, f: 43 })
+  expect(preWorkout).toEqual({ kcal: 1000, p: 50, c: 123, f: 17 })
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
+  }
+})
+
 // ── deriveDailyBudget ────────────────────────────────────────────────────────
 test('deriveDailyBudget (no energy) keeps the static base kcal + derived carbs/fat', () => {
   const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
@@ -343,6 +400,43 @@ test('done meal/snack slots carry the FULL logged-meal totals — nothing logged
   const sum = (k: 'kcal' | 'p' | 'c' | 'f') => doneMeals.reduce((acc, x) => acc + (x[k] ?? 0), 0)
   const expected = meals.reduce((a, m) => ({ kcal: a.kcal + m.kcal, p: a.p + m.p, c: a.c + m.c, f: a.f + m.f }), { kcal: 0, p: 0, c: 0, f: 0 })
   expect({ kcal: sum('kcal'), p: sum('p'), c: sum('c'), f: sum('f') }).toEqual(expected)
+})
+
+// ── buildDayPlan template branch (mezo-7102) ─────────────────────────────────
+const templateRow = (over: Partial<SlotTemplateRow> & { label: string; anchor: SlotTemplateRow['anchor'] }): SlotTemplateRow => ({
+  slotKind: 'lunch', role: 'standard', budgetPct: 50, ...over,
+})
+const twoLunchTemplate: SlotTemplate = {
+  dayType: 'rest',
+  slots: [
+    templateRow({ label: 'Ebéd 1', anchor: { type: 'fixed', time: '12:00' } }),
+    templateRow({ label: 'Ebéd 2', anchor: { type: 'fixed', time: '15:00' } }),
+  ],
+}
+test('buildDayPlan with a template: un-logged windows carry the template labels, fixed times and slotKey', () => {
+  const plan = buildDayPlan(baseInput({ template: twoLunchTemplate, meals: [] }))
+  const ebed1 = plan.slots.find(s => s.label === 'Ebéd 1')!
+  const ebed2 = plan.slots.find(s => s.label === 'Ebéd 2')!
+  expect(ebed1).toMatchObject({ time: '12:00', slotKey: 'lunch' })
+  expect(ebed2).toMatchObject({ time: '15:00', slotKey: 'lunch' })
+})
+test('buildDayPlan with a template: two logged lunch meals fill the two lunch windows in loggedAt order', () => {
+  const early = meal({ id: 'lunch-early', slot: 'lunch', title: 'Korai ebéd', loggedAt: '2026-07-02T11:50:00' })
+  const late = meal({ id: 'lunch-late', slot: 'lunch', title: 'Kései ebéd', loggedAt: '2026-07-02T15:10:00' })
+  // Deliberately out of order in the input array — the cursor logic sorts by loggedAt (existing
+  // behavior, pinned here for the template path).
+  const plan = buildDayPlan(baseInput({ template: twoLunchTemplate, meals: [late, early] }))
+  const ebed1 = plan.slots.find(s => s.label === 'Ebéd 1')!
+  const ebed2 = plan.slots.find(s => s.label === 'Ebéd 2')!
+  expect(ebed1).toMatchObject({ state: 'done', mealId: 'lunch-early' }) // earliest loggedAt fills the FIRST (by time) window
+  expect(ebed2).toMatchObject({ state: 'done', mealId: 'lunch-late' })
+})
+test('buildDayPlan: template absent/null is a zero-regression pin — output DEEP-EQUALS the no-template path', () => {
+  const plainInput = baseInput({ meals: [meal({ id: 'm1', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00' })] })
+  const withoutTemplate = buildDayPlan(plainInput)
+  const withNullTemplate = buildDayPlan({ ...plainInput, template: null })
+  expect(withNullTemplate).toEqual(withoutTemplate)
+  expect(plainInput.template).toBeUndefined() // baseInput never sets template — absent is the default
 })
 
 // ── protocol (stack-day) zones ───────────────────────────────────────────────

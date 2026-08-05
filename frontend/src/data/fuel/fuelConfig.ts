@@ -24,6 +24,18 @@ export const DEFAULT_RUN_MIN = 45
 export const PERI_SNACK_MIN_KCAL = 300
 export const PERI_SNACK_MIN_DURATION = 90
 
+// Meal-slot templates (mezo-7102). Role multipliers skew a slot's P/C/F share before per-macro
+// normalization (splitBudgetPct) — pre-workout is carb-forward, post-workout protein-forward.
+export const ROLE_MACRO_MULTIPLIERS: Record<'standard' | 'pre_workout' | 'post_workout', { p: number; c: number; f: number }> = {
+  standard: { p: 1, c: 1, f: 1 },
+  pre_workout: { p: 0.5, c: 1.6, f: 0.4 },
+  post_workout: { p: 1.7, c: 1.1, f: 0.7 },
+}
+export const MAX_TEMPLATE_SLOTS = 8
+export const PRE_WORKOUT_SLOT_WARN_PCT = 15
+export const PRE_WORKOUT_SLOT_WARN_KCAL = 300
+export const EVENING_SHARE_WARN = 0.4
+
 /** 'HH:mm' → minutes since midnight. */
 export function toMin(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number)
