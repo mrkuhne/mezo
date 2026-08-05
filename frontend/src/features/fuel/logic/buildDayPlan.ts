@@ -24,8 +24,10 @@ import {
   RECIPE_FIT_TOLERANCE,
   ROLE_MACRO_MULTIPLIERS,
   SLOT_WEIGHT,
+  daySpan,
   toHHmm,
   toMin,
+  unwrapDayMinute,
 } from '@/data/fuel/fuelConfig'
 import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
@@ -329,7 +331,14 @@ function hhmmFromLoggedAt(iso: string, fallback: string): string {
 // ── buildDayPlan ─────────────────────────────────────────────────────────────
 export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   const { wake, bed, mealsPerDay, blocks, budget, meals, recipes, protocolSlots, nowHHmm } = input
-  const now = toMin(nowHHmm)
+  // Midnight-crossing axis (mezo-9rtw): steps 5-7 classify/sort on the SAME unwrapped wake→bed axis
+  // `compileTemplate`/`dayZones` already use — a template (mezo-7102) can legitimately emit a
+  // wall-clock time past midnight (e.g. a "Késői snack" at 01:00 on a wake-07:00/bed-03:00 day),
+  // and comparing raw HH:mm minutes would misclassify/mis-sort it hours early. `unwrap` is the
+  // identity function on a non-crossing day, so this is a no-op there (byte-identical output).
+  const span = daySpan(wake, bed)
+  const unwrap = (hhmm: string) => unwrapDayMinute(hhmm, span.wakeMin, span.crossesMidnight)
+  const unwrappedNow = unwrap(nowHHmm)
   const kitchenCloseMin = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
 
   // 1. Windows + per-slot budgets. A template (mezo-7102) replaces the live placement/weight split
@@ -439,13 +448,17 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     .filter(s => s.items!.length > 0)
 
   // 5. Training block slots — gym → workout, sport/run → sport; done once (start+duration) has passed.
+  //    Evaluated on the unwrapped axis (mezo-9rtw) for consistency with steps 6/7: blocks come from
+  //    real schedules and don't wrap today, so on a non-crossing day `unwrap` is the identity and
+  //    this is byte-identical to the old raw comparison.
   const blockSlots: FuelSlot[] = blocks.map(b => {
-    const end = toMin(b.time) + (b.durationMin ?? DEFAULT_BLOCK_MIN)
+    const start = unwrap(b.time)
+    const end = start + (b.durationMin ?? DEFAULT_BLOCK_MIN)
     return {
       time: b.time,
       kind: b.kind === 'gym' ? 'workout' : 'sport',
       label: b.label,
-      state: end <= now ? 'done' : 'pending',
+      state: end <= unwrappedNow ? 'done' : 'pending',
       duration: b.durationMin ?? undefined,
     }
   })
@@ -456,20 +469,23 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //    past bedtime the eating day is over → no "now", every unlogged window is "missed". (The gate
   //    is bedtime, NOT the 90-min kitchen-planning cutoff: the last window stays "now" until sleep.)
   //    Block slots (end ≤ now → done) and protocol slots keep their own state — no global now-flag.
+  //    Classification runs on the unwrapped axis (mezo-9rtw) — see the header note above.
   const unlogged = mealSlots.map((_, i) => i).filter(i => mealSlots[i].state !== 'done')
   let nowWin = -1
-  if (now <= toMin(bed) && unlogged.length) {
-    for (const i of unlogged) if (toMin(mealSlots[i].time) <= now) nowWin = i
+  if (unwrappedNow <= span.bedMin && unlogged.length) {
+    for (const i of unlogged) if (unwrap(mealSlots[i].time) <= unwrappedNow) nowWin = i
     if (nowWin === -1) nowWin = unlogged[0] // now precedes all meals → first is current
   }
-  const nowTime = nowWin >= 0 ? toMin(mealSlots[nowWin].time) : now
+  const nowTime = nowWin >= 0 ? unwrap(mealSlots[nowWin].time) : unwrappedNow
   for (const i of unlogged) {
     if (i === nowWin) mealSlots[i].state = 'now'
-    else mealSlots[i].state = toMin(mealSlots[i].time) < nowTime ? 'missed' : 'pending'
+    else mealSlots[i].state = unwrap(mealSlots[i].time) < nowTime ? 'missed' : 'pending'
   }
 
-  // 7. Merge + sort. Extra logged meals join the sort like any other slot (they are 'done').
-  const slots = [...mealSlots, ...extraSlots, ...protoSlots, ...blockSlots].sort((a, z) => toMin(a.time) - toMin(z.time))
+  // 7. Merge + sort. Extra logged meals join the sort like any other slot (they are 'done'). Sorted
+  //    on the unwrapped axis (mezo-9rtw) so a midnight-wrapped slot (e.g. a template's 01:00 "Késői
+  //    snack" on a wake-07:00/bed-03:00 day) sorts LAST instead of first.
+  const slots = [...mealSlots, ...extraSlots, ...protoSlots, ...blockSlots].sort((a, z) => unwrap(a.time) - unwrap(z.time))
 
   // 8. Top context fields.
   const gym = blocks.find(b => b.kind === 'gym')
