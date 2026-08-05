@@ -24,7 +24,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
           <p className="quicklog-sub">bármikor, két koppintás</p>
           <div className="quicklog-grid">
             {ACTIONS.map(a => (
-              <button key={a.label} type="button" className="quicklog-tile"
+              <button key={a.label} type="button" className="quicklog-tile np-press"
                 onClick={() => { close(); navigate(a.to) }}>
                 <span className="quicklog-emoji" aria-hidden>{a.emoji}</span>
                 <span className="quicklog-label">{a.label}</span>
