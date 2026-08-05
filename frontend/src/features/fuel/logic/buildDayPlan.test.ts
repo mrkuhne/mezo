@@ -458,6 +458,57 @@ test('buildDayPlan: a template whose every row is training-anchored, on a blockl
   expect(plan.slots.filter(s => s.slotKey)).toEqual([]) // no meal/snack windows at all
 })
 
+// ── midnight-crossing template axis (mezo-9rtw) ──────────────────────────────
+// Repro from the mezo-7102 final review: wake 07:00 / bed 03:00 (crosses midnight) with a template
+// producing Ebéd 13:00, Vacsora 20:00 and a bed−120 "Késői snack" that lands at 01:00 wall-clock —
+// a time legitimately BEFORE wake on the raw HH:mm axis but AFTER the evening on the real day.
+// Pre-fix, step 7 sorted by raw minutes (01:00 = 60 landed FIRST) and step 6 classified it 'missed'
+// hours before it was even scheduled. Both must resolve on the unwrapped wake→bed axis instead.
+test('buildDayPlan with a template on a NON-crossing day: unwrap is the identity — order/state match the pre-fix (raw-axis) expectations exactly', () => {
+  // This is the non-crossing regression pin (mezo-9rtw): on a normal day `unwrap` is the identity,
+  // so the sort/state machine must still produce exactly what the raw-minute axis always produced.
+  const plan = buildDayPlan(baseInput({ template: twoLunchTemplate, meals: [], nowHHmm: '13:30' }))
+  const named = plan.slots.filter(s => s.label === 'Ebéd 1' || s.label === 'Ebéd 2')
+  expect(named.map(s => s.time)).toEqual(['12:00', '15:00'])
+  // 13:30 is at/before Ebéd 1 (12:00) but not Ebéd 2 (15:00) → Ebéd 1 is "now", Ebéd 2 "pending".
+  expect(named.map(s => s.state)).toEqual(['now', 'pending'])
+})
+
+describe('midnight-crossing template axis (mezo-9rtw)', () => {
+  const midnightTemplate: SlotTemplate = {
+    dayType: 'rest',
+    slots: [
+      templateRow({ label: 'Ebéd', slotKind: 'lunch', anchor: { type: 'fixed', time: '13:00' }, budgetPct: 45 }),
+      templateRow({ label: 'Vacsora', slotKind: 'dinner', anchor: { type: 'fixed', time: '20:00' }, budgetPct: 40 }),
+      templateRow({ label: 'Késői snack', slotKind: 'snack', anchor: { type: 'bed', offsetMin: -120 }, budgetPct: 15 }),
+    ],
+  }
+  const crossingInput = (nowHHmm: string) =>
+    baseInput({ wake: '07:00', bed: '03:00', template: midnightTemplate, meals: [], blocks: [], nowHHmm })
+  const namedSlots = (plan: FuelPlanToday) => plan.slots.filter(s => ['Ebéd', 'Vacsora', 'Késői snack'].includes(s.label))
+
+  test('nowHHmm 12:00: the 01:00 late slot sorts LAST and is "pending" (not "missed"); 13:00 is "now"', () => {
+    const plan = buildDayPlan(crossingInput('12:00'))
+    const named = namedSlots(plan)
+    // Sort order on the unwrapped axis: 13:00 (780) < 20:00 (1200) < 01:00 (1500, unwrapped) — the
+    // 01:00 slot sorts LAST despite its raw minute-of-day (60) being the smallest of the three.
+    expect(named.map(s => s.label)).toEqual(['Ebéd', 'Vacsora', 'Késői snack'])
+    expect(named.map(s => s.time)).toEqual(['13:00', '20:00', '01:00'])
+    // now=12:00 precedes every unwrapped window (780/1200/1500 all > 720) → earliest (Ebéd) is "now".
+    expect(named.map(s => s.state)).toEqual(['now', 'pending', 'pending'])
+  })
+
+  test('nowHHmm 00:30 (unwrapped past-midnight, still before bed 03:00): Vacsora is "now", Ebéd "missed", Késői snack stays "pending"', () => {
+    const plan = buildDayPlan(crossingInput('00:30'))
+    const named = namedSlots(plan)
+    // unwrappedNow = 1470 (00:30 is before wake → +1440). Latest unlogged window at/before 1470
+    // among {780, 1200, 1500} is 1200 (Vacsora) → Vacsora "now"; Ebéd (780 < 1470) "missed";
+    // Késői snack (1500 > 1470) "pending".
+    expect(named.map(s => s.label)).toEqual(['Ebéd', 'Vacsora', 'Késői snack'])
+    expect(named.map(s => s.state)).toEqual(['missed', 'now', 'pending'])
+  })
+})
+
 // ── protocol (stack-day) zones ───────────────────────────────────────────────
 test('protocol slots map zones onto FuelKind and carry done-state straight from the entry\'s `taken`', () => {
   expect(ZONE_FUEL_KIND).toMatchObject({
