@@ -17,3 +17,4 @@ bottom. Rotate (archive the head) when this passes ~500 lines. Format: `YYYY-MM-
 - 2026-08-02 · INGEST · Ethier 'fastest 20 lb muscle' video (ehQ_5TThkRI, extraction notes → raw/transcripts) distilled into concepts/set-volume-landmarks + jeremy-ethier entity update; drives the Train set-budget layer (mezo-7rdg).
 - 2026-08-03 · QUERY · warm-up protocol for RIR 0-2 sets filed in queries/ (3-agent web sweep: coaches + literature + app schemes); feeds the warm-up prescription feature.
 - 2026-08-03 · INGEST · program-design rules concept + plan-builder guidance UX comparison filed (3-agent sweep: RP guides, Helms/Nippard/Ethier templates, app UX); seeds the guided-meso-building epic mezo-oyhy.
+- 2026-08-05 · QUERY · free exercise image/video API scan filed in queries/ (free-exercise-db · wger · ExerciseDB · WorkoutX · YouTube embeds; endpoints verified live with curl). Context: the kettlebell catalog block mezo-18g3 — media layer is additive, not blocking.
