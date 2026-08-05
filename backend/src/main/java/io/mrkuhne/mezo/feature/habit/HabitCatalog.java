@@ -14,7 +14,13 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
-/** Static habit content, loaded fail-fast at startup (the QuestCatalog pattern). */
+/**
+ * The habit SEED source (mezo-n5e9.1): static content loaded fail-fast at startup (the
+ * QuestCatalog pattern), validated once. It is no longer the runtime catalog — that role belongs
+ * to {@link io.mrkuhne.mezo.feature.habit.service.HabitCatalogService}, which lazily imports these
+ * defs into per-user {@code habit_chain}/{@code habit_def} rows on first read, so a user's edits
+ * (including deletions) diverge from this seed without mutating it.
+ */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.HABIT_SWITCH, havingValue = "true")
