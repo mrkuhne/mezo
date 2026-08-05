@@ -1,5 +1,5 @@
 create table habit_chain (
-    id uuid primary key default gen_random_uuid(),
+    id uuid not null default gen_random_uuid(),
     created_by uuid not null,
     is_deleted boolean not null default false,
     created_at timestamptz not null default now(),
@@ -8,6 +8,8 @@ create table habit_chain (
     daypart varchar(8) not null,
     position int not null,
     is_active boolean not null default true,
+    constraint pk_habit_chain_id primary key (id),
+    constraint fk_habit_chain_created_by_app_user_id foreign key (created_by) references app_user (id) on delete cascade,
     constraint ck_habit_chain_daypart check (daypart in ('MORNING', 'DAY', 'EVENING')),
     constraint ck_habit_chain_position check (position >= 1)
 );

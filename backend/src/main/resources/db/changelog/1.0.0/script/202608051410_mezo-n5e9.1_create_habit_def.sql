@@ -1,5 +1,5 @@
 create table habit_def (
-    id uuid primary key default gen_random_uuid(),
+    id uuid not null default gen_random_uuid(),
     created_by uuid not null,
     is_deleted boolean not null default false,
     created_at timestamptz not null default now(),
@@ -16,6 +16,8 @@ create table habit_def (
     xp int not null,
     link_url text,
     is_active boolean not null default true,
+    constraint pk_habit_def_id primary key (id),
+    constraint fk_habit_def_created_by_app_user_id foreign key (created_by) references app_user (id) on delete cascade,
     constraint fk_habit_def_chain foreign key (chain_id) references habit_chain (id),
     constraint ck_habit_def_mode check (mode in ('DERIVED', 'MANUAL')),
     constraint ck_habit_def_skill_kind check (skill_kind = 'LIFE'),
