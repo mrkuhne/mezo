@@ -268,6 +268,23 @@ describe('useStack / useProtocol (real mode)', () => {
     )
   })
 
+  it('logIntake invalidates ["habitDay"] + the day quest read (derived habit re-derive, mezo-u6jx)', async () => {
+    // The habit-day READ is the evaluation trigger (habit.md §3) — a stim intake must nudge
+    // ['habitDay'] and ['dailyQuests', date] or morning_coffee's ✓ waits for a remount.
+    server.use(http.post(`${API_BASE}/api/fuel/intake`, () => HttpResponse.json({ id: 'i-1' })))
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    const date = localDateString()
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useStackActions(date), { wrapper: Wrapper })
+    act(() => result.current.logIntake('p-1'))
+    await waitFor(() => {
+      const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+      expect(keys).toContain(JSON.stringify(['habitDay']))
+      expect(keys).toContain(JSON.stringify(['dailyQuests', date]))
+    })
+    invalidateSpy.mockRestore()
+  })
+
   it('undoIntake DELETEs the matching cached row id', async () => {
     const date = localDateString()
     server.use(
