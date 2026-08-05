@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -65,6 +67,13 @@ public class HabitEvaluator {
     public static final Set<String> END_OF_DAY_METRICS = Set.of("no_stim_after", "last_meal_before");
     /** Decided by the NEXT day's sleep log (deadline: next day noon). */
     public static final String METRIC_BED_NEXT_DAY = "bedtime_next_day";
+    /** Every metric the evaluator can honestly resolve — the admin catalog's DERIVED-def guard
+     * (mezo-n5e9.1): a custom habit's metric must be one of these (and not "manual", handled
+     * separately by the mode/metric mismatch check). */
+    public static final Set<String> SUPPORTED_METRICS = Stream
+        .concat(Stream.concat(INTRADAY_METRICS.stream(), END_OF_DAY_METRICS.stream()),
+            Stream.of(METRIC_BED_NEXT_DAY))
+        .collect(Collectors.toUnmodifiableSet());
 
     public boolean satisfied(String metric, UUID userId, LocalDate date) {
         return switch (metric) {

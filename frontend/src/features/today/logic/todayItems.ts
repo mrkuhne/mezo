@@ -131,13 +131,20 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
   // ── habits: chain-bucketed, and the absorbing side of every dedup pair.
   const absorbedMetrics = new Set<string>()
   for (const h of habits) {
+    // A def in a user-created chain (`chain_xxxx`, live via the admin catalog API since
+    // mezo-n5e9.1 — the wire's `chain` widened to a plain string, `habitApi.ts` casts it into
+    // this narrower FE type) has no entry in this hardcoded MORNING/EVENING map. Skip the row
+    // rather than crash on `CHAIN_GROUP[h.chain]`/`CHAIN_FACE[h.chain]` being undefined (review
+    // finding 4) — full daypart-driven bucketing off `HabitChainAdmin.daypart` is `.2`'s job.
+    const face = CHAIN_FACE[h.chain]
+    if (!face) continue
     const paired = DEDUP_PAIRS[h.key]
     const twin = paired ? quests.find((q) => q.metric === paired) : undefined
     if (twin) absorbedMetrics.add(paired)
     items.push({
       id: `habit:${h.key}`,
       source: 'habit',
-      face: CHAIN_FACE[h.chain],
+      face,
       status: HABIT_STATUS[h.status] ?? 'open',
       tone: h.chain === 'MORNING' ? 'body' : 'mind',
       emoji: h.chain === 'MORNING' ? '🌅' : '🌙',
