@@ -190,6 +190,10 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
 const pctWindow = (over: Partial<PlannedWindow> & { budgetPct: number }): PlannedWindow => ({
   slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, ...over,
 })
+test('splitBudgetPct: an empty windows array returns [] instead of throwing (no largest-pct index to absorb drift into)', () => {
+  const daily: Macro4 = { kcal: 2000, p: 150, c: 200, f: 60 }
+  expect(splitBudgetPct(daily, [])).toEqual([])
+})
 test('splitBudgetPct: all-standard-role windows sum EXACTLY to the daily budget per macro (25/25/25/25)', () => {
   const windows = [25, 25, 25, 25].map(pct => pctWindow({ budgetPct: pct }))
   const daily: Macro4 = { kcal: 2000, p: 200, c: 200, f: 100 }
@@ -437,6 +441,21 @@ test('buildDayPlan: template absent/null is a zero-regression pin — output DEE
   const withNullTemplate = buildDayPlan({ ...plainInput, template: null })
   expect(withNullTemplate).toEqual(withoutTemplate)
   expect(plainInput.template).toBeUndefined() // baseInput never sets template — absent is the default
+})
+test('buildDayPlan: a template whose every row is training-anchored, on a blockless day, never crashes — empty meal windows', () => {
+  // Every row anchors to training_start/training_end; with `blocks: []` compileTemplate defensively
+  // drops all of them (nothing to resolve against) → windows = [] flows into splitBudgetPct, which
+  // must not throw (the guard fixed here) — the day still renders (protocol/block slots, top fields).
+  const allTrainingAnchored: SlotTemplate = {
+    dayType: 'training_am',
+    slots: [
+      templateRow({ label: 'Pre', slotKind: 'snack', anchor: { type: 'training_start', offsetMin: -45 } }),
+      templateRow({ label: 'Post', slotKind: 'lunch', anchor: { type: 'training_end', offsetMin: 30 } }),
+    ],
+  }
+  expect(() => buildDayPlan(baseInput({ template: allTrainingAnchored, blocks: [], meals: [] }))).not.toThrow()
+  const plan = buildDayPlan(baseInput({ template: allTrainingAnchored, blocks: [], meals: [] }))
+  expect(plan.slots.filter(s => s.slotKey)).toEqual([]) // no meal/snack windows at all
 })
 
 // ── protocol (stack-day) zones ───────────────────────────────────────────────

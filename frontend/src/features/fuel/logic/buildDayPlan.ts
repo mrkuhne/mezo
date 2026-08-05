@@ -257,6 +257,10 @@ export function splitBudget(budget: Macro4, windows: PlannedWindow[]): Macro4[] 
 // absorbed by the largest-pct window (the `placeWindows`/`splitBudget` dinner-absorbs principle,
 // generalized: dinner is usually the biggest slot, but a template's biggest slot may be any row).
 export function splitBudgetPct(budget: Macro4, windows: PlannedWindow[]): Macro4[] {
+  // A template's rows can ALL be training-anchored and get defensively dropped by compileTemplate
+  // on a blockless day (or a cached mock-mode template can carry `slots: []`) — no window means no
+  // largest-pct index to absorb drift into, so bail before that reduce ever runs.
+  if (!windows.length) return []
   const totalPct = windows.reduce((s, w) => s + (w.budgetPct ?? 0), 0) || 1
   const share = (w: PlannedWindow) => (w.budgetPct ?? 0) / totalPct
   // kcal: straight pct
