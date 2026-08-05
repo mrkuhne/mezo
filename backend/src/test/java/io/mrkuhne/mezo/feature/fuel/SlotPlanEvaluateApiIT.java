@@ -56,6 +56,26 @@ class SlotPlanEvaluateApiIT extends ApiIntegrationTest {
         assertThat(resp.getSummary()).isEqualTo("Igazitsd at.");
     }
 
+    /** SlotPlanEvaluationService.normalizeSuggestions: a null/omitted suggestions field in the LLM
+     *  answer must never leak as null onto the wire — the contract says required + non-nullable. */
+    @Test
+    void testEvaluate_shouldReturnEmptySuggestions_whenLlmAnswerOmitsSuggestionsField() {
+        SlotPlanEvaluateRequest req = baseRequest()
+            .resolvedTimes(List.of(
+                ResolvedSlotTime.builder().label("Reggeli").time("07:30").build(),
+                ResolvedSlotTime.builder().label("Vacsora").time("19:00").build(),
+                ResolvedSlotTime.builder()
+                    .label("[fake-slot-plan:{\"verdict\":\"ok\",\"summary\":\"Rendben.\"}]")
+                    .time("00:00")
+                    .build()))
+            .build();
+
+        SlotPlanEvaluateResponse resp = evaluate(req, HttpStatus.OK);
+
+        assertThat(resp.getVerdict()).isEqualTo(SlotPlanEvaluateResponse.VerdictEnum.OK);
+        assertThat(resp.getSuggestions()).isNotNull().isEmpty();
+    }
+
     private SlotPlanEvaluateResponse evaluate(SlotPlanEvaluateRequest req, HttpStatus expected) {
         return postForBody("/api/fuel/slot-templates/evaluate", req, ownerAuthHeaders(), expected,
             SlotPlanEvaluateResponse.class);

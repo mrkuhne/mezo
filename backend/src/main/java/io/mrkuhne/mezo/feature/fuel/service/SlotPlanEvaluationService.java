@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.SlotPlanBlock;
 import io.mrkuhne.mezo.api.dto.SlotPlanBudget;
 import io.mrkuhne.mezo.api.dto.SlotPlanEvaluateRequest;
 import io.mrkuhne.mezo.api.dto.SlotPlanEvaluateResponse;
+import io.mrkuhne.mezo.api.dto.SlotPlanSuggestion;
 import io.mrkuhne.mezo.api.dto.SlotTemplateSlot;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -77,12 +78,29 @@ public class SlotPlanEvaluationService {
                 new LlmCallContext("slot_template", "evaluate", null, null),
                 () -> port.complete(SYSTEM_PROMPT, userMessage));
             String json = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-            return objectMapper.readValue(json, SlotPlanEvaluateResponse.class);
+            SlotPlanEvaluateResponse response = objectMapper.readValue(json, SlotPlanEvaluateResponse.class);
+            // Strict-JSON contract: a null/blank verdict or summary is a parse failure, not a valid
+            // "empty" answer — degrade the same way as an unparseable payload (the sibling
+            // MealAiDraftService/MealCoachService/RecipeBreakdownProseService null-guard idiom).
+            if (response.getVerdict() == null || response.getSummary() == null || response.getSummary().isBlank()) {
+                throw new IllegalStateException("Slot-plan evaluation answer missing verdict/summary: " + json);
+            }
+            response.setSuggestions(normalizeSuggestions(response.getSuggestions()));
+            return response;
         } catch (Exception e) {
             log.warn("Slot-plan evaluation failed: {}", e.getMessage(), e);
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("FUEL_SLOT_TEMPLATE_LLM_UNAVAILABLE").build(), HttpStatus.SERVICE_UNAVAILABLE);
         }
+    }
+
+    /** Null/omitted -> empty (never null on the wire, contract says `required: [suggestions]`);
+     *  a malformed entry with no text is dropped, mirroring improve()/fitsFor() in the sibling
+     *  LLM-parsing services (MealCoachService, RecipeBreakdownProseService). */
+    private static List<SlotPlanSuggestion> normalizeSuggestions(List<SlotPlanSuggestion> raw) {
+        return raw == null ? List.of() : raw.stream()
+            .filter(s -> s != null && s.getText() != null && !s.getText().isBlank())
+            .toList();
     }
 
     /** Compact plain-text serialization (not JSON — keeps sentinel planting/matching in ITs simple). */
