@@ -56,7 +56,7 @@ public class HabitEvaluator {
 
     /** Metrics decidable during the day (re-checked on every read). */
     public static final Set<String> INTRADAY_METRICS = Set.of("sleep_wake_window", "manual",
-        "weight_logged_before", "stim_intake_before", "training_done_today", "breakfast_protein",
+        "weight_logged_today", "stim_intake_today", "training_done_today", "breakfast_protein",
         "intention_focus_set", "intention_reflected", "ritual_closed");
     /** Metrics decidable only once the day is over (nightly close / next read). */
     public static final Set<String> END_OF_DAY_METRICS = Set.of("no_stim_after", "last_meal_before");
@@ -70,26 +70,20 @@ public class HabitEvaluator {
                 .map(w -> withinWindow(LocalTime.parse(w),
                     habitTargets.resolve(userId).wake(), properties.wakeWindowMin()))
                 .orElse(false);
-            case "weight_logged_before" -> weightLogRepository
+            case "weight_logged_today" -> weightLogRepository
                 .findFirstByCreatedByAndDeletedFalseAndDateOrderByCreatedAtDesc(userId, date)
-                .map(w -> localTime(w.getCreatedAt())
-                    .isBefore(LocalTime.parse(properties.weighInCutoff())))
-                .orElse(false);
-            case "stim_intake_before" -> stimIntakes(userId, date).stream()
-                .anyMatch(t -> t.isBefore(LocalTime.parse(properties.morningWindowEnd())));
+                .isPresent();
+            case "stim_intake_today" -> !stimIntakes(userId, date).isEmpty();
             case "training_done_today" -> {
                 if (!workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()) {
                     yield true;
                 }
-                // Run logs carry created_at, so the wake-anchored cutoff applies here (spec D2);
-                // gym completion stays date-presence (no completed_at — honest fallback).
-                LocalTime cutoff = habitTargets.resolve(userId).wake()
-                    .plusHours(properties.workoutWindowHours());
+                // Run branch is date-presence too since mezo-u6jx — the tick rewards the logged act,
+                // the timing coaching lives in anchorCopy (spec: honest-derivation fix §2).
                 yield runSessionLogRepository
                     .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
                     .stream()
-                    .anyMatch(r -> date.equals(r.getDate())
-                        && localTime(r.getCreatedAt()).isBefore(cutoff));
+                    .anyMatch(r -> date.equals(r.getDate()));
             }
             case "breakfast_protein" -> fuelDayService.getDay(userId, date).getMeals().stream()
                 .filter(m -> "breakfast".equals(m.getSlot()))
