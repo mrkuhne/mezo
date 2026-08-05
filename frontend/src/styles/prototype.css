@@ -283,7 +283,8 @@
   --surface-glass: rgba(245, 239, 230, 0.05);
   --border-strong: rgba(245, 239, 230, 0.14);
 
-  /* AnchorMode (kept: --anchor-accent has JS consumers — VulnerabilityCard, train.ts) */
+  /* AnchorMode (kept: consumers — the .anch* family + train.ts's recovery template;
+     VulnerabilityCard moved onto the primary ramp in mezo-setx.5.1) */
   --anchor-canvas:  #14110E;
   --anchor-surface: #1F1915;
   --anchor-accent:  #D97757;
@@ -1333,18 +1334,19 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 @keyframes np-fabglow { 0%,100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--cta-g2) 35%, transparent); }
   50% { box-shadow: 0 8px 28px color-mix(in srgb, var(--cta-g2) 55%, transparent); } }
 @media (prefers-reduced-motion: no-preference) { .tab-fab { animation: np-fabglow 3.2s ease-in-out infinite; } }
+/* QuickInputSheet — the FAB's 6-tile quick-log launcher (DS re-dress mezo-setx.5.4) */
 .quicklog { padding: 4px 6px 10px; }
-.quicklog h2 { font-family: var(--ff-display); font-size: 19px; font-weight: 800; }
-.quicklog-sub { font-size: 12px; color: var(--faint); font-weight: 600; margin-top: 2px; }
-.quicklog-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+.quicklog h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+.quicklog-sub { font-size: 14px; color: var(--text-secondary); font-weight: 400; margin-top: 2px; }
+.quicklog-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-4); }
 .quicklog-tile {
-  border-radius: 22px; padding: 16px 8px 14px; text-align: center;
-  border: 1.5px solid var(--line); background: var(--canvas); cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border-radius: var(--r-2xl); padding: 16px 8px 14px; min-height: 104px; text-align: center;
+  border: 1px solid var(--divider); background: var(--surface-page); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit;
 }
-.quicklog-emoji { width: 42px; height: 42px; border-radius: 50%; background: var(--warm); display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 6px; }
-.quicklog-label { font-size: 12px; font-weight: 800; color: var(--ink); }
-.quicklog-hint { font-size: 10px; color: var(--faint); font-weight: 700; }
+.quicklog-emoji { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-recess); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 6px; }
+.quicklog-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.quicklog-hint { font-size: 12px; color: var(--text-muted); font-weight: 500; }
 .screen-content { padding-bottom: 118px; }
 .icon-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; color: var(--sub); } /* DS Rule 6: 48dp tap target */
 
@@ -1407,14 +1409,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    Bézier itself lives on in `logic/dayArc.ts`, redrawn by the Napzárás recap under
    the dark-canvas `.rz-arc-*` rules below. */
 
-/* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
-.greet { padding: 8px 24px 0; }
-.greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
-[data-day="reggel"] .greet-day { color: var(--amber-deep); }
+/* ===== Today greeting header — the page's Hero block (DS §Hero + text-h1 role,
+   mezo-setx.5.1): eyebrow date-line over the one-per-screen 36/700 h1. The em
+   accent keeps the daypart tint (accent/lav are large-text-safe at 36/700). ===== */
+.greet { padding: 10px 24px 0; }
+.greet-day { font: 700 12px/1.4 var(--ff-body); color: var(--text-secondary); letter-spacing: .22em; text-transform: uppercase; }
+[data-day="reggel"] .greet-day { color: var(--accent-deep); }
 [data-day="este"] .greet-day { color: var(--lav-deep); }
-.greet h1 { font-family: var(--ff-display); font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; color: var(--ink); }
-.greet h1 em { font-style: normal; color: var(--coral); }
-[data-day="reggel"] .greet h1 em { color: var(--amber); }
+.greet h1 { font-family: var(--ff-display); font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-top: 4px; color: var(--text-primary); text-wrap: balance; }
+.greet h1 em { font-style: normal; color: var(--primary-hover); }
+[data-day="reggel"] .greet h1 em { color: var(--accent-base); }
 [data-day="este"] .greet h1 em { color: var(--lav-deep); }
 
 /* ===== Napív Today hero =====
@@ -1423,7 +1427,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    card language's, worn across Today, Train and Fuel. */
 .h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
 .h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
-.typetag { display: inline-block; border-radius: 999px; padding: 5px 11px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.typetag { display: inline-block; border-radius: var(--r-sm); padding: 3px 8px; font-size: 10px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; }
 .typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
 .typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .typetag-run { background: var(--wash-run); color: var(--tag-run); }
@@ -1432,18 +1436,29 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .typetag-body { background: var(--wash-sage); color: var(--sage-deep); }
 .typetag-mind { background: var(--wash-lav); color: var(--lav-deep); }
 .typetag-fuel { background: var(--wash-amber); color: var(--amber-deep); }
-.warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
-:root[data-theme="dark"] .warmstrip { color: #E8B36B; }
+/* the niggle strip — the DS warning Alert idiom, token-only (both themes flip via the ramp) */
+.warmstrip { display: flex; align-items: center; gap: 10px; background: var(--warning-bg); border: 1px solid var(--warning-soft); border-radius: var(--r-lg); padding: 10px 12px; font: 500 13px/1.45 var(--ff-body); color: var(--warning-deep); margin-top: 12px; }
 .np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
 .np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 
 /* `.np-eventrow*` retired with `VolleyballCard`, `.alt-btn` with `WorkoutTeaser`'s
    details button (mezo-j7u4): the day face's sport hero is the shared `.todaycard`. */
 
-/* ===== Napív briefing collapse (BriefingCard, spec §Task 5) ===== */
-.brief { display: flex; gap: 10px; background: var(--warm); border-radius: 20px; padding: 13px 15px; margin-top: 12px; }
-.brief-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
-.brief-more { border: 0; background: none; cursor: pointer; font: inherit; color: var(--coral-deep); font-weight: 800; white-space: nowrap; font-size: 12px; align-self: flex-end; }
+/* ===== Briefing bubble — the CoachBubble-dressed briefing (mezo-setx.5.1) =====
+   The shell is `shared/ui/CoachBubble` (`.coach-bubble`); these are its briefing-only
+   children: the collapsed clamp row, the lead/rest paragraph pair (coach voice over
+   body prose), the refs row and the meta+toggle foot. */
+.brief-bubble, .today-note { margin: 0 24px 16px; }
+.brief { display: flex; gap: 10px; align-items: flex-end; }
+.brief-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.brief-more { border: 0; background: none; cursor: pointer; font: 700 14px/1 var(--ff-body); color: var(--primary-deep); white-space: nowrap; padding: 8px 2px; align-self: flex-end; }
+.briefing-body { display: flex; flex-direction: column; gap: 10px; }
+/* the lead inherits the .cb-body coach voice; the remaining paragraphs step down to body */
+.brief-rest { font: 400 16px/1.55 var(--ff-body); letter-spacing: 0; color: var(--text-primary); }
+.brief-refs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--primary-base) 18%, transparent); }
+.brief-refs-l { font: 700 10px/1 var(--ff-body); letter-spacing: .18em; text-transform: uppercase; color: var(--primary-deep); }
+.brief-foot { display: flex; align-items: baseline; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.brief-meta { font: 600 11px/1.2 var(--ff-body); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 /* The `.beats`/`.beat*` heartbeat strip retired with `CheckInStrip` (mezo-j7u4) — the
    check-in slots are ordinary `.itemrow`s inside their face's TodoCard now. */
@@ -1505,7 +1520,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 /* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
    Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
-.metapill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: var(--sub); background: var(--warm); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.metapill { display: inline-flex; align-items: center; border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--text-secondary); background: var(--surface-recess); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ===== Napív day strip — Mai's week navigator (mezo-9bbc) ===== */
 .daystrip { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 24px 6px; }
@@ -1579,7 +1594,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* ===== Napív today session card (Mai — sport/run, mezo-lruy; K3 language mezo-9bbc) =====
    The gym hero's lighter sibling: icon shield + eyebrow → title → fact pills →
    full-width CTA, tinted per modality via --tc-accent/--tc-wash. */
-.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(150deg, var(--tc-wash), var(--surface) 78%); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(165deg, var(--tc-wash), var(--surface-card) 72%); border: 1px solid color-mix(in srgb, var(--tc-accent) 16%, transparent); border-radius: var(--r-2xl); padding: var(--sp-4); margin: 0 24px 16px; box-shadow: var(--shadow-sm); }
 .todaycard-gym { --tc-accent: var(--tag-gym); --tc-wash: var(--wash-gym); }
 .todaycard-sport { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); }
 .todaycard-cross { --tc-accent: var(--tag-cross); --tc-wash: var(--wash-cross); }
@@ -1589,152 +1604,155 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .todaycard-mind { --tc-accent: var(--lav-deep);  --tc-wash: var(--wash-lav); }
 .todaycard-fuel { --tc-accent: var(--amber-deep); --tc-wash: var(--wash-amber); }
 .todaycard.logged { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
-.todaycard-top { display: flex; align-items: flex-start; gap: 11px; }
-.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: 15px; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
-.todaycard.logged .todaycard-icon { background: var(--sage-deep); color: var(--surface); }
-.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
-.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
-.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); }
-.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--surface); }
-.todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
-.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--surface); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
+.todaycard-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: var(--r-lg); background: var(--surface-card); box-shadow: var(--shadow-xs); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
+.todaycard.logged .todaycard-icon { background: var(--success-base); color: var(--text-inverse); }
+.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.todaycard-time { font-size: 14px; font-weight: 600; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
+.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; color: var(--text-primary); }
+.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: var(--r-full); padding: 4px 10px; font-size: 10px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--tc-accent); background: var(--surface-card); border: 1px solid color-mix(in srgb, var(--tc-accent) 20%, transparent); }
+.todaycard-pills { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 12px 16px; min-height: 48px; border-radius: var(--r-full); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--tc-accent); background: var(--surface-card); border: 1px solid color-mix(in srgb, var(--tc-accent) 28%, transparent); }
 /* --- Emitted by ItemCard *children*, not by ItemCard itself (mezo-j7u4) --------------------
    The card language's prose slots: `-note` is the sentence that carries the WHY / provenance
    (RitualCard's window framing, WindDownBanner's Walker citation), `-tip*` the explanatory
    advice lines, `-rows` nests shared `ItemRow`s inside the card (the `.tdc .itemrow` idiom).
    No existing rule covers standalone card prose — `.itemrow-t2`, `.donebar-detail` and
    `.fhc-next-tx s` are all structural children of other primitives. */
-.todaycard-note { margin-top: 11px; font: 500 12px/1.55 var(--ff-body); color: var(--sub); }
-.todaycard-note b { color: var(--sage-deep); font-weight: 700; }
-.todaycard-tips { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
-.todaycard-tip { display: flex; align-items: center; gap: 10px; font: 500 12.5px/1.45 var(--ff-body); color: var(--sub); }
-.todaycard-tip b { color: var(--ink); font-weight: 700; }
-.todaycard-tip-ic { flex: none; width: 30px; height: 30px; border-radius: 10px; background: var(--surface);
+.todaycard-note { margin-top: 12px; font: 500 13px/1.55 var(--ff-body); color: var(--text-secondary); }
+.todaycard-note b { color: var(--success-hover); font-weight: 700; }
+.todaycard-tips { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.todaycard-tip { display: flex; align-items: center; gap: 10px; font: 500 13px/1.5 var(--ff-body); color: var(--text-secondary); }
+.todaycard-tip b { color: var(--text-primary); font-weight: 700; }
+.todaycard-tip-ic { flex: none; width: 30px; height: 30px; border-radius: var(--r-md); background: var(--surface-card);
   display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
 .todaycard-rows { margin-top: 10px; }
-.todaycard-rows .itemrow { margin: 0; padding: 8px 4px; background: transparent; box-shadow: none; }
+.todaycard-rows .itemrow { width: 100%; margin: 0; padding: 8px 4px; background: transparent; box-shadow: none; border-color: transparent; }
 
 /* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
-.donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: var(--wash-sage); border: 0; font-family: inherit; text-align: left; cursor: inherit; }
-.donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--sage-deep); color: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
-.donebar-txt { font-size: 12px; font-weight: 800; color: var(--sage-deep); }
-.donebar-detail { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 700; color: var(--sub); letter-spacing: 0; text-transform: none; }
+.donebar { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: var(--r-lg); background: var(--success-bg); border: 1px solid var(--success-soft); font-family: inherit; text-align: left; cursor: inherit; }
+.donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--success-base); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; }
+.donebar-txt { font-size: 13px; font-weight: 700; color: var(--success-hover); }
+.donebar-detail { display: block; margin-top: 1px; font-size: 12px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0; text-transform: none; }
 /* The tappable variant is a <button> (the whole bar opens the review / re-opens the
    log sheet) — the inherited cursor left it without a pointer (mezo-9bbc review). */
 button.donebar { cursor: pointer; }
 
-/* ===== ItemRow — the compact ItemCard sibling (mezo-jyua) ===== */
-.itemrow { --ir-a: var(--coral-deep); display: flex; align-items: center; gap: 11px; width: 100%;
-  padding: 11px 13px; border-radius: 18px; background: var(--surface); box-shadow: var(--np-shadow-row);
-  margin: 0 24px 8px; border: 0; font-family: inherit; text-align: left; }
+/* ===== ItemRow — the canonical DS ListItem (mezo-jyua; DS spec mezo-setx.5.1) =====
+   Leading 40×40 tone-tinted icon shield (domain tint on an icon = legal data-viz band)
+   → 16/600 title + 14/400 subtitle → trailing time / action pill / `↗` link.
+   56 px minimum row height; the tone accent rides the --ir-a custom property. */
+.itemrow { --ir-a: var(--primary-deep); display: flex; align-items: center; gap: var(--sp-3);
+  width: calc(100% - 48px); min-height: 56px; padding: 10px 14px; border-radius: var(--r-lg);
+  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-xs);
+  margin: 0 24px 8px; font-family: inherit; text-align: left; }
 .itemrow-gym   { --ir-a: var(--tag-gym); }
 .itemrow-sport { --ir-a: var(--tag-sport); }
 .itemrow-cross { --ir-a: var(--tag-cross); }
 .itemrow-trx   { --ir-a: var(--tag-trx); }
 .itemrow-run   { --ir-a: var(--tag-run); }
-.itemrow-body  { --ir-a: var(--sage-deep); }
+.itemrow-body  { --ir-a: var(--success-hover); }
 .itemrow-mind  { --ir-a: var(--lav-deep); }
-.itemrow-fuel  { --ir-a: var(--amber-deep); }
-.itemrow-ic { flex: none; width: 34px; height: 34px; border-radius: 12px; display: inline-flex;
-  align-items: center; justify-content: center; font-size: 15px;
-  background: color-mix(in srgb, var(--ir-a) 13%, var(--surface)); }
+.itemrow-fuel  { --ir-a: var(--accent-deep); }
+.itemrow-ic { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center; font-size: 17px;
+  background: color-mix(in srgb, var(--ir-a) 12%, var(--surface-card)); }
 .itemrow-tx { flex: 1; min-width: 0; display: block; }
-.itemrow-t1 { display: block; font-size: 13.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
-.itemrow-t2 { display: block; font-size: 10.5px; font-weight: 700; color: var(--sub); margin-top: 2px; }
-.itemrow-tm { flex: none; font-size: 11.5px; font-weight: 800; color: var(--ir-a); font-variant-numeric: tabular-nums; }
-.itemrow-act { flex: none; border-radius: 11px; padding: 8px 12px; font-size: 11px; font-weight: 800;
-  font-family: inherit; cursor: pointer; color: var(--ir-a); border: 0;
-  background: color-mix(in srgb, var(--ir-a) 11%, var(--surface)); }
-.itemrow-act.is-inert { cursor: default; color: var(--faint); background: var(--warm); }
+.itemrow-t1 { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.itemrow-t2 { display: block; font-size: 14px; font-weight: 400; color: var(--text-secondary); line-height: 1.35; margin-top: 2px; }
+.itemrow-tm { flex: none; font-size: 14px; font-weight: 600; color: var(--ir-a); font-variant-numeric: tabular-nums; }
+.itemrow-act { flex: none; border-radius: var(--r-full); padding: 9px 14px; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer; color: var(--text-primary); border: 1px solid var(--divider);
+  background: var(--surface-recess); white-space: nowrap; }
+.itemrow-act.is-inert { cursor: default; color: var(--text-disabled); background: var(--surface-recess); border-color: transparent; }
 /* Whole-row-button shape with a link: the hit area is an INNER button so the <a> is its
    sibling, never its descendant. */
-.itemrow-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px;
+.itemrow-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-3);
   background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit;
   text-align: left; cursor: pointer; }
 /* The item's own external content — sits NEXT TO the action pill, never instead of it. */
-.itemrow-link { flex: none; width: 30px; height: 30px; border-radius: 11px; display: inline-flex;
-  align-items: center; justify-content: center; text-decoration: none; font-size: 13px;
-  font-weight: 800; color: var(--ir-a); background: var(--warm); }
-.itemrow.is-done { background: transparent; box-shadow: none; }
-.itemrow.is-done .itemrow-t1 { color: var(--sub); }
-.itemrow.is-done .itemrow-ic { background: var(--sage-deep); color: var(--surface); }
+.itemrow-link { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center; text-decoration: none; font-size: 14px;
+  font-weight: 700; color: var(--ir-a); background: var(--surface-recess); }
+.itemrow.is-done { background: transparent; box-shadow: none; border-color: transparent; }
+.itemrow.is-done .itemrow-t1 { color: var(--text-secondary); }
+.itemrow.is-done .itemrow-ic { background: var(--success-base); color: var(--text-inverse); }
 button.itemrow { cursor: pointer; }
 
-/* ===== DayFaceStrip — Today's daypart navigator (mezo-j7u4) ===== */
-.dfs { display: flex; gap: 8px; padding: 6px 24px 12px; }
-.dfs-pill { flex: 1; border-radius: 16px; padding: 10px 6px 9px; text-align: center;
-  background: var(--surface); box-shadow: var(--np-shadow-row); border: 1.5px solid transparent;
-  font-family: inherit; cursor: pointer; transition: background .26s var(--np-ease-ios), border-color .26s var(--np-ease-ios); }
-.dfs-e { display: block; font-size: 15px; }
-.dfs-l { display: block; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--faint); margin-top: 3px; }
-.dfs-c { display: block; font-size: 9.5px; font-weight: 800; color: var(--sage-deep); margin-top: 2px;
+/* ===== DayFaceStrip — Today's daypart navigator (mezo-j7u4; DS tab idiom mezo-setx.5.1):
+   selected = ink-filled, the clock's face = primary ring, counters in the status voice. ===== */
+.dfs { display: flex; gap: var(--sp-2); padding: 6px 24px 14px; }
+.dfs-pill { flex: 1; min-height: 48px; border-radius: var(--r-lg); padding: 10px 6px 9px; text-align: center;
+  background: var(--surface-card); box-shadow: var(--shadow-xs); border: 1.5px solid var(--divider);
+  font-family: inherit; cursor: pointer; transition: background var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
+.dfs-e { display: block; font-size: 16px; }
+.dfs-l { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-secondary); margin-top: 3px; }
+.dfs-c { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 2px;
   font-variant-numeric: tabular-nums; }
-.dfs-pill.now { border-color: var(--coral); }
-.dfs-pill.now .dfs-l { color: var(--coral-deep); }
-.dfs-pill.sel { background: var(--ink); border-color: var(--ink); }
-.dfs-pill.sel .dfs-l { color: color-mix(in srgb, var(--surface) 72%, transparent); }
-.dfs-pill.sel .dfs-c { color: color-mix(in srgb, var(--surface) 82%, transparent); }
-.dfs-pill.sel.now { box-shadow: 0 0 0 2px var(--coral); }
+.dfs-pill.has-open .dfs-c { color: var(--success-hover); }
+.dfs-pill.now { border-color: var(--primary-base); }
+.dfs-pill.now .dfs-l { color: var(--primary-deep); }
+.dfs-pill.sel { background: var(--secondary-hover); border-color: var(--secondary-hover); }
+.dfs-pill.sel .dfs-l { color: color-mix(in srgb, var(--surface-card) 75%, transparent); }
+.dfs-pill.sel .dfs-c, .dfs-pill.sel.has-open .dfs-c { color: color-mix(in srgb, var(--surface-card) 85%, transparent); }
+.dfs-pill.sel.now { box-shadow: 0 0 0 2px var(--primary-base); }
 
 /* ===== TodoCard — the merged actionable card of a face (mezo-j7u4) ===== */
-.tdc { margin: 0 24px 12px; padding: 14px 6px 8px; border-radius: 24px; background: var(--surface);
-  box-shadow: var(--np-shadow-row); }
-.tdc-hd { display: flex; align-items: center; padding: 0 10px; margin-bottom: 9px; }
-.tdc-hd-l { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.tdc-hd-r { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
+.tdc { margin: 0 24px 16px; padding: 14px 8px 10px; border-radius: var(--r-2xl); background: var(--surface-card);
+  border: 1px solid var(--divider); box-shadow: var(--shadow-sm); }
+.tdc-hd { display: flex; align-items: center; padding: 0 10px; margin-bottom: 10px; }
+.tdc-hd-l { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+.tdc-hd-r { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--success-hover);
   font-variant-numeric: tabular-nums; }
-.tdc-bar { height: 5px; border-radius: 999px; background: var(--warm); overflow: hidden; margin: 0 10px 12px; }
-.tdc-bar i { display: block; height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, var(--coral), var(--amber)); }
+.tdc-bar { height: 6px; border-radius: var(--r-full); background: var(--surface-recess); overflow: hidden; margin: 0 10px 12px; }
+.tdc-bar i { display: block; height: 100%; border-radius: var(--r-full); background: var(--success-base); }
 /* The header's right cell as a link into quest management (mezo-j7u4 fix round 1). */
-.tdc-hd-go { text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
-.tdc-grp { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--faint); margin: 10px 10px 6px; }
+.tdc-hd-go { text-decoration: none; display: inline-flex; align-items: center; gap: 3px; color: var(--accent-deep); }
+.tdc-grp { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text-muted); margin: 12px 10px 6px; }
 /* Companion line for the plan the rows belong to — the retired fuel preview's sparkle row. */
-.tdc-note { display: flex; gap: 8px; margin: 10px 10px 4px; padding-top: 9px;
-  border-top: 1px solid var(--line); font: 500 11.5px/1.5 var(--ff-body); color: var(--sub); }
-.tdc-note b { color: var(--coral-deep); font-weight: 800; font-variant-numeric: tabular-nums; }
-/* Inside the card the rows lose the standalone row's outer margin + shadow. */
-.tdc .itemrow { margin: 0 4px 4px; box-shadow: none; background: transparent; padding: 9px; }
+.tdc-note { display: flex; gap: 8px; margin: 10px 10px 4px; padding-top: 10px;
+  border-top: 1px solid var(--divider); font: 500 13px/1.5 var(--ff-body); color: var(--text-secondary); }
+.tdc-note b { color: var(--primary-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Inside the card the rows lose the standalone row's outer margin + border + shadow. */
+.tdc .itemrow { width: calc(100% - 4px); margin: 0 2px 4px; box-shadow: none; background: transparent; border-color: transparent; padding: 8px; }
 .tdc .itemrow.is-done { background: transparent; }
 
-/* ===== FaceHeroCard extras (mezo-j7u4) ===== */
-.fhc-bar { height: 5px; border-radius: 999px; background: rgba(255,255,255,.72); margin-top: 12px; overflow: hidden; }
-.fhc-bar i { display: block; height: 100%; border-radius: 999px; background: var(--tc-accent); }
-.fhc-next { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 11px 12px;
-  border-radius: 15px; background: rgba(255,255,255,.80); }
-:root[data-theme="dark"] .fhc-next { background: rgba(255,255,255,.07); }
+/* ===== FaceHeroCard extras (mezo-j7u4) — token-only, both themes via color-mix ===== */
+.fhc-bar { height: 6px; border-radius: var(--r-full); background: color-mix(in srgb, var(--surface-card) 72%, transparent); margin-top: 12px; overflow: hidden; }
+.fhc-bar i { display: block; height: 100%; border-radius: var(--r-full); background: var(--tc-accent); }
+.fhc-next { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 11px 12px;
+  border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface-card) 80%, transparent); }
 .fhc-next-tx { flex: 1; min-width: 0; }
-.fhc-next-tx b { display: block; font-size: 13px; font-weight: 800; color: var(--ink); }
-.fhc-next-tx s { display: block; text-decoration: none; font-size: 10.5px; font-weight: 700;
-  color: var(--sub); margin-top: 1px; }
-.fhc-next-go { flex: none; border-radius: 12px; padding: 9px 14px; font-size: 11.5px; font-weight: 800;
-  font-family: inherit; cursor: pointer; border: 0; color: var(--surface); background: var(--tc-accent); }
-.fhc-next-link { flex: none; width: 32px; height: 32px; border-radius: 12px; display: inline-flex;
-  align-items: center; justify-content: center; text-decoration: none; font-size: 13px;
-  font-weight: 800; color: var(--tc-accent); background: rgba(255,255,255,.72); }
-:root[data-theme="dark"] .fhc-next-link { background: rgba(255,255,255,.10); }
+.fhc-next-tx b { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.fhc-next-tx s { display: block; text-decoration: none; font-size: 14px; font-weight: 400;
+  color: var(--text-secondary); margin-top: 2px; }
+.fhc-next-go { flex: none; border-radius: var(--r-full); padding: 10px 16px; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer; border: 0; color: var(--text-inverse); background: var(--text-primary); }
+.fhc-next-link { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center; text-decoration: none; font-size: 14px;
+  font-weight: 700; color: var(--tc-accent); background: color-mix(in srgb, var(--surface-card) 72%, transparent); }
 /* in-flight write: the CTA is withdrawn to inert copy, never left clickable (ItemRow's rule) */
-.fhc-next-go.is-inert { background: var(--warm); color: var(--faint); cursor: default; }
+.fhc-next-go.is-inert { background: var(--surface-recess); color: var(--text-disabled); cursor: default; }
 
 /* ===== DoneFold (mezo-j7u4) ===== */
-.donefold { margin: 4px 24px 12px; }
-.donefold-hd { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px;
-  border-radius: 16px; border: 1.5px dashed var(--line); background: transparent; font-family: inherit;
-  font-size: 11.5px; font-weight: 800; color: var(--sub); cursor: pointer; }
-.donefold-c { margin-left: auto; color: var(--sage-deep); font-variant-numeric: tabular-nums; }
-.donefold-ch { color: var(--faint); }
-.donefold .itemrow { margin: 6px 0 0; }
+.donefold { margin: 4px 24px 16px; }
+.donefold-hd { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 12px 14px;
+  border-radius: var(--r-lg); border: 1.5px dashed var(--divider); background: transparent; font-family: inherit;
+  font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+.donefold-c { margin-left: auto; color: var(--success-hover); font-variant-numeric: tabular-nums; }
+.donefold-ch { color: var(--text-disabled); }
+.donefold .itemrow { width: 100%; margin: 6px 0 0; }
 
 /* ===== Face section line + day XP (mezo-j7u4) ===== */
-.zoneline { display: flex; align-items: center; gap: 9px; padding: 16px 24px 8px; }
-.zoneline span { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--faint); white-space: nowrap; }
-.zoneline i { flex: 1; height: 1px; background: var(--line); }
-.dayxp { margin: 8px 24px 20px; padding: 12px 14px; border-radius: 16px; background: var(--warm);
-  font-size: 12px; font-weight: 700; color: var(--sub); text-align: center; }
-.dayxp b { color: var(--sage-deep); font-variant-numeric: tabular-nums; }
+.zoneline { display: flex; align-items: center; gap: 10px; padding: 16px 24px 8px; }
+.zoneline span { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-muted); white-space: nowrap; }
+.zoneline i { flex: 1; height: 1px; background: var(--divider); }
+.dayxp { margin: 8px 24px 20px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--surface-recess);
+  font-size: 14px; font-weight: 600; color: var(--text-secondary); text-align: center; }
+.dayxp b { color: var(--success-hover); font-variant-numeric: tabular-nums; }
 
 /* ===== Today face-swap motion (mezo-1khu) ===== */
 /* The incoming face rebuilds with the np-rise family's rhythm; direction is carried by a
@@ -1753,7 +1771,7 @@ button.itemrow { cursor: pointer; }
    .faceswap-family selector tied at (0,1,0), so the LATER (reduce-block) declaration wins
    on every longhand via normal source-order tie-break — a structural guarantee, not a
    specificity race that the next added selector could silently re-break. */
-.faceswap > * { opacity: 0; animation-duration: .5s; animation-timing-function: var(--np-ease-ios);
+.faceswap > * { opacity: 0; animation-duration: var(--duration-slow); animation-timing-function: var(--ease-out);
   animation-fill-mode: forwards; }
 .faceswap:where([data-dir="fwd"]) > * { animation-name: face-in-fwd; }
 .faceswap:where([data-dir="back"]) > * { animation-name: face-in-back; }
@@ -2230,40 +2248,112 @@ button.itemrow { cursor: pointer; }
 /* ===== Daily intention (mezo-a686) =====
    The full-card `.intent*` banner retired with the daypart faces (mezo-j7u4): the creed became
    the one-line `.creedchip` below and the foci moved into the face's TodoCard/hero rows.
-   `.intent-creed` survives because `IntentionSheet` still quotes the creed with it. */
-.intent-creed { font: 500 13.5px/1.45 var(--ff-body); color: var(--sub); font-style: italic; }
+   `.intent-creed` retired in mezo-setx.5.5 — IntentionSheet's creed quote wears the
+   DS `.shcreed` Fraunces meta-voice callout now (sheet form family, above the .vuln block). */
 
 /* ===== Intention creed chip (mezo-j7u4) ===== */
-.creedchip { margin: 0 24px 12px; padding: 10px 13px; border-radius: 16px;
-  background: color-mix(in srgb, var(--lav) 11%, transparent); }
-.creedchip-hd { display: flex; gap: 9px; align-items: center; }
+.creedchip { margin: 0 24px 16px; padding: 12px 14px; border-radius: var(--r-lg);
+  background: var(--wash-lav); }
+.creedchip-hd { display: flex; gap: 10px; align-items: center; }
 .creedchip-st { color: var(--lav-deep); font-size: 13px; }
-.creedchip-cnt { flex: none; font-size: 9.5px; font-weight: 800; letter-spacing: .04em;
-  color: var(--text-quaternary); font-variant-numeric: tabular-nums; }
+.creedchip-cnt { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  color: var(--text-muted); font-variant-numeric: tabular-nums; }
 /* the day's stated intentions — the `◆` prose rows the retired `.fx` list used */
-.creedchip-foci { margin-top: 9px; display: flex; flex-direction: column; gap: 6px; }
-.creedchip-fx { display: flex; gap: 8px; align-items: flex-start; font: 600 12px/1.35 var(--ff-body); color: var(--ink); }
-.creedchip-fx-mark { flex: 0 0 auto; color: var(--lav-deep); font-size: 9px; line-height: 1.6; }
-.creedchip-tx { flex: 1; min-width: 0; text-align: left; font-size: 11.5px; font-style: italic;
-  color: var(--lav-deep); line-height: 1.4; font-family: inherit; }
+.creedchip-foci { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.creedchip-fx { display: flex; gap: 8px; align-items: flex-start; font: 500 14px/1.4 var(--ff-body); color: var(--text-primary); }
+.creedchip-fx-mark { flex: 0 0 auto; color: var(--lav-deep); font-size: 9px; line-height: 1.8; }
+/* the creed is a quote — narrative meta-text, so it speaks Fraunces italic (DS text-meta-sm) */
+.creedchip-tx { flex: 1; min-width: 0; text-align: left; font: italic 500 14px/1.45 var(--ff-serif);
+  color: var(--lav-deep); }
 /* the creed text doubles as the CreedSheet opener — a button, stripped back to plain text */
 button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; }
-.creedchip-go { flex: none; font-size: 10px; font-weight: 800; color: var(--lav-deep); border: 0;
-  border-radius: 999px; padding: 5px 9px; font-family: inherit; cursor: pointer;
-  background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.creedchip-go { flex: none; font-size: 12px; font-weight: 700; color: var(--lav-deep); border: 0;
+  border-radius: var(--r-full); padding: 7px 11px; font-family: var(--ff-body); font-style: normal; cursor: pointer;
+  background: color-mix(in srgb, var(--surface-card) 70%, transparent); white-space: nowrap; }
 
-/* evening reflect */
-.reflect { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
-.reflect-q { font: 700 11.5px/1.3 var(--ff-body); color: var(--sub); margin-bottom: 8px; }
+/* evening reflect — the intention question as its own card */
+.reflect { margin: 0 24px 16px; padding: 14px; border-radius: var(--r-lg);
+  background: var(--surface-card); border: 1px solid var(--divider); }
+.reflect-q { font: 600 14px/1.4 var(--ff-body); color: var(--text-primary); margin-bottom: 10px; }
 .reflect-opts { display: flex; gap: 8px; }
 .reflect-opt {
-  flex: 1; padding: 9px 6px; border-radius: 12px; font: 700 12px/1 var(--ff-body); color: var(--sub);
-  background: var(--warm); text-align: center;
+  flex: 1; min-height: 44px; padding: 10px 6px; border: 0; border-radius: var(--r-md);
+  font: 700 13px/1 var(--ff-body); color: var(--text-secondary); font-family: inherit;
+  background: var(--surface-recess); text-align: center; cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
-.reflect-opt.on-yes { background: var(--wash-sage); color: var(--sage-deep); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sage) 45%, transparent); }
-.reflect-done { display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1.3 var(--ff-body); color: var(--sage-deep);
-  background: var(--wash-sage); padding: 8px 12px; border-radius: 12px; margin-top: 12px; }
+.reflect-opt:active { transform: scale(.97); }
+.reflect-opt.on-yes { background: var(--success-bg); color: var(--success-hover); box-shadow: inset 0 0 0 1.5px var(--success-soft); }
+.reflect-done { display: inline-flex; align-items: center; gap: 6px; font: 700 13px/1.35 var(--ff-body); color: var(--success-hover);
+  background: var(--success-bg); border: 1px solid var(--success-soft); padding: 9px 12px; border-radius: var(--r-md); }
 .reflect-done svg { width: 14px; height: 14px; }
+
+/* ===== StatStrip — the DS 3-cell glance strip (shared/ui/StatStrip, mezo-setx.5.1) ===== */
+.statstrip { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1px;
+  background: var(--divider); border: 1px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
+.statstrip-c { background: var(--surface-card); padding: 10px; text-align: center; }
+.statstrip-v { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05;
+  color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.statstrip-u { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+.statstrip-l { font-size: 9px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-muted); margin-top: 2px; }
+/* Today's „Ma eddig" placement (FaceMorning) */
+.today-stats { margin: 0 24px 16px; }
+
+/* ===== Sheet form fields — the DS form composition for the Today sheets (mezo-setx.5.5):
+   visible label over a bordered 16px field (Rule 17 + the input-size floor), focus ring
+   from the shared token. `.shcreed` is the creed quote's Fraunces meta-voice callout. ===== */
+.shlabel { font: 500 14px/1.5 var(--ff-body); color: var(--text-secondary); }
+.shta { width: 100%; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid var(--divider);
+  background: var(--surface-card); color: var(--text-primary); font: 400 16px/1.45 var(--ff-body); resize: none; }
+.shta:focus-visible { border-color: var(--primary-base); box-shadow: var(--shadow-focus); }
+.shcreed { padding: 10px 12px; border-radius: var(--r-md); background: var(--wash-lav);
+  font: italic 500 14px/1.45 var(--ff-serif); color: var(--lav-deep); }
+
+/* ===== VulnerabilityCard — the coral info-Alert tone notice (mezo-setx.5.1) ===== */
+.vuln { margin: 0 24px 16px; padding: 12px 14px; border-radius: var(--r-lg);
+  background: var(--primary-bg); border: 1px solid var(--primary-soft); }
+.vuln-eyebrow { font: 700 12px/1.4 var(--ff-body); letter-spacing: .22em; text-transform: uppercase;
+  color: var(--primary-deep); }
+.vuln p { font: 500 13px/1.55 var(--ff-body); color: var(--text-primary); margin-top: 6px; }
+
+/* ===== AnchorModeView — the muted „rough day" recovery skin (mezo-setx.5.2) =====
+   The calm counterpart of the Today faces: the same DS roles (eyebrow, h1,
+   ListItem rows, CoachBubble) re-tinted to the --anchor-* amber family. */
+.anch-head { padding: 16px 24px 6px; }
+.anch-head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.anch-head-id { display: flex; align-items: center; gap: var(--sp-2); }
+.anch-eyebrow { color: var(--text-secondary); }
+.anch-title { margin-top: var(--sp-4); }
+.anch-accent { color: var(--anchor-accent); }
+/* the companion's bubble, muted off coral onto the anchor amber. Doubled-up
+   selectors on purpose: the `.coach-bubble` base block sits LATER in this file,
+   so a same-specificity override here would lose the source-order tie. */
+.coach-bubble.anch-coach { margin: var(--sp-5) 24px 16px;
+  background: color-mix(in srgb, var(--anchor-accent) 7%, transparent);
+  border-left-color: var(--anchor-accent); }
+.coach-bubble.anch-coach .cb-avatar { background: radial-gradient(circle at 30% 30%, var(--accent-soft), var(--anchor-accent));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--anchor-accent) 30%, transparent); }
+.coach-bubble.anch-coach .cb-eyebrow, .coach-bubble.anch-coach .cb-body { color: var(--anchor-text); }
+.anch-block { padding: 0 24px; margin-bottom: var(--sp-5); }
+.anch-zoneline { display: block; margin-bottom: var(--sp-3); }
+.anch-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* the three anchors — DS ListItem geometry, whole-row buttons */
+.anch-row { display: flex; align-items: center; gap: var(--sp-3); width: 100%; min-height: 56px;
+  padding: 10px 14px; border-radius: var(--r-lg); background: var(--surface-card);
+  border: 1px solid var(--divider); box-shadow: var(--shadow-xs);
+  font-family: inherit; text-align: left; cursor: pointer; }
+.anch-row-ic { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
+  align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--anchor-accent) 12%, var(--surface-card)); }
+.anch-row-tx { flex: 1; min-width: 0; display: block; }
+.anch-row-t1 { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.anch-row-t2 { display: block; font-size: 14px; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
+/* the paused-plan aside — dashed empty-state card, Fraunces meta voice */
+.anch-paused { padding: var(--sp-4); border-radius: var(--r-lg); border: 1.5px dashed var(--divider); }
+.anch-paused-l { font: 700 11px/1.2 var(--ff-body); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.anch-paused p { font: italic 500 14px/1.5 var(--ff-serif); color: var(--text-secondary); margin-top: var(--sp-2); }
 
 /* ===== WindDownBanner — the Today evening/night band (mezo-d71m, spec D2/D3) =====
    The dim/winddown phases wear the shared `ItemCard` since mezo-j7u4, so the light-surface
@@ -2392,70 +2482,89 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .phref-band { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: color-mix(in srgb, var(--sage) 35%, transparent); }
 .phref-pin { position: absolute; top: -3px; width: 3px; height: 12px; border-radius: 2px; transform: translateX(-1.5px); }
 
-/* ===== Ritual — Napzárás full-screen flow (mezo-ilsj, spec §4) ===== */
+/* ===== Ritual — Napzárás full-screen flow (mezo-ilsj, spec §4; DS re-dress mezo-setx.5.3) =====
+   The flow forces data-theme=dark (RitualPage's setForceTheme), so every token below
+   resolves through the Pulse dark ramp — the takeover surface is expressed in DS tokens
+   rather than literal graphites, and the cream washes are color-mixed off --text-primary
+   (dark: #F5EFE6). Lavender is the ritual's settled night direction (spec D10): the
+   data-viz --dv-lav + the kept --lav-deep carrier, deliberately not the primary ramp. */
 .rz-screen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow-y: auto;
-  background: radial-gradient(120% 90% at 50% -10%, #2A2521 0%, #241f1c 55%, #1a1614 100%); color: #F5EFE6; z-index: 30; }
+  background: radial-gradient(120% 90% at 50% -10%, var(--surface-elevated) 0%, var(--surface-card) 55%, var(--surface-page) 100%);
+  color: var(--text-primary); z-index: var(--z-bottomnav); }
 .rz-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 0; }
 .rz-dots { display: flex; gap: 6px; }
-.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(245,239,230,.18); }
-.rz-dot.on { background: var(--lav); }
-.rz-exit { background: none; border: 0; padding: 4px; color: rgba(245,239,230,.5); font-size: 15px; line-height: 1; }
+.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
+.rz-dot.on { background: var(--dv-lav); }
+.rz-exit { background: none; border: 0; width: 44px; height: 44px; margin: -8px -12px 0 0;
+  display: grid; place-items: center; cursor: pointer;
+  color: color-mix(in srgb, var(--text-primary) 50%, transparent); font-size: 16px; line-height: 1; }
 .rz-act { flex: 1; display: flex; flex-direction: column; padding: 0 20px 28px; }
 .rz-moon { width: 84px; height: 84px; border-radius: 50%; margin: 72px auto 0;
-  background: radial-gradient(circle at 34% 30%, #efe9dc 0%, #cfc4e2 55%, var(--lav) 100%);
-  box-shadow: 0 0 40px 6px rgba(171,159,210,.35); animation: rz-breath 4.2s ease-in-out infinite; }
+  background: radial-gradient(circle at 34% 30%,
+    color-mix(in srgb, var(--dv-lav) 10%, var(--text-primary)) 0%,
+    color-mix(in srgb, var(--dv-lav) 45%, var(--text-primary)) 55%,
+    var(--dv-lav) 100%);
+  box-shadow: 0 0 40px 6px color-mix(in srgb, var(--dv-lav) 35%, transparent);
+  animation: rz-breath 4.2s ease-in-out infinite; }
 @keyframes rz-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-.rz-line1 { font-family: var(--ff-display); font-size: 24px; text-align: center; margin-top: 40px; }
-.rz-line2 { color: rgba(245,239,230,.55); text-align: center; margin-top: 8px; }
-.rz-cta { margin: 56px auto 0; padding: 13px 34px; border-radius: 999px; border: 0;
-  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700;
+.rz-line1 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-align: center; margin-top: 40px; }
+.rz-line2 { font-size: 16px; color: color-mix(in srgb, var(--text-primary) 55%, transparent); text-align: center; margin-top: 8px; }
+.rz-cta { margin: 56px auto 0; padding: 13px 34px; min-height: 48px; border-radius: var(--r-full); border: 0;
+  background: linear-gradient(120deg, var(--dv-lav), var(--lav-deep)); color: var(--text-inverse);
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
   animation: rz-glowp 3s ease-in-out infinite; }
-@keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px rgba(171,159,210,.35); } 50% { box-shadow: 0 0 30px 8px rgba(171,159,210,.55); } }
+@keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--dv-lav) 35%, transparent); } 50% { box-shadow: 0 0 30px 8px color-mix(in srgb, var(--dv-lav) 55%, transparent); } }
 @keyframes rz-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 8% { opacity: 1; }
   100% { opacity: 0; transform: translateY(520px) rotate(560deg); } }
 
 /* Day-story act (act 2): arc redraw (np-draw reuse) + recap event rows (np-anim reuse). */
-.rz-story-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--lav); margin: 6px 4px 0; }
+.rz-story-eyebrow { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--dv-lav); margin: 6px 4px 0; }
 .rz-arc { display: block; margin: 20px auto 0; }
-.rz-arc-path { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round; opacity: .9;
+.rz-arc-path { fill: none; stroke: var(--dv-lav); stroke-width: 2.5; stroke-linecap: round; opacity: .9;
   stroke-dasharray: 400; stroke-dashoffset: 400; animation: np-draw 1.4s var(--np-ease-ios) .2s forwards; }
 .rz-arc-dot { transform-box: fill-box; transform-origin: center; opacity: 0;
   animation: np-pop .5s var(--np-ease-spring) forwards; }
-.rz-arc-checkin-done { fill: var(--sage); }
-.rz-arc-checkin-now { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
-.rz-arc-checkin-pending { fill: #241f1c; stroke: var(--faint); stroke-width: 2.5; }
-.rz-arc-workout { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
-.rz-arc-sleep { fill: #241f1c; stroke: var(--lav); stroke-width: 2.5; }
-.rz-thin { font-family: var(--ff-body); font-style: italic; font-size: 12.5px; text-align: center;
-  color: rgba(245,239,230,.65); margin: 18px 6px 0; }
+.rz-arc-checkin-done { fill: var(--success-base); }
+.rz-arc-checkin-now { fill: var(--surface-card); stroke: var(--primary-base); stroke-width: 2.5; }
+.rz-arc-checkin-pending { fill: var(--surface-card); stroke: var(--text-disabled); stroke-width: 2.5; }
+.rz-arc-workout { fill: var(--surface-card); stroke: var(--primary-base); stroke-width: 2.5; }
+.rz-arc-sleep { fill: var(--surface-card); stroke: var(--dv-lav); stroke-width: 2.5; }
+/* the thin-day soft line — the Fraunces meta voice (DS text-meta-sm) */
+.rz-thin { font: italic 500 14px/1.5 var(--ff-serif); text-align: center;
+  color: color-mix(in srgb, var(--text-primary) 65%, transparent); margin: 18px 6px 0; }
 .rz-events { display: flex; flex-direction: column; gap: 9px; margin-top: 18px; }
-.rz-ev { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px;
-  background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-ev { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); font-family: var(--ff-body); font-size: 14px; }
 .rz-ev-icon { font-size: 15px; }
 .rz-ev-label { flex: 1; }
-.rz-ev-meta { color: var(--faint); font-size: 11px; }
-.rz-ev-meta.ok { color: var(--sage); }
+.rz-ev-meta { color: var(--text-disabled); font-size: 12px; }
+.rz-ev-meta.ok { color: var(--success-base); }
 
 /* Loops act (act 3): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
    once a row closes, and the single "Minden hurok zárva" beat once nothing is left open. The
    glow is a static wash + inset ring (no pulse) — the retired RoutineCard's first-pending
    idiom, not an animated pulsing dot. */
-.rz-loops-sub { font-family: var(--ff-body); font-size: 11.5px; font-weight: 500;
-  color: rgba(245,239,230,.5); margin: 6px 4px 14px; }
+.rz-loops-sub { font-family: var(--ff-body); font-size: 14px; font-weight: 400;
+  color: color-mix(in srgb, var(--text-primary) 55%, transparent); margin: 6px 4px 14px; }
 .rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 12px;
-  border-radius: 16px; background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
-.rz-loop.glow { background: rgba(171,159,210,.14); box-shadow: inset 0 0 0 1px rgba(171,159,210,.35); }
-.rz-loop-done { color: rgba(245,239,230,.5); }
-.rz-loop-mk { color: var(--sage); }
+  border-radius: var(--r-lg); background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  font-family: var(--ff-body); font-size: 14px; }
+.rz-loop.glow { background: color-mix(in srgb, var(--dv-lav) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 35%, transparent); }
+.rz-loop-done { color: color-mix(in srgb, var(--text-primary) 50%, transparent); }
+.rz-loop-mk { color: var(--success-base); }
 .rz-loop-text { flex: 1; }
-.rz-loop-act { margin-left: auto; padding: 6px 13px; border-radius: 999px; border: 0;
-  background: var(--lav); color: #1d1927; font-family: var(--ff-body); font-weight: 700; font-size: 11px;
-  white-space: nowrap; }
+.rz-loop-act { margin-left: auto; padding: 9px 15px; border-radius: var(--r-full); border: 0;
+  background: var(--dv-lav); color: var(--text-inverse); font-family: var(--ff-body); font-weight: 700; font-size: 13px;
+  white-space: nowrap; cursor: pointer; }
 .rz-loop-chips { margin-left: auto; display: flex; gap: 5px; }
-.rz-loop-chip { padding: 5px 9px; border-radius: 999px; border: 0; background: rgba(245,239,230,.1);
-  color: #F5EFE6; font-family: var(--ff-body); font-weight: 600; font-size: 10.5px; }
-.rz-loop-beat { justify-content: center; text-align: center; color: rgba(245,239,230,.7); font-style: italic; }
+.rz-loop-chip { padding: 8px 11px; border-radius: var(--r-full); border: 0;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  color: var(--text-primary); font-family: var(--ff-body); font-weight: 600; font-size: 13px; cursor: pointer; }
+.rz-loop-beat { justify-content: center; text-align: center;
+  color: color-mix(in srgb, var(--text-primary) 70%, transparent);
+  font: italic 500 14px/1.5 var(--ff-serif); }
 
 /* Harvest act (act 4): XP count-up (the shared CountUp primitive), per-source/coin chips
    (np-pop reuse via .rz-pop), an optional LIFE skill highlight (bar-only — honest-absence,
@@ -2467,21 +2576,24 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-harvest-body { display: flex; flex-direction: column; margin-block: auto; }
 .rz-harvest .rz-cta { margin-top: 0; }
 .rz-xp-wrap { text-align: center; margin-top: 26px; }
-.rz-xp-num { display: block; font-family: var(--ff-display); font-size: 52px; line-height: 1; font-weight: 700; color: var(--amber); }
-.rz-xp-unit { font-family: var(--ff-body); font-size: 15px; font-weight: 600; color: var(--faint); margin-top: 4px; }
+/* the DS hero numeral role: 56 / Geist 200 / -0.04em — the harvest total IS the hero number */
+.rz-xp-num { display: block; font-family: var(--ff-display); font-size: 56px; line-height: 1; font-weight: 200;
+  letter-spacing: -0.04em; color: var(--dv-amber); font-variant-numeric: tabular-nums; }
+.rz-xp-unit { font-family: var(--ff-body); font-size: 14px; font-weight: 600; color: var(--text-disabled); margin-top: 4px; }
 .rz-src-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 4px 0; }
-.rz-chip { padding: 6px 10px; border-radius: 999px; background: rgba(245,239,230,.07);
-  font-family: var(--ff-body); font-weight: 600; font-size: 11px; }
+.rz-chip { padding: 6px 10px; border-radius: var(--r-full); background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
 .rz-coin-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
-.rz-coin-chip { padding: 7px 12px; border-radius: 999px; background: rgba(255,190,96,.14); color: var(--amber);
-  font-family: var(--ff-body); font-weight: 700; font-size: 12px; }
+.rz-coin-chip { padding: 7px 12px; border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--dv-amber) 14%, transparent); color: var(--dv-amber);
+  font-family: var(--ff-body); font-weight: 700; font-size: 13px; }
 .rz-pop { opacity: 0; animation: np-pop .5s var(--np-ease-spring) forwards; }
-.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
+.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 14px; }
 .rz-skill-lv { color: var(--lav-deep); font-weight: 700; }
-.rz-skill-bar { height: 7px; border-radius: 99px; background: rgba(245,239,230,.1); margin-top: 6px; overflow: hidden; }
-.rz-skill-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--lav), var(--lav-deep));
+.rz-skill-bar { height: 7px; border-radius: var(--r-full); background: color-mix(in srgb, var(--text-primary) 10%, transparent); margin-top: 6px; overflow: hidden; }
+.rz-skill-bar i { display: block; height: 100%; border-radius: var(--r-full); background: linear-gradient(90deg, var(--dv-lav), var(--lav-deep));
   transform-origin: left; transform: scaleX(0); animation: np-grow .9s var(--np-ease-ios) forwards; }
-.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 13px; color: var(--coral); }
+.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 14px; color: var(--primary-base); }
 .rz-streak.dim { opacity: .45; }
 .rz-conf { position: absolute; inset: 0; pointer-events: none; }
 .rz-conf i { position: absolute; top: -8px; width: 6px; height: 10px; border-radius: 2px; opacity: 0;
@@ -2489,23 +2601,30 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 
 /* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
-.rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
+.rz-ring { fill: none; stroke: var(--dv-lav); stroke-width: 2.5; stroke-linecap: round;
   stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center;
   animation: np-draw 2s var(--np-ease-ios) .3s forwards; }
 .rz-circle-moon { animation: rz-breath 4.2s ease-in-out infinite; transform-origin: center; }
-.rz-end { font-family: var(--ff-display); font-size: 19px; line-height: 1.35; text-align: center; margin: 28px 26px 0; }
-.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: 16px; background: rgba(245,239,230,.05);
-  font-style: italic; font-size: 12px; line-height: 1.55; }
-.rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 9.5px; font-weight: 600;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--lav); margin-bottom: 6px; }
-.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: 18px; background: rgba(245,239,230,.05); }
-.rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--lav); }
+/* the companion's release line — the DS coach voice (Geist 200 · 22, never italic) */
+.rz-end { font-family: var(--ff-body); font-size: 22px; font-weight: 200; letter-spacing: -0.02em;
+  line-height: 1.32; text-align: center; margin: 28px 26px 0; }
+/* the closing note — narrative meta, Fraunces italic (DS text-meta-sm) */
+.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  font: italic 500 14px/1.55 var(--ff-serif); }
+.rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 10px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--dv-lav); margin-bottom: 6px; }
+.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: var(--r-xl);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--dv-lav); }
 .rz-handoff-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
-  font-family: var(--ff-body); font-size: 12.5px; line-height: 1.5; color: rgba(245,239,230,.9); }
-.rz-handoff-steps em { font-style: normal; color: var(--faint); font-size: 11px; }
-.rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; border: 0; border-radius: 999px;
-  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700; font-size: 13px;
+  font-family: var(--ff-body); font-size: 14px; line-height: 1.5;
+  color: color-mix(in srgb, var(--text-primary) 90%, transparent); }
+.rz-handoff-steps em { font-style: normal; color: var(--text-disabled); font-size: 12px; }
+.rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; min-height: 48px; border: 0; border-radius: var(--r-full);
+  background: linear-gradient(120deg, var(--dv-lav), var(--lav-deep)); color: var(--text-inverse);
+  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
   animation: rz-glowp 3s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {

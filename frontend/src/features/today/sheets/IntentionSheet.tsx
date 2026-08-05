@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 
+// DS re-dress (mezo-setx.5.5): h2 role title (it IS the field's visible question, Rule 17 —
+// wired via aria-labelledby), the creed quote in the Fraunces meta voice (.shcreed),
+// 16px .shta field, cta-primary save.
 export function IntentionSheet({ creed, onSave, onClose }:
   { creed: string | null; onSave: (text: string) => void; onClose: () => void }) {
   const [text, setText] = useState('')
@@ -8,17 +11,16 @@ export function IntentionSheet({ creed, onSave, onClose }:
     <Sheet onClose={onClose} labelledBy="focus-title">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px', gap: 12 }}>
-          <h2 id="focus-title" style={{ font: '700 18px/1.2 var(--ff-display)' }}>Mi ma a fókuszod?</h2>
+          <h2 id="focus-title" className="h-display size-lg">Mi ma a fókuszod?</h2>
           {creed && (
-            <div className="intent-creed" style={{ background: 'var(--wash-lav)', padding: '10px 12px', borderRadius: 12 }}>
+            <div className="shcreed">
               „{creed}"
             </div>
           )}
-          <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={200} rows={2} autoFocus
-            placeholder="Ma arra figyelek, hogy…"
-            style={{ width: '100%', padding: 12, borderRadius: 12, border: '1px solid var(--card-border)',
-              background: 'var(--surface-1)', color: 'var(--ink)', font: '500 14px/1.4 var(--ff-body)', resize: 'none' }} />
-          <button className="hab-act" disabled={!text.trim()} style={{ alignSelf: 'flex-end' }}
+          <textarea className="shta" value={text} onChange={(e) => setText(e.target.value)}
+            maxLength={200} rows={2} autoFocus aria-labelledby="focus-title"
+            placeholder="Ma arra figyelek, hogy…" />
+          <button className="cta-primary" disabled={!text.trim()}
             onClick={() => { onSave(text.trim()); close() }}>Hozzáadom</button>
         </div>
       )}

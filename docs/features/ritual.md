@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-07-29
+updated: 2026-08-05
 tags: [today, habit, growth, intention, proactive, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -149,6 +149,7 @@ const state = ritualWindowState(new Date(), ritualDay.window)  // 'waiting' | 'o
 - **Add a Harvest source label:** `HarvestStep.tsx`'s `SOURCE_LABEL_HU` is a closed `Record<KnownSource, string>` gated by `isKnownSource` — a new `XpEventType` source (backend `level_up_event.source_type`) needs a matching HU label + `CHIP_ICON_BY_SOURCE` entry (`features/progression/logic/levelUpMeta.ts`) added here, or it is defensively skipped (never rendered unlabelled).
 - **Tune the window:** `RitualProperties` (`mezo.ritual.lead-min`/`mezo.ritual.prep-lead-min`), never a code constant ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 - **Tune the Harvest choreography timing:** edit the constants inline in `harvestStages.ts` (delay deltas) — it is pure and unit-tested (`harvestStages.test.ts`), so a timing change is a one-file, fully-covered edit.
+- **DS re-dress (`mezo-setx.5.3`, 2026-08-05):** the whole `rz-*` family speaks the Mezo-edition DS tokens — the takeover surface is the Pulse dark ramp (`--surface-elevated/card/page` radial, valid because `RitualPage` forces `data-theme=dark`), the cream washes are `color-mix` off `--text-primary`, lavender rides `--dv-lav` + the kept `--lav-deep` carrier (spec D10 — the ritual's settled night direction, deliberately NOT the primary ramp even on CTAs), done-marks the success ramp, the streak `--primary-base`, coins/confetti the `--dv-amber`/data-viz band (`CONFETTI_COLOR` in `HarvestStep` moved to `--dv-*` tokens; `ReleaseStep`'s moon fill is token-mixed). Type roles: the Harvest total is the DS hero numeral (56 / Geist 200 / −0.04em), the release line the coach voice (22/200), the thin-day line + closing note + loop beat the Fraunces meta voice (14/500i), body copy 14, eyebrows 11/700/0.18em; radii/z snapped to the scales; the ✕ exit grew a 44px hit area and every CTA a 48px min-height. Behaviour, act machine, close-ordering and the reduced-motion block are untouched (`reducedMotionGuard.test.ts` still passes unchanged); all four `ritual-*` goldens regenerated.
 - **New animation:** extend the `rz-*` CSS family (`prototype.css`, tail of the file) rather than introducing a new family — it already reuses/extends the Napív `np-draw`/`np-pop`/`np-twinkle`/`pulse-soft` keyframes plus the ritual-local `fall` (confetti) and `glowp` (CTA pulse) keyframes. Every new loop/entrance MUST land behind the existing `@media (prefers-reduced-motion: reduce)` block at the CSS tail (or the shared `useReducedMotion` hook for JS-driven animation, the `CountUp` precedent) — component tests stub `matchMedia` to reduced (the `LevelUpScreen.test.tsx` pattern).
 - House standards: contract-first ([`api_contract_conventions.md`](../references/api_contract_conventions.md)), backend per [`docs/references/*.md`](../references/), dual-mode hook recipe in [`_platform-data-layer.md`](_platform-data-layer.md).
 

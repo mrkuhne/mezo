@@ -7,17 +7,16 @@
 // The three pills are plain divs, NOT the real `.dfs` tablist/`role="tab"` buttons:
 // a skeleton must not offer a screen-reader user tabs that do not exist yet.
 //
-// TWO hero cards, not one — a fix-round correction (review of mezo-1khu): FaceMorning
-// ALWAYS stacks two `.todaycard`s (FaceHeroCard, the chain hero, then BriefingCard —
-// both unconditional), and FaceEvening stacks two (WindDownBanner + RitualCard)
-// whenever `windDownPhase` is not `'none'` — which, given `EVENING_LEAD_MIN` (240) vs.
-// `DIM_LEAD_MIN` (90), is true for most of the evening face's span (only its first
-// ~150 minutes, before the dim window opens, show RitualCard alone). Only FaceDay
+// TWO hero cards, not one — a fix-round correction (review of mezo-1khu): FaceEvening
+// stacks two `.todaycard`s (WindDownBanner + RitualCard) whenever `windDownPhase` is
+// not `'none'` — which, given `EVENING_LEAD_MIN` (240) vs. `DIM_LEAD_MIN` (90), is
+// true for most of the evening face's span — and FaceMorning stacks the chain hero
+// `.todaycard` plus the briefing CoachBubble + StatStrip (since the DS re-dress,
+// mezo-setx.5.1), which together reserve roughly a second card's height. Only FaceDay
 // always renders exactly one. Two cards is the honest majority match, chosen over a
 // perfect match for every face (impossible with one fixed skeleton): it costs the
 // day face — and the early slice of the evening face — one hero card's worth of
-// height (~150-160px) that shrinks out on swap. See task-12-report.md for the
-// worst-case delta per face.
+// height (~150-160px) that shrinks out on swap.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 function HeroCardSkeleton() {

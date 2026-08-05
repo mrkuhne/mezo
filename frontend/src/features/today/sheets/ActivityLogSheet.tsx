@@ -64,12 +64,12 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           </div>
 
           {quest && phase === 'compose' && (
-            <div className="card" style={{ padding: 12, marginBottom: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
+            <div className="card" style={{ padding: 12, marginBottom: 14, background: 'var(--primary-bg)', borderColor: 'var(--primary-soft)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={11} color="var(--coral)" />
+                <Icon name="sparkle" size={11} color="var(--primary-deep)" />
                 <div className="col" style={{ flex: 1, gap: 3 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>{quest.title}</span>
-                  <span className="text-tertiary" style={{ fontSize: 11 }}>+{quest.xp} XP a teljesítésért</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4 }}>{quest.title}</span>
+                  <span className="text-tertiary" style={{ fontSize: 12 }}>+{quest.xp} XP a teljesítésért</span>
                 </div>
               </div>
             </div>
@@ -80,10 +80,11 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
               <div className="col gap-sm">
                 <div className="card" style={{ padding: 10 }}>
                   <textarea value={text} maxLength={500} onChange={e => setText(e.target.value.slice(0, 500))}
+                    aria-labelledby="activity-log-title"
                     placeholder="pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…"
-                    style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
+                    style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 16, lineHeight: 1.45 }} />
                 </div>
-                <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5 }}>Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</p>
+                <p className="text-tertiary" style={{ fontSize: 12, lineHeight: 1.5 }}>Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</p>
               </div>
               <div className="row gap-sm mt-lg">
                 <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
@@ -94,9 +95,9 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
 
           {phase === 'pick' && pickTarget && (
             <div className="col gap-sm">
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Nem egyértelmű — melyik skillhez tartozik?</span>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>Nem egyértelmű — melyik skillhez tartozik?</span>
               <div className="card" style={{ padding: 10 }}>
-                <p className="text-tertiary" style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.45 }}>„{pickTarget.text}"</p>
+                <p className="text-tertiary" style={{ font: 'italic 500 14px/1.45 var(--ff-serif)' }}>„{pickTarget.text}"</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
                 {LIFE_SKILLS.map(s => (
@@ -112,7 +113,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           {phase === 'done' && result && (
             <>
               <div className="col gap-sm">
-                <div className="card" style={{ padding: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
+                <div className="card" style={{ padding: 14, background: 'var(--primary-bg)', borderColor: 'var(--primary-soft)' }}>
                   <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{doneMeta ? `${doneMeta.icon} ${doneMeta.name}` : result.entry.text}</span>
                     <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{result.entry.xpAwarded} XP</span>
@@ -121,8 +122,8 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
                 {result.completedQuest && (
                   <div className="card" style={{ padding: 10 }}>
                     <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                      <Icon name="check" size={12} color="var(--success)" />
-                      <span style={{ fontSize: 12, lineHeight: 1.4 }}>Küldetés teljesítve: {result.completedQuest.title} (+{result.completedQuest.xp} XP)</span>
+                      <Icon name="check" size={12} color="var(--success-hover)" />
+                      <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>Küldetés teljesítve: {result.completedQuest.title} (+{result.completedQuest.xp} XP)</span>
                     </div>
                   </div>
                 )}

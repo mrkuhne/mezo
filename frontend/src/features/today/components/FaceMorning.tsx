@@ -1,7 +1,8 @@
 // ============================================================
 // Mezo · FaceMorning — the 🌅 face (mezo-j7u4): the morning chain hero, the
-// companion's briefing, the creed chip, the day's remaining todos, and a
-// preview of what the later faces hold (the screen's actual guidance).
+// day's numbers as a DS StatStrip, the companion's briefing as a CoachBubble,
+// the creed chip, the day's remaining todos, and a preview of what the later
+// faces hold (the screen's actual guidance).
 // ============================================================
 import { BriefingCard } from '@/features/today/components/BriefingCard'
 import { DoneFold } from '@/features/today/components/DoneFold'
@@ -9,6 +10,7 @@ import { FaceHeroCard } from '@/features/today/components/FaceHeroCard'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { TodoCard } from '@/features/today/components/TodoCard'
 import { ItemRow } from '@/shared/ui/ItemRow'
+import { StatStrip, type StatStripCell } from '@/shared/ui/StatStrip'
 import type { Briefing } from '@/data/types'
 import type { DayFace } from '@/features/today/logic/dayFace'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
@@ -16,7 +18,7 @@ import type { TodayItem } from '@/features/today/logic/todayItems'
 import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
 
 export function FaceMorning({
-  open, done, doneXp, chain, briefing, briefingDemo, briefingFacts, later, growth, fuelNote,
+  open, done, doneXp, chain, briefing, briefingDemo, stats, later, growth, fuelNote,
   habitPending, onAct, onFace,
 }: {
   open: TodayItem[]
@@ -25,7 +27,8 @@ export function FaceMorning({
   chain: { done: number; total: number; next: TodayItem | null }
   briefing: Briefing
   briefingDemo?: boolean
-  briefingFacts: string[]
+  /** The day's glance numbers („Ma eddig") — rendered as the DS StatStrip, morning face only. */
+  stats: StatStripCell[]
   /** Items belonging to the later faces, previewed as compact rows. Day-wide (`face: 'all'`)
    *  items are excluded by the caller's narrowing filter, so every row here has a real face
    *  to jump to — the `'all' ? 'nap'` fallback this used to carry was unreachable. */
@@ -51,7 +54,8 @@ export function FaceMorning({
         title={chain.next ? 'Indul a lánc' : 'Megvan a reggeled'}
         done={chain.done} total={chain.total} next={chain.next} disabled={habitPending} onAct={onAct}
       />
-      <BriefingCard briefing={briefing} demo={briefingDemo} facts={briefingFacts} />
+      <StatStrip cells={stats} className="today-stats" />
+      <BriefingCard briefing={briefing} demo={briefingDemo} />
       <IntentionBanner variant="chip" />
       <TodoCard
         items={todo} doneCount={done.length} xp={doneXp} growth={growth}
