@@ -167,6 +167,58 @@ test('a fork + edit on one day type survives switching away and back', async () 
   expect(await screen.findByDisplayValue('Egyedi Reggeli')).toBeInTheDocument()
 })
 
+// mezo-4ghd fix round 1 (reviewer finding 1, CRITICAL): a draft stashed while a saved template was
+// loaded (switch away+back seeds it, since a loaded template starts `forked=true`) used to outlive
+// "Ajánlott visszaállítása" deleting that template server-side — a LATER switch-away+back would
+// then resurrect the deleted template's rows as an editable fork, and Mentés would silently
+// re-create it. `resetToRecommended` now clears that day type's draft too.
+test('reset-then-revisit: deleting a saved template also clears its stashed draft — no resurrection', async () => {
+  const qc = newQc()
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => ({ read: useSlotTemplates(), act: useSlotTemplateActions() }), { wrapper })
+  await act(() => result.current.act.putTemplate(SAMPLE))
+
+  renderPage(qc)
+  expect(await screen.findAllByLabelText('Slot neve')).toHaveLength(2)
+
+  // Switch away and back ONCE while the saved template is still loaded — this is what stashes a
+  // draft for 'rest' (a loaded template starts `forked=true`).
+  await userEvent.click(screen.getByRole('tab', { name: 'Reggeli edzés' }))
+  await userEvent.click(screen.getByRole('tab', { name: 'Pihenőnap' }))
+  expect(await screen.findAllByLabelText('Slot neve')).toHaveLength(2)
+
+  await userEvent.click(screen.getByRole('button', { name: 'Ajánlott visszaállítása' }))
+  await waitFor(() => expect(result.current.read.templates).toEqual([]))
+
+  // Switch away and back again — the FIRST switch's stashed draft must not resurrect the now
+  // deleted template.
+  await userEvent.click(screen.getByRole('tab', { name: 'Reggeli edzés' }))
+  await userEvent.click(screen.getByRole('tab', { name: 'Pihenőnap' }))
+
+  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: /Testreszabás/ })).toBeInTheDocument()
+})
+
+// mezo-4ghd fix round 1 (reviewer finding 2, IMPORTANT): the render-time resync in `NumberField`
+// only fires when the COMMITTED value changes between renders — typing "12.5" already commits 12
+// at the "2" keystroke, so the trailing ".5" left the input showing "12.5" forever (the Σ pill and
+// the wire were correct at 12, only the input's own text lagged). `onBlur` now settles it.
+test('Budget % input settles to the committed integer on blur, even though it lagged while typing', async () => {
+  const qc = newQc()
+  renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+
+  const pctInputs = await screen.findAllByLabelText('Budget %')
+  await userEvent.clear(pctInputs[0])
+  await userEvent.type(pctInputs[0], '12.5')
+  expect(pctInputs[0]).toHaveValue('12.5') // lags while typing — unchanged, no keystroke-reset
+
+  await userEvent.tab() // blur
+  expect(pctInputs[0]).toHaveValue('12')
+})
+
 test('fork + Mentés saves the template to the cache and navigates back', async () => {
   const qc = newQc()
   const wrapper = ({ children }: { children: ReactNode }) => (

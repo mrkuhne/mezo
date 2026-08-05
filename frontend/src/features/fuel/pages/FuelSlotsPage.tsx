@@ -107,6 +107,13 @@ function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void
 // mid-typing states ("-", ".", "12.5") hold, coercing to a number on every change, and re-syncs
 // only on an EXTERNAL value change (the ± buttons) via the render-time prev-prop pattern — no
 // useEffect, so no keystroke-reset race. `allowNegative` widens the pattern for signed offsets.
+// mezo-4ghd fix round 1 (reviewer finding 2): the render-time resync above only fires when the
+// COMMITTED value changes between renders — typing "12.5" with a `normalize` in play commits 12
+// already at the "2" keystroke, so the trailing ".5" never changes `value` again and the display
+// is stuck showing "12.5" forever even though the committed/wire value is 12. `onBlur` adds a
+// second, unconditional settle point: on blur, the text always snaps to `String(value)`, so the
+// keystroke-reset-free typing experience is unchanged but the field never lingers out of sync
+// with what was actually committed once the user moves on.
 function NumberField({
   value, onChange, label, width = 42, allowNegative = false, normalize,
 }: {
@@ -141,6 +148,7 @@ function NumberField({
       inputMode="decimal"
       value={text}
       onChange={e => commit(e.target.value)}
+      onBlur={() => { if (text !== String(value)) setText(String(value)) }}
       aria-label={label}
       style={{ width, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
     />
@@ -255,11 +263,30 @@ export function FuelSlotsPage() {
     setRows(seedRowsFromRecommendation(recommendedWindows, recommendedBudgets))
     setForked(true)
   }
+  // mezo-4ghd fix round 1 (reviewer finding 1, CRITICAL): a stashed draft outlives the template it
+  // was seeded from. Repro: a saved template loads into the editor (`forked=true` from mount) →
+  // switching away+back stashes/restores that draft → "Ajánlott visszaállítása" deletes the
+  // server-side template but left the STALE draft sitting in `drafts[dayType]` → the next
+  // switch-away+back resurrected the deleted template's rows as an editable fork, and Mentés
+  // would silently re-create it. Both `save` and `resetToRecommended` now drop that day type's
+  // draft once its action lands — `save` because the just-saved `rows` supersede any stashed
+  // pre-save draft, `resetToRecommended` because there is no longer any template to draft from.
+  const clearDraft = (dt: SlotTemplateDayType) =>
+    setDrafts(prev => {
+      if (!(dt in prev)) return prev
+      const next = { ...prev }
+      delete next[dt]
+      return next
+    })
   const save = () => {
-    putTemplate({ dayType, slots: rows }).then(() => navigate(-1))
+    putTemplate({ dayType, slots: rows }).then(() => {
+      clearDraft(dayType)
+      navigate(-1)
+    })
   }
   const resetToRecommended = () => {
     deleteTemplate(dayType).then(() => {
+      clearDraft(dayType)
       setForked(false)
       setRows([])
     })
