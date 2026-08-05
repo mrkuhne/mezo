@@ -60,13 +60,14 @@ YouTube Data API v3 (free 10 000 units/day) could *search* candidates, but its T
 or caching the video itself, so it would only ever fill in `video_url` — a one-off authoring job,
 not a runtime dependency.
 
-## If we build it
+## Outcome
 
-1. `exercise_catalog.image_url TEXT NULL` (+ contract field), seeded from a hand-mapped
-   slug → `free-exercise-db` filename table in `content/exercise-catalog.json`.
-2. Vendor the ~160 JPGs into the repo (public domain — no hotlink risk, no CDN dependency, and the
-   PWA can cache them) rather than pointing at `raw.githubusercontent.com` at runtime.
-3. FE: an image variant beside `VideoDemo` — still frame by default, `▶ Demo` still wins when a
-   `video_url` exists.
+Designed and filed the same day as
+[`2026-08-05-exercise-demo-images-design.md`](../../superpowers/specs/2026-08-05-exercise-demo-images-design.md)
+(bd `mezo-8xdl`): **two** nullable columns (`image_start_url` / `image_end_url`), because the dataset
+ships exactly 2 frames per exercise and alternating them is what actually conveys the movement;
+assets **vendored** into `frontend/public/exercises/` (public domain ⇒ no attribution plumbing,
+same-origin ⇒ offline PWA); a **hand-curated** slug→name map, since fuzzy matching pairs
+`Pull-Up → Scapular Pull-Up`. Coverage lands ~110–120 of 161 rows, so "no image" is a specced state.
 
-Nothing here blocks the catalog itself; it's an additive media layer.
+Nothing here blocked the catalog itself; it's an additive media layer.

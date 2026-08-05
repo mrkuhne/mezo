@@ -73,7 +73,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     void testLoad_shouldFailFast_whenContentInvalid() {
         CatalogJsonItem bad = new CatalogJsonItem(
             "bad-item", "Bad Item", "not-a-muscle", "compound",
-            new BigDecimal("0.50"), new BigDecimal("0.50"), null);
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null);
         assertThatThrownBy(() -> loader.load(List.of(bad)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("bad-item");
@@ -95,5 +95,35 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         var user = train.createUserCatalogExercise(owner, "My Move", "quad", "plyo");
         loader.run();
         assertThat(repository.findById(user.getId())).isPresent();
+    }
+
+    @Test
+    void testLoad_shouldSeedBothImageFrames_whenContentProvidesThem() {
+        loader.load(List.of(imageItem("/exercises/box-jump-a.jpg", "/exercises/box-jump-b.jpg")));
+
+        ExerciseCatalogEntity row = repository.findBySlug("box-jump").orElseThrow();
+        assertThat(row.getImageStartUrl()).isEqualTo("/exercises/box-jump-a.jpg");
+        assertThat(row.getImageEndUrl()).isEqualTo("/exercises/box-jump-b.jpg");
+    }
+
+    @Test
+    void testLoad_shouldPreserveUserImages_whenContentAlsoProvidesThem() {
+        // A user attached stills in-app; a redeploy re-runs the loader with its own JSON values.
+        ExerciseCatalogEntity master = repository.findBySlug("box-jump").orElseThrow();
+        master.setImageStartUrl("/uploads/mine-a.jpg");
+        master.setImageEndUrl("/uploads/mine-b.jpg");
+        repository.saveAndFlush(master);
+
+        loader.load(List.of(imageItem("/exercises/box-jump-a.jpg", "/exercises/box-jump-b.jpg")));
+
+        ExerciseCatalogEntity row = repository.findBySlug("box-jump").orElseThrow();
+        assertThat(row.getImageStartUrl()).isEqualTo("/uploads/mine-a.jpg");
+        assertThat(row.getImageEndUrl()).isEqualTo("/uploads/mine-b.jpg");
+    }
+
+    /** The real box-jump content row, with the two image frames swapped in. */
+    private CatalogJsonItem imageItem(String start, String end) {
+        return new CatalogJsonItem("box-jump", "Box Jump", "quad", "plyo",
+            new BigDecimal("0.60"), new BigDecimal("0.35"), null, start, end);
     }
 }

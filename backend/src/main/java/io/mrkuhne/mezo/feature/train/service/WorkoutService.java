@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.progression.ProgressionGate;
@@ -76,7 +77,7 @@ public class WorkoutService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
-    private final CatalogVideoResolver catalogVideoResolver;
+    private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
     // Progression collaborators (T6): the gym finish awards XP behind the feature switch. The gate
     // bean exists ONLY when mezo.feature.progression.enabled=true, so an absent provider ⇔ switch off.
@@ -162,9 +163,9 @@ public class WorkoutService {
             return empty; // rest day
         }
         Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, exercises);
-        // Demo videos: one batched catalog fetch for the day's linked exercises (catalog_id →
+        // Demo media: one batched catalog fetch for the day's linked exercises (catalog_id →
         // video_url), never per-exercise. Map keyed by catalog id; nulls filtered out.
-        Map<UUID, String> videoByCatalog = catalogVideoResolver.resolve(exercises.stream()
+        Map<UUID, CatalogMedia> mediaByCatalog = catalogMediaResolver.resolve(exercises.stream()
             .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
         // Week-scoped completion (D5): a template day completed ANY day of the current Mon–Sun
         // week reviews instead of restarting — was date == today before mezo-p7rp.
@@ -204,7 +205,12 @@ public class WorkoutService {
             TodayExercise t = mapper.toTodayExercise(e);
             t.setLastWeek(lastWeek.get(e.getId()));
             if (e.getCatalogId() != null) {
-                t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
+                CatalogMedia m = mediaByCatalog.get(e.getCatalogId());
+                if (m != null) {
+                    t.setVideoUrl(m.videoUrl());
+                    t.setImageStartUrl(m.imageStartUrl());
+                    t.setImageEndUrl(m.imageEndUrl());
+                }
             }
             int effective = effectiveSets.getOrDefault(e.getId(), e.getWorkingSets());
             t.setWorkingSets(effective);
