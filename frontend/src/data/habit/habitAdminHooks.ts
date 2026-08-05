@@ -18,14 +18,17 @@ export const HABIT_CATALOG_KEY = ['habitCatalog'] as const
  *  (unlike habitDay's staleTime:0 lazy-eval heartbeat). Never the seed while unresolved in
  *  real mode (useDualQuery's ghost-guard). */
 export function useHabitCatalog() {
-  const { data, isPending } = useDualQuery<HabitCatalog>({
+  const { data, isPending, isError, refetch } = useDualQuery<HabitCatalog>({
     queryKey: HABIT_CATALOG_KEY,
     mockData: mockHabitCatalog,
     realFetch: habitAdminApi.catalog,
     realEmpty: { chains: [] },
     realStaleTime: 60_000,
   })
-  return { catalog: data, isPending }
+  // `isError`/`refetch` (mezo-n5e9.2 fix wave): a genuinely failed real-mode fetch and an
+  // honest "not loaded yet" both read as `{chains: []}` off `data` alone — the editor needs to
+  // tell them apart to show a retry ghost instead of the inviting "+ Új rutin" empty state.
+  return { catalog: data, isPending, isError, refetch }
 }
 
 export function useHabitCatalogActions() {
@@ -236,7 +239,15 @@ function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch:
   const found = findDef(base, id)
   if (!found) return undefined
   const { chain: fromChain, def } = found
-  const updated: HabitDefInfo = { ...def, ...patch }
+  // Mirrors the real PATCH's "a null value is ignored, not a clear" semantics (HabitEditSheet
+  // fix wave, mezo-n5e9.2): a naive `{...def, ...patch}` spread would let `why: null` overwrite
+  // a live value here while the real endpoint's `if (request.getWhy() != null)` guard leaves it
+  // untouched — the two modes disagreeing about whether a field cleared. Strip null values
+  // before merging so BOTH modes consistently say "can't clear an optional field in v1".
+  const patchNoNulls = Object.fromEntries(
+    Object.entries(patch).filter(([, v]) => v !== null),
+  ) as HabitDefUpdateInput
+  const updated: HabitDefInfo = { ...def, ...patchNoNulls }
   const targetChainKey = patch.chainKey ?? fromChain.chainKey
   if (targetChainKey === fromChain.chainKey) {
     qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {

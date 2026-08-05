@@ -52,7 +52,9 @@ function renderPage() {
 
 beforeEach(() => {
   reorderChain.mockClear(); updateChain.mockClear(); updateDef.mockClear()
-  useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING, EVENING] }, isPending: false })
+  useHabitCatalog.mockReturnValue({
+    catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn(),
+  })
   useHabitCatalogActions.mockReturnValue({
     createChain: vi.fn(() => Promise.resolve()),
     updateChain, deleteChain: vi.fn(() => Promise.resolve()),
@@ -101,10 +103,30 @@ describe('RoutineEditorPage', () => {
   })
 
   it('shows a ghost state while pending with an empty catalog', () => {
-    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: true })
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: true, isError: false, refetch: vi.fn() })
     renderPage()
     expect(screen.queryByText('Reggeli rutin')).not.toBeInTheDocument()
     expect(screen.getByText(/rutinok betöltése/i)).toBeInTheDocument()
+  })
+
+  it('shows a retry ghost (not the create CTA) when the catalog errored and is empty', () => {
+    const refetch = vi.fn()
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
+    renderPage()
+    expect(screen.queryByText('Reggeli rutin')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /új rutin/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/nem sikerült betölteni/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /újra/i }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('an error with existing (stale) chains still renders the normal chain view, not the retry ghost', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: true, refetch: vi.fn(),
+    })
+    renderPage()
+    expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
+    expect(screen.queryByText(/nem sikerült betölteni/i)).not.toBeInTheDocument()
   })
 
   it('an inactive chain renders dimmed but its rows stay tappable', () => {

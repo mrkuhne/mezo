@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HabitEditSheet } from '@/features/me/sheets/HabitEditSheet'
 import type { HabitDefInfo } from '@/data/types'
 
-const { createDef, updateDef, useHabitCatalogActions, useProgressionProfile } = vi.hoisted(() => ({
+const { createDef, updateDef, deleteDef, useHabitCatalogActions, useProgressionProfile } = vi.hoisted(() => ({
   createDef: vi.fn(() => Promise.resolve()),
   updateDef: vi.fn(() => Promise.resolve()),
+  deleteDef: vi.fn(() => Promise.resolve()),
   useHabitCatalogActions: vi.fn(),
   useProgressionProfile: vi.fn(),
 }))
@@ -34,8 +35,8 @@ const EDIT_DEF: HabitDefInfo = {
 }
 
 beforeEach(() => {
-  createDef.mockClear(); updateDef.mockClear()
-  useHabitCatalogActions.mockReturnValue({ createDef, updateDef, pending: false })
+  createDef.mockClear(); updateDef.mockClear(); deleteDef.mockClear()
+  useHabitCatalogActions.mockReturnValue({ createDef, updateDef, deleteDef, pending: false })
   useProgressionProfile.mockReturnValue({ data: LIFE_PROFILE })
 })
 
@@ -103,5 +104,28 @@ describe('HabitEditSheet — edit', () => {
       title: 'Nyújtás — reggel', why: 'Miért fontos', anchorCopy: 'kávé után', xp: 10,
       linkUrl: 'https://example.com',
     })
+  })
+
+  it('clearing an optional field omits its key from the patch — can\'t clear in v1 (mezo-n5e9.2 fix wave)', () => {
+    render(<HabitEditSheet chainKey="MORNING" def={EDIT_DEF} onClose={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Miért'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    // Exact deep equality (no `objectContaining`) — if `why` were still present at all
+    // (even as `null`), this assertion would fail, since the actual patch must match precisely.
+    expect(updateDef).toHaveBeenCalledWith('def-1', {
+      title: 'Nyújtás', anchorCopy: 'kávé után', xp: 10, linkUrl: 'https://example.com',
+    })
+  })
+
+  it('a danger-styled "Habit törlése" button calls deleteDef with the def id, then closes', () => {
+    const onClose = vi.fn()
+    render(<HabitEditSheet chainKey="MORNING" def={EDIT_DEF} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /habit törlése/i }))
+    expect(deleteDef).toHaveBeenCalledWith('def-1')
+  })
+
+  it('CREATE mode has no delete affordance (nothing exists yet to delete)', () => {
+    render(<HabitEditSheet chainKey="MORNING" onClose={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /habit törlése/i })).not.toBeInTheDocument()
   })
 })

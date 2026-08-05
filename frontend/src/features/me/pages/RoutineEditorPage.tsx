@@ -21,7 +21,7 @@ import type { HabitChainInfo, HabitDaypart, HabitDefInfo } from '@/data/types'
 const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀️', EVENING: '🌙' }
 
 export function RoutineEditorPage() {
-  const { catalog, isPending } = useHabitCatalog()
+  const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { updateChain, updateDef, reorderChain, pending } = useHabitCatalogActions()
   // undefined chain/def inside the wrapper object → create mode; a real one → edit. The
   // wrapper (not the value itself) is what gates the conditional mount, so `{ chain: undefined }`
@@ -51,6 +51,14 @@ export function RoutineEditorPage() {
 
       {isPending && chains.length === 0 ? (
         <GhostState message="Rutinok betöltése…" />
+      ) : isError && chains.length === 0 ? (
+        // A genuinely failed fetch and an honest "not resolved yet" both read as an empty
+        // catalog off `catalog.chains` alone — without `isError` this rendered the same
+        // inviting "+ Új rutin" create view a real empty catalog gets, hiding the failure.
+        // Stale-but-present chains (a refetch failing after a successful first load) fall
+        // through to the normal view below instead — only a genuinely EMPTY result on error
+        // gets the retry ghost.
+        <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
       ) : (
         <div className="col gap-md">
           {chains.map((chain) => (

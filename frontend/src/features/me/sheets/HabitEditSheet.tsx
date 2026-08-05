@@ -3,6 +3,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Chip } from '@/shared/ui/Chip'
 import { useHabitCatalogActions, useProgressionProfile } from '@/data/hooks'
+import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import type { HabitDefInfo, HabitMode } from '@/data/types'
@@ -29,7 +30,7 @@ const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparen
 export function HabitEditSheet({
   chainKey, def, onClose,
 }: { chainKey: string; def?: HabitDefInfo; onClose: () => void }) {
-  const { createDef, updateDef, pending } = useHabitCatalogActions()
+  const { createDef, updateDef, deleteDef, pending } = useHabitCatalogActions()
   const { data: profile } = useProgressionProfile()
 
   const skillOptions = (profile.life ?? []).length > 0
@@ -47,9 +48,17 @@ export function HabitEditSheet({
 
   const save = (close: () => void) => {
     if (def) {
-      updateDef(def.id, {
-        title, why: why || null, anchorCopy: anchorCopy || null, xp, linkUrl: linkUrl || null,
-      }).then(close)
+      // Contract-honest "can't clear an optional field in v1" (mezo-n5e9.2 fix wave): the real
+      // PATCH ignores a JSON `null` value (`if (request.getWhy() != null)`), so sending
+      // `why: null` after the user emptied the field silently no-ops in real mode while
+      // `mockUpdateDef` used to actually clear it — a divergence the refetch would then expose
+      // (the old value reappears). Omitting an emptied optional key entirely makes both modes
+      // agree: neither touches a field the user cleared, in v1.
+      const patch: HabitDefUpdateInput = { title, xp }
+      if (why.trim()) patch.why = why
+      if (anchorCopy.trim()) patch.anchorCopy = anchorCopy
+      if (linkUrl.trim()) patch.linkUrl = linkUrl
+      updateDef(def.id, patch).then(close)
       return
     }
     createDef({
@@ -57,6 +66,10 @@ export function HabitEditSheet({
       mode, skillKey, xp, linkUrl: linkUrl || null,
       ...(mode === 'DERIVED' ? { metric } : {}),
     }).then(close)
+  }
+
+  const remove = (close: () => void) => {
+    if (def) deleteDef(def.id).then(close)
   }
 
   return (
@@ -169,6 +182,22 @@ export function HabitEditSheet({
                 </div>
               )}
             </>
+          )}
+
+          {def && (
+            // Confirm-free (single-user app, soft-deleted server-side) — the backend has no
+            // seed-def guard, so a built-in def is deletable too, matching the editor's
+            // edit-anything intent. Danger-styled (`var(--error)`) so it reads as destructive
+            // without needing a two-step confirm like the goal-delete precedent.
+            <button
+              type="button"
+              className="cta-ghost"
+              disabled={pending}
+              style={{ opacity: pending ? 0.5 : 1, color: 'var(--error)', borderColor: 'var(--error)' }}
+              onClick={() => remove(close)}
+            >
+              <Icon name="trash" size={13} /> Habit törlése
+            </button>
           )}
 
           <button type="button" className="cta-primary" disabled={pending || title.trim().length === 0}

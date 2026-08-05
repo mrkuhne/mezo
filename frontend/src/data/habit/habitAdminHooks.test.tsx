@@ -84,6 +84,26 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     })
   })
 
+  it('updateDef ignores a null patch value — mirrors the real PATCH\'s "null = no-op, not a clear" (mezo-n5e9.2 fix wave)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const target = result.current.catalog.catalog.chains
+      .find((c) => c.chainKey === 'MORNING')!.defs.find((d) => d.habitKey === 'morning_sunlight')!
+    expect(target.why).not.toBeNull()
+
+    await act(async () => {
+      await result.current.actions.updateDef(target.id, { why: null })
+    })
+    await waitFor(() => {
+      const def = result.current.catalog.catalog.chains
+        .flatMap((c) => c.defs).find((d) => d.id === target.id)!
+      expect(def.why).toBe(target.why) // unchanged — a null patch value never clears
+    })
+  })
+
   it('deleteChain throws HABIT_CHAIN_SEED for a seed chain — mirrors the backend 409 guard (was: silently removed a 9-def seed chain)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
@@ -227,6 +247,18 @@ describe('useHabitCatalog / useHabitCatalogActions (real mode)', () => {
     expect(result.current.catalog.chains).toEqual([]) // never the mock seed while unresolved
     await waitFor(() => expect(result.current.catalog.chains).toHaveLength(1))
     expect(result.current.catalog.chains[0].defs[0].habitKey).toBe('wake_on_time')
+  })
+
+  it('surfaces isError on a failed GET, and refetch() recovers once the server responds (mezo-n5e9.2 fix wave)', async () => {
+    server.use(http.get(`${API_BASE}/api/habit/catalog`, () => HttpResponse.json([], { status: 500 })))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitCatalog(), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.catalog.chains).toEqual([]) // realEmpty, never the mock seed
+
+    server.use(http.get(`${API_BASE}/api/habit/catalog`, () => HttpResponse.json({ chains: [] })))
+    result.current.refetch()
+    await waitFor(() => expect(result.current.isError).toBe(false))
   })
 
   it('createDef POSTs /api/habit/def and invalidates habitCatalog + habitDay + habitSummary', async () => {
