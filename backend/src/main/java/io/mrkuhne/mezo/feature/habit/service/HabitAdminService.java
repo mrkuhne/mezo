@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.habit.entity.HabitDefEntity;
 import io.mrkuhne.mezo.feature.habit.mapper.HabitMapper;
 import io.mrkuhne.mezo.feature.habit.repository.HabitChainRepository;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDefRepository;
+import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -130,6 +131,13 @@ public class HabitAdminService {
     @Transactional
     public HabitDefAdmin createDef(UUID userId, HabitDefCreateRequest request) {
         catalogService.ensureCatalog(userId);
+        if (!ProgressionTaxonomy.LIFE.contains(request.getSkillKey())) {
+            // The ActivityService#categorize precedent (ACTIVITY_SKILL_UNKNOWN): a free-form
+            // skillKey would upsert a phantom LIFE-skill row via ProgressionService.award on
+            // completion (review finding 2) — validate against the same taxonomy source of truth.
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("HABIT_SKILL_UNKNOWN").build(), HttpStatus.BAD_REQUEST);
+        }
         HabitChainEntity chain = chainRepository
             .findByCreatedByAndChainKeyAndDeletedFalse(userId, request.getChainKey())
             .orElseThrow(() -> new SystemRuntimeErrorException(

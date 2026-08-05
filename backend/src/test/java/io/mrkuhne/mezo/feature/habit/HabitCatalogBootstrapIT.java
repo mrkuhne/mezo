@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.habit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDefEntity;
 import io.mrkuhne.mezo.feature.habit.repository.HabitChainRepository;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDefRepository;
@@ -83,5 +84,21 @@ class HabitCatalogBootstrapIT extends AbstractIntegrationTest {
         // (mezo-n5e9.1 review finding 3 — the nightly cron must not materialize catalogs for
         // users who never used habits).
         assertThat(chainRepository.findByCreatedByAndDeletedFalseOrderByPositionAsc(owner)).isEmpty();
+    }
+
+    @Test
+    void testSummary_shouldNotBootstrapCatalog_whenUserHasNeverTouchedHabits() {
+        UUID owner = userPopulator.createUser("habit-boot6@test.hu").getId();
+
+        HabitSummaryResponse summary = habitService.summary(owner);
+
+        // summary is read-only/non-bootstrapping (mezo-n5e9.1 review finding 3 — it used to call
+        // ensureCatalog TWICE, materializing 17 rows for every dormant account on every companion
+        // chat turn since ContextSnapshotAssembler/PracticeTools read it each time). A never-
+        // touched user gets an honest empty/zero summary; getDay remains the real bootstrap point.
+        assertThat(chainRepository.findByCreatedByAndDeletedFalseOrderByPositionAsc(owner)).isEmpty();
+        assertThat(summary.getPerfectMorningDays30()).isZero();
+        assertThat(summary.getPerfectEveningDays30()).isZero();
+        assertThat(summary.getHabits()).isEmpty();
     }
 }

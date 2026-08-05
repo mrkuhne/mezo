@@ -178,6 +178,10 @@ class HabitServiceIT extends AbstractIntegrationTest {
     void testSummary_shouldComputeStrengthAndNullUnderMinSample_whenClosedRowsVary() {
         UUID owner = owner();
         LocalDate today = LocalDate.now();
+        // summary is read-only/non-bootstrapping (mezo-n5e9.1 review finding 3) — a real getDay
+        // touch is what materializes the catalog perfectDays/activeForChainKey need to resolve
+        // habit keys against; the honest real-world order (getDay before summary).
+        habitService.getDay(owner, today);
         // morning_sunlight: 5 closed rows (4 done + 1 missed) on distinct past dates -> min sample met
         habitPopulator.row(owner, today.minusDays(1), "morning_sunlight", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, today.minusDays(2), "morning_sunlight", HabitDayEntity.STATUS_DONE);
@@ -207,6 +211,9 @@ class HabitServiceIT extends AbstractIntegrationTest {
     void testSummary_shouldCountPerfectDays_whenFullChainDone() {
         UUID owner = owner();
         LocalDate day = LocalDate.now().minusDays(1);
+        // summary is read-only/non-bootstrapping (mezo-n5e9.1 review finding 3) — bootstrap via a
+        // real getDay touch first, same reasoning as the strength test above.
+        habitService.getDay(owner, LocalDate.now());
         // all 9 MORNING keys done on the same past day -> one perfect morning
         habitPopulator.row(owner, day, "wake_on_time", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_sunlight", HabitDayEntity.STATUS_DONE);

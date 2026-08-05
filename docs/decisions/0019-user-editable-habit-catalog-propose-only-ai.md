@@ -67,7 +67,8 @@ never resurrected.**
   rows *first* and returns with zero writes if there are none; only a user with actual stale rows
   triggers `ensureCatalog` (`HabitService.java:172-178`, asserted by
   `HabitCatalogBootstrapIT.testClosePast_shouldNotBootstrapCatalog_whenUserHasNoHabitDayRows`).
-  `getDay`/`check`/`uncheck`/`summary`/the admin endpoints still bootstrap on touch, same as before.
+  `getDay`/`check`/`uncheck`/the admin endpoints still bootstrap on touch, same as before —
+  `summary` does not (see Consequences: it's read-only, and `getDay` is the bootstrap point).
 
 **(b) The AI suggester (child `.3`, not built yet) is propose-only — it never writes.** Per D7 of
 the routine-editor spec, the upcoming `POST /api/habit/ai/suggest` will run a second `ChatClient`
@@ -121,6 +122,12 @@ path.
   XP/progression tail, and every existing Today/Growth surface are byte-for-byte the same — the
   catalog swap is purely underneath `HabitService`/`HabitMapper`, which is the point of the
   original general data model.
+- **`HabitService#summary` is read-only and non-bootstrapping** (mezo-n5e9.1 review finding 3): it
+  used to call `ensureCatalog` (twice), materializing 17 catalog rows for any user whose summary
+  was read — including every companion chat turn, since `ContextSnapshotAssembler`/`PracticeTools`
+  call `summary` on each one. A user who has never touched habits now gets an honest empty/zero
+  summary instead; `getDay` (the Today read) remains the one true bootstrap point, same as every
+  other read/write path above.
 
 ## Alternatives considered
 

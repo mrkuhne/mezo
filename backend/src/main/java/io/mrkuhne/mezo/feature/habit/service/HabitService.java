@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -129,9 +130,15 @@ public class HabitService {
         return mapper.toResponse(def, chainKey, row, null);
     }
 
-    @Transactional
+    /**
+     * NON-bootstrapping (mezo-n5e9.1 review finding 3): a user who has never touched habits gets
+     * an honest empty/zero summary here — their catalog materializes on the first {@code getDay}
+     * read, not on a chat-driven summary probe (this is also what {@code ContextSnapshotAssembler}
+     * / {@code PracticeTools} call on every companion turn; bootstrapping 17 rows for a dormant
+     * account on every chat message was the bug).
+     */
+    @Transactional(readOnly = true)
     public HabitSummaryResponse summary(UUID userId) {
-        catalogService.ensureCatalog(userId); // summary can be a user's first-ever catalog touch
         LocalDate today = LocalDate.now();
         LocalDate from = today.minusDays(properties.summaryDays() - 1L);
         List<HabitDayEntity> window = repository
@@ -150,7 +157,7 @@ public class HabitService {
         return HabitSummaryResponse.builder()
             .perfectMorningDays30(perfectDays(userId, window, HabitCatalog.CHAIN_MORNING))
             .perfectEveningDays30(perfectDays(userId, window, HabitCatalog.CHAIN_EVENING))
-            .habits(catalogService.ensureCatalog(userId).stream().map(def -> {
+            .habits(catalogService.activeOrderedWithoutBootstrap(userId).stream().map(def -> {
                 long[] c = counts.getOrDefault(def.getHabitKey(), new long[2]);
                 return HabitStrength.builder()
                     .key(def.getHabitKey())
@@ -255,22 +262,39 @@ public class HabitService {
         return ensureRows(userId, date, catalogService.ensureCatalog(userId));
     }
 
+    /**
+     * RECONCILES rather than short-circuits (mezo-n5e9.1 review finding 1 — critical): a def
+     * created through the admin API AFTER today's rows already materialized used to be invisible
+     * to this method (the old early-return fired on ANY existing row for the day), so
+     * {@code check()}'s unconditional call landed on a habit_key with no row and its bare
+     * {@code .orElseThrow()} 500'd. Now every active def whose {@code habit_key} has no row yet
+     * for {@code date} gets one inserted — a no-op (zero writes) on the common case where nothing
+     * changed since the day was last touched.
+     */
     private List<HabitDayEntity> ensureRows(UUID userId, LocalDate date, List<HabitDefEntity> defs) {
         List<HabitDayEntity> existing = repository.findByCreatedByAndHabitDate(userId, date);
-        if (!existing.isEmpty()) {
+        Set<String> existingKeys = existing.stream().map(HabitDayEntity::getHabitKey)
+            .collect(Collectors.toSet());
+        List<HabitDefEntity> missing = defs.stream()
+            .filter(def -> !existingKeys.contains(def.getHabitKey()))
+            .toList();
+        if (missing.isEmpty()) {
             return existing;
         }
         try {
-            List<HabitDayEntity> fresh = defs.stream().map(def -> {
+            List<HabitDayEntity> fresh = missing.stream().map(def -> {
                 HabitDayEntity e = new HabitDayEntity();
                 e.setCreatedBy(userId);
                 e.setHabitDate(date);
                 e.setHabitKey(def.getHabitKey());
                 return e;
             }).toList();
-            return repository.saveAllAndFlush(fresh);
+            List<HabitDayEntity> saved = repository.saveAllAndFlush(fresh);
+            List<HabitDayEntity> all = new ArrayList<>(existing);
+            all.addAll(saved);
+            return all;
         } catch (DataIntegrityViolationException e) {
-            // lost the race against the cron/another read — the rows exist now
+            // lost the race against the cron/another read/concurrent check — the rows exist now
             return repository.findByCreatedByAndHabitDate(userId, date);
         }
     }

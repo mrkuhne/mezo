@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.HabitCheckRequest;
 import io.mrkuhne.mezo.api.dto.HabitDayResponse;
+import io.mrkuhne.mezo.api.dto.HabitDefAdmin;
+import io.mrkuhne.mezo.api.dto.HabitDefCreateRequest;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -64,10 +66,38 @@ class HabitApiIT extends ApiIntegrationTest {
 
     @Test
     void testGetHabitSummary_shouldReturnHonestZeros_whenNoHistory() {
+        // summary is read-only/non-bootstrapping (mezo-n5e9.1 review finding 3) — read the day
+        // first (the honest real-world order: getDay is the bootstrap point) so the 15-def seed
+        // catalog exists by the time summary is asked to report on it.
+        getForBody("/api/habit/day/" + LocalDate.now(), ownerAuthHeaders(), HttpStatus.OK, HabitDayResponse.class);
+
         HabitSummaryResponse s = getForBody("/api/habit/summary",
             ownerAuthHeaders(), HttpStatus.OK, HabitSummaryResponse.class);
         assertThat(s.getPerfectMorningDays30()).isZero();
         assertThat(s.getHabits()).hasSize(15);
         assertThat(s.getHabits()).allSatisfy(h -> assertThat(h.getStrengthPct()).isNull());
+    }
+
+    @Test
+    void testCheckHabit_shouldReconcileNewlyCreatedDef_afterDayAlreadyMaterialized() {
+        // Materialize today's rows against the original 15-def catalog FIRST...
+        getForBody("/api/habit/day/" + LocalDate.now(), ownerAuthHeaders(), HttpStatus.OK, HabitDayResponse.class);
+
+        // ...then an admin creates a MANUAL def AFTER today's rows already exist — a runtime-
+        // mutable catalog reaches this (mezo-n5e9.1 review finding 1, critical): the old
+        // ensureRows() early-returned on ANY existing row for the day, so this def's habit_key
+        // never got a row and check()'s bare .orElseThrow() 500'd.
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Új szokás")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitCheckRequest body = HabitCheckRequest.builder().date(LocalDate.now()).build();
+        HabitWriteResponse res = postForBody("/api/habit/" + created.getHabitKey() + "/check", body,
+            ownerAuthHeaders(), HttpStatus.OK, HabitWriteResponse.class);
+
+        assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
+        assertThat(res.getHabit().getXp()).isEqualTo(10);
+        assertThat(res.getLevelUps()).isNotEmpty();
     }
 }

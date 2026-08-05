@@ -71,6 +71,17 @@ public class HabitCatalogService {
         return chainRepository.findByCreatedByAndDeletedFalseOrderByPositionAsc(userId);
     }
 
+    /**
+     * Same shape as {@link #ensureCatalog}'s return value (active defs, chain-then-position
+     * ordered) but NEVER bootstraps — for read-only callers ({@code HabitService#summary},
+     * mezo-n5e9.1 review finding 3) that must not materialize a catalog for a user who has never
+     * touched habits. Returns an empty list for such a user; their catalog is created on their
+     * first {@code getDay}/{@code check}/{@code uncheck}/admin touch instead.
+     */
+    public List<HabitDefEntity> activeOrderedWithoutBootstrap(UUID userId) {
+        return activeOrdered(userId);
+    }
+
     private void bootstrapMissing(UUID userId) {
         Map<String, HabitChainEntity> byKey = chains(userId).stream()
             .collect(Collectors.toMap(HabitChainEntity::getChainKey, Function.identity()));

@@ -55,6 +55,19 @@ class HabitAdminApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreateDef_shouldRejectUnknownSkillKey() {
+        // A free-form skillKey would upsert a phantom LIFE-skill row via ProgressionService.award
+        // on completion (mezo-n5e9.1 review finding 2) — validated against ProgressionTaxonomy.LIFE,
+        // the same taxonomy ActivityService#categorize checks (ACTIVITY_SKILL_UNKNOWN precedent).
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Hidegzuhany")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("garbage").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_SKILL_UNKNOWN");
+    }
+
+    @Test
     void testCreateDef_shouldCreateManual_forcingManualMetric() {
         catalog();
         HabitDefAdmin created = postForBody("/api/habit/def",
