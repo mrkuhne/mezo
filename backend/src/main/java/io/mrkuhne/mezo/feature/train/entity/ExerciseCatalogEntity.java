@@ -69,4 +69,16 @@ public class ExerciseCatalogEntity {
     /** Effective YouTube demo URL; nullable. */
     @Column(name = "video_url")
     private String videoUrl;
+
+    /**
+     * Demo still, start position ({@code mezo-8xdl.1}) — the presence flag for the image pair:
+     * no start frame means the exercise has no image at all. Same-origin vendored path
+     * ({@code /exercises/{slug}-a.jpg}) or an absolute URL.
+     */
+    @Column(name = "image_start_url")
+    private String imageStartUrl;
+
+    /** Demo still, end position; alternated with {@link #imageStartUrl} to convey the movement. */
+    @Column(name = "image_end_url")
+    private String imageEndUrl;
 }

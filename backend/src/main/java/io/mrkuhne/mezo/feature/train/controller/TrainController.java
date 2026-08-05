@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
 import io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest;
+import io.mrkuhne.mezo.api.dto.CatalogImagesRequest;
 import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
@@ -96,6 +97,12 @@ public class TrainController implements TrainApi {
     @Override
     public ExerciseCatalogItem setExerciseVideo(UUID id, CatalogVideoRequest catalogVideoRequest) {
         return exerciseCatalogService.setVideo(currentUserId.get(), id, catalogVideoRequest.getVideoUrl());
+    }
+
+    @Override
+    public ExerciseCatalogItem setExerciseImages(UUID id, CatalogImagesRequest catalogImagesRequest) {
+        return exerciseCatalogService.setImages(currentUserId.get(), id,
+            catalogImagesRequest.getImageStartUrl(), catalogImagesRequest.getImageEndUrl());
     }
 
     @Override
