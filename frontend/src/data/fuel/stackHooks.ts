@@ -91,7 +91,13 @@ function findIntakeRow(rows: Intake[], pantryItemId: string, slotKey?: StackZone
 export function useStackActions(date: string = localDateString()) {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const invalidate = () => qc.invalidateQueries({ queryKey: intakeKey(date) })
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: intakeKey(date) })
+    // A stim intake can satisfy morning_coffee (stim_intake_today) / affect no_stim_after —
+    // the habit-day READ is the evaluation trigger, so nudge it (mezo-pquo pattern, mezo-u6jx).
+    qc.invalidateQueries({ queryKey: ['habitDay'] })
+    qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+  }
 
   const logM = useMutation({
     mutationFn: mock

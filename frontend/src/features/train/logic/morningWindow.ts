@@ -1,6 +1,6 @@
 import type { GymScheduleSlot } from '@/data/types'
 
-/** FE mirror of `mezo.habit.workout-window-hours` (M5 cutoff = wake + this many hours). */
+/** Wake-anchored morning-training window span, in hours (circadian training timing — no relation to the habit engine's tick, which is date-presence). */
 export const WINDOW_HOURS = 6
 /** Coffee-first start offset (the buildDayPlan "reggeli = wake+45" constant-family). */
 export const WINDOW_START_OFFSET_MIN = 60
