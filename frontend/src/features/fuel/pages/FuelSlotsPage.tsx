@@ -23,15 +23,17 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTemplates } from '@/data/hooks'
+import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTemplateEvaluation, useSlotTemplates } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { compileTemplate, resolveAnchorTimes } from '@/features/fuel/logic/compileTemplate'
 import { validateSlotPlan } from '@/features/fuel/logic/validateSlotPlan'
 import { placeWindows, splitBudget, splitBudgetPct } from '@/features/fuel/logic/buildDayPlan'
 import type { Macro4, PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import { ROLE_OPTIONS } from '@/features/fuel/logic/recipeRole'
 import { toHHmm } from '@/data/fuel/fuelConfig'
+import type { SlotPlanVerdict } from '@/data/fuel/slotTemplateApi'
 import type { MealSlot, SlotAnchor, SlotTemplateDayType, SlotTemplateRow } from '@/data/types'
 
 const DAY_TYPES: { id: SlotTemplateDayType; label: string }[] = [
@@ -151,6 +153,7 @@ export function FuelSlotsPage() {
   const { settings } = useFuelSettings()
   const { templates } = useSlotTemplates()
   const { putTemplate, deleteTemplate, pending } = useSlotTemplateActions()
+  const { evaluate, pending: evalPending } = useSlotTemplateEvaluation()
 
   const existing = templates.find(t => t.dayType === dayType) ?? null
   const refBlocks = dayType === todayType ? blocks : SYNTHETIC_BLOCKS[dayType]
@@ -178,6 +181,21 @@ export function FuelSlotsPage() {
     // setting `forked` true here means this branch can never fire again for this day type.
     setForked(true)
     setRows(existing.slots)
+  }
+
+  // mezo-7102 Task 12: Mezo's qualitative "olvasat" on the current draft — evaluate-on-demand,
+  // never blocks Mentés. A verdict/degrade note describes the split it was computed for, so any
+  // edit to `rows` must invalidate it: `rowsAtEval` tracks the array reference the last result was
+  // computed for, and — the SAME render-time reset idiom `trackedDayType` above uses — clears the
+  // stale result the moment `rows` moves on (a row edit, or a day-type switch, which resyncs `rows`
+  // itself above). Self-terminating: once cleared, `rowsAtEval` is null so this can't re-fire.
+  const [verdict, setVerdict] = useState<SlotPlanVerdict | null>(null)
+  const [evalDegraded, setEvalDegraded] = useState(false)
+  const [rowsAtEval, setRowsAtEval] = useState<SlotTemplateRow[] | null>(null)
+  if (rowsAtEval !== null && rowsAtEval !== rows) {
+    setRowsAtEval(null)
+    setVerdict(null)
+    setEvalDegraded(false)
   }
 
   const recommendedWindows = placeWindows(wake, bed, settings.mealsPerDay, refBlocks, weightKg)
@@ -215,6 +233,29 @@ export function FuelSlotsPage() {
       setForked(false)
       setRows([])
     })
+  }
+
+  // Builds the wire request off the SAME `rawTimes`/`refBlocks` validateSlotPlan already computed
+  // above (mezo-7102 fix wave finding F2's unclamped resolution) — resolvedTimes drops a row whose
+  // anchor has nothing to resolve against (a training-relative row on a blockless day), keeping the
+  // label paired 1:1 with its own row. An in-card HANDLED error (the honest degrade note) is fine
+  // per the error/feedback standard (§7a) — the global mutation-cache toast still fires too; this
+  // never hacks that shared cache, it only adds richer local handling on top.
+  const runEvaluate = () => {
+    const resolvedTimes = rawTimes
+      .map((t, i) => (t == null ? null : { label: rows[i].label, time: toHHmm(((t % 1440) + 1440) % 1440) }))
+      .filter((x): x is { label: string; time: string } => x !== null)
+    const snapshot = rows
+    evaluate({
+      dayType,
+      rows,
+      resolvedTimes,
+      budget: { kcal: budget.kcal, p: budget.p, c: budget.c, f: budget.f },
+      balanceKcal: budget.energy.balance,
+      blocks: refBlocks,
+    })
+      .then(v => { setVerdict(v); setEvalDegraded(false); setRowsAtEval(snapshot) })
+      .catch(() => { setVerdict(null); setEvalDegraded(true); setRowsAtEval(snapshot) })
   }
 
   return (
@@ -382,6 +423,58 @@ export function FuelSlotsPage() {
             {warnings.map(w => (
               <p key={w.code} style={{ fontSize: 11, color: 'var(--warning)', marginTop: 6 }}>{w.text}</p>
             ))}
+
+            {/* "Mezo értékelése" (mezo-7102 Task 12) — an AI olvasat on the current draft,
+                normal page flow near the save area (NOT the portaled bar, same reasoning as the
+                reset button just below). Disabled while a Tier-1 error blocks Mentés anyway, or
+                while a call is already in flight. Never blocks saving — Mentés stays governed by
+                `errors` alone. */}
+            <button
+              className="cta-ghost"
+              aria-label="Mezo értékelése"
+              onClick={runEvaluate}
+              disabled={errors.length > 0 || evalPending}
+              style={{ width: '100%', marginTop: 14 }}
+            >
+              <Icon name="sparkle" size={14} /> Mezo értékelése
+            </button>
+
+            {evalPending && (
+              <p className="np-twinkle text-tertiary" style={{ fontSize: 11.5, textAlign: 'center', margin: '10px 2px 0' }}>
+                ✨ Mezo értékeli a felosztást…
+              </p>
+            )}
+
+            {!evalPending && verdict && (
+              <div className="card" style={{ margin: '10px 0 0', padding: 12, background: 'color-mix(in srgb, var(--sage) 6%, transparent)' }}>
+                <div className="row gap-sm" style={{ alignItems: 'center', marginBottom: 8 }}>
+                  <Icon name="sparkle" size={12} color="var(--coral)" />
+                  <Eyebrow brand>Mezo · olvasat</Eyebrow>
+                  <span
+                    className={verdict.verdict === 'adjust' ? 'chip warning' : 'chip'}
+                    style={verdict.verdict === 'ok' ? { color: 'var(--sage-deep)', background: 'var(--wash-sage)', borderColor: 'transparent' } : undefined}
+                  >
+                    {verdict.verdict === 'ok' ? 'rendben' : 'érdemes igazítani'}
+                  </span>
+                </div>
+                <p style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>{verdict.summary}</p>
+                {verdict.suggestions.length > 0 && (
+                  <div className="col gap-xs" style={{ marginTop: 8 }}>
+                    {verdict.suggestions.map((s, i) => (
+                      <p key={i} style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                        {s.slotLabel && <b>{s.slotLabel}: </b>}{s.text}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!evalPending && evalDegraded && (
+              <p className="text-tertiary" style={{ fontSize: 11, margin: '10px 2px 0' }}>
+                Az AI-értékelés most nem elérhető — a determinisztikus ellenőrzés él.
+              </p>
+            )}
 
             {/* Normal page flow, NOT the portaled save bar (fix round 1): a saved template's
                 bar would otherwise stack THREE rows (reset + Mégse/Mentés) against the page's

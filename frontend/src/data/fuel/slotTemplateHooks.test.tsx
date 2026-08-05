@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapper } from '@/test/queryWrapper'
-import { useSlotTemplates, useSlotTemplateActions } from '@/data/fuel/slotTemplateHooks'
+import { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
 import type { SlotTemplate } from '@/data/types'
 
 afterEach(() => vi.unstubAllEnvs())
@@ -108,5 +108,87 @@ describe('useSlotTemplates (real mode)', () => {
     const { result } = renderHook(() => useSlotTemplateActions(), { wrapper: makeHookWrapper() })
     await act(() => result.current.deleteTemplate('training_am'))
     expect(deletedDayType).toBe('training_am')
+  })
+})
+
+describe('useSlotTemplateEvaluation (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+
+  it('resolves the canned verdict after the demo delay — stateless (no cache write)', async () => {
+    const { result } = renderHook(() => useSlotTemplateEvaluation(), { wrapper: makeHookWrapper() })
+    expect(result.current.pending).toBe(false)
+
+    let verdict: unknown
+    act(() => {
+      void result.current.evaluate({
+        dayType: 'rest',
+        rows: SAMPLE.slots,
+        resolvedTimes: [{ label: 'Reggeli', time: '07:00' }],
+        budget: { kcal: 2200, p: 160, c: 220, f: 70 },
+        balanceKcal: -300,
+        blocks: [],
+      }).then(v => { verdict = v })
+    })
+    await waitFor(() => expect(result.current.pending).toBe(true))
+    await waitFor(() => expect(verdict).toEqual({
+      verdict: 'ok',
+      summary: 'A felosztás illik a célodhoz — a fehérje-elosztás és az edzés körüli időzítés rendben van.',
+      suggestions: [],
+    }))
+    await waitFor(() => expect(result.current.pending).toBe(false))
+  })
+})
+
+describe('useSlotTemplateEvaluation (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('POSTs the flattened wire body (dayType + toWireSlot slots + resolvedTimes/budget/balance/blocks) and returns the server verdict', async () => {
+    let body: unknown
+    server.use(
+      http.post(`${API_BASE}/api/fuel/slot-templates/evaluate`, async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({
+          verdict: 'adjust',
+          summary: 'Igazíts a fehérje-elosztáson.',
+          suggestions: [{ slotLabel: 'Ebéd', text: 'Emeld a fehérjét 10g-mal.' }],
+        })
+      }),
+    )
+    const { result } = renderHook(() => useSlotTemplateEvaluation(), { wrapper: makeHookWrapper() })
+
+    let verdict: unknown
+    await act(async () => {
+      verdict = await result.current.evaluate({
+        dayType: 'training_am',
+        rows: SAMPLE.slots,
+        resolvedTimes: [
+          { label: 'Reggeli', time: '07:00' },
+          { label: 'Edzés előtt', time: '07:15' },
+        ],
+        budget: { kcal: 2400, p: 180, c: 260, f: 75 },
+        balanceKcal: -250,
+        blocks: [{ kind: 'gym', time: '08:00', durationMin: 60, label: 'Gym' }],
+      })
+    })
+
+    expect(body).toEqual({
+      dayType: 'training_am',
+      slots: [
+        { label: 'Reggeli', slotKind: 'breakfast', role: 'standard', budgetPct: 25, anchorType: 'wake', offsetMin: 30 },
+        { label: 'Edzés előtt', slotKind: 'snack', role: 'pre_workout', budgetPct: 15, anchorType: 'training_start', offsetMin: -45 },
+      ],
+      resolvedTimes: [
+        { label: 'Reggeli', time: '07:00' },
+        { label: 'Edzés előtt', time: '07:15' },
+      ],
+      budget: { kcal: 2400, p: 180, c: 260, f: 75 },
+      balanceKcal: -250,
+      blocks: [{ kind: 'gym', time: '08:00', durationMin: 60 }],
+    })
+    expect(verdict).toEqual({
+      verdict: 'adjust',
+      summary: 'Igazíts a fehérje-elosztáson.',
+      suggestions: [{ slotLabel: 'Ebéd', text: 'Emeld a fehérjét 10g-mal.' }],
+    })
   })
 })

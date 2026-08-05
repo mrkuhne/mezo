@@ -6,20 +6,18 @@
 // Napiv coral vocabulary: --wash-gym/--tag-gym accents.
 // Ported from prototype train-views.jsx (GymPage + sub-components).
 // ============================================================
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain, useWeekWorkouts } from '@/data/hooks'
+import { useTrain, useWeekMuscleLog, useWeekWorkouts } from '@/data/hooks'
 import type { GymScheduleSlot } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
-import { MUSCLE_LABELS } from '@/data/train/train'
-import { muscleColor } from '@/features/train/logic/muscleColors'
-import { muscleRegionGroups, muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
-import { budgetGroup, muscleBudgets } from '@/features/train/logic/setBudget'
+import { selectGymRows, weekZoneRows } from '@/features/train/logic/weekZone'
 import { GymStat } from '@/features/train/components/GymStat'
 import { PhaseDots } from '@/features/train/components/PhaseDots'
 import { GymDayCard } from '@/features/train/components/GymDayCard'
+import { ZoneMiniGrid } from '@/features/train/components/ZoneMiniGrid'
 import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { MuscleWeekSheet } from '@/features/train/sheets/MuscleWeekSheet'
@@ -31,6 +29,10 @@ export function GymPage() {
   // current Mon–Sun week (any date) — a day-card tap for an already-done day routes straight
   // to its review instead of restarting. listWorkouts returns completed instances only; empty in mock.
   const { workouts: weekWorkouts } = useWeekWorkouts()
+  // Live zone rows (mezo-oyhy.7): this week's completed instance details, feeding the
+  // meta-card's ZoneMiniGrid + live Szetek/Gym napok stats. Called unconditionally at the
+  // top, before the workoutPending/!activeMeso early returns, for hook-order stability.
+  const weekLog = useWeekMuscleLog()
   const navigate = useNavigate()
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -70,11 +72,13 @@ export function GymPage() {
   const days = activeMeso.days ?? []
   const gymDays = days.filter((d) => d.exerciseCount > 0)
   const totalSets = gymDays.reduce((acc, d) => acc + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
-  // Region-grouped per-muscle weekly breakdown for the meta-card grid (mezo-ly27).
-  const muscleGroups = muscleRegionGroups(muscleWeekFromMeso(days))
-  // Read-only set-budget mirror (mezo-7rdg): muscle groups over their weekly budget
-  // get a warning pill on the meta card, echoing the MuscleWeekSheet detail view.
-  const overGroups = new Set(muscleBudgets(days).filter((b) => b.level === 'over').map((b) => b.group))
+  // Live zone rows (mezo-oyhy.7): done sets from the week's completed instances
+  // + the weekly plan on the optimal-zone scale, one mini bar per muscle group.
+  const zoneRows = selectGymRows(weekZoneRows({ plannedDays: days, completed: weekLog.details }))
+  const doneWorkingSets = weekLog.details.reduce(
+    (acc, w) => acc + w.exercises.reduce(
+      (b, e) => b + e.sets.filter((s) => !s.skipped && (s.kind ?? 'working') === 'working').length, 0), 0)
+  const doneGymDays = weekLog.completedSummaries.filter((s) => s.origin === 'meso').length
 
   // Current phase for the active week (Week 3 ⇒ phaseCurve[2] ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -131,41 +135,12 @@ export function GymPage() {
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             <GymStat label="Fázis" val={currentPhase} sub={`hét ${activeMeso.currentWeek}`} color="var(--tag-gym)" />
             <GymStat label="Split" val={splitHead} sub={splitTail ?? ''} color="var(--text-primary)" />
-            <GymStat label="Szetek" val={totalSets} sub="heti összesen" color="var(--cat-physiology)" />
-            <GymStat label="Gym napok" val={gymDays.length} sub="hét" color="var(--cat-preference)" />
+            <GymStat label="Szetek" val={`${doneWorkingSets}/${totalSets}`} sub="kész / heti terv" color="var(--cat-physiology)" />
+            <GymStat label="Gym napok" val={`${doneGymDays}/${gymDays.length}`} sub="kész / hét" color="var(--cat-preference)" />
           </div>
-          {/* Region-grouped muscle grid (mezo-ly27) — every trained muscle, working sets. */}
-          {muscleGroups.length > 0 && (
-            <div style={{
-              marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)',
-              display: 'grid', gridTemplateColumns: '44px 1fr', rowGap: 8, columnGap: 8, alignItems: 'baseline',
-            }}>
-              {muscleGroups.map((g) => (
-                <Fragment key={g.region}>
-                  <span className="label-mono" style={{ fontSize: 8.5, fontWeight: 800, color: muscleColor(g.rows[0].muscle).deep }}>
-                    {g.label}
-                  </span>
-                  <span className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
-                    {g.rows.map((r) => {
-                      const fam = muscleColor(r.muscle)
-                      const over = overGroups.has(budgetGroup(r.muscle) ?? '')
-                      const pillLabel = `${MUSCLE_LABELS[r.muscle] ?? r.muscle} ${r.workingSets}${over ? ' ⚠' : ''}`
-                      return (
-                        <span
-                          key={r.muscle}
-                          style={{
-                            fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
-                            background: fam.wash, color: over ? 'var(--error)' : fam.deep, whiteSpace: 'nowrap',
-                          }}
-                          {...(over ? { title: 'Heti szet-keret túllépve', 'aria-label': `${pillLabel} · Heti szet-keret túllépve` } : {})}
-                        >
-                          {pillLabel}
-                        </span>
-                      )
-                    })}
-                  </span>
-                </Fragment>
-              ))}
+          {zoneRows.length > 0 && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+              <ZoneMiniGrid rows={zoneRows} />
             </div>
           )}
           <div

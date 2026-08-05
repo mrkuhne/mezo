@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useChallengeActions, useChallenges, useProgressionProfile, useTrain } from '@/data/hooks'
+import { useChallengeActions, useChallenges, useProgressionProfile, useTrain, useWeekMuscleLog } from '@/data/hooks'
 import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -23,6 +23,8 @@ import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
 import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
+import { selectPrepRows, weekZoneRows } from '@/features/train/logic/weekZone'
+import { WeekZoneCard } from '@/features/train/components/WeekZoneCard'
 import { avgWorkingRir, exerciseTonnage, sessionProgressSegments, setStatus, topSetDeltaPct, warmupPctLabel } from '@/features/train/logic/workoutCardMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
@@ -215,6 +217,10 @@ function ActiveWorkoutSession({
   const goBack = useBackNav('/train')
   const qc = useQueryClient()
   const rest = useRestTimer()
+  // Live weekly zone context (mezo-oyhy.7): unconditional hook call at the top —
+  // the prep block below reads its result, but the hook itself must run every
+  // render regardless of phase so hook order stays stable.
+  const weekLog = useWeekMuscleLog()
   // Exiting the session (Bezárás / back / Mentés — all route through here) drops any
   // running rest; the state is page-local so unmount alone would clear it too.
   const onExit = () => {
@@ -719,6 +725,17 @@ function ActiveWorkoutSession({
     const stats = prepStats(W)
     const oneRmMap = oneRmByIdentity(exerciseRecords)
     const exerciseGroups = groupExercisesByRegion(W.exercises)
+    // Live weekly zone context (mezo-oyhy.7): the week's logged sets + today's
+    // plan on the optimal-zone scale, for the groups this session trains.
+    const zoneRows = activeMeso?.days && !weekLog.pending
+      ? selectPrepRows(weekZoneRows({
+          plannedDays: activeMeso.days,
+          completed: weekLog.details,
+          todayPlan: W.exercises.map((e) => ({ muscle: e.muscle, type: e.type, workingSets: e.workingSets, targetRIR: e.targetRIR })),
+        }))
+      : []
+    const zonePlanWorkouts = (activeMeso?.days ?? []).filter((d) => d.exerciseCount > 0).length
+    const zoneDoneWorkouts = weekLog.completedSummaries.filter((s) => s.origin === 'meso').length
 
     return (
       <div>
@@ -735,6 +752,12 @@ function ActiveWorkoutSession({
         <div style={{ padding: '6px 24px' }}>
           <PrepHero overline={`${huWeekdayFull()} · ${weekLabel}`} title={W.title} forecast={forecast} stats={stats} overload={W.overloadSummary ?? null} />
         </div>
+
+        {zoneRows.length > 0 && (
+          <div style={{ padding: '10px 24px 0' }}>
+            <WeekZoneCard rows={zoneRows} doneWorkouts={zoneDoneWorkouts} planWorkouts={zonePlanWorkouts} />
+          </div>
+        )}
 
         {/* Niggle pre-flag — dismissed once acknowledged ("Értem · jó így") */}
         {niggleActive && W.niggleWarning && !niggleConfirmed && (
