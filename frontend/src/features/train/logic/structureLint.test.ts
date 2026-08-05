@@ -136,6 +136,16 @@ describe('push-pull (R6)', () => {
     const legs = [day('Hét', [ex('quad', 4), ex('ham', 3), ex('glute', 3)])]
     expect(structureLint(legs).filter((f) => f.rule === 'push-pull')).toHaveLength(0)
   })
+  it('stays silent at ratio 0.6, flags below', () => {
+    // push 3 (chest), pull 5 (back) → 0.6 exactly → silent
+    const edge = [day('Hét', [ex('chest-mid', 3), ex('back-mid', 5)])]
+    expect(structureLint(edge).filter((f) => f.rule === 'push-pull')).toHaveLength(0)
+    // push 3 (chest), pull 6 (back) → 0.5 → flags
+    const under = [day('Hét', [ex('chest-mid', 3), ex('back-mid', 6)])]
+    const found = structureLint(under).filter((f) => f.rule === 'push-pull')
+    expect(found).toHaveLength(1)
+    expect(found[0].label).toContain('0.5')
+  })
 })
 
 describe('ham-quad (R7)', () => {
@@ -146,6 +156,16 @@ describe('ham-quad (R7)', () => {
     expect(found[0].label).toContain('0.3')
     const smallQuad = [day('Hét', [ex('quad', 5), ex('ham', 1), ex('chest-mid', 4), ex('back-mid', 4)])]
     expect(structureLint(smallQuad).filter((f) => f.rule === 'ham-quad')).toHaveLength(0)
+  })
+})
+
+describe('unknown muscle (budgetGroup → null)', () => {
+  it('is skipped by every group-keyed rule and never throws', () => {
+    const w = cleanWeek()
+    // 'sport' has no budgetGroup mapping — still occupies a session slot (7th, in-band).
+    w[0].exercises.push(ex('sport', 10))
+    expect(() => structureLint(w)).not.toThrow()
+    expect(structureLint(w)).toEqual([])
   })
 })
 

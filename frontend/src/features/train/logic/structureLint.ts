@@ -57,7 +57,6 @@ export const PUSH_PULL_SIDE: Record<string, 'push' | 'pull'> = {
 }
 
 const groupLabel = (group: string) => BUDGET_GROUP_LABELS[group] ?? group
-const ratio1 = (x: number) => (Math.round(x * 10) / 10).toFixed(1)
 
 export function structureLint(days: MesoDay[]): StructureFinding[] {
   const session: StructureFinding[] = []
@@ -95,7 +94,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
-          detail: '2 szett alatt egy gyakorlat alig ad ingert — a 2 szett teljesen legitim kezdés.',
+          detail: `${band.min} szett alatt egy gyakorlat alig ad ingert — a ${band.min} szett teljesen legitim kezdés.`,
         })
       } else if (ex.workingSets > band.max) {
         session.push({
@@ -164,27 +163,32 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
     }
   }
 
-  // R6 — push:pull
+  // R6 — push:pull (compare the ROUNDED ratio to the band so the rendered
+  // label never contradicts the flag decision — e.g. 1.62 rounds to 1.6, silent).
   if (pushSets > 0 && pullSets > 0) {
     const ratio = pushSets / pullSets
-    if (ratio < PUSH_PULL_BAND.min || ratio > PUSH_PULL_BAND.max) {
+    const r = Math.round(ratio * 10) / 10
+    if (r < PUSH_PULL_BAND.min || r > PUSH_PULL_BAND.max) {
       weekly.push({
         rule: 'push-pull',
-        label: `Push:pull arány ${ratio1(ratio)}.`,
+        label: `Push:pull arány ${r.toFixed(1)}.`,
         detail: 'A ≈1:1 heti tolóerő-húzóerő arány védi a vállat (strukturális-balansz irodalom, nem RP-szabály).',
       })
     }
   }
 
-  // R7 — ham:quad
+  // R7 — ham:quad (same rounded-comparison approach as R6)
   const quad = weeklySets.get('quad') ?? 0
   const ham = weeklySets.get('ham') ?? 0
-  if (quad >= HAM_QUAD_QUAD_GATE && ham / quad < HAM_QUAD_MIN) {
-    weekly.push({
-      rule: 'ham-quad',
-      label: `Ham:quad arány ${ratio1(ham / quad)}.`,
-      detail: 'A hátsó comb a quad-volumen ~0.6–0.8-szorosát kéri (strukturális-balansz irodalom).',
-    })
+  if (quad >= HAM_QUAD_QUAD_GATE) {
+    const r = Math.round((ham / quad) * 10) / 10
+    if (r < HAM_QUAD_MIN) {
+      weekly.push({
+        rule: 'ham-quad',
+        label: `Ham:quad arány ${r.toFixed(1)}.`,
+        detail: 'A hátsó comb a quad-volumen ~0.6–0.8-szorosát kéri (strukturális-balansz irodalom).',
+      })
+    }
   }
 
   return [...session, ...weekly]
