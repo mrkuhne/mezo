@@ -34,6 +34,7 @@ import type {
   FuelSlot,
   MacroSet,
   Recipe,
+  RecipeRole,
   SlotItem,
   StackZoneKey,
 } from '@/data/types'
@@ -76,6 +77,11 @@ export interface PlannedWindow {
   label: string
   time: number
   weight: number
+  /** Set only by `compileTemplate` (mezo-7102) — the row's fixed budget share; `placeWindows`
+   *  leaves it undefined (its `weight` is the live signal there). */
+  budgetPct?: number
+  /** Set only by `compileTemplate` (mezo-7102) — carries the template row's recipe role through. */
+  role?: RecipeRole
 }
 
 const MACRO_KEYS: (keyof Macro4)[] = ['kcal', 'p', 'c', 'f']
