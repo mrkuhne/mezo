@@ -3,6 +3,7 @@
 // its real start CTA, the remaining todos, the companion's midday note, and a
 // preview of the evening.
 // ============================================================
+import { ChainCelebrations, type ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { DoneFold } from '@/features/today/components/DoneFold'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
@@ -22,7 +23,7 @@ export interface DayHero {
 }
 
 export function FaceDay({
-  open, done, doneXp, hero, heroWarn, heroNote, note, later, growth, fuelNote,
+  open, done, doneXp, hero, heroWarn, heroNote, celebrations, note, later, growth, fuelNote,
   habitPending, onAct, onFace, onCustom,
 }: {
   open: TodayItem[]
@@ -34,6 +35,11 @@ export function FaceDay({
   heroWarn?: string | null
   /** Companion note about the day's load (a workout + a sport session stacked). */
   heroNote?: string | null
+  /** Every ACTIVE DAY-daypart chain's progress (mezo-n5e9.4): the routine editor lets a custom
+   *  chain anchor to midday — this face owns celebrating those completions, same as the morning
+   *  and evening faces own theirs. There is no hero for a DAY chain (unlike morning): every step
+   *  already renders as an actionable `TodoCard` row. */
+  celebrations: ChainCelebrationInput[]
   note: CompanionNote | null
   later: TodayItem[]
   /** Quest summary + the route into quest management (TodoCard's header). */
@@ -52,6 +58,7 @@ export function FaceDay({
   // (a 17:00 sport session next to the gym) had no surface anywhere on its own face.
   return (
     <>
+      <ChainCelebrations chains={celebrations} />
       {hero ? (
         <ItemCard {...hero}>
           {heroWarn && <div className="warmstrip">⚠️ {heroWarn}</div>}

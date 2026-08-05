@@ -49,4 +49,42 @@ describe('useDualQuery', () => {
     )
     await waitFor(() => expect(result.current.data).toBe(REAL))
   })
+
+  it('real mode: isError flips true on a failed fetch — a consumer can render an error state (mezo-n5e9.2 fix wave)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const realFetch = () => Promise.reject(new Error('boom'))
+    const { result } = renderHook(
+      () => useDualQuery({ queryKey: ['dq-real-error'], mockData: SEED, realFetch, realEmpty: EMPTY }),
+      { wrapper: makeWrapper() },
+    )
+    expect(result.current.isError).toBe(false)
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.data).toBe(EMPTY) // still never the mock seed
+  })
+
+  it('mock mode: isError is always false (the mock queryFn never rejects)', () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(
+      () => useDualQuery({ queryKey: ['dq-mock-error'], mockData: SEED, realFetch: async () => REAL, realEmpty: EMPTY }),
+      { wrapper: makeWrapper() },
+    )
+    expect(result.current.isError).toBe(false)
+  })
+
+  it('refetch() re-runs the query — a failed real-mode fetch can recover without a remount', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let attempt = 0
+    const realFetch = () => {
+      attempt += 1
+      return attempt === 1 ? Promise.reject(new Error('boom')) : Promise.resolve(REAL)
+    }
+    const { result } = renderHook(
+      () => useDualQuery({ queryKey: ['dq-real-refetch'], mockData: SEED, realFetch, realEmpty: EMPTY }),
+      { wrapper: makeWrapper() },
+    )
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    result.current.refetch()
+    await waitFor(() => expect(result.current.data).toBe(REAL))
+    expect(result.current.isError).toBe(false)
+  })
 })

@@ -26,7 +26,7 @@ export function useDualQuery<T>(opts: {
   realEmpty: T
   /** real-mode staleTime (mock mode is always Infinity). Omit → TanStack app default. */
   realStaleTime?: number
-}): { data: T; isPending: boolean } {
+}): { data: T; isPending: boolean; isError: boolean; refetch: () => void } {
   const mock = isMockMode()
   const q = useQuery({
     queryKey: opts.queryKey,
@@ -39,5 +39,12 @@ export function useDualQuery<T>(opts: {
     // unresolved (q.data === undefined) — realEmpty, never the seed.
     data: q.data ?? (mock ? opts.mockData : opts.realEmpty),
     isPending: q.isPending,
+    // Additive (mezo-n5e9.2 fix wave): existing `{data, isPending}` consumers are unaffected —
+    // `q.isError`/`q.refetch` pass straight through so a screen CAN render a terminal error
+    // state + a retry instead of the misleading "empty, go ahead and create" read `realEmpty`
+    // gives a genuinely-failed fetch. Mock mode's queryFn never rejects, so `isError` is always
+    // false there.
+    isError: q.isError,
+    refetch: () => { void q.refetch() },
   }
 }
