@@ -1,14 +1,17 @@
 import { useEffect, useRef } from 'react'
 import { isMockMode } from '@/data/_client/mode'
+import { localDateString } from '@/shared/lib/dates'
 import { notificationApi } from '@/data/notification/notificationApi'
 import { initialCheckins } from '@/data/today/checkins'
-import { useStack, useProtocol } from '@/data/fuel/stackHooks'
+import { useStack, useProtocol, useIntakes } from '@/data/fuel/stackHooks'
+import { useFuelSettings } from '@/data/fuel/fuelSettingsHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
-import { buildProtocol, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
+import { projectStackDay, type StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import type { components } from '@/data/_client/api.gen'
-import type { CheckinSlot, ProtocolSlotData } from '@/data/types'
+import type { CheckinSlot } from '@/data/types'
 
 type NotificationScheduleEntry = components['schemas']['NotificationScheduleEntry']
 
@@ -34,15 +37,12 @@ function checkinDeeplink(time: string): string {
   return `/today?checkin=${time}`
 }
 
-/** Human label per `buildProtocol` slot window — mirrors the mockup's "Stack · reggeli slot"
- *  style titles without re-deriving the slot's meaning; falls back to the raw window key for
- *  any future window buildProtocol.ts might add, so a new slot never renders as `undefined`. */
+/** Human label per `projectStackDay` zone — mirrors the mockup's "Stack · reggeli slot" style
+ *  titles without re-deriving the slot's meaning; falls back to the raw zone key for any future
+ *  zone `StackZoneKey` might add, so a new slot never renders as `undefined`. */
 const FUEL_WINDOW_LABEL: Record<string, string> = {
-  wake: 'reggeli',
-  'pre-snack': 'edzés előtti snack',
-  'T-40min': 'edzés előtti',
-  'ebéd': 'ebédi',
-  'T-2h sleep': 'esti',
+  wake: 'ébredési', breakfast: 'reggeli', pre_workout: 'edzés előtti', post_workout: 'edzés utáni',
+  lunch: 'ebédi', dinner: 'vacsora melletti', evening: 'esti', bedtime: 'lefekvés előtti',
 }
 
 function truncate(text: string, maxChars: number): string {
@@ -61,11 +61,12 @@ function checkinEntry(slot: Pick<CheckinSlot, 'time'>): NotificationScheduleEntr
   }
 }
 
-function fuelSlotEntry(slot: ProtocolSlotData): NotificationScheduleEntry {
-  const label = FUEL_WINDOW_LABEL[slot.window] ?? slot.window
-  const body = slot.items.length
-    ? slot.items.map((item) => (item.dose ? `${item.name} ${item.dose}` : item.name)).join(' + ') + '.'
-    : 'Stack-tétel ebben a slotban.'
+function fuelSlotEntry(slot: StackDaySlot): NotificationScheduleEntry {
+  const label = FUEL_WINDOW_LABEL[slot.zone] ?? slot.zone
+  const body = slot.entries
+    .filter((e) => !e.skippedToday)
+    .map((e) => (e.dose ? `${e.name} ${e.dose}` : e.name))
+    .join(' + ')
   return {
     weekday: null, // fuel/stack slots recur every day
     time: slot.time,
@@ -73,7 +74,7 @@ function fuelSlotEntry(slot: ProtocolSlotData): NotificationScheduleEntry {
     title: truncate(`Stack · ${label} slot`, MAX_TITLE_CHARS),
     body: truncate(body, MAX_BODY_CHARS),
     deeplink: FUEL_DEEPLINK,
-    source: 'buildProtocol',
+    source: 'projectStackDay',
   }
 }
 
@@ -81,15 +82,20 @@ function fuelSlotEntry(slot: ProtocolSlotData): NotificationScheduleEntry {
  * Pure — today's check-in + fuel/stack slots turned into the FE-owned schedule snapshot
  * (N3, bd mezo-h4wp.6.3). Reuses the existing slot times verbatim rather than re-deriving
  * them: check-in times come straight from `data/today/checkins.ts`, fuel/stack times straight
- * from `buildProtocol`'s output. `checkin`/`fuel_slot` are the ONLY categories the backend
+ * from `projectStackDay`'s output. `checkin`/`fuel_slot` are the ONLY categories the backend
  * accepts on this endpoint — everything else is backend-native (AnchorResolver already owns
  * its minute), so this builder never emits any other category by construction.
+ *
+ * A zone whose every entry is skipped today (rest-day skip, mezo-vx9v) is dropped rather than
+ * mapped to a blank-body notification — mirrors `buildDayPlan`'s FuelSlot mapper, which drops
+ * the same zones from the "Mai" timeline for the same reason.
  */
 export function buildScheduleEntries(
   checkins: Pick<CheckinSlot, 'time'>[],
-  protocolSlots: ProtocolSlotData[],
+  slots: StackDaySlot[],
 ): NotificationScheduleEntry[] {
-  return [...checkins.map(checkinEntry), ...protocolSlots.map(fuelSlotEntry)]
+  const withEntries = slots.filter((s) => s.entries.some((e) => !e.skippedToday))
+  return [...checkins.map(checkinEntry), ...withEntries.map(fuelSlotEntry)]
 }
 
 /**
@@ -100,19 +106,21 @@ export function buildScheduleEntries(
  * Real mode only — mock mode must never reach the network. Waits for `useSleepGoal()`'s
  * `isPending` to clear before writing: firing on the very first render would snapshot the
  * pre-resolve ghost wake/bed anchors (and possibly an empty stash) as if they were real,
- * which is a worse snapshot than waiting a beat. `useStack`/`useProtocol`/`useTrain`/
- * `useRunning` don't expose their own pending flag, so there is a narrow window where the
- * fuel/stack slots (including the gym-derived pre-workout time) could still reflect a ghost
- * if one of those fetches is slower than the sleep-goal one — an accepted, documented gap
- * (the design spec already frames FE-snapshot staleness as "degrades gracefully"), not a
- * silent one.
+ * which is a worse snapshot than waiting a beat. `useStack`/`useProtocol`/`useIntakes`/
+ * `useFuelSettings`/`useTrain`/`useRunning` don't expose their own pending flag, so there is a
+ * narrow window where the fuel/stack slots (including the gym-derived pre-workout time) could
+ * still reflect a ghost if one of those fetches is slower than the sleep-goal one — an
+ * accepted, documented gap (the design spec already frames FE-snapshot staleness as "degrades
+ * gracefully"), not a silent one. `useScheduleSnapshotWriter` deliberately does NOT delegate to
+ * `useStackDay` (mezo-vx9v Task 9): that hook composes the same sources but doesn't surface
+ * `useSleepGoal`'s `isPending`, which this gate needs — routing through it would silently drop
+ * the "don't snapshot the pre-resolve ghost" protection this docstring describes.
  *
- * The `preWorkout` anchor is derived via the CANONICAL `deriveProtocolAnchors` (same function
- * `useFuelTimeline`/the settings preview use) — this is deliberate: a second, independent
- * derivation of "40 minutes before the first training block" is exactly the drift this design
- * was shaped to avoid (fix round 1, mezo-h4wp.6.3 review). Without it, every persisted
- * `fuel_slot` row would silently fall back to `wake + 60min` on every training day, hours off
- * the real pre-workout time.
+ * The pre-workout zone's time is derived by `projectStackDay` straight from the day's real
+ * training `blocks` (`deriveBlocks`) — the same single derivation `useFuelTimeline`/the Stack
+ * page use — so a second, independent derivation of "40 minutes before the first training
+ * block" never has the chance to quietly disagree (fix round 1, mezo-h4wp.6.3 review; the
+ * rest-day case is now a skip — the zone is absent — rather than a `wake + 60min` fallback).
  *
  * `categories` is DERIVED from the entries actually built — never a separately maintained
  * list — so it is structurally impossible for the payload to name a category some entry
@@ -125,7 +133,9 @@ export function buildScheduleEntries(
 export function useScheduleSnapshotWriter(): void {
   const mock = isMockMode()
   const { stash } = useStack()
-  const { selectedIds } = useProtocol()
+  const { occurrences } = useProtocol()
+  const intakes = useIntakes(localDateString())
+  const { settings } = useFuelSettings()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
   const { gymSchedule, sport } = useTrain()
   const { activeRunningBlock } = useRunning()
@@ -135,10 +145,12 @@ export function useScheduleSnapshotWriter(): void {
     if (mock || written.current || sleepGoalPending) return
     written.current = true
 
-    const selection = selectedIds ?? stash.filter((s) => s.type !== 'medication').map((s) => s.id)
-    const anchors = deriveProtocolAnchors(gymSchedule, sport, activeRunningBlock, sleepGoal.wakeTime, sleepGoal.bedTime)
-    const protocolSlots = buildProtocol(selection, stash, anchors).slots
-    const entries = buildScheduleEntries(initialCheckins, protocolSlots)
+    const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
+    const slots = projectStackDay({
+      occurrences, stash, intakes, wake: sleepGoal.wakeTime, bed: sleepGoal.bedTime,
+      mealsPerDay: settings.mealsPerDay, blocks,
+    })
+    const entries = buildScheduleEntries(initialCheckins, slots)
     if (entries.length === 0) return
 
     const categories = [...new Set(entries.map((e) => e.category))]

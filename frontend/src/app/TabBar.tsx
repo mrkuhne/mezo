@@ -18,7 +18,8 @@ function TabItem({ t }: { t: Tab }) {
   return (
     <NavLink to={`/${t.id}`} className={({ isActive }) => cn('tab-item', isActive && 'active')}>
       <span className="tab-dot" />
-      <Icon name={t.icon} size={22} />
+      {/* DS BottomNav active treatment: the icon container gets a primary tint */}
+      <span className="tab-ico"><Icon name={t.icon} size={22} /></span>
       <span>{t.label}</span>
     </NavLink>
   )

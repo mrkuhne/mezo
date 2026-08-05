@@ -46,6 +46,22 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Meal-slot templates (mezo-7102) — per-day-type anchor plan the planner replays onto a real day. */
+export type SlotTemplateDayType = 'rest' | 'training_am' | 'training_pm'
+export type SlotAnchor =
+  | { type: 'fixed'; time: string }
+  | { type: 'wake' | 'training_start' | 'training_end' | 'bed'; offsetMin: number }
+export interface SlotTemplateRow {
+  label: string
+  slotKind: MealSlot        // 'breakfast' | 'lunch' | 'dinner' | 'snack' (types.ts:68)
+  role: RecipeRole          // 'standard' | 'pre_workout' | 'post_workout' (types.ts:281)
+  anchor: SlotAnchor
+  budgetPct: number
+}
+export interface SlotTemplate {
+  dayType: SlotTemplateDayType
+  slots: SlotTemplateRow[]
+}
 export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
 export type ToolType = 'read' | 'compute' | 'write'
 export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context' | 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; label: string; weight: number; score: number; color: string; detail: string }
@@ -184,6 +200,17 @@ export interface Protocol {
   version: number; builtAt: string; source: string; status: string
   itemCount: number; confidence: number; lastReplanReason: string | null
   history: { v: number; when: string; reason: string }[]
+}
+// --- Fuel · Stack occurrences (living protocol, mezo-vx9v) — mirrors ProtocolItemResponse ---
+/** Daily intake zone — the wire contract (StackZone entity keys). Never rename these strings. */
+export type StackZoneKey = 'wake' | 'breakfast' | 'pre_workout' | 'post_workout' | 'lunch' | 'dinner' | 'evening' | 'bedtime'
+export type StackPlacementSource = 'rule' | 'llm' | 'user' | 'fallback'
+/** One item's occurrence in a zone — a protocol can carry the same pantryItemId in several zones. */
+export interface ProtocolOccurrence {
+  id: string; pantryItemId: string; slotKey: StackZoneKey
+  dose: string | null; pinned: boolean
+  placementSource: StackPlacementSource; placementReason: string | null
+  restDayFallback: StackZoneKey | 'skip' | null; dailyTotalHint: string | null
 }
 // --- Medication (Gyógyszer) — mirrors the generated Medication* DTOs (api.gen.ts) ---
 export type MedicationPhaseKey = 'peak' | 'stable' | 'trough'
@@ -568,40 +595,6 @@ export interface ReplanScenario {
   tools: { type: ToolType; name: string }[]
   confidence: number
 }
-export interface StackRecommendation {
-  name: string
-  source: PantrySourceKey
-  price: string
-  inStash: boolean
-  reason: string
-  metric: string
-  confidence: number
-}
-
-// --- Fuel · Stack protocol builder ---
-export interface ProtocolSlotItem { refId: string; name: string; dose: string; color: string }
-export interface ProtocolSlotData {
-  time: string
-  window: string
-  kind: string
-  kindColor: string
-  relatedTo?: string
-  items: ProtocolSlotItem[]
-  reasoning: string
-  primary: boolean
-}
-export interface Reasoning {
-  kind: 'physiology' | 'timing' | 'interaction' | 'sleep'
-  text: string
-  evidence?: string
-}
-export interface MealMatch { recipeId: string; slot: string; reason: string }
-export interface BuiltProtocol {
-  slots: ProtocolSlotData[]
-  reasoning: Reasoning[]
-  mealMatches: MealMatch[]
-}
-
 // --- Tudás (knowledge) ---
 // V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'

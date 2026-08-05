@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 
+// DS re-dress (mezo-setx.5.5): h2 role title, the intro doubles as the field's visible
+// label (Rule 17 — wired via aria-labelledby), 16px .shta field, cta-primary save.
 export function CreedSheet({ initial, onSave, onClose }:
   { initial: string; onSave: (text: string) => void; onClose: () => void }) {
   const [text, setText] = useState(initial)
@@ -8,15 +10,14 @@ export function CreedSheet({ initial, onSave, onClose }:
     <Sheet onClose={onClose} labelledBy="creed-title">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px', gap: 12 }}>
-          <h2 id="creed-title" style={{ font: '700 18px/1.2 var(--ff-display)' }}>A vezérelved</h2>
-          <p className="text-tertiary" style={{ fontSize: 12.5 }}>
+          <h2 id="creed-title" className="h-display size-lg">A vezérelved</h2>
+          <p id="creed-label" className="shlabel">
             Egy mondat az irányról, ami a döntéseidet vezeti — erre nézel rá minden nap.
           </p>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={280} rows={3}
-            placeholder="Minden döntésem a célom felé visz — szándékkal élek."
-            style={{ width: '100%', padding: 12, borderRadius: 12, border: '1px solid var(--card-border)',
-              background: 'var(--surface-1)', color: 'var(--ink)', font: '500 14px/1.4 var(--ff-body)', resize: 'none' }} />
-          <button className="hab-act" disabled={!text.trim()} style={{ alignSelf: 'flex-end' }}
+          <textarea className="shta" value={text} onChange={(e) => setText(e.target.value)}
+            maxLength={280} rows={3} aria-labelledby="creed-title creed-label"
+            placeholder="Minden döntésem a célom felé visz — szándékkal élek." />
+          <button className="cta-primary" disabled={!text.trim()}
             onClick={() => { onSave(text.trim()); close() }}>Mentés</button>
         </div>
       )}

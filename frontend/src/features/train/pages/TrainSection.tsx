@@ -12,7 +12,8 @@ export function TrainSection() {
     <>
       <AppHero
         utilities={
-          <SubNavDropdown label="Train alnavigáció" items={TRAIN_TABS} accent="var(--coral-deep)" />
+          // coral in UI chrome = primary (D4) — the Train identity rides the primary ramp
+          <SubNavDropdown label="Train alnavigáció" items={TRAIN_TABS} accent="var(--primary-deep)" />
         }
       />
       <Outlet />

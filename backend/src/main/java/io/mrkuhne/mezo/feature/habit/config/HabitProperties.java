@@ -11,9 +11,6 @@ import org.springframework.validation.annotation.Validated;
 public record HabitProperties(
     @NotBlank String closeCron,
     @Min(0) int wakeWindowMin,
-    @NotBlank String weighInCutoff,
-    @NotBlank String morningWindowEnd,
-    @Min(1) int workoutWindowHours,
     @Min(1) int proteinTargetG,
     @Min(0) int bedGraceMin,
     @Min(0) int kitchenCloseOffsetMin,

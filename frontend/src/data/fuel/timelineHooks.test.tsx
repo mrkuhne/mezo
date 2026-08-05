@@ -8,7 +8,7 @@ import { useFuelPreview } from '@/data/today/todayHooks'
 import { deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import type { FuelSlot, SportSchedule, VolleyballSession } from '@/data/types'
+import type { FuelSlot, SlotTemplate, SportSchedule, VolleyballSession } from '@/data/types'
 
 /** A wrapper bound to ONE QueryClient — so the co-composed hooks share a cache. */
 function sharedWrapper() {
@@ -181,6 +181,23 @@ describe('useFuelTimeline (real mode)', () => {
         http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithSettings])),
         http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
         http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: stashFixture })),
+        // A living-protocol occurrence for kreatin at the wake zone (mezo-vx9v Task 9 — the
+        // "Mai" timeline now projects `occurrences`, not a selection-derived buildProtocol).
+        http.get(`${API_BASE}/api/fuel/protocol`, () =>
+          HttpResponse.json({
+            active: {
+              id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active',
+              confidence: 0.9,
+              items: [
+                {
+                  id: 'occ-kreatin', pantryItemId: 'kreatin', slotKey: 'wake', dose: '5g',
+                  pinned: false, placementSource: 'rule', placementReason: null,
+                },
+              ],
+            },
+            history: [],
+          }),
+        ),
         http.get(`${API_BASE}/api/fuel/intake/:date`, () =>
           HttpResponse.json({ intakes: [{ id: 'i1', pantryItemId: 'kreatin', takenAt: '2026-07-02T05:40:00Z', takenDate: '2026-07-02', dose: '5g' }] }),
         ),
@@ -265,5 +282,70 @@ describe('useFuelTimeline (real mode)', () => {
     // Computed, not a static seed: the fallback used the live day-targets (2800), and no hand-authored
     // 05:50 wake slot leaks (the wake anchor is the sleep goal's 06:45).
     expect(result.current.plan.slots.some(s => s.time === '05:50' && s.label === 'Ébresztő')).toBe(false)
+  })
+
+  // Task 7 (mezo-7102): resolveDayType(blocks) picks the cached template matching today's REAL
+  // day type, and buildDayPlan folds its anchors straight into plan.slots (compileTemplate
+  // replaces placeWindows for this day). A blockless day (no gym/sport/running today, same
+  // empty-schedule overrides the cold-load test above uses) → resolveDayType → 'rest', so a
+  // 'rest' template is the deterministic match — no dependency on which weekday the suite runs on.
+  it('resolves the rest-day template and folds its anchors into plan.slots (mezo-7102)', async () => {
+    const restTemplate: SlotTemplate = {
+      dayType: 'rest',
+      slots: [
+        { label: 'Reggeli 8:00 30%', slotKind: 'breakfast', role: 'standard', anchor: { type: 'fixed', time: '08:00' }, budgetPct: 30 },
+        { label: 'Ebéd 1 12:30 40%', slotKind: 'lunch', role: 'standard', anchor: { type: 'fixed', time: '12:30' }, budgetPct: 40 },
+        { label: 'Vacsora 19:00 30%', slotKind: 'dinner', role: 'standard', anchor: { type: 'fixed', time: '19:00' }, budgetPct: 30 },
+      ],
+    }
+    // Wire-shape mirror of restTemplate — backs the GET handler so a background refetch (the
+    // real-mode useDualQuery staleTime triggers one on mount) converges on the SAME template the
+    // direct cache seed below provides, instead of racing it back down to the default empty list.
+    const restTemplateWire = {
+      templates: [{
+        dayType: restTemplate.dayType,
+        slots: restTemplate.slots.map(s => ({
+          label: s.label, slotKind: s.slotKind, role: s.role, budgetPct: s.budgetPct,
+          anchorType: s.anchor.type, time: s.anchor.type === 'fixed' ? s.anchor.time : undefined,
+        })),
+      }],
+    }
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no weight goal
+      http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+        HttpResponse.json({
+          date: String(params.date),
+          targets: { kcal: 2800, p: 200, c: 300, f: 80, water: 4000 },
+          consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+          meals: [],
+        }),
+      ),
+      http.get(`${API_BASE}/api/fuel/slot-templates`, () => HttpResponse.json(restTemplateWire)),
+    )
+    const { qc, Wrapper } = sharedWrapper()
+    qc.setQueryData(['fuelSlotTemplates'], [restTemplate])
+    const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+
+    await waitFor(() => expect(result.current.plan.bedtime).toBe('23:15')) // sleep goal resolved
+    expect(result.current.dayType).toBe('rest')
+    expect(result.current.template).toEqual(restTemplate)
+    const byLabel = (label: string) => result.current.plan.slots.find(s => s.label === label)
+    expect(byLabel('Reggeli 8:00 30%')?.time).toBe('08:00')
+    expect(byLabel('Ebéd 1 12:30 40%')?.time).toBe('12:30')
+    expect(byLabel('Vacsora 19:00 30%')?.time).toBe('19:00')
+  })
+
+  // Zero-regression (mezo-7102): with NO cached template, useSlotTemplates resolves the default
+  // empty list (real mode's honest-empty MSW handler) → `template` is null and buildDayPlan keeps
+  // today's placeWindows/splitBudget path — the pre-Task-7 behavior, unchanged.
+  it('with no cached template, dayType/template are additive and the plan is unaffected (mezo-7102)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.plan.bedtime).toBe('23:15'))
+    expect(result.current.dayType).toMatch(/^(rest|training_am|training_pm)$/)
+    expect(result.current.template).toBeNull()
   })
 })

@@ -4,7 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useStack, useProtocol, useStackActions, useProtocolActions } from '@/data/fuel/stackHooks'
-import { supplementsStash } from '@/data/fuel/fuel'
+import { supplementsStash, mockPlaceOccurrence } from '@/data/fuel/fuel'
 import { localDateString } from '@/shared/lib/dates'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -52,32 +52,152 @@ describe('useStack / useProtocol (mock mode)', () => {
     await waitFor(() => expect(isTaken()).toBe(false))
   })
 
-  it('useProtocol returns the v3 seed protocol', () => {
+  it('useProtocol returns the v3 seed protocol + its 8 occurrence seed rows', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
     expect(result.current.protocol.version).toBe(3)
-    // Seed carries no selection by design (the page's default selection applies).
-    expect(result.current.selectedIds).toBeNull()
+    expect(result.current.occurrences).toHaveLength(8)
+    expect(result.current.occurrences.find(o => o.id === 'occ-magnez')).toMatchObject({
+      pantryItemId: 'magnez', slotKey: 'evening', pinned: false, placementSource: 'rule',
+    })
   })
 
-  it('applyProtocol resolves with version 4 and the ["protocol"] cache reflects it', async () => {
+  it('addItem with an explicit slotKey adds a pinned user occurrence in a new zone', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
       () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
       { wrapper: Wrapper },
     )
-    expect(result.current.protocol.protocol.version).toBe(3)
+    // magnez already has a seed occurrence at 'evening' — 'lunch' is a different zone, not a dup.
+    await act(async () => { await result.current.actions.addItem('magnez', { slotKey: 'lunch' }) })
+    await waitFor(() => expect(result.current.protocol.occurrences).toHaveLength(9))
+    const added = result.current.protocol.occurrences.find(o => o.pantryItemId === 'magnez' && o.slotKey === 'lunch')
+    expect(added).toMatchObject({ pinned: true, placementSource: 'user', dose: null })
+  })
 
-    let view: Awaited<ReturnType<typeof result.current.actions.applyProtocol>> | undefined
-    await act(async () => {
-      view = await result.current.actions.applyProtocol(['kreatin', 'd3k2'])
-    })
-    expect(view!.protocol!.version).toBe(4)
-    expect(view!.selectedIds).toEqual(['kreatin', 'd3k2'])
+  it('addItem is a no-op when the (item, zone) pair already exists', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    await act(async () => { await result.current.actions.addItem('magnez', { slotKey: 'evening' }) })
+    // still 8 — no duplicate occurrence created for the zone magnez already occupies.
+    expect(result.current.protocol.occurrences).toHaveLength(8)
+  })
 
-    await waitFor(() => expect(result.current.protocol.protocol.version).toBe(4))
-    expect(result.current.protocol.selectedIds).toEqual(['kreatin', 'd3k2'])
-    expect(result.current.protocol.protocol.itemCount).toBe(2)
+  it('addItem with no slotKey uses mockPlaceOccurrence (timing pass) — weekly* lands on wake', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    // 'reta' (medication, timing 'weekly-monday') has no seed occurrence — no dup collision.
+    await act(async () => { await result.current.actions.addItem('reta') })
+    await waitFor(() => expect(result.current.protocol.occurrences).toHaveLength(9))
+    const added = result.current.protocol.occurrences.find(o => o.pantryItemId === 'reta')
+    expect(added).toMatchObject({ slotKey: 'wake', pinned: false, placementSource: 'rule' })
+  })
+
+  it('moveItem pins the occurrence into the new zone', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    await act(async () => { await result.current.actions.moveItem('occ-d3k2', 'evening') })
+    await waitFor(() =>
+      expect(result.current.protocol.occurrences.find(o => o.id === 'occ-d3k2')).toMatchObject({
+        slotKey: 'evening', pinned: true, placementSource: 'user',
+      }),
+    )
+  })
+
+  it('unpinItem restores the mock placement (mockPlaceOccurrence, not the manual move)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    // d3k2 (timing 'midday') seeds at 'lunch' via the name-rule table; move it away, then unpin —
+    // it should land back on 'lunch' via the timing-hint pass, which agrees here.
+    await act(async () => { await result.current.actions.moveItem('occ-d3k2', 'evening') })
+    await waitFor(() => expect(result.current.protocol.occurrences.find(o => o.id === 'occ-d3k2')?.pinned).toBe(true))
+    await act(async () => { await result.current.actions.unpinItem('occ-d3k2') })
+    await waitFor(() =>
+      expect(result.current.protocol.occurrences.find(o => o.id === 'occ-d3k2')).toMatchObject({
+        slotKey: 'lunch', pinned: false, placementSource: 'rule',
+      }),
+    )
+  })
+
+  it('setDose patches the occurrence dose', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    await act(async () => { await result.current.actions.setDose('occ-magnez', '600mg') })
+    await waitFor(() =>
+      expect(result.current.protocol.occurrences.find(o => o.id === 'occ-magnez')?.dose).toBe('600mg'),
+    )
+  })
+
+  it('removeItem removes exactly one occurrence', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    await act(async () => { await result.current.actions.removeItem('occ-omega3') })
+    await waitFor(() => expect(result.current.protocol.occurrences).toHaveLength(7))
+    expect(result.current.protocol.occurrences.some(o => o.id === 'occ-omega3')).toBe(false)
+  })
+
+  it('removeAllFor empties every occurrence for that pantry item', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
+      { wrapper: Wrapper },
+    )
+    // Give d3k2 a second occurrence first, so removeAllFor has more than one row to clear.
+    await act(async () => { await result.current.actions.addItem('d3k2', { slotKey: 'dinner' }) })
+    await waitFor(() => expect(result.current.protocol.occurrences.filter(o => o.pantryItemId === 'd3k2')).toHaveLength(2))
+    await act(async () => { await result.current.actions.removeAllFor('d3k2') })
+    await waitFor(() => expect(result.current.protocol.occurrences.some(o => o.pantryItemId === 'd3k2')).toBe(false))
+  })
+
+  it('logIntake(pantryItemId, slotKey) / undoIntake round-trip keyed by zone, not just the item', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ stack: useStack(), actions: useStackActions() }),
+      { wrapper: Wrapper },
+    )
+    const isTaken = () => result.current.stack.stash.find(s => s.id === 'magnez')!.taken
+    expect(isTaken()).toBe(false)
+
+    act(() => result.current.actions.logIntake('magnez', 'evening'))
+    await waitFor(() => expect(isTaken()).toBe(true))
+
+    act(() => result.current.actions.undoIntake('magnez', 'evening'))
+    await waitFor(() => expect(isTaken()).toBe(false))
+  })
+})
+
+describe('mockPlaceOccurrence (mezo-vx9v) — mirrors PlacementRules.zoneForTiming', () => {
+  const byId = (id: string) => supplementsStash.find(s => s.id === id)!
+
+  it('maps each timing value to its backend-mirrored zone', () => {
+    expect(mockPlaceOccurrence(byId('kreatin'))).toMatchObject({ slotKey: 'wake', placementSource: 'rule' }) // morning
+    expect(mockPlaceOccurrence(byId('d3k2'))).toMatchObject({ slotKey: 'lunch', placementSource: 'rule' }) // midday
+    expect(mockPlaceOccurrence(byId('magnez'))).toMatchObject({ slotKey: 'evening', placementSource: 'rule' }) // evening
+    expect(mockPlaceOccurrence(byId('omega3'))).toMatchObject({ slotKey: 'dinner', placementSource: 'rule' }) // dinner
+    expect(mockPlaceOccurrence(byId('origin-pwo'))).toMatchObject({ slotKey: 'pre_workout', placementSource: 'rule' }) // pre-workout
+    expect(mockPlaceOccurrence(byId('reta'))).toMatchObject({ slotKey: 'wake', placementSource: 'rule' }) // weekly-monday
+  })
+
+  it('falls back to breakfast/fallback for an unmapped timing (e.g. flexible)', () => {
+    expect(mockPlaceOccurrence(byId('whey'))).toMatchObject({ slotKey: 'breakfast', placementSource: 'fallback' })
   })
 })
 
@@ -90,7 +210,7 @@ describe('useStack / useProtocol (real mode)', () => {
     const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
     expect(result.current.protocol.version).toBe(0)
     expect(result.current.protocol.status).toBe('none')
-    expect(result.current.selectedIds).toBeNull()
+    expect(result.current.occurrences).toEqual([]) // never the 8-item seed
   })
 
   it('useProtocol returns the v0 ghost when the backend reports no active protocol', async () => {
@@ -99,6 +219,7 @@ describe('useStack / useProtocol (real mode)', () => {
     const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.protocol.version).toBe(0))
     expect(result.current.protocol.status).toBe('none')
+    expect(result.current.occurrences).toEqual([])
   })
 
   it('useStack merges GET /api/fuel/intake/{date} rows into the pantry stash taken flags', async () => {
@@ -147,6 +268,57 @@ describe('useStack / useProtocol (real mode)', () => {
     )
   })
 
+  it('logIntake invalidates ["habitDay"] + the day quest read (derived habit re-derive, mezo-u6jx)', async () => {
+    // The habit-day READ is the evaluation trigger (habit.md §3) — a stim intake must nudge
+    // ['habitDay'] and ['dailyQuests', date] or morning_coffee's ✓ waits for a remount.
+    server.use(http.post(`${API_BASE}/api/fuel/intake`, () => HttpResponse.json({ id: 'i-1' })))
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    const date = localDateString()
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useStackActions(date), { wrapper: Wrapper })
+    act(() => result.current.logIntake('p-1'))
+    await waitFor(() => {
+      const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+      expect(keys).toContain(JSON.stringify(['habitDay']))
+      expect(keys).toContain(JSON.stringify(['dailyQuests', date]))
+    })
+    invalidateSpy.mockRestore()
+  })
+
+  it('undoIntake invalidates ["habitDay"] + the day quest read (derived habit re-derive, mezo-u6jx)', async () => {
+    // Mirrors the logIntake case above — removing the day's only evidence for a metric
+    // (e.g. morning_coffee) must also nudge the habit-day read, or its state waits for a remount.
+    const date = localDateString()
+    server.use(
+      http.get(`${API_BASE}/api/pantry`, () =>
+        HttpResponse.json({
+          ingredients: [],
+          stash: [{ id: 'p-1', name: 'Kávé', brand: '', type: 'supplement', category: 'stim', dose: '200mg', form: 'kapszula', stock: 10, stockUnit: 'db', protocol: '', timing: 'flexible', taken: false }],
+        }),
+      ),
+      http.get(`${API_BASE}/api/fuel/intake/:date`, () =>
+        HttpResponse.json({
+          intakes: [{ id: 'intake-p1', pantryItemId: 'p-1', takenAt: '2026-07-02T07:00:00Z', takenDate: date, dose: '200mg' }],
+        }),
+      ),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ stack: useStack(), actions: useStackActions(date) }),
+      { wrapper: Wrapper },
+    )
+    // Wait until the seeded intake row lands in the shared cache (p-1 shows taken) before undoing it.
+    await waitFor(() => expect(result.current.stack.stash.find(s => s.id === 'p-1')?.taken).toBe(true))
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    act(() => result.current.actions.undoIntake('p-1'))
+    await waitFor(() => {
+      const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+      expect(keys).toContain(JSON.stringify(['habitDay']))
+      expect(keys).toContain(JSON.stringify(['dailyQuests', date]))
+    })
+    invalidateSpy.mockRestore()
+  })
+
   it('undoIntake DELETEs the matching cached row id', async () => {
     const date = localDateString()
     server.use(
@@ -178,32 +350,105 @@ describe('useStack / useProtocol (real mode)', () => {
     expect(date).toBe(localDateString())
   })
 
-  it('applyProtocol POSTs selectedPantryItemIds and writes the response into the ["protocol"] cache', async () => {
-    let posted: { selectedPantryItemIds: string[]; reason?: string } | undefined
-    server.use(http.post(`${API_BASE}/api/fuel/protocol`, async ({ request }) => {
-      posted = (await request.json()) as { selectedPantryItemIds: string[]; reason?: string }
-      return HttpResponse.json({
+  it('addItem POSTs {pantryItemId} and invalidates ["protocol"]', async () => {
+    let posted: Record<string, unknown> | undefined
+    server.use(http.post(`${API_BASE}/api/fuel/protocol/items`, async ({ request }) => {
+      posted = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json(
+        { id: 'item-new', pantryItemId: 'magnez', slotKey: 'evening', pinned: false, placementSource: 'rule' },
+        { status: 201 },
+      )
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => useProtocolActions(), { wrapper: Wrapper })
+    await act(async () => { await result.current.addItem('magnez') })
+    expect(posted).toMatchObject({ pantryItemId: 'magnez' })
+    expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('protocol'))).toBe(true)
+  })
+
+  it('moveItem PATCHes {slotKey} and invalidates ["protocol"]', async () => {
+    let posted: Record<string, unknown> | undefined
+    server.use(http.patch(`${API_BASE}/api/fuel/protocol/items/:id`, async ({ request }) => {
+      posted = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ id: 'occ-1', pantryItemId: 'd3k2', slotKey: 'evening', pinned: true, placementSource: 'user' })
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => useProtocolActions(), { wrapper: Wrapper })
+    await act(async () => { await result.current.moveItem('occ-1', 'evening') })
+    expect(posted).toEqual({ slotKey: 'evening' })
+    expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('protocol'))).toBe(true)
+  })
+
+  it('setDose PATCHes {dose} and invalidates ["protocol"]', async () => {
+    let posted: Record<string, unknown> | undefined
+    server.use(http.patch(`${API_BASE}/api/fuel/protocol/items/:id`, async ({ request }) => {
+      posted = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ id: 'occ-1', pantryItemId: 'd3k2', slotKey: 'lunch', pinned: false, placementSource: 'rule', dose: '600mg' })
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => useProtocolActions(), { wrapper: Wrapper })
+    await act(async () => { await result.current.setDose('occ-1', '600mg') })
+    expect(posted).toEqual({ dose: '600mg' })
+    expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('protocol'))).toBe(true)
+  })
+
+  it('unpinItem PATCHes {pinned:false} and invalidates ["protocol"]', async () => {
+    let posted: Record<string, unknown> | undefined
+    server.use(http.patch(`${API_BASE}/api/fuel/protocol/items/:id`, async ({ request }) => {
+      posted = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ id: 'occ-1', pantryItemId: 'd3k2', slotKey: 'lunch', pinned: false, placementSource: 'rule' })
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => useProtocolActions(), { wrapper: Wrapper })
+    await act(async () => { await result.current.unpinItem('occ-1') })
+    expect(posted).toEqual({ pinned: false })
+    expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('protocol'))).toBe(true)
+  })
+
+  it('removeItem DELETEs the occurrence and invalidates ["protocol"]', async () => {
+    let deletedId: string | undefined
+    server.use(http.delete(`${API_BASE}/api/fuel/protocol/items/:id`, ({ params }) => {
+      deletedId = String(params.id)
+      return new HttpResponse(null, { status: 204 })
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => useProtocolActions(), { wrapper: Wrapper })
+    await act(async () => { await result.current.removeItem('occ-1') })
+    expect(deletedId).toBe('occ-1')
+    expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('protocol'))).toBe(true)
+  })
+
+  it('removeAllFor DELETEs every occurrence id matching the pantry item, reading the cache written by useProtocol', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/protocol`, () =>
+      HttpResponse.json({
         active: {
-          id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active',
-          confidence: 0.9, selectedPantryItemIds: posted.selectedPantryItemIds,
+          id: 'proto-1', version: 1, builtAt: '2026-07-02T06:00:00Z', status: 'active', confidence: 0.9,
+          items: [
+            { id: 'occ-1', pantryItemId: 'd3k2', slotKey: 'lunch', pinned: false, placementSource: 'rule' },
+            { id: 'occ-2', pantryItemId: 'd3k2', slotKey: 'dinner', pinned: true, placementSource: 'user' },
+            { id: 'occ-3', pantryItemId: 'magnez', slotKey: 'evening', pinned: false, placementSource: 'rule' },
+          ],
         },
-        history: [{ version: 1, builtAt: '2026-07-02T06:00:00Z', reason: posted.reason }],
-      })
+        history: [],
+      }),
+    ))
+    const deletedIds: string[] = []
+    server.use(http.delete(`${API_BASE}/api/fuel/protocol/items/:id`, ({ params }) => {
+      deletedIds.push(String(params.id))
+      return new HttpResponse(null, { status: 204 })
     }))
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
       () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
       { wrapper: Wrapper },
     )
-    // Let the initial GET settle to the ghost first, so the in-flight fetch cannot clobber the
-    // applyProtocol setQueryData (in the real app the GET resolves long before the user applies).
-    await waitFor(() => expect(result.current.protocol.protocol.status).toBe('none'))
-    await act(async () => {
-      await result.current.actions.applyProtocol(['kreatin', 'd3k2'], 'kézi')
-    })
-    expect(posted).toEqual({ selectedPantryItemIds: ['kreatin', 'd3k2'], reason: 'kézi' })
-    await waitFor(() => expect(result.current.protocol.protocol.version).toBe(1))
-    expect(result.current.protocol.selectedIds).toEqual(['kreatin', 'd3k2'])
-    expect(result.current.protocol.protocol.status).toBe('active')
+    await waitFor(() => expect(result.current.protocol.occurrences).toHaveLength(3))
+    await act(async () => { await result.current.actions.removeAllFor('d3k2') })
+    expect(deletedIds.sort()).toEqual(['occ-1', 'occ-2'])
   })
 })

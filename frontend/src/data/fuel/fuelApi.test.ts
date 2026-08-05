@@ -12,7 +12,11 @@ const full: ProtocolViewResponse = {
     status: 'active',
     confidence: 0.82,
     lastReplanReason: 'Új cél',
-    selectedPantryItemIds: ['a', 'b', 'c'],
+    items: [
+      { id: 'item-a', pantryItemId: 'a', slotKey: 'wake', pinned: false, placementSource: 'rule', placementReason: 'r1' },
+      { id: 'item-b', pantryItemId: 'b', slotKey: 'lunch', pinned: true, placementSource: 'user' },
+      { id: 'item-c', pantryItemId: 'c', slotKey: 'evening', pinned: false, placementSource: 'fallback', dose: '5g' },
+    ],
   },
   history: [
     { version: 3, builtAt: '2026-06-30T08:00:00Z', reason: 'Új cél' },
@@ -23,16 +27,15 @@ const full: ProtocolViewResponse = {
 
 describe('fromProtocolView', () => {
   it('maps a full response onto the FE Protocol shape', () => {
-    const { protocol, selectedIds } = fromProtocolView(full)
+    const { protocol } = fromProtocolView(full)
     expect(protocol).not.toBeNull()
     expect(protocol!.version).toBe(3)
     expect(protocol!.status).toBe('active')
     expect(protocol!.source).toBe('Stack builder')
-    expect(protocol!.itemCount).toBe(3) // = selection length
+    expect(protocol!.itemCount).toBe(3) // = items length
     expect(protocol!.confidence).toBe(0.82)
     expect(protocol!.lastReplanReason).toBe('Új cél')
     expect(protocol!.builtAt).not.toBe('') // formatted, non-empty
-    expect(selectedIds).toEqual(['a', 'b', 'c'])
   })
 
   it('maps history entries incl. null reason → empty string', () => {
@@ -43,6 +46,17 @@ describe('fromProtocolView', () => {
     expect(protocol!.history[1]).toMatchObject({ v: 2, reason: '' })
   })
 
+  it('maps items into occurrences (mezo-vx9v)', () => {
+    const { occurrences } = fromProtocolView(full)
+    expect(occurrences).toHaveLength(3)
+    expect(occurrences[0]).toEqual({
+      id: 'item-a', pantryItemId: 'a', slotKey: 'wake', dose: null, pinned: false,
+      placementSource: 'rule', placementReason: 'r1', restDayFallback: null, dailyTotalHint: null,
+    })
+    expect(occurrences[1]).toMatchObject({ pantryItemId: 'b', slotKey: 'lunch', pinned: true, placementSource: 'user' })
+    expect(occurrences[2]).toMatchObject({ pantryItemId: 'c', dose: '5g', placementSource: 'fallback' })
+  })
+
   it('defaults optional confidence → 0 and lastReplanReason → null', () => {
     const noOptionals: ProtocolViewResponse = {
       active: {
@@ -50,18 +64,19 @@ describe('fromProtocolView', () => {
         version: 1,
         builtAt: '2026-06-30T08:00:00Z',
         status: 'active',
-        selectedPantryItemIds: ['x'],
+        items: [],
       },
       history: [],
     }
-    const { protocol } = fromProtocolView(noOptionals)
+    const { protocol, occurrences } = fromProtocolView(noOptionals)
     expect(protocol!.confidence).toBe(0)
     expect(protocol!.lastReplanReason).toBeNull()
     expect(protocol!.history).toEqual([])
+    expect(occurrences).toEqual([])
   })
 
-  it('returns nulls when there is no active protocol', () => {
+  it('returns nulls/empties when there is no active protocol', () => {
     const empty: ProtocolViewResponse = { history: [] }
-    expect(fromProtocolView(empty)).toEqual({ protocol: null, selectedIds: null })
+    expect(fromProtocolView(empty)).toEqual({ protocol: null, occurrences: [] })
   })
 })

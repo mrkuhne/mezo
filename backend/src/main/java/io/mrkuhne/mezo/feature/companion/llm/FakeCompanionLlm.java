@@ -173,6 +173,26 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern QUEST_FLAVOR_SENTINEL =
             Pattern.compile("\\[fake-quest-flavor:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of PlacementEngine.SYSTEM_PROMPT_MARKER (feature/fuel) — LITERAL, not an import,
+     *  same drift-safety rationale as every other mirror here. */
+    public static final String STACK_PLACEMENT_MARKER_MIRROR = "KAMRA-ELHELYEZES-FELADAT";
+
+    /** Scripted stack placement (mezo-vx9v): {@code [fake-stack-placement:{…}]} planted in the
+     *  pantry item NAME (the prompt's user message). Default = one valid minimal placement so
+     *  the un-scripted happy path still resolves via the LLM branch (source="llm"). */
+    public static final Pattern STACK_PLACEMENT_SENTINEL =
+            Pattern.compile("\\[fake-stack-placement:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+
+    /** Mirror of SlotPlanEvaluationService.SYSTEM_PROMPT_MARKER (feature/fuel) — LITERAL, not an
+     *  import, same drift-safety rationale as every other mirror here. */
+    public static final String SLOT_PLAN_MARKER_MIRROR = "SLOT-TERV-ERTEKELES";
+
+    /** Scripted slot-plan evaluation (mezo-7102): {@code [fake-slot-plan:{…}]} planted in a SLOT
+     *  LABEL (the prompt's user message). Default = one valid minimal 'ok' verdict so the
+     *  un-scripted happy path still resolves via the LLM branch. */
+    public static final Pattern SLOT_PLAN_SENTINEL =
+            Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -241,6 +261,18 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(QUEST_FLAVOR_MARKER_MIRROR)) {
             Matcher m = QUEST_FLAVOR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "[]";
+        }
+        if (systemPrompt.startsWith(STACK_PLACEMENT_MARKER_MIRROR)) {
+            Matcher m = STACK_PLACEMENT_SENTINEL.matcher(userMessage);
+            // default = one valid minimal placement so the un-scripted happy path resolves via LLM
+            return m.find() ? m.group(1)
+                    : "{\"slotKey\":\"evening\",\"reasonHu\":\"Teszt indoklás.\"}";
+        }
+        if (systemPrompt.startsWith(SLOT_PLAN_MARKER_MIRROR)) {
+            Matcher m = SLOT_PLAN_SENTINEL.matcher(userMessage);
+            // default = valid minimal 'ok' verdict so the un-scripted happy path still resolves
+            return m.find() ? m.group(1)
+                    : "{\"verdict\":\"ok\",\"summary\":\"Teszt értékelés.\",\"suggestions\":[]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

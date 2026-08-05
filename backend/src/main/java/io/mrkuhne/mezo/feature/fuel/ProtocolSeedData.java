@@ -1,6 +1,6 @@
 package io.mrkuhne.mezo.feature.fuel;
 
-import io.mrkuhne.mezo.api.dto.ProtocolActivateRequest;
+import io.mrkuhne.mezo.api.dto.ProtocolItemCreateRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
@@ -9,7 +9,6 @@ import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,11 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Seeds the owner's two real stim products (Tasty Dose gombakávé + Origin PWO) and — only when the
- * owner has no active protocol yet — activates a v1 protocol containing them (mezo-67rb, spec D6).
- * {@code @Profile("demodata")} is the profile prod runs, so the rows land on the live DB at the
- * next deploy. Idempotent by NAME per item (the shelf is curated — {@code PantryCatalogLoader}'s
- * empty-shelf guard would never fire here) and by active-protocol presence; an existing active
- * protocol is never touched. Runs after {@code PantryCatalogLoader} (60).
+ * owner has no active protocol yet — adds each as a living-protocol occurrence, engine-placed
+ * (mezo-67rb, spec D6; reworked onto {@link ProtocolService#addItem} in mezo-vx9v Task 10 —
+ * there is no whole-selection activate step anymore). The rule table places "Tasty Dose gombakávé"
+ * (matches the {@code kávé} needle) at {@code wake} and "Origin PWO" (matches the {@code pwo}
+ * needle) at {@code pre_workout}. {@code @Profile("demodata")} is the profile prod runs, so the
+ * rows land on the live DB at the next deploy. Idempotent by NAME per item (the shelf is curated —
+ * {@code PantryCatalogLoader}'s empty-shelf guard would never fire here) and by active-protocol
+ * presence; an existing active protocol is never touched. Runs after {@code PantryCatalogLoader} (60).
  */
 @Slf4j
 @Component
@@ -36,7 +38,6 @@ public class ProtocolSeedData implements CommandLineRunner {
 
     static final String TASTY_DOSE_NAME = "Tasty Dose gombakávé";
     static final String ORIGIN_PWO_NAME = "Origin PWO";
-    static final String SEED_REASON = "seed: video-1 (4) protocol setup (mezo-67rb)";
 
     private final AppUserRepository appUserRepository;
     private final OwnerProperties ownerProperties;
@@ -61,10 +62,9 @@ public class ProtocolSeedData implements CommandLineRunner {
         UUID tastyDose = ensureItem(ownerId, tastyDose(ownerId));
         UUID originPwo = ensureItem(ownerId, originPwo(ownerId));
         if (protocolRepository.findByCreatedByAndStatusAndDeletedFalse(ownerId, "active").isEmpty()) {
-            protocolService.activate(ownerId, new ProtocolActivateRequest()
-                .selectedPantryItemIds(List.of(tastyDose, originPwo))
-                .reason(SEED_REASON));
-            log.info("protocol seed: activated v1 with Tasty Dose + Origin PWO (mezo-67rb)");
+            protocolService.addItem(ownerId, new ProtocolItemCreateRequest().pantryItemId(tastyDose));
+            protocolService.addItem(ownerId, new ProtocolItemCreateRequest().pantryItemId(originPwo));
+            log.info("protocol seed: added Tasty Dose (wake) + Origin PWO (pre_workout) occurrences (mezo-67rb)");
         }
     }
 

@@ -32,7 +32,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     @Test
     void testRun_shouldLoadCuratedCatalog_whenContextStarts() {
         // The loader is profile-independent and already ran at context startup.
-        assertThat(repository.count()).isEqualTo(139);
+        assertThat(repository.count()).isEqualTo(161);
         ExerciseCatalogEntity row = repository.findBySlug("chest-supported-row").orElseThrow();
         assertThat(row.getName()).isEqualTo("Chest Supported Row");
         assertThat(row.getMuscle()).isEqualTo("back-mid");
@@ -54,7 +54,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     void testRun_shouldBeIdempotent_whenRunTwice() {
         loader.run();
         loader.run();
-        assertThat(repository.count()).isEqualTo(139);
+        assertThat(repository.count()).isEqualTo(161);
     }
 
     @Test

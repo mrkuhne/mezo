@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,6 +34,9 @@ import org.springframework.stereotype.Service;
  * where a real signal exists. Unknown metric -> false (a stale catalog row can't complete).
  * Timestamp-less sources degrade to honest date-presence (spec §3 note): gym sessions have no
  * completed_at, so training_done_today counts a completed instance on the date.
+ * Since {@code mezo-u6jx}, date-presence is not a fallback but the CHOSEN semantics for the
+ * weigh-in/stim/run metrics too — the tick rewards the logged act, not the log's wall-clock
+ * timing; per-metric timing coaching lives in the habit catalog's {@code anchorCopy} instead.
  */
 @Slf4j
 @Service
@@ -56,12 +61,19 @@ public class HabitEvaluator {
 
     /** Metrics decidable during the day (re-checked on every read). */
     public static final Set<String> INTRADAY_METRICS = Set.of("sleep_wake_window", "manual",
-        "weight_logged_before", "stim_intake_before", "training_done_today", "breakfast_protein",
+        "weight_logged_today", "stim_intake_today", "training_done_today", "breakfast_protein",
         "intention_focus_set", "intention_reflected", "ritual_closed");
     /** Metrics decidable only once the day is over (nightly close / next read). */
     public static final Set<String> END_OF_DAY_METRICS = Set.of("no_stim_after", "last_meal_before");
     /** Decided by the NEXT day's sleep log (deadline: next day noon). */
     public static final String METRIC_BED_NEXT_DAY = "bedtime_next_day";
+    /** Every metric the evaluator can honestly resolve — the admin catalog's DERIVED-def guard
+     * (mezo-n5e9.1): a custom habit's metric must be one of these (and not "manual", handled
+     * separately by the mode/metric mismatch check). */
+    public static final Set<String> SUPPORTED_METRICS = Stream
+        .concat(Stream.concat(INTRADAY_METRICS.stream(), END_OF_DAY_METRICS.stream()),
+            Stream.of(METRIC_BED_NEXT_DAY))
+        .collect(Collectors.toUnmodifiableSet());
 
     public boolean satisfied(String metric, UUID userId, LocalDate date) {
         return switch (metric) {
@@ -70,26 +82,20 @@ public class HabitEvaluator {
                 .map(w -> withinWindow(LocalTime.parse(w),
                     habitTargets.resolve(userId).wake(), properties.wakeWindowMin()))
                 .orElse(false);
-            case "weight_logged_before" -> weightLogRepository
+            case "weight_logged_today" -> weightLogRepository
                 .findFirstByCreatedByAndDeletedFalseAndDateOrderByCreatedAtDesc(userId, date)
-                .map(w -> localTime(w.getCreatedAt())
-                    .isBefore(LocalTime.parse(properties.weighInCutoff())))
-                .orElse(false);
-            case "stim_intake_before" -> stimIntakes(userId, date).stream()
-                .anyMatch(t -> t.isBefore(LocalTime.parse(properties.morningWindowEnd())));
+                .isPresent();
+            case "stim_intake_today" -> !stimIntakes(userId, date).isEmpty();
             case "training_done_today" -> {
                 if (!workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()) {
                     yield true;
                 }
-                // Run logs carry created_at, so the wake-anchored cutoff applies here (spec D2);
-                // gym completion stays date-presence (no completed_at — honest fallback).
-                LocalTime cutoff = habitTargets.resolve(userId).wake()
-                    .plusHours(properties.workoutWindowHours());
+                // Run branch is date-presence too since mezo-u6jx — the tick rewards the logged act,
+                // the timing coaching lives in anchorCopy (spec: honest-derivation fix §2).
                 yield runSessionLogRepository
                     .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
                     .stream()
-                    .anyMatch(r -> date.equals(r.getDate())
-                        && localTime(r.getCreatedAt()).isBefore(cutoff));
+                    .anyMatch(r -> date.equals(r.getDate()));
             }
             case "breakfast_protein" -> fuelDayService.getDay(userId, date).getMeals().stream()
                 .filter(m -> "breakfast".equals(m.getSlot()))

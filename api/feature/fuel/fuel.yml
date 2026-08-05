@@ -3,9 +3,17 @@ info: { title: '', version: '' }
 tags:
   - name: Fuel
     description: >
-      Fuel-owned protocol + supplement-intake endpoints. The protocol persists ONLY the selected
-      pantry-item ids + version metadata (ADR/spec 2026-07-02) — timing slots are recomputed by the
-      FE buildProtocol. supplement_intake is an append-only taken-ledger FK-ing pantry_item (ADR 0005).
+      Fuel-owned protocol + supplement-intake endpoints. The protocol is a LIVING set of occurrences
+      (one protocol_item row per pantry-item/zone placement, each carrying its own slotKey/dose/pin
+      state) — there is no whole-selection activate step; occurrences are added/moved/re-dosed/
+      unpinned/removed individually and the engine places a new occurrence's zone when slotKey is
+      omitted (mezo-vx9v). supplement_intake is an append-only taken-ledger FK-ing pantry_item (ADR 0005).
+  - name: FuelSlotPlan
+    description: >
+      Gated LLM "judge my split" evaluate endpoint for the meal-slot template feature (mezo-7102).
+      Own tag so the generated controller interface (FuelSlotPlanApi) is separate from FuelApi —
+      the endpoint is @ConditionalOnProperty-gated independently while FuelController (slot-template
+      CRUD) stays unconditional. Stateless: nothing is persisted, the request is only auth-gated.
 paths:
   /api/fuel/protocol:
     get:
@@ -15,17 +23,46 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolViewResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/protocol/items:
     post:
       tags: [Fuel]
-      operationId: activateProtocol
-      summary: Activate a new protocol version from the current selection (previous active superseded)
+      operationId: addProtocolItem
+      summary: Add an occurrence to the living protocol (engine places it when slotKey omitted)
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolActivateRequest' } } }
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemCreateRequest' } } }
       responses:
-        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolViewResponse' } } } }
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemResponse' } } } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Pantry item not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: Duplicate occurrence in that zone, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/protocol/items/{id}:
+    patch:
+      tags: [Fuel]
+      operationId: patchProtocolItem
+      summary: Move (pin), re-dose or unpin (engine re-places) one occurrence
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemPatchRequest' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolItemResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: Duplicate occurrence in that zone, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Fuel]
+      operationId: deleteProtocolItem
+      summary: Remove one occurrence (soft delete)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/fuel/intake/{date}:
     get:
       tags: [Fuel]
@@ -60,6 +97,51 @@ paths:
         '204': { description: Deleted }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/slot-templates:
+    get:
+      tags: [Fuel]
+      operationId: listSlotTemplates
+      summary: All meal-slot templates of the owner (0-3 rows, one per day type)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SlotTemplateListResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/slot-templates/{dayType}:
+    put:
+      tags: [Fuel]
+      operationId: putSlotTemplate
+      summary: Whole-document upsert of one day type's template
+      parameters:
+        - { name: dayType, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SlotTemplateRequest' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SlotTemplateResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Fuel]
+      operationId: deleteSlotTemplate
+      summary: Delete one day type's template (revert to the automatic recommendation)
+      parameters:
+        - { name: dayType, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/slot-templates/evaluate:
+    post:
+      tags: [FuelSlotPlan]
+      operationId: evaluateSlotPlan
+      summary: Gated LLM judgement of a (draft) slot split against the goal balance + training placement
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SlotPlanEvaluateRequest' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SlotPlanEvaluateResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'AI evaluation unavailable (slot-template-ai/companion switch off)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     ProtocolHistoryEntry:
@@ -71,7 +153,7 @@ components:
         reason: { type: string }
     ProtocolResponse:
       type: object
-      required: [id, version, builtAt, status, selectedPantryItemIds]
+      required: [id, version, builtAt, status, items]
       properties:
         id: { type: string, format: uuid }
         version: { type: integer }
@@ -79,19 +161,39 @@ components:
         status: { type: string, enum: [active, superseded] }
         confidence: { type: number }
         lastReplanReason: { type: string }
-        selectedPantryItemIds: { type: array, items: { type: string, format: uuid } }
+        items: { type: array, items: { $ref: '#/components/schemas/ProtocolItemResponse' } }
+    ProtocolItemResponse:
+      type: object
+      required: [id, pantryItemId, slotKey, pinned, placementSource]
+      properties:
+        id: { type: string, format: uuid }
+        pantryItemId: { type: string, format: uuid }
+        slotKey: { type: string }
+        dose: { type: string }
+        pinned: { type: boolean }
+        placementSource: { type: string, enum: [rule, llm, user, fallback] }
+        placementReason: { type: string }
+        restDayFallback: { type: string, description: "'skip' or a zone key; absent = FE default" }
+        dailyTotalHint: { type: string, description: 'Rule-table daily-total hint (derived, not stored)' }
+    ProtocolItemCreateRequest:
+      type: object
+      required: [pantryItemId]
+      properties:
+        pantryItemId: { type: string, format: uuid }
+        slotKey: { type: string, pattern: '^(wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime)$' }
+        dose: { type: string, maxLength: 60 }
+    ProtocolItemPatchRequest:
+      type: object
+      properties:
+        slotKey: { type: string, pattern: '^(wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime)$' }
+        dose: { type: string, maxLength: 60 }
+        pinned: { type: boolean, description: 'false = unpin, the engine re-places; true only alongside slotKey' }
     ProtocolViewResponse:
       type: object
       required: [history]
       properties:
         active: { $ref: '#/components/schemas/ProtocolResponse' }
         history: { type: array, items: { $ref: '#/components/schemas/ProtocolHistoryEntry' } }
-    ProtocolActivateRequest:
-      type: object
-      required: [selectedPantryItemIds]
-      properties:
-        selectedPantryItemIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
-        reason: { type: string }
     IntakeRequest:
       type: object
       required: [pantryItemId]
@@ -117,3 +219,74 @@ components:
       required: [intakes]
       properties:
         intakes: { type: array, items: { $ref: '#/components/schemas/IntakeResponse' } }
+    SlotTemplateSlot:
+      type: object
+      required: [label, slotKind, role, anchorType, budgetPct]
+      properties:
+        label: { type: string, maxLength: 40 }
+        slotKind: { type: string, pattern: '^(breakfast|lunch|dinner|snack)$' }
+        role: { type: string, pattern: '^(standard|pre_workout|post_workout)$' }
+        anchorType: { type: string, pattern: '^(fixed|wake|training_start|training_end|bed)$' }
+        time: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'Required when anchorType=fixed' }
+        offsetMin: { type: integer, minimum: -720, maximum: 720, description: 'Required for relative anchors, signed' }
+        budgetPct: { type: integer, minimum: 1, maximum: 100 }
+    SlotTemplateRequest:
+      type: object
+      required: [slots]
+      properties:
+        slots: { type: array, items: { $ref: '#/components/schemas/SlotTemplateSlot' }, minItems: 2, maxItems: 8 }
+    SlotTemplateResponse:
+      type: object
+      required: [dayType, slots]
+      properties:
+        dayType: { type: string, enum: [rest, training_am, training_pm] }
+        slots: { type: array, items: { $ref: '#/components/schemas/SlotTemplateSlot' } }
+    SlotTemplateListResponse:
+      type: object
+      required: [templates]
+      properties:
+        templates: { type: array, items: { $ref: '#/components/schemas/SlotTemplateResponse' } }
+    ResolvedSlotTime:
+      type: object
+      required: [label, time]
+      properties:
+        label: { type: string, maxLength: 200 }
+        time: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+    SlotPlanBudget:
+      type: object
+      required: [kcal, p, c, f]
+      properties:
+        kcal: { type: integer }
+        p: { type: integer }
+        c: { type: integer }
+        f: { type: integer }
+    SlotPlanBlock:
+      type: object
+      required: [kind, time]
+      properties:
+        kind: { type: string }
+        time: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        durationMin: { type: integer, nullable: true }
+    SlotPlanSuggestion:
+      type: object
+      required: [text]
+      properties:
+        slotLabel: { type: string, maxLength: 40 }
+        text: { type: string }
+    SlotPlanEvaluateRequest:
+      type: object
+      required: [dayType, slots, budget, balanceKcal]
+      properties:
+        dayType: { type: string, pattern: '^(rest|training_am|training_pm)$' }
+        slots: { type: array, items: { $ref: '#/components/schemas/SlotTemplateSlot' }, minItems: 2, maxItems: 8 }
+        resolvedTimes: { type: array, items: { $ref: '#/components/schemas/ResolvedSlotTime' } }
+        budget: { $ref: '#/components/schemas/SlotPlanBudget' }
+        balanceKcal: { type: integer }
+        blocks: { type: array, items: { $ref: '#/components/schemas/SlotPlanBlock' } }
+    SlotPlanEvaluateResponse:
+      type: object
+      required: [verdict, summary, suggestions]
+      properties:
+        verdict: { type: string, enum: [ok, adjust] }
+        summary: { type: string }
+        suggestions: { type: array, items: { $ref: '#/components/schemas/SlotPlanSuggestion' } }

@@ -7,14 +7,16 @@ import {
   pickRecipe,
   placeWindows,
   splitBudget,
-  PROTOCOL_KIND,
+  splitBudgetPct,
+  ZONE_FUEL_KIND,
   type DayBudget,
   type DayPlanInput,
   type Macro4,
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelPlanToday, MealItemLine, ProtocolSlotData, Recipe } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, MealItemLine, Recipe, SlotTemplate, SlotTemplateRow } from '@/data/types'
+import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
@@ -55,13 +57,26 @@ function recipe(over: Partial<Recipe> & { id: string; category: Recipe['category
     ...over,
   }
 }
-function proto(over: Partial<ProtocolSlotData> & { kind: string; time: string }): ProtocolSlotData {
+function stackEntry(over: Partial<StackDayEntry> & { pantryItemId: string; name: string }): StackDayEntry {
   return {
-    window: 'w',
-    kindColor: '#fff',
-    items: [],
-    reasoning: 'why',
-    primary: false,
+    occurrenceId: `occ-${over.pantryItemId}`,
+    persistedZone: 'wake',
+    dose: null,
+    pinned: false,
+    placementSource: 'rule',
+    reason: null,
+    dailyTotalHint: null,
+    skippedToday: false,
+    displacedToday: false,
+    taken: false,
+    ...over,
+  }
+}
+function stackSlot(over: Partial<StackDaySlot> & { zone: StackDaySlot['zone']; time: string }): StackDaySlot {
+  return {
+    label: 'w',
+    anchorNote: null,
+    entries: [],
     ...over,
   }
 }
@@ -77,7 +92,6 @@ function baseInput(over: Partial<DayPlanInput> = {}): DayPlanInput {
     meals: [],
     recipes: [],
     protocolSlots: [],
-    intakes: [],
     caffeineCutoff: '14:00',
     nowHHmm: '12:00',
     ...over,
@@ -167,6 +181,66 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
   expect(out[1]).toEqual({ kcal: 614, p: 47, c: 65, f: 19 }) // lunch
   expect(out[2]).toEqual({ kcal: 307, p: 23, c: 32, f: 9 }) // snack
   expect(out[3]).toEqual({ kcal: 615, p: 46, c: 64, f: 19 }) // dinner absorbs drift
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
+  }
+})
+
+// ── splitBudgetPct (mezo-7102, template windows) ─────────────────────────────
+const pctWindow = (over: Partial<PlannedWindow> & { budgetPct: number }): PlannedWindow => ({
+  slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, ...over,
+})
+test('splitBudgetPct: an empty windows array returns [] instead of throwing (no largest-pct index to absorb drift into)', () => {
+  const daily: Macro4 = { kcal: 2000, p: 150, c: 200, f: 60 }
+  expect(splitBudgetPct(daily, [])).toEqual([])
+})
+test('splitBudgetPct: all-standard-role windows sum EXACTLY to the daily budget per macro (25/25/25/25)', () => {
+  const windows = [25, 25, 25, 25].map(pct => pctWindow({ budgetPct: pct }))
+  const daily: Macro4 = { kcal: 2000, p: 200, c: 200, f: 100 }
+  const out = splitBudgetPct(daily, windows)
+  // role multipliers are all 1 for 'standard' → this is a straight proportional split (no skew).
+  expect(out).toEqual([
+    { kcal: 500, p: 50, c: 50, f: 25 },
+    { kcal: 500, p: 50, c: 50, f: 25 },
+    { kcal: 500, p: 50, c: 50, f: 25 },
+    { kcal: 500, p: 50, c: 50, f: 25 },
+  ])
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
+  }
+})
+test('splitBudgetPct: rounding drift is absorbed by the LARGEST-pct window, not the first one', () => {
+  // pct [20, 50, 30] — index 1 is the largest pct, and must absorb the drift even though it is
+  // neither first nor last. f: 0.2·13=2.6→3, 0.5·13=6.5→7, 0.3·13=3.9→4 naive sum=14 ≠ 13.
+  const windows = [
+    pctWindow({ budgetPct: 20, label: 'A' }),
+    pctWindow({ budgetPct: 50, label: 'B' }),
+    pctWindow({ budgetPct: 30, label: 'C' }),
+  ]
+  const daily: Macro4 = { kcal: 1000, p: 100, c: 100, f: 13 }
+  const out = splitBudgetPct(daily, windows)
+  expect(out).toEqual([
+    { kcal: 200, p: 20, c: 20, f: 3 },
+    { kcal: 500, p: 50, c: 50, f: 6 }, // absorbs the -1 drift (naive round would be 7)
+    { kcal: 300, p: 30, c: 30, f: 4 },
+  ])
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
+  }
+})
+test('splitBudgetPct: a pre_workout slot gets more carbs and less protein/fat than a standard slot at the same pct', () => {
+  const windows: PlannedWindow[] = [
+    pctWindow({ budgetPct: 50, role: 'standard', label: 'Standard' }),
+    pctWindow({ budgetPct: 50, role: 'pre_workout', label: 'PreWorkout' }),
+  ]
+  const daily: Macro4 = { kcal: 2000, p: 150, c: 200, f: 60 }
+  const out = splitBudgetPct(daily, windows)
+  const [standard, preWorkout] = out
+  expect(preWorkout.c).toBeGreaterThan(standard.c)
+  expect(preWorkout.p).toBeLessThan(standard.p)
+  expect(preWorkout.f).toBeLessThan(standard.f)
+  expect(standard).toEqual({ kcal: 1000, p: 100, c: 77, f: 43 })
+  expect(preWorkout).toEqual({ kcal: 1000, p: 50, c: 123, f: 17 })
   for (const k of ['kcal', 'p', 'c', 'f'] as const) {
     expect(out.reduce((s, b) => s + b[k], 0)).toBe(daily[k])
   }
@@ -332,20 +406,154 @@ test('done meal/snack slots carry the FULL logged-meal totals — nothing logged
   expect({ kcal: sum('kcal'), p: sum('p'), c: sum('c'), f: sum('f') }).toEqual(expected)
 })
 
-// ── protocol + intake pips ───────────────────────────────────────────────────
-test('protocol slots map kinds onto FuelKind and set item done-state from intakes', () => {
-  expect(PROTOCOL_KIND).toMatchObject({ morning: 'wake', 'pre-fuel': 'snack', 'pre-workout': 'preworkout', 'fat-bound': 'midday', evening: 'evening' })
-  const p = proto({
-    kind: 'evening',
+// ── buildDayPlan template branch (mezo-7102) ─────────────────────────────────
+const templateRow = (over: Partial<SlotTemplateRow> & { label: string; anchor: SlotTemplateRow['anchor'] }): SlotTemplateRow => ({
+  slotKind: 'lunch', role: 'standard', budgetPct: 50, ...over,
+})
+const twoLunchTemplate: SlotTemplate = {
+  dayType: 'rest',
+  slots: [
+    templateRow({ label: 'Ebéd 1', anchor: { type: 'fixed', time: '12:00' } }),
+    templateRow({ label: 'Ebéd 2', anchor: { type: 'fixed', time: '15:00' } }),
+  ],
+}
+test('buildDayPlan with a template: un-logged windows carry the template labels, fixed times and slotKey', () => {
+  const plan = buildDayPlan(baseInput({ template: twoLunchTemplate, meals: [] }))
+  const ebed1 = plan.slots.find(s => s.label === 'Ebéd 1')!
+  const ebed2 = plan.slots.find(s => s.label === 'Ebéd 2')!
+  expect(ebed1).toMatchObject({ time: '12:00', slotKey: 'lunch' })
+  expect(ebed2).toMatchObject({ time: '15:00', slotKey: 'lunch' })
+})
+test('buildDayPlan with a template: two logged lunch meals fill the two lunch windows in loggedAt order', () => {
+  const early = meal({ id: 'lunch-early', slot: 'lunch', title: 'Korai ebéd', loggedAt: '2026-07-02T11:50:00' })
+  const late = meal({ id: 'lunch-late', slot: 'lunch', title: 'Kései ebéd', loggedAt: '2026-07-02T15:10:00' })
+  // Deliberately out of order in the input array — the cursor logic sorts by loggedAt (existing
+  // behavior, pinned here for the template path).
+  const plan = buildDayPlan(baseInput({ template: twoLunchTemplate, meals: [late, early] }))
+  const ebed1 = plan.slots.find(s => s.label === 'Ebéd 1')!
+  const ebed2 = plan.slots.find(s => s.label === 'Ebéd 2')!
+  expect(ebed1).toMatchObject({ state: 'done', mealId: 'lunch-early' }) // earliest loggedAt fills the FIRST (by time) window
+  expect(ebed2).toMatchObject({ state: 'done', mealId: 'lunch-late' })
+})
+test('buildDayPlan: template absent/null is a zero-regression pin — output DEEP-EQUALS the no-template path', () => {
+  const plainInput = baseInput({ meals: [meal({ id: 'm1', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00' })] })
+  const withoutTemplate = buildDayPlan(plainInput)
+  const withNullTemplate = buildDayPlan({ ...plainInput, template: null })
+  expect(withNullTemplate).toEqual(withoutTemplate)
+  expect(plainInput.template).toBeUndefined() // baseInput never sets template — absent is the default
+})
+test('buildDayPlan: a template whose every row is training-anchored, on a blockless day, never crashes — empty meal windows', () => {
+  // Every row anchors to training_start/training_end; with `blocks: []` compileTemplate defensively
+  // drops all of them (nothing to resolve against) → windows = [] flows into splitBudgetPct, which
+  // must not throw (the guard fixed here) — the day still renders (protocol/block slots, top fields).
+  const allTrainingAnchored: SlotTemplate = {
+    dayType: 'training_am',
+    slots: [
+      templateRow({ label: 'Pre', slotKind: 'snack', anchor: { type: 'training_start', offsetMin: -45 } }),
+      templateRow({ label: 'Post', slotKind: 'lunch', anchor: { type: 'training_end', offsetMin: 30 } }),
+    ],
+  }
+  expect(() => buildDayPlan(baseInput({ template: allTrainingAnchored, blocks: [], meals: [] }))).not.toThrow()
+  const plan = buildDayPlan(baseInput({ template: allTrainingAnchored, blocks: [], meals: [] }))
+  expect(plan.slots.filter(s => s.slotKey)).toEqual([]) // no meal/snack windows at all
+})
+
+// ── midnight-crossing template axis (mezo-9rtw) ──────────────────────────────
+// Repro from the mezo-7102 final review: wake 07:00 / bed 03:00 (crosses midnight) with a template
+// producing Ebéd 13:00, Vacsora 20:00 and a bed−120 "Késői snack" that lands at 01:00 wall-clock —
+// a time legitimately BEFORE wake on the raw HH:mm axis but AFTER the evening on the real day.
+// Pre-fix, step 7 sorted by raw minutes (01:00 = 60 landed FIRST) and step 6 classified it 'missed'
+// hours before it was even scheduled. Both must resolve on the unwrapped wake→bed axis instead.
+test('buildDayPlan with a template on a NON-crossing day: unwrap is the identity — order/state match the pre-fix (raw-axis) expectations exactly', () => {
+  // This is the non-crossing regression pin (mezo-9rtw): on a normal day `unwrap` is the identity,
+  // so the sort/state machine must still produce exactly what the raw-minute axis always produced.
+  const plan = buildDayPlan(baseInput({ template: twoLunchTemplate, meals: [], nowHHmm: '13:30' }))
+  const named = plan.slots.filter(s => s.label === 'Ebéd 1' || s.label === 'Ebéd 2')
+  expect(named.map(s => s.time)).toEqual(['12:00', '15:00'])
+  // 13:30 is at/before Ebéd 1 (12:00) but not Ebéd 2 (15:00) → Ebéd 1 is "now", Ebéd 2 "pending".
+  expect(named.map(s => s.state)).toEqual(['now', 'pending'])
+})
+
+describe('midnight-crossing template axis (mezo-9rtw)', () => {
+  const midnightTemplate: SlotTemplate = {
+    dayType: 'rest',
+    slots: [
+      templateRow({ label: 'Ebéd', slotKind: 'lunch', anchor: { type: 'fixed', time: '13:00' }, budgetPct: 45 }),
+      templateRow({ label: 'Vacsora', slotKind: 'dinner', anchor: { type: 'fixed', time: '20:00' }, budgetPct: 40 }),
+      templateRow({ label: 'Késői snack', slotKind: 'snack', anchor: { type: 'bed', offsetMin: -120 }, budgetPct: 15 }),
+    ],
+  }
+  const crossingInput = (nowHHmm: string) =>
+    baseInput({ wake: '07:00', bed: '03:00', template: midnightTemplate, meals: [], blocks: [], nowHHmm })
+  const namedSlots = (plan: FuelPlanToday) => plan.slots.filter(s => ['Ebéd', 'Vacsora', 'Késői snack'].includes(s.label))
+
+  test('nowHHmm 12:00: the 01:00 late slot sorts LAST and is "pending" (not "missed"); 13:00 is "now"', () => {
+    const plan = buildDayPlan(crossingInput('12:00'))
+    const named = namedSlots(plan)
+    // Sort order on the unwrapped axis: 13:00 (780) < 20:00 (1200) < 01:00 (1500, unwrapped) — the
+    // 01:00 slot sorts LAST despite its raw minute-of-day (60) being the smallest of the three.
+    expect(named.map(s => s.label)).toEqual(['Ebéd', 'Vacsora', 'Késői snack'])
+    expect(named.map(s => s.time)).toEqual(['13:00', '20:00', '01:00'])
+    // now=12:00 precedes every unwrapped window (780/1200/1500 all > 720) → earliest (Ebéd) is "now".
+    expect(named.map(s => s.state)).toEqual(['now', 'pending', 'pending'])
+  })
+
+  test('nowHHmm 00:30 (unwrapped past-midnight, still before bed 03:00): Vacsora is "now", Ebéd "missed", Késői snack stays "pending"', () => {
+    const plan = buildDayPlan(crossingInput('00:30'))
+    const named = namedSlots(plan)
+    // unwrappedNow = 1470 (00:30 is before wake → +1440). Latest unlogged window at/before 1470
+    // among {780, 1200, 1500} is 1200 (Vacsora) → Vacsora "now"; Ebéd (780 < 1470) "missed";
+    // Késői snack (1500 > 1470) "pending".
+    expect(named.map(s => s.label)).toEqual(['Ebéd', 'Vacsora', 'Késői snack'])
+    expect(named.map(s => s.state)).toEqual(['missed', 'now', 'pending'])
+  })
+})
+
+// ── protocol (stack-day) zones ───────────────────────────────────────────────
+test('protocol slots map zones onto FuelKind and carry done-state straight from the entry\'s `taken`', () => {
+  expect(ZONE_FUEL_KIND).toMatchObject({
+    wake: 'wake', breakfast: 'snack', pre_workout: 'preworkout', post_workout: 'snack',
+    lunch: 'midday', dinner: 'evening', evening: 'evening', bedtime: 'evening',
+  })
+  const slot = stackSlot({
+    zone: 'evening',
     time: '21:00',
-    items: [
-      { refId: 'mg', name: 'Magnézium', dose: '300mg', color: '#f' },
-      { refId: 'omega', name: 'Omega-3', dose: '2g', color: '#f' },
+    label: 'Este',
+    entries: [
+      stackEntry({ pantryItemId: 'mg', name: 'Magnézium', dose: '300mg', taken: true }),
+      stackEntry({ pantryItemId: 'omega', name: 'Omega-3', dose: '2g', taken: false }),
     ],
   })
-  const plan = buildDayPlan(baseInput({ protocolSlots: [p], intakes: [{ id: 'i1', pantryItemId: 'mg', takenAt: 'x', dose: null, slotKey: null }] }))
-  const slot = plan.slots.find(s => s.kind === 'evening')!
-  expect(slot.items!.map(it => it.done)).toEqual([true, false]) // mg taken, omega not
+  const plan = buildDayPlan(baseInput({ protocolSlots: [slot] }))
+  const found = plan.slots.find(s => s.kind === 'evening')!
+  expect(found.label).toBe('Este stack')
+  expect(found.items!.map(it => it.done)).toEqual([true, false]) // mg taken, omega not
+})
+test('a protocol slot with a skipped entry drops that item from the rendered stack card', () => {
+  const slot = stackSlot({
+    zone: 'evening',
+    time: '21:00',
+    label: 'Este',
+    entries: [
+      stackEntry({ pantryItemId: 'mg', name: 'Magnézium', taken: true }),
+      stackEntry({ pantryItemId: 'pwo', name: 'PWO', skippedToday: true }),
+    ],
+  })
+  const plan = buildDayPlan(baseInput({ protocolSlots: [slot] }))
+  const found = plan.slots.find(s => s.kind === 'evening')!
+  expect(found.items).toHaveLength(1) // the skipped entry never renders as an item pip
+  expect(found.items![0].label).toContain('Magnézium')
+})
+test('a protocol slot whose entries are ALL skipped is dropped entirely — never an empty stack card', () => {
+  const slot = stackSlot({
+    zone: 'breakfast',
+    time: '06:20',
+    label: 'Reggeli',
+    entries: [stackEntry({ pantryItemId: 'pwo', name: 'PWO', skippedToday: true })],
+  })
+  const plan = baseInput({ protocolSlots: [slot] })
+  const built = buildDayPlan(plan)
+  expect(built.slots.some(s => s.label === 'Reggeli stack')).toBe(false)
 })
 
 // ── blocks render as workout/sport slots ─────────────────────────────────────
@@ -393,7 +601,7 @@ test('a gym block with unknown duration reports end "—" / duration 0 in the to
 //  classifies each window's state, it never moves a window. See the fixed-plan state tests below.)
 describe('slot identity + determinism (mezo-53su)', () => {
   // Baseline inputs used across the cases: wake 06:00, bed 23:00 -> eatingStart 06:45, kitchenClose 21:30.
-  const base = { wake: '06:00', bed: '23:00', mealsPerDay: 4, blocks: [], budget: NO_BUDGET, meals: [], recipes: [], protocolSlots: [], intakes: [], caffeineCutoff: '14:00' }
+  const base = { wake: '06:00', bed: '23:00', mealsPerDay: 4, blocks: [], budget: NO_BUDGET, meals: [], recipes: [], protocolSlots: [], caffeineCutoff: '14:00' }
 
   it('meal slots carry their slotKey; block slots do not', () => {
     const plan = buildDayPlan({ ...base, blocks: [{ kind: 'gym', label: 'Pull', time: '07:30', durationMin: 60 }], nowHHmm: '06:00' })

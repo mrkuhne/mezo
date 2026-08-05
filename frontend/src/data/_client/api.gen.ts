@@ -1266,12 +1266,46 @@ export interface paths {
         /** The active protocol + version history (active absent when none exists — honest-empty) */
         get: operations["getProtocol"];
         put?: never;
-        /** Activate a new protocol version from the current selection (previous active superseded) */
-        post: operations["activateProtocol"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/protocol/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an occurrence to the living protocol (engine places it when slotKey omitted) */
+        post: operations["addProtocolItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/protocol/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one occurrence (soft delete) */
+        delete: operations["deleteProtocolItem"];
+        options?: never;
+        head?: never;
+        /** Move (pin), re-dose or unpin (engine re-places) one occurrence */
+        patch: operations["patchProtocolItem"];
         trace?: never;
     };
     "/api/fuel/intake/{date}": {
@@ -1320,6 +1354,58 @@ export interface paths {
         post?: never;
         /** Soft-delete an intake entry (undo a mis-tap) */
         delete: operations["deleteIntake"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/slot-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All meal-slot templates of the owner (0-3 rows, one per day type) */
+        get: operations["listSlotTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/slot-templates/{dayType}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Whole-document upsert of one day type's template */
+        put: operations["putSlotTemplate"];
+        post?: never;
+        /** Delete one day type's template (revert to the automatic recommendation) */
+        delete: operations["deleteSlotTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/slot-templates/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gated LLM judgement of a (draft) slot split against the goal balance + training placement */
+        post: operations["evaluateSlotPlan"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1900,6 +1986,104 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/habit/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Full catalog for the editor — chains with their defs, inactive included */
+        get: operations["getHabitCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/chain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createHabitChain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/chain/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteHabitChain"];
+        options?: never;
+        head?: never;
+        patch: operations["updateHabitChain"];
+        trace?: never;
+    };
+    "/api/habit/chain/{id}/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Full-order replacement of the chain's def positions */
+        put: operations["reorderHabitChain"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/def": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createHabitDef"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/def/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteHabitDef"];
+        options?: never;
+        head?: never;
+        patch: operations["updateHabitDef"];
         trace?: never;
     };
     "/api/intention/day/{date}": {
@@ -4092,15 +4276,39 @@ export interface components {
             status: "active" | "superseded";
             confidence?: number;
             lastReplanReason?: string;
-            selectedPantryItemIds: string[];
+            items: components["schemas"]["ProtocolItemResponse"][];
+        };
+        ProtocolItemResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            pantryItemId: string;
+            slotKey: string;
+            dose?: string;
+            pinned: boolean;
+            /** @enum {string} */
+            placementSource: "rule" | "llm" | "user" | "fallback";
+            placementReason?: string;
+            /** @description 'skip' or a zone key; absent = FE default */
+            restDayFallback?: string;
+            /** @description Rule-table daily-total hint (derived, not stored) */
+            dailyTotalHint?: string;
+        };
+        ProtocolItemCreateRequest: {
+            /** Format: uuid */
+            pantryItemId: string;
+            slotKey?: string;
+            dose?: string;
+        };
+        ProtocolItemPatchRequest: {
+            slotKey?: string;
+            dose?: string;
+            /** @description false = unpin, the engine re-places; true only alongside slotKey */
+            pinned?: boolean;
         };
         ProtocolViewResponse: {
             active?: components["schemas"]["ProtocolResponse"];
             history: components["schemas"]["ProtocolHistoryEntry"][];
-        };
-        ProtocolActivateRequest: {
-            selectedPantryItemIds: string[];
-            reason?: string;
         };
         IntakeRequest: {
             /** Format: uuid */
@@ -4130,6 +4338,61 @@ export interface components {
         };
         IntakeListResponse: {
             intakes: components["schemas"]["IntakeResponse"][];
+        };
+        SlotTemplateSlot: {
+            label: string;
+            slotKind: string;
+            role: string;
+            anchorType: string;
+            /** @description Required when anchorType=fixed */
+            time?: string;
+            /** @description Required for relative anchors, signed */
+            offsetMin?: number;
+            budgetPct: number;
+        };
+        SlotTemplateRequest: {
+            slots: components["schemas"]["SlotTemplateSlot"][];
+        };
+        SlotTemplateResponse: {
+            /** @enum {string} */
+            dayType: "rest" | "training_am" | "training_pm";
+            slots: components["schemas"]["SlotTemplateSlot"][];
+        };
+        SlotTemplateListResponse: {
+            templates: components["schemas"]["SlotTemplateResponse"][];
+        };
+        ResolvedSlotTime: {
+            label: string;
+            time: string;
+        };
+        SlotPlanBudget: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        SlotPlanBlock: {
+            kind: string;
+            time: string;
+            durationMin?: number | null;
+        };
+        SlotPlanSuggestion: {
+            slotLabel?: string;
+            text: string;
+        };
+        SlotPlanEvaluateRequest: {
+            dayType: string;
+            slots: components["schemas"]["SlotTemplateSlot"][];
+            resolvedTimes?: components["schemas"]["ResolvedSlotTime"][];
+            budget: components["schemas"]["SlotPlanBudget"];
+            balanceKcal: number;
+            blocks?: components["schemas"]["SlotPlanBlock"][];
+        };
+        SlotPlanEvaluateResponse: {
+            /** @enum {string} */
+            verdict: "ok" | "adjust";
+            summary: string;
+            suggestions: components["schemas"]["SlotPlanSuggestion"][];
         };
         ConversationResponse: {
             /** Format: uuid */
@@ -4566,8 +4829,8 @@ export interface components {
             /** Format: uuid */
             id?: string;
             key: string;
-            /** @enum {string} */
-            chain: "MORNING" | "EVENING";
+            /** @description Chain key (seed chains: MORNING / EVENING) */
+            chain: string;
             position: number;
             title: string;
             why: string;
@@ -4608,6 +4871,77 @@ export interface components {
             perfectMorningDays30: number;
             perfectEveningDays30: number;
             habits: components["schemas"]["HabitStrength"][];
+        };
+        HabitChainAdmin: {
+            /** Format: uuid */
+            id: string;
+            chainKey: string;
+            title: string;
+            /** @enum {string} */
+            daypart: "MORNING" | "DAY" | "EVENING";
+            position: number;
+            isActive: boolean;
+            defs: components["schemas"]["HabitDefAdmin"][];
+        };
+        HabitDefAdmin: {
+            /** Format: uuid */
+            id: string;
+            habitKey: string;
+            chainKey: string;
+            position: number;
+            title: string;
+            why?: string | null;
+            anchorCopy?: string | null;
+            /** @enum {string} */
+            mode: "DERIVED" | "MANUAL";
+            metric: string;
+            skillKey: string;
+            xp: number;
+            linkUrl?: string | null;
+            isActive: boolean;
+        };
+        HabitCatalogResponse: {
+            chains: components["schemas"]["HabitChainAdmin"][];
+        };
+        HabitChainCreateRequest: {
+            title: string;
+            /** @enum {string} */
+            daypart: "MORNING" | "DAY" | "EVENING";
+        };
+        HabitChainUpdateRequest: {
+            title?: string;
+            /** @enum {string} */
+            daypart?: "MORNING" | "DAY" | "EVENING";
+            position?: number;
+            isActive?: boolean;
+        };
+        HabitDefCreateRequest: {
+            chainKey: string;
+            title: string;
+            why?: string | null;
+            anchorCopy?: string | null;
+            /** @enum {string} */
+            mode: "DERIVED" | "MANUAL";
+            /** @description Required for DERIVED; ignored for MANUAL (forced to "manual") */
+            metric?: string;
+            skillKey: string;
+            xp: number;
+            linkUrl?: string | null;
+            /** @description Defaults to end of chain */
+            position?: number;
+        };
+        HabitDefUpdateRequest: {
+            title?: string;
+            why?: string | null;
+            anchorCopy?: string | null;
+            chainKey?: string;
+            position?: number;
+            xp?: number;
+            linkUrl?: string | null;
+            isActive?: boolean;
+        };
+        HabitReorderRequest: {
+            defIds: string[];
         };
         IntentionFocusResponse: {
             /** Format: uuid */
@@ -8900,7 +9234,7 @@ export interface operations {
             };
         };
     };
-    activateProtocol: {
+    addProtocolItem: {
         parameters: {
             query?: never;
             header?: never;
@@ -8909,7 +9243,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProtocolActivateRequest"];
+                "application/json": components["schemas"]["ProtocolItemCreateRequest"];
             };
         };
         responses: {
@@ -8919,7 +9253,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProtocolViewResponse"];
+                    "application/json": components["schemas"]["ProtocolItemResponse"];
                 };
             };
             /** @description Validation error */
@@ -8933,6 +9267,124 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Pantry item not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Duplicate occurrence in that zone */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteProtocolItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    patchProtocolItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolItemPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtocolItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Duplicate occurrence in that zone */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9053,6 +9505,168 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listSlotTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTemplateListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putSlotTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dayType: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTemplateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteSlotTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dayType: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    evaluateSlotPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotPlanEvaluateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotPlanEvaluateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description AI evaluation unavailable (slot-template-ai/companion switch off) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10470,6 +11084,192 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getHabitCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The catalog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitCatalogResponse"];
+                };
+            };
+        };
+    };
+    createHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitChainCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description The created chain */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+        };
+    };
+    deleteHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Soft-deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitChainUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated chain */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+        };
+    };
+    reorderHabitChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description The chain with defs in the new order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+        };
+    };
+    createHabitDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitDefCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description The created def */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitDefAdmin"];
+                };
+            };
+        };
+    };
+    deleteHabitDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Soft-deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateHabitDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitDefUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated def */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitDefAdmin"];
                 };
             };
         };

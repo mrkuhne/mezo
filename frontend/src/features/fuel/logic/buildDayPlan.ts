@@ -22,22 +22,28 @@ import {
   POST_WORKOUT_SNAP_MIN,
   PRE_WORKOUT_SNAP_MIN,
   RECIPE_FIT_TOLERANCE,
+  ROLE_MACRO_MULTIPLIERS,
   SLOT_WEIGHT,
+  daySpan,
   toHHmm,
   toMin,
+  unwrapDayMinute,
 } from '@/data/fuel/fuelConfig'
+import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
-import type { Intake } from '@/data/fuel/fuelApi'
 import type {
   FuelKind,
   FuelMeal,
   FuelPlanToday,
   FuelSlot,
   MacroSet,
-  ProtocolSlotData,
   Recipe,
+  RecipeRole,
   SlotItem,
+  SlotTemplate,
+  StackZoneKey,
 } from '@/data/types'
+import type { StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 
 // ── Public interfaces ────────────────────────────────────────────────────────
 export interface PlannerBlock {
@@ -56,10 +62,12 @@ export interface DayPlanInput {
   budget: DayBudget
   meals: FuelMeal[]
   recipes: Recipe[]
-  protocolSlots: ProtocolSlotData[]
-  intakes: Intake[]
+  protocolSlots: StackDaySlot[]
   caffeineCutoff: string
   nowHHmm: string
+  /** A per-day-type slot template (mezo-7102) — when present, windows come from `compileTemplate`
+   *  + `splitBudgetPct` instead of `placeWindows` + `splitBudget`. Absent/null keeps today's behavior. */
+  template?: SlotTemplate | null
 }
 
 export type SlotKey = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -77,6 +85,11 @@ export interface PlannedWindow {
   label: string
   time: number
   weight: number
+  /** Set only by `compileTemplate` (mezo-7102) — the row's fixed budget share; `placeWindows`
+   *  leaves it undefined (its `weight` is the live signal there). */
+  budgetPct?: number
+  /** Set only by `compileTemplate` (mezo-7102) — carries the template row's recipe role through. */
+  role?: RecipeRole
 }
 
 const MACRO_KEYS: (keyof Macro4)[] = ['kcal', 'p', 'c', 'f']
@@ -239,8 +252,38 @@ export function splitBudget(budget: Macro4, windows: PlannedWindow[]): Macro4[] 
   return out
 }
 
+// ── splitBudgetPct ───────────────────────────────────────────────────────────
+// Template windows (mezo-7102) carry an explicit `budgetPct` (and a recipe `role`) instead of a
+// live `weight` — kcal splits straight by pct; P/C/F split by pct × the row's ROLE_MACRO_MULTIPLIERS,
+// then each macro COLUMN is renormalized so it still sums to the daily budget. Rounding drift is
+// absorbed by the largest-pct window (the `placeWindows`/`splitBudget` dinner-absorbs principle,
+// generalized: dinner is usually the biggest slot, but a template's biggest slot may be any row).
+export function splitBudgetPct(budget: Macro4, windows: PlannedWindow[]): Macro4[] {
+  // A template's rows can ALL be training-anchored and get defensively dropped by compileTemplate
+  // on a blockless day (or a cached mock-mode template can carry `slots: []`) — no window means no
+  // largest-pct index to absorb drift into, so bail before that reduce ever runs.
+  if (!windows.length) return []
+  const totalPct = windows.reduce((s, w) => s + (w.budgetPct ?? 0), 0) || 1
+  const share = (w: PlannedWindow) => (w.budgetPct ?? 0) / totalPct
+  // kcal: straight pct
+  const out = windows.map(w => ({ kcal: Math.round(budget.kcal * share(w)), p: 0, c: 0, f: 0 }) as Macro4)
+  // p/c/f: pct share × role multiplier, then normalize the column so Σ === budget[k]
+  for (const k of ['p', 'c', 'f'] as const) {
+    const raw = windows.map(w => share(w) * (ROLE_MACRO_MULTIPLIERS[w.role ?? 'standard'][k]))
+    const rawSum = raw.reduce((s, x) => s + x, 0) || 1
+    windows.forEach((_, i) => { out[i][k] = Math.round((budget[k] * raw[i]) / rawSum) })
+  }
+  // absorb drift per macro into the largest-pct slot (the dinner-absorbs principle)
+  const bigIdx = windows.reduce((bi, w, i) => ((w.budgetPct ?? 0) > (windows[bi].budgetPct ?? 0) ? i : bi), 0)
+  for (const k of ['kcal', 'p', 'c', 'f'] as const) {
+    const sum = out.reduce((s, b) => s + b[k], 0)
+    out[bigIdx][k] += budget[k] - sum
+  }
+  return out
+}
+
 // ── recipe fit ───────────────────────────────────────────────────────────────
-function perServing(r: Recipe): Macro4 {
+export function perServing(r: Recipe): Macro4 {
   const s = r.servings || 1
   return { kcal: r.macros.kcal / s, p: r.macros.p / s, c: r.macros.c / s, f: r.macros.f / s }
 }
@@ -263,20 +306,16 @@ export function pickRecipe(category: SlotKey, budget: Macro4, recipes: Recipe[])
 }
 
 // ── protocol slot mapping ────────────────────────────────────────────────────
-/** `ProtocolSlotData.kind` (from buildProtocol) → `FuelKind`. */
-export const PROTOCOL_KIND: Record<string, FuelKind> = {
-  morning: 'wake',
-  'pre-fuel': 'snack',
-  'pre-workout': 'preworkout',
-  'fat-bound': 'midday',
+/** `StackDaySlot.zone` (from `projectStackDay`) → `FuelKind`. */
+export const ZONE_FUEL_KIND: Record<StackZoneKey, FuelKind> = {
+  wake: 'wake',
+  breakfast: 'snack',
+  pre_workout: 'preworkout',
+  post_workout: 'snack',
+  lunch: 'midday',
+  dinner: 'evening',
   evening: 'evening',
-}
-const PROTOCOL_LABEL: Partial<Record<FuelKind, string>> = {
-  wake: 'Ébresztő',
-  snack: 'Pre-workout snack',
-  preworkout: 'Pre-workout stack',
-  midday: 'Délutáni stack',
-  evening: 'Esti stack',
+  bedtime: 'evening',
 }
 
 /** Local wall-clock 'HH:mm' from a logged-at instant. Parsed via `new Date` so a UTC-serialized
@@ -291,14 +330,23 @@ function hhmmFromLoggedAt(iso: string, fallback: string): string {
 
 // ── buildDayPlan ─────────────────────────────────────────────────────────────
 export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
-  const { wake, bed, mealsPerDay, blocks, budget, meals, recipes, protocolSlots, intakes, nowHHmm } = input
-  const now = toMin(nowHHmm)
+  const { wake, bed, mealsPerDay, blocks, budget, meals, recipes, protocolSlots, nowHHmm } = input
+  // Midnight-crossing axis (mezo-9rtw): steps 5-7 classify/sort on the SAME unwrapped wake→bed axis
+  // `compileTemplate`/`dayZones` already use — a template (mezo-7102) can legitimately emit a
+  // wall-clock time past midnight (e.g. a "Késői snack" at 01:00 on a wake-07:00/bed-03:00 day),
+  // and comparing raw HH:mm minutes would misclassify/mis-sort it hours early. `unwrap` is the
+  // identity function on a non-crossing day, so this is a no-op there (byte-identical output).
+  const span = daySpan(wake, bed)
+  const unwrap = (hhmm: string) => unwrapDayMinute(hhmm, span.wakeMin, span.crossesMidnight)
+  const unwrappedNow = unwrap(nowHHmm)
   const kitchenCloseMin = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
-  const intakeRefs = new Set(intakes.map(i => i.pantryItemId))
 
-  // 1. Windows + per-slot budgets.
-  const windows = placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
-  const budgets = splitBudget(budget, windows)
+  // 1. Windows + per-slot budgets. A template (mezo-7102) replaces the live placement/weight split
+  //    with a replayed anchor plan + its explicit pct split; absent/null keeps today's behavior.
+  const windows = input.template
+    ? compileTemplate(input.template, { wake, bed, blocks })
+    : placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
+  const budgets = input.template ? splitBudgetPct(budget, windows) : splitBudget(budget, windows)
 
   // 2. Logged meals grouped by slotKey, each group sorted by loggedAt (multi-snack fills in time order).
   const loggedByKey: Record<SlotKey, FuelMeal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
@@ -375,36 +423,42 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     }
   }
 
-  // 4. Supplement (protocol) slots — item pips done via intakes; slot done when every item taken.
-  const protoSlots: FuelSlot[] = protocolSlots.map(p => {
-    const kind = PROTOCOL_KIND[p.kind] ?? 'midday'
-    const items: SlotItem[] = p.items.map(it => ({
-      type: 'supplement',
-      refId: it.refId,
-      label: it.dose ? `${it.name} · ${it.dose}` : it.name,
-      done: intakeRefs.has(it.refId),
-      primary: p.primary || undefined,
-    }))
-    const done = items.length > 0 && items.every(it => it.done)
-    return {
-      time: p.time,
-      kind,
-      label: PROTOCOL_LABEL[kind] ?? p.window,
-      state: done ? 'done' : 'pending',
-      items,
-      mezoNote: p.reasoning,
-      windowTip: p.relatedTo,
-    }
-  })
+  // 4. Supplement (protocol) slots — item done-state arrives straight from `projectStackDay`'s
+  //    per-occurrence `taken`; a rest-day-skipped entry is dropped from the slot, and a zone left
+  //    with zero (all-skipped) entries never renders as an empty stack card.
+  const protoSlots: FuelSlot[] = protocolSlots
+    .map((s): FuelSlot => {
+      const items: SlotItem[] = s.entries.filter(e => !e.skippedToday).map(e => ({
+        type: 'supplement',
+        refId: e.pantryItemId,
+        label: e.dose ? `${e.name} · ${e.dose}` : e.name,
+        done: e.taken,
+      }))
+      const done = items.length > 0 && items.every(it => it.done)
+      return {
+        time: s.time,
+        kind: ZONE_FUEL_KIND[s.zone],
+        label: `${s.label} stack`,
+        state: done ? 'done' : 'pending',
+        items,
+        mezoNote: s.entries.find(e => e.reason)?.reason ?? undefined,
+        windowTip: s.anchorNote ?? undefined,
+      }
+    })
+    .filter(s => s.items!.length > 0)
 
   // 5. Training block slots — gym → workout, sport/run → sport; done once (start+duration) has passed.
+  //    Evaluated on the unwrapped axis (mezo-9rtw) for consistency with steps 6/7: blocks come from
+  //    real schedules and don't wrap today, so on a non-crossing day `unwrap` is the identity and
+  //    this is byte-identical to the old raw comparison.
   const blockSlots: FuelSlot[] = blocks.map(b => {
-    const end = toMin(b.time) + (b.durationMin ?? DEFAULT_BLOCK_MIN)
+    const start = unwrap(b.time)
+    const end = start + (b.durationMin ?? DEFAULT_BLOCK_MIN)
     return {
       time: b.time,
       kind: b.kind === 'gym' ? 'workout' : 'sport',
       label: b.label,
-      state: end <= now ? 'done' : 'pending',
+      state: end <= unwrappedNow ? 'done' : 'pending',
       duration: b.durationMin ?? undefined,
     }
   })
@@ -415,20 +469,23 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //    past bedtime the eating day is over → no "now", every unlogged window is "missed". (The gate
   //    is bedtime, NOT the 90-min kitchen-planning cutoff: the last window stays "now" until sleep.)
   //    Block slots (end ≤ now → done) and protocol slots keep their own state — no global now-flag.
+  //    Classification runs on the unwrapped axis (mezo-9rtw) — see the header note above.
   const unlogged = mealSlots.map((_, i) => i).filter(i => mealSlots[i].state !== 'done')
   let nowWin = -1
-  if (now <= toMin(bed) && unlogged.length) {
-    for (const i of unlogged) if (toMin(mealSlots[i].time) <= now) nowWin = i
+  if (unwrappedNow <= span.bedMin && unlogged.length) {
+    for (const i of unlogged) if (unwrap(mealSlots[i].time) <= unwrappedNow) nowWin = i
     if (nowWin === -1) nowWin = unlogged[0] // now precedes all meals → first is current
   }
-  const nowTime = nowWin >= 0 ? toMin(mealSlots[nowWin].time) : now
+  const nowTime = nowWin >= 0 ? unwrap(mealSlots[nowWin].time) : unwrappedNow
   for (const i of unlogged) {
     if (i === nowWin) mealSlots[i].state = 'now'
-    else mealSlots[i].state = toMin(mealSlots[i].time) < nowTime ? 'missed' : 'pending'
+    else mealSlots[i].state = unwrap(mealSlots[i].time) < nowTime ? 'missed' : 'pending'
   }
 
-  // 7. Merge + sort. Extra logged meals join the sort like any other slot (they are 'done').
-  const slots = [...mealSlots, ...extraSlots, ...protoSlots, ...blockSlots].sort((a, z) => toMin(a.time) - toMin(z.time))
+  // 7. Merge + sort. Extra logged meals join the sort like any other slot (they are 'done'). Sorted
+  //    on the unwrapped axis (mezo-9rtw) so a midnight-wrapped slot (e.g. a template's 01:00 "Késői
+  //    snack" on a wake-07:00/bed-03:00 day) sorts LAST instead of first.
+  const slots = [...mealSlots, ...extraSlots, ...protoSlots, ...blockSlots].sort((a, z) => unwrap(a.time) - unwrap(z.time))
 
   // 8. Top context fields.
   const gym = blocks.find(b => b.kind === 'gym')

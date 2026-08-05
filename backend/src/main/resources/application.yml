@@ -211,6 +211,16 @@ mezo:
     # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
     fuel-settings:
       enabled: true
+    # Stack placement LLM fallback (mezo-vx9v) — zone suggestion for supplements the rule
+    # table does not know; needs the companion switch too (CompanionLlm bean), otherwise
+    # placement degrades to the deterministic 'fallback' zone.
+    stack-placement-llm:
+      enabled: true
+    # Slot-plan AI evaluate (mezo-7102) — gated, stateless "judge my split" LLM call over a
+    # (draft) meal-slot template; nothing persisted. Needs the companion switch too (adapter
+    # bean), otherwise the endpoint answers 503.
+    slot-template-ai:
+      enabled: true
     # Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
     # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
     gamification:
@@ -641,9 +651,6 @@ mezo:
   habit:
     close-cron: "0 10 0 * * *"    # 00:10 — after the quest finalize
     wake-window-min: 45
-    weigh-in-cutoff: "09:00"
-    morning-window-end: "10:00"
-    workout-window-hours: 6   # M5 cutoff = sleep-anchor wake + this many hours (ghost wake 06:00 -> 12:00)
     protein-target-g: 25
     bed-grace-min: 30
     kitchen-close-offset-min: 90

@@ -82,6 +82,16 @@ describe('buildTodayItems — habits', () => {
     expect(items.find(i => i.face === 'reggel')?.group).toBe('Reggeli rutin')
     expect(items.find(i => i.face === 'este')?.group).toBe('Esti rutin')
   })
+
+  test('a habit in an unknown/custom chain does not throw and produces no row (mezo-n5e9.1 review finding 4)', () => {
+    // The wire's `chain` widened to a plain string (ADR 0019, `HabitChainAdmin`'s admin API);
+    // `habitApi.ts` casts it into this narrower FE type, so a custom `chain_xxxx` row is
+    // reachable here at runtime even though the type says 'MORNING' | 'EVENING'.
+    const custom = habit({ key: 'custom_deadbeef', chain: 'chain_abc123' as HabitItem['chain'] })
+    expect(() => buildTodayItems({ ...EMPTY, habits: [custom] })).not.toThrow()
+    const items = buildTodayItems({ ...EMPTY, habits: [custom] })
+    expect(items).toHaveLength(0)
+  })
 })
 
 describe('buildTodayItems — dedup', () => {
