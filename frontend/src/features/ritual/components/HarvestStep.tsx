@@ -25,7 +25,8 @@ function isKnownSource(source: string): source is KnownSource {
 }
 
 const CONFETTI_LEFT = ['12%', '22%', '31%', '40%', '49%', '58%', '67%', '76%', '85%', '93%']
-const CONFETTI_COLOR = ['var(--lav)', 'var(--amber)', 'var(--sage)', 'var(--coral)']
+// Data-viz band tokens (D4) — confetti is a reward moment, the one place these hues belong.
+const CONFETTI_COLOR = ['var(--dv-lav)', 'var(--dv-amber)', 'var(--dv-sage)', 'var(--dv-coral)']
 
 const clampPct = (n: number) => Math.max(0, Math.min(100, n))
 

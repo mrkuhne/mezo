@@ -2471,70 +2471,89 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .phref-band { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: color-mix(in srgb, var(--sage) 35%, transparent); }
 .phref-pin { position: absolute; top: -3px; width: 3px; height: 12px; border-radius: 2px; transform: translateX(-1.5px); }
 
-/* ===== Ritual — Napzárás full-screen flow (mezo-ilsj, spec §4) ===== */
+/* ===== Ritual — Napzárás full-screen flow (mezo-ilsj, spec §4; DS re-dress mezo-setx.5.3) =====
+   The flow forces data-theme=dark (RitualPage's setForceTheme), so every token below
+   resolves through the Pulse dark ramp — the takeover surface is expressed in DS tokens
+   rather than literal graphites, and the cream washes are color-mixed off --text-primary
+   (dark: #F5EFE6). Lavender is the ritual's settled night direction (spec D10): the
+   data-viz --dv-lav + the kept --lav-deep carrier, deliberately not the primary ramp. */
 .rz-screen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow-y: auto;
-  background: radial-gradient(120% 90% at 50% -10%, #2A2521 0%, #241f1c 55%, #1a1614 100%); color: #F5EFE6; z-index: 30; }
+  background: radial-gradient(120% 90% at 50% -10%, var(--surface-elevated) 0%, var(--surface-card) 55%, var(--surface-page) 100%);
+  color: var(--text-primary); z-index: var(--z-bottomnav); }
 .rz-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 0; }
 .rz-dots { display: flex; gap: 6px; }
-.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(245,239,230,.18); }
-.rz-dot.on { background: var(--lav); }
-.rz-exit { background: none; border: 0; padding: 4px; color: rgba(245,239,230,.5); font-size: 15px; line-height: 1; }
+.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
+.rz-dot.on { background: var(--dv-lav); }
+.rz-exit { background: none; border: 0; width: 44px; height: 44px; margin: -8px -12px 0 0;
+  display: grid; place-items: center; cursor: pointer;
+  color: color-mix(in srgb, var(--text-primary) 50%, transparent); font-size: 16px; line-height: 1; }
 .rz-act { flex: 1; display: flex; flex-direction: column; padding: 0 20px 28px; }
 .rz-moon { width: 84px; height: 84px; border-radius: 50%; margin: 72px auto 0;
-  background: radial-gradient(circle at 34% 30%, #efe9dc 0%, #cfc4e2 55%, var(--lav) 100%);
-  box-shadow: 0 0 40px 6px rgba(171,159,210,.35); animation: rz-breath 4.2s ease-in-out infinite; }
+  background: radial-gradient(circle at 34% 30%,
+    color-mix(in srgb, var(--dv-lav) 10%, var(--text-primary)) 0%,
+    color-mix(in srgb, var(--dv-lav) 45%, var(--text-primary)) 55%,
+    var(--dv-lav) 100%);
+  box-shadow: 0 0 40px 6px color-mix(in srgb, var(--dv-lav) 35%, transparent);
+  animation: rz-breath 4.2s ease-in-out infinite; }
 @keyframes rz-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-.rz-line1 { font-family: var(--ff-display); font-size: 24px; text-align: center; margin-top: 40px; }
-.rz-line2 { color: rgba(245,239,230,.55); text-align: center; margin-top: 8px; }
-.rz-cta { margin: 56px auto 0; padding: 13px 34px; border-radius: 999px; border: 0;
-  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700;
+.rz-line1 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-align: center; margin-top: 40px; }
+.rz-line2 { font-size: 16px; color: color-mix(in srgb, var(--text-primary) 55%, transparent); text-align: center; margin-top: 8px; }
+.rz-cta { margin: 56px auto 0; padding: 13px 34px; min-height: 48px; border-radius: var(--r-full); border: 0;
+  background: linear-gradient(120deg, var(--dv-lav), var(--lav-deep)); color: var(--text-inverse);
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
   animation: rz-glowp 3s ease-in-out infinite; }
-@keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px rgba(171,159,210,.35); } 50% { box-shadow: 0 0 30px 8px rgba(171,159,210,.55); } }
+@keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--dv-lav) 35%, transparent); } 50% { box-shadow: 0 0 30px 8px color-mix(in srgb, var(--dv-lav) 55%, transparent); } }
 @keyframes rz-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 8% { opacity: 1; }
   100% { opacity: 0; transform: translateY(520px) rotate(560deg); } }
 
 /* Day-story act (act 2): arc redraw (np-draw reuse) + recap event rows (np-anim reuse). */
-.rz-story-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--lav); margin: 6px 4px 0; }
+.rz-story-eyebrow { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--dv-lav); margin: 6px 4px 0; }
 .rz-arc { display: block; margin: 20px auto 0; }
-.rz-arc-path { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round; opacity: .9;
+.rz-arc-path { fill: none; stroke: var(--dv-lav); stroke-width: 2.5; stroke-linecap: round; opacity: .9;
   stroke-dasharray: 400; stroke-dashoffset: 400; animation: np-draw 1.4s var(--np-ease-ios) .2s forwards; }
 .rz-arc-dot { transform-box: fill-box; transform-origin: center; opacity: 0;
   animation: np-pop .5s var(--np-ease-spring) forwards; }
-.rz-arc-checkin-done { fill: var(--sage); }
-.rz-arc-checkin-now { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
-.rz-arc-checkin-pending { fill: #241f1c; stroke: var(--faint); stroke-width: 2.5; }
-.rz-arc-workout { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
-.rz-arc-sleep { fill: #241f1c; stroke: var(--lav); stroke-width: 2.5; }
-.rz-thin { font-family: var(--ff-body); font-style: italic; font-size: 12.5px; text-align: center;
-  color: rgba(245,239,230,.65); margin: 18px 6px 0; }
+.rz-arc-checkin-done { fill: var(--success-base); }
+.rz-arc-checkin-now { fill: var(--surface-card); stroke: var(--primary-base); stroke-width: 2.5; }
+.rz-arc-checkin-pending { fill: var(--surface-card); stroke: var(--text-disabled); stroke-width: 2.5; }
+.rz-arc-workout { fill: var(--surface-card); stroke: var(--primary-base); stroke-width: 2.5; }
+.rz-arc-sleep { fill: var(--surface-card); stroke: var(--dv-lav); stroke-width: 2.5; }
+/* the thin-day soft line — the Fraunces meta voice (DS text-meta-sm) */
+.rz-thin { font: italic 500 14px/1.5 var(--ff-serif); text-align: center;
+  color: color-mix(in srgb, var(--text-primary) 65%, transparent); margin: 18px 6px 0; }
 .rz-events { display: flex; flex-direction: column; gap: 9px; margin-top: 18px; }
-.rz-ev { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px;
-  background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-ev { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); font-family: var(--ff-body); font-size: 14px; }
 .rz-ev-icon { font-size: 15px; }
 .rz-ev-label { flex: 1; }
-.rz-ev-meta { color: var(--faint); font-size: 11px; }
-.rz-ev-meta.ok { color: var(--sage); }
+.rz-ev-meta { color: var(--text-disabled); font-size: 12px; }
+.rz-ev-meta.ok { color: var(--success-base); }
 
 /* Loops act (act 3): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
    once a row closes, and the single "Minden hurok zárva" beat once nothing is left open. The
    glow is a static wash + inset ring (no pulse) — the retired RoutineCard's first-pending
    idiom, not an animated pulsing dot. */
-.rz-loops-sub { font-family: var(--ff-body); font-size: 11.5px; font-weight: 500;
-  color: rgba(245,239,230,.5); margin: 6px 4px 14px; }
+.rz-loops-sub { font-family: var(--ff-body); font-size: 14px; font-weight: 400;
+  color: color-mix(in srgb, var(--text-primary) 55%, transparent); margin: 6px 4px 14px; }
 .rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 12px;
-  border-radius: 16px; background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
-.rz-loop.glow { background: rgba(171,159,210,.14); box-shadow: inset 0 0 0 1px rgba(171,159,210,.35); }
-.rz-loop-done { color: rgba(245,239,230,.5); }
-.rz-loop-mk { color: var(--sage); }
+  border-radius: var(--r-lg); background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  font-family: var(--ff-body); font-size: 14px; }
+.rz-loop.glow { background: color-mix(in srgb, var(--dv-lav) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 35%, transparent); }
+.rz-loop-done { color: color-mix(in srgb, var(--text-primary) 50%, transparent); }
+.rz-loop-mk { color: var(--success-base); }
 .rz-loop-text { flex: 1; }
-.rz-loop-act { margin-left: auto; padding: 6px 13px; border-radius: 999px; border: 0;
-  background: var(--lav); color: #1d1927; font-family: var(--ff-body); font-weight: 700; font-size: 11px;
-  white-space: nowrap; }
+.rz-loop-act { margin-left: auto; padding: 9px 15px; border-radius: var(--r-full); border: 0;
+  background: var(--dv-lav); color: var(--text-inverse); font-family: var(--ff-body); font-weight: 700; font-size: 13px;
+  white-space: nowrap; cursor: pointer; }
 .rz-loop-chips { margin-left: auto; display: flex; gap: 5px; }
-.rz-loop-chip { padding: 5px 9px; border-radius: 999px; border: 0; background: rgba(245,239,230,.1);
-  color: #F5EFE6; font-family: var(--ff-body); font-weight: 600; font-size: 10.5px; }
-.rz-loop-beat { justify-content: center; text-align: center; color: rgba(245,239,230,.7); font-style: italic; }
+.rz-loop-chip { padding: 8px 11px; border-radius: var(--r-full); border: 0;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  color: var(--text-primary); font-family: var(--ff-body); font-weight: 600; font-size: 13px; cursor: pointer; }
+.rz-loop-beat { justify-content: center; text-align: center;
+  color: color-mix(in srgb, var(--text-primary) 70%, transparent);
+  font: italic 500 14px/1.5 var(--ff-serif); }
 
 /* Harvest act (act 4): XP count-up (the shared CountUp primitive), per-source/coin chips
    (np-pop reuse via .rz-pop), an optional LIFE skill highlight (bar-only — honest-absence,
@@ -2546,21 +2565,24 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-harvest-body { display: flex; flex-direction: column; margin-block: auto; }
 .rz-harvest .rz-cta { margin-top: 0; }
 .rz-xp-wrap { text-align: center; margin-top: 26px; }
-.rz-xp-num { display: block; font-family: var(--ff-display); font-size: 52px; line-height: 1; font-weight: 700; color: var(--amber); }
-.rz-xp-unit { font-family: var(--ff-body); font-size: 15px; font-weight: 600; color: var(--faint); margin-top: 4px; }
+/* the DS hero numeral role: 56 / Geist 200 / -0.04em — the harvest total IS the hero number */
+.rz-xp-num { display: block; font-family: var(--ff-display); font-size: 56px; line-height: 1; font-weight: 200;
+  letter-spacing: -0.04em; color: var(--dv-amber); font-variant-numeric: tabular-nums; }
+.rz-xp-unit { font-family: var(--ff-body); font-size: 14px; font-weight: 600; color: var(--text-disabled); margin-top: 4px; }
 .rz-src-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 4px 0; }
-.rz-chip { padding: 6px 10px; border-radius: 999px; background: rgba(245,239,230,.07);
-  font-family: var(--ff-body); font-weight: 600; font-size: 11px; }
+.rz-chip { padding: 6px 10px; border-radius: var(--r-full); background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
 .rz-coin-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
-.rz-coin-chip { padding: 7px 12px; border-radius: 999px; background: rgba(255,190,96,.14); color: var(--amber);
-  font-family: var(--ff-body); font-weight: 700; font-size: 12px; }
+.rz-coin-chip { padding: 7px 12px; border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--dv-amber) 14%, transparent); color: var(--dv-amber);
+  font-family: var(--ff-body); font-weight: 700; font-size: 13px; }
 .rz-pop { opacity: 0; animation: np-pop .5s var(--np-ease-spring) forwards; }
-.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
+.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 14px; }
 .rz-skill-lv { color: var(--lav-deep); font-weight: 700; }
-.rz-skill-bar { height: 7px; border-radius: 99px; background: rgba(245,239,230,.1); margin-top: 6px; overflow: hidden; }
-.rz-skill-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--lav), var(--lav-deep));
+.rz-skill-bar { height: 7px; border-radius: var(--r-full); background: color-mix(in srgb, var(--text-primary) 10%, transparent); margin-top: 6px; overflow: hidden; }
+.rz-skill-bar i { display: block; height: 100%; border-radius: var(--r-full); background: linear-gradient(90deg, var(--dv-lav), var(--lav-deep));
   transform-origin: left; transform: scaleX(0); animation: np-grow .9s var(--np-ease-ios) forwards; }
-.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 13px; color: var(--coral); }
+.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 14px; color: var(--primary-base); }
 .rz-streak.dim { opacity: .45; }
 .rz-conf { position: absolute; inset: 0; pointer-events: none; }
 .rz-conf i { position: absolute; top: -8px; width: 6px; height: 10px; border-radius: 2px; opacity: 0;
@@ -2568,23 +2590,30 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 
 /* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
-.rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
+.rz-ring { fill: none; stroke: var(--dv-lav); stroke-width: 2.5; stroke-linecap: round;
   stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center;
   animation: np-draw 2s var(--np-ease-ios) .3s forwards; }
 .rz-circle-moon { animation: rz-breath 4.2s ease-in-out infinite; transform-origin: center; }
-.rz-end { font-family: var(--ff-display); font-size: 19px; line-height: 1.35; text-align: center; margin: 28px 26px 0; }
-.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: 16px; background: rgba(245,239,230,.05);
-  font-style: italic; font-size: 12px; line-height: 1.55; }
-.rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 9.5px; font-weight: 600;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--lav); margin-bottom: 6px; }
-.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: 18px; background: rgba(245,239,230,.05); }
-.rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--lav); }
+/* the companion's release line — the DS coach voice (Geist 200 · 22, never italic) */
+.rz-end { font-family: var(--ff-body); font-size: 22px; font-weight: 200; letter-spacing: -0.02em;
+  line-height: 1.32; text-align: center; margin: 28px 26px 0; }
+/* the closing note — narrative meta, Fraunces italic (DS text-meta-sm) */
+.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  font: italic 500 14px/1.55 var(--ff-serif); }
+.rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 10px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--dv-lav); margin-bottom: 6px; }
+.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: var(--r-xl);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--dv-lav); }
 .rz-handoff-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
-  font-family: var(--ff-body); font-size: 12.5px; line-height: 1.5; color: rgba(245,239,230,.9); }
-.rz-handoff-steps em { font-style: normal; color: var(--faint); font-size: 11px; }
-.rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; border: 0; border-radius: 999px;
-  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700; font-size: 13px;
+  font-family: var(--ff-body); font-size: 14px; line-height: 1.5;
+  color: color-mix(in srgb, var(--text-primary) 90%, transparent); }
+.rz-handoff-steps em { font-style: normal; color: var(--text-disabled); font-size: 12px; }
+.rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; min-height: 48px; border: 0; border-radius: var(--r-full);
+  background: linear-gradient(120deg, var(--dv-lav), var(--lav-deep)); color: var(--text-inverse);
+  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
   animation: rz-glowp 3s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
