@@ -39,7 +39,7 @@ public class WeightLogPopulator {
         return weightLogRepository.saveAndFlush(e);
     }
 
-    /** Weight log with a controlled created_at (habit weigh-in-cutoff tests). The native
+    /** Weight log with a controlled created_at, for deterministic habit-evaluator tests. The native
      *  {@code created_at} backdate needs its own transaction — the base IT is non-transactional. */
     @Transactional
     public WeightLogEntity createWeightLogAt(UUID owner, LocalDate date, BigDecimal weightKg,

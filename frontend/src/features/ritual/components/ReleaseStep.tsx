@@ -18,7 +18,8 @@ export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
     <div className="rz-act rz-release">
       <svg className="rz-circle" viewBox="0 0 100 100" width="110" aria-hidden="true">
         <circle className="rz-ring" cx="50" cy="50" r="42" />
-        <circle className="rz-circle-moon" cx="50" cy="50" r="17" fill="#cfc4e2" />
+        {/* pale-lavender moon — token-mixed (Rule 1), matches the arrival moon's mid-stop */}
+        <circle className="rz-circle-moon" cx="50" cy="50" r="17" fill="color-mix(in srgb, var(--dv-lav) 45%, var(--text-primary))" />
       </svg>
       <p className="rz-end">A nap le van zárva. Elengedheted. 🌙</p>
       {closingNote != null && (

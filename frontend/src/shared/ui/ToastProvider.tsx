@@ -56,7 +56,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           data-kind={toast.kind}
           style={{ background: KIND_BG[toast.kind] }}
         >
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{toast.text}</span>
+          {/* DS caption floor: 14px for sentence-case feedback text */}
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.text}</span>
         </div>
       )}
     </ToastContext.Provider>

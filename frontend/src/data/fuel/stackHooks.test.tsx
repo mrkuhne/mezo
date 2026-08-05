@@ -268,6 +268,57 @@ describe('useStack / useProtocol (real mode)', () => {
     )
   })
 
+  it('logIntake invalidates ["habitDay"] + the day quest read (derived habit re-derive, mezo-u6jx)', async () => {
+    // The habit-day READ is the evaluation trigger (habit.md §3) — a stim intake must nudge
+    // ['habitDay'] and ['dailyQuests', date] or morning_coffee's ✓ waits for a remount.
+    server.use(http.post(`${API_BASE}/api/fuel/intake`, () => HttpResponse.json({ id: 'i-1' })))
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    const date = localDateString()
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useStackActions(date), { wrapper: Wrapper })
+    act(() => result.current.logIntake('p-1'))
+    await waitFor(() => {
+      const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+      expect(keys).toContain(JSON.stringify(['habitDay']))
+      expect(keys).toContain(JSON.stringify(['dailyQuests', date]))
+    })
+    invalidateSpy.mockRestore()
+  })
+
+  it('undoIntake invalidates ["habitDay"] + the day quest read (derived habit re-derive, mezo-u6jx)', async () => {
+    // Mirrors the logIntake case above — removing the day's only evidence for a metric
+    // (e.g. morning_coffee) must also nudge the habit-day read, or its state waits for a remount.
+    const date = localDateString()
+    server.use(
+      http.get(`${API_BASE}/api/pantry`, () =>
+        HttpResponse.json({
+          ingredients: [],
+          stash: [{ id: 'p-1', name: 'Kávé', brand: '', type: 'supplement', category: 'stim', dose: '200mg', form: 'kapszula', stock: 10, stockUnit: 'db', protocol: '', timing: 'flexible', taken: false }],
+        }),
+      ),
+      http.get(`${API_BASE}/api/fuel/intake/:date`, () =>
+        HttpResponse.json({
+          intakes: [{ id: 'intake-p1', pantryItemId: 'p-1', takenAt: '2026-07-02T07:00:00Z', takenDate: date, dose: '200mg' }],
+        }),
+      ),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ stack: useStack(), actions: useStackActions(date) }),
+      { wrapper: Wrapper },
+    )
+    // Wait until the seeded intake row lands in the shared cache (p-1 shows taken) before undoing it.
+    await waitFor(() => expect(result.current.stack.stash.find(s => s.id === 'p-1')?.taken).toBe(true))
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    act(() => result.current.actions.undoIntake('p-1'))
+    await waitFor(() => {
+      const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+      expect(keys).toContain(JSON.stringify(['habitDay']))
+      expect(keys).toContain(JSON.stringify(['dailyQuests', date]))
+    })
+    invalidateSpy.mockRestore()
+  })
+
   it('undoIntake DELETEs the matching cached row id', async () => {
     const date = localDateString()
     server.use(
