@@ -398,6 +398,50 @@ export const handlers = [
     HttpResponse.json({ perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] }),
   ),
 
+  // Habit admin catalog (routine editor, mezo-n5e9.2) — honest-empty default (never a 404);
+  // write endpoints echo a minimal valid HabitChainAdmin/HabitDefAdmin so the mutation hooks'
+  // wire→domain mapping has something real to map. Tests override with server.use() for
+  // populated/payload-capture cases.
+  http.get(`${API_BASE}/api/habit/catalog`, () => HttpResponse.json({ chains: [] })),
+  http.post(`${API_BASE}/api/habit/chain`, async ({ request }) => {
+    const body = (await request.json()) as { title: string; daypart: string }
+    return HttpResponse.json({
+      id: 'chain-new', chainKey: 'chain_00000001', title: body.title, daypart: body.daypart,
+      position: 1, isActive: true, defs: [],
+    })
+  }),
+  http.patch(`${API_BASE}/api/habit/chain/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: String(params.id), chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING',
+      position: 1, isActive: true, defs: [], ...body,
+    })
+  }),
+  http.delete(`${API_BASE}/api/habit/chain/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.put(`${API_BASE}/api/habit/chain/:id/order`, ({ params }) =>
+    HttpResponse.json({
+      id: String(params.id), chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING',
+      position: 1, isActive: true, defs: [],
+    })),
+  http.post(`${API_BASE}/api/habit/def`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: 'def-new', habitKey: 'custom_00000001', chainKey: String(body.chainKey ?? 'MORNING'),
+      position: 1, title: String(body.title ?? ''), why: null, anchorCopy: null,
+      mode: body.mode ?? 'MANUAL', metric: 'manual', skillKey: String(body.skillKey ?? 'mindset'),
+      xp: Number(body.xp ?? 0), linkUrl: null, isActive: true,
+    })
+  }),
+  http.patch(`${API_BASE}/api/habit/def/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: String(params.id), habitKey: 'custom_00000001', chainKey: 'MORNING', position: 1,
+      title: 'Def', why: null, anchorCopy: null, mode: 'MANUAL', metric: 'manual', skillKey: 'mindset',
+      xp: 5, linkUrl: null, isActive: true, ...body,
+    })
+  }),
+  http.delete(`${API_BASE}/api/habit/def/:id`, () => new HttpResponse(null, { status: 204 })),
+
   // Daily intention (mezo-a686) — honest-empty default (no creed, no foci, no reflection; never a
   // 404). Tests override with server.use() for populated cases.
   http.get(`${API_BASE}/api/intention/day/:date`, ({ params }) =>
