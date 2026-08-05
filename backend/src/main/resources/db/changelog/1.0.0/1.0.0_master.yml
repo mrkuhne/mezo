@@ -545,3 +545,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608031200_mezo-vx9v_protocol_item_occurrence.sql
+  - changeSet:
+      id: "1.0.0:202608051400_mezo-n5e9.1_create_habit_chain"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608051400_mezo-n5e9.1_create_habit_chain.sql
+  - changeSet:
+      id: "1.0.0:202608051410_mezo-n5e9.1_create_habit_def"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608051410_mezo-n5e9.1_create_habit_def.sql
