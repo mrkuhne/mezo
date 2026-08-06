@@ -17,7 +17,11 @@ import { TodayPage } from '@/features/today/pages/TodayPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { gymLevelUpMock } from '@/data/progression/progressionMock'
-import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
+import { today, user, workoutPrediction, volleyballNote } from '@/data/today/today'
+// `workout` mirrors useToday()'s real mock branch (mezo-oyhy.3): Train's own recipe-shaped
+// WorkoutPlan, not the retired Today-local Phase-1 `Workout` duplicate — the estimator needs
+// the recipe fields (workingSets/warmupSets/repMin/repMax) to compute a real chip minute count.
+import { workout } from '@/data/train/train'
 import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import type { LevelUpResult } from '@/data/train/trainApi'
 import type { CheckinSlot, DailyQuest, HabitChainInfo, HabitItem, VolleyballSession } from '@/data/types'

@@ -10,6 +10,7 @@ import type { SkillLevel } from '@/data/progression/progressionApi'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { growthForecast, type ForecastSkill } from '@/features/train/logic/growthForecast'
 import { muscleRegion } from '@/features/train/logic/muscleColors'
+import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
 export interface PrepStats {
   workSets: number
@@ -39,7 +40,13 @@ export function prepStats(W: WorkoutPlan): PrepStats {
     repsEst += e.workingSets * Math.round((e.repMin + e.repMax) / 2)
     if (e.muscle && e.muscle !== 'sport') regions.add(muscleRegion(e.muscle) ?? 'egyeb')
   }
-  return { workSets, warmupSets, repsEst, durationEst: W.durationEst, muscleCount: regions.size }
+  return {
+    workSets,
+    warmupSets,
+    repsEst,
+    durationEst: estimateSessionMinutes(W.exercises),
+    muscleCount: regions.size,
+  }
 }
 
 /** MesoDay adapter so growthForecast can score ONE workout (meso day or custom/saját plan). */

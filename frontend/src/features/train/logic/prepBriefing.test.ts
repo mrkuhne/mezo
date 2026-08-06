@@ -45,8 +45,15 @@ describe('prepStats', () => {
   it('sums working sets, warmup sets, reps estimate and distinct muscles', () => {
     // workSets = e.workingSets: 3+3=6; warmupSets = e.warmupSets: 1+0=1;
     // repsEst = 3×round((8+12)/2)=30 + 3×round((4+6)/2)=15 → 45; muscleCount = {quad} → 1.
+    // durationEst (estimateSessionMinutes, hand-derived — NOT asserted against itself):
+    //   anchoredExercise (compound, 3 working @ avg(8,12)=10 reps, 1 warmup):
+    //     working 3×10×3.5s=105s + rest 2×150s(compound)=300s + warmup 1×(20+45)s=65s
+    //     + transition 90s → 560s
+    //   plyoExercise (plyo, 3 working @ avg(4,6)=5 reps, 0 warmup):
+    //     working 3×5×2s=30s + rest 2×90s(non-compound)=180s + warmup 0s + transition 90s → 300s
+    //   total 860s / 60 = 14.33 → round 14 + 8min warm-up block = 22
     const s = prepStats(plan)
-    expect(s).toEqual({ workSets: 6, warmupSets: 1, repsEst: 45, durationEst: 45, muscleCount: 1 })
+    expect(s).toEqual({ workSets: 6, warmupSets: 1, repsEst: 45, durationEst: 22, muscleCount: 1 })
   })
 
   it('excludes empty and "sport" muscles from muscleCount but counts other distinct ones', () => {
