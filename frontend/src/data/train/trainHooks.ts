@@ -227,6 +227,7 @@ export function toLibraryItem(r: ExerciseCatalogItem): ExerciseLibraryItem {
   return {
     id: r.id, catalogId: r.id, name: r.name, muscle: r.muscle, type: r.type, stim: r.stim, fatigue: r.fatigue,
     videoUrl: r.videoUrl ?? null, editable: r.editable,
+    imageStartUrl: r.imageStartUrl ?? null, imageEndUrl: r.imageEndUrl ?? null,
   }
 }
 

@@ -11,6 +11,7 @@ import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
+import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 
 // 102.5 -> "102.5", 100.0 -> "100"
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
@@ -40,10 +41,15 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 interface ExerciseRecordSheetProps {
   record: ExerciseRecordResponse
   videoUrl?: string | null
+  // Demo stills resolved from the catalog row (mezo-8xdl); absent start = no image.
+  imageStartUrl?: string | null
+  imageEndUrl?: string | null
   onClose: () => void
 }
 
-export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecordSheetProps) {
+export function ExerciseRecordSheet({
+  record, videoUrl, imageStartUrl, imageEndUrl, onClose,
+}: ExerciseRecordSheetProps) {
   const r = record
   const maxRecent = Math.max(...r.recentTopSets.map((s) => s.weightKg ?? s.reps), 1)
 
@@ -88,6 +94,20 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
               {r.bestSet ? huMonthDay(r.bestSet.date) : `${r.sessionCount} alkalom alatt`}
             </span>
           </div>
+
+          {/* Demo stills (catalog-resolved) — the cheap always-on layer, above the opt-in
+              video. Renders nothing at all without a start frame, so an unmapped exercise
+              leaves no empty box. */}
+          {imageStartUrl && (
+            <div style={{ marginBottom: 12 }}>
+              <ExerciseImage
+                start={imageStartUrl}
+                end={imageEndUrl}
+                name={r.name}
+                muscle={r.muscle}
+              />
+            </div>
+          )}
 
           {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
               YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
