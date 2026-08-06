@@ -113,9 +113,20 @@ public class HabitService {
      * other row, and null here too once the row is no longer pending (done/missed rows never
      * needed a hint) or when the day has no sleep log yet (the CTA must keep offering Logolás —
      * "not logged" and "logged, out of window" are different states, not the same "pending").
+     *
+     * <p><b>TODAY-only (review fix, mezo-czol):</b> a bare {@code pending} status only PROVES
+     * "out of window" on a today read, because {@code evaluateIntraday} runs for today only and
+     * would already have flipped an in-window wakeup to {@code done} before this method ever sees
+     * the row. A past-day read never runs that evaluation — a day whose rows never materialized
+     * (past dates don't lazily create rows, see {@code getDay} above) reads as a synthetic
+     * {@code pending} default regardless of what the backfilled sleep log actually says, so
+     * inferring "out of window" from bare pending there would be dishonest (an in-window
+     * backfilled wakeup would wrongly get the hint). Gating on {@code date.equals(LocalDate.now())}
+     * matches {@code evaluateIntraday}'s own scope exactly: past-day rows always get a null hint,
+     * consistent with the Rutin tab's past-day view being read-only history, not a live affordance.
      */
     private String wakeHint(UUID userId, LocalDate date, HabitDefEntity def, HabitDayEntity row) {
-        if (!"wake_on_time".equals(def.getHabitKey())) {
+        if (!"wake_on_time".equals(def.getHabitKey()) || !date.equals(LocalDate.now())) {
             return null;
         }
         String status = row != null ? row.getStatus() : HabitDayEntity.STATUS_PENDING;
