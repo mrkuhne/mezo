@@ -123,10 +123,15 @@ exercise with a curated video and no image is unaffected by this feature.
 - `scripts/data/exercise-image-map.json` — `{ "<slug>": "<free-exercise-db name>" }`, hand-verified,
   reviewed in the diff. Unmapped slugs are simply absent.
 - `scripts/import-exercise-images.mjs` — for each mapped slug: fetch both frames from
-  `raw.githubusercontent.com`, downscale to ~560 px, write
-  `frontend/public/exercises/{slug}-a.jpg` / `-b.jpg`, and **print a mapped/unmapped report**.
-  Idempotent (skips byte-identical output), run by hand when the map changes — not in CI.
-  Uses `sharp` as a devDependency rather than macOS `sips`, so the script is portable.
+  `raw.githubusercontent.com`, write `frontend/public/exercises/{slug}-a.jpg` / `-b.jpg`, and
+  **print a mapped/unmapped report**. Idempotent (skips existing output unless `--force`), run by
+  hand when the map changes — not in CI.
+  **[Amended at implementation, `mezo-8xdl.2`]** The plan here was a `sharp` devDependency
+  downscaling to ~560 px. Measured on the real files it recovers ~35 % (avg 59 KB → ~40 KB) — not
+  worth a toolchain dependency on an otherwise dependency-free script, and the 850 px source is the
+  better hero image on a 3× phone screen. **No re-encode; the originals ship as-is**, which also
+  makes the import reproducible on any platform. Total came in at **~15 MB, not the ~7 MB estimated
+  here** (the first sampled frame was unrepresentatively small). See [ADR 0020](../../decisions/0020-vendor-public-domain-exercise-imagery.md).
 - The catalog JSON entries then carry the two relative paths, and the loader (D6) seeds them.
 - `vite.config.ts`: `exercises/**` **out of** `workbox.globPatterns`, plus a `CacheFirst`
   `runtimeCaching` rule (~300 entries, 60 days).

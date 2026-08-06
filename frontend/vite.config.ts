@@ -17,6 +17,24 @@ export default defineConfig({
         // the self-hosted brand fonts (public/fonts/*.woff2) are precached — the app
         // then renders Geist + Fraunces offline instead of falling back to system.
         globPatterns: ['**/*.{js,wasm,css,html,ico,png,svg,woff2}'],
+        // The vendored exercise demo stills (public/exercises/*.jpg, ~15 MB, mezo-8xdl.2) must
+        // NEVER enter the precache — the precache IS the install cost, and demo photos are not
+        // install-critical. Belt and braces: `jpg` is absent from globPatterns above AND the
+        // directory is ignored, so adding another extension there can't silently pull them in.
+        globIgnores: ['**/exercises/**'],
+        // They are cached on first view instead and kept — the files are content-addressed by
+        // slug and only ever replaced wholesale by a re-import, so CacheFirst can't go stale.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/exercises/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'exercise-images',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
         // Web Push handlers live in their own plain file so the generateSW strategy stays
         // intact (switching to injectManifest would mean owning the whole worker for two
         // event listeners) — bd mezo-h4wp.6.1.

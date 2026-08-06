@@ -43,6 +43,28 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetExerciseCatalog_shouldCarryVendoredImagePaths_whenSlugIsMapped() {
+        List<ExerciseCatalogItem> items =
+            getForList("/api/train/exercises", ownerAuthHeaders(), HttpStatus.OK, ExerciseCatalogItem.class);
+
+        // barbell-squat is mapped in scripts/data/exercise-image-map.json; the loader seeds the two
+        // relative paths from the content JSON at startup. Deliberately NOT box-jump — the /images
+        // write contract test mutates that row and would race this assertion.
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getSlug()).isEqualTo("barbell-squat");
+            assertThat(i.getImageStartUrl()).isEqualTo("/exercises/barbell-squat-a.jpg");
+            assertThat(i.getImageEndUrl()).isEqualTo("/exercises/barbell-squat-b.jpg");
+        });
+        // ...and an unmapped slug stays imageless: 37 of the 161 rows have no faithful counterpart
+        // in the dataset, which is a specced state rather than a gap (ADR 0020).
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getSlug()).isEqualTo("kb-swing");
+            assertThat(i.getImageStartUrl()).isNull();
+            assertThat(i.getImageEndUrl()).isNull();
+        });
+    }
+
+    @Test
     void testReplaceDayExercises_shouldPersistCatalogId_whenProvided() {
         HttpHeaders auth = ownerAuthHeaders();
         UUID catalogId = catalogIdOf(auth, "hip-thrust");
