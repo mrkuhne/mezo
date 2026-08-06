@@ -3,11 +3,11 @@ package io.mrkuhne.mezo.feature.notification;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.notification.entity.NotificationPrefEntity;
 import io.mrkuhne.mezo.feature.notification.repository.NotificationPrefRepository;
 import io.mrkuhne.mezo.feature.notification.repository.PushLogRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -19,11 +19,12 @@ class NotificationPrefRepositoryIT extends AbstractIntegrationTest {
     @Autowired private NotificationPrefRepository prefRepository;
     @Autowired private PushLogRepository pushLogRepository;
     @Autowired private NotificationPopulator notificationPopulator;
-    @Autowired private AppUserRepository appUserRepository;
+    @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
 
+    // find-or-create: no demodata profile in this context — findByEmail().orElseThrow() was order-dependent (mezo-ghug)
     private UUID ownerId() {
-        return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+        return databasePopulator.populateUser(ownerProperties.ownerEmail());
     }
 
     @Test

@@ -3,10 +3,10 @@ package io.mrkuhne.mezo.feature.notification;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.notification.entity.PushSubscriptionEntity;
 import io.mrkuhne.mezo.feature.notification.repository.PushSubscriptionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.DatabasePopulator;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 class PushSubscriptionRepositoryIT extends AbstractIntegrationTest {
 
     @Autowired private PushSubscriptionRepository repository;
-    @Autowired private AppUserRepository appUserRepository;
+    @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
 
+    // find-or-create: no demodata profile in this context — findByEmail().orElseThrow() was order-dependent (mezo-ghug)
     private UUID ownerId() {
-        return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+        return databasePopulator.populateUser(ownerProperties.ownerEmail());
     }
 
     @Test
