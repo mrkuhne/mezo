@@ -23,6 +23,7 @@ import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 import { StructureLintCard } from '@/features/train/components/StructureLintCard'
 import { budgetGroup, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { structureLint } from '@/features/train/logic/structureLint'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
 
@@ -97,6 +98,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
 
   const off = isOffDay(day)
   const daySets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
+  const dayMinutes = estimateSessionMinutes(day.exercises)
   const weekSets = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
   const trainingDays = days.filter((d) => d.exercises.length > 0).length
   const showRename = Boolean(onRenameDay) && day.muscle === 'custom'
@@ -173,6 +175,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
         dayType={showRename ? '' : day.type}
         daySets={daySets}
         dayExerciseCount={day.exercises.length}
+        dayMinutes={dayMinutes}
         weekSets={weekSets}
         trainingDays={trainingDays}
         warningCount={warningCount}

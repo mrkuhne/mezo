@@ -163,9 +163,24 @@ describe('unknown muscle (budgetGroup → null)', () => {
   it('is skipped by every group-keyed rule and never throws', () => {
     const w = cleanWeek()
     // 'sport' has no budgetGroup mapping — still occupies a session slot (7th, in-band).
-    w[0].exercises.push(ex('sport', 10))
+    w[0].exercises.push(ex('sport', 2))
     expect(() => structureLint(w)).not.toThrow()
     expect(structureLint(w)).toEqual([])
+  })
+})
+
+describe('session-length (R8, mezo-oyhy.3)', () => {
+  it('flags a too-short and a too-long day; the clean week stays silent', () => {
+    expect(structureLint(cleanWeek()).filter((f) => f.rule === 'session-length')).toHaveLength(0)
+    // Short: one 2-set exercise ≈ 13 min (< 45)
+    const short = [day('Hét', [ex('chest-mid', 2)])]
+    const shortFound = structureLint(short).filter((f) => f.rule === 'session-length')
+    expect(shortFound).toHaveLength(1)
+    expect(shortFound[0].day).toBe('Hét')
+    expect(shortFound[0].label).toMatch(/^Hét: ~\d+ perc\.$/)
+    // Long: pile sets past 90 min — 8 compounds × 4 sets ≈ 105 min
+    const long = [day('Hét', Array.from({ length: 8 }, (_, i) => ex('chest-mid', 4, { name: `L${i}` })))]
+    expect(structureLint(long).filter((f) => f.rule === 'session-length')).toHaveLength(1)
   })
 })
 

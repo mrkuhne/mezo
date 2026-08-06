@@ -11,10 +11,11 @@
 import type { MesoDay } from '@/data/types'
 import { BUDGET_GROUP_LABELS, budgetGroup } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
 export type StructureRuleId =
   | 'exercises-per-muscle' | 'sets-per-exercise' | 'frequency'
-  | 'variety' | 'session-size' | 'push-pull' | 'ham-quad'
+  | 'variety' | 'session-size' | 'push-pull' | 'ham-quad' | 'session-length'
 
 export interface StructureFinding {
   rule: StructureRuleId
@@ -39,6 +40,8 @@ export const VARIETY_MIN = 2
 export const VARIETY_MIN_WEEKLY_SETS = 6
 // Exercises per training day — plyo counts, it is a real session slot.
 export const SESSION_SIZE = { min: 5, max: 9 } as const
+// Estimated session-length band, minutes (research: 20 min too short, 3 h counterproductive).
+export const SESSION_LENGTH_BAND = { min: 45, max: 90 } as const
 // Weekly push:pull working-set ratio silence band; needs both sides > 0.
 export const PUSH_PULL_BAND = { min: 0.6, max: 1.6 } as const
 // ham:quad floor, checked only when quad weekly sets reach the gate.
@@ -130,6 +133,16 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
         rule: 'session-size', day: d.day,
         label: `${d.day}: ${size} gyakorlat.`,
         detail: '9 fölött a session vége már fáradtan megy — oszd el, vagy húzd meg.',
+      })
+    }
+
+    // R8 — session length (recipe estimator; GymExercise satisfies SessionTimeExercise)
+    const minutes = estimateSessionMinutes(d.exercises)
+    if (minutes < SESSION_LENGTH_BAND.min || minutes > SESSION_LENGTH_BAND.max) {
+      session.push({
+        rule: 'session-length', day: d.day,
+        label: `${d.day}: ~${minutes} perc.`,
+        detail: 'A produktív sáv 45–90 perc — 20 perc túl rövid az érdemi ingerhez, 3 óra már kontraproduktív.',
       })
     }
   }
