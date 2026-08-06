@@ -992,6 +992,17 @@ export interface HabitCatalog {
   chains: HabitChainInfo[]
 }
 
+/** One AI-suggested habit def (routine editor "AI javaslat", mezo-n5e9.3) — mirrors
+ *  HabitSuggestion 1:1 (every field required/non-null on the wire, no domain mapping needed). */
+export interface HabitSuggestion {
+  title: string
+  why: string
+  anchorCopy: string
+  skillKey: string
+  xp: number
+  chainKey: string
+}
+
 // ── Daily intention — standing creed + up to 3 daily foci + a holistic reflection (mezo-a686)
 export type Reflection = 'yes' | 'partial' | 'no'
 export interface IntentionFocus { id: string; focusDate: string; text: string }

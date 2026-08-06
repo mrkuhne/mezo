@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ApiError } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import {
@@ -7,9 +9,10 @@ import {
   type HabitChainUpdateInput,
   type HabitDefCreateInput,
   type HabitDefUpdateInput,
+  type HabitSuggestInput,
 } from '@/data/habit/habitAdminApi'
-import { mockHabitCatalog } from '@/data/habit/habitMock'
-import type { HabitCatalog, HabitChainInfo, HabitDefInfo } from '@/data/types'
+import { mockHabitCatalog, mockHabitSuggestions } from '@/data/habit/habitMock'
+import type { HabitCatalog, HabitChainInfo, HabitDefInfo, HabitSuggestion } from '@/data/types'
 
 export const HABIT_CATALOG_KEY = ['habitCatalog'] as const
 
@@ -126,6 +129,42 @@ export function useHabitCatalogActions() {
     pending:
       createChainM.isPending || updateChainM.isPending || deleteChainM.isPending
       || reorderChainM.isPending || createDefM.isPending || updateDefM.isPending || deleteDefM.isPending,
+  }
+}
+
+/**
+ * On-demand AI habit suggestions (routine editor "AI javaslat", mezo-n5e9.3) — deliberately
+ * mutation-shaped, not a query: suggestions are a one-shot fetch per "Javasolj" click, never
+ * cached or refetched. Real mode maps a 503 (suggester off) or 404 (whole habit surface off)
+ * to a local `unavailable` flag instead of throwing to the global mutation-error toast (the
+ * chatHooks.ts:44-46 degraded-mapping precedent — catch, don't toast); any OTHER error (e.g. a
+ * 400) is rethrown so it still fails the mutation and surfaces the global toast as normal.
+ */
+export function useHabitAiSuggest() {
+  const mock = isMockMode()
+  const [unavailable, setUnavailable] = useState(false)
+
+  const suggestM = useMutation({
+    mutationFn: async (input: HabitSuggestInput): Promise<HabitSuggestion[]> => {
+      if (mock) return mockHabitSuggestions
+      try {
+        const result = await habitAdminApi.suggest(input)
+        setUnavailable(false)
+        return result
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 503 || err.status === 404)) {
+          setUnavailable(true)
+          return []
+        }
+        throw err
+      }
+    },
+  })
+
+  return {
+    suggest: (input: HabitSuggestInput) => suggestM.mutateAsync(input),
+    pending: suggestM.isPending,
+    unavailable,
   }
 }
 
