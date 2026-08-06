@@ -20,9 +20,12 @@ const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparen
  * the form; an empty (but resolved) result shows a quiet ghost instead of implying a failure.
  */
 export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClose: () => void }) {
-  const { suggest, pending, unavailable } = useHabitAiSuggest()
+  const { suggest, pending: suggestPending, unavailable } = useHabitAiSuggest()
   const { catalog } = useHabitCatalog()
-  const { createDef } = useHabitCatalogActions()
+  // `pending` here gates the per-card accept/dismiss buttons (createDef's own in-flight state),
+  // distinct from `suggestPending` above (the "Javasolj" fetch) — HabitEditSheet/ChainEditSheet's
+  // same `useHabitCatalogActions().pending` disabled-gate precedent, renamed to avoid the clash.
+  const { createDef, pending: actionPending } = useHabitCatalogActions()
   const [hint, setHint] = useState('')
   const [cards, setCards] = useState<HabitSuggestion[] | null>(null)
 
@@ -36,7 +39,12 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
     createDef({
       chainKey: s.chainKey, title: s.title, why: s.why, anchorCopy: s.anchorCopy,
       mode: 'MANUAL', skillKey: s.skillKey, xp: s.xp,
-    }).then(() => setCards((prev) => prev?.filter((c) => c !== s) ?? prev))
+    })
+      .then(() => setCards((prev) => prev?.filter((c) => c !== s) ?? prev))
+      // A genuine failure (e.g. a stale chainKey → 400 HABIT_DEF_UNKNOWN_CHAIN) already surfaces
+      // via the global mutation-error toast (QueryProvider's MutationCache.onError) — swallow it
+      // here so it doesn't also become an unhandled rejection; the card stays for a retry.
+      .catch(() => {})
   }
 
   const dismiss = (s: HabitSuggestion) => {
@@ -81,8 +89,8 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
               <button
                 type="button"
                 className="cta-primary"
-                disabled={pending}
-                style={{ opacity: pending ? 0.5 : 1 }}
+                disabled={suggestPending}
+                style={{ opacity: suggestPending ? 0.5 : 1 }}
                 onClick={run}
               >
                 <span aria-hidden="true">✨</span> Javasolj
@@ -108,12 +116,19 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
                     <button
                       type="button"
                       className="chip"
+                      disabled={actionPending}
                       onClick={() => accept(s)}
-                      style={{ fontSize: 11, padding: '6px 12px', background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}
+                      style={{ fontSize: 11, padding: '6px 12px', background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)', opacity: actionPending ? 0.5 : 1 }}
                     >
                       Elfogadom
                     </button>
-                    <button type="button" className="chip" onClick={() => dismiss(s)} style={{ fontSize: 11, padding: '6px 12px' }}>
+                    <button
+                      type="button"
+                      className="chip"
+                      disabled={actionPending}
+                      onClick={() => dismiss(s)}
+                      style={{ fontSize: 11, padding: '6px 12px', opacity: actionPending ? 0.5 : 1 }}
+                    >
                       Elvetem
                     </button>
                   </div>

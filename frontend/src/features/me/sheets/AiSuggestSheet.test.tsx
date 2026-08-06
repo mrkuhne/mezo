@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { useState } from 'react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import type { HabitChainInfo, HabitSuggestion } from '@/data/types'
@@ -7,7 +8,10 @@ const {
   suggest, createDef, useHabitAiSuggest, useHabitCatalog, useHabitCatalogActions,
 } = vi.hoisted(() => ({
   suggest: vi.fn(),
-  createDef: vi.fn(() => Promise.resolve()),
+  // Typed to accept the create-def payload (unknown here — the payload shape is asserted
+  // structurally at each toHaveBeenCalledWith site) so the pending-gate tests below can wrap
+  // it as `createDef(input)` without a spurious "expected 0 arguments" compile error.
+  createDef: vi.fn((_input: unknown) => Promise.resolve()),
   useHabitAiSuggest: vi.fn(),
   useHabitCatalog: vi.fn(),
   useHabitCatalogActions: vi.fn(),
@@ -35,6 +39,10 @@ const SUGGESTIONS: HabitSuggestion[] = [
 beforeEach(() => {
   suggest.mockClear(); createDef.mockClear()
   suggest.mockResolvedValue(SUGGESTIONS)
+  // Re-asserted every test (not just cleared) — a test that overrides createDef's return value
+  // (the pending-gate / rejection-handling cases below) must not bleed its implementation into
+  // the next test via a stale mockReturnValue/mockImplementation.
+  createDef.mockImplementation(() => Promise.resolve())
   useHabitAiSuggest.mockReturnValue({ suggest, pending: false, unavailable: false })
   useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn() })
   useHabitCatalogActions.mockReturnValue({ createDef, pending: false })
@@ -110,5 +118,90 @@ describe('AiSuggestSheet', () => {
     useHabitAiSuggest.mockReturnValue({ suggest, pending: true, unavailable: false })
     render(<AiSuggestSheet onClose={vi.fn()} />)
     expect(screen.getByRole('button', { name: /javasolj/i })).toBeDisabled()
+  })
+
+  it('a second Elfogadom click while the first accept is still pending does not fire a second createDef (review fix)', async () => {
+    // A stateful useHabitCatalogActions stand-in — real usage's `pending` comes from an actual
+    // in-flight useMutation, so the pending-gate assertion needs the mock to actually flip
+    // `pending` true for the render cycle between the first click and the deferred settling.
+    let resolveCreateDef: () => void = () => {}
+    const deferred = new Promise<void>((resolve) => { resolveCreateDef = resolve })
+    createDef.mockReturnValue(deferred)
+    useHabitCatalogActions.mockImplementation(() => {
+      const [pending, setPending] = useState(false)
+      return {
+        createDef: (input: unknown) => {
+          setPending(true)
+          return createDef(input).finally(() => setPending(false))
+        },
+        pending,
+      }
+    })
+
+    render(<AiSuggestSheet onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
+    await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
+
+    const acceptButtons = screen.getAllByRole('button', { name: 'Elfogadom' })
+    fireEvent.click(acceptButtons[0])
+    expect(createDef).toHaveBeenCalledTimes(1)
+    expect(acceptButtons[0]).toBeDisabled() // the pending gate — this is what makes the 2nd click a no-op
+
+    fireEvent.click(acceptButtons[0]) // double-tap while still pending
+    expect(createDef).toHaveBeenCalledTimes(1) // still just once — no duplicate def
+
+    await act(async () => {
+      resolveCreateDef()
+    })
+    await waitFor(() => expect(screen.queryByText('Esti telefon-lezárás')).not.toBeInTheDocument())
+  })
+
+  it('Elvetem is also disabled while an accept is pending (consistency with Elfogadom)', async () => {
+    let resolveCreateDef: () => void = () => {}
+    const deferred = new Promise<void>((resolve) => { resolveCreateDef = resolve })
+    createDef.mockReturnValue(deferred)
+    useHabitCatalogActions.mockImplementation(() => {
+      const [pending, setPending] = useState(false)
+      return {
+        createDef: (input: unknown) => {
+          setPending(true)
+          return createDef(input).finally(() => setPending(false))
+        },
+        pending,
+      }
+    })
+
+    render(<AiSuggestSheet onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
+    await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Elfogadom' })[0])
+    expect(screen.getAllByRole('button', { name: 'Elvetem' })[0]).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Elvetem' })[1]).toBeDisabled()
+
+    await act(async () => {
+      resolveCreateDef()
+    })
+    await waitFor(() => expect(screen.queryByText('Esti telefon-lezárás')).not.toBeInTheDocument())
+  })
+
+  it('a rejecting createDef on accept leaves the card in place and does not surface as an unhandled rejection (review fix)', async () => {
+    // mockImplementation (not mockReturnValue with a pre-built Promise.reject) — the rejected
+    // promise must be constructed fresh INSIDE the call so accept()'s own .then().catch() attaches
+    // in the same synchronous tick; a promise built ahead of time and only later handed a handler
+    // is what triggers Node's "handled asynchronously" warning this test is guarding against.
+    createDef.mockImplementation(() => Promise.reject(new Error('HABIT_DEF_UNKNOWN_CHAIN')))
+    render(<AiSuggestSheet onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
+    await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
+
+    const card = screen.getByText('Esti telefon-lezárás').closest('.card') as HTMLElement
+    fireEvent.click(within(card).getByRole('button', { name: 'Elfogadom' }))
+
+    // The rejection is consumed by accept()'s own .catch (no test-level unhandled-rejection
+    // warning) — the global mutation-error toast is the app's real surface for this failure,
+    // not exercised here; locally the card simply stays, so the user can retry it.
+    await waitFor(() => expect(createDef).toHaveBeenCalledTimes(1))
+    expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument()
   })
 })
