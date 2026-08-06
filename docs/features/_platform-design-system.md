@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív" → Mezo Edition DS)
 type: feature-platform
 status: in-progress
-updated: 2026-08-05
+updated: 2026-08-06
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -208,6 +208,20 @@ The sleep C-éj slice appended two feature-scoped CSS families to `prototype.css
 - **`.wdb*` — the Today evening/night band** (`WindDownBanner.tsx`). **Theme-aware** (built from the normal Napív tokens — `--lav-deep`/`--wash-lav`/`--amber-deep`/`--wash-amber`/`--sage-deep`/`--wash-sage`/`--ink`/`--sub`/`--faint`/`--line`/`--warm`/`--surface`): `.wdb` (the dim/winddown card shell) + `.wdb-hd`/`.wdb-eye`/`.wdb-pill` (header + to-bed pill), `.wdb-title`, `.wdb-list`/`.wdb-tip`/`.wdb-tip-ic` (the dim/detox tip rows), `.wdb-foot`/`.wdb-stat` (the Walker-stat footer), and the winddown habit block `.wdb-hab`/`.wdb-hab-tx`/`.wdb-hab-t1/-t2`/`.wdb-hab-xp`/`.wdb-pipa`/`.wdb-done`. **The one exception is `.wdb-night`** — the night-phase entry row is **literal-dark in both themes** (its own dark surface + `#F5EFE6`/`#B7A899`/`#B9ACD9` text, matching the NightPage it links into), the idiom the retired `.dynamic-island.live` capsule used before its `mezo-xt65` deletion.
 - **`.sstat*` / `.sesc*` — the Sleep education layer** (slice C3, `mezo-hd8k`). **Theme-aware** (Napív aliases): `.sstat` (the daily-rotating Walker stat card on `SleepPage` — a whole-card `button` over a `--wash-lav` gradient) + `.sstat-eye`/`.sstat-title`/`.sstat-text`/`.sstat-src`, `.sstat-row` (the deck-sheet list rows) and `.sstat-foot` (the sources footer); `.sesc` (the escalation card — a `--wash-amber` gradient, deliberately amber not red, ADR 0010 tone) + `.sesc-actions`/`.sesc-cta`/`.sesc-quiet`, and the sheet-side `.sesc-sheet`/`.sesc-lead`/`.sesc-body` escalation section. Consumed by `SleepStatCard.tsx`/`SleepEscalationCard.tsx`/`SleepStatsSheet.tsx` — see [me.md](me.md) §2 Alvás.
 - **`.night*` / `.nb-*` / `.ns-*` / `.nw-*` — the full-screen NightPage, literal-dark in BOTH themes** (`#0E0B09` canvas, `#F5EFE6`/`#B7A899`/`#6E6156` text, `#B9ACD9` lavender accent — hardcoded hex, deliberately exempt from the tokens-only rule, same always-dark rationale the retired `.dynamic-island.live` capsule used (deleted in `mezo-xt65`): a 3 a.m. sub-30-lux surface reads as always-dark). `.night`/`.night-back`/`.night-body`/`.night-eye`/`.night-moon`/`.night-glow`/`.night-title`/`.night-tx`/`.night-cta`/`.night-quiet` (the idle/getup frames), `.night-orb` (the numberless breathing orb, `nb-breath 18s`) + `.night-tools`/`.night-tool` (the waiting-frame tool menu), `.night-steps` (the get-up list); and the three tool families **`.nb-*`** (breathing: `.nb-stage`/`.nb-orb` + the CSS-only `nb-lb-in/-hold/-out` label cycle over the 18 s `nb-breath` cycle), **`.ns-*`** (body scan: `.ns-card`/`.ns-part`/`.ns-tx`/`.ns-dots`/`.ns-dot`), **`.nw-*`** (4K-walk: `.nw-stage`/`.nw-setup`/`.nw-remind`/`.nw-t`/`.nw-tx`/`.nw-rtx`). **All transform/scale motion is reduced-motion-guarded** — `@media (prefers-reduced-motion: reduce)` stills `.nb-orb`/`.night-orb`; the `nb-lb-in/-hold/-out` **label opacity fades intentionally keep cycling** under reduce (spec D6: the 5-6-7 pacing must survive without motion), a deliberate, documented exception to the §3.5 "all infinite animation behind a reduce guard" rule.
+
+### Exercise demo stills — the `.exdemo*` family (`mezo-8xdl.3`, 2026-08-06)
+
+Three feature-scoped classes at the tail of `prototype.css` (`.exdemo` / `.exdemo-frame` /
+`.exdemo-toggle` / `.exdemo-thumb`), owned solely by
+[`features/train/components/ExerciseImage.tsx`](../features/train.md) — **not shared vocabulary**
+(same precedent as `.wdb*`/`.sstat*`/`.ph*`). They exist because the vendored demo photos
+([ADR 0020](../decisions/0020-vendor-public-domain-exercise-imagery.md)) are shot in a red-walled
+commercial gym and read as pasted-in stock without treatment: `saturate(.88)` always plus
+`brightness(.9)` under dark, the DS card radius, and a 5 px **muscle rail along the leading edge**
+(colour injected inline from `muscleColors.ts`) — the same rail the `mezo-kaui` PR cards use, which
+is what actually binds a foreign photograph to our card system. Reconciliation lives in the
+component, never at a call site. `.exdemo-frame` carries the crossfade transition and drops it
+under `prefers-reduced-motion`.
 
 ### Sleep-phase classes — the `.ph*` family (`mezo-fk9a`, 2026-07-31)
 

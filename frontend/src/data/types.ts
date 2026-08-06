@@ -906,6 +906,10 @@ export interface ExerciseLibraryItem {
   id: string; name: string; muscle: string; type: ExerciseKind; stim: number; fatigue: number
   catalogId?: string  // set when the item comes from the backend catalog (real mode)
   videoUrl?: string | null  // YouTube demo URL; null/absent when no demo is set
+  // Demo stills, start + end position (mezo-8xdl). imageStartUrl is the presence flag:
+  // absent means the exercise has no image at all (37 of the 161 master rows, ADR 0020).
+  imageStartUrl?: string | null
+  imageEndUrl?: string | null
   editable?: boolean  // true for user-authored catalog rows (created_by == current user)
 }
 
