@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-03
+updated: 2026-08-06
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1107,6 +1107,18 @@ same shape again: **fuel owns the port** (`feature/fuel/service/StackPlacementLl
 bean ⇒ `PlacementEngine`'s `ObjectProvider<StackPlacementLlm>` is empty ⇒ placement **silently**
 degrades to the deterministic 'fallback' zone, never an error. Consumer side in
 [`fuel.md`](fuel.md).
+
+**Habit-suggest consumer (✅ wired, ADR 0012, ADR [0019](../decisions/0019-user-editable-habit-catalog-propose-only-ai.md), mezo-n5e9.3).** The routine editor's propose-only AI habit suggester is
+another consumer-owned-port pair, on the **smart** tier instead of cheap: **habit owns the port**
+(`feature/habit/service/HabitSuggestPort.java`, `suggest(userId, chainKey, hint)`) and companion owns
+`HabitSuggestLlmAdapter` (`llm/HabitSuggestLlmAdapter.java`) — the `StackPlacementLlmAdapter` idiom
+extended to a **three-way** array (`HABIT_AI_SUGGEST_SWITCH` + `COMPANION_SWITCH` + `HABIT_SWITCH`).
+Any one off ⇒ no adapter bean ⇒ `HabitAiService`'s `ObjectProvider<HabitSuggestPort>` is empty ⇒ a
+clean **503** (never a silent degrade — an on-demand suggestion the user explicitly asked for has no
+deterministic fallback to fall back to, unlike stack-placement/meal-coach). Tagged
+`LlmCallContext("habit_ai_suggest", "propose", …)` for the `llm_log_history` audit (§4 below).
+Consumer side — the routine editor's „✨ AI javaslat" sheet, the grounding/filter chain, the contract —
+is in [`habit.md`](habit.md) §2/§4/§5.
 
 **V2.1 embedding seam (✅ wired, unused until V2.2).** All embedding access goes through the
 `EmbeddingPort` (`EmbeddingPort.java`) — `embedDocuments(List<String>) → List<float[]>` /
