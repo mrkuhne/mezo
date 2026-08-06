@@ -807,8 +807,9 @@ describe('TrainTodayPage (real mode, pending)', () => {
     // prevent (mezo-9bbc final review, I4).
     const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
     expect(sk.filter((el) => el.style.width === '62px')).toHaveLength(7)
-    // the only remaining full-width 44px block is the gym hero's CTA
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '44px')).toHaveLength(1)
+    // the only remaining full-width block is the gym hero's CTA — 48px since the DS
+    // re-skin gave it the minimum tap height (mezo-setx.6.2)
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '48px')).toHaveLength(1)
   })
 })
 

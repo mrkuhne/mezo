@@ -27,6 +27,9 @@ import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
+import { Chip } from '@/shared/ui/Chip'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
@@ -129,13 +132,15 @@ export function TrainTodayPage() {
         {/* No „Heti terv” ghost here — that whole list lives on the Heti tab now
             (mezo-9bbc); promising a section Mai no longer owns was a leftover. */}
         <div style={{ padding: '0 24px 16px' }}>
+          {/* Caption role at 14 (the sentence-case floor), 48dp target — it was a
+              10px uppercase strip, below both. */}
           <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
-            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
-            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
-            letterSpacing: '0.14em', textTransform: 'uppercase',
+            width: '100%', minHeight: 48, padding: '12px 16px', background: 'transparent',
+            borderStyle: 'dashed', borderColor: 'var(--divider)', color: 'var(--tag-gym)',
+            fontSize: 14, fontWeight: 600,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>
-            <Icon name="plus" size={12} /> Saját edzés
+            <Icon name="plus" size={14} /> Saját edzés
           </button>
         </div>
         {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
@@ -232,16 +237,18 @@ export function TrainTodayPage() {
     <>
       {/* Header — selection-aware: the over-line + h1 read the shown day, and a
           non-today selection gets a "← Ma" way back to today. */}
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">
+          <Eyebrow brand>
             {shownDay ? `Edzés · ${DAY_LABELS[shownDay.day] ?? shownDay.day} · W${activeMeso.currentWeek}` : `Edzés · W${activeMeso.currentWeek}`}
-          </div>
-          <h1>{isTodayShown ? 'Mai nap' : (DAY_LABELS[shownDay?.day ?? ''] ?? 'Mai nap')}</h1>
+          </Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>
+            {isTodayShown ? 'Mai nap' : (DAY_LABELS[shownDay?.day ?? ''] ?? 'Mai nap')}
+          </PageTitle>
         </div>
         {!isTodayShown && (
-          <button type="button" className="pgact-np" onClick={() => writeDay(null)}>
-            <Icon name="chevron-left" size={12} /> Ma
+          <button type="button" className="pgact" onClick={() => writeDay(null)}>
+            <Icon name="chevron-left" size={14} /> Ma
           </button>
         )}
       </div>
@@ -267,19 +274,18 @@ export function TrainTodayPage() {
 
       {/* Mezociklus overview entry card (active meso only) */}
       <div style={{ padding: '0 24px 12px' }}>
+        {/* The DS canonical row: a 56px nav row at body size with a trailing chevron. */}
         <button
           type="button"
-          className="card np-press"
+          className="card mesorow"
           onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
           aria-label={`Mezociklus áttekintő · ${activeMeso.shortTitle}`}
-          style={{ padding: '12px 14px', width: '100%', textAlign: 'left', display: 'block' }}
         >
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-              🗓 {activeMeso.shortTitle} · {currentPhase} · W{activeMeso.currentWeek}/{activeMeso.weeks}
-            </span>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>→</span>
-          </div>
+          <span aria-hidden="true">🗓</span>
+          <span className="mesorow-tx">
+            {activeMeso.shortTitle} · {currentPhase} · W{activeMeso.currentWeek}/{activeMeso.weeks}
+          </span>
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
         </button>
       </div>
 
@@ -303,15 +309,7 @@ export function TrainTodayPage() {
                 <div className="trainhero-over">
                   {gymEyebrow}
                   {gymInProgress && (
-                    <span
-                      className="chip"
-                      style={{
-                        marginLeft: 8, fontSize: 9, color: 'var(--warning)',
-                        borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
-                      }}
-                    >
-                      ● Folyamatban
-                    </span>
+                    <Chip variant="warning" style={{ marginLeft: 8 }}>● Folyamatban</Chip>
                   )}
                 </div>
                 <div className="h2row">
@@ -319,10 +317,10 @@ export function TrainTodayPage() {
                   <span className="typetag typetag-gym">🏋️ GYM</span>
                 </div>
                 <div className="chips">
-                  <span className="chip-np">{workout.exercises.length} gyakorlat</span>
-                  <span className="chip-np">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
-                  {workoutMinutes > 0 && <span className="chip-np">~{workoutMinutes} perc</span>}
-                  {gym.type && <span className="chip-np">{gym.type}</span>}
+                  <span className="metapill">{workout.exercises.length} gyakorlat</span>
+                  <span className="metapill">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
+                  {workoutMinutes > 0 && <span className="metapill">~{workoutMinutes} perc</span>}
+                  {gym.type && <span className="metapill">{gym.type}</span>}
                 </div>
                 {completedTodayWorkout ? (
                   // Done-state: the workout is over (no restart until next week) — the shared
@@ -469,9 +467,9 @@ export function TrainTodayPage() {
           instance's day plan here. */}
       {isTodayShown && !shownDay?.gym && todaySession?.openWorkout && workout && (
         <div style={{ padding: '0 24px 12px' }}>
-          <div className="card" style={{ padding: 18 }}>
-            <span className="eyebrow" style={{ color: 'var(--warning)' }}>● Folyamatban</span>
-            <p style={{ fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>{workout.title}</p>
+          <div className="card" style={{ padding: 'var(--sp-4)' }}>
+            <span className="eyebrow" style={{ color: 'var(--warning-hover)' }}>● Folyamatban</span>
+            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>{workout.title}</p>
             <div className="np-ctarow mt-md">
               <button type="button" className="np-cta np-press" onClick={openSession}>
                 Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
@@ -487,20 +485,20 @@ export function TrainTodayPage() {
           rest-day card must never render together (mezo-ws2x — Finding 4). */}
       {restDayCard && (
         <div style={{ padding: '0 24px 12px' }}>
-          <div className="card" style={{ padding: 18 }}>
+          <div className="card" style={{ padding: 'var(--sp-4)' }}>
             <span className="eyebrow">{isTodayShown ? 'Ma pihenőnap' : 'Nincs tervezett edzés'}</span>
-            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 16, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               {isTodayShown
                 ? 'Nincs tervezett edzés mára — a heti rended a Heti fülön találod.'
                 : 'Ezen a napon nincs tervezett edzés.'}
             </p>
             {isTodayShown && (
               <CtaGhost
-                className="rad-12 mt-md"
+                className="mt-md"
                 onClick={() => setCustomOpen(true)}
                 style={{ borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)', color: 'var(--tag-gym)' }}
               >
-                <Icon name="plus" size={12} /> Saját edzés
+                <Icon name="plus" size={14} /> Saját edzés
               </CtaGhost>
             )}
           </div>
@@ -516,12 +514,12 @@ export function TrainTodayPage() {
       {isTodayShown && !restDayCard && (
         <div style={{ padding: '0 24px 16px' }}>
           <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
-            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
-            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
-            letterSpacing: '0.14em', textTransform: 'uppercase',
+            width: '100%', minHeight: 48, padding: '12px 16px', background: 'transparent',
+            borderStyle: 'dashed', borderColor: 'var(--divider)', color: 'var(--tag-gym)',
+            fontSize: 14, fontWeight: 600,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>
-            <Icon name="plus" size={12} /> Saját edzés
+            <Icon name="plus" size={14} /> Saját edzés
           </button>
         </div>
       )}
