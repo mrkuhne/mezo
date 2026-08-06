@@ -27,8 +27,16 @@ const SLEEP_KEYS = new Set(['wake_on_time'])
  * Quiet per-key explainer for passive DERIVED rows (no CTA): why the row will tick by
  * itself. Without it the evening bed_on_time row — decided only by TOMORROW morning's
  * sleep log (E4) — reads as broken (mezo-o5hx).
+ *
+ * Since mezo-czol the server can also compute a per-row hint (e.g. wake_on_time after an
+ * honestly out-of-window wakeup — only the server knows the wakeup + goal anchor + window
+ * together) — `h.hint` takes precedence when present; the static bed_on_time copy is the
+ * fallback for the one row the server never hints (its own FE-only explainer already covers it).
  */
 export function habitHint(h: HabitItem): string | null {
+  if (h.status === 'pending' && h.hint) {
+    return h.hint
+  }
   if (h.status === 'pending' && h.key === 'bed_on_time') {
     return 'holnap reggel, az alvásnaplódból derül ki'
   }
@@ -41,6 +49,12 @@ export function habitAction(h: HabitItem): HabitAction {
   }
   if (h.mode === 'MANUAL') {
     return { kind: 'check' }
+  }
+  // A server-hinted pending row (mezo-czol) behaves like bed_on_time's precedent: no CTA, the
+  // hint renders as the subtitle instead (habitHint above). Hints only ever apply to DERIVED
+  // rows — MANUAL is handled above and never reaches here.
+  if (h.hint) {
+    return { kind: 'none' }
   }
   if (SLEEP_KEYS.has(h.key)) {
     return { kind: 'sleep-sheet' }

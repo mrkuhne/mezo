@@ -138,6 +138,15 @@ public class HabitEvaluator {
             .stream().filter(s -> date.equals(s.getDate())).findFirst();
     }
 
+    /**
+     * The day's wakeup clock string ("HH:mm"), if a sleep log exists — {@code HabitService.getDay}
+     * reuses this (mezo-czol) to build the {@code wake_on_time} row's out-of-window hint without
+     * duplicating the sleep-log lookup {@link #satisfied} already does for {@code sleep_wake_window}.
+     */
+    public Optional<String> wakeupOf(UUID userId, LocalDate date) {
+        return sleepLog(userId, date).map(SleepLogEntity::getWakeup).filter(Objects::nonNull);
+    }
+
     /** Local wall-clock times of the day's stim-kind intakes (owner-scoped pantry resolution). */
     private List<LocalTime> stimIntakes(UUID userId, LocalDate date) {
         return supplementIntakeRepository

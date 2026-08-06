@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +54,18 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = FeaturesConfiguration.HABIT_SWITCH, havingValue = "true")
 public class HabitService {
 
+    /**
+     * The out-of-window wake-hint copy (mezo-czol): server-only computed because only the server
+     * knows the wakeup + the goal anchor + {@code wake-window-min} together. This domain's
+     * non-error, dynamic user copy has no {@code messages.properties} precedent — that catalog is
+     * exclusively wired through {@code SystemMessage}/{@code GlobalExceptionHandler} for
+     * REQUEST/FIELD *errors* (see {@code error_handling.md}) — so per the house rule ("no
+     * precedent -> a plain code constant"), this stays a constant here rather than growing a new,
+     * unprecedented non-error message-resolution path.
+     */
+    private static final String WAKE_HINT_FORMAT = "%s — a célablakon kívül (%s ± %d′)";
+    private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+
     private final HabitDayRepository repository;
     private final HabitCatalogService catalogService;
     private final HabitEvaluator evaluator;
@@ -61,6 +74,7 @@ public class HabitService {
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
     private final HabitProperties properties;
+    private final HabitTargets habitTargets;
 
     @Transactional
     public HabitDayResponse getDay(UUID userId, LocalDate date) {
@@ -83,11 +97,46 @@ public class HabitService {
         return HabitDayResponse.builder()
             .date(date)
             .habits(defs.stream()
-                .map(def -> mapper.toResponse(def, chainKeyById.get(def.getChainId()),
-                    byKey.get(def.getHabitKey()), strengths.get(def.getHabitKey())))
+                .map(def -> {
+                    HabitDayEntity row = byKey.get(def.getHabitKey());
+                    return mapper.toResponse(def, chainKeyById.get(def.getChainId()), row,
+                        strengths.get(def.getHabitKey()), wakeHint(userId, date, def, row));
+                })
                 .toList())
             .levelUps(levelUps.stream().map(levelUpResultMapper::toDto).toList())
             .build();
+    }
+
+    /**
+     * The {@code wake_on_time} row's out-of-window explainer (mezo-czol, live repro: a wakeup
+     * honestly outside the goal window left the row pending with zero feedback). Null for every
+     * other row, and null here too once the row is no longer pending (done/missed rows never
+     * needed a hint) or when the day has no sleep log yet (the CTA must keep offering Logolás —
+     * "not logged" and "logged, out of window" are different states, not the same "pending").
+     *
+     * <p><b>TODAY-only (review fix, mezo-czol):</b> a bare {@code pending} status only PROVES
+     * "out of window" on a today read, because {@code evaluateIntraday} runs for today only and
+     * would already have flipped an in-window wakeup to {@code done} before this method ever sees
+     * the row. A past-day read never runs that evaluation — a day whose rows never materialized
+     * (past dates don't lazily create rows, see {@code getDay} above) reads as a synthetic
+     * {@code pending} default regardless of what the backfilled sleep log actually says, so
+     * inferring "out of window" from bare pending there would be dishonest (an in-window
+     * backfilled wakeup would wrongly get the hint). Gating on {@code date.equals(LocalDate.now())}
+     * matches {@code evaluateIntraday}'s own scope exactly: past-day rows always get a null hint,
+     * consistent with the Rutin tab's past-day view being read-only history, not a live affordance.
+     */
+    private String wakeHint(UUID userId, LocalDate date, HabitDefEntity def, HabitDayEntity row) {
+        if (!"wake_on_time".equals(def.getHabitKey()) || !date.equals(LocalDate.now())) {
+            return null;
+        }
+        String status = row != null ? row.getStatus() : HabitDayEntity.STATUS_PENDING;
+        if (!HabitDayEntity.STATUS_PENDING.equals(status)) {
+            return null;
+        }
+        return evaluator.wakeupOf(userId, date)
+            .map(wakeup -> WAKE_HINT_FORMAT.formatted(wakeup,
+                HH_MM.format(habitTargets.resolve(userId).wake()), properties.wakeWindowMin()))
+            .orElse(null);
     }
 
     @Transactional
@@ -104,7 +153,7 @@ public class HabitService {
         List<LevelUpResult> levelUps = complete(row, def, HabitDayEntity.SOURCE_MANUAL);
         String chainKey = chainKeyById(userId).get(def.getChainId());
         return HabitWriteResponse.builder()
-            .habit(mapper.toResponse(def, chainKey, row, null))
+            .habit(mapper.toResponse(def, chainKey, row, null, null))
             .levelUps(levelUps.stream().map(levelUpResultMapper::toDto).toList())
             .build();
     }
@@ -127,7 +176,7 @@ public class HabitService {
         row.setSource(null);
         repository.save(row);
         String chainKey = chainKeyById(userId).get(def.getChainId());
-        return mapper.toResponse(def, chainKey, row, null);
+        return mapper.toResponse(def, chainKey, row, null, null);
     }
 
     /**

@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 public class HabitMapper {
 
     public HabitResponse toResponse(HabitDefEntity def, String chainKey, HabitDayEntity row,
-        Integer strengthPct) {
+        Integer strengthPct, String hint) {
         String status = row != null ? row.getStatus() : HabitDayEntity.STATUS_PENDING;
         return HabitResponse.builder()
             .id(row != null ? row.getId() : null)
@@ -41,6 +41,7 @@ public class HabitMapper {
             .xp(def.getXp())
             .strengthPct(strengthPct)
             .linkUrl(def.getLinkUrl())
+            .hint(hint)
             .build();
     }
 

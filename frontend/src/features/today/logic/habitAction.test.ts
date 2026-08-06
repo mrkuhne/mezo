@@ -47,4 +47,27 @@ describe('habitAction', () => {
     expect(habitAction({ ...byKey('morning_sunlight'), mode: 'DERIVED', key: 'evening_ritual', status: 'pending' }))
       .toEqual({ kind: 'nav', to: '/ritual' })
   })
+
+  // Server-computed out-of-window hint (mezo-czol): a still-pending wake_on_time row that the
+  // server has explained (e.g. an honestly out-of-window wakeup) reads like bed_on_time's
+  // precedent — no CTA, the hint carries the explanation as the row's subtitle instead.
+  test('a pending DERIVED row WITH a server hint has no action', () => {
+    expect(habitAction({ ...byKey('wake_on_time'), status: 'pending',
+      hint: '06:30 — a célablakon kívül (05:30 ± 45′)' }))
+      .toEqual({ kind: 'none' })
+  })
+  test('habitHint prefers the server hint over the static bed_on_time copy', () => {
+    expect(habitHint({ ...byKey('wake_on_time'), status: 'pending',
+      hint: '06:30 — a célablakon kívül (05:30 ± 45′)' }))
+      .toBe('06:30 — a célablakon kívül (05:30 ± 45′)')
+  })
+  test('a pending DERIVED row WITHOUT a hint keeps its CTA', () => {
+    expect(habitAction({ ...byKey('wake_on_time'), status: 'pending', hint: null }))
+      .toEqual({ kind: 'sleep-sheet' })
+  })
+  test('a hint on a MANUAL row is ignored — MANUAL always stays checkable', () => {
+    expect(habitAction({ ...byKey('morning_sunlight'), status: 'pending',
+      hint: 'should never win over MANUAL' }))
+      .toEqual({ kind: 'check' })
+  })
 })

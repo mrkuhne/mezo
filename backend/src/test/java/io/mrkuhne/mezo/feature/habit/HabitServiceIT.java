@@ -85,6 +85,85 @@ class HabitServiceIT extends AbstractIntegrationTest {
         assertThat(second.getLevelUps()).isEmpty(); // idempotent
     }
 
+    /**
+     * The live repro this fixes (mezo-czol): an honest out-of-window wakeup left {@code
+     * wake_on_time} pending with zero feedback — the row's CTA kept dumbly re-offering
+     * "Logolás". The server is the only party that knows the wakeup + the goal anchor + the
+     * configured window (mezo.habit.wake-window-min, 45 by default — see application.yml), so
+     * the hint is computed here, never on the FE.
+     */
+    @Test
+    void testGetDay_shouldHintOutOfWindow_whenWakeupOutsideGoalWindow() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "05:30", 15);
+        sleepLogPopulator.createSleepLog(owner, today, "23:00", "06:30", new BigDecimal("7.5"));
+
+        HabitDayResponse day = habitService.getDay(owner, today);
+
+        assertThat(day.getHabits()).filteredOn(h -> "wake_on_time".equals(h.getKey()))
+            .first().satisfies(h -> {
+                assertThat(h.getStatus().getValue()).isEqualTo("pending"); // honestly outside the window
+                assertThat(h.getHint()).isEqualTo("06:30 — a célablakon kívül (05:30 ± 45′)");
+            });
+    }
+
+    @Test
+    void testGetDay_shouldCompleteAndNullHint_whenWakeupInsideGoalWindow() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "05:30", 15);
+        sleepLogPopulator.createSleepLog(owner, today, "22:30", "05:40", new BigDecimal("7.0"));
+
+        HabitDayResponse day = habitService.getDay(owner, today);
+
+        assertThat(day.getHabits()).filteredOn(h -> "wake_on_time".equals(h.getKey()))
+            .first().satisfies(h -> {
+                assertThat(h.getStatus().getValue()).isEqualTo("done");
+                assertThat(h.getHint()).isNull();
+            });
+    }
+
+    @Test
+    void testGetDay_shouldStayPendingWithNullHint_whenNoSleepLogYet() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "05:30", 15);
+
+        HabitDayResponse day = habitService.getDay(owner, today);
+
+        assertThat(day.getHabits()).filteredOn(h -> "wake_on_time".equals(h.getKey()))
+            .first().satisfies(h -> {
+                assertThat(h.getStatus().getValue()).isEqualTo("pending"); // CTA must keep offering Logolás
+                assertThat(h.getHint()).isNull();
+            });
+    }
+
+    /**
+     * Review fix regression (mezo-czol): a PAST day's rows never materialize/evaluate (that only
+     * happens for {@code LocalDate.now()}), so a past {@code wake_on_time} row reads as a
+     * synthetic {@code pending} default regardless of what its sleep log actually says. Before the
+     * today-gate, {@code wakeHint} inferred "out of window" from bare pending + a wakeup existing
+     * — which falsely flagged this in-window backfilled wakeup as out-of-window. The hint is a
+     * TODAY-read affordance only; past-day reads (e.g. the Rutin tab's read-only history view)
+     * must always get a null hint.
+     */
+    @Test
+    void testGetDay_shouldStayHintFree_whenPastDayHasInWindowBackfilledWakeup() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "05:30", 15);
+        sleepLogPopulator.createSleepLog(owner, yesterday, "22:30", "05:45", new BigDecimal("7.0"));
+
+        HabitDayResponse day = habitService.getDay(owner, yesterday);
+
+        assertThat(day.getHabits()).filteredOn(h -> "wake_on_time".equals(h.getKey()))
+            .first().satisfies(h -> {
+                assertThat(h.getStatus().getValue()).isEqualTo("pending"); // synthetic default — rows never materialized for a past day
+                assertThat(h.getHint()).isNull(); // must NOT falsely claim the in-window wakeup was out of window
+            });
+    }
+
     @Test
     void testCheck_shouldAwardAndGuard_whenManualHabit() {
         UUID owner = owner();
