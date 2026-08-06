@@ -209,6 +209,27 @@ The sleep C-éj slice appended two feature-scoped CSS families to `prototype.css
 - **`.sstat*` / `.sesc*` — the Sleep education layer** (slice C3, `mezo-hd8k`). **Theme-aware** (Napív aliases): `.sstat` (the daily-rotating Walker stat card on `SleepPage` — a whole-card `button` over a `--wash-lav` gradient) + `.sstat-eye`/`.sstat-title`/`.sstat-text`/`.sstat-src`, `.sstat-row` (the deck-sheet list rows) and `.sstat-foot` (the sources footer); `.sesc` (the escalation card — a `--wash-amber` gradient, deliberately amber not red, ADR 0010 tone) + `.sesc-actions`/`.sesc-cta`/`.sesc-quiet`, and the sheet-side `.sesc-sheet`/`.sesc-lead`/`.sesc-body` escalation section. Consumed by `SleepStatCard.tsx`/`SleepEscalationCard.tsx`/`SleepStatsSheet.tsx` — see [me.md](me.md) §2 Alvás.
 - **`.night*` / `.nb-*` / `.ns-*` / `.nw-*` — the full-screen NightPage, literal-dark in BOTH themes** (`#0E0B09` canvas, `#F5EFE6`/`#B7A899`/`#6E6156` text, `#B9ACD9` lavender accent — hardcoded hex, deliberately exempt from the tokens-only rule, same always-dark rationale the retired `.dynamic-island.live` capsule used (deleted in `mezo-xt65`): a 3 a.m. sub-30-lux surface reads as always-dark). `.night`/`.night-back`/`.night-body`/`.night-eye`/`.night-moon`/`.night-glow`/`.night-title`/`.night-tx`/`.night-cta`/`.night-quiet` (the idle/getup frames), `.night-orb` (the numberless breathing orb, `nb-breath 18s`) + `.night-tools`/`.night-tool` (the waiting-frame tool menu), `.night-steps` (the get-up list); and the three tool families **`.nb-*`** (breathing: `.nb-stage`/`.nb-orb` + the CSS-only `nb-lb-in/-hold/-out` label cycle over the 18 s `nb-breath` cycle), **`.ns-*`** (body scan: `.ns-card`/`.ns-part`/`.ns-tx`/`.ns-dots`/`.ns-dot`), **`.nw-*`** (4K-walk: `.nw-stage`/`.nw-setup`/`.nw-remind`/`.nw-t`/`.nw-tx`/`.nw-rtx`). **All transform/scale motion is reduced-motion-guarded** — `@media (prefers-reduced-motion: reduce)` stills `.nb-orb`/`.night-orb`; the `nb-lb-in/-hold/-out` **label opacity fades intentionally keep cycling** under reduce (spec D6: the 5-6-7 pacing must survive without motion), a deliberate, documented exception to the §3.5 "all infinite animation behind a reduce guard" rule.
 
+### Gyakorlatok catalog card — the `.excat*` family + 3 page-level classes (`mezo-setx.6.7`, 2026-08-06)
+
+The first **Train page** bead of the DS sweep, so it sets the precedent the remaining
+`mezo-setx.6.x` pages follow. Four feature-scoped classes at the tail of `prototype.css`
+(`.excat` / `.excat-rail` / `.excat-open` / `.excat-name` / `.excat-rank` / `.excat-tag` /
+`.excat-stats` / `.excat-statv` / `.excat-acts` / `.excat-act` / `.excat-stim`) re-express the
+`mezo-kaui` variant-A card in DS vocabulary, plus **three classes that are page-level vocabulary
+other pages will want**: `.searchfield` (the DS SearchInput — leading glyph + a borderless **16px**
+input in 48px field chrome with the coral `--shadow-focus` ring), `.chip.tapchip` (the DS chip
+given a 44px tap height — the bare chip spec is ~28px, below every target rule, and padding is the
+sanctioned fix), and `.pgact` (the `.page-header` trailing action: 44px, `--primary-bg`/`--primary-deep`,
+replacing the Napív `.pgact-np`).
+
+Three structural decisions worth carrying forward: **icon actions live in their own trailing column,
+never an absolute overlay** (that is what buys a 48dp target without eating the title line);
+**a row with nothing to open is not a button** (a dead button promises a sheet that cannot appear);
+and **a colour rail is an element, not a thick leading border** — a 5px border under `--r-2xl`
+curves into a leaf at the corners, visible as a rendering bug on dashed cards. Also note the DS
+eyebrow is `nowrap` by default: inside a 3-column stat strip it collides with its neighbour, so
+`.excat-stats .eyebrow` wraps and reserves two lines.
+
 ### Exercise demo stills — the `.exdemo*` family (`mezo-8xdl.3`, 2026-08-06)
 
 Three feature-scoped classes at the tail of `prototype.css` (`.exdemo` / `.exdemo-frame` /

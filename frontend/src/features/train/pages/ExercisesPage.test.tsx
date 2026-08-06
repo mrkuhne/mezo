@@ -100,6 +100,22 @@ test('search merges record rows with catalog ghost rows', async () => {
   expect(screen.getAllByText(/MÉG NINCS REKORD/i).length).toBeGreaterThan(0)
 })
 
+test('the search field carries an accessible name, not just a placeholder', async () => {
+  renderView()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  expect(screen.getByRole('textbox', { name: 'Keresés a gyakorlatok között' })).toBeInTheDocument()
+})
+
+test('a ghost row is not a button — nothing to open until it has a record', async () => {
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'lateral')
+  // Lateral Raise is catalog-only in the fixture: it renders, but as inert copy —
+  // a dead button would promise a record sheet that cannot open (mezo-setx.6.7).
+  expect(screen.getByText('Lateral Raise')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Lateral Raise/ })).not.toBeInTheDocument()
+})
+
 test('plyo chip filters records and ghosts by type', async () => {
   renderView()
   await screen.findByText('Top gyakorlatok · rekordjaid')

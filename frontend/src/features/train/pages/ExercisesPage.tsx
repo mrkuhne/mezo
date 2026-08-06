@@ -3,9 +3,15 @@
 // Default state: "Top gyakorlatok" ranked by sessionCount (backend order).
 // Active search/filter switches to full-catalog results: record rows first,
 // then dashed ghost rows for catalog items without history (STIM meter).
-// Cards are variant-A three-zone cards (mezo-kaui): muscle-color rail +
-// rank plaque + name + integrated ▶/⋯ roundels · colored pill row (filled
-// amber plyo pill) · 3-cell stat strip (weighted vs bodyweight branch).
+//
+// DS-migrated (mezo-setx.6.7): the mezo-kaui three-zone card survives as a
+// concept but speaks DS vocabulary now — `.excat*` (h3 title, Tag stamps,
+// eyebrow stat labels, sp-4 padding, muscle rail on the leading edge). The
+// ▶/⋯ roundels moved OUT of the absolute header overlay into a trailing
+// action column, which is what lets them carry real 48dp targets without
+// stealing the title's line. Filter chips are the DS chip; the search box is
+// the DS SearchInput (16px input in field chrome with a coral focus ring).
+//
 // Tapping a record row opens ExerciseRecordSheet; ⋯ opens CatalogExerciseSheet
 // (edit + delete live there); ▶ opens VideoUrlSheet. Mock mode has no set
 // history -> records are empty, the catalog search still works.
@@ -21,6 +27,8 @@ import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { cn } from '@/shared/lib/cn'
 import { ExerciseRecordSheet } from '@/features/train/sheets/ExerciseRecordSheet'
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
@@ -39,52 +47,33 @@ const maxRep = (r: ExerciseRecordResponse): number | null => {
   return src.length ? Math.max(...src.map((s) => s.reps)) : null
 }
 
-// Mono uppercase pill — the card's secondary-info unit (muscle/type/sessions/Saját).
-function Pill({ bg, color, children }: { bg: string; color: string; children: ReactNode }) {
-  return (
-    <span
-      className="label-mono"
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 999,
-        padding: '4px 9px', fontSize: 8.5, fontWeight: 700, letterSpacing: '0.05em',
-        textTransform: 'uppercase', whiteSpace: 'nowrap', background: bg, color,
-      }}
-    >
-      {children}
-    </span>
-  )
+// The card's secondary-info unit (muscle/type/sessions/Saját) on the DS Tag
+// spec — a descriptive stamp, not a selectable chip, so it stays non-tappable.
+function Tag({ bg, color, children }: { bg: string; color: string; children: ReactNode }) {
+  return <span className="excat-tag" style={{ background: bg, color }}>{children}</span>
 }
 
-// One cell of the hairline-topped stat strip (label over value).
-function StatCell({ label, value, color, first }: {
-  label: string; value: string; color?: string; first?: boolean
-}) {
+// One cell of the hairline-topped stat strip: eyebrow label over an h3-weight
+// value. The dividers come from `.excat-stats` so cell order carries no styling.
+function StatCell({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ flex: 1, ...(first ? {} : { borderLeft: '1px solid var(--border-subtle)', paddingLeft: 12 }) }}>
-      <div className="label-mono text-tertiary" style={{ fontSize: 7.5 }}>{label}</div>
-      <div className="label-mono" style={{ fontSize: 15, fontWeight: 700, marginTop: 2, color: color ?? 'var(--text-primary)' }}>
-        {value}
-      </div>
+    <div>
+      <div className="eyebrow">{label}</div>
+      <div className="excat-statv" style={color ? { color } : undefined}>{value}</div>
     </div>
   )
 }
 
-// Round icon button (▶ video / ⋯ edit) — sits over the card, outside the open-button
-// so we never nest <button> in <button>.
-function Roundel({ label, onClick, bg, color, size = 30, children }: {
-  label: string; onClick: () => void; bg: string; color: string; size?: number; children: ReactNode
+// Round icon button (▶ video / ⋯ edit): a 48dp target around a 32px visual
+// (MOBILE_UX §3 Rule 4 — pad the small visual, don't shrink the target). Lives
+// in the card's trailing column, a SIBLING of the open-button, so we never nest
+// <button> in <button>.
+function Roundel({ label, onClick, bg, color, children }: {
+  label: string; onClick: () => void; bg: string; color: string; children: ReactNode
 }) {
   return (
-    <button
-      aria-label={label}
-      onClick={onClick}
-      style={{
-        width: size, height: size, borderRadius: 999, border: 'none', flexShrink: 0,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        background: bg, color, fontSize: 10, fontWeight: 700,
-      }}
-    >
-      {children}
+    <button className="excat-act" aria-label={label} onClick={onClick}>
+      <span style={{ background: bg, color }}>{children}</span>
     </button>
   )
 }
@@ -104,64 +93,51 @@ function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
   // weighted stat branch needs an actual load, not just a present field.
   const weighted = (r.bestSet?.weightKg ?? 0) > 0
   const best = maxRep(r)
-  // reserve header space for the absolutely-positioned roundels
-  const actionPad = onEdit && onVideo ? 66 : onVideo || onEdit ? 34 : 0
   return (
-    <div className="card" style={{ display: 'flex', overflow: 'hidden' }}>
-      <div style={{ width: 5, background: mc.rail, flexShrink: 0 }} aria-hidden="true" />
-      <div style={{ flex: 1, position: 'relative', padding: '14px 14px 12px' }}>
-        <button onClick={onOpen} style={{ display: 'block', width: '100%', textAlign: 'left' }}>
-          <div className="row" style={{ alignItems: 'center', gap: 10, paddingRight: actionPad }}>
-            {rank != null && (
-              <span
-                className="label-mono"
-                style={{
-                  width: 26, height: 26, borderRadius: 8, background: mc.wash, color: mc.deep,
-                  fontSize: 11, fontWeight: 800, display: 'inline-flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}
-              >
-                {rank}
-              </span>
-            )}
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>
-              {r.name}
-            </span>
-          </div>
-          <div className="row" style={{ gap: 6, margin: '10px 0 12px', flexWrap: 'wrap' }}>
-            <Pill bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</Pill>
-            {r.type === 'plyo' ? (
-              // --amber is bright in BOTH themes; --ink flips → deliberate literal warm ink.
-              <Pill bg="var(--amber)" color="#2B2118">⚡ Plyo</Pill>
-            ) : (
-              <Pill bg="var(--surface-2)" color="var(--text-secondary)">{r.type}</Pill>
-            )}
-            <Pill bg="var(--surface-2)" color="var(--text-secondary)">{r.sessionCount} alkalom</Pill>
-            {lib?.editable && <Pill bg="var(--wash-amber)" color="var(--coral-deep)">Saját</Pill>}
-          </div>
-          <div className="row" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 10 }}>
-            {weighted ? (
-              <>
-                <StatCell first label="Legjobb szett" value={`${num(r.bestSet!.weightKg!)}×${r.bestSet!.reps}`} />
-                <StatCell
-                  label="e1RM"
-                  value={r.bestE1rm ? `${num(r.bestE1rm.value)} kg` : '—'}
-                  color={r.bestE1rm ? 'var(--coral-deep)' : undefined}
-                />
-                <StatCell label="Összvolumen" value={fmtVolume(r.totalVolume)} />
-              </>
-            ) : (
-              <>
-                <StatCell first label="Max rep" value={best != null ? String(best) : '—'} />
-                <StatCell label="Összes rep" value={String(r.totalReps)} />
-                <StatCell label="Szettek" value={String(r.totalSets)} />
-              </>
-            )}
-          </div>
-        </button>
-        <div className="row gap-xs" style={{ position: 'absolute', top: 12, right: 12 }}>
+    <div className="excat">
+      <div className="excat-rail" style={{ background: mc.rail }} aria-hidden="true" />
+      <button className="excat-open" onClick={onOpen}>
+        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          {rank != null && (
+            <span className="excat-rank" style={{ background: mc.wash, color: mc.deep }}>{rank}</span>
+          )}
+          <span className="excat-name">{r.name}</span>
+        </div>
+        <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+          <Tag bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</Tag>
+          {r.type === 'plyo' ? (
+            // --amber is bright in BOTH themes; --ink flips → deliberate literal warm ink.
+            <Tag bg="var(--amber)" color="#2B2118">⚡ Plyo</Tag>
+          ) : (
+            <Tag bg="var(--surface-2)" color="var(--text-secondary)">{r.type}</Tag>
+          )}
+          <Tag bg="var(--surface-2)" color="var(--text-secondary)">{r.sessionCount} alkalom</Tag>
+          {lib?.editable && <Tag bg="var(--primary-bg)" color="var(--primary-deep)">Saját</Tag>}
+        </div>
+        <div className="excat-stats">
+          {weighted ? (
+            <>
+              <StatCell label="Legjobb szett" value={`${num(r.bestSet!.weightKg!)}×${r.bestSet!.reps}`} />
+              <StatCell
+                label="e1RM"
+                value={r.bestE1rm ? `${num(r.bestE1rm.value)} kg` : '—'}
+                color={r.bestE1rm ? 'var(--primary-deep)' : undefined}
+              />
+              <StatCell label="Összvolumen" value={fmtVolume(r.totalVolume)} />
+            </>
+          ) : (
+            <>
+              <StatCell label="Max rep" value={best != null ? String(best) : '—'} />
+              <StatCell label="Összes rep" value={String(r.totalReps)} />
+              <StatCell label="Szettek" value={String(r.totalSets)} />
+            </>
+          )}
+        </div>
+      </button>
+      {(onEdit || onVideo) && (
+        <div className="excat-acts">
           {onEdit && (
-            <Roundel label="Gyakorlat szerkesztése" onClick={onEdit} bg="var(--surface-2)" color="var(--text-secondary)" size={26}>
+            <Roundel label="Gyakorlat szerkesztése" onClick={onEdit} bg="var(--surface-2)" color="var(--text-secondary)">
               ⋯
             </Roundel>
           )}
@@ -176,7 +152,7 @@ function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
             </Roundel>
           )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -188,28 +164,30 @@ function GhostRow({ item, onVideo, onEdit }: {
 }) {
   const mc = muscleColor(item.muscle)
   return (
-    <div
-      style={{
-        display: 'flex', overflow: 'hidden', borderRadius: 20,
-        border: '1px dashed var(--border-strong)', opacity: 0.85,
-      }}
-    >
-      <div style={{ width: 5, background: mc.rail, opacity: 0.45, flexShrink: 0 }} aria-hidden="true" />
-      <div style={{ flex: 1, padding: '13px 14px' }}>
-        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)', flex: 1 }}>
-            {item.name}
-          </span>
+    <div className="excat ghost">
+      <div className="excat-rail" style={{ background: mc.rail }} aria-hidden="true" />
+      {/* No record yet ⇒ nothing to open: the body is a plain div, not a dead button. */}
+      <div className="excat-open">
+        <div className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
+          <span className="excat-name" style={{ flex: 1 }}>{item.name}</span>
           <div style={{ textAlign: 'right' }}>
-            <div className="label-mono" style={{ fontSize: 7.5, color: mc.deep }}>Stim</div>
-            <div className="row gap-xs" style={{ marginTop: 3 }}>
+            <div className="eyebrow" style={{ color: mc.deep }}>Stim</div>
+            <div className="excat-stim" aria-hidden="true">
               {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} style={{ width: 5, height: 9, background: n / 5 <= item.stim ? mc.rail : 'var(--surface-3)' }} />
+                <i key={n} style={n / 5 <= item.stim ? { background: mc.rail } : undefined} />
               ))}
             </div>
           </div>
+        </div>
+        <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+          <Tag bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[item.muscle] ?? item.muscle}</Tag>
+          <Tag bg="var(--surface-2)" color="var(--text-tertiary)">Még nincs rekord</Tag>
+        </div>
+      </div>
+      {(onEdit || onVideo) && (
+        <div className="excat-acts">
           {onEdit && (
-            <Roundel label="Gyakorlat szerkesztése" onClick={onEdit} bg="var(--surface-2)" color="var(--text-secondary)" size={26}>
+            <Roundel label="Gyakorlat szerkesztése" onClick={onEdit} bg="var(--surface-2)" color="var(--text-secondary)">
               ⋯
             </Roundel>
           )}
@@ -219,17 +197,12 @@ function GhostRow({ item, onVideo, onEdit }: {
               onClick={onVideo}
               bg={item.videoUrl ? mc.wash : 'var(--surface-2)'}
               color={item.videoUrl ? mc.deep : 'var(--text-quaternary)'}
-              size={26}
             >
               ▶
             </Roundel>
           )}
         </div>
-        <div className="row" style={{ gap: 6, marginTop: 8 }}>
-          <Pill bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[item.muscle] ?? item.muscle}</Pill>
-          <Pill bg="var(--surface-2)" color="var(--text-tertiary)">Még nincs rekord</Pill>
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -282,30 +255,27 @@ export function ExercisesPage() {
 
   return (
     <>
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">Edzés · Gyakorlatok</div>
-          <h1>Gyakorlatok</h1>
+          <Eyebrow brand>Edzés · Gyakorlatok</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>Gyakorlatok</PageTitle>
         </div>
-        <button
-          type="button"
-          onClick={() => setCatalog({})}
-          className="pgact-np np-press"
-          style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
-        >
-          <Icon name="plus" size={12} /> Új gyakorlat
+        {/* Top-right is reserved for low-frequency actions (anti-pattern 19) — authoring
+            a catalog exercise qualifies; the frequent action here is search. */}
+        <button type="button" onClick={() => setCatalog({})} className="pgact">
+          <Icon name="plus" size={14} /> Új gyakorlat
         </button>
       </div>
 
       <div style={{ padding: '0 24px 8px' }}>
-        {/* Search */}
-        <div className="card" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Icon name="search" size={14} color="var(--text-tertiary)" />
+        {/* Search — the DS SearchInput: leading glyph + a borderless 16px field. */}
+        <div className="searchfield" style={{ marginBottom: 10 }}>
+          <Icon name="search" size={16} color="var(--text-tertiary)" />
           <input
+            aria-label="Keresés a gyakorlatok között"
             placeholder="Keresés · pl. bench, squat, row"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: 1, fontSize: 13, padding: '6px 0' }}
           />
         </div>
         {/* Muscle filter — level 1: régiók */}
@@ -315,8 +285,8 @@ export function ExercisesPage() {
               key={m}
               onClick={() => { setTop(m); setSub(null) }}
               aria-pressed={top === m}
-              className={cn('chip', top === m && 'brand')}
-              style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
+              className={cn('chip tapchip', top === m && 'brand')}
+              style={{ flexShrink: 0 }}
             >
               {TOP_FILTER_LABELS[m] ?? m}
             </button>
@@ -330,8 +300,8 @@ export function ExercisesPage() {
                 key={m}
                 onClick={() => setSub(sub === m ? null : m)}
                 aria-pressed={sub === m}
-                className={cn('chip', sub === m && 'brand')}
-                style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
+                className={cn('chip tapchip', sub === m && 'brand')}
+                style={{ flexShrink: 0 }}
               >
                 {MUSCLE_LABELS[m] ?? m}
               </button>
@@ -343,7 +313,7 @@ export function ExercisesPage() {
       <div style={{ padding: '0 24px 32px' }}>
         <div className="row" style={{ justifyContent: 'space-between', margin: '10px 0' }}>
           <span className="eyebrow">{searching ? 'Találatok · teljes katalógus' : 'Top gyakorlatok · rekordjaid'}</span>
-          <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>
+          <span className="label-mono text-tertiary">
             {searching ? `${records.length + ghosts.length} / ${exerciseLibrary.length}` : `${exerciseRecords.length} PR`}
           </span>
         </div>
@@ -375,7 +345,7 @@ export function ExercisesPage() {
               />
             ))}
             {searching && records.length + ghosts.length === 0 && (
-              <p className="text-tertiary" style={{ fontSize: 12, textAlign: 'center', padding: 20 }}>
+              <p className="text-tertiary" style={{ fontSize: 14, textAlign: 'center', padding: 24 }}>
                 Nincs találat ezzel a szűrővel.
               </p>
             )}
