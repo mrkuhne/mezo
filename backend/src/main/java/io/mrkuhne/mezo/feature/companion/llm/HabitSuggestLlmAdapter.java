@@ -99,7 +99,7 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
         Set<String> chainKeys =
                 chains.stream().map(HabitChainEntity::getChainKey).collect(Collectors.toSet());
 
-        String context = buildContext(userId, chains, defs, groundedSkills, chainKey, hint);
+        String context = buildContext(userId, chains, defs, groundedSkills, chainKeys, chainKey, hint);
         String prompt =
                 String.format(Locale.ROOT, SYSTEM_PROMPT, properties.habitSuggest().maxSuggestions());
 
@@ -140,12 +140,15 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
     }
 
     private String buildContext(UUID userId, List<HabitChainEntity> chains, List<HabitDefEntity> defs,
-            List<SkillLevel> groundedSkills, String chainKey, String hint) {
+            List<SkillLevel> groundedSkills, Set<String> chainKeys, String chainKey, String hint) {
         StringBuilder b = new StringBuilder();
         b.append(skillsBlock(groundedSkills)).append('\n');
         b.append(goalBlock(userId)).append('\n');
         b.append(routinesBlock(chains, defs));
-        if (chainKey != null && !chainKey.isBlank()) {
+        // Never echo unvalidated input into the prompt: an unknown/stale chainKey (the caller's
+        // own client-side state can drift — a chain deleted since the client last read the
+        // catalog) is silently omitted rather than handed to the model as if it were real.
+        if (chainKey != null && !chainKey.isBlank() && chainKeys.contains(chainKey)) {
             b.append("\n[Preferált lánc] ").append(chainKey);
         }
         if (hint != null && !hint.isBlank()) {

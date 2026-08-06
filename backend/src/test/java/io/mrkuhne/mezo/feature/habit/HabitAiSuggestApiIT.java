@@ -21,12 +21,14 @@ import org.springframework.test.context.ActiveProfiles;
  * {@code @ActiveProfiles("companion-fake")} pattern) — the {@code HabitSuggestLlmAdapter}'s
  * grounding + strict-JSON parse + filter chain, end to end through the HTTP contract.
  *
- * <p>The sentinel JSON is planted via the request's {@code chainKey} field rather than {@code
- * hint}: {@code hint} carries a contract {@code @Size(max = 200)}, too tight for a multi-item
- * JSON array, while {@code chainKey} is unconstrained and — like {@code chainKey} everywhere in
- * the adapter's context — only ever read back into the LLM's context text, never validated
- * against the real chain-key set (that check applies to the MODEL'S OUTPUT chainKey, not the
- * request's preselection hint).
+ * <p>The sentinel JSON is planted via the request's {@code hint} field: {@code chainKey} is now
+ * validated against the caller's own live chain keys BEFORE being echoed into the LLM context at
+ * all (the review fix — never echo unvalidated input), so a sentinel planted there would simply
+ * never reach the prompt text. {@code hint} carries a contract {@code @Size(max = 200)}, so
+ * payloads here are deliberately compact (dropped optional {@code why}/{@code anchorCopy} fields,
+ * short titles); the over-cap case uses {@link
+ * io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm#SUGGEST_COUNT_SENTINEL}, a compact
+ * count-DSL, instead of spelling out 7 JSON objects.
  *
  * <p>The adapter-absent 503 path lives in {@code HabitAiSuggestSwitchOffIT} — Task 1's coverage
  * moved there once this task's adapter started existing at the default IT profile.
@@ -57,31 +59,24 @@ class HabitAiSuggestApiIT extends ApiIntegrationTest {
     void testSuggest_shouldReturnBothInOrder_whenSentinelSuppliesTwoValidSuggestions() {
         HttpHeaders auth = ownerAuthHeaders();
         String sentinel = "[fake-habit-suggest:["
-                + suggestionJson("Napi hála-jegyzet", "mindset", 10, "EVENING") + ","
-                + suggestionJson("Esti nyújtás", "recovery", 5, "EVENING")
+                + suggestionJson("A", "mindset", 10, "MORNING") + ","
+                + suggestionJson("B", "recovery", 5, "EVENING")
                 + "]]";
-        HabitSuggestRequest request = HabitSuggestRequest.builder().chainKey(sentinel).build();
+        HabitSuggestRequest request = HabitSuggestRequest.builder().hint(sentinel).build();
 
         HabitSuggestResponse response = postForBody(
                 "/api/habit/ai/suggest", request, auth, HttpStatus.OK, HabitSuggestResponse.class);
 
         assertThat(response.getSuggestions()).hasSize(2);
-        assertThat(response.getSuggestions().get(0).getTitle()).isEqualTo("Napi hála-jegyzet");
-        assertThat(response.getSuggestions().get(1).getTitle()).isEqualTo("Esti nyújtás");
+        assertThat(response.getSuggestions().get(0).getTitle()).isEqualTo("A");
+        assertThat(response.getSuggestions().get(1).getTitle()).isEqualTo("B");
     }
 
     @Test
     void testSuggest_shouldCapAtMaxSuggestions_whenSentinelSuppliesMoreThanTheCap() {
         HttpHeaders auth = ownerAuthHeaders();
-        StringBuilder items = new StringBuilder();
-        for (int i = 0; i < 7; i++) {
-            if (i > 0) {
-                items.append(',');
-            }
-            items.append(suggestionJson("Javaslat " + i, i % 2 == 0 ? "mindset" : "recovery", 10, "MORNING"));
-        }
-        String sentinel = "[fake-habit-suggest:[" + items + "]]";
-        HabitSuggestRequest request = HabitSuggestRequest.builder().chainKey(sentinel).build();
+        HabitSuggestRequest request =
+                HabitSuggestRequest.builder().hint("[fake-habit-suggest-count:7]").build();
 
         HabitSuggestResponse response = postForBody(
                 "/api/habit/ai/suggest", request, auth, HttpStatus.OK, HabitSuggestResponse.class);
@@ -90,28 +85,27 @@ class HabitAiSuggestApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testSuggest_shouldDropDirtyRows_whenSkillKeyOrChainKeyUnknownOrXpOutOfRange() {
+    void testSuggest_shouldDropDirtyRows_whenSkillKeyUnknownOrXpOutOfRange() {
         HttpHeaders auth = ownerAuthHeaders();
         String sentinel = "[fake-habit-suggest:["
-                + suggestionJson("Jó javaslat", "mindset", 10, "MORNING") + ","
-                + suggestionJson("Ismeretlen skill", "unknown_skill", 10, "MORNING") + ","
-                + suggestionJson("Ismeretlen lánc", "mindset", 10, "UNKNOWN_CHAIN") + ","
-                + suggestionJson("Túl sok XP", "mindset", 20, "MORNING")
+                + suggestionJson("J", "mindset", 10, "MORNING") + ","
+                + "{\"title\":\"S\",\"skillKey\":\"unknown_skill\",\"xp\":10}" + ","
+                + suggestionJson("X", "mindset", 99, "MORNING")
                 + "]]";
-        HabitSuggestRequest request = HabitSuggestRequest.builder().chainKey(sentinel).build();
+        HabitSuggestRequest request = HabitSuggestRequest.builder().hint(sentinel).build();
 
         HabitSuggestResponse response = postForBody(
                 "/api/habit/ai/suggest", request, auth, HttpStatus.OK, HabitSuggestResponse.class);
 
         assertThat(response.getSuggestions()).hasSize(1);
-        assertThat(response.getSuggestions().getFirst().getTitle()).isEqualTo("Jó javaslat");
+        assertThat(response.getSuggestions().getFirst().getTitle()).isEqualTo("J");
     }
 
     @Test
     void testSuggest_shouldReturnEmptySuggestions_whenSentinelUnparseable() {
         HttpHeaders auth = ownerAuthHeaders();
         HabitSuggestRequest request =
-                HabitSuggestRequest.builder().chainKey("[fake-habit-suggest:not-json]").build();
+                HabitSuggestRequest.builder().hint("[fake-habit-suggest:not-json]").build();
 
         HabitSuggestResponse response = postForBody(
                 "/api/habit/ai/suggest", request, auth, HttpStatus.OK, HabitSuggestResponse.class);
@@ -119,8 +113,10 @@ class HabitAiSuggestApiIT extends ApiIntegrationTest {
         assertThat(response.getSuggestions()).isEmpty();
     }
 
+    /** Compact — {@code why}/{@code anchorCopy} dropped (both optional-in-practice for the
+     *  adapter's own filter chain) to keep multi-item sentinels under {@code hint}'s 200-char cap. */
     private static String suggestionJson(String title, String skillKey, int xp, String chainKey) {
-        return "{\"title\":\"" + title + "\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
-                + "\"skillKey\":\"" + skillKey + "\",\"xp\":" + xp + ",\"chainKey\":\"" + chainKey + "\"}";
+        return "{\"title\":\"" + title + "\",\"skillKey\":\"" + skillKey + "\",\"xp\":" + xp
+                + ",\"chainKey\":\"" + chainKey + "\"}";
     }
 }

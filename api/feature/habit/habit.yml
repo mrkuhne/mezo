@@ -355,7 +355,7 @@ components:
     HabitSuggestRequest:
       type: object
       properties:
-        chainKey: { type: string, nullable: true, description: "Preselected chain to suggest for" }
+        chainKey: { type: string, nullable: true, maxLength: 40, description: "Preselected chain to suggest for" }
         hint: { type: string, nullable: true, maxLength: 200, description: "Optional user intent (szándék)" }
     HabitSuggestion:
       type: object

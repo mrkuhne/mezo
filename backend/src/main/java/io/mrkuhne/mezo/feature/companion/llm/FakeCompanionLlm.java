@@ -193,16 +193,26 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SLOT_PLAN_SENTINEL =
             Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
 
-    /** Scripted habit suggestions (mezo-n5e9.3): {@code [fake-habit-suggest:[…]]} planted anywhere
-     *  in the adapter's context text (ITs use the request's {@code chainKey}, which — unlike
-     *  {@code hint} — carries no contract length cap) — GREEDY array alternative (like {@code
-     *  QUEST_FLAVOR_SENTINEL}), PLUS a raw-text fallback alternative so a deliberately broken
-     *  payload (e.g. {@code [fake-habit-suggest:not-json]}) still matches and reaches the caller's
-     *  JSON parser verbatim, exercising the degrade-to-empty path instead of silently falling
-     *  through to the default. Default = one valid minimal suggestion so the un-scripted happy
-     *  path still resolves via the LLM branch. */
+    /** Scripted habit suggestions (mezo-n5e9.3): {@code [fake-habit-suggest:[…]]} planted via the
+     *  request's {@code hint} (the ONLY unvalidated-echo channel left into the adapter's context —
+     *  {@code chainKey} is now checked against the user's real chain keys before being echoed at
+     *  all, so an unknown value never reaches the prompt text to be sentinel-matched). {@code hint}
+     *  carries a contract {@code @Size(max = 200)}, so payloads must stay compact; {@link
+     *  #SUGGEST_COUNT_SENTINEL} is the compact alternative for multi-item scripts. GREEDY array
+     *  alternative (like {@code QUEST_FLAVOR_SENTINEL}), PLUS a raw-text fallback alternative so a
+     *  deliberately broken payload (e.g. {@code [fake-habit-suggest:not-json]}) still matches and
+     *  reaches the caller's JSON parser verbatim, exercising the degrade-to-empty path instead of
+     *  silently falling through to the default. Default = one valid minimal suggestion so the
+     *  un-scripted happy path still resolves via the LLM branch. */
     public static final Pattern SUGGEST_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
+
+    /** Compact companion to {@link #SUGGEST_SENTINEL}: {@code [fake-habit-suggest-count:N]}
+     *  generates N valid suggestions server-side (fixed skillKey/chainKey/xp) instead of the
+     *  caller spelling out N JSON objects — the only way to stay under {@code hint}'s 200-char cap
+     *  for an over-cap (N > max-suggestions) script. */
+    public static final Pattern SUGGEST_COUNT_SENTINEL =
+            Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
     @Override
     public String complete(String systemPrompt, String userMessage,
@@ -286,6 +296,10 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "{\"verdict\":\"ok\",\"summary\":\"Teszt értékelés.\",\"suggestions\":[]}";
         }
         if (systemPrompt.startsWith(HabitSuggestLlmAdapter.SUGGEST_MARKER)) {
+            Matcher count = SUGGEST_COUNT_SENTINEL.matcher(userMessage);
+            if (count.find()) {
+                return habitSuggestionsCount(Integer.parseInt(count.group(1)));
+            }
             Matcher m = SUGGEST_SENTINEL.matcher(userMessage);
             // default = one valid minimal suggestion so the un-scripted happy path still resolves
             return m.find() ? m.group(1)
@@ -365,6 +379,22 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
         }
         return complete(systemPrompt, userMessage);
+    }
+
+    /** {@link #SUGGEST_COUNT_SENTINEL}: N valid, distinct, grounded suggestions — fixed skillKey
+     *  ({@code mindset}) / chainKey ({@code MORNING}) / xp (10) so ITs only need to seed those two
+     *  as real data; only the title varies, so the over-cap script fits comfortably under
+     *  {@code hint}'s 200-char cap regardless of N. */
+    private static String habitSuggestionsCount(int n) {
+        StringBuilder items = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            if (i > 0) {
+                items.append(',');
+            }
+            items.append("{\"title\":\"Javaslat ").append(i)
+                    .append("\",\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}");
+        }
+        return "[" + items + "]";
     }
 
     /**
