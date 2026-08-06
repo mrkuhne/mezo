@@ -12,9 +12,7 @@ export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
 /** Proactive H1 in-day note — the CompanionNoteCard's data (mock mode has none; honest absence). */
 export interface CompanionNote { window: string; kind: 'nudge' | 'closing'; text: string }
-export interface WorkoutExercise { id: string; name: string; sets: number; targetReps: string; targetRIR: number; type: string; muscle: string }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
-export interface Workout { title: string; tag: string; durationEst: number; exercises: WorkoutExercise[]; niggleWarning: NiggleWarning }
 /** `date`+`oneOff` mark a dated one-off event merged into the weekly rhythm (mezo-e1sp) — recurring slots carry neither. */
 export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; sport?: 'volleyball' | 'cross' | 'trx'; today?: boolean; flex?: boolean; date?: string; oneOff?: boolean }
 export type FuelKind = 'wake' | 'meal' | 'midday' | 'snack' | 'preworkout' | 'workout' | 'sport' | 'evening'
@@ -702,11 +700,11 @@ export interface ChatMessage {
 // --- Train (mesocycles, workouts, sport) ---
 // NOTE (port fix): `NiggleWarning` and `GymScheduleDay` already exist above (Today/Fuel
 // slices) with the exact shape Train needs — reused here rather than re-declared.
-// The plan's "WorkoutExercise" interface collides by name with the existing Today
-// `WorkoutExercise` (no `lastWeek`); the Train logged-set variant is therefore named
-// `LoggedWorkoutExercise`, and the plan's "WorkoutPlan" is kept verbatim. The existing
-// `VolleyballSession` gained an additive optional `flex?` field (present on the Szo
-// fixture in data.js) so it can be reused for the sport schedule too.
+// The plan's logged-set variant is named `LoggedWorkoutExercise` (has `lastWeek`;
+// the now-retired Phase-1 Today `WorkoutExercise` duplicate did not), and the plan's
+// "WorkoutPlan" is kept verbatim. The existing `VolleyballSession` gained an additive
+// optional `flex?` field (present on the Szo fixture in data.js) so it can be reused
+// for the sport schedule too.
 export type MesoPhase = 'MEV' | 'MAV' | 'MRV' | 'Deload'
 export type MesoStatus = 'active' | 'planned' | 'archived'
 export type ExerciseKind = 'compound' | 'isolation' | 'plyo'

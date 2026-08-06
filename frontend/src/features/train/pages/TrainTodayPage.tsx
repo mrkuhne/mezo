@@ -42,6 +42,7 @@ import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
 import { SPORT_TONE, sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessionState'
+import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
@@ -296,6 +297,7 @@ export function TrainTodayPage() {
             // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
             // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
             const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
+            const workoutMinutes = estimateSessionMinutes(workout.exercises)
             return (
               <section key="hero-gym" className="trainhero np-anim">
                 <div className="trainhero-over">
@@ -319,7 +321,7 @@ export function TrainTodayPage() {
                 <div className="chips">
                   <span className="chip-np">{workout.exercises.length} gyakorlat</span>
                   <span className="chip-np">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
-                  {workout.durationEst > 0 && <span className="chip-np">~{workout.durationEst} perc</span>}
+                  {workoutMinutes > 0 && <span className="chip-np">~{workoutMinutes} perc</span>}
                   {gym.type && <span className="chip-np">{gym.type}</span>}
                 </div>
                 {completedTodayWorkout ? (
