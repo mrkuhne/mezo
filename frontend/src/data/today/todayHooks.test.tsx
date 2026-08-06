@@ -4,7 +4,11 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { useToday } from '@/data/hooks'
-import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
+import { today, user, workoutPrediction, volleyballNote } from '@/data/today/today'
+// `workout` is Train's own mock plan (mezo-oyhy.3: useToday's mock branch delegates to
+// useTrain() for the recipe-shaped WorkoutPlan the session-length estimator needs — the
+// old Today-local Phase-1 `Workout` duplicate is no longer read here).
+import { workout as trainWorkoutMock } from '@/data/train/train'
 import { makeHookWrapper } from '@/test/queryWrapper'
 
 afterEach(() => {
@@ -13,12 +17,12 @@ afterEach(() => {
 
 const HU_WEEKDAYS = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat']
 
-test('useToday (mock) returns the byte-identical Phase-1 statics + demo copy', () => {
+test('useToday (mock) returns the statics + the train-mock workout + demo copy', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
   expect(result.current.today).toBe(today)
   expect(result.current.user).toBe(user)
-  expect(result.current.workout).toBe(workout)
+  expect(result.current.workout).toBe(trainWorkoutMock)
   expect(result.current.workoutTime).toBe('17:00')
   expect(result.current.prediction).toBe(workoutPrediction)
   expect(result.current.volleyballNote).toBe(volleyballNote)

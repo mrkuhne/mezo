@@ -11,12 +11,13 @@ interface MesoEditorHeroProps {
   dayType: string
   daySets: number
   dayExerciseCount: number
+  dayMinutes: number
   weekSets: number
   trainingDays: number
   warningCount: number
 }
 
-export function MesoEditorHero({ dayType, daySets, dayExerciseCount, weekSets, trainingDays, warningCount }: MesoEditorHeroProps) {
+export function MesoEditorHero({ dayType, daySets, dayExerciseCount, dayMinutes, weekSets, trainingDays, warningCount }: MesoEditorHeroProps) {
   const hasWarnings = warningCount > 0
 
   return (
@@ -44,7 +45,7 @@ export function MesoEditorHero({ dayType, daySets, dayExerciseCount, weekSets, t
       <div style={{ position: 'relative' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Eyebrow brand>{dayType}</Eyebrow>
-          <span className="label-mono">{dayExerciseCount} gyakorlat</span>
+          <span className="label-mono">{dayExerciseCount} gyakorlat{dayMinutes > 0 ? ` · ~${dayMinutes} perc` : ''}</span>
         </div>
 
         <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>

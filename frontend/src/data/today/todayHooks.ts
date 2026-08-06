@@ -12,7 +12,6 @@ import {
   user,
   briefing,
   briefingVariants,
-  workout,
   volleyballSessions,
   workoutPrediction,
   volleyballNote,
@@ -25,7 +24,6 @@ import type {
   TodayScenario,
   UserMeta,
   VolleyballSession,
-  Workout,
   WorkoutPlan,
   WorkoutPrediction,
 } from '@/data/types'
@@ -62,8 +60,11 @@ type TodayData = {
   briefing: Briefing | null
   /** True in real mode — the briefing prose is static demo copy until the proactive epic ships the generated one. */
   briefingDemo: boolean
-  /** Mock: the Phase-1 static plan. Real: today's planned Train session; null (rest day / no meso) hides the teaser. */
-  workout: Workout | WorkoutPlan | null
+  /** Mock: Train's own Phase-1 static plan (`data/train/train.ts`'s `workout`, byte-identical
+   * to the retired Today-local duplicate — deduped by `estimateSessionMinutes` needing the
+   * recipe-shaped `LoggedWorkoutExercise[]`, `mezo-oyhy.3`). Real: today's planned Train
+   * session; null (rest day / no meso) hides the teaser. */
+  workout: WorkoutPlan | null
   /** The teaser eyebrow time — the real gym slot for today, or null (eyebrow renders without a time). */
   workoutTime: string | null
   /** Demo prediction line in mock mode; null in real mode (predictions are a later epic). */
@@ -87,7 +88,7 @@ export function useToday(): TodayData {
       user,
       briefing: null,
       briefingDemo: false,
-      workout,
+      workout: train.workout,
       workoutTime: today.workoutTime,
       prediction: workoutPrediction,
       volleyballSessions,

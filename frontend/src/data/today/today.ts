@@ -3,7 +3,6 @@ import type {
   TodayMeta,
   UserMeta,
   VolleyballSession,
-  Workout,
   WorkoutPrediction,
 } from '@/data/types'
 
@@ -87,24 +86,6 @@ export const briefingVariants: {
       },
     ],
     confidence: 0.94,
-  },
-}
-
-export const workout: Workout = {
-  title: 'Pull Day',
-  tag: 'Week 3 · MAV',
-  durationEst: 78,
-  exercises: [
-    { id: 'ex1', name: 'Chest Supported Row', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound', muscle: 'back-mid' },
-    { id: 'ex2', name: 'Lat Pulldown · Pronated', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound', muscle: 'back-wide' },
-    { id: 'ex3', name: 'Cable Pull-Around', sets: 3, targetReps: '12-15', targetRIR: 1, type: 'isolation', muscle: 'back-mid' },
-    { id: 'ex4', name: 'Hammer Curl', sets: 3, targetReps: '10-12', targetRIR: 1, type: 'isolation', muscle: 'biceps-brachialis' },
-    { id: 'ex5', name: 'Face Pull', sets: 3, targetReps: '15-20', targetRIR: 1, type: 'isolation', muscle: 'shoulder-rear' },
-  ],
-  niggleWarning: {
-    muscle: 'right-shoulder',
-    muscleLabel: 'Jobb váll',
-    detail: 'Március 18 óta enyhe niggle. Múlt héten szépen érezhető lett, ezért a Cable Pull-Around-ot előrébb hozzuk és a Lat Pulldown-nál pronated griffel megyünk (csukló kíméletesebb).',
   },
 }
 

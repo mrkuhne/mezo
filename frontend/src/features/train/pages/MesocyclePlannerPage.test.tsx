@@ -199,7 +199,7 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   await user.click(screen.getByRole('button', { name: /^Kész/ }))
   await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
   expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
-  expect(screen.getByText('1 gyakorlat')).toBeInTheDocument()
+  expect(screen.getByText(/^1 gyakorlat/)).toBeInTheDocument()
 })
 
 test('manually picked weekdays survive a day-count change', async () => {

@@ -57,6 +57,7 @@ import {
   type SessionItemInput, type TodayItem,
 } from '@/features/today/logic/todayItems'
 import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/features/train/logic/sportKinds'
+import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
@@ -172,12 +173,13 @@ export function TodayPage() {
   // with a `GYM · {tag}` eyebrow and an `Indítsuk` CTA. Now the hero is a reference to the very
   // object the item is built from, so drift is structurally impossible.
   // Array order IS hero precedence: the gym session wins, a sport session heroes on a rest day.
+  const gymMinutes = workout ? estimateSessionMinutes(workout.exercises) : 0
   const sessions = useMemo<DaySession[]>(() => [
     ...(workout ? [{
       id: 'gym', tone: 'gym' as const, emoji: '🏋️',
       tag: `GYM${workout.tag ? ` · ${workout.tag}` : ''}`, title: workout.title,
       time: workoutTime ?? null,
-      facts: [`${workout.exercises.length} gyakorlat`, `~${workout.durationEst} perc`, prediction?.label],
+      facts: [`${workout.exercises.length} gyakorlat`, gymMinutes > 0 ? `~${gymMinutes} perc` : null, prediction?.label],
       logged: false, ctaLabel: 'Indítsuk',
     }] : []),
     ...(sportToday ? [{
@@ -186,7 +188,7 @@ export function TodayPage() {
       time: sportToday.time, facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
       logged: false, ctaLabel: 'Logold',
     }] : []),
-  ], [workout, workoutTime, prediction, sportToday])
+  ], [workout, workoutTime, prediction, sportToday, gymMinutes])
   // The one session the Nap face promotes to its hero, and the id of its item. Everything
   // downstream keys off THIS id — never off `source === 'session'`, which also swept away the
   // sessions that are NOT the hero (a 17:00 sport session next to a gym day rendered nowhere).
