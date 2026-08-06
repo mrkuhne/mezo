@@ -5,12 +5,13 @@ import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import type { HabitChainInfo } from '@/data/types'
 
 const {
-  useHabitCatalog, useHabitCatalogActions, useProgressionProfile,
+  useHabitCatalog, useHabitCatalogActions, useProgressionProfile, useHabitAiSuggest,
   reorderChain, updateChain, updateDef,
 } = vi.hoisted(() => ({
   useHabitCatalog: vi.fn(),
   useHabitCatalogActions: vi.fn(),
   useProgressionProfile: vi.fn(),
+  useHabitAiSuggest: vi.fn(),
   reorderChain: vi.fn(() => Promise.resolve()),
   updateChain: vi.fn(() => Promise.resolve()),
   updateDef: vi.fn(() => Promise.resolve()),
@@ -19,6 +20,7 @@ vi.mock('@/data/hooks', () => ({
   useHabitCatalog: () => useHabitCatalog(),
   useHabitCatalogActions: () => useHabitCatalogActions(),
   useProgressionProfile: () => useProgressionProfile(),
+  useHabitAiSuggest: () => useHabitAiSuggest(),
 }))
 
 function def(habitKey: string, chainKey: string, position: number): HabitChainInfo['defs'][number] {
@@ -63,6 +65,7 @@ beforeEach(() => {
     pending: false,
   })
   useProgressionProfile.mockReturnValue({ data: { life: [] } })
+  useHabitAiSuggest.mockReturnValue({ suggest: vi.fn(() => Promise.resolve([])), pending: false, unavailable: false })
 })
 
 describe('RoutineEditorPage', () => {
@@ -100,6 +103,13 @@ describe('RoutineEditorPage', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: /új rutin/i }))
     expect(screen.getByRole('heading', { name: 'Új rutin' })).toBeInTheDocument()
+  })
+
+  it('AI javaslat opens the suggestion sheet with no chainKey preselect (mezo-n5e9.3, v1 single entry)', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /ai javaslat/i }))
+    expect(screen.getByRole('heading', { name: /ai javaslat/i })).toBeInTheDocument()
+    expect(useHabitAiSuggest).toHaveBeenCalled()
   })
 
   it('shows a ghost state while pending with an empty catalog', () => {

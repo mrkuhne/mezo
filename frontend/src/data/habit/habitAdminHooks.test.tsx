@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useHabitCatalog, useHabitCatalogActions } from '@/data/habit/habitAdminHooks'
+import { useHabitAiSuggest, useHabitCatalog, useHabitCatalogActions } from '@/data/habit/habitAdminHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
@@ -222,6 +222,18 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
       .find((c) => c.chainKey === 'MORNING')!.defs.find((d) => d.id === target.id)
     expect(stillThere).toBeDefined()
   })
+
+  it('useHabitAiSuggest.suggest resolves the canned 2-suggestion fixture (mezo-n5e9.3)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitAiSuggest(), { wrapper: Wrapper })
+    let suggestions: Awaited<ReturnType<typeof result.current.suggest>> = []
+    await act(async () => {
+      suggestions = await result.current.suggest({ hint: 'jobb esti lezárás' })
+    })
+    expect(suggestions).toHaveLength(2)
+    expect(suggestions.every((s) => s.chainKey === 'MORNING' || s.chainKey === 'EVENING')).toBe(true)
+    expect(result.current.unavailable).toBe(false)
+  })
 })
 
 describe('useHabitCatalog / useHabitCatalogActions (real mode)', () => {
@@ -288,5 +300,65 @@ describe('useHabitCatalog / useHabitCatalogActions (real mode)', () => {
       expect(keys).toContain(JSON.stringify(['habitSummary']))
     })
     invalidateSpy.mockRestore()
+  })
+
+  it('useHabitAiSuggest.suggest POSTs /api/habit/ai/suggest with chainKey + hint and resolves the mapped suggestions', async () => {
+    let posted: Record<string, unknown> | undefined
+    server.use(http.post(`${API_BASE}/api/habit/ai/suggest`, async ({ request }) => {
+      posted = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({
+        suggestions: [
+          { title: 'Napi 10 perc olvasás', why: 'Esti lezárás olvasással.', anchorCopy: 'wind-down alatt', skillKey: 'learning', xp: 5, chainKey: 'EVENING' },
+        ],
+      })
+    }))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitAiSuggest(), { wrapper: Wrapper })
+
+    let suggestions: Awaited<ReturnType<typeof result.current.suggest>> = []
+    await act(async () => {
+      suggestions = await result.current.suggest({ chainKey: 'EVENING', hint: 'olvasás' })
+    })
+    expect(posted).toEqual({ chainKey: 'EVENING', hint: 'olvasás' })
+    expect(suggestions).toEqual([
+      { title: 'Napi 10 perc olvasás', why: 'Esti lezárás olvasással.', anchorCopy: 'wind-down alatt', skillKey: 'learning', xp: 5, chainKey: 'EVENING' },
+    ])
+    expect(result.current.unavailable).toBe(false)
+  })
+
+  it('useHabitAiSuggest.suggest maps a 503 to unavailable:true instead of throwing to the global toast', async () => {
+    server.use(http.post(`${API_BASE}/api/habit/ai/suggest`, () => new HttpResponse(null, { status: 503 })))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitAiSuggest(), { wrapper: Wrapper })
+
+    let suggestions: Awaited<ReturnType<typeof result.current.suggest>> | undefined
+    await act(async () => {
+      suggestions = await result.current.suggest({})
+    })
+    expect(suggestions).toEqual([]) // resolved, not rejected — no global toast for this path
+    await waitFor(() => expect(result.current.unavailable).toBe(true))
+  })
+
+  it('useHabitAiSuggest.suggest maps a 404 (whole habit surface off) to unavailable:true too', async () => {
+    server.use(http.post(`${API_BASE}/api/habit/ai/suggest`, () => new HttpResponse(null, { status: 404 })))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitAiSuggest(), { wrapper: Wrapper })
+
+    await act(async () => {
+      await result.current.suggest({})
+    })
+    await waitFor(() => expect(result.current.unavailable).toBe(true))
+  })
+
+  it('useHabitAiSuggest.suggest still rejects a non-503/404 error (e.g. 400) — the global toast path', async () => {
+    server.use(http.post(`${API_BASE}/api/habit/ai/suggest`, () =>
+      HttpResponse.json([{ code: 'HABIT_SUGGEST_BAD_REQUEST', message: 'bad' }], { status: 400 })))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitAiSuggest(), { wrapper: Wrapper })
+
+    await act(async () => {
+      await expect(result.current.suggest({})).rejects.toThrow()
+    })
+    expect(result.current.unavailable).toBe(false) // not eaten as "unavailable" — a genuine failure
   })
 })

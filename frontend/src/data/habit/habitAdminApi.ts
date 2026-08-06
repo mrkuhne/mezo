@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { HabitCatalog, HabitChainInfo, HabitDaypart, HabitDefInfo } from '@/data/types'
+import type { HabitCatalog, HabitChainInfo, HabitDaypart, HabitDefInfo, HabitSuggestion } from '@/data/types'
 
 type CatalogWire = components['schemas']['HabitCatalogResponse']
 type ChainWire = components['schemas']['HabitChainAdmin']
@@ -10,6 +10,9 @@ type ChainUpdateWire = components['schemas']['HabitChainUpdateRequest']
 type DefCreateWire = components['schemas']['HabitDefCreateRequest']
 type DefUpdateWire = components['schemas']['HabitDefUpdateRequest']
 type ReorderWire = components['schemas']['HabitReorderRequest']
+type SuggestRequestWire = components['schemas']['HabitSuggestRequest']
+type SuggestionWire = components['schemas']['HabitSuggestion']
+type SuggestResponseWire = components['schemas']['HabitSuggestResponse']
 
 export interface HabitChainCreateInput { title: string; daypart: HabitDaypart }
 export interface HabitChainUpdateInput { title?: string; daypart?: HabitDaypart; position?: number; isActive?: boolean }
@@ -36,6 +39,7 @@ export interface HabitDefUpdateInput {
   linkUrl?: string | null
   isActive?: boolean
 }
+export interface HabitSuggestInput { chainKey?: string; hint?: string }
 
 const toDefInfo = (w: DefWire): HabitDefInfo => ({
   id: w.id,
@@ -51,6 +55,15 @@ const toDefInfo = (w: DefWire): HabitDefInfo => ({
   xp: w.xp,
   linkUrl: w.linkUrl ?? null,
   isActive: w.isActive,
+})
+
+const toSuggestion = (w: SuggestionWire): HabitSuggestion => ({
+  title: w.title,
+  why: w.why,
+  anchorCopy: w.anchorCopy,
+  skillKey: w.skillKey,
+  xp: w.xp,
+  chainKey: w.chainKey,
 })
 
 const toChainInfo = (w: ChainWire): HabitChainInfo => ({
@@ -102,4 +115,10 @@ export const habitAdminApi = {
 
   deleteDef: (id: string): Promise<void> =>
     apiFetch(`/api/habit/def/${id}`, { method: 'DELETE' }).then(() => undefined),
+
+  suggest: (input: HabitSuggestInput): Promise<HabitSuggestion[]> =>
+    apiFetch<SuggestResponseWire>('/api/habit/ai/suggest', {
+      method: 'POST',
+      body: JSON.stringify({ chainKey: input.chainKey, hint: input.hint } satisfies SuggestRequestWire),
+    }).then((r) => r.suggestions.map(toSuggestion)),
 }

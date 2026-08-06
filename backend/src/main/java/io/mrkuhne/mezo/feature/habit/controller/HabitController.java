@@ -12,9 +12,12 @@ import io.mrkuhne.mezo.api.dto.HabitDefCreateRequest;
 import io.mrkuhne.mezo.api.dto.HabitDefUpdateRequest;
 import io.mrkuhne.mezo.api.dto.HabitReorderRequest;
 import io.mrkuhne.mezo.api.dto.HabitResponse;
+import io.mrkuhne.mezo.api.dto.HabitSuggestRequest;
+import io.mrkuhne.mezo.api.dto.HabitSuggestResponse;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
 import io.mrkuhne.mezo.feature.habit.service.HabitAdminService;
+import io.mrkuhne.mezo.feature.habit.service.HabitAiService;
 import io.mrkuhne.mezo.feature.habit.service.HabitService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -34,6 +37,7 @@ public class HabitController implements HabitApi {
 
     private final HabitService habitService;
     private final HabitAdminService habitAdminService;
+    private final HabitAiService habitAiService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -94,5 +98,10 @@ public class HabitController implements HabitApi {
     @Override
     public void deleteHabitDef(UUID id) {
         habitAdminService.deleteDef(currentUserId.get(), id);
+    }
+
+    @Override
+    public HabitSuggestResponse suggestHabits(HabitSuggestRequest request) {
+        return habitAiService.suggest(currentUserId.get(), request);
     }
 }

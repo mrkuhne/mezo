@@ -441,6 +441,9 @@ export const handlers = [
     })
   }),
   http.delete(`${API_BASE}/api/habit/def/:id`, () => new HttpResponse(null, { status: 204 })),
+  // AI habit suggestion (mezo-n5e9.3) — honest-empty default (never a 404/503); tests override
+  // with server.use() for the populated-cards and unavailable (503/404) cases.
+  http.post(`${API_BASE}/api/habit/ai/suggest`, () => HttpResponse.json({ suggestions: [] })),
 
   // Daily intention (mezo-a686) — honest-empty default (no creed, no foci, no reflection; never a
   // 404). Tests override with server.use() for populated cases.

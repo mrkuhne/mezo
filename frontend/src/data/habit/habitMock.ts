@@ -1,4 +1,4 @@
-import type { HabitCatalog, HabitDefInfo, HabitItem, HabitSummary } from '@/data/types'
+import type { HabitCatalog, HabitDefInfo, HabitItem, HabitSuggestion, HabitSummary } from '@/data/types'
 
 /**
  * Static seed mirroring content/habit-catalog.json; demo state: 3 morning items done.
@@ -123,6 +123,19 @@ const bedOnTime: HabitDefInfo = {
   anchorCopy: 'wind-down után', mode: 'DERIVED', metric: 'bedtime_next_day', skillKey: 'recovery',
   xp: 15, linkUrl: null, isActive: true,
 }
+
+/** Canned "AI javaslat" fixture (mock mode, mezo-n5e9.3) — palette-consistent with the seed
+ *  catalog above: seed chainKeys (MORNING/EVENING), LIFE skillKeys, xp in the 5-15 seed range. */
+export const mockHabitSuggestions: HabitSuggestion[] = [
+  {
+    title: 'Esti telefon-lezárás', why: 'A képernyő 30 perccel lefekvés előtt lekapcsolva gyorsabb elalvást hoz.',
+    anchorCopy: 'wind-down előtt', skillKey: 'recovery', xp: 10, chainKey: 'EVENING',
+  },
+  {
+    title: 'Reggeli 5 perc nyújtás', why: 'Pár perc mobilizáció ébredés után élénkebbé teszi a testet a nap elejére.',
+    anchorCopy: 'ébredés után', skillKey: 'mindset', xp: 5, chainKey: 'MORNING',
+  },
+]
 
 export const mockHabitCatalog: HabitCatalog = {
   chains: [

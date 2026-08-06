@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions } from '@/data/hooks'
+import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
 import { HabitEditSheet } from '@/features/me/sheets/HabitEditSheet'
 import { cn } from '@/shared/lib/cn'
@@ -28,6 +29,9 @@ export function RoutineEditorPage() {
   // (create) is still truthy and distinct from `null` (closed).
   const [chainSheet, setChainSheet] = useState<{ chain?: HabitChainInfo } | null>(null)
   const [habitSheet, setHabitSheet] = useState<{ chainKey: string; def?: HabitDefInfo } | null>(null)
+  // v1: a single page-level entry, always opened with no chainKey preselect (mezo-n5e9.3) — a
+  // per-chain preselect can ride the same sheet/state shape later without changing this shape.
+  const [suggestSheet, setSuggestSheet] = useState<{ chainKey?: string } | null>(null)
 
   const chains = [...catalog.chains].sort((a, b) => a.position - b.position)
 
@@ -74,15 +78,23 @@ export function RoutineEditorPage() {
               onAddHabit={() => setHabitSheet({ chainKey: chain.chainKey })}
             />
           ))}
-          <button type="button" className="cta-primary" onClick={() => setChainSheet({})}>
-            <Icon name="plus" size={14} /> Új rutin
-          </button>
+          <div className="row gap-sm">
+            <button type="button" className="cta-primary" style={{ flex: 1.8 }} onClick={() => setChainSheet({})}>
+              <Icon name="plus" size={14} /> Új rutin
+            </button>
+            <button type="button" className="cta-ghost" style={{ flex: 1 }} onClick={() => setSuggestSheet({})}>
+              <span aria-hidden="true">✨</span> AI javaslat
+            </button>
+          </div>
         </div>
       )}
 
       {chainSheet && <ChainEditSheet chain={chainSheet.chain} onClose={() => setChainSheet(null)} />}
       {habitSheet && (
         <HabitEditSheet chainKey={habitSheet.chainKey} def={habitSheet.def} onClose={() => setHabitSheet(null)} />
+      )}
+      {suggestSheet && (
+        <AiSuggestSheet chainKey={suggestSheet.chainKey} onClose={() => setSuggestSheet(null)} />
       )}
     </div>
   )
