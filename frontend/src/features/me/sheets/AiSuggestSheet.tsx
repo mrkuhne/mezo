@@ -32,7 +32,13 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
   const chainTitle = (key: string) => catalog.chains.find((c) => c.chainKey === key)?.title ?? key
 
   const run = () => {
-    suggest({ chainKey, hint: hint.trim() || undefined }).then(setCards)
+    suggest({ chainKey, hint: hint.trim() || undefined })
+      .then(setCards)
+      // Same rationale as accept() below: a genuine failure (network/500/etc — the hook already
+      // rethrows anything that isn't 503/404) already surfaces via the global mutation-error
+      // toast — swallow it here so it doesn't also become an unhandled rejection; the sheet
+      // just stays on the empty/no-cards form, ready for another "Javasolj" attempt.
+      .catch(() => {})
   }
 
   const accept = (s: HabitSuggestion) => {

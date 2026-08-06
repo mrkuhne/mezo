@@ -106,6 +106,24 @@ describe('AiSuggestSheet', () => {
     await waitFor(() => expect(screen.getByText(/nincs javaslat/i)).toBeInTheDocument())
   })
 
+  it('a rejecting suggest (a genuine failure the hook rethrows — network/500/etc) leaves the sheet usable: no cards, no unhandled rejection (review fix)', async () => {
+    // mockRejectedValue builds the rejected promise fresh inside the mock's own implementation
+    // (not a pre-constructed Promise.reject handed to mockReturnValue) — same reasoning as the
+    // accept()-rejection test above: run()'s .then().catch() must attach in the same synchronous
+    // tick as the promise is created, or Node reports a "handled asynchronously" warning even
+    // though the rejection IS handled.
+    suggest.mockRejectedValue(new Error('network error'))
+    render(<AiSuggestSheet onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
+
+    await waitFor(() => expect(suggest).toHaveBeenCalledTimes(1))
+    // no cards, no crash, no premature "no suggestions" ghost (cards stays null, not [])— the
+    // form is still there, ready for another "Javasolj" attempt.
+    expect(screen.queryByText(/nincs javaslat/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /javasolj/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Szándék')).toBeInTheDocument()
+  })
+
   it('unavailable (503/404) shows the honest inline card and hides the form entirely', () => {
     useHabitAiSuggest.mockReturnValue({ suggest, pending: false, unavailable: true })
     render(<AiSuggestSheet onClose={vi.fn()} />)

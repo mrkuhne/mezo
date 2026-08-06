@@ -101,6 +101,26 @@ class HabitAiSuggestApiIT extends ApiIntegrationTest {
         assertThat(response.getSuggestions().getFirst().getTitle()).isEqualTo("J");
     }
 
+    /** A separate (not folded into {@link #testSuggest_shouldDropDirtyRows_whenSkillKeyUnknownOrXpOutOfRange})
+     *  test for the unknown-{@code chainKey} dirty row: that sentinel is already 199 of the
+     *  {@code hint} field's 200-char cap, with zero room left for a fourth row — this covers the
+     *  adapter's {@code chainKeys.contains(s.chainKey())} filter (final-review nit, mezo-n5e9.3). */
+    @Test
+    void testSuggest_shouldDropDirtyRow_whenChainKeyUnknown() {
+        HttpHeaders auth = ownerAuthHeaders();
+        String sentinel = "[fake-habit-suggest:["
+                + suggestionJson("J", "mindset", 10, "MORNING") + ","
+                + suggestionJson("C", "mindset", 10, "NOPE")
+                + "]]";
+        HabitSuggestRequest request = HabitSuggestRequest.builder().hint(sentinel).build();
+
+        HabitSuggestResponse response = postForBody(
+                "/api/habit/ai/suggest", request, auth, HttpStatus.OK, HabitSuggestResponse.class);
+
+        assertThat(response.getSuggestions()).hasSize(1);
+        assertThat(response.getSuggestions().getFirst().getTitle()).isEqualTo("J");
+    }
+
     @Test
     void testSuggest_shouldReturnEmptySuggestions_whenSentinelUnparseable() {
         HttpHeaders auth = ownerAuthHeaders();
