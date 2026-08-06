@@ -387,6 +387,8 @@ export function ExercisesPage() {
         <ExerciseRecordSheet
           record={openRecord}
           videoUrl={resolveCatalogRow(openRecord)?.videoUrl ?? null}
+          imageStartUrl={resolveCatalogRow(openRecord)?.imageStartUrl ?? null}
+          imageEndUrl={resolveCatalogRow(openRecord)?.imageEndUrl ?? null}
           onClose={() => setOpenRecord(null)}
         />
       )}

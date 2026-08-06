@@ -60,6 +60,24 @@ test('a name-grouped record opens the record sheet WITH the demo player chip', a
   expect(within(sheet).getByRole('button', { name: /Demo/ })).toBeInTheDocument()
 })
 
+test('the record sheet heroes the catalog demo stills above the video chip', async () => {
+  renderView()
+  await userEvent.click(await screen.findByRole('button', { name: /Hip Thrust/ }))
+  const sheet = await screen.findByRole('dialog')
+  // Resolved through the same name fallback as videoUrl; the pair renders as one figure.
+  const frames = sheet.querySelectorAll('.exdemo img')
+  expect(frames).toHaveLength(2)
+  expect(frames[0]).toHaveAttribute('src', '/exercises/hip-thrust-a.jpg')
+})
+
+test('a record whose catalog row has no image renders no demo figure at all', async () => {
+  renderView()
+  // Box Jump is imageless in the fixture, like the 37 unmapped master rows.
+  await userEvent.click(await screen.findByRole('button', { name: /Box Jump/ }))
+  const sheet = await screen.findByRole('dialog')
+  expect(sheet.querySelector('.exdemo')).toBeNull()
+})
+
 test('a bodyweight record with weightKg 0 (live-backend shape) uses the rep stat branch', async () => {
   renderView()
   const row = await screen.findByRole('button', { name: /Dead Hang/ })

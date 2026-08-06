@@ -339,7 +339,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   const span = daySpan(wake, bed)
   const unwrap = (hhmm: string) => unwrapDayMinute(hhmm, span.wakeMin, span.crossesMidnight)
   const unwrappedNow = unwrap(nowHHmm)
-  const kitchenCloseMin = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
+  const kitchenCloseMin = span.bedMin - KITCHEN_CLOSE_OFFSET_MIN
 
   // 1. Windows + per-slot budgets. A template (mezo-7102) replaces the live placement/weight split
   //    with a replayed anchor plan + its explicit pct split; absent/null keeps today's behavior.
@@ -503,7 +503,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       ? { start: sport.time, end: sport.durationMin != null ? toHHmm(toMin(sport.time) + sport.durationMin) : '—', noneToday: false }
       : { start: '—', end: '—', noneToday: true },
     bedtime: bed,
-    kitchenClose: toHHmm(kitchenCloseMin),
+    kitchenClose: toHHmm(((kitchenCloseMin % 1440) + 1440) % 1440),
     caffeineCutoff: input.caffeineCutoff,
     energy: budget.energy,
     slots,
