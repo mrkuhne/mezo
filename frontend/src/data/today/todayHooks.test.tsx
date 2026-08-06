@@ -17,7 +17,7 @@ afterEach(() => {
 
 const HU_WEEKDAYS = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat']
 
-test('useToday (mock) returns the byte-identical Phase-1 statics + demo copy', () => {
+test('useToday (mock) returns the statics + the train-mock workout + demo copy', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
   expect(result.current.today).toBe(today)

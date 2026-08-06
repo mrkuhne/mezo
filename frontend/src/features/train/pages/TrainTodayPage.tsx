@@ -297,7 +297,7 @@ export function TrainTodayPage() {
             // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
             // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
             const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
-            const workoutMinutes = workout ? estimateSessionMinutes(workout.exercises) : 0
+            const workoutMinutes = estimateSessionMinutes(workout.exercises)
             return (
               <section key="hero-gym" className="trainhero np-anim">
                 <div className="trainhero-over">
