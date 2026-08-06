@@ -229,6 +229,7 @@ components:
         xp: { type: integer }
         strengthPct: { type: integer, nullable: true, description: 'trailing-28d done ratio, null under min-sample' }
         linkUrl: { type: string, nullable: true, description: 'optional external resource opened directly from the row (e.g. a routine video)' }
+        hint: { type: string, nullable: true, description: "Server-computed explainer for a row that cannot tick right now (e.g. out-of-window wakeup)" }
     HabitDayResponse:
       type: object
       required: [date, habits, levelUps]

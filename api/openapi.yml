@@ -12058,6 +12058,12 @@ components:
           description: >-
             optional external resource opened directly from the row (e.g. a
             routine video)
+        hint:
+          type: string
+          nullable: true
+          description: >-
+            Server-computed explainer for a row that cannot tick right now (e.g.
+            out-of-window wakeup)
     HabitDayResponse:
       type: object
       required:

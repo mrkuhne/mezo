@@ -4901,6 +4901,8 @@ export interface components {
             strengthPct?: number | null;
             /** @description optional external resource opened directly from the row (e.g. a routine video) */
             linkUrl?: string | null;
+            /** @description Server-computed explainer for a row that cannot tick right now (e.g. out-of-window wakeup) */
+            hint?: string | null;
         };
         HabitDayResponse: {
             /** Format: date */

@@ -957,6 +957,9 @@ export interface HabitItem {
   xp: number
   strengthPct?: number | null
   linkUrl?: string | null
+  /** Server-computed explainer for a still-pending row that cannot tick right now (e.g. an
+   *  honestly out-of-window wakeup, mezo-czol) — see `logic/habitAction.ts`'s `habitHint`. */
+  hint?: string | null
 }
 export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
 export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }
