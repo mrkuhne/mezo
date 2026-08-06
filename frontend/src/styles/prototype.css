@@ -2972,3 +2972,59 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 }
 .ninput:focus-visible { border-color: var(--primary-base); box-shadow: var(--shadow-focus); }
 .ninput:disabled { background: var(--surface-recess); color: var(--text-disabled); }
+
+/* ── Exercise demo stills (mezo-8xdl.3) ──────────────────────────────────────
+   The vendored free-exercise-db photos are shot in a red-walled commercial gym
+   — tonally foreign to the Napív surfaces. The desaturation + the muscle rail
+   running along the leading edge are what bind them to the card language; the
+   rail colour is set inline per exercise. */
+.exdemo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--r-2xl);
+  border: 1px solid var(--card-border);
+  border-inline-start-width: 5px;
+  border-inline-start-style: solid;   /* colour comes in inline (muscleColor.rail) */
+  background: var(--surface-2);
+}
+.exdemo-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.88);
+  transition: opacity var(--duration-slow, 320ms) var(--ease-out);
+}
+:root[data-theme='dark'] .exdemo-frame { filter: saturate(0.88) brightness(0.9); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .exdemo-frame { filter: saturate(0.88) brightness(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exdemo-frame { transition: none; }
+}
+.exdemo-toggle {
+  position: absolute;
+  right: 8px; bottom: 8px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: var(--surface-glass, var(--surface-1));
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1;
+}
+.exdemo-thumb {
+  flex: none;
+  width: 44px; height: 44px;
+  border-radius: var(--r-md, 10px);
+  object-fit: cover;
+  filter: saturate(0.88);
+  /* the no-image fallback tile paints its own wash + initial */
+  display: grid; place-items: center;
+  font: 600 15px/1 var(--ff-display);
+}
