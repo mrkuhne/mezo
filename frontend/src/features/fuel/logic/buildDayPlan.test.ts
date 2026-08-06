@@ -167,6 +167,20 @@ test('evening volleyball (18:15+90) snaps a pre slot to 17:00 and dinner to 20:1
   expect(dinner.weight).toBe(2.5)
 })
 
+// ── kitchen close on the unwrapped axis (mezo-t1vh) ─────────────────────────────
+test('kitchen close on a crossing day (wake 07:00 / bed 03:00) renders on the unwrapped axis', () => {
+  const plan = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00' }))
+  expect(plan.kitchenClose).toBe('01:30') // bedMin = 1620 (unwrapped), kitchenCloseMin = 1530, mod 1440 = 90 → 01:30
+})
+test('kitchen close on a crossing day with early bed (wake 07:00 / bed 00:30) wraps past midnight', () => {
+  const plan = buildDayPlan(baseInput({ wake: '07:00', bed: '00:30' }))
+  expect(plan.kitchenClose).toBe('23:00') // bedMin = 1470 (unwrapped), kitchenCloseMin = 1380, mod 1440 = 1380 → 23:00
+})
+test('kitchen close on a non-crossing day (wake 06:00 / bed 23:00) is byte-identical (no behavior change)', () => {
+  const plan = buildDayPlan(baseInput({ wake: '06:00', bed: '23:00' }))
+  expect(plan.kitchenClose).toBe('21:30') // bedMin = 1380 (non-crossing), kitchenCloseMin = 1290, mod 1440 = 1290 → 21:30
+})
+
 // ── budget split — sums EXACTLY to the daily budget, drift on dinner ──────────
 test('splitBudget rounds per macro and lands the drift on the dinner window', () => {
   const windows: PlannedWindow[] = [
