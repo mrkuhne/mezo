@@ -12,6 +12,8 @@ import { useTrain, useWeekMuscleLog, useWeekWorkouts } from '@/data/hooks'
 import type { GymScheduleSlot } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { selectGymRows, weekZoneRows } from '@/features/train/logic/weekZone'
 import { GymStat } from '@/features/train/components/GymStat'
@@ -51,10 +53,10 @@ export function GymPage() {
   if (!activeMeso) {
     return (
       <>
-        <div className="pghead-np">
+        <div className="page-header">
           <div>
-            <div className="over">Edzés · Gym</div>
-            <h1>Gym</h1>
+            <Eyebrow brand>Edzés · Gym</Eyebrow>
+            <PageTitle style={{ marginTop: 4 }}>Gym</PageTitle>
           </div>
         </div>
         <div style={{ padding: '0 24px 12px' }}>
@@ -87,40 +89,34 @@ export function GymPage() {
   return (
     <>
       {/* Header */}
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">Edzés · Gym</div>
-          <h1>{activeMeso.shortTitle}</h1>
+          <Eyebrow brand>Edzés · Gym</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>{activeMeso.shortTitle}</PageTitle>
         </div>
-        <div className="row gap-sm" style={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={() => setCustomOpen(true)}
-            className="pgact-np np-press"
-            style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
-          >
-            <Icon name="plus" size={12} /> Saját
-          </button>
-          {/* Always available (mezo-4t43): the planner sets times at plan time, this chip
-              is the mid-cycle editor. Mock save no-ops → the local override keeps it visible. */}
-          <button
-            type="button"
-            onClick={() => setScheduleOpen(true)}
-            className="pgact-np np-press"
-            style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
-          >
-            <Icon name="today" size={12} /> Időpontok
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
-            className="pgact-np np-press"
-            aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
-            style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
-          >
-            📈 W{activeMeso.currentWeek}/{activeMeso.weeks} →
-          </button>
-        </div>
+      </div>
+
+      {/* Three labelled actions do not fit beside a 36px h1 at DS type sizes — at
+          `.page-header` widths they wrapped into a column and collided with the
+          title. They get their own scrollable row under the head instead; the
+          header's top-right slot stays empty rather than half-full. */}
+      <div className="pgactrow">
+        <button type="button" onClick={() => setCustomOpen(true)} className="pgact">
+          <Icon name="plus" size={14} /> Saját
+        </button>
+        {/* Always available (mezo-4t43): the planner sets times at plan time, this chip
+            is the mid-cycle editor. Mock save no-ops → the local override keeps it visible. */}
+        <button type="button" onClick={() => setScheduleOpen(true)} className="pgact">
+          <Icon name="today" size={14} /> Időpontok
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
+          className="pgact"
+          aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
+        >
+          📈 W{activeMeso.currentWeek}/{activeMeso.weeks} →
+        </button>
       </div>
 
       {/* Meso meta — the card is a button since mezo-ly27: tap → MuscleWeekSheet */}
@@ -132,7 +128,9 @@ export function GymPage() {
           aria-label="Heti izomterhelés — részletek"
           style={{ padding: 16, width: '100%', textAlign: 'left', display: 'block' }}
         >
-          <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
+          {/* 2×2, not 1×4: at phone widths four cells give each ~85px, which wraps
+              "Pull / Push / Legs" onto three lines and breaks "Gym napok" in half. */}
+          <div className="statstrip statstrip-2">
             <GymStat label="Fázis" val={currentPhase} sub={`hét ${activeMeso.currentWeek}`} color="var(--tag-gym)" />
             <GymStat label="Split" val={splitHead} sub={splitTail ?? ''} color="var(--text-primary)" />
             <GymStat label="Szetek" val={`${doneWorkingSets}/${totalSets}`} sub="kész / heti terv" color="var(--cat-physiology)" />
@@ -147,14 +145,14 @@ export function GymPage() {
             className="row gap-md mt-md"
             style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)', alignItems: 'center' }}
           >
-            <Icon name="train" size={11} color="var(--tag-gym)" />
-            <span className="label-mono text-tertiary" style={{ fontSize: 10, flex: 1 }}>
+            <Icon name="train" size={14} color="var(--tag-gym)" />
+            <span className="label-mono text-tertiary" style={{ flex: 1 }}>
               {activeMeso.startDate} → {activeMeso.endDate} · {activeMeso.style}
             </span>
             <PhaseDots phases={activeMeso.phaseCurve} current={activeMeso.currentWeek - 1} />
           </div>
         </button>
-        <div className="label-mono text-tertiary" style={{ fontSize: 9, textAlign: 'center', marginTop: 8 }}>
+        <div className="eyebrow text-tertiary" style={{ textAlign: 'center', marginTop: 8 }}>
           tap → heti izomterhelés
         </div>
       </div>
@@ -163,7 +161,7 @@ export function GymPage() {
       <div style={{ padding: '0 24px 24px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
           <span className="eyebrow">Heti split</span>
-          <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>tap → részletek</span>
+          <span className="label-mono text-tertiary">tap → részletek</span>
         </div>
         <div className="col gap-sm">
           {days.map((d) => (

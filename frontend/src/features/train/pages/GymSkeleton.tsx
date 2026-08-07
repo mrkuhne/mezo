@@ -1,14 +1,16 @@
 // Layout-aware loading skeleton for GymPage (mezo-f2z). Mirrors the real Gym shape —
 // page-header → meso meta card (4 stats + a divider strip) → day-by-day list — so the
 // swap to real content does not reflow. Built from the Skeleton primitives.
+// Sizes track the DS re-skin (mezo-setx.6.4): 36px h1, 44px header actions, a
+// StatStrip-shaped meta row and 56px+ ListItem day rows.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function GymSkeleton() {
   return (
     <div role="status" aria-label="Betöltés…">
       <div className="page-header">
-        <div className="col gap-xs"><Skeleton width={80} height={11} /><Skeleton width={130} height={20} /></div>
-        <Skeleton width={56} height={9} />
+        <div className="col gap-xs"><Skeleton width={110} height={12} /><Skeleton width={170} height={36} /></div>
+        <Skeleton width={92} height={44} radius={999} />
       </div>
       {/* Meso meta card — 4 stats + a divider strip */}
       <div style={{ padding: '0 24px 12px' }}>
@@ -16,7 +18,7 @@ export default function GymSkeleton() {
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="col gap-sm" style={{ flex: 1 }}>
-                <Skeleton width="60%" height={9} /><Skeleton width="50%" height={16} /><Skeleton width="70%" height={8} />
+                <Skeleton width="55%" height={20} /><Skeleton width="70%" height={9} /><Skeleton width="60%" height={11} />
               </div>
             ))}
           </div>
@@ -36,7 +38,7 @@ export default function GymSkeleton() {
         </div>
         <div className="col gap-sm">
           {Array.from({ length: 3 }, (_, i) => (
-            <Skeleton key={i} width="100%" height={56} radius={11} />
+            <Skeleton key={i} width="100%" height={64} radius={14} />
           ))}
         </div>
       </div>
