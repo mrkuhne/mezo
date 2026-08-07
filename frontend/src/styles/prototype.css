@@ -2477,9 +2477,34 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   100% { border-radius: 52% 48% 60% 40% / 44% 54% 46% 56%; transform: translate(6px,4px) scale(1.05); }
 }
 @keyframes isl-floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* L1 — the unfolded list inside a big island. Scrolls internally; the sky itself never does. */
+.isl-l1 { overflow-y: auto; flex: 1 1 auto; text-align: left; scrollbar-width: none; margin-top: 6px; }
+.isl-l1::-webkit-scrollbar { display: none; }
+.isl-grouph { display: flex; align-items: baseline; justify-content: space-between; font-size: 9px;
+              font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--faint);
+              margin: 14px 2px 6px; }
+.isl-grouph-go { font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 700;
+                 color: var(--sub); text-decoration: none; }
+.isl-l1 .itemrow { margin-bottom: 6px; }
+.isl-dayxp { text-align: center; font-size: 12px; font-weight: 700; color: var(--success-hover);
+             padding: 8px 0; }
+.isl-l1-close { display: block; width: 100%; text-align: center; font-size: 12px; font-weight: 700;
+                color: var(--sub); background: none; border: none; font-family: inherit;
+                cursor: pointer; padding: 10px 0 2px; }
+/* row entrance stagger — 70ms ladder, open-ended tail so long lists stay bounded */
+:where(.isl-l1) .itemrow { animation: isl-rowin .35s ease both; }
+:where(.isl-l1) .itemrow:nth-child(2) { animation-delay: 70ms; }
+:where(.isl-l1) .itemrow:nth-child(3) { animation-delay: 140ms; }
+:where(.isl-l1) .itemrow:nth-child(4) { animation-delay: 210ms; }
+:where(.isl-l1) .itemrow:nth-child(5) { animation-delay: 280ms; }
+:where(.isl-l1) .itemrow:nth-child(6) { animation-delay: 350ms; }
+:where(.isl-l1) .itemrow:nth-child(7) { animation-delay: 420ms; }
+:where(.isl-l1) .itemrow:nth-child(n+8) { animation-delay: 490ms; }
+@keyframes isl-rowin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   :where(.isl.isl-big) .isl-blob { animation: none; }
   :where(.isl:not(.isl-big)) { animation: none; }
+  :where(.isl-l1) .itemrow { animation: none; }
   .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
 }
 
