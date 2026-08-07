@@ -2513,6 +2513,8 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                 background: none; border: none; font-family: inherit; cursor: pointer; }
 .isl-openhead { font-size: 10.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
                 color: var(--sub); text-align: left; flex: none; }
+.isl-anchor-rows { margin-top: 18px; text-align: left; }
+.isl-anchor-rows .itemrow { margin-bottom: 6px; }
 /* evening phase wrapper — the hero-slot content cross-slides on phase change */
 .isl-phase { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 :where(.isl-phase) { animation: isl-phasein .45s ease both; }
