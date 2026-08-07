@@ -2477,6 +2477,42 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   100% { border-radius: 52% 48% 60% 40% / 44% 54% 46% 56%; transform: translate(6px,4px) scale(1.05); }
 }
 @keyframes isl-floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* big-view content: DS Hero numeral + fact cells (StatStrip idiom + delta line) + act row */
+.isl-hero-v { font-size: 52px; font-weight: 200; letter-spacing: -.04em; line-height: 1;
+              color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 26px; }
+.isl-hero-v.is-word { font-size: 36px; margin-top: 34px; }
+.isl-hero-u { font-size: 19px; font-weight: 300; color: var(--faint); margin-left: 5px; letter-spacing: 0; }
+.isl-hero-sub { font-size: 12px; color: var(--sub); font-weight: 500; margin-top: 8px; }
+.isl-facts { display: grid; gap: 1px; background: var(--line); border-radius: var(--r-lg);
+             overflow: hidden; margin-top: 18px; }
+.isl-fact { background: var(--surface-1); padding: 11px 8px 10px; text-align: center; }
+.isl-fact-v { font-size: 19px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.isl-fact-u { font-size: 10px; font-weight: 500; color: var(--faint); margin-left: 2px; }
+.isl-fact-l { font-size: 8.5px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+              color: var(--faint); margin-top: 2px; }
+.isl-fact-d { font-size: 10px; font-weight: 600; margin-top: 4px; }
+.isl-fact-d.is-good { color: var(--success-hover); }
+.isl-fact-d.is-warn { color: var(--warning-hover); }
+.isl-fact-d.is-muted { color: var(--faint); }
+.isl-warnchip { display: inline-flex; align-items: center; gap: 5px; background: var(--warning-bg);
+                color: var(--warning-deep); border: 1px solid var(--warning-soft);
+                border-radius: var(--r-full); font-size: 11px; font-weight: 600; padding: 5px 12px;
+                margin: 14px auto 0; }
+.isl-act { margin-top: auto; padding-top: 14px; display: flex; align-items: center;
+           justify-content: center; gap: 10px; }
+.isl-cta { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px;
+           border-radius: var(--r-full); background: var(--gradient-cta); color: #fff;
+           font-size: 13px; font-weight: 700; box-shadow: var(--shadow-cta); border: none;
+           font-family: inherit; cursor: pointer; }
+.isl-cta.is-lav { background: linear-gradient(135deg, #8d7fc0, #6d5f9c);
+                  box-shadow: 0 8px 20px rgba(109,95,156,.35); }
+.isl-more { display: inline-flex; padding: 9px 14px; border-radius: var(--r-full);
+            background: transparent; color: var(--sub); font-size: 12px; font-weight: 600;
+            border: 1px solid var(--line); cursor: pointer; font-family: inherit; }
+.isl-doneline { margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--success-hover);
+                background: none; border: none; font-family: inherit; cursor: pointer; }
+.isl-openhead { font-size: 10.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+                color: var(--sub); text-align: left; flex: none; }
 /* L1 — the unfolded list inside a big island. Scrolls internally; the sky itself never does. */
 .isl-l1 { overflow-y: auto; flex: 1 1 auto; text-align: left; scrollbar-width: none; margin-top: 6px; }
 .isl-l1::-webkit-scrollbar { display: none; }
