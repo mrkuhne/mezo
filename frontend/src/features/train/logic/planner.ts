@@ -13,6 +13,7 @@
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
 import type { ExerciseKind, GymExercise, MesoDay, GoalPreset, SplitOption } from '@/data/types'
+import { fitProgram } from '@/features/train/logic/programFit'
 
 // --- step labels (meso-planner.jsx:135) ---
 export const stepLabels = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Program'] as const
@@ -43,7 +44,11 @@ interface GoalScheme {
 }
 export const SCHEMES: Record<string, GoalScheme> = {
   hypertrophy: { compound: { reps: '8-10', rir: 1, sets: 4 }, isolation: { reps: '10-12', rir: 1, sets: 3 } },
-  strength: { compound: { reps: '4-6', rir: 1, sets: 5 }, isolation: { reps: '8-10', rir: 2, sets: 3 } },
+  // compound sets 5 -> 4 (mezo-oyhy.6 curation): 5 sat above SETS_PER_EXERCISE.compound.max (4,
+  // structureLint R2), so the strength scheme itself tripped 'sets-per-exercise' before the
+  // fitter ever ran (fitProgram only trims once a GROUP's budget reaches FIT_CEILING, not per
+  // exercise) — R2 band is RP 2-4, 4 is the correct top of band, not a strength-scheme regression.
+  strength: { compound: { reps: '4-6', rir: 1, sets: 4 }, isolation: { reps: '8-10', rir: 2, sets: 3 } },
   'cut-prep': { compound: { reps: '10-12', rir: 2, sets: 3 }, isolation: { reps: '12-15', rir: 1, sets: 3 } },
   recovery: { compound: { reps: '10-12', rir: 2, sets: 3 }, isolation: { reps: '12-15', rir: 2, sets: 2 } },
   sport: { compound: { reps: '6-8', rir: 2, sets: 4 }, isolation: { reps: '10-12', rir: 1, sets: 3 } },
@@ -128,7 +133,13 @@ function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
         { name: 'Romanian Deadlift', muscle: 'ham', type: 'compound' },
         { name: 'Leg Press', muscle: 'quad', type: 'compound' },
         { name: 'Seated Leg Curl', muscle: 'ham', type: 'isolation' },
-        { name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation' },
+        // Bulgarian Split Squat (mezo-oyhy.6 curation): Láb+Plyo B was glute's only weekly
+        // source (1 slot × compound cap 4 = 4 < GROUP_MEV.glute 6) — a 2nd compound glute
+        // slot clears the floor (2 × 4 = 8 >= 6) and gives 2 distinct weekly names for free.
+        { name: 'Bulgarian Split Squat', muscle: 'glute', type: 'compound' },
+        // Seated Calf Raise, was 'Standing Calf Raise' (mezo-oyhy.6 curation): identical to
+        // Láb+Plyo A's calf name — distinct name clears the weekly variety flag.
+        { name: 'Seated Calf Raise', muscle: 'calf', type: 'isolation' },
       ]
     case 'Felső A':
       return [
@@ -154,6 +165,11 @@ function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
         { name: 'Lat Pulldown · Pronated', muscle: 'lats', type: 'compound', ...(isShoulder ? { warning: 'Pronated grif · csukló-kíméletes' } : {}) },
         { name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation' },
         { name: 'Hammer Curl', muscle: 'biceps', type: 'isolation' },
+        // Incline Curl (mezo-oyhy.6 curation): Pull runs 2x/week in every PPL day-count, so a
+        // single Hammer Curl slot capped biceps at 2 x isolation-cap 3 = 6 < GROUP_MEV.biceps 8.
+        // A 2nd curl exercise gives 4 slots (2/week x 2 names) x cap 3 = 12 >= 8, and 2 distinct
+        // names clears the weekly variety flag in the same move.
+        { name: 'Incline Curl', muscle: 'biceps', type: 'isolation' },
         { name: 'Face Pull', muscle: 'rear-delt', type: 'isolation' },
       ]
     case 'Push':
@@ -163,6 +179,11 @@ function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
         { name: 'Overhead Press', muscle: 'shoulder', type: 'compound', ...(isShoulder ? { warning: 'Cable variánssal helyettesítve' } : {}) },
         { name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation' },
         { name: 'Tricep Pushdown', muscle: 'triceps', type: 'isolation' },
+        // Overhead Tricep Ext (mezo-oyhy.6 curation): Push runs 2x/week in every PPL day-count,
+        // so a single Tricep Pushdown slot read 1 distinct weekly name once sets crossed the
+        // variety gate (>=6). A 2nd triceps name clears it; MEV was never the issue (triceps
+        // was already >= floor), so this is a variety-only, cheap-edit fix.
+        { name: 'Overhead Tricep Ext', muscle: 'triceps', type: 'isolation' },
       ]
     case 'Legs':
       return [
@@ -171,7 +192,26 @@ function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
         { name: 'Leg Press', muscle: 'quad', type: 'compound' },
         { name: 'Leg Curl', muscle: 'ham', type: 'isolation' },
         { name: 'Hip Thrust', muscle: 'glute', type: 'compound' },
+        // Bulgarian Split Squat (mezo-oyhy.6 curation): at PPL 4/5-day, 'Legs · light' is
+        // trimmed away entirely (trimmedTemplate only removes light-labelled days), leaving
+        // this the ONLY weekly Legs day — 1 Hip Thrust slot capped glute at 4 < GROUP_MEV 6.
+        // A 2nd compound glute slot clears the floor (2 x 4 = 8 >= 6) with 2 distinct names.
+        { name: 'Bulgarian Split Squat', muscle: 'glute', type: 'compound' },
         { name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation' },
+      ]
+    // 'Legs · light' (mezo-oyhy.6 curation): only reached at PPL 6-day (the sole day-count
+    // where the light day survives trimming) — a distinct list, not the 'Legs' case reused,
+    // so its calf exercise can carry a different name than the main Legs day's. Order matters:
+    // isLight trims the LAST element (trainingDay, planner.ts) — Seated Calf Raise sits before
+    // Leg Curl so it survives the trim; Leg Curl is the one dropped.
+    case 'Legs · light':
+      return [
+        { name: 'Barbell Squat', muscle: 'quad', type: 'compound' },
+        { name: 'Romanian Deadlift', muscle: 'ham', type: 'compound' },
+        { name: 'Leg Press', muscle: 'quad', type: 'compound' },
+        { name: 'Hip Thrust', muscle: 'glute', type: 'compound' },
+        { name: 'Seated Calf Raise', muscle: 'calf', type: 'isolation' },
+        { name: 'Leg Curl', muscle: 'ham', type: 'isolation' },
       ]
     case 'Upper':
       return [
@@ -180,7 +220,19 @@ function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
         { name: 'Lat Pulldown · Pronated', muscle: 'lats', type: 'compound', ...(isShoulder ? { warning: 'Pronated grif' } : {}) },
         { name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation' },
         { name: 'Hammer Curl', muscle: 'biceps', type: 'isolation' },
+        // Incline Curl (mezo-oyhy.6 curation): 'Upper' runs 2x/week in every Upper/Lower(/
+        // Sport) day-count, so a single Hammer Curl slot capped biceps at 2 x cap 3 = 6 <
+        // GROUP_MEV.biceps 8. 2nd curl -> 4 slots x cap 3 = 12 >= 8, plus 2 distinct names.
+        { name: 'Incline Curl', muscle: 'biceps', type: 'isolation' },
         { name: 'Tricep Pushdown', muscle: 'triceps', type: 'isolation' },
+        // Incline DB Press + Face Pull (mezo-oyhy.6 curation): chest (Bench Press only) and
+        // shoulder (Lateral Raise only) each read 1 distinct weekly name across 'Upper's 2x/
+        // week occurrences once sets crossed the variety gate — MEV was never short for either
+        // (compound chest cap alone clears MEV 4; Lateral+FacePull clears MEV 6), so this is a
+        // variety-only, cheap-edit fix. Session size lands at 9 (band max) — triceps' matching
+        // single-name repeat is left to STRUCTURAL_ALLOWED rather than a 10th exercise.
+        { name: 'Incline DB Press', muscle: 'chest', type: 'compound' },
+        { name: 'Face Pull', muscle: 'rear-delt', type: 'isolation' },
       ]
     case 'Lower':
       return [
@@ -189,14 +241,31 @@ function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
         { name: 'Leg Press', muscle: 'quad', type: 'compound' },
         { name: 'Leg Curl', muscle: 'ham', type: 'isolation' },
         { name: 'Hip Thrust', muscle: 'glute', type: 'compound' },
+        // Bulgarian Split Squat (mezo-oyhy.6 curation): 'Lower' is the only weekly Legs-type
+        // day in Upper/Lower(/Sport) — 1 Hip Thrust slot capped glute at 4 < MEV 6; 2nd slot
+        // clears it (2 x 4 = 8 >= 6).
+        { name: 'Bulgarian Split Squat', muscle: 'glute', type: 'compound' },
       ]
-    case 'Full':
+    // 'Full · A' / 'Full · B' (mezo-oyhy.6 curation): previously a single 'Full' case served
+    // both template slots verbatim — every Full-body day was byte-identical, guaranteeing a
+    // single-name variety flag on every trained group. Two distinct 5-exercise lists (the
+    // template already labels the days 'Full · A'/'Full · B' — planner.ts SPLIT_TEMPLATES)
+    // alternate the movement pool weekly, and rebalance push:pull along the way.
+    case 'Full · A':
       return [
         { name: 'Barbell Squat', muscle: 'quad', type: 'compound' },
         { name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound' },
         { name: 'Barbell Bench Press', muscle: 'chest', type: 'compound' },
         { name: 'Romanian Deadlift', muscle: 'ham', type: 'compound' },
         { name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation' },
+      ]
+    case 'Full · B':
+      return [
+        { name: 'Incline DB Press', muscle: 'chest', type: 'compound' },
+        { name: 'Weighted Pull-Up', muscle: 'lats', type: 'compound' },
+        { name: 'Hip Thrust', muscle: 'glute', type: 'compound' },
+        { name: 'Leg Curl', muscle: 'ham', type: 'isolation' },
+        { name: 'Face Pull', muscle: 'rear-delt', type: 'isolation' },
       ]
     default:
       return exercisesForDay('Pull', niggle)
@@ -328,9 +397,11 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
     }
     const baseType = BASE_TYPES.find((t) => d.type.startsWith(t)) ?? 'Pull'
     const isLight = d.type.includes('light')
-    // Láb+Plyo / Felső days carry an A/B suffix that selects distinct lists — pass
-    // the full day type; other splits key off the resolved base type.
-    const seedKey = baseType === 'Láb+Plyo' || baseType === 'Felső' ? d.type : baseType
+    // Láb+Plyo / Felső / Legs (· light) / Full (· A/B) days carry a suffix that selects a
+    // distinct list (mezo-oyhy.6 curation added the Legs/Full variants) — pass the full day
+    // type; other splits key off the resolved base type.
+    const seedKey =
+      baseType === 'Láb+Plyo' || baseType === 'Felső' || baseType === 'Legs' || baseType === 'Full' ? d.type : baseType
     let exercises: GymExercise[] = exercisesForDay(seedKey, niggle).map((seed, i) => {
       // Plyo seeds are prescribed weightless: no warm-up, fixed low-rep, RIR 0.
       if (seed.type === 'plyo') {
@@ -369,11 +440,11 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
   }
 
   if (!weekdays) {
-    return template.map((d): PlannerDay => {
+    return fitProgram(template.map((d): PlannerDay => {
       if (d.type === 'Rest') return { ...restDay(d.day, d.note), muscle: d.muscle }
       if (d.type === 'Volleyball') return { ...d, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
       return trainingDay(d)
-    })
+    }), goal?.id ?? 'hypertrophy')
   }
 
   // Selected-weekday placement: the trimmed training sequence lands on the chosen days in
@@ -381,7 +452,7 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
   // template volleyball days stay volleyball, everything else rests.
   const sequence = template.filter((d) => isTrainingType(d.type))
   let next = 0
-  return DAY_ORDER.map((dayKey): PlannerDay => {
+  return fitProgram(DAY_ORDER.map((dayKey): PlannerDay => {
     if (weekdays.includes(dayKey) && sequence.length > 0) {
       const src = sequence[next % sequence.length]
       next++
@@ -392,5 +463,5 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
       return { ...templ, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
     }
     return restDay(dayKey)
-  })
+  }), goal?.id ?? 'hypertrophy')
 }
