@@ -29,6 +29,14 @@ describe('SetBudgetCard', () => {
     render(<SetBudgetCard budgets={[withPlyo]} capWarnings={[]} defaultOpen />)
     expect(screen.getByText(/\+10 plyo/)).toBeInTheDocument()
   })
+  it('expanded: shows the direct-only counting footnote (ADR 0021)', () => {
+    render(<SetBudgetCard budgets={[ok]} capWarnings={[]} defaultOpen />)
+    expect(screen.getByText(/Csak a fő izom szettjei számítanak/)).toBeInTheDocument()
+  })
+  it('collapsed: footnote hidden', () => {
+    render(<SetBudgetCard budgets={[ok]} capWarnings={[]} />)
+    expect(screen.queryByText(/Csak a fő izom/)).not.toBeInTheDocument()
+  })
 })
 
 const under: MuscleBudgetRow = { group: 'ham', label: 'Hamstring', colorMuscle: 'ham', failureSets: 0, volumeSets: 1, workingSets: 1, plyoSets: 0, budget: 0.05, level: 'under', mev: 2, zoneStart: 0.1, setsToZone: 1, suggestedDay: 'Csü' }
