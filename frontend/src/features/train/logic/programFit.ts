@@ -69,9 +69,11 @@ function varyRepZones(days: MesoDay[], slotMap: Map<string, Slot[]>): void {
     slots.forEach((s, i) => {
       if (i === 0) return
       const e = days[s.dayIdx].exercises[s.exIdx]
+      // Shoulder isolation always goes light, regardless of the palette cycle below.
+      if (group === 'shoulder' && e.type === 'isolation') { e.repMin = 20; e.repMax = 25; return }
       // Palette cycle: odd slots shifted, even slots (2,4,…) back to the base range.
       if (i % 2 === 0) { e.repMin = first.repMin; e.repMax = first.repMax; return }
-      const [lo, hi] = group === 'shoulder' && e.type === 'isolation' ? [20, 25] : shift[e.type === 'compound' ? 'compound' : 'isolation']
+      const [lo, hi] = shift[e.type === 'compound' ? 'compound' : 'isolation']
       e.repMin = lo
       e.repMax = hi
     })

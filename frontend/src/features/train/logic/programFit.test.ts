@@ -33,6 +33,17 @@ describe('phase 1 — rep-zone variation', () => {
     const lat = out[0].exercises.find((e) => e.name === 'L')!
     expect([lat.repMin, lat.repMax]).toEqual([20, 25])
   })
+  it('shoulder isolation slots ≥1 ALWAYS go light, even at even indices (2, 4, …)', () => {
+    const out = fitProgram([day('Hét', [
+      ex('shoulder-front', 3), ex('shoulder-side', 3, { name: 'L1', type: 'isolation', repMin: 10, repMax: 12 }),
+      ex('shoulder-rear', 3, { name: 'L2', type: 'isolation', repMin: 10, repMax: 12 }),
+      ex('chest-mid', 3), ex('back-mid', 3), ex('quad', 3),
+    ])], 'hypertrophy')
+    const l1 = out[0].exercises.find((e) => e.name === 'L1')!
+    const l2 = out[0].exercises.find((e) => e.name === 'L2')!
+    expect([l1.repMin, l1.repMax]).toEqual([20, 25])
+    expect([l2.repMin, l2.repMax]).toEqual([20, 25]) // slot index 2 (even) — must not revert to the base range
+  })
   it('plyo exercises are never touched', () => {
     const plyo = ex('quad', 3, { name: 'Box Jump', type: 'plyo', repMin: 5, repMax: 5, targetRIR: 0, warmupSets: 0 })
     const out = fitProgram([day('Hét', [plyo, ex('quad', 3), ex('ham', 3), ex('chest-mid', 3), ex('back-mid', 3)])], 'hypertrophy')
