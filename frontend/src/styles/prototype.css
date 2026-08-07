@@ -566,6 +566,13 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .h-display.size-md { font-size: 20px; }
 .h-display.size-sm { font-size: 16px; }
 
+/* DS text-meta-sm — the Fraunces italic "meta voice" for source lines, empty-state
+   subtitles and asides. The idiom was already in use inline at three sites
+   (.rz-thin, .creedchip-tx, the paused-plan aside); this is the shared class new
+   call sites should reach for (mezo-setx.6.4). Existing sites are left alone —
+   retrofitting them is not this bead's job. */
+.text-meta-sm { font: italic 500 14px/1.45 var(--ff-serif); }
+
 .page-title {
   /* DS text-h1 role: 36 / 700 / -0.03em — one per screen */
   font-family: var(--ff-display);
@@ -3206,3 +3213,18 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 }
 .mesorow:active { background: var(--surface-recess); }
 .mesorow-tx { flex: 1; min-width: 0; font-size: 16px; color: var(--text-primary); }
+
+/* StatStrip sub-caption (mezo-setx.6.4) — the optional third line under a cell's
+   label, for cells that need to say what the value is measured against
+   ("kész / heti terv"). Used by GymStat; the domain-free <StatStrip> has no
+   equivalent prop on purpose, so this is opt-in vocabulary, not a new default. */
+.statstrip-s { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
+
+/* A page-header action ROW — for pages whose actions outgrow the header's
+   top-right slot (GymPage has three labelled ones, mezo-setx.6.4). Scrolls
+   horizontally rather than wrapping into a column beside the title. */
+.pgactrow { display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; padding: 0 24px 12px; }
+.pgactrow::-webkit-scrollbar { display: none; }
+.pgactrow > * { flex: none; }
+/* StatStrip in two columns — for cells whose values are phrases, not numerals. */
+.statstrip-2 { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
