@@ -28,8 +28,8 @@ import { test, expect } from '@playwright/test'
  *    neutralized under reduced-motion (asserted by reducedMotionGuard.test.ts), so both
  *    /ritual shots settle to a deterministic end state — confetti is display:none, the
  *    Harvest CountUp renders its final value immediately, np-anim/rz-pop settle visible.
- *    Today's own `.faceswap` family is neutralized the same way, asserted by
- *    features/today/todayReducedMotion.test.ts.
+ *    Today's own island motion (blob morph, floaty capsules, L1 stagger, phase swap) is
+ *    neutralized the same way, asserted by features/today/todayReducedMotion.test.ts.
  *  - wait for `document.fonts.ready` → the self-hosted fonts (Geist + Fraunces) are in
  *    before the pixel compare, else the first paint uses fallback metrics.
  */

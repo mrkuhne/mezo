@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-07-29
+updated: 2026-08-07
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -34,24 +34,24 @@ Intention has no page of its own — it is exercised through three surfaces:
 
 ### `IntentionBanner` on Today — two variants (`features/today/components/IntentionBanner.tsx`)
 
-Since the daypart-faces re-composition (`mezo-j7u4`, [ADR 0014](../decisions/0014-today-daypart-faces.md)) the component takes an explicit **`variant: 'chip' | 'reflect'`** prop and **the daypart decision moved OUT of it into the caller** — the face that mounts it. The full-card `.intent*` banner is gone (its CSS retired); the day half became a compact `.creedchip`, the evening half kept the `.reflect*` block. The five states survive, redistributed:
+Since the daypart-faces re-composition (`mezo-j7u4`, [ADR 0014](../decisions/0014-today-daypart-faces.md)) the component takes an explicit **`variant: 'chip' | 'reflect'`** prop and **the daypart decision moved OUT of it into the caller** — the island that mounts it. The full-card `.intent*` banner is gone (its CSS retired); the day half became a compact `.creedchip`, the evening half kept the `.reflect*` block. Since the three-islands re-composition (`mezo-euze`, [ADR 0022](../decisions/0022-today-three-islands.md)) both variants render **inside the island's unfolded L1 list** (`IslandList`'s `focus` slot, under a **`Fókusz` group heading**) rather than on the main surface. The five states survive, redistributed:
 
-**`variant="chip"` — the creed chip** (mounted by `FaceMorning.tsx:53` and `FaceDay.tsx:64`, i.e. the 🌅 Reggel and ☀️ Nap faces). One `.creedchip` row: a `✦` mark, the creed in quiet italics, a `{n} / {cap}` counter, and one CTA:
+**`variant="chip"` — the creed chip** (mounted by `IslandMorning.tsx:55` and `IslandDay.tsx:66` into their L1 `Fókusz` group, i.e. the 🌅 Reggel and ☀️ Nap islands). One `.creedchip` row: a `✦` mark, the creed in quiet italics, a `{n} / {cap}` counter, and one CTA:
 1. **No creed** — the prompt + a CTA opening `CreedSheet`.
 2. **Creed, no focus** — the creed + `+ Mai fókusz` (opens `IntentionSheet`).
 3. **Foci set** — the counter plus **one `◆`-marked `.creedchip-fx` row per live focus** underneath the chip, and `+ Mai fókusz` until the cap. **This row list is load-bearing, not decoration:** without it the feature is write-only — you add a focus, save, and it appears nowhere on Today. (It was: the first cut of the chip dropped the foci, and mutating `onSave` to a no-op left all 202 `features/today` tests green. Caught in review, fixed, now covered.)
    The **creed text itself is the `CreedSheet` opener** (`button.creedchip-tx`, a button stripped back to plain text) — the retired banner's separate `szerkeszt` affordance. Without it `CreedSheet`/`setCreed` would be **unreachable app-wide**, since the chip is the creed's only surface.
    The foci rows are deliberately **local markup, not `ItemRow`s**: a focus is one line of the user's own prose with no icon, subtitle or action, so `ItemRow`'s contract would force a 34 px emoji shield, bold the prose as a title and leave both trailing slots empty. (Contrast the habit rows, where `ItemRow` mapped 1:1 — the judgement is about when *not* to reuse a primitive.)
 
-**`variant="reflect"` — the evening reflection** (mounted by `FaceEvening.tsx:59`, the 🌙 Este face, below the `TodoCard`). A `.reflect` block:
+**`variant="reflect"` — the evening reflection** (mounted by `IslandEvening.tsx:92` into the 🌙 Este island's L1 `Fókusz` group). A `.reflect` block:
 4. **Reflect row** — `Szándékkal élted a napot?` + three inline buttons **`Igen` / `Részben` / `Nem`** (write `reflect(value)` directly — no sheet).
 5. **Reflected** — once answered, collapses to `✓ {label} — a mai szándékodra reflektáltál.`
 
-The reflect variant **ghosts when there is nothing to reflect on** (no creed, or no foci) — a stricter guard than the chip's, and its own: the evening face mounts it unconditionally, so the check has to live in the component.
+The reflect variant **ghosts when there is nothing to reflect on** (no creed, or no foci) — a stricter guard than the chip's, and its own: the evening island mounts it unconditionally, so the check has to live in the component.
 
 **Honest ghost (both variants):** renders `null` when the day is still unresolved (real mode before data / switch off) — `isPending && no foci && no creed` (`IntentionBanner.tsx:26`).
 
-**Note on the timing seam:** which variant a user sees is now decided by the **sleep-anchored face model** (`features/today/logic/dayFace.ts`, off `useSleepGoal()`'s wake/bed) rather than by `daypartNow()`'s fixed 4–11 / 12–17 / 18–3 bands. A consequence of „act-anywhere": selecting the **Este** pill at 16:00 shows the reflection, and selecting **Reggel** at 22:00 shows the chip — deliberate, and the same retroactive affordance every other Today row gained.
+**Note on the timing seam:** which variant a user sees is now decided by the **sleep-anchored face model** (`features/today/logic/dayFace.ts`, off `useSleepGoal()`'s wake/bed) rather than by `daypartNow()`'s fixed 4–11 / 12–17 / 18–3 bands. A consequence of „act-anywhere": selecting the **Este** capsule at 16:00 shows the reflection, and selecting **Reggel** at 22:00 shows the chip — deliberate, and the same retroactive affordance every other Today row gained.
 
 ### Two DERIVED habits in the chains ([habit.md](habit.md))
 - **`daily_intention`** (MORNING, position 7, „Napi szándék", anchor „reggeli rutin után", xp 10) — its `Logolás` button opens `IntentionSheet` (add a focus). The habit completes **derived** off `intention_focus_set` (today has ≥ 1 focus), never self-claimed.
@@ -177,6 +177,6 @@ await reflect('partial')                                        // yes | partial
 - **Catalog:** `content/habit-catalog.json` (`daily_intention` MORNING/pos7/xp10 + `intention_reflect` EVENING/pos3/xp5) · `content/quest-catalog.json` (`growth_intention` GROWTH/xp20).
 - **Contract:** `api/feature/intention/intention.yml` (tag `Intention`, 5 endpoints, `IntentionDayResponse`/`IntentionCreedResponse`/`IntentionFocusResponse`/`SetCreedRequest`/`AddFocusRequest`/`ReflectRequest`).
 - **FE data:** `frontend/src/data/intention/{intentionApi,intentionMock,intentionHooks}.ts` (+ barrel line in `data/hooks.ts:37`; types `Reflection`/`IntentionFocus`/`IntentionDay` in `data/types.ts`).
-- **FE UI:** `frontend/src/features/today/components/IntentionBanner.tsx` (`variant="chip"` mounted by `FaceMorning.tsx:53` + `FaceDay.tsx:64`; `variant="reflect"` by `FaceEvening.tsx:59`) · `features/today/sheets/{IntentionSheet,CreedSheet,ReflectSheet}.tsx` · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds, dispatched by `TodayPage`'s `act()`) · CSS: **`.creedchip*`** (the new chip family) + the surviving `.reflect*` block + `.intent-creed` (still used by `IntentionSheet`'s creed quote) — the rest of `.intent-*` and the `.fx-*` foci list are **deleted** (`mezo-j7u4`), see [`_platform-design-system.md` §3](_platform-design-system.md).
+- **FE UI:** `frontend/src/features/today/components/IntentionBanner.tsx` (`variant="chip"` mounted by `IslandMorning.tsx:55` + `IslandDay.tsx:66`; `variant="reflect"` by `IslandEvening.tsx:92` — all into `IslandList`'s `focus` slot under the L1 `Fókusz` heading, `mezo-euze`) · `features/today/sheets/{IntentionSheet,CreedSheet,ReflectSheet}.tsx` · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds, dispatched by `TodayPage`'s `act()`) · CSS: **`.creedchip*`** (the new chip family) + the surviving `.reflect*` block + `.intent-creed` (still used by `IntentionSheet`'s creed quote) — the rest of `.intent-*` and the `.fx-*` foci list are **deleted** (`mezo-j7u4`), see [`_platform-design-system.md` §3](_platform-design-system.md).
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/intention/{IntentionApiIT,IntentionServiceIT,IntentionDerivedIT,IntentionEntityIT}.java` + `support/populator/IntentionPopulator.java` · `frontend/src/data/intention/intentionHooks.test.tsx` + `frontend/src/features/today/components/IntentionBanner.test.tsx`.
 - **Docs:** spec [`docs/superpowers/specs/2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md) · ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).

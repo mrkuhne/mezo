@@ -21,9 +21,8 @@ const at = (hhmm: string) => {
 
 /**
  * Clock-only fake timers for the tests that await a mutation: with `setTimeout`
- * faked too, RTL's `waitFor` polls on a clock nobody advances and always times out
- * (this repo has no `jest` global, so RTL cannot detect the fake timers and drive
- * them itself). Faking `Date` alone is all the face derivation needs.
+ * faked too, RTL's `waitFor` polls on a clock nobody advances and always times out.
+ * Faking `Date` alone is all the face derivation needs.
  */
 const clockAt = (hhmm: string) => vi.useFakeTimers({ toFake: ['Date'] }).setSystemTime(at(hhmm))
 
@@ -46,94 +45,78 @@ function renderToday(path = '/today') {
   )
 }
 
-describe('TodayPage — face selection', () => {
+/** Which island is big right now — the selection's single observable. */
+const bigFace = (container: HTMLElement) =>
+  (container.querySelector('.isl.isl-big') as HTMLElement | null)?.dataset.face ?? null
+
+/** A capsule's button (the visible ones only — the big island's capsule is aria-hidden). */
+const capsule = (name: RegExp) => screen.getByRole('button', { name })
+
+/** Opens the selected island's L1 list. */
+const openList = () => fireEvent.click(screen.getByRole('button', { name: /^még \d+ ›$/ }))
+
+describe('TodayPage — island selection', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
-  test('with no ?dp the face comes from the clock', () => {
+  test('with no ?dp the big island comes from the clock', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday()
-    expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Reggel/)
+    const { container } = renderToday()
+    expect(bigFace(container)).toBe('reggel')
   })
 
-  test('the evening clock lands on the evening face', () => {
+  test('the evening clock lands on the evening island', () => {
     vi.useFakeTimers().setSystemTime(at('21:05'))
-    renderToday()
-    expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Este/)
+    const { container } = renderToday()
+    expect(bigFace(container)).toBe('este')
   })
 
-  test('?dp= overrides the clock — but the clock still marks the CURRENT pill', () => {
+  test('?dp= overrides the clock — but the clock still marks the CURRENT capsule', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday('/today?dp=este')
-    expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Este/)
+    const { container } = renderToday('/today?dp=este')
+    expect(bigFace(container)).toBe('este')
     // „hol tartok" (the clock) and „mit nézek" (the selection) must not blur together.
-    expect(screen.getByRole('tab', { name: /^Reggel/ })).toHaveAccessibleName(/· most/)
-    expect(screen.getByRole('tab', { selected: true })).not.toHaveAccessibleName(/· most/)
+    expect(capsule(/^Reggel · most ·/)).toBeInTheDocument()
+    expect(within(capsule(/^Reggel · most ·/)).getByText('MOST')).toBeInTheDocument()
   })
 
   test.each(['', 'holnap', '4'])('a blank or unknown ?dp=%s falls back to the clock face', (v) => {
     vi.useFakeTimers().setSystemTime(at('13:42'))
-    renderToday(`/today?dp=${v}`)
-    expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Nap/)
+    const { container } = renderToday(`/today?dp=${v}`)
+    expect(bigFace(container)).toBe('nap')
   })
 
-  test('tapping another pill switches the rendered face', () => {
+  test('tapping a capsule grows that island', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday()
+    const { container } = renderToday()
     // fireEvent (not element.click()) — only the act-wrapped events flush the router's
     // state update in this Vitest/RTL/React-19 stack.
-    fireEvent.click(screen.getByRole('tab', { name: /^Este/ }))
-    expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Este/)
+    fireEvent.click(capsule(/^Este ·/))
+    expect(bigFace(container)).toBe('este')
   })
 
   test('selecting the CURRENT face drops ?dp entirely (no stale param)', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday('/today?dp=este')
-    fireEvent.click(screen.getByRole('tab', { name: /^Reggel/ }))
-    expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Reggel/)
+    const { container } = renderToday('/today?dp=este')
+    fireEvent.click(capsule(/^Reggel · most ·/))
+    expect(bigFace(container)).toBe('reggel')
     expect(screen.getByTestId('loc').textContent).toBe('/today')
   })
 
   test('selecting another face writes ?dp and keeps the other params', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday('/today?vulnerable=on')
-    fireEvent.click(screen.getByRole('tab', { name: /^Nap/ }))
+    fireEvent.click(capsule(/^Nap ·/))
     expect(screen.getByTestId('loc').textContent).toBe('/today?vulnerable=on&dp=nap')
   })
-})
 
-describe('TodayPage — face-swap direction (mezo-1khu)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
-
-  test('moving forward (Reggel → Nap) stamps data-dir="fwd"', () => {
+  test('a face switch closes an open L1 list', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday()
-    fireEvent.click(screen.getByRole('tab', { name: /^Nap/ }))
-    expect(container.querySelector('.faceswap')).toHaveAttribute('data-dir', 'fwd')
-  })
-
-  test('moving backward (Este → Reggel) stamps data-dir="back"', () => {
-    vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday('/today?dp=este')
-    fireEvent.click(screen.getByRole('tab', { name: /^Reggel/ }))
-    expect(container.querySelector('.faceswap')).toHaveAttribute('data-dir', 'back')
-  })
-
-  test('skipping forward past a face (Reggel → Este) still reads as forward', () => {
-    vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday()
-    fireEvent.click(screen.getByRole('tab', { name: /^Este/ }))
-    expect(container.querySelector('.faceswap')).toHaveAttribute('data-dir', 'fwd')
-  })
-
-  test('the face-swap wrapper remounts (a fresh key) on every face change', () => {
-    vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday()
-    const before = container.querySelector('.faceswap')
-    fireEvent.click(screen.getByRole('tab', { name: /^Nap/ }))
-    const after = container.querySelector('.faceswap')
-    expect(after).not.toBe(before)
+    openList()
+    expect(container.querySelector('.isl-l1')).toBeTruthy()
+    fireEvent.click(capsule(/^Nap ·/))
+    expect(container.querySelector('.isl-l1')).toBeNull()
   })
 })
 
@@ -141,72 +124,78 @@ describe('TodayPage — composition', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
-  test('the fixed chrome renders on every face', () => {
+  test('the fixed chrome + the sky render', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday()
     expect(container.querySelector('.apphero')).toBeTruthy()
-    expect(container.querySelector('.greet')).toBeTruthy()
-    expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeInTheDocument()
+    expect(container.querySelector('.sky-islands')).toBeTruthy()
+    expect(container.querySelectorAll('.isl:not(.isl-anchor)')).toHaveLength(3)
   })
 
-  test('the retired sections are gone', () => {
+  test('the retired surfaces are gone', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday()
-    expect(container.querySelector('.dayarc')).toBeNull()
-    expect(container.querySelector('.zonediv')).toBeNull()
-    expect(container.querySelector('.beats')).toBeNull()
-    expect(container.querySelector('.scard')).toBeNull()
-    expect(container.querySelector('.np-hero')).toBeNull()
-    expect(screen.queryByText('Teendők ma')).toBeNull()
-    expect(screen.queryByText('A napod')).toBeNull()
-    expect(screen.queryByText('Ma eddig')).toBeNull()
+    expect(container.querySelector('.greet')).toBeNull()
+    expect(container.querySelector('.dfs')).toBeNull()
+    expect(container.querySelector('.faceswap')).toBeNull()
+    expect(container.querySelector('.tdc')).toBeNull()
+    expect(container.querySelector('.fhc-next')).toBeNull()
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByText('Ma még vár rád')).toBeNull()
+    expect(screen.queryByText('Szép reggelt, Daniel — induljunk.')).toBeNull()
   })
 
-  test('?day=rough still replaces the whole screen with AnchorMode', () => {
+  test('?day=rough melts the sky into the single anchor island', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday('/today?day=rough')
-    expect(screen.queryByRole('tablist')).toBeNull()
-    expect(screen.getByText('Kilépés')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /megnyitás/ })).toBeNull()
+    expect(screen.getByText(/Horgony mód/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kilépés a horgony módból' })).toBeInTheDocument()
   })
 
-  test('the morning face leads with the chain hero and previews the later faces', () => {
+  test('the morning island promotes the chain\'s first open step as its ONE CTA', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday()
-    expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('50 fekvőtámasz')
-    expect(screen.getByText('Ma még vár rád')).toBeInTheDocument()
+    renderToday()
+    expect(screen.getByRole('button', { name: '50 fekvőtámasz' })).toBeInTheDocument()
+    // the other two islands are capsules with their own counters
+    expect(capsule(/^Nap ·/)).toBeInTheDocument()
+    expect(capsule(/^Este ·/)).toBeInTheDocument()
   })
 
-  test('EVERY pending morning-chain step is actionable, not just the promoted one', () => {
+  test('the morning hero is the sleep number with contextual facts', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday()
-    // seed: pushups (promoted) · videó · gombakávé · edzés · fehérjés reggeli
-    const promoted = container.querySelector('.fhc-next-tx b')?.textContent
-    expect(promoted).toBe('50 fekvőtámasz')
-    const group = [...container.querySelectorAll('.tdc-grp')]
+    expect(container.querySelector('.isl-hero-v')?.textContent).toContain('óra alvás')
+    // facts are contextualized (delta lines), not raw numbers
+    expect(container.querySelectorAll('.isl-fact').length).toBeGreaterThan(0)
+  })
+
+  test('EVERY pending morning-chain step is actionable in L1', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday()
+    openList()
+    const group = [...container.querySelectorAll('.isl-grouph')]
       .find((g) => g.textContent?.startsWith('Reggeli rutin'))!
     const rows = [...group.parentElement!.querySelectorAll('.itemrow')]
-    // the promoted step is NOT repeated as a row, and every other step has its own control
-    expect(rows.map((r) => r.querySelector('.itemrow-t1')?.textContent)).not.toContain(promoted)
     expect(rows.length).toBeGreaterThan(0)
     for (const r of rows) {
       expect(within(r as HTMLElement).getByRole('button')).toBeInTheDocument()
     }
   })
 
-  test('a middle chain step can be ticked without touching the ones before it', async () => {
+  test('a middle chain step can be ticked without touching the ones before it', () => {
     clockAt('09:12')
-    const { container } = renderToday()
-    // „Gombakávé" is step 6 — two steps behind the promoted one. Before this round it was an
-    // inert metapill, so a skipped step could never be logged.
+    renderToday()
+    openList()
     const row = screen.getByText('Gombakávé').closest('.itemrow') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Logolás' }))
     expect(screen.getByTestId('loc').textContent).toBe('/fuel/stack')
-    expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('50 fekvőtámasz')
   })
 
-  test("the chain's linked content is reachable from its row", () => {
+  test("the chain's linked content is reachable from its L1 row", () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday()
+    openList()
     const link = screen.getByRole('link', { name: 'Reggeli videó megnyitása' })
     expect(link).toHaveAttribute('href', expect.stringContaining('facebook.com'))
     expect(link).toHaveAttribute('target', '_blank')
@@ -215,139 +204,131 @@ describe('TodayPage — composition', () => {
     expect(within(row).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
   })
 
-  test('the evening face names Napzárás exactly once — the hero owns it, the row is gone', () => {
-    clockAt('21:05')
-    renderToday()
-    // The hero's eyebrow is the ONE naming. The `evening_ritual` habit row and the
-    // `ritual:day` item both described the same act with a weaker affordance.
-    expect(screen.getAllByText('NAPZÁRÁS')).toHaveLength(1)
-    expect(screen.queryByText('Napzárás')).toBeNull()
-    // …and the hero still offers the route (its CTA inside the window, the card otherwise).
-    expect(screen.getByRole('heading', { name: 'Zárjuk le a napot' })).toBeInTheDocument()
+  test('the briefing prose lives at the top of the morning L1 as a CoachBubble', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday()
+    // L0 carries no prose — no coach bubble on the closed island
+    expect(container.querySelector('.coach-bubble')).toBeNull()
+    openList()
+    expect(container.querySelector('.isl-l1 .coach-bubble')).toBeTruthy()
   })
 
-  test('the day face keeps the workout niggle warning, and ?niggle=off suppresses it', () => {
+  test('the evening island owns the Napzárás act — no ritual row in L1', () => {
+    clockAt('21:30')
+    const { container } = renderToday()
+    // Inside the window the CTA is the one affordance…
+    expect(screen.getByRole('button', { name: 'Zárjuk le a napot' })).toBeInTheDocument()
+    openList()
+    // …and the L1 never repeats it as a row (neither the ritual item nor evening_ritual).
+    const rowTitles = [...container.querySelectorAll('.isl-l1 .itemrow .itemrow-t1')].map((n) => n.textContent)
+    expect(rowTitles).not.toContain('Zárjuk le a napot')
+    expect(rowTitles.filter((t) => t?.includes('Napzárás'))).toHaveLength(0)
+  })
+
+  test('the day island keeps the workout niggle warning, and ?niggle=off suppresses it', () => {
     clockAt('13:42')
     const { container, unmount } = renderToday()
-    expect(container.querySelector('.warmstrip')?.textContent).toContain('niggle')
+    expect(container.querySelector('.isl-warnchip')?.textContent).toContain('niggle')
     unmount()
     const off = renderToday('/today?niggle=off')
-    expect(off.container.querySelector('.warmstrip')).toBeNull()
+    expect(off.container.querySelector('.isl-warnchip')).toBeNull()
   })
 
-  test('a face with fuel rows carries the fuel plan companion line', () => {
-    clockAt('13:42')
-    const { container } = renderToday()
-    expect(container.querySelector('.tdc-note')).toBeTruthy()
-  })
-
-  test('the TodoCard header links into quest management', () => {
+  test('the quest group heading links into quest management', () => {
     clockAt('09:12')
     renderToday()
+    openList()
     const link = screen.getByRole('link', { name: 'Küldetések kezelése a Növekedésben' })
     expect(link).toHaveAttribute('href', '/me/growth')
     expect(link.textContent).toMatch(/^\d+\/\d+ · \+\d+ XP/)
   })
 
-  test('the evening face closes with the retrospective and the day XP once something is done', async () => {
-    clockAt('21:05')
+  test('the evening retrospective appears with the day XP once something is done', async () => {
+    clockAt('21:30')
     renderToday()
+    openList()
     // The seed evening chain is entirely pending, so the retrospective is honestly absent…
-    expect(screen.queryByText('Ahogy a nap telt')).toBeNull()
+    expect(screen.queryByText(/Ahogy a nap telt/)).toBeNull()
     fireEvent.click(screen.getAllByRole('button', { name: 'Pipa' })[0])
     // …and appears — with the day's XP line — the moment the first item lands.
-    await waitFor(() => expect(screen.getByText('Ahogy a nap telt')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/Ahogy a nap telt/)).toBeInTheDocument())
     expect(screen.getByText(/Ma összesen/)).toBeInTheDocument()
   })
 })
 
 /**
- * I2 — the `wind_down` habit used to be offered TWICE on the Este face inside the winddown
- * window: once as the `WindDownBanner`'s own row (title + anchor cue + XP + `Pipa`) and once as
- * an „Esti rutin" row in the `TodoCard`, because `OWNED_BY_RITUAL_HERO` filtered only
- * `evening_ritual`. The two controls came from two `useHabitActions` instances with INDEPENDENT
- * `pending` state, so tapping one left the other live and a second `check('wind_down')` could
- * fire. With the mock anchor (wake 06:45 / bed 23:15) the winddown phase is 22:15–23:15.
+ * The `wind_down` habit is offered exactly once (mezo-mvb4.1 heritage): inside the winddown
+ * phase the island's own „Leállás megvolt ✓" ghost owns it and the L1 row is filtered; in dim
+ * and outside the windows the L1 row is the only affordance (act-anywhere must survive).
+ * Mock anchor (wake 06:45 / bed 23:15): dim 21:45–22:15 · winddown 22:15–23:15.
  */
 describe('TodayPage — the wind-down habit is offered exactly once', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
-  const windDownRows = () =>
-    screen.getAllByText('Wind-down, képernyő le').map((n) => n.closest('.itemrow') as HTMLElement)
-
-  test('inside the winddown phase the banner owns it — one row, one Pipa', () => {
+  test('inside the winddown phase the island ghost owns it — no L1 row', () => {
     clockAt('22:30')
     renderToday()
-    // Two before the fix: the banner's row AND the „Esti rutin" TodoCard row.
-    const rows = windDownRows()
-    expect(rows).toHaveLength(1)
-    // …and the surviving one is the BANNER's (inside the wind-down `.todaycard`, where the
-    // advice lines explain it), not the weaker `.tdc` row.
-    expect(rows[0].closest('.tdc')).toBeNull()
-    expect(rows[0].closest('.todaycard')).toBeTruthy()
-    expect(within(rows[0]).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Leállás megvolt ✓' })).toBeInTheDocument()
+    openList()
+    expect(screen.queryByText('Wind-down, képernyő le')).toBeNull()
   })
 
-  test('in the dim phase the banner shows no row, so the TodoCard keeps the only affordance', () => {
-    // 22:00 = dim (bed−90 … bed−60): the habit's anchor („napzárás után") has not come due, the
-    // banner deliberately renders no row — so filtering the TodoCard row here would leave the
-    // habit unreachable on this face, which is a loss, not a de-duplication.
+  test('in the dim phase the L1 row keeps the only affordance', () => {
     clockAt('22:00')
-    const { container } = renderToday()
-    const rows = windDownRows()
-    expect(rows).toHaveLength(1)
-    expect(rows[0].closest('.tdc')).toBeTruthy()
-    expect(within(rows[0]).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
-    expect(container.querySelector('.todaycard-rows')).toBeNull()
+    renderToday()
+    expect(screen.queryByRole('button', { name: /Leállás megvolt/ })).toBeNull()
+    openList()
+    const row = screen.getByText('Wind-down, képernyő le').closest('.itemrow') as HTMLElement
+    expect(within(row).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
   })
 
-  test('outside the wind-down windows the TodoCard row is still there', () => {
-    clockAt('21:05') // phase 'none' — the banner renders nothing at all
+  test('outside the wind-down windows the L1 row is still there', () => {
+    clockAt('21:30')
     renderToday()
-    const rows = windDownRows()
-    expect(rows).toHaveLength(1)
-    expect(rows[0].closest('.tdc')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Leállás megvolt/ })).toBeNull()
+    openList()
+    expect(screen.getByText('Wind-down, képernyő le')).toBeInTheDocument()
   })
 })
 
-describe('TodayPage — no face renders a control that does nothing', () => {
+describe('TodayPage — no island renders a control that does nothing', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
   /**
-   * The class-level guard, driven off the REAL quest/habit/fuel/check-in fixtures rather than a
-   * hand-picked case: on every face, tap every control the face renders and assert that each one
-   * did something observable — navigated, opened a sheet, or fired a write. A pill that leaves
-   * the URL unchanged, opens nothing and writes nothing is the defect this asserts against.
+   * The class-level guard, driven off the REAL quest/habit/fuel/check-in fixtures: on every
+   * island, open L1, tap every control and assert that each one did something observable —
+   * navigated, opened a sheet, or fired a write. A pill that leaves the URL unchanged, opens
+   * nothing and writes nothing is the defect this asserts against.
    */
-  test.each(['reggel', 'nap', 'este'])('every control on the %s face does something', async (face) => {
+  test.each(['reggel', 'nap', 'este'])('every L1 control on the %s island does something', async (face) => {
     clockAt('09:12')
-    const { container, unmount } = renderToday(`/today?dp=${face}`)
-    const controls = [...container.querySelectorAll('.tdc .itemrow, .fhc-next')]
-      .flatMap((row) => [...row.querySelectorAll('button')]
-        .map((btn) => ({ btn, title: row.querySelector('.itemrow-t1, .fhc-next-tx b')?.textContent })))
-    expect(controls.length).toBeGreaterThan(0)
-    unmount()
+    const first = renderToday(`/today?dp=${face}`)
+    openList()
+    const titles = [...first.container.querySelectorAll('.isl-l1 .itemrow')]
+      .filter((row) => row.querySelector('button'))
+      .map((row) => row.querySelector('.itemrow-t1')?.textContent)
+    expect(titles.length).toBeGreaterThan(0)
+    first.unmount()
 
-    for (const { title } of controls) {
+    for (const title of titles) {
       // Fresh mount per control: a served action changes the tree, which would invalidate
       // the node handles collected above.
       const one = renderToday(`/today?dp=${face}`)
-      const row = [...one.container.querySelectorAll('.tdc .itemrow, .fhc-next')]
-        .find((r) => r.querySelector('.itemrow-t1, .fhc-next-tx b')?.textContent === title)!
+      openList()
+      const row = [...one.container.querySelectorAll('.isl-l1 .itemrow')]
+        .find((r) => r.querySelector('.itemrow-t1')?.textContent === title)!
       const btn = row.querySelector('button')!
       const before = one.container.innerHTML
       fireEvent.click(btn)
-      // `waitFor` covers the async ones too: a MANUAL habit's check resolves through a
-      // mutation, so its evidence is the re-render that follows the cache patch.
       await waitFor(() => {
         const navigated = screen.getByTestId('loc').textContent !== `/today?dp=${face}`
         const sheetOpened = document.querySelector('[role="dialog"]') !== null
         const treeChanged = one.container.innerHTML !== before
         expect(
           navigated || sheetOpened || treeChanged,
-          `„${title}" renders a control that does nothing on the ${face} face`,
+          `„${title}" renders a control that does nothing on the ${face} island`,
         ).toBe(true)
       })
       one.unmount()
@@ -362,25 +343,26 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   test('an ACTIVITY quest row opens the activity log sheet, it never self-completes', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday()
+    openList()
     const row = screen.getByText('Olvass ma legalább 10 percet').closest('.itemrow') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Naplózz' }))
     expect(screen.getByText('Mi történt ma?')).toBeInTheDocument()
   })
 
-  test('a MANUAL habit routes to check() — the chain hero advances to the next step', async () => {
+  test('the promoted CTA routes a MANUAL habit to check() and advances to the next step', async () => {
     clockAt('09:12')
-    const { container } = renderToday()
-    expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('50 fekvőtámasz')
-    // The hero's own CTA — the chain rows below now carry their own `Pipa` pills too.
-    fireEvent.click(container.querySelector('.fhc-next-go') as HTMLElement)
+    renderToday()
+    const cta = screen.getByRole('button', { name: '50 fekvőtámasz' })
+    fireEvent.click(cta)
     await waitFor(() =>
-      expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('Reggeli videó'))
+      expect(screen.getByRole('button', { name: 'Reggeli videó' })).toBeInTheDocument())
   })
 
   test('a fuel row logs IN PLACE instead of navigating to /fuel', () => {
     vi.useFakeTimers().setSystemTime(at('13:42'))
     const { container } = renderToday()
-    const fuelRow = [...container.querySelectorAll('.tdc .itemrow')]
+    openList()
+    const fuelRow = [...container.querySelectorAll('.isl-l1 .itemrow')]
       .find((r) => within(r as HTMLElement).queryByRole('button', { name: 'Logold' })) as HTMLElement
     fireEvent.click(within(fuelRow).getByRole('button', { name: 'Logold' }))
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Mit ettél?')
@@ -389,30 +371,19 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
 
   test('a check-in row opens the check-in sheet for its own slot', () => {
     vi.useFakeTimers().setSystemTime(at('13:42'))
-    const { container } = renderToday()
-    // Scoped to the face's TodoCard — the same slot is ALSO previewed as a `later` row.
-    const card = within(container.querySelector('.tdc') as HTMLElement)
-    const row = card.getByText('Hogy vagy?').closest('.itemrow') as HTMLElement
+    renderToday()
+    openList()
+    const row = screen.getByText('Hogy vagy?').closest('.itemrow') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Koppints' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('dialog').textContent).toContain('14:00')
   })
-
-  test('a preview row jumps to the item\'s own face rather than acting on it', () => {
-    vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday()
-    fireEvent.click(screen.getAllByRole('button', { name: /ugrás a napszakára$/ })[0])
-    expect(screen.getByRole('tab', { selected: true })).not.toHaveAccessibleName(/^Reggel/)
-  })
 })
 
 /**
- * Per-chain celebrations (mezo-n5e9.4 — the Task 2 review carry-over): `chainProgress` used to
- * literal-filter `h.chain === 'MORNING'/'EVENING'`, so a custom chain from the routine editor
- * would get Today rows but no completion toast. These tests render against a bespoke
- * QueryClient (not the shared `QueryWrapper`) so the `habitCatalog`/`habitDay` caches can be
- * pre-seeded with a custom DAY chain before mount — `renderToday`'s fresh-per-call client has no
- * seeding hook of its own.
+ * Per-chain celebrations (mezo-n5e9.4): a custom chain from the routine editor toasts with its
+ * own title; the seed chains keep their fixed copy. Bespoke QueryClient so the caches can be
+ * pre-seeded before mount.
  */
 describe('TodayPage — per-chain celebrations (mezo-n5e9.4)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

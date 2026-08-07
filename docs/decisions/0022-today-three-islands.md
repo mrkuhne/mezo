@@ -1,0 +1,33 @@
+# ADR 0022 — Today is a sky of three islands: hero + facts on L0, everything else one layer deeper
+
+- **Status:** accepted (2026-08-07)
+- **Driving bd:** `mezo-euze`
+- **Spec:** [`docs/superpowers/specs/2026-08-07-today-three-islands-design.md`](../superpowers/specs/2026-08-07-today-three-islands-design.md) (+ the interactive mockups under `specs/assets/`)
+- **Supersedes:** the *render layer* of [ADR 0014](0014-today-daypart-faces.md) (daypart faces behind a pill strip). ADR 0014's **day model survives unchanged** — the three sleep-anchored windows (`dayFace.ts`), the six-source normalizer (`todayItems.ts`), act-anywhere, the one-clock rule and the dedup tables are all still the foundation; what changed is how a daypart *renders*.
+
+## Context
+
+The daypart-faces screen (ADR 0014) fixed the 13-idiom card pile by unifying everything onto one card language — but the result was still a **stack of co-equal cards** under a pill navigator: hero card + stats + briefing + creed chip + todo card + previews + done fold, all on the main surface, every visit. The DS **Hero** block (halo gradient + Geist-200 numeral — the anchor of every other primary page since ADR 0018) was absent from the app's most-visited screen, and the user's explicit feedback on the redesign brief was: keep the Reggel/Nap/Este segmentation, drop the flat card pile, unfold information **in layers**, and make the surface feel **alive** (organic shapes, motion, moving parts).
+
+Three divergent directions were mocked up in-browser (guided timeline / focus deck / spatial islands); the user picked the islands and iterated it through three prototype rounds (v1 → v3). Two decisions came from those rounds and are user-fixed: **no greeting and no status-eyebrow on L0** (the island's identity is its position, blob tint and hero — the surface shows *data*, not chatter), and **facts must be contextualized** (trend, delta, goal distance, forecast — never raw numbers).
+
+## Decision
+
+`/today` is a non-scrolling **sky** between `AppHero` and the tab bar, holding **three islands** — exactly one big, two floating capsules, always in chronological order (Reggel → Nap → Este):
+
+1. **L0 (the stage):** the big island is the DS Hero re-expressed organically — a slowly morphing halo blob, one **hero numeral** (morning: last night's sleep; day: the session's start time; evening: a live countdown to lights-out), a data subtitle, **1–2 contextual fact cells** (StatStrip idiom + a toned delta line), **one** promoted CTA, and two quiet handles (`még N ›`, `✓ N kész ma`). The capsules carry a one-line essence (next item / anchor time) + an open-count. The chronologically-current island wears a gold `MOST` ring independent of selection (ADR 0014's dual signal, inherited).
+2. **L1 (the list):** the island's full item list — the retired `TodoCard`+`DoneFold` job — unfolds *inside* the island (`IslandList`): grouped `ItemRow`s, the briefing/companion prose as a CoachBubble head, the creed/reflection under a `Fókusz` group (`IntentionBanner` reused), the done block (evening: „Ahogy a nap telt” + day XP). Scrolls internally; L0 never scrolls.
+3. **L2 (sheets):** unchanged — every existing sheet opens from an L1 row or the promoted CTA.
+4. **The evening island swaps its hero content by `windDown` phase** (normál → ráhangolódás → leállás → éjszaka): the countdown is constant, the facts/CTA row changes, the *leállás* phase carries the `wind_down` Pipa (filtering its L1 row while shown — the offered-exactly-once rule), and *éjszaka* darkens the island shell itself to a single night-mode entry. `WindDownBanner` and `RitualCard` dissolve into this.
+5. **Rough day melts the sky:** `?day=rough` no longer swaps to a separate view — the capsules collapse and one warm anchor island fills the screen (`AnchorIsland`, the `AnchorModeView` successor). The melt is the metaphor: the day contracts to a single holding point, then expands back.
+6. **Motion is structural, not decorative:** the island-select is a *continuous bubble morph* (29→34 px radius + flex on one shared spring curve, cross-fading content layers — v2 fixed the "oval stall" of naive radius interpolation); capsules float; L1 rows stagger in; phases cross-slide. Every animation has a `:where()`-guarded reduced-motion disable, and the guard test (`todayReducedMotion.test.ts`) now asserts the cascade property for the island families.
+
+`TodayPage` stays the composition root: same hooks, same `items` memo with `servableAction` stripping, same `act()` dispatcher, same `?dp=` URL-derivation semantics, same guard order (anchor → pending), same AppHero node-identity contract. New pure module `logic/islandFacts.ts` derives the facts (null on missing source — the honest-cell rule; HRV stays mock-only).
+
+## Consequences
+
+- **Retired:** `GreetingHeader`, `DayFaceStrip`, `FaceMorning/FaceDay/FaceEvening`, `FaceHeroCard`, `TodoCard`, `DoneFold`, `WindDownBanner`, `RitualCard`, `AnchorModeView` (+ their tests and the `.greet*`/`.dfs*`/`.tdc*`/`.fhc*`/`.donefold*`/`.zoneline`/`.dayxp`/`.faceswap`/`.anch*`-minus-`.anch-coach` CSS families). `.wdb-night*` survives (SleepPage consumes it). `BriefingCard`, `CompanionNoteCard`, `IntentionBanner`, `VulnerabilityCard`, `ChainCelebrations`, all sheets and all `logic/` modules are reused.
+- **Dropped surfaces (accepted trades):** the „Ma még vár rád / Este vár rád” cross-face previews (the capsules carry that job now); the fuel companion `.tdc-note` line and the stacked-day `volleyballNote` hero note (no prose slots on L0; the companion's day/evening note survives as the L1 CoachBubble head); the greeting line (the app said hello twice — AppHero already carries identity).
+- **Deliberate spec deviations recorded here:** the day island's facts are protein + energy (the spec's weekly-tonnage cell needs `weekAgenda` wiring TodayPage doesn't have — the fact catalog explicitly allows the swap); the evening „heti rang” delta simplified to `n/N tétel ma` (no 7-day XP history source); the screen-level evening color cooling is deferred to the existing circadian canvas (`[data-day]` tints), which already does that job app-wide.
+- **A11y idiom change:** the daypart switcher is no longer a `tablist` — capsules are plain buttons with full spoken labels („Este · Napzárás 21:15-től · megnyitás”), the big island carries `aria-current`. Cross-feature tests that asserted the tablist were re-anchored.
+- **Follow-ups filed:** focus management beyond default button focus (island-select → hero, L1-open → first row); fact-catalog swaps (weekly load once `weekAgenda` wiring is justified, HRV when a source exists); linux visual baselines regenerate via workflow.

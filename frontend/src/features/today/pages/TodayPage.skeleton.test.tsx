@@ -40,19 +40,19 @@ function renderToday(path?: string) {
 afterEach(() => vi.clearAllMocks())
 
 describe('TodayPage — sleep-anchor pending gate', () => {
-  test('while useSleepGoal is pending, the layout-matched skeleton renders instead of a face', () => {
+  test('while useSleepGoal is pending, the layout-matched skeleton renders instead of an island', () => {
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: true })
     const { container } = renderToday()
-    // The skeleton, not a face: no tablist (the real DayFaceStrip), no face tabs.
-    expect(screen.queryByRole('tablist')).toBeNull()
+    // The skeleton, not the live sky: no capsule buttons, but the same island silhouette.
+    expect(screen.queryByRole('button', { name: /megnyitás/ })).toBeNull()
     expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
-    expect(container.querySelectorAll('.dfs-pill')).toHaveLength(3)
+    expect(container.querySelectorAll('.isl')).toHaveLength(3)
   })
 
-  test('once useSleepGoal resolves, the real face navigator renders instead', () => {
+  test('once useSleepGoal resolves, the live island sky renders instead', () => {
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: false })
     const { container } = renderToday()
-    expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: /megnyitás/ }).length).toBeGreaterThan(0)
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
   })
 
@@ -66,7 +66,7 @@ describe('TodayPage — sleep-anchor pending gate', () => {
 
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: false })
     rerender(tree())
-    expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: /megnyitás/ }).length).toBeGreaterThan(0)
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
   })
 
@@ -107,11 +107,11 @@ describe('TodayPage — sleep-anchor pending gate', () => {
   // before the calm AnchorModeView. TodayPage.test.tsx:158 covers anchorMode too, but only
   // in mock mode, where `isPending` is never true — this is the only test that exercises
   // the actual combination the ordering bug lived in.
-  test('anchorMode wins over a pending sleep anchor — no skeleton flash into AnchorModeView', () => {
+  test('anchorMode wins over a pending sleep anchor — no skeleton flash into the melt', () => {
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: true })
     const { container } = renderToday('/today?day=rough')
-    expect(screen.getByText('Anchor mode · csendben')).toBeTruthy()
+    expect(screen.getByText(/Horgony mód/)).toBeTruthy()
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
-    expect(container.querySelectorAll('.dfs-pill')).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /megnyitás/ })).toBeNull()
   })
 })
