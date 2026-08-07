@@ -110,3 +110,25 @@ No new UI copy — the generator's output simply stops triggering the existing w
 - No RIR reassignment (budget styles stay scheme-driven).
 - Deload/phase-curve week scaling (the fitter fits week-1; in-cycle progression is the
   landmark engine's job, spec D4).
+
+## Amendment (2026-08-07, after invariant-suite findings — approved by Daniel)
+
+The first invariant run proved the original "lint === [] everywhere" goal partly wrong:
+several lint findings encode SPLIT-INHERENT trade-offs (1× leg frequency on 3-day
+Upper/Lower; sport-split leg frequency) that the user's split choice causes and the lint
+exists to surface — hiding them would be dishonest. Others were TEMPLATE defects (single
+calf/biceps movement names, missing Full-body B-variant list, strength scheme 5 sets vs the
+2–4 band, MEV-unreachable slot structures). Resolution:
+
+1. **Template curation (planner.ts data):** distinct variant names where a movement repeats
+   (Standing/Seated Calf Raise), a real `Full · B` exercise list, `SCHEMES.strength.compound.sets`
+   5 → 4, a second biceps slot where the split can host it (PPL Pull B, Upper B), a second
+   glute slot on Legs days. Curation is normal template maintenance; movement lists remain
+   hand-curated (still no catalog-driven selection).
+2. **Calibrated invariants:** fitter-addressable rule families (`rep-zone`,
+   `sets-per-exercise`, `session-size`, `session-length`, `exercises-per-muscle`) must be
+   clean EVERYWHERE; `budget ≤ 1.0` everywhere; `sets ≥ MEV` OR every slot saturated at its
+   kind cap with the combo+group in `MEV_ALLOWED` (arithmetic comment required);
+   split-inherent `frequency`/`variety`/`push-pull`/`ham-quad` findings go to a
+   `STRUCTURAL_ALLOWED` list keyed per combo+rule with a comment naming the trade-off —
+   these stay visible to users by design. Soft ceiling `NEAR_ALLOWED` unchanged.
