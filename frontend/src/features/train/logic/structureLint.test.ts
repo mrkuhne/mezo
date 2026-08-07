@@ -20,8 +20,8 @@ const cleanWeek = (): MesoDay[] => [
     ex('ham', 3), ex('shoulder-side', 3), ex('biceps-long', 3),
   ]),
   day('Csü', [
-    ex('chest-mid', 3, { name: 'B1' }), ex('back-mid', 3, { name: 'B2' }), ex('quad', 3, { name: 'B3' }),
-    ex('ham', 3, { name: 'B4' }), ex('triceps-long', 3, { name: 'B5' }), ex('back-wide', 3, { name: 'B6' }),
+    ex('chest-mid', 3, { name: 'B1', repMin: 12, repMax: 15 }), ex('back-mid', 3, { name: 'B2', repMin: 12, repMax: 15 }), ex('quad', 3, { name: 'B3', repMin: 12, repMax: 15 }),
+    ex('ham', 3, { name: 'B4', repMin: 12, repMax: 15 }), ex('triceps-long', 3, { name: 'B5', repMin: 12, repMax: 15 }), ex('back-wide', 3, { name: 'B6', repMin: 12, repMax: 15 }),
   ]),
 ]
 
@@ -195,5 +195,52 @@ describe('scoping & ordering', () => {
     w[0].exercises[5].workingSets = 4 // weekly R3 (biceps single-day 4 sets)
     const out = structureLint(w)
     expect(out.findIndex((f) => f.rule === 'sets-per-exercise')).toBeLessThan(out.findIndex((f) => f.rule === 'frequency'))
+  })
+})
+
+describe('rep-zone (R9, mezo-oyhy.4)', () => {
+  // Zone refresher: repMax ≤ 10 → heavy; repMin ≥ 20 → light; else moderate.
+  const heavy = { repMin: 5, repMax: 8 }
+  const light = { repMin: 20, repMax: 25 }
+
+  it('rebalanced clean week stays silent', () => {
+    expect(structureLint(cleanWeek()).filter((f) => f.rule === 'rep-zone')).toHaveLength(0)
+  })
+  it('classification boundaries: repMax 10 is heavy, repMin 20 is light, 8-12 is moderate', () => {
+    // chest 6 sets: 3 heavy (8-10) + 3 moderate (8-12) → 50% — silent
+    const mixed = [day('Hét', [ex('chest-mid', 3), ex('chest-upper', 3, { name: 'M', repMin: 8, repMax: 12 })])]
+    expect(structureLint(mixed).filter((f) => f.rule === 'rep-zone')).toHaveLength(0)
+    // chest 6 sets all repMax 10 → 100% heavy — flags
+    const mono = [day('Hét', [ex('chest-mid', 3), ex('chest-upper', 3, { name: 'M2' })])]
+    const found = structureLint(mono).filter((f) => f.rule === 'rep-zone')
+    expect(found).toHaveLength(1)
+    expect(found[0].label).toBe('Mell: a heti szettek 100%-a nehéz zónában.')
+    expect(found[0].day).toBeUndefined()
+  })
+  it('gate: 5 mono sets silent, 6 flag', () => {
+    const five = [day('Hét', [ex('chest-mid', 5)])]
+    expect(structureLint(five).filter((f) => f.rule === 'rep-zone')).toHaveLength(0)
+    const six = [day('Hét', [ex('chest-mid', 6)])]
+    expect(structureLint(six).filter((f) => f.rule === 'rep-zone')).toHaveLength(1)
+  })
+  it('mono threshold: 79% silent, 80% flags', () => {
+    // 15 heavy + 4 moderate = 19 sets → 78.9% — silent
+    const below = [day('Hét', [ex('chest-mid', 15), ex('chest-upper', 4, { name: 'M', repMin: 8, repMax: 12 })])]
+    expect(structureLint(below).filter((f) => f.rule === 'rep-zone')).toHaveLength(0)
+    // 16 heavy + 4 moderate = 20 → 80% — flags
+    const at = [day('Hét', [ex('chest-mid', 16), ex('chest-upper', 4, { name: 'M', repMin: 8, repMax: 12 })])]
+    expect(structureLint(at).filter((f) => f.rule === 'rep-zone')).toHaveLength(1)
+  })
+  it('skew exceptions: shoulder-light and ham-heavy silent; shoulder-heavy flags', () => {
+    const shoulderLight = [day('Hét', [ex('shoulder-side', 3, { ...light, type: 'isolation' }), ex('shoulder-rear', 3, { name: 'S2', ...light, type: 'isolation' })])]
+    expect(structureLint(shoulderLight).filter((f) => f.rule === 'rep-zone')).toHaveLength(0)
+    const hamHeavy = [day('Hét', [ex('ham', 6, heavy)])]
+    expect(structureLint(hamHeavy).filter((f) => f.rule === 'rep-zone')).toHaveLength(0)
+    const shoulderHeavy = [day('Hét', [ex('shoulder-side', 6, heavy)])]
+    expect(structureLint(shoulderHeavy).filter((f) => f.rule === 'rep-zone')).toHaveLength(1)
+  })
+  it('plyo sets never count toward the zone mix', () => {
+    const w = [day('Hét', [ex('quad', 5), ex('quad', 6, { name: 'P', type: 'plyo', repMin: 5, repMax: 5 })])]
+    expect(structureLint(w).filter((f) => f.rule === 'rep-zone')).toHaveLength(0) // 5 < gate
   })
 })

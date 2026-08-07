@@ -15,7 +15,7 @@ import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
 export type StructureRuleId =
   | 'exercises-per-muscle' | 'sets-per-exercise' | 'frequency'
-  | 'variety' | 'session-size' | 'push-pull' | 'ham-quad' | 'session-length'
+  | 'variety' | 'session-size' | 'push-pull' | 'ham-quad' | 'session-length' | 'rep-zone'
 
 export interface StructureFinding {
   rule: StructureRuleId
@@ -48,6 +48,23 @@ export const PUSH_PULL_BAND = { min: 0.6, max: 1.6 } as const
 export const HAM_QUAD_MIN = 0.4
 export const HAM_QUAD_QUAD_GATE = 6
 
+// Weekly rep-zone mix (RP: ~25% heavy 5–10 · 50% moderate 10–20 · 25% light 20–30).
+// Flags only a MONO-zone week: dominant zone ≥ 80% of a group's sets, gated at 6.
+export const REP_ZONE_MONO_SHARE = 0.8
+export const REP_ZONE_MIN_WEEKLY_SETS = 6
+export type RepZone = 'heavy' | 'moderate' | 'light'
+/** Deliberate skews that stay silent (RP: side/rear delts light, hip-hinge heavy). */
+export const REP_ZONE_SKEW_OK: Record<string, RepZone> = { shoulder: 'light', ham: 'heavy', glute: 'heavy' }
+
+/** Zone of a rep range: repMax ≤ 10 heavy, repMin ≥ 20 light, else moderate. */
+export function repZoneOf(repMin: number, repMax: number): RepZone {
+  if (repMax <= 10) return 'heavy'
+  if (repMin >= 20) return 'light'
+  return 'moderate'
+}
+
+const REP_ZONE_LABELS: Record<RepZone, string> = { heavy: 'nehéz', moderate: 'közepes', light: 'könnyű' }
+
 // Muscle key → push/pull side; legs and core are neutral (absent). The legacy
 // coarse 'shoulder' maps to push (press-dominant); rear delts pull.
 export const PUSH_PULL_SIDE: Record<string, 'push' | 'pull'> = {
@@ -69,6 +86,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
   const weeklySets = new Map<string, number>()
   const weeklyDays = new Map<string, Set<string>>()
   const weeklyNames = new Map<string, Set<string>>()
+  const weeklyZones = new Map<string, Record<RepZone, number>>()
   let pushSets = 0
   let pullSets = 0
 
@@ -90,6 +108,10 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
       const side = PUSH_PULL_SIDE[ex.muscle]
       if (side === 'push') pushSets += ex.workingSets
       else if (side === 'pull') pullSets += ex.workingSets
+
+      let zones = weeklyZones.get(group)
+      if (!zones) { zones = { heavy: 0, moderate: 0, light: 0 }; weeklyZones.set(group, zones) }
+      zones[repZoneOf(ex.repMin, ex.repMax)] += ex.workingSets
 
       // R2 — sets per exercise
       const band = SETS_PER_EXERCISE[ex.type]
@@ -202,6 +224,21 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
         detail: 'A hátsó comb a quad-volumen ~0.6–0.8-szorosát kéri (strukturális-balansz irodalom).',
       })
     }
+  }
+
+  // R9 — rep-zone mono-diet (weekly; skew exceptions per REP_ZONE_SKEW_OK)
+  for (const [group, zones] of weeklyZones) {
+    const total = zones.heavy + zones.moderate + zones.light
+    if (total < REP_ZONE_MIN_WEEKLY_SETS) continue
+    const dominant = (Object.keys(zones) as RepZone[]).reduce((a, b) => (zones[a] >= zones[b] ? a : b))
+    const share = zones[dominant] / total
+    if (share < REP_ZONE_MONO_SHARE) continue
+    if (REP_ZONE_SKEW_OK[group] === dominant) continue
+    weekly.push({
+      rule: 'rep-zone',
+      label: `${groupLabel(group)}: a heti szettek ${Math.round(share * 100)}%-a ${REP_ZONE_LABELS[dominant]} zónában.`,
+      detail: 'Az arany arány ~25% nehéz (5–10) · 50% közepes (10–20) · 25% könnyű (20–30 rep) — vegyíts a hiányzó zónákból.',
+    })
   }
 
   return [...session, ...weekly]
