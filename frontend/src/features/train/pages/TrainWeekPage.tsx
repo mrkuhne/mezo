@@ -1,7 +1,11 @@
 // ============================================================
 // Mezo · TrainWeekPage („Heti”) — the detailed Mon–Sun agenda that used to
 // live at the bottom of Mai (mezo-9bbc). Weekly load tiles + one WeeklyDayRow
-// per day + the Saját edzés footer + the gym/sport provenance note. Gym rows
+// per day + the Saját edzés footer + the gym/sport provenance note.
+// DS-migrated (mezo-setx.6.3): DS page head, the shared eyebrow+count section
+// head, `.dashedcta` for the footer, and the provenance note on the primary
+// wash at caption size. `LoadTiles`/`WeeklyDayRow` are used only here, so they
+// ride along on this bead (handover §3). Gym rows
 // keep their direct-start/review targets; any other session drills into Mai
 // with that day selected (`/train?day={index}`).
 // ============================================================
@@ -11,6 +15,8 @@ import { useTrain, useRunning, useWeekWorkouts } from '@/data/hooks'
 import { DAY_ORDER } from '@/data/train/train'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
@@ -52,10 +58,10 @@ export function TrainWeekPage() {
 
   return (
     <>
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">{activeMeso ? `Edzés · W${activeMeso.currentWeek}` : 'Edzés'}</div>
-          <h1>Heti terv</h1>
+          <Eyebrow brand>{activeMeso ? `Edzés · W${activeMeso.currentWeek}` : 'Edzés'}</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>Heti terv</PageTitle>
         </div>
       </div>
 
@@ -68,9 +74,11 @@ export function TrainWeekPage() {
         <>
           <LoadTiles tiles={weeklyLoad(agenda)} />
           <div style={{ padding: '0 24px 16px' }}>
-            <div className="secthead-np">
-              <h3>A hét</h3>
-              <span>{sessionCount} session</span>
+            {/* The same section-head idiom the other migrated Train pages use
+                (eyebrow + label-mono count) rather than a second heading style. */}
+            <div className="row" style={{ justifyContent: 'space-between', margin: '10px 0' }}>
+              <span className="eyebrow">A hét</span>
+              <span className="label-mono text-tertiary">{sessionCount} session</span>
             </div>
             <div className="col gap-sm">
               {agenda.map((a) => (
@@ -95,23 +103,18 @@ export function TrainWeekPage() {
                 />
               ))}
             </div>
-            <button type="button" onClick={() => setCustomOpen(true)} className="card mt-md" style={{
-              padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
-              borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
-              letterSpacing: '0.14em', textTransform: 'uppercase',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}>
-              <Icon name="plus" size={12} /> Saját edzés
+            <button type="button" onClick={() => setCustomOpen(true)} className="card dashedcta mt-md">
+              <Icon name="plus" size={14} /> Saját edzés
             </button>
           </div>
         </>
       )}
 
       <div style={{ padding: '0 24px 32px' }}>
-        <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)' }}>
+        <div className="card" style={{ padding: 'var(--sp-4)', background: 'var(--primary-bg)' }}>
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--coral)" />
-            <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', flex: 1 }}>
+            <Icon name="sparkle" size={16} color="var(--primary-base)" />
+            <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-secondary)', flex: 1 }}>
               A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv együtt-mozgatja a
               pacing-et, alvás-onsetet és a vacsora-időt.
             </p>

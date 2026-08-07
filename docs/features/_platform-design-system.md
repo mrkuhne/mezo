@@ -209,6 +209,21 @@ The sleep C-éj slice appended two feature-scoped CSS families to `prototype.css
 - **`.sstat*` / `.sesc*` — the Sleep education layer** (slice C3, `mezo-hd8k`). **Theme-aware** (Napív aliases): `.sstat` (the daily-rotating Walker stat card on `SleepPage` — a whole-card `button` over a `--wash-lav` gradient) + `.sstat-eye`/`.sstat-title`/`.sstat-text`/`.sstat-src`, `.sstat-row` (the deck-sheet list rows) and `.sstat-foot` (the sources footer); `.sesc` (the escalation card — a `--wash-amber` gradient, deliberately amber not red, ADR 0010 tone) + `.sesc-actions`/`.sesc-cta`/`.sesc-quiet`, and the sheet-side `.sesc-sheet`/`.sesc-lead`/`.sesc-body` escalation section. Consumed by `SleepStatCard.tsx`/`SleepEscalationCard.tsx`/`SleepStatsSheet.tsx` — see [me.md](me.md) §2 Alvás.
 - **`.night*` / `.nb-*` / `.ns-*` / `.nw-*` — the full-screen NightPage, literal-dark in BOTH themes** (`#0E0B09` canvas, `#F5EFE6`/`#B7A899`/`#6E6156` text, `#B9ACD9` lavender accent — hardcoded hex, deliberately exempt from the tokens-only rule, same always-dark rationale the retired `.dynamic-island.live` capsule used (deleted in `mezo-xt65`): a 3 a.m. sub-30-lux surface reads as always-dark). `.night`/`.night-back`/`.night-body`/`.night-eye`/`.night-moon`/`.night-glow`/`.night-title`/`.night-tx`/`.night-cta`/`.night-quiet` (the idle/getup frames), `.night-orb` (the numberless breathing orb, `nb-breath 18s`) + `.night-tools`/`.night-tool` (the waiting-frame tool menu), `.night-steps` (the get-up list); and the three tool families **`.nb-*`** (breathing: `.nb-stage`/`.nb-orb` + the CSS-only `nb-lb-in/-hold/-out` label cycle over the 18 s `nb-breath` cycle), **`.ns-*`** (body scan: `.ns-card`/`.ns-part`/`.ns-tx`/`.ns-dots`/`.ns-dot`), **`.nw-*`** (4K-walk: `.nw-stage`/`.nw-setup`/`.nw-remind`/`.nw-t`/`.nw-tx`/`.nw-rtx`). **All transform/scale motion is reduced-motion-guarded** — `@media (prefers-reduced-motion: reduce)` stills `.nb-orb`/`.night-orb`; the `nb-lb-in/-hold/-out` **label opacity fades intentionally keep cycling** under reduce (spec D6: the 5-6-7 pacing must survive without motion), a deliberate, documented exception to the §3.5 "all infinite animation behind a reduce guard" rule.
 
+### Heti — `.dashedcta` + the scrolling-row escape hatch (`mezo-setx.6.3`, 2026-08-07)
+
+**`.dashedcta`** — the full-width dashed "add your own" CTA that closes a list (Saját edzés on Mai
+and Heti): caption 14 with a 48dp target, replacing a 10px uppercase strip that existed as identical
+inline styles at three call sites. Mai's two copies adopt the class when their own bead next touches
+them.
+
+**The scrolling-row pattern is now used twice** (`.pgactrow`, `.loadrow`) and is the standard answer
+to the same DS-migration failure: a horizontal row of fixed-content children that fit at Napív type
+sizes but not at DS ones. A `nowrap` value inside a *shrinking* flex child is **silently cut off** —
+the row must either scroll (`overflow-x: auto` + `flex: 1 0 auto` on the children) or the value must
+wrap; clipping is never the right answer, and it is invisible to tests, so check it in the browser.
+`.loadtile` also shows the other half: its values sit at **caption 14, not the 16 body floor**,
+because they are compact metrics in a three-across row, not prose.
+
 ### GymPage — StatStrip cell reuse + 3 shared additions (`mezo-setx.6.4`, 2026-08-06)
 
 Three additions that are **page-agnostic vocabulary**, filed here rather than in the Train doc

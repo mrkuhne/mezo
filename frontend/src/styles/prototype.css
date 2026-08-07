@@ -1521,14 +1521,24 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .stag-trx { background: var(--wash-trx); color: var(--tag-trx); }
 
 /* ===== Napív weekly load tiles (Mai, spec §4.3) ===== */
-.loadrow { display: flex; gap: 9px; margin: 14px 24px 0; }
-.loadtile { flex: 1; border-radius: 18px; padding: 10px 11px; display: flex; align-items: center; gap: 9px; background: var(--surface); box-shadow: var(--np-shadow-row); min-width: 0; }
-.loadtile .lic { width: 32px; height: 32px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+/* Scrolls rather than clips (mezo-setx.6.3): the tiles hold free-form values
+   ("2× · sprint"), and at DS type sizes three of them can exceed a phone width
+   by a few px — a nowrap value in a shrinking flex child is then silently cut
+   off. Same escape hatch as `.pgactrow`. */
+.loadrow { display: flex; gap: 9px; margin: 14px 24px 0; overflow-x: auto; scrollbar-width: none; }
+.loadrow::-webkit-scrollbar { display: none; }
+/* DS-migrated (mezo-setx.6.3): DS card chrome + the StatStrip label/value voice. */
+.loadtile { flex: 1 0 auto; border-radius: var(--r-lg); padding: 10px 12px; display: flex; align-items: center; gap: var(--sp-3); background: var(--surface-1); border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); min-width: 0; }
+.loadtile .lic { width: 32px; height: 32px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
 .loadtile .lic-gym { background: var(--wash-gym); }
 .loadtile .lic-sport { background: var(--wash-sport); }
 .loadtile .lic-run { background: var(--wash-run); }
-.loadtile .lk { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .3px; text-transform: uppercase; }
-.loadtile .lva { font-size: 13.5px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; color: var(--ink); white-space: nowrap; }
+.loadtile .lk { font-size: 9px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); }
+/* Caption size (14), not the 16 body floor: these are compact metric values in a
+   three-across row, and at 16 the row could not hold "2× · sprint" on one line —
+   it overflowed the page, and letting it wrap broke "5× · 73p" after the dot. */
+.loadtile .lva { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--ff-display); margin-top: 2px; color: var(--text-primary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.loadtile > div:last-child { min-width: 0; }
 
 /* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
    Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
@@ -1567,28 +1577,32 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    over one padded block per session — type tag + title + state chip on the top
    line, the session's facts as meta pills below. The pre-mezo-lruy single-line
    variant (tag · title · joined meta · chip) collided on long titles. */
-.dayrow { background: var(--surface); border-radius: 22px; padding: 12px 14px 13px; box-shadow: var(--np-shadow-row); margin-bottom: 10px; }
-.dayrow-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
-.dayrow .d { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800; color: var(--sub); text-transform: uppercase; letter-spacing: .08em; }
-.dayrow .d small { border-radius: 999px; padding: 2px 7px; font-size: 9px; font-weight: 800; color: var(--coral-deep); background: var(--wash-gym); letter-spacing: .1em; }
+/* DS-migrated (mezo-setx.6.3): DS card chrome (r-2xl, sp-4, shadow-sm, token
+   border), the eyebrow voice on the day label, ListItem-sized session titles and
+   the 48dp tap floor on every tappable session block. */
+.dayrow { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: var(--r-2xl); padding: var(--sp-4); box-shadow: var(--shadow-sm); margin-bottom: 10px; }
+.dayrow-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: var(--sp-3); }
+.dayrow .d { display: inline-flex; align-items: center; gap: 7px; font: 700 12px/1.4 var(--ff-body); color: var(--text-secondary); text-transform: uppercase; letter-spacing: .18em; }
+.dayrow .d small { border-radius: var(--r-full); padding: 2px 8px; font-size: 9.5px; font-weight: 800; color: var(--primary-deep); background: var(--primary-bg); letter-spacing: .10em; }
 .dayrow .sess { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.dayrow .sess .s { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 10px 11px; border-radius: 16px; background: var(--warm); border: 0; text-align: left; font-family: inherit; cursor: inherit; }
+.dayrow .sess .s { display: flex; flex-direction: column; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 12px; border-radius: var(--r-lg); background: var(--surface-recess); border: 0; text-align: left; font-family: inherit; cursor: inherit; }
 .dayrow .sess .s-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dayrow .sess .s-title { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; min-width: 0; }
+.dayrow .sess .s-title { font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; min-width: 0; }
 .dayrow .sess .s-meta { display: flex; flex-wrap: wrap; gap: 6px; }
 /* On the wash-tinted session block the pills invert to the card surface. */
-.dayrow .sess .s .metapill { background: var(--surface); color: var(--sub); font-size: 11px; padding: 4px 9px; }
-.dayrow .sess .s .meta { color: var(--faint); font-weight: 600; font-size: 11.5px; }
-.dayrow .chev { color: var(--faint); font-size: 17px; line-height: 1; }
-.dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); cursor: pointer; }
-.dayrow.today .chev { color: var(--coral-deep); }
+.dayrow .sess .s .metapill { background: var(--surface-1); color: var(--text-secondary); }
+.dayrow .sess .s .meta { color: var(--text-tertiary); font-weight: 600; font-size: 14px; }
+.dayrow .chev { color: var(--text-tertiary); font-size: 17px; line-height: 1; }
+.dayrow.today { border-color: var(--primary-base); box-shadow: var(--shadow-md); cursor: pointer; }
+.dayrow.today .chev { color: var(--primary-deep); }
 /* Rest day: nothing to lay out — the dashed card stays a single compact line. */
-.dayrow.rest { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+.dayrow.rest { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: transparent; box-shadow: none; border: 1px dashed var(--divider); }
 .dayrow.rest .dayrow-head { margin-bottom: 0; }
 .dayrow.rest .sess { flex: 1; }
 .dayrow.rest .sess .s { padding: 0; background: transparent; }
-.dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
-.dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
+/* Status stamps on a session block — the DS Tag spec (9.5/800/0.10em, r-sm). */
+.dayrow .done-chip { border-radius: var(--r-sm); padding: 2px 7px; font-size: 9.5px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
+.dayrow .log-chip { border-radius: var(--r-sm); padding: 2px 7px; font-size: 9.5px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; margin-left: auto; flex-shrink: 0; }
 
 /* ===== Napív train hero (Mai, spec §4.3) ===== */
 /* The gym hero, DS-migrated (mezo-setx.6.2): it now speaks `.todaycard`'s chrome —
@@ -3228,3 +3242,18 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .pgactrow > * { flex: none; }
 /* StatStrip in two columns — for cells whose values are phrases, not numerals. */
 .statstrip-2 { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+
+/* Dashed "add your own" CTA — the full-width secondary entry that closes a list
+   (Saját edzés on Mai and Heti). Caption role at 14 with a 48dp target; it was a
+   10px uppercase strip at three call sites (mezo-setx.6.3). Mai's two inline
+   copies should adopt this class when their own bead next touches them. */
+.dashedcta {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 48px;
+  padding: 12px 16px;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--divider);
+  color: var(--tag-gym);
+  font-size: 14px; font-weight: 600;
+}
