@@ -119,13 +119,13 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
-          detail: `${band.min} szettekorlat alig ad ingert — a ${band.min} szettekezdés.`,
+          detail: `${band.min} szett alatt egy gyakorlat alig ad ingert — a ${band.min} szett teljesen legitim kezdés.`,
         })
       } else if (ex.workingSets > band.max) {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
-          detail: `${band.max} szettekorlaton a plusz szettekább új gyakorlat vagy másik nap.`,
+          detail: `${band.max} szett fölött egy gyakorlaton a plusz szett már alig hoz — inkább új gyakorlat vagy másik nap.`,
         })
       }
     }
