@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C · Három sziget — v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary-bg:#FFF4EF; --primary-soft:#FFDFD3; --primary-base:#FF6B4A; --primary-hover:#E05535; --primary-deep:#A84A26;
+    --secondary-base:#5F5346; --secondary-hover:#2B2118;
+    --accent-bg:#fdf8ec; --accent-soft:#faecc8; --accent-base:#d4a853; --accent-hover:#b8902e; --accent-deep:#8e6e1f;
+    --success-bg:#eef5ec; --success-soft:#d8e6d4; --success-base:#6b8a5d; --success-hover:#4a6a3d; --success-deep:#2d4d2a;
+    --error-bg:#fdf0ec; --error-soft:#f5d5cc; --error-base:#c4634b;
+    --surface-page:#FBF6EF; --surface-card:#ffffff; --surface-recess:rgba(43,33,24,0.05);
+    --text-primary:#2B2118; --text-secondary:#5F5346; --text-muted:#8A7A6A;
+    --divider:rgba(43,33,24,0.10);
+    --dv-lav:#9B8FC4; --lav-deep:#6d5f9c;
+    --gradient-cta:linear-gradient(135deg,#FF7A55,#FF5B36);
+    --shadow-cta:0 8px 20px rgba(255,91,54,0.35);
+    --shadow-sm:0 2px 6px rgba(43,33,24,0.06);
+    --shadow-md:0 6px 18px rgba(43,33,24,0.10);
+    --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px; --r-2xl:22px; --r-3xl:28px; --r-full:9999px;
+    --ease-swap:cubic-bezier(.3,.9,.35,1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Geist',system-ui,sans-serif; background:#efe8dd; color:var(--text-primary); padding:32px 24px 80px;}
+  .wrap{max-width:1280px; margin:0 auto;}
+  h1{font-size:28px; font-weight:700; letter-spacing:-0.02em;}
+  .lede{font-size:14.5px; color:var(--text-secondary); margin-top:6px; max-width:800px; line-height:1.55;}
+  .lede b{color:var(--text-primary);}
+  .cols{display:flex; gap:36px; margin-top:28px; flex-wrap:wrap; justify-content:center;}
+  .left{flex:none;}
+  .right{flex:1; min-width:420px; max-width:640px;}
+
+  .statebar{display:flex; gap:8px; margin-bottom:10px; justify-content:center; flex-wrap:wrap; align-items:center;}
+  .statebar .lb{font-size:10px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-muted); margin-right:2px;}
+  .statebar button{font-family:inherit; font-size:12px; font-weight:700; padding:8px 14px; border-radius:var(--r-full); border:1px solid var(--divider); background:var(--surface-card); color:var(--text-secondary); cursor:pointer;}
+  .statebar button.on{background:var(--secondary-hover); color:#fff; border-color:var(--secondary-hover);}
+  .statebar button.warm.on{background:#b0614a; border-color:#b0614a;}
+  .statebar.sub button{font-size:11px; padding:6px 12px;}
+  .tip{text-align:center; font-size:12px; color:var(--text-muted); margin-bottom:14px;}
+
+  .phone{width:372px; height:772px; border-radius:44px; border:8px solid #17120d; background:var(--surface-page); overflow:hidden; position:relative; box-shadow:0 22px 48px rgba(43,33,24,0.25); margin:0 auto;}
+  .screen{position:absolute; inset:0; overflow-y:auto; scrollbar-width:none; display:flex; flex-direction:column; transition:background .7s ease;}
+  .screen::-webkit-scrollbar{display:none;}
+  .screen[data-mood="este"]{background:linear-gradient(180deg,#F3EFF7 0%, #FBF6EF 70%);}
+
+  .apphero{display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--divider); background:rgba(251,246,239,0.92); backdrop-filter:blur(6px); position:sticky; top:0; z-index:10; flex:none;}
+  .av{width:36px; height:36px; border-radius:var(--r-full); background:var(--gradient-cta); color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--primary-soft);}
+  .apphero .nm{font-size:13px; font-weight:700;}
+  .apphero .ti{font-size:10px; color:var(--text-muted); font-family:'Fraunces',serif; font-style:italic;}
+  .cnt{margin-left:auto; display:flex; gap:8px; font-size:11px; font-weight:700; color:var(--text-secondary);}
+
+  .eyebrow{font-size:10.5px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--text-secondary);}
+  .heronum{font-size:52px; font-weight:200; letter-spacing:-0.04em; line-height:1; color:var(--text-primary); font-variant-numeric:tabular-nums;}
+  .heronum .unit{font-size:19px; font-weight:300; color:var(--text-muted); margin-left:5px; letter-spacing:0;}
+  .herosub{font-size:12px; color:var(--text-secondary); font-weight:500;}
+  .coach{font-weight:200; font-size:19px; letter-spacing:-0.02em; line-height:1.35; color:var(--primary-deep);}
+  .screen[data-mood="este"] .coach{color:var(--lav-deep);}
+  .frau{font-family:'Fraunces',serif; font-style:italic; color:var(--text-muted);}
+  .cta{display:inline-flex; align-items:center; gap:6px; padding:11px 20px; border-radius:var(--r-full); background:var(--gradient-cta); color:#fff; font-size:13px; font-weight:700; box-shadow:var(--shadow-cta); border:none; font-family:inherit; cursor:pointer;}
+  .cta.lav{background:linear-gradient(135deg,#8d7fc0,#6d5f9c); box-shadow:0 8px 20px rgba(109,95,156,0.35);}
+  .ghostcta{display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:var(--r-full); background:transparent; color:var(--text-secondary); font-size:12px; font-weight:600; border:1px solid var(--divider); cursor:pointer; font-family:inherit;}
+  .tabbar{display:flex; justify-content:space-around; padding:10px 8px 16px; background:rgba(251,246,239,0.94); border-top:1px solid var(--divider); backdrop-filter:blur(6px); flex:none; margin-top:auto; position:sticky; bottom:0; z-index:10;}
+  .tabbar span{font-size:10px; font-weight:600; color:var(--text-muted); text-align:center;}
+  .tabbar .on{color:var(--primary-deep);}
+  .tabbar i{display:block; font-style:normal; font-size:16px; margin-bottom:2px;}
+
+  /* ── the sky & islands ── */
+  .sky{flex:1; display:flex; flex-direction:column; gap:10px; padding:12px 14px 12px; min-height:0; transition:gap .5s ease;}
+  .isl{position:relative; overflow:hidden; border:1px solid var(--divider); background:var(--surface-card); box-shadow:var(--shadow-sm); border-radius:29px; flex:0 1 58px; min-height:0; cursor:pointer;
+       transition:flex .55s var(--ease-swap), border-radius .55s var(--ease-swap), background .6s ease, box-shadow .4s ease, opacity .45s ease;}
+  .isl.big{flex:1 1 100%; border-radius:34px; cursor:default; box-shadow:var(--shadow-md);}
+  .isl .blob{position:absolute; width:300px; height:300px; filter:blur(2px); animation:morph 9s ease-in-out infinite alternate; z-index:0; opacity:0; transition:opacity .6s ease; pointer-events:none;}
+  .isl.big .blob{opacity:.9;}
+  @keyframes morph{
+    0%{border-radius:58% 42% 55% 45%/50% 58% 42% 50%; transform:translate(-8px,-6px) scale(1);}
+    50%{border-radius:45% 55% 48% 52%/58% 44% 56% 42%;}
+    100%{border-radius:52% 48% 60% 40%/44% 54% 46% 56%; transform:translate(6px,4px) scale(1.05);}
+  }
+  .isl[data-f="reggel"] .blob{top:-100px; left:50%; margin-left:-150px; background:radial-gradient(ellipse at 50% 45%, rgba(212,168,83,0.34), rgba(255,223,211,0.25) 55%, transparent 75%);}
+  .isl[data-f="nap"] .blob{top:-100px; left:50%; margin-left:-150px; background:radial-gradient(ellipse at 50% 45%, rgba(255,107,74,0.20), rgba(212,168,83,0.16) 55%, transparent 75%);}
+  .isl[data-f="este"] .blob{top:-100px; left:50%; margin-left:-150px; background:radial-gradient(ellipse at 50% 45%, rgba(155,143,196,0.30), rgba(231,134,110,0.10) 55%, transparent 75%);}
+
+  /* capsule view — absolute overlay, so the shell morphs in ONE continuous move */
+  .capview{position:absolute; inset:0; z-index:2; display:flex; align-items:center; gap:10px; padding:0 16px; opacity:1; transition:opacity .22s ease .18s;}
+  .isl.big .capview{opacity:0; pointer-events:none; transition:opacity .15s ease;}
+  .capview .em{font-size:18px;}
+  .capview .t{font-size:13px; font-weight:700;}
+  .capview .m{font-size:11px; color:var(--text-muted); margin-top:1px;}
+  .capview .n{margin-left:auto; font-size:11px; font-weight:700; color:var(--text-secondary); background:var(--surface-recess); padding:4px 10px; border-radius:var(--r-full); white-space:nowrap;}
+  .isl:not(.big){animation:floaty 5.4s ease-in-out infinite;}
+  .isl[data-f="este"]:not(.big){animation-delay:1.6s;}
+  .isl[data-f="reggel"]:not(.big){animation-delay:.8s;}
+  @keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+
+  .isl.now-clock:not(.big){border-color:var(--accent-base); box-shadow:0 0 0 4px rgba(212,168,83,0.15);}
+  .nowtag{font-size:8.5px; font-weight:800; letter-spacing:0.16em; color:var(--accent-deep); background:var(--accent-bg); border:1px solid var(--accent-soft); padding:2px 7px; border-radius:var(--r-full);}
+
+  /* big view — always in flow, crossfades with capview */
+  .bigview{position:relative; z-index:1; display:flex; flex-direction:column; height:100%; padding:22px 18px 16px; text-align:center; min-height:0; opacity:0; pointer-events:none; transition:opacity .32s ease .14s;}
+  .isl.big .bigview{opacity:1; pointer-events:auto;}
+  .bighead{display:none; align-items:center; justify-content:center; gap:8px;}
+  .isl.big.open .bighead{display:flex;}
+  .bigview .coach{margin-top:10px;}
+  .bigview .heronum{margin-top:26px;}
+  .bigview .herosub{margin-top:8px;}
+  .strip{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--divider); border-radius:var(--r-lg); overflow:hidden; margin-top:18px;}
+  .strip .cell{background:var(--surface-card); padding:11px 8px 10px; text-align:center;}
+  .strip .v{font-size:19px; font-weight:700; letter-spacing:-0.02em;}
+  .strip .v .u{font-size:10px; font-weight:500; color:var(--text-muted); margin-left:2px;}
+  .strip .l{font-size:8.5px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-muted); margin-top:2px;}
+  .strip .d{font-size:10px; font-weight:600; margin-top:4px;}
+  .strip .d.good{color:var(--success-hover);}
+  .strip .d.warn{color:#8a6918;}
+  .strip .d.mut{color:var(--text-muted);}
+  .chiprow{display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .metachip{font-size:11px; font-weight:600; color:var(--text-secondary); background:var(--surface-recess); padding:5px 12px; border-radius:var(--r-full);}
+  .actrow{margin-top:auto; padding-top:14px; display:flex; align-items:center; justify-content:center; gap:10px; flex:none;}
+  .doneline{margin-top:10px; font-size:11.5px; font-weight:600; color:var(--success-hover); background:none; border:none; font-family:inherit; cursor:pointer;}
+
+  /* evening phase blocks — swap with a soft cross-slide */
+  .ph{display:none; flex-direction:column; flex:1; min-height:0;}
+  .isl[data-f="este"][data-phase="normal"] .ph-normal,
+  .isl[data-f="este"][data-phase="dim"] .ph-dim,
+  .isl[data-f="este"][data-phase="winddown"] .ph-winddown,
+  .isl[data-f="este"][data-phase="night"] .ph-night{display:flex;}
+  .ph.swapin{animation:phswap .45s ease both;}
+  @keyframes phswap{from{opacity:0; transform:translateY(12px);}to{opacity:1; transform:none;}}
+
+  /* night: the island itself goes dark */
+  .isl[data-f="este"][data-phase="night"].big{background:linear-gradient(165deg,#28223c,#1d1930); border-color:rgba(255,255,255,0.09);}
+  .isl[data-f="este"][data-phase="night"] .blob{opacity:.5;}
+  .ph-night .eyebrow{color:#B9ACD9;}
+  .ph-night .coach{color:#CFC6EA;}
+  .ph-night .heronum{color:#F5EFE6;}
+  .ph-night .heronum .unit, .ph-night .herosub{color:#9c92b8;}
+  .nightrow{display:flex; align-items:center; gap:10px; margin-top:auto; padding:12px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); border-radius:var(--r-xl); color:#E8E2F5; font-size:13px; font-weight:600; cursor:pointer;}
+  .nightrow .arr{margin-left:auto; color:#9c92b8;}
+
+  /* L1 */
+  .l1{overflow:hidden; max-height:0; opacity:0; transition:max-height .5s ease, opacity .4s ease; text-align:left; margin-top:6px;}
+  .isl.big.open .l1{max-height:none; flex:1 1 auto; overflow-y:auto; opacity:1; scrollbar-width:none;}
+  .isl.big.open .l1::-webkit-scrollbar{display:none;}
+  .isl.big.open .coach, .isl.big.open .heronum, .isl.big.open .herosub, .isl.big.open .strip, .isl.big.open .chiprow,
+  .isl.big.open .actrow, .isl.big.open .doneline{display:none;}
+  .isl.big.open .ph{display:none;}
+  .isl.big.open .l1{display:block;}
+  .isl.big.open .bigview{text-align:left;}
+  .isl.big.open .bighead{justify-content:flex-start;}
+  .grouph{font-size:9px; font-weight:800; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-muted); margin:14px 2px 6px;}
+  .l1 .grouph:first-child{margin-top:10px;}
+  .irow{display:flex; align-items:center; gap:10px; padding:9px 10px; background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-lg); margin-bottom:6px; opacity:0; transform:translateY(6px); transition:opacity .35s ease, transform .35s ease;}
+  .isl.big.open .irow{opacity:1; transform:none;}
+  .irow .sh{width:36px; height:36px; border-radius:var(--r-md); background:var(--surface-recess); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;}
+  .irow .tt{font-size:13.5px; font-weight:600; line-height:1.2;}
+  .irow .ss{font-size:11px; color:var(--text-muted); margin-top:1px;}
+  .irow .act{margin-left:auto; font-size:11px; font-weight:700; color:var(--primary-deep); background:var(--primary-bg); border:1px solid var(--primary-soft); padding:6px 12px; border-radius:var(--r-full); white-space:nowrap; cursor:pointer;}
+  .irow.done{opacity:.55;}
+  .irow.done .tt{text-decoration:line-through; text-decoration-thickness:1px; text-decoration-color:var(--text-muted);}
+  .irow.done .act{color:var(--success-hover); background:var(--success-bg); border-color:transparent;}
+  .backline{display:block; width:100%; text-align:center; font-size:12px; font-weight:700; color:var(--text-secondary); background:none; border:none; font-family:inherit; cursor:pointer; padding:10px 0 2px;}
+
+  /* ── anchor mode: the three islands melt into ONE warm island ── */
+  .anchorisl{flex:0 1 0px; opacity:0; pointer-events:none; border-width:0; cursor:default; box-shadow:var(--shadow-md); background:linear-gradient(170deg,#FFF2EA,#FBF4EC);}
+  .anchorisl .blob{top:-90px; left:50%; margin-left:-150px; background:radial-gradient(ellipse at 50% 45%, rgba(231,134,110,0.26), rgba(212,168,83,0.16) 55%, transparent 78%); animation-duration:12s;}
+  .sky[data-anchor="on"]{gap:0;}
+  .sky[data-anchor="on"] .isl:not(.anchorisl){flex:0 1 0px; opacity:0; pointer-events:none; border-width:0; margin:0;}
+  .sky[data-anchor="on"] .anchorisl{flex:1 1 100%; opacity:1; pointer-events:auto; border-width:1px; border-radius:34px;}
+  .anchorisl .bigview{opacity:1; pointer-events:auto;}
+  .anchorisl .irow{opacity:1; transform:none;}
+  .anchorisl .arows{margin-top:18px; text-align:left;}
+
+  /* ── right column: spec ── */
+  .spec{background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-2xl); padding:20px 22px; margin-bottom:18px; box-shadow:var(--shadow-sm);}
+  .spec h3{font-size:15px; font-weight:700; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px;}
+  .spec h3 .no{width:22px; height:22px; border-radius:var(--r-full); background:var(--secondary-hover); color:#fff; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+  .spec p, .spec li{font-size:13px; line-height:1.6; color:var(--text-secondary);}
+  .spec p{margin-top:8px;}
+  .spec ul{margin:8px 0 0 18px;}
+  .spec b{color:var(--text-primary); font-weight:600;}
+  .spec table{width:100%; border-collapse:collapse; margin-top:10px; font-size:12px;}
+  .spec th{text-align:left; font-size:9.5px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-muted); padding:6px 8px; border-bottom:1px solid var(--divider);}
+  .spec td{padding:7px 8px; border-bottom:1px solid var(--divider); color:var(--text-secondary); vertical-align:top; line-height:1.5;}
+  .spec td:first-child{font-weight:700; color:var(--text-primary); white-space:nowrap;}
+  .ok{background:var(--success-bg); border:1px solid var(--success-soft);}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>C · Három sziget — v3</h1>
+  <p class="lede"><b>Ami változott:</b> a köszöngetés és a státusz-eyebrow („Szép reggelt…”, „Reggel · most · 2/4”, „Nap · 3 nyitott”) <b>kikerült a szigetekről</b>. A nagy szigeten mostantól csak <b>egy hero + 1–2 értékes tény</b> él — és a tények nem nyers számok, hanem <b>kontextualizált adatok</b> (trend, delta, cél-távolság, előrejelzés) az app valódi adatvagyonából: alvásadósság, súlytrend, HRV-eltérés az átlagodtól, heti edzésterhelés, mezó-hét, fehérje-állás, nap-mérleg, alvás-kilátás.</p>
+
+  <div class="cols">
+    <div class="left">
+      <div class="statebar">
+        <button id="sb-reggel" class="on" onclick="select('reggel')">🌅 Reggel</button>
+        <button id="sb-nap" onclick="select('nap')">☀️ Nap</button>
+        <button id="sb-este" onclick="select('este')">🌙 Este</button>
+        <button id="sb-anchor" class="warm" onclick="toggleAnchor()">🌧️ Rossz nap</button>
+      </div>
+      <div class="statebar sub">
+        <span class="lb">Este fázisa</span>
+        <button id="pb-normal" class="on" onclick="setPhase('normal')">normál</button>
+        <button id="pb-dim" onclick="setPhase('dim')">ráhangolódás</button>
+        <button id="pb-winddown" onclick="setPhase('winddown')">leállás</button>
+        <button id="pb-night" onclick="setPhase('night')">éjszaka</button>
+      </div>
+      <p class="tip">…vagy koppints közvetlenül a kapszulákra a telefonban</p>
+
+      <div class="phone"><div class="screen" id="screen">
+        <div class="apphero"><div class="av">D</div><div><div class="nm">Daniel</div><div class="ti">A Következetes</div></div><div class="cnt"><span>🔥 12</span><span>⚡ 2/5</span><span>🪙 140</span></div></div>
+
+        <div class="sky" id="sky" data-anchor="off">
+
+          <!-- ═══ REGGEL ═══ -->
+          <div class="isl now-clock" data-f="reggel" onclick="select('reggel')">
+            <div class="blob"></div>
+            <div class="capview">
+              <span class="em">🌅</span>
+              <div><div class="t">Reggel</div><div class="m">Mobilitás videó a következő</div></div>
+              <span class="nowtag">MOST</span>
+              <span class="n">3 ›</span>
+            </div>
+            <div class="bigview">
+              <div class="bighead"><span class="eyebrow">🌅 Reggel</span></div>
+              <div class="heronum">7,2<span class="unit">óra alvás</span></div>
+              <div class="herosub">0,3 órával a célod alatt · heti adósság −0,4 óra</div>
+              <div class="strip">
+                <div class="cell"><div class="v">78,6<span class="u">kg</span></div><div class="l">Súly</div><div class="d good">↘ −0,4 a héten · cél 76,0</div></div>
+                <div class="cell"><div class="v">64<span class="u">ms</span></div><div class="l">HRV</div><div class="d good">↗ +6 az átlagod felett</div></div>
+              </div>
+              <div class="l1">
+                <div class="grouph">Reggeli rutin · 2/4</div>
+                <div class="irow" style="transition-delay:.05s;"><div class="sh">🧘</div><div><div class="tt">Mobilitás videó</div><div class="ss">8 perc · napi videó ↗</div></div><button class="act">Indítsd</button></div>
+                <div class="irow" style="transition-delay:.1s;"><div class="sh">🍳</div><div><div class="tt">Protein reggeli</div><div class="ss">min. 30 g fehérje</div></div><button class="act">Pipa ✓</button></div>
+                <div class="irow done" style="transition-delay:.15s;"><div class="sh">⏰</div><div><div class="tt">Ébredés időben</div><div class="ss">06:45</div></div><span class="act">✓ +10 XP</span></div>
+                <div class="irow done" style="transition-delay:.2s;"><div class="sh">⚖️</div><div><div class="tt">Reggeli mérés</div><div class="ss">78,6 kg</div></div><span class="act">✓ +15 XP</span></div>
+                <div class="grouph">Check-in</div>
+                <div class="irow" style="transition-delay:.25s;"><div class="sh">💬</div><div><div class="tt">Hogy vagy?</div><div class="ss">10:00 · délelőtti</div></div><button class="act">Koppints</button></div>
+                <div class="grouph">Napi küldetések</div>
+                <div class="irow" style="transition-delay:.3s;"><div class="sh">💧</div><div><div class="tt">Vízcél</div><div class="ss">1,2 / 2,5 liter</div></div><button class="act">+250 ml</button></div>
+                <div class="grouph">Fókusz</div>
+                <div class="irow" style="transition-delay:.35s;"><div class="sh">✦</div><div><div class="tt">„Erős test, tiszta fej”</div><div class="ss">mai fókusz: jelen lenni · 1/2</div></div><button class="act">+ Fókusz</button></div>
+                <button class="backline" onclick="event.stopPropagation(); toggleOpen();">összecsuk ↑</button>
+              </div>
+              <div class="actrow">
+                <button class="cta" onclick="event.stopPropagation();">Mobilitás videó · 8′</button>
+                <button class="ghostcta" onclick="event.stopPropagation(); toggleOpen();">még 3 ›</button>
+              </div>
+              <button class="doneline" onclick="event.stopPropagation(); toggleOpen();">✓ 2 kész ma · +45 XP</button>
+            </div>
+          </div>
+
+          <!-- ═══ NAP ═══ -->
+          <div class="isl" data-f="nap" onclick="select('nap')">
+            <div class="blob"></div>
+            <div class="capview">
+              <span class="em">☀️</span>
+              <div><div class="t">Nap</div><div class="m">13:00 · Pull A · 55 perc</div></div>
+              <span class="n">3 ›</span>
+            </div>
+            <div class="bigview">
+              <div class="bighead"><span class="eyebrow">☀️ Nap</span></div>
+              <div class="heronum">13:00<span class="unit">Pull A · 55′</span></div>
+              <div class="herosub">5. mezóhét · deload 2 hét múlva</div>
+              <div class="strip">
+                <div class="cell"><div class="v">2/4</div><div class="l">Edzés a héten</div><div class="d mut">eddig 8,2 t össztonna</div></div>
+                <div class="cell"><div class="v">62<span class="u">g</span></div><div class="l">Fehérje ma</div><div class="d warn">cél 160 g — ebéd előtt vagy</div></div>
+              </div>
+              <div class="chiprow">
+                <span class="metachip">⚠️ váll-niggle: óvatos bemelegítés</span>
+              </div>
+              <div class="l1">
+                <div class="grouph">Edzés</div>
+                <div class="irow" style="transition-delay:.05s;"><div class="sh">🏋️</div><div><div class="tt">Pull A</div><div class="ss">13:00 · 55 perc</div></div><button class="act">Indítsuk</button></div>
+                <div class="grouph">Check-in</div>
+                <div class="irow" style="transition-delay:.1s;"><div class="sh">💬</div><div><div class="tt">Hogy vagy?</div><div class="ss">14:00 · délutáni</div></div><button class="act">Koppints</button></div>
+                <div class="grouph">Fuel</div>
+                <div class="irow" style="transition-delay:.15s;"><div class="sh">🥗</div><div><div class="tt">Ebéd</div><div class="ss">12:30 · fehérje + rost</div></div><button class="act">Log</button></div>
+                <button class="backline" onclick="event.stopPropagation(); toggleOpen();">összecsuk ↑</button>
+              </div>
+              <div class="actrow">
+                <button class="cta" onclick="event.stopPropagation();">Indítsuk</button>
+                <button class="ghostcta" onclick="event.stopPropagation(); toggleOpen();">még 2 ›</button>
+              </div>
+              <button class="doneline" onclick="event.stopPropagation(); toggleOpen();">✓ ma még semmi — a reggel hozta a +45 XP-t</button>
+            </div>
+          </div>
+
+          <!-- ═══ ESTE ═══ -->
+          <div class="isl" data-f="este" data-phase="normal" onclick="select('este')">
+            <div class="blob"></div>
+            <div class="capview">
+              <span class="em">🌙</span>
+              <div><div class="t">Este</div><div class="m">Napzárás 21:15-től</div></div>
+              <span class="n">2 ›</span>
+            </div>
+            <div class="bigview">
+
+              <div class="ph ph-normal">
+                <div class="bighead"><span class="eyebrow" style="color:var(--lav-deep);">🌙 Este</span></div>
+                <div class="heronum">1:45<span class="unit">a villanyoltásig</span></div>
+                <div class="herosub">napzárás 21:15-től · villanyoltás 22:30</div>
+                <div class="strip">
+                  <div class="cell"><div class="v">+85<span class="u">XP</span></div><div class="l">Nap mérlege</div><div class="d good">9/11 tétel · legjobb napod a héten</div></div>
+                  <div class="cell"><div class="v">7,9<span class="u">óra</span></div><div class="l">Alvás-kilátás</div><div class="d mut">ha 22:30-kor lefekszel</div></div>
+                </div>
+                <div class="actrow">
+                  <button class="cta lav" onclick="event.stopPropagation();">Zárjuk le a napot</button>
+                  <button class="ghostcta" onclick="event.stopPropagation(); toggleOpen();">még 1 ›</button>
+                </div>
+                <button class="doneline" onclick="event.stopPropagation(); toggleOpen();">Ahogy a nap telt · 5 tétel ›</button>
+              </div>
+
+              <div class="ph ph-dim">
+                <div class="bighead"><span class="eyebrow" style="color:var(--lav-deep);">🌘 Esti ráhangolódás</span></div>
+                <div class="heronum">1:20<span class="unit">a villanyoltásig</span></div>
+                <div class="herosub">ráhangolódás: fény 30 lux alá · szoba ~18 °C</div>
+                <div class="strip">
+                  <div class="cell"><div class="v">+18<span class="u">%</span></div><div class="l">REM hűvösben</div><div class="d mut">18 °C-os szobában</div></div>
+                  <div class="cell"><div class="v">7,9<span class="u">óra</span></div><div class="l">Alvás-kilátás</div><div class="d mut">ha 22:30-kor lefekszel</div></div>
+                </div>
+                <div class="actrow">
+                  <button class="cta lav" onclick="event.stopPropagation();">Zárjuk le a napot</button>
+                  <button class="ghostcta" onclick="event.stopPropagation(); toggleOpen();">még 1 ›</button>
+                </div>
+                <button class="doneline" onclick="event.stopPropagation(); toggleOpen();">Ahogy a nap telt · 5 tétel ›</button>
+              </div>
+
+              <div class="ph ph-winddown">
+                <div class="bighead"><span class="eyebrow" style="color:var(--lav-deep);">🌒 Esti leállás</span></div>
+                <div class="heronum">0:45<span class="unit">a villanyoltásig</span></div>
+                <div class="herosub">villanyoltás 22:30 · képernyők le</div>
+                <div class="strip">
+                  <div class="cell"><div class="v">+85<span class="u">XP</span></div><div class="l">Nap mérlege</div><div class="d good">9/11 tétel</div></div>
+                  <div class="cell"><div class="v">7,9<span class="u">óra</span></div><div class="l">Alvás-kilátás</div><div class="d mut">ha tartod a 22:30-at</div></div>
+                </div>
+                <div class="actrow">
+                  <button class="cta lav" onclick="event.stopPropagation();">Zárjuk le a napot</button>
+                  <button class="ghostcta" onclick="event.stopPropagation();">Leállás megvolt ✓</button>
+                </div>
+                <button class="doneline" onclick="event.stopPropagation(); toggleOpen();">Ahogy a nap telt · 5 tétel ›</button>
+              </div>
+
+              <div class="ph ph-night">
+                <div class="bighead"><span class="eyebrow">🌑 Éjszakai mód</span></div>
+                <div class="heronum">22:30<span class="unit">elmúlt</span></div>
+                <div class="herosub">minden várhat reggelig — jó éjt</div>
+                <div class="nightrow" onclick="event.stopPropagation();">🌙 Éjszakai mód megnyitása<span class="arr">›</span></div>
+              </div>
+
+              <div class="l1">
+                <div class="grouph">Napzárás</div>
+                <div class="irow" style="transition-delay:.05s;"><div class="sh">🌙</div><div><div class="tt">Zárjuk le a napot</div><div class="ss">5 felvonás · ~4 perc</div></div><button class="act">Kezdjük</button></div>
+                <div class="grouph">Esti rutin</div>
+                <div class="irow" style="transition-delay:.1s;"><div class="sh">📵</div><div><div class="tt">Képernyő le</div><div class="ss">21:30-tól</div></div><button class="act">Pipa ✓</button></div>
+                <div class="grouph">Fókusz</div>
+                <div class="irow" style="transition-delay:.15s;"><div class="sh">✦</div><div><div class="tt">Sikerült ma jelen lenned?</div><div class="ss">esti visszatekintés</div></div><button class="act">Igen / Nem</button></div>
+                <div class="grouph">Ahogy a nap telt</div>
+                <div class="irow done" style="transition-delay:.2s;"><div class="sh">⏰</div><div><div class="tt">Ébredés időben</div><div class="ss">06:45</div></div><span class="act">✓</span></div>
+                <div class="irow done" style="transition-delay:.25s;"><div class="sh">⚖️</div><div><div class="tt">Reggeli mérés</div><div class="ss">78,6 kg</div></div><span class="act">✓</span></div>
+                <button class="backline" onclick="event.stopPropagation(); toggleOpen();">összecsuk ↑</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ HORGONY (rossz nap) ═══ -->
+          <div class="isl anchorisl" data-f="anchor">
+            <div class="blob"></div>
+            <div class="bigview">
+              <div class="bighead"><span class="eyebrow" style="color:#b0614a;">🫧 Horgony mód</span></div>
+              <p class="coach" style="color:#b0614a;">Nehéz nap — <em class="frau" style="color:inherit;">ma elég a minimum. Itt vagyok.</em></p>
+              <div class="heronum">3<span class="unit">apró horgony</span></div>
+              <div class="herosub">Semmi lista, semmi elvárás — csak ami jólesik.</div>
+              <div class="arows">
+                <div class="irow"><div class="sh">💧</div><div><div class="tt">Egy pohár víz</div><div class="ss">most, lassan</div></div><button class="act">Megvolt ✓</button></div>
+                <div class="irow"><div class="sh">🌬️</div><div><div class="tt">Három mély levegő</div><div class="ss">4-7-8 ritmusban</div></div><button class="act">Megvolt ✓</button></div>
+                <div class="irow"><div class="sh">🚶</div><div><div class="tt">Öt perc levegő</div><div class="ss">csak az ajtóig is elég</div></div><button class="act">Megvolt ✓</button></div>
+              </div>
+              <div class="actrow">
+                <button class="ghostcta" onclick="toggleAnchor()">Kilépés a horgony módból</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="tabbar"><span class="on"><i>☉</i>Ma</span><span><i>⚒</i>Edzés</span><span><i>◍</i>Fuel</span><span><i>◑</i>Én</span></div>
+      </div></div>
+    </div>
+
+    <div class="right">
+      <div class="spec ok">
+        <h3><span class="no">✓</span>Ami a v3-ban dőlt el</h3>
+        <ul>
+          <li><b>Nincs köszöngetés, nincs státusz-eyebrow L0-n.</b> A nagy sziget = <b>hero + 1–2 tény + CTA</b>, semmi más. A sziget identitását a pozíció + a blob-szín + a hero hordozza; a nyitott-számláló a „még N ›” fogantyúban és a kapszulákon él.</li>
+          <li><b>A tények kontextualizált adatok</b> — trend, delta, cél-távolság, előrejelzés — nem nyers számok. A cellák a DS StatStrip-idiómán ülnek, egy delta-sorral bővítve.</li>
+          <li><b>A briefing/coach-hang következménye:</b> az L0-ról lekerült — javaslatom: a reggeli L1 tetején él CoachBubble-ként (lásd a nyitott kérdést lent).</li>
+        </ul>
+      </div>
+
+      <div class="spec">
+        <h3><span class="no">1</span>Tény-katalógus — miből válogathatunk szigetenként</h3>
+        <p>Az app adatvagyona, ebből mutat a sziget <b>1–2-t</b> (a mostani választás vastaggal). Bármelyik cserélhető:</p>
+        <table>
+          <tr><th>Sziget</th><th>Jelöltek</th></tr>
+          <tr><td>🌅 Reggel</td><td><b>alvás + adósság</b> (hero) · <b>súly + heti trend + cél-táv</b> · <b>HRV vs átlagod</b> · pihenőpulzus · sorozat (🔥 nap) · reggeli fehérje-cél</td></tr>
+          <tr><td>☀️ Nap</td><td><b>edzés-időpont</b> (hero) · <b>heti edzés-darab + tonna</b> · <b>fehérje-állás</b> · mezó-hét/deload-táv · kcal-egyenleg · lépés/aktivitás · tegnapi e1RM-csúcs · vízcél-állás</td></tr>
+          <tr><td>🌙 Este</td><td><b>countdown</b> (hero) · <b>nap-mérleg (XP + tétel + heti rang)</b> · <b>alvás-kilátás</b> („ha 22:30-kor fekszel → 7,9 óra”) · energia-átlag a check-inekből · képernyő-idő · holnapi első esemény</td></tr>
+        </table>
+      </div>
+
+      <div class="spec">
+        <h3><span class="no">2</span>Az esti sziget négy fázisa</h3>
+        <p>Egyetlen sziget, egy hero-hely — a tartalma a <code>windDown</code> óra szerint <b>puha kereszt-úszással</b> cserélődik (a hős-szám mindig a villanyoltásig hátralévő idő):</p>
+        <table>
+          <tr><th>Fázis</th><th>Ablak</th><th>Mit mutat</th></tr>
+          <tr><td>🌙 normál</td><td>este eleje</td><td>„zárjuk le szépen” · napzárás CTA · chipek: leállás-idő, esti kérdés</td></tr>
+          <tr><td>🌘 ráhangolódás</td><td>[−90′, −60′)</td><td>fény/hőmérséklet tippek + a „+18% REM” evidencia-chip</td></tr>
+          <tr><td>🌒 leállás</td><td>[−60′, 0)</td><td>a CTA mellé belép a <b>„Leállás megvolt ✓”</b> pipa (a wind_down habit)</td></tr>
+          <tr><td>🌑 éjszaka</td><td>villanyoltás után</td><td><b>a sziget maga elsötétül</b> — Éjszakai mód belépő, minden más elhallgat</td></tr>
+        </table>
+      </div>
+
+      <div class="spec">
+        <h3><span class="no">3</span>Rossz nap — összeolvadás</h3>
+        <p>A <code>?day=rough</code> nem külön képernyőre visz többé: a három sziget <b>egyetlen meleg, rózsás szigetté olvad össze</b> (a kapszulák behúzódnak, a horgony-sziget kitölti az eget). Tartalma az AnchorMode öröksége: 3 apró horgony, semmi számláló, semmi elvárás. A „Kilépés” visszaolvasztja a három szigetet. A mozgás maga a metafora: a nap <b>összehúzódik egyetlen megtartó ponttá</b>, majd újra kitágul.</p>
+      </div>
+
+      <div class="spec">
+        <h3><span class="no">4</span>Ami változatlan a v2-ből</h3>
+        <ul>
+          <li>Tér-szabályok: egy nagy sziget, kronologikus sorrend, L0 nem görgethető, MOST-gyűrű a kronologikus helyeden.</li>
+          <li>Rétegek: L0 színpad → L1 lista (ItemRow-nyelv, belül görgethető) → L2 sheetek változatlanul; Fókusz (creed) az L1-ben.</li>
+          <li>A folyamatos buborék-morf (29→34 px rádiusz, közös rugógörbe, kereszt-áttűnés), az esti fázis-csere, a Rossz nap összeolvadás, a lavendula-hűlés.</li>
+          <li>Mozgás-nyelv: blob-morf, lebegő kapszulák, lépcsőző L1-sorok, reduced-motion garancia.</li>
+        </ul>
+      </div>
+
+      <div class="spec" style="background:var(--accent-bg); border-color:var(--accent-soft);">
+        <h3><span class="no">?</span>Egy nyitott kérdés</h3>
+        <p><b>Hol lakjon a briefing prózája?</b> A coach-sor lekerült az L0-ról — a generált reggeli briefing (a companion saját szövege) így vagy <b>(a)</b> a reggeli L1 tetején él egy CoachBubble-ben, vagy <b>(b)</b> a hero-számra koppintva nyílik (az alvás-szám alatt úgyis az éjszakáról beszél), vagy <b>(c)</b> kimarad a Ma-ról, és csak push/Insights felületen él. Melyik?</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let sel='reggel';
+  function select(f){
+    if(sel===f){ return; }
+    sel=f;
+    document.querySelectorAll('.isl:not(.anchorisl)').forEach(el=>{
+      const is = el.dataset.f===f;
+      el.classList.toggle('big', is);
+      el.classList.remove('open');
+    });
+    ['reggel','nap','este'].forEach(x=>{
+      const b=document.getElementById('sb-'+x); if(b) b.classList.toggle('on', x===f);
+    });
+    document.getElementById('screen').dataset.mood = (f==='este') ? 'este' : 'nappal';
+    if (typeof sendEvent === 'function') { try { sendEvent({type:'island-select', face:f}); } catch(e){} }
+  }
+  function toggleOpen(){
+    const big=document.querySelector('.isl.big:not(.anchorisl)');
+    if(big){ big.classList.toggle('open'); }
+  }
+  function setPhase(p){
+    const este=document.querySelector('.isl[data-f="este"]');
+    este.dataset.phase=p;
+    este.classList.remove('open');
+    document.querySelectorAll('.statebar.sub button').forEach(b=>b.classList.toggle('on', b.id==='pb-'+p));
+    select('este');
+    const ph=este.querySelector('.ph-'+p);
+    if(ph){ ph.classList.remove('swapin'); void ph.offsetWidth; ph.classList.add('swapin'); }
+    if (typeof sendEvent === 'function') { try { sendEvent({type:'evening-phase', phase:p}); } catch(e){} }
+  }
+  function toggleAnchor(){
+    const sky=document.getElementById('sky');
+    const on = sky.dataset.anchor!=='on';
+    sky.dataset.anchor = on ? 'on' : 'off';
+    document.getElementById('sb-anchor').classList.toggle('on', on);
+    if (typeof sendEvent === 'function') { try { sendEvent({type:'anchor-mode', on:on}); } catch(e){} }
+  }
+  document.querySelector('.isl[data-f="reggel"]').classList.add('big');
+</script>
+</body>
+</html>
