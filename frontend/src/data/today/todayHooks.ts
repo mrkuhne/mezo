@@ -165,5 +165,7 @@ export function useFuelPreview() {
   const start = Math.max(0, nowIdx)
   const visible = slots.slice(start, start + 3)
   const nextStack = slots.find(s => s.state !== 'done' && (s.items ?? []).some(it => !it.done))
-  return { visible, nextStack }
+  // The full composed plan rides along for the three-islands facts (protein/energy,
+  // mezo-euze) — additive, the {visible, nextStack} shape above is untouched.
+  return { visible, nextStack, plan }
 }
