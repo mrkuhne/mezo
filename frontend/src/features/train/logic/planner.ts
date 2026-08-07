@@ -13,6 +13,7 @@
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
 import type { ExerciseKind, GymExercise, MesoDay, GoalPreset, SplitOption } from '@/data/types'
+import { fitProgram } from '@/features/train/logic/programFit'
 
 // --- step labels (meso-planner.jsx:135) ---
 export const stepLabels = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Program'] as const
@@ -439,11 +440,11 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
   }
 
   if (!weekdays) {
-    return template.map((d): PlannerDay => {
+    return fitProgram(template.map((d): PlannerDay => {
       if (d.type === 'Rest') return { ...restDay(d.day, d.note), muscle: d.muscle }
       if (d.type === 'Volleyball') return { ...d, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
       return trainingDay(d)
-    })
+    }), goal?.id ?? 'hypertrophy')
   }
 
   // Selected-weekday placement: the trimmed training sequence lands on the chosen days in
@@ -451,7 +452,7 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
   // template volleyball days stay volleyball, everything else rests.
   const sequence = template.filter((d) => isTrainingType(d.type))
   let next = 0
-  return DAY_ORDER.map((dayKey): PlannerDay => {
+  return fitProgram(DAY_ORDER.map((dayKey): PlannerDay => {
     if (weekdays.includes(dayKey) && sequence.length > 0) {
       const src = sequence[next % sequence.length]
       next++
@@ -462,5 +463,5 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
       return { ...templ, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
     }
     return restDay(dayKey)
-  })
+  }), goal?.id ?? 'hypertrophy')
 }
