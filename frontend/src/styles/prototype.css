@@ -2408,6 +2408,81 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wdb-night-t2 { font: 500 11.5px/1.55 var(--ff-body); color: #B7A899; }
 .wdb-night-chev { color: #B9ACD9; font-size: 17px; }
 
+/* ═════════ Today három sziget (mezo-euze) ═════════
+   The sky: three islands, exactly one big. The shell is ONE continuous bubble —
+   capsule 29px ↔ big 34px radius on a single spring curve (flex + radius together),
+   the capsule layer absolute on the shell and cross-fading, so the morph never
+   pauses or shows an empty frame. Every animation here has its reduced-motion
+   counterpart at the end of this section, `:where()`-wrapped so the disable
+   cannot be outranked (the todayReducedMotion contract). */
+.sky-islands { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;
+               min-height: 0; transition: gap .5s ease; }
+.isl { position: relative; overflow: hidden; border: 1px solid var(--card-border);
+       background: var(--surface-1); box-shadow: var(--shadow-sm); border-radius: 29px;
+       flex: 0 1 58px; min-height: 58px;
+       transition: flex .55s cubic-bezier(.3,.9,.35,1), border-radius .55s cubic-bezier(.3,.9,.35,1),
+                   background .6s ease, opacity .45s ease; }
+.isl.isl-big { flex: 1 1 100%; border-radius: 34px; box-shadow: var(--shadow-md); }
+.isl-blob { position: absolute; width: 300px; height: 300px; top: -100px; left: 50%;
+            margin-left: -150px; filter: blur(2px); opacity: 0; transition: opacity .6s ease;
+            pointer-events: none; z-index: 0; }
+.isl.isl-big .isl-blob { opacity: .9; }
+:where(.isl.isl-big) .isl-blob { animation: isl-morph 9s ease-in-out infinite alternate; }
+.isl[data-face="reggel"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--accent-base) 34%, transparent),
+    color-mix(in srgb, var(--primary-soft) 25%, transparent) 55%, transparent 75%); }
+.isl[data-face="nap"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--primary-base) 20%, transparent),
+    color-mix(in srgb, var(--accent-base) 16%, transparent) 55%, transparent 75%); }
+.isl[data-face="este"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--dv-lav) 30%, transparent), transparent 75%); }
+.isl-cap { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; gap: 10px;
+           padding: 0 16px; background: none; border: none; font-family: inherit; text-align: left;
+           cursor: pointer; opacity: 1; transition: opacity .22s ease .18s; }
+.isl.isl-big .isl-cap { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+.isl-cap-t { display: block; font-size: 13px; font-weight: 700; color: var(--ink); }
+.isl-cap-m { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+.isl-cap-n { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--sub);
+             background: var(--surface-recess); padding: 4px 10px; border-radius: var(--r-full);
+             white-space: nowrap; }
+.isl-nowtag { font-size: 8.5px; font-weight: 800; letter-spacing: .16em; color: var(--accent-deep);
+              background: var(--accent-bg); border: 1px solid var(--accent-soft); padding: 2px 7px;
+              border-radius: var(--r-full); }
+.isl.now-clock:not(.isl-big) { border-color: var(--accent-base);
+              box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-base) 15%, transparent); }
+:where(.isl:not(.isl-big)) { animation: isl-floaty 5.4s ease-in-out infinite; }
+.isl[data-face="reggel"]:not(.isl-big) { animation-delay: .8s; }
+.isl[data-face="este"]:not(.isl-big) { animation-delay: 1.6s; }
+.isl-bigview { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%;
+               padding: 22px 18px 16px; text-align: center; min-height: 0; opacity: 0;
+               pointer-events: none; transition: opacity .32s ease .14s; }
+.isl.isl-big .isl-bigview { opacity: 1; pointer-events: auto; }
+/* night: the shell itself darkens — theme-invariant literal dark, the .wdb-night heritage */
+.isl.isl-night { background: linear-gradient(165deg, #28223c, #1d1930);
+                 border-color: rgba(255,255,255,.09); }
+/* anchor melt (?day=rough): the three islands collapse, one warm island fills the sky */
+.isl.isl-anchor { flex: 0 1 0px; min-height: 0; opacity: 0; pointer-events: none; border-width: 0; }
+.sky-islands.is-anchor { gap: 0; }
+.sky-islands.is-anchor .isl:not(.isl-anchor) { flex: 0 1 0px; min-height: 0; opacity: 0;
+                 pointer-events: none; border-width: 0; margin: 0; }
+.sky-islands.is-anchor .isl-anchor { flex: 1 1 100%; opacity: 1; pointer-events: auto;
+                 border-width: 1px; border-radius: 34px;
+                 background: linear-gradient(170deg, var(--primary-bg), var(--surface-page)); }
+.isl-anchor .isl-blob { opacity: .9; background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--rose) 26%, transparent),
+    color-mix(in srgb, var(--accent-base) 16%, transparent) 55%, transparent 78%); }
+@keyframes isl-morph {
+  0%   { border-radius: 58% 42% 55% 45% / 50% 58% 42% 50%; transform: translate(-8px,-6px); }
+  50%  { border-radius: 45% 55% 48% 52% / 58% 44% 56% 42%; }
+  100% { border-radius: 52% 48% 60% 40% / 44% 54% 46% 56%; transform: translate(6px,4px) scale(1.05); }
+}
+@keyframes isl-floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  :where(.isl.isl-big) .isl-blob { animation: none; }
+  :where(.isl:not(.isl-big)) { animation: none; }
+  .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
+}
+
 /* ===== NightPage calm tools (mezo-d71m, spec D6) — literal dark, theme-independent ===== */
 .nb, .ns, .nw { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .nb-stage { position: relative; height: 250px; display: flex; align-items: center; justify-content: center; }
