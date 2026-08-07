@@ -2415,6 +2415,9 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    pauses or shows an empty frame. Every animation here has its reduced-motion
    counterpart at the end of this section, `:where()`-wrapped so the disable
    cannot be outranked (the todayReducedMotion contract). */
+/* The app scroller becomes a flex column while Today's sky is mounted, so the sky
+   FILLS the viewport (L0 never scrolls — only the L1 list inside an island). */
+.screen-content:has(.sky-islands) { display: flex; flex-direction: column; }
 .sky-islands { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;
                min-height: 0; transition: gap .5s ease; }
 .isl { position: relative; overflow: hidden; border: 1px solid var(--card-border);
