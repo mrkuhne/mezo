@@ -2513,6 +2513,19 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                 background: none; border: none; font-family: inherit; cursor: pointer; }
 .isl-openhead { font-size: 10.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
                 color: var(--sub); text-align: left; flex: none; }
+/* evening phase wrapper — the hero-slot content cross-slides on phase change */
+.isl-phase { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+:where(.isl-phase) { animation: isl-phasein .45s ease both; }
+@keyframes isl-phasein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* night: light-on-dark text pairs + the night entry row (theme-invariant dark surface) */
+.isl-night .isl-hero-v { color: #F5EFE6; }
+.isl-night .isl-hero-u, .isl-night .isl-hero-sub { color: #9c92b8; }
+.isl-night .isl-openhead { color: #B9ACD9; }
+.isl-nightrow { display: flex; align-items: center; gap: 10px; margin-top: auto; padding: 12px 14px;
+                background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+                border-radius: var(--r-xl); color: #E8E2F5; font-size: 13px; font-weight: 600;
+                text-decoration: none; }
+.isl-nightrow-arr { margin-left: auto; color: #9c92b8; }
 /* L1 — the unfolded list inside a big island. Scrolls internally; the sky itself never does. */
 .isl-l1 { overflow-y: auto; flex: 1 1 auto; text-align: left; scrollbar-width: none; margin-top: 6px; }
 .isl-l1::-webkit-scrollbar { display: none; }
@@ -2541,6 +2554,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   :where(.isl.isl-big) .isl-blob { animation: none; }
   :where(.isl:not(.isl-big)) { animation: none; }
   :where(.isl-l1) .itemrow { animation: none; }
+  :where(.isl-phase) { animation: none; }
   .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
 }
 

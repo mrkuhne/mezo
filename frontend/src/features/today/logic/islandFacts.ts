@@ -121,7 +121,7 @@ export function sleepOutlook(goal: SleepGoal): IslandFact {
  * passed within the last 12 hours reads as a huge "time to next bed" —
  * that window IS the "elmúlt" state (night face).
  */
-export function bedCountdown(now: Date, goal: SleepGoal): IslandHero {
+export function bedCountdown(now: Date, goal: { bedTime: string }): IslandHero {
   const m = minsToBed(now, goal.bedTime)
   if (m === 0 || m > 12 * 60) return { value: goal.bedTime, unit: 'elmúlt', sub: null }
   return { value: `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`, unit: 'a villanyoltásig', sub: null }
