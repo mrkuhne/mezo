@@ -1,4 +1,4 @@
-# ADR 0021 — Today is a sky of three islands: hero + facts on L0, everything else one layer deeper
+# ADR 0022 — Today is a sky of three islands: hero + facts on L0, everything else one layer deeper
 
 - **Status:** accepted (2026-08-07)
 - **Driving bd:** `mezo-euze`
