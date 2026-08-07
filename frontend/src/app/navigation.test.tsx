@@ -19,7 +19,7 @@ test('redirects / to Today', async () => {
   // mode TodayPage renders TodaySkeleton until `useSleepGoal()` resolves (TodayPage's
   // `sleepGoalPending` guard). Mock mode seeds the goal synchronously via `initialData`,
   // so a getBy would only ever have passed there — this keeps the smoke test mode-agnostic.
-  expect(await screen.findByRole('tablist', { name: 'Napszakok' })).toBeInTheDocument()
+  expect((await screen.findAllByRole('button', { name: /megnyitás/ })).length).toBeGreaterThan(0)
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
