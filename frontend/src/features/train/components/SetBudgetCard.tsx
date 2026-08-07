@@ -4,7 +4,8 @@
 // unified-editor, composite-v2 mockup). Collapsed: a pill wrap, one per
 // muscle group, colored by budget level. Expanded: one row per group with
 // a rail + progress bar, plus warning lines for over-budget groups and
-// single-session cap breaches (sessionCapWarnings).
+// single-session cap breaches (sessionCapWarnings), and a discreet
+// direct-only counting footnote (ADR 0021).
 // ============================================================
 import { useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -153,6 +154,10 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
               ))}
             </div>
           ) : null}
+
+          <div style={{ fontSize: 9.5, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
+            Csak a fő izom szettjei számítanak — a szinergista munka (pl. fekvenyomás → tricepsz) nem.
+          </div>
         </div>
       )}
     </div>
