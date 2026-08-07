@@ -12,7 +12,7 @@
 // Applied by generateProgram as its final step on both return paths.
 // ============================================================
 import type { GymExercise, MesoDay } from '@/data/types'
-import { GROUP_MEV, SESSION_MUSCLE_CAP, budgetGroup, budgetOf, setStyle } from '@/features/train/logic/setBudget'
+import { FAILURE_WEEKLY_CAP, GROUP_MEV, SESSION_MUSCLE_CAP, VOLUME_WEEKLY_CAP, budgetGroup, budgetOf, setStyle } from '@/features/train/logic/setBudget'
 import { SETS_PER_EXERCISE, SESSION_LENGTH_BAND, repZoneOf, type RepZone } from '@/features/train/logic/structureLint'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { isOffDay } from '@/features/train/logic/offDay'
@@ -166,10 +166,13 @@ function guardSessionLength(days: MesoDay[], slotMap: Map<string, Slot[]>): void
             const slots = slotMap.get(c.group!) ?? []
             const cur = groupStats(days, slots)
             const style = setStyle(c.e.targetRIR)
-            const nextBudget = cur.budget + (style === 'failure' ? 1 / 12 : 1 / 20)
+            const nextBudget = cur.budget + (style === 'failure' ? 1 / FAILURE_WEEKLY_CAP : 1 / VOLUME_WEEKLY_CAP)
             return { ...c, nextBudget }
           })
-          .filter((c) => c.nextBudget < FIT_CEILING)
+          // The session-length band is a hard rule (structureLint R5) — it must never lose to the
+          // FIT_CEILING soft ceiling (waivable via NEAR_ALLOWED in the invariant suite). Padding here
+          // only has to respect the one truly hard budget bound: <= 1 (structureLint 'budget' rule).
+          .filter((c) => c.nextBudget <= 1)
           .sort((a, b) => a.nextBudget - b.nextBudget || a.exIdx - b.exIdx)
         if (candidates.length === 0) break
         candidates[0].e.workingSets++

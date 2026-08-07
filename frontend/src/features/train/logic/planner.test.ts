@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterAll, describe, expect, test } from 'vitest'
 import { GOAL_PRESETS, SPLITS } from '@/data/train/train'
 import { addWeeks, defaultWeekdays, generateProgram, getSeason, stepLabels } from '@/features/train/logic/planner'
 import { structureLint, type StructureFinding } from '@/features/train/logic/structureLint'
@@ -296,6 +296,191 @@ allowMev('biceps', 'Láb+Plyo / Felső', [4], ALL_GOAL_IDS)
 // the ceiling); no other combo needs it. Mechanism kept for future template drift.
 const NEAR_ALLOWED = new Set<string>([])
 
+// Finding 2 (mezo-oyhy.6 fix wave): every ALLOWED entry must be exercised at least once by the
+// sweep(s) below — a key nothing ever looks up is stale (template drift moved past it) and
+// should be deleted, not silently kept. Tracked centrally so both the no-weekdays and the
+// weekdays sweep (below) feed the same afterAll check.
+const structuralConsumed = new Set<string>()
+const mevConsumed = new Set<string>()
+const nearConsumed = new Set<string>()
+
+/** Shared assertion body for one generated program against one (allowlist-set, consumed-set)
+ *  triple — used by both the no-weekdays and the weekdays sweep below. */
+function assertInvariants(
+  prog: ReturnType<typeof generateProgram>,
+  goalId: string,
+  splitLabel: string,
+  d: number,
+  label: string,
+  structuralAllowed: Set<string>,
+  structConsumed: Set<string>,
+  mevAllowed: Set<string>,
+  mevCons: Set<string>,
+  nearAllowed: Set<string>,
+  nearCons: Set<string>,
+) {
+  for (const f of structureLint(prog) as StructureFinding[]) {
+    if (HARD_CLEAN_RULES.has(f.rule)) {
+      throw new Error(`fitter-addressable finding [${f.rule}] on ${label}: ${f.label}`)
+    }
+    if (!STRUCTURAL_RULES.has(f.rule)) {
+      throw new Error(`unexpected structureLint rule '${f.rule}' on ${label}: ${f.label}`)
+    }
+    const groupLabel = f.label.split(':')[0]
+    const group = GROUP_LABEL_TO_KEY[groupLabel] ?? null
+    const key = [goalId, splitLabel, d, f.rule, group].filter((v) => v !== null).join('|')
+    expect(structuralAllowed.has(key), `unallowlisted structural finding ${key}: ${f.label}`).toBe(true)
+    structConsumed.add(key)
+  }
+  for (const row of muscleBudgets(prog)) {
+    expect(row.budget).toBeLessThanOrEqual(1)
+    const mev = GROUP_MEV[row.group]
+    if (mev !== undefined) {
+      const groupKey = `${goalId}|${splitLabel}|${d}|${row.group}`
+      if (row.workingSets < mev) {
+        expect(mevAllowed.has(groupKey), `unallowlisted MEV shortfall ${groupKey}: ${row.workingSets} < ${mev}`).toBe(true)
+        mevCons.add(groupKey)
+      }
+      if (!nearAllowed.has(groupKey)) {
+        expect(row.budget).toBeLessThan(FIT_CEILING)
+      } else {
+        nearCons.add(groupKey)
+      }
+    }
+  }
+}
+
+// ============================================================
+// Finding 1 (mezo-oyhy.6 fix wave): the wizard (MesocyclePlannerPage.tsx) always calls
+// generateProgram with `weekdays: defaultWeekdays(...)` — the plain no-weekdays sweep above
+// never exercises that path. The two diverge whenever the split's trimmed-template training-day
+// count doesn't exactly equal `days`:
+//  - No-weekdays path: trimmedTemplate only ever REMOVES light-labelled days: when a split has
+//    no (or not enough) light days to remove, its training-day count can stay ABOVE `days`, and
+//    generateProgram maps the template verbatim (every day placed) regardless.
+//  - Weekdays path: defaultWeekdays first PICKS the template's training days, capped at `days`
+//    — any training day past the cap is dropped entirely. generateProgram's weekday branch then
+//    replays only the picked days from `sequence = template.filter(isTrainingType)`, cycling
+//    with `next % sequence.length` when more weekdays are picked than the split defines. So a
+//    picked-and-cycled day can literally duplicate an earlier day's type+exercises, and a
+//    dropped day silently loses its type — this reshapes weekly frequency independently of the
+//    no-weekdays template path, hence a fully separate WD_* allowlist below.
+// Every entry keeps its own derivation comment, verified against defaultWeekdays' actual output
+// (not hand-traced blind) the same way the hand-derived Hét pin above was.
+// ============================================================
+const WD_STRUCTURAL_ALLOWED = new Set<string>()
+function wdAllowStructural(rule: string, group: string | null, splitLabel: string, days: number[], goalIds: string[]) {
+  for (const goalId of goalIds) for (const d of days) WD_STRUCTURAL_ALLOWED.add([goalId, splitLabel, d, rule, group].filter((v) => v !== null).join('|'))
+}
+const WD_MEV_ALLOWED = new Set<string>()
+function wdAllowMev(group: string, splitLabel: string, days: number[], goalIds: string[]) {
+  for (const goalId of goalIds) for (const d of days) WD_MEV_ALLOWED.add(`${goalId}|${splitLabel}|${d}|${group}`)
+}
+const WD_NEAR_ALLOWED = new Set<string>()
+function wdAllowNear(group: string, splitLabel: string, days: number[], goalIds: string[]) {
+  for (const goalId of goalIds) for (const d of days) WD_NEAR_ALLOWED.add(`${goalId}|${splitLabel}|${d}|${group}`)
+}
+const wdStructuralConsumed = new Set<string>()
+const wdMevConsumed = new Set<string>()
+const wdNearConsumed = new Set<string>()
+
+// PPL @ 4d, weekdays=[Hét,Kedd,Sze,Csü]: trimmedTemplate(PPL,4) can only remove the ONE
+// light-labelled day (Szo 'Legs · light'), so it still carries 5 training days (Push,Pull,Legs,
+// Push,Pull on Hét..Pén) — defaultWeekdays then caps the picked weekdays at days=4, so it takes
+// the FIRST 4 training days and drops Pén (the 2nd Pull). generateProgram's weekday branch places
+// Push(Hét),Pull(Kedd),Legs(Sze),Push(Csü) and — since Pén was never picked — converts Pén (a
+// template Pull day) to Rest. Result: Push x2 (Hét,Csü), Pull x1 (Kedd), Legs x1 (Sze). back +
+// biceps (Pull-only) and quad/ham/glute (Legs-only) each read every weekly set on ONE day.
+for (const group of ['back', 'biceps', 'quad', 'ham', 'glute']) wdAllowStructural('frequency', group, 'Pull / Push / Legs', [4], ALL_GOAL_IDS)
+// Same Pull x1/week drop (above): biceps' 2 isolation slots (Hammer Curl + Incline Curl) x cap
+// 3 = 6 < GROUP_MEV.biceps 8 — the 2nd weekly Pull day that would have doubled it to 12 was the
+// one dropped by the days=4 cap.
+wdAllowMev('biceps', 'Pull / Push / Legs', [4], ALL_GOAL_IDS)
+// Same Push x2 / Pull x1 skew (above) pushes the push:pull ratio itself outside the ±1.6 silence
+// band for the 3 goals whose scheme yields a wide enough push/pull set gap (measured, not
+// assumed): cut-prep 32/18=1.78→1.8, recovery 30/18=1.67→1.7, sport 36/19=1.89→1.9 — all >1.6.
+// hypertrophy (28/18=1.556→1.6), strength (32/20=1.6→1.6) and erohipertrofia (26/18=1.44→1.4)
+// round to <=1.6 and stay silent.
+wdAllowStructural('push-pull', null, 'Pull / Push / Legs', [4], ['cut-prep', 'recovery', 'sport'])
+// PPL @ 5d, weekdays=[Hét,Kedd,Sze,Csü,Pén]: trimmedTemplate(PPL,5) removes the same light day
+// (toRemove=6-5=1, exactly matches the one available), leaving exactly 5 training days that
+// defaultWeekdays picks in full (no drop) — the weekdays branch places them 1:1, identical to
+// the no-weekdays template path at this day count. Pull now runs 2x (Kedd,Pén) same as Push
+// (Hét,Csü); only Legs stays 1x/week — same single-leg-day trade-off as the no-weekdays PPL[4,5]
+// entry above, now re-derived for the weekdays path's own allowlist.
+for (const group of ['quad', 'ham', 'glute']) wdAllowStructural('frequency', group, 'Pull / Push / Legs', [5], ALL_GOAL_IDS)
+
+// Upper / Lower @ 3d, weekdays=[Hét,Kedd,Csü]: trimmedTemplate(UL,3) has no light days to trim
+// (Upper/Lower never carries a 'light' label), so it keeps all 4 template training days
+// (Upper,Lower,Upper,Lower); defaultWeekdays caps at 3 and takes the first 3 (Upper,Lower,Upper),
+// dropping Pén (2nd Lower) — the weekdays branch converts the dropped Pén (template Lower) to
+// Rest. Result: Upper x2 (Hét,Csü), Lower x1 (Kedd) — quad/ham/glute (Lower-only) read every
+// weekly set on the single Kedd session.
+for (const group of ['quad', 'ham', 'glute']) wdAllowStructural('frequency', group, 'Upper / Lower', [3], ALL_GOAL_IDS)
+// Upper / Lower @ 3d and 4d: 'Upper' runs 2x/week (both day counts — at 4d weekdays=[Hét,Kedd,
+// Csü,Pén] picks all 4 training days in order, identical to the no-weekdays template path) with
+// a single triceps exercise (Tricep Pushdown) — same split-inherent single-name repeat as the
+// no-weekdays UL[3,4] entry above, surfacing only for strength's heavier isolation-adjacent
+// volume (6+ weekly sets clears the variety gate; every other goal's session-length trim keeps
+// triceps under it).
+wdAllowStructural('variety', 'triceps', 'Upper / Lower', [3, 4], ['strength'])
+
+// Full body @ 3d, weekdays=[Hét,Sze,Pén]: trimmedTemplate(FB,3) has no light days either, keeps
+// all 4 template training days (A,B,A,B on Hét,Sze,Pén,Szo); defaultWeekdays caps at 3, takes
+// the first 3 (A,B,A), drops Szo (2nd B) — converted to Rest. Result: A x2 (Hét,Pén), B x1 (Sze).
+// Quad only ever lives in Full · A (Barbell Squat) — 2 occurrences, but still 1 distinct weekly
+// name (variety). Glute only ever lives in Full · B (Hip Thrust) — now a single B day, so every
+// weekly glute set lands on Sze (frequency) AND the lone slot (workingSets 4) < GROUP_MEV.glute
+// 6 (MEV — the 2nd B day that would have doubled it was dropped by the day-count cap).
+wdAllowStructural('frequency', 'glute', 'Full body', [3], ALL_GOAL_IDS)
+wdAllowStructural('variety', 'quad', 'Full body', [3], ALL_GOAL_IDS)
+wdAllowMev('glute', 'Full body', [3], ALL_GOAL_IDS)
+// Full body @ 4d, weekdays=[Hét,Sze,Pén,Szo]: defaultWeekdays picks all 4 training days in
+// order — identical to the no-weekdays template path at this day count. Full body @ 5d,
+// weekdays=[Hét,Kedd,Sze,Pén,Szo]: the 4 training days plus 1 padded rest day (Kedd) cause the
+// weekday branch to CYCLE the 4-entry sequence across 5 slots (A,B,A,B,A→A x3, B x2) — quad
+// (A-only) and glute (B-only) both clear their frequency floor now (3x/2x spread across
+// distinct days) but keep reading a single distinct name each week (variety) — same
+// split-inherent single-list trade-off as the no-weekdays FB[3,4,5] entry above.
+wdAllowStructural('variety', 'quad', 'Full body', [4, 5], ALL_GOAL_IDS)
+wdAllowStructural('variety', 'glute', 'Full body', [4, 5], ALL_GOAL_IDS)
+
+// Upper / Lower / Sport @ 4d, weekdays=[Hét,Sze,Pén,Vas]: trimmedTemplate(ULS,4) keeps its only
+// 3 training days (Upper,Lower,Upper on Hét,Sze,Pén — trainingCount 3 <= days, untouched);
+// defaultWeekdays pads with the first rest day (Vas) to reach 4. The weekday branch cycles the
+// 3-entry sequence across the 4 picked days: Hét→Upper, Sze→Lower, Pén→Upper, Vas→sequence[0]
+// AGAIN → Upper (a literal duplicate of Hét's day). Result: Upper x3 (Hét,Pén,Vas), Lower x1
+// (Sze) — quad/ham/glute (Lower-only) read every set on one day (frequency); triceps (single
+// Tricep Pushdown, Upper-only) keeps its one distinct weekly name across all 3 duplicated
+// occurrences (variety) — the same single-name repeat as the no-weekdays ULS entry above, now
+// unconditional on every goal (not just strength) because 3x/week clears the variety gate
+// regardless of scheme.
+for (const group of ['quad', 'ham', 'glute']) wdAllowStructural('frequency', group, 'Upper / Lower / Sport', [4], ALL_GOAL_IDS)
+wdAllowStructural('variety', 'triceps', 'Upper / Lower / Sport', [4, 5], ALL_GOAL_IDS)
+// erohipertrofia @ ULS 4d and 5d only: 'back' (Chest Supported Row + Lat Pulldown, 2 slots per
+// Upper day) trained on 3 Upper days at the RIR-0 failure scheme lands its budget at
+// sets=11/FAILURE_WEEKLY_CAP(12)=0.9167 — over the FIT_CEILING(0.85) soft ceiling but under the
+// hard 1.0 cap (mev=10 is already met, so this is a near-ceiling waiver, not an MEV shortfall).
+// The programFit.ts session-length-guard fix (this same change) is what makes back reach exactly
+// this budget: it now pads Chest Supported Row on the cycled-duplicate day toward the 45-min
+// floor instead of stopping dead at the soft ceiling — a hard rule (session-length) legitimately
+// outranks the soft ceiling here.
+wdAllowNear('back', 'Upper / Lower / Sport', [4, 5], ['erohipertrofia'])
+
+// Láb+Plyo / Felső @ 4d (its only option), weekdays=[Hét,Kedd,Csü,Pén]: this split has no light
+// days and trainingCount already equals days=4, so trimmedTemplate is a no-op and defaultWeekdays
+// picks all 4 training days in template order — the weekdays branch places them 1:1, IDENTICAL
+// to the no-weekdays template path. Same mechanism as the no-weekdays Láb+Plyo/Felső entries
+// above (glute sourced only from Láb+Plyo B; biceps' 2 isolation slots x cap 3 = 6 < MEV 8),
+// re-derived here for the weekdays path's own allowlist.
+wdAllowStructural('frequency', 'glute', 'Láb+Plyo / Felső', [4], ALL_GOAL_IDS)
+wdAllowMev('biceps', 'Láb+Plyo / Felső', [4], ALL_GOAL_IDS)
+
+// calf: PPL 4/5-day weekdays path keeps the same 1-slot-only 'Legs' day as the no-weekdays path
+// (see the no-weekdays calf entry above) — 1 isolation slot (Standing Calf Raise) x cap 3 = 3 <
+// GROUP_MEV.calf 4, on both day counts.
+wdAllowMev('calf', 'Pull / Push / Legs', [4, 5], ALL_GOAL_IDS)
+
 describe('generator invariants (mezo-oyhy.6)', () => {
   for (const goal of GOAL_PRESETS) {
     for (const split of SPLITS) {
@@ -310,31 +495,15 @@ describe('generator invariants (mezo-oyhy.6)', () => {
         }
         test(`${label}: fitter-hard-clean, structural findings allowlisted, MEV/ceiling honoured`, () => {
           const prog = generateProgram({ goal, split, days: d })
-          for (const f of structureLint(prog) as StructureFinding[]) {
-            if (HARD_CLEAN_RULES.has(f.rule)) {
-              throw new Error(`fitter-addressable finding [${f.rule}] on ${label}: ${f.label}`)
-            }
-            if (!STRUCTURAL_RULES.has(f.rule)) {
-              throw new Error(`unexpected structureLint rule '${f.rule}' on ${label}: ${f.label}`)
-            }
-            const groupLabel = f.label.split(':')[0]
-            const group = GROUP_LABEL_TO_KEY[groupLabel] ?? null
-            const key = [goal.id, split.label, d, f.rule, group].filter((v) => v !== null).join('|')
-            expect(STRUCTURAL_ALLOWED.has(key), `unallowlisted structural finding ${key}: ${f.label}`).toBe(true)
-          }
-          for (const row of muscleBudgets(prog)) {
-            expect(row.budget).toBeLessThanOrEqual(1)
-            const mev = GROUP_MEV[row.group]
-            if (mev !== undefined) {
-              if (row.workingSets < mev) {
-                const mevKey = `${goal.id}|${split.label}|${d}|${row.group}`
-                expect(MEV_ALLOWED.has(mevKey), `unallowlisted MEV shortfall ${mevKey}: ${row.workingSets} < ${mev}`).toBe(true)
-              }
-              if (!NEAR_ALLOWED.has(`${goal.id}|${split.label}|${d}|${row.group}`)) {
-                expect(row.budget).toBeLessThan(FIT_CEILING)
-              }
-            }
-          }
+          assertInvariants(prog, goal.id, split.label, d, label, STRUCTURAL_ALLOWED, structuralConsumed, MEV_ALLOWED, mevConsumed, NEAR_ALLOWED, nearConsumed)
+        })
+        test(`${label} · weekdays: fitter-hard-clean, structural findings allowlisted, MEV/ceiling honoured`, () => {
+          const weekdays = defaultWeekdays({ split, days: d })
+          const prog = generateProgram({ goal, split, days: d, weekdays })
+          assertInvariants(
+            prog, goal.id, split.label, d, `${label} · weekdays`,
+            WD_STRUCTURAL_ALLOWED, wdStructuralConsumed, WD_MEV_ALLOWED, wdMevConsumed, WD_NEAR_ALLOWED, wdNearConsumed,
+          )
         })
       }
     }
@@ -345,5 +514,17 @@ describe('generator invariants (mezo-oyhy.6)', () => {
     const prog = generateProgram({ goal, split: 'Pull / Push / Legs', days: 5, niggle: 'shoulder' })
     const warned = prog.flatMap((pd) => pd.exercises).filter((e) => e.warning)
     expect(warned.length).toBeGreaterThan(0)
+  })
+
+  // Finding 2 (mezo-oyhy.6 fix wave): a self-enforcing allowlist — every entry above must be
+  // consumed by at least one combo in the two sweeps, or it's stale (the fitter/template moved
+  // on and the entry no longer describes anything real) and must be deleted, not left to rot.
+  afterAll(() => {
+    for (const key of STRUCTURAL_ALLOWED) expect(structuralConsumed.has(key), `stale STRUCTURAL_ALLOWED entry (never fired): ${key}`).toBe(true)
+    for (const key of MEV_ALLOWED) expect(mevConsumed.has(key), `stale MEV_ALLOWED entry (never fired): ${key}`).toBe(true)
+    for (const key of NEAR_ALLOWED) expect(nearConsumed.has(key), `stale NEAR_ALLOWED entry (never fired): ${key}`).toBe(true)
+    for (const key of WD_STRUCTURAL_ALLOWED) expect(wdStructuralConsumed.has(key), `stale WD_STRUCTURAL_ALLOWED entry (never fired): ${key}`).toBe(true)
+    for (const key of WD_MEV_ALLOWED) expect(wdMevConsumed.has(key), `stale WD_MEV_ALLOWED entry (never fired): ${key}`).toBe(true)
+    for (const key of WD_NEAR_ALLOWED) expect(wdNearConsumed.has(key), `stale WD_NEAR_ALLOWED entry (never fired): ${key}`).toBe(true)
   })
 })
