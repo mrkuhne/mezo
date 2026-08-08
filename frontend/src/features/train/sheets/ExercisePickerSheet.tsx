@@ -21,6 +21,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { VideoDemo } from '@/features/train/components/VideoDemo'
+import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 
 interface ExercisePickerSheetProps {
   onClose: () => void
@@ -157,8 +158,16 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                     textAlign: 'left',
                     width: '100%',
                     borderColor: flashId === e.id ? 'var(--line)' : undefined,
+                    gap: 12,
                   }}
                 >
+                  <ExerciseImage
+                    start={e.imageStartUrl}
+                    end={e.imageEndUrl}
+                    name={e.name}
+                    muscle={e.muscle}
+                    variant="thumb"
+                  />
                   <div className="col flex-1">
                     <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
                     <div className="row gap-sm mt-xs">
@@ -170,7 +179,7 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                       </span>
                     </div>
                   </div>
-                  <div className="col" style={{ alignItems: 'flex-end', marginRight: 12 }}>
+                  <div className="col" style={{ alignItems: 'flex-end' }}>
                     <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>
                       STIM
                     </span>

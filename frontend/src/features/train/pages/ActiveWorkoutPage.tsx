@@ -30,6 +30,7 @@ import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
+import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
@@ -298,6 +299,9 @@ function ActiveWorkoutSession({
   // tappable again, same as a bound `id` would. The global mutation-error toast already
   // tells the user the save failed; this just keeps the row from being a dead end.
   const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
+  // Tap-to-reveal demo still (mezo-8xdl.4) — mirrors the video's hidden-until-asked
+  // stance, so it never steals the logging surface mid-set.
+  const [imageOpen, setImageOpen] = useState(false)
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -384,6 +388,8 @@ function ActiveWorkoutSession({
   useEffect(() => {
     setEditingSetIdx(null)
   }, [current.id])
+  // The demo still must not stay open across an advance to the next exercise.
+  useEffect(() => { setImageOpen(false) }, [current.id])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -1257,8 +1263,34 @@ function ActiveWorkoutSession({
             </div>
           )}
 
-          {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
-              YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
+          {/* Inline demo media (catalog-resolved). The video wrapper renders only when a real
+              YouTube id is extractable; the still is tap-to-reveal so it never steals the
+              logging surface mid-set (mezo-8xdl.4). The image chip and Demo chip stay stacked
+              (not side by side) — merging them onto one row would mean restructuring
+              VideoDemo's chip+player unit, which mezo-setx.6.14/.6.17 own. */}
+          {current.imageStartUrl && (
+            <div className="mt-sm">
+              <button
+                type="button"
+                className="chip"
+                style={{ fontSize: 9, alignSelf: 'flex-start' }}
+                aria-expanded={imageOpen}
+                onClick={() => setImageOpen((v) => !v)}
+              >
+                <span aria-hidden="true">⛶</span> Kép
+              </button>
+              {imageOpen && (
+                <div className="mt-sm">
+                  <ExerciseImage
+                    start={current.imageStartUrl}
+                    end={current.imageEndUrl}
+                    name={current.name}
+                    muscle={current.muscle}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {current.videoUrl && youTubeId(current.videoUrl) && (
             <div className="mt-sm">
               <VideoDemo url={current.videoUrl} />

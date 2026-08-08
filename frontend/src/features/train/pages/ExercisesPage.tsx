@@ -34,6 +34,7 @@ import { ExerciseRecordSheet } from '@/features/train/sheets/ExerciseRecordSheet
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
 import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
 import ExercisesSkeleton from '@/features/train/pages/ExercisesSkeleton'
+import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
 // Σ volume, whole kg from the API → "4.2 t" above a tonne, "860 kg" below.
@@ -98,10 +99,19 @@ function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
       <div className="excat-rail" style={{ background: mc.rail }} aria-hidden="true" />
       <button className="excat-open" onClick={onOpen}>
         <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-          {rank != null && (
-            <span className="excat-rank" style={{ background: mc.wash, color: mc.deep }}>{rank}</span>
-          )}
-          <span className="excat-name">{r.name}</span>
+          <ExerciseImage
+            start={lib?.imageStartUrl}
+            end={lib?.imageEndUrl}
+            name={r.name}
+            muscle={r.muscle}
+            variant="thumb"
+          />
+          <span className="excat-name" style={{ flex: 1, minWidth: 0 }}>
+            {rank != null && (
+              <span className="label-mono" style={{ color: 'var(--text-tertiary)', marginRight: 6 }}>#{rank}</span>
+            )}
+            {r.name}
+          </span>
         </div>
         <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
           <Tag bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</Tag>
@@ -168,8 +178,15 @@ function GhostRow({ item, onVideo, onEdit }: {
       <div className="excat-rail" style={{ background: mc.rail }} aria-hidden="true" />
       {/* No record yet ⇒ nothing to open: the body is a plain div, not a dead button. */}
       <div className="excat-open">
-        <div className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
-          <span className="excat-name" style={{ flex: 1 }}>{item.name}</span>
+        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          <ExerciseImage
+            start={item.imageStartUrl}
+            end={item.imageEndUrl}
+            name={item.name}
+            muscle={item.muscle}
+            variant="thumb"
+          />
+          <span className="excat-name" style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
           <div style={{ textAlign: 'right' }}>
             <div className="eyebrow" style={{ color: mc.deep }}>Stim</div>
             <div className="excat-stim" aria-hidden="true">

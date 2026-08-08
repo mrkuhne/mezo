@@ -77,8 +77,20 @@ test('thumb without an image falls back to a muscle tile so list rows keep a str
 })
 
 test('thumb with an image uses the start frame only, lazily', () => {
-  render(<ExerciseImage start={A} end={B} name="Barbell Squat" muscle="quad" variant="thumb" />)
-  const img = screen.getByAltText('Barbell Squat')
+  const { container } = render(<ExerciseImage start={A} end={B} name="Barbell Squat" muscle="quad" variant="thumb" />)
+  const img = container.querySelector('img.exdemo-thumb')!
   expect(img).toHaveAttribute('src', A)
   expect(img).toHaveAttribute('loading', 'lazy')
+})
+
+test('thumb image is decorative (next to a visible label) — empty alt, not exposed by name', () => {
+  const { container } = render(<ExerciseImage start={A} end={null} name="Barbell Squat" muscle="quad" variant="thumb" />)
+  const img = container.querySelector('img.exdemo-thumb')!
+  expect(img).toHaveAttribute('alt', '')
+  expect(screen.queryByAltText('Barbell Squat')).not.toBeInTheDocument()
+})
+
+test('hero image is not decorative — retains the alt text', () => {
+  render(<ExerciseImage start={A} end={null} name="Barbell Squat" muscle="quad" />)
+  expect(screen.getByAltText('Barbell Squat')).toBeInTheDocument()
 })

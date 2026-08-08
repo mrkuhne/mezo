@@ -367,6 +367,8 @@ export const workout: WorkoutPlan = {
       id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
       warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, anchorWeightKg: null,
       sets: 5,
+      imageStartUrl: '/exercises/lat-pulldown-pronated-a.jpg',
+      imageEndUrl: '/exercises/lat-pulldown-pronated-b.jpg',
       rationale: 'Múlt hét 11 × 72 kg → +2.5 kg',
       prescribedSets: [
         { kind: 'warmup', targetWeightKg: 37.5, targetReps: 8, targetRIR: null },
@@ -396,6 +398,8 @@ export const workout: WorkoutPlan = {
       id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
       warmupSets: 1, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, anchorWeightKg: null,
       sets: 4,
+      imageStartUrl: '/exercises/hammer-curl-a.jpg',
+      imageEndUrl: '/exercises/hammer-curl-b.jpg',
       rationale: 'Múlt hét 11 × 18 kg → cél 12 ism.',
       prescribedSets: [
         { kind: 'warmup', targetWeightKg: 12.5, targetReps: 4, targetRIR: null },
@@ -608,9 +612,9 @@ export const sport: Sport = {
 // --- exercise library (data.js:538-560) — all 21 items verbatim ---
 export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false },
-  { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound', stim: 0.84, fatigue: 0.4 },
+  { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound', stim: 0.84, fatigue: 0.4, imageStartUrl: '/exercises/lat-pulldown-pronated-a.jpg', imageEndUrl: '/exercises/lat-pulldown-pronated-b.jpg' },
   { id: 'exl-3', name: 'Lat Pulldown · Neutral', muscle: 'back-wide', type: 'compound', stim: 0.82, fatigue: 0.4 },
-  { id: 'exl-4', name: 'T-Bar Row', muscle: 'back-mid', type: 'compound', stim: 0.88, fatigue: 0.65 },
+  { id: 'exl-4', name: 'T-Bar Row', muscle: 'back-mid', type: 'compound', stim: 0.88, fatigue: 0.65, imageStartUrl: '/exercises/t-bar-row-a.jpg', imageEndUrl: '/exercises/t-bar-row-b.jpg' },
   { id: 'exl-5', name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation', stim: 0.72, fatigue: 0.25 },
   { id: 'exl-6', name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation', stim: 0.68, fatigue: 0.2 },
   { id: 'exl-7', name: 'Incline DB Curl', muscle: 'biceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },

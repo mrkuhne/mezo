@@ -12,9 +12,11 @@
 // lists with a straight left edge instead of ragged holes.
 //
 // The photos are tonally foreign to the DS — a man in a red-walled commercial
-// gym. Reconciling them lives HERE, once, not at each call site.
+// gym. Reconciling them lives HERE, once, not at each call site. The `thumb`
+// variant's image is always decorative (next to a visible label) — alt="" so
+// it does not double-announce the exercise name in the accessible name.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 
 /** How long each frame is held before crossfading to the other one. */
@@ -23,11 +25,15 @@ const FRAME_MS = 1200
 interface ExerciseImageProps {
   start: string | null | undefined
   end?: string | null
-  /** Exercise name — the alt text; never decorative-empty. */
+  /** Exercise name. `hero` uses it as the alt text (never decorative-empty); `thumb` is
+   * always decorative (alt="") since it sits next to a visible label, and `name` is used
+   * only for the no-image fallback tile's initial. */
   name: string
   /** Catalog muscle token, for the rail tint + the no-image fallback tile. */
   muscle?: string
   variant?: 'hero' | 'thumb'
+  /** Caller-side placement (e.g. alignSelf). Component identity styles (muscle colours) always win. */
+  style?: CSSProperties
 }
 
 /** true when the user asked for reduced motion (SSR/jsdom-safe). */
@@ -44,7 +50,7 @@ function usePrefersReducedMotion(): boolean {
   return reduced
 }
 
-export function ExerciseImage({ start, end, name, muscle, variant = 'hero' }: ExerciseImageProps) {
+export function ExerciseImage({ start, end, name, muscle, variant = 'hero', style }: ExerciseImageProps) {
   const colors = muscleColor(muscle ?? '')
   const reduced = usePrefersReducedMotion()
   // The alternation is INFORMATION, so reduced motion must not simply drop it —
@@ -68,7 +74,7 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero' }: Ex
         <div
           aria-hidden="true"
           className="exdemo-thumb"
-          style={{ background: colors.wash, color: colors.deep }}
+          style={{ ...style, background: colors.wash, color: colors.deep }}
         >
           {name.slice(0, 1).toUpperCase()}
         </div>
@@ -78,11 +84,12 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero' }: Ex
       <img
         className="exdemo-thumb"
         src={start}
-        alt={name}
+        alt=""
         width={44}
         height={44}
         loading="lazy"
         decoding="async"
+        style={style}
       />
     )
   }
@@ -90,7 +97,7 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero' }: Ex
   if (!start) return null
 
   return (
-    <figure className="exdemo" style={{ borderInlineStartColor: colors.rail }}>
+    <figure className="exdemo" style={{ ...style, borderInlineStartColor: colors.rail }}>
       {/* Both frames are stacked and cross-faded; the end frame is inert when absent. */}
       <img
         className="exdemo-frame"

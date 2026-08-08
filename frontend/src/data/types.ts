@@ -840,6 +840,9 @@ export interface LoggedWorkoutExercise {
   lastWeek: LastWeekSet | null // null on the first-ever workout (no previous completed instance)
   note?: string | null // durable per-exercise note (F4); absent in Phase-1 statics
   videoUrl?: string | null // demo video (catalog-resolved); absent in Phase-1 statics
+  // Demo stills (catalog-resolved, mezo-8xdl). imageStartUrl is the presence flag.
+  imageStartUrl?: string | null
+  imageEndUrl?: string | null
 }
 export interface ChallengeRef { kind: string; label: string }
 export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo' | 'overload'

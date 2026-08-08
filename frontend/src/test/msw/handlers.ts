@@ -605,6 +605,8 @@ export const handlers = [
             { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
           ],
           lastWeek: { weightKg: 102.5, reps: 9, rir: 2 },
+          imageStartUrl: '/exercises/lat-pulldown-pronated-a.jpg',
+          imageEndUrl: '/exercises/lat-pulldown-pronated-b.jpg',
         },
       ],
       openWorkout: null,

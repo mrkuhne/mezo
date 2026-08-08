@@ -908,6 +908,7 @@ type RealExercise = {
   anchorWeightKg?: number | null; rationale?: string | null
   prescribedSets?: PrescribedSetFixture[] | null
   lastWeek: { weightKg: number; reps: number; rir: number } | null
+  imageStartUrl?: string | null; imageEndUrl?: string | null
 }
 // Recipe-shaped /today exercise (warmupSets+workingSets = the old `sets`); prescribedSets
 // omitted → toWorkoutPlan sets it null → the panel falls back to the lastWeek prefill.
@@ -1761,4 +1762,30 @@ test('mock mode: the last remaining slot cannot be deleted', async () => {
   const sheet = within(screen.getByRole('dialog'))
   expect(sheet.getByRole('button', { name: 'Szett törlése' })).toBeDisabled()
   expect(sheet.getByText(/Az utolsó szett nem törölhető/)).toBeInTheDocument()
+})
+
+test('real mode: the active exercise hides its demo still behind a chip', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          imageStartUrl: '/exercises/chest-supported-t-bar-row-a.jpg',
+          imageEndUrl: '/exercises/chest-supported-t-bar-row-b.jpg',
+        },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  const chip = await screen.findByRole('button', { name: 'Kép' })
+  // Nothing is shown until asked for — mid-set the screen belongs to logging.
+  expect(document.querySelector('.exdemo')).toBeNull()
+  await user.click(chip)
+  expect(document.querySelector('.exdemo')).not.toBeNull()
 })
