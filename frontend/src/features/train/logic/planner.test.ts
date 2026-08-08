@@ -261,8 +261,14 @@ allowStructural('frequency', 'glute', 'Láb+Plyo / Felső', [4], ALL_GOAL_IDS)
 // each lives in only ONE of the two 5-exercise A/B lists, so each reads 1 distinct weekly name
 // once sets cross the variety gate. A differently-named 2nd quad/glute movement in the other
 // list would clear it, but Full · B was curated to the coordinator-specified 5 exercises
-// (chest/lats/glute/ham/rear-delt) and wasn't expanded further in this pass.
-for (const group of ['quad', 'glute']) allowStructural('variety', group, 'Full body', [3, 4, 5], ALL_GOAL_IDS)
+// (chest/lats/glute/ham/rear-delt) and wasn't expanded further in this pass. quad stays
+// variety-shaped at every day count (Full · A always runs >=2x/week here). glute is
+// variety-shaped only at 4/5d — at 3d (mezo-jpxl) the trimmedTemplate end-trim (planner.ts)
+// drops Full · B to a single weekly occurrence, so the SAME split-inherent gap surfaces as
+// 'frequency' (single day) instead of 'variety' (single name); see the frequency|glute FB[3]
+// entry below.
+allowStructural('variety', 'quad', 'Full body', [3, 4, 5], ALL_GOAL_IDS)
+allowStructural('variety', 'glute', 'Full body', [4, 5], ALL_GOAL_IDS)
 // Upper/Lower(/Sport): 'Upper' runs 2x/week with a single triceps exercise (Tricep Pushdown) —
 // chest/shoulder got a 2nd distinct name in this curation pass (Incline DB Press / Face Pull,
 // session size then at the 9-exercise band max), triceps did not (a 10th exercise would have
@@ -271,6 +277,28 @@ for (const group of ['quad', 'glute']) allowStructural('variety', group, 'Full b
 // compound volume, where 6 sets survive and the split-inherent single-name repeat surfaces.
 allowStructural('variety', 'triceps', 'Upper / Lower', [3, 4], ['strength'])
 allowStructural('variety', 'triceps', 'Upper / Lower / Sport', [4, 5], ['strength'])
+
+// mezo-jpxl: trimmedTemplate's new end-trim stage (planner.ts) now correctly caps
+// template-path training-day counts at `days` for splits without enough light days — for these
+// 3 combos the no-weekdays template path becomes BYTE-IDENTICAL to the weekdays path (verified
+// by direct comparison, not assumed), so every finding already documented in the WD_* allowlist
+// below for the SAME combo re-derives here unchanged; comments here summarize, see the WD_*
+// block for the full derivation of each trade-off.
+//
+// PPL @ 4d (toRemove=2: light Szo trimmed first, then the end-trim drops Pén, the 2nd Pull) —
+// now Push x2 (Hét,Csü), Pull x1 (Kedd), Legs x1 (Sze): back + biceps (Pull-only) join the
+// already-allowlisted quad/ham/glute (Legs-only) as single-day-frequency groups.
+for (const group of ['back', 'biceps']) allowStructural('frequency', group, 'Pull / Push / Legs', [4], ALL_GOAL_IDS)
+// Same Push x2 / Pull x1 skew pushes push:pull outside the ±1.6 silence band for the same 3
+// goals as the WD PPL[4] entry (measured): cut-prep 1.8, recovery 1.7, sport 1.9.
+allowStructural('push-pull', null, 'Pull / Push / Legs', [4], ['cut-prep', 'recovery', 'sport'])
+// Upper / Lower @ 3d (toRemove=1, no light day to trim first, so the end-trim drops Pén, the
+// 2nd Lower) — now Upper x2 (Hét,Csü), Lower x1 (Kedd): quad/ham/glute (Lower-only) read every
+// weekly set on the single Kedd session.
+for (const group of ['quad', 'ham', 'glute']) allowStructural('frequency', group, 'Upper / Lower', [3], ALL_GOAL_IDS)
+// Full body @ 3d (toRemove=1, no light day, end-trim drops Szo, the 2nd Full · B) — now
+// Full · A x2 (Hét,Pén), Full · B x1 (Sze): glute (Full · B-only) reads every weekly set on Sze.
+allowStructural('frequency', 'glute', 'Full body', [3], ALL_GOAL_IDS)
 
 // MEV shortfalls where every slot of the group is already saturated at its
 // SETS_PER_EXERCISE kind cap — arithmetic proves the floor is unreachable given the
@@ -287,6 +315,14 @@ allowMev('calf', 'Pull / Push / Legs', [4, 5], ALL_GOAL_IDS)
 // Curl on Felső A, Incline Curl on Felső B) x cap 3 = 6 < GROUP_MEV.biceps 8 — already 2
 // distinct names (variety is fine), just short on volume; a 3rd slot wasn't added in this pass.
 allowMev('biceps', 'Láb+Plyo / Felső', [4], ALL_GOAL_IDS)
+// mezo-jpxl: PPL @ 4d's new Pull x1/week (see frequency entry above) halves biceps' weekly
+// slots from 4 to 2 (Hammer Curl + Incline Curl) x cap 3 = 6 < GROUP_MEV.biceps 8 — same
+// arithmetic as the WD PPL[4] biceps entry, now also true on the template path.
+allowMev('biceps', 'Pull / Push / Legs', [4], ALL_GOAL_IDS)
+// mezo-jpxl: Full body @ 3d's new Full · B x1/week (see frequency entry above) halves glute's
+// only slot (Hip Thrust, 4 sets) — 4 < GROUP_MEV.glute 6 — same arithmetic as the WD FB[3]
+// glute entry, now also true on the template path.
+allowMev('glute', 'Full body', [3], ALL_GOAL_IDS)
 
 // Combos whose template floor structure cannot reach the soft ceiling — each entry must carry
 // a derivation comment. Key: `${goalId}|${splitLabel}|${days}|${group}`. Empty after this

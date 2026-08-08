@@ -337,7 +337,12 @@ const BASE_TYPES = ['Pull', 'Push', 'Legs', 'Upper', 'Lower', 'Full', 'Láb+Plyo
 
 const isTrainingType = (t: string) => t !== 'Rest' && t !== 'Volleyball'
 
-/** Split label → 7-day template with the training days trimmed to `days` (light days first). */
+/** Split label → 7-day template with the training days trimmed to `days`, two-stage: (1) every
+ *  light-labelled training day is converted to Rest first (lowest-volume slot goes first); (2)
+ *  if still over `days` — splits with no light day, or trimmed below their light-day count —
+ *  the remaining surplus training days are converted to Rest from the END of the week backwards,
+ *  so the earliest-week (and earliest A/B-paired) training days survive. Never pads upward when
+ *  the template has fewer training days than `days` (defaultWeekdays owns that). */
 function trimmedTemplate(split: SplitOption | string | null, days: number): DayTemplate[] {
   const splitLabel = typeof split === 'string' ? split : (split?.label ?? '')
   // "Custom split" → "Custom" template key.
@@ -347,13 +352,27 @@ function trimmedTemplate(split: SplitOption | string | null, days: number): DayT
   const trainingCount = template.filter((d) => isTrainingType(d.type)).length
   if (trainingCount <= days) return template
   let toRemove = trainingCount - days
-  return template.map((d) => {
+
+  // Stage 1: light-labelled training days first (existing behavior).
+  const afterLight = template.map((d) => {
     if (toRemove > 0 && isTrainingType(d.type) && d.type.includes('light')) {
       toRemove--
       return { day: d.day, type: 'Rest', muscle: '', note: 'Pihenőnap' }
     }
     return d
   })
+  if (toRemove <= 0) return afterLight
+
+  // Stage 2: still over `days` — trim remaining surplus training days from the end of the week
+  // backwards.
+  const result = [...afterLight]
+  for (let i = result.length - 1; toRemove > 0 && i >= 0; i--) {
+    if (isTrainingType(result[i].type)) {
+      toRemove--
+      result[i] = { day: result[i].day, type: 'Rest', muscle: '', note: 'Pihenőnap' }
+    }
+  }
+  return result
 }
 
 /** Default gym-weekday selection for a split + day count: the template's training days,
