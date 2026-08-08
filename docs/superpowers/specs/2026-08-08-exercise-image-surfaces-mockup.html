@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="hu" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mezo-8xdl.4 — demo-képek elhelyezése (mockup)</title>
+<link rel="stylesheet" href="../../../frontend/src/styles/fonts.css">
+<link rel="stylesheet" href="../../../frontend/src/styles/prototype.css">
+<style>
+  body { background: var(--bg-app, #FBF6EF); color: var(--text-primary); font-family: var(--ff-body); margin: 0; padding: 24px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 28px; align-items: start; }
+  .panel { min-width: 0; }
+  .panel > h2 { font: 700 12px/1 var(--ff-body); letter-spacing: .22em; text-transform: uppercase; color: var(--primary-deep); margin: 0 0 4px; }
+  .panel > p { font: 400 14px/1.45 var(--ff-body); color: var(--text-secondary); margin: 0 0 12px; }
+  .mkphone { width: 380px; max-width: 100%; background: var(--surface-page, #FBF6EF); border: 1px solid var(--divider); border-radius: 24px; padding: 14px; }
+  h1.mk { font-family: var(--ff-display); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .lede { font: 400 16px/1.5 var(--ff-body); color: var(--text-secondary); max-width: 70ch; margin: 0 0 28px; }
+  .verdict { font: italic 500 14px/1.45 var(--ff-serif); color: var(--text-secondary); margin: 10px 2px 0; }
+  .themebtn { position: fixed; right: 18px; top: 18px; z-index: 9; }
+</style>
+</head>
+<body>
+<button class="chip themebtn" onclick="document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">🌗 Téma</button>
+
+<h1 class="mk">mezo-8xdl.4 — hol jelenjenek meg a demo-képek</h1>
+<p class="lede">Igazi tokenek, igazi osztályok, igazi vendorolt képek (a dev szerver szolgálja ki őket).
+A kérdés minden panelnél ugyanaz: <b>hova kerüljön a bélyegkép úgy, hogy ne lökje szét a meglévő ritmust</b> —
+és mit lásson az a sor, amelyiknek nincs képe (a 161-ből 37-nek nincs).</p>
+
+<div class="wrap">
+
+  <!-- ============ 1. KATALÓGUS KÁRTYA ============ -->
+  <div class="panel">
+    <h2>1 · Gyakorlatok — katalógus kártya</h2>
+    <p><b>A variáns:</b> a bélyegkép a rang-plakett helyére kerül, a rang a névsor elé költözik <code>#1</code>-ként.</p>
+    <div class="mkphone">
+      <div class="excat">
+        <div class="excat-rail" style="background: var(--sky)"></div>
+        <div class="excat-open" style="display:block">
+          <div class="row" style="align-items:center; gap:10px">
+            <img class="exdemo-thumb" src="../../../frontend/public/exercises/chin-up-a.jpg" alt="">
+            <span class="excat-name" style="flex:1; min-width:0">
+              <span class="label-mono" style="color:var(--text-tertiary); margin-right:6px">#1</span>Chin-Up
+            </span>
+          </div>
+          <div class="row" style="gap:6px; margin-top:10px; flex-wrap:wrap">
+            <span class="excat-tag" style="background:var(--wash-run); color:var(--tag-run)">Hát (széles)</span>
+            <span class="excat-tag" style="background:var(--surface-2); color:var(--text-secondary)">compound</span>
+            <span class="excat-tag" style="background:var(--surface-2); color:var(--text-secondary)">21 alkalom</span>
+          </div>
+          <div class="excat-stats">
+            <div><div class="eyebrow">Legjobb szett</div><div class="excat-statv">102.5×9</div></div>
+            <div><div class="eyebrow">e1RM</div><div class="excat-statv" style="color:var(--primary-deep)">133.3 kg</div></div>
+            <div><div class="eyebrow">Összvolumen</div><div class="excat-statv">182.5 t</div></div>
+          </div>
+        </div>
+        <div class="excat-acts">
+          <button class="excat-act" aria-label="Videó"><span style="background:var(--wash-run); color:var(--tag-run)">▶</span></button>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:18px"><b>B variáns:</b> a bélyegkép a rang-plakett <i>mellé</i> kerül — mindkét jel megmarad.</p>
+    <div class="mkphone">
+      <div class="excat">
+        <div class="excat-rail" style="background: var(--sky)"></div>
+        <div class="excat-open" style="display:block">
+          <div class="row" style="align-items:center; gap:10px">
+            <span class="excat-rank" style="background:var(--wash-run); color:var(--tag-run)">1</span>
+            <img class="exdemo-thumb" src="../../../frontend/public/exercises/chin-up-a.jpg" alt="">
+            <span class="excat-name" style="flex:1; min-width:0">Chin-Up</span>
+          </div>
+          <div class="row" style="gap:6px; margin-top:10px; flex-wrap:wrap">
+            <span class="excat-tag" style="background:var(--wash-run); color:var(--tag-run)">Hát (széles)</span>
+            <span class="excat-tag" style="background:var(--surface-2); color:var(--text-secondary)">compound</span>
+            <span class="excat-tag" style="background:var(--surface-2); color:var(--text-secondary)">21 alkalom</span>
+          </div>
+          <div class="excat-stats">
+            <div><div class="eyebrow">Legjobb szett</div><div class="excat-statv">102.5×9</div></div>
+            <div><div class="eyebrow">e1RM</div><div class="excat-statv" style="color:var(--primary-deep)">133.3 kg</div></div>
+            <div><div class="eyebrow">Összvolumen</div><div class="excat-statv">182.5 t</div></div>
+          </div>
+        </div>
+        <div class="excat-acts">
+          <button class="excat-act" aria-label="Videó"><span style="background:var(--wash-run); color:var(--tag-run)">▶</span></button>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:18px"><b>Kép nélküli sor</b> (a 37-ből) — izomszínű csempe a kezdőbetűvel, hogy a lista bal éle egyenes maradjon:</p>
+    <div class="mkphone">
+      <div class="excat">
+        <div class="excat-rail" style="background: var(--sage)"></div>
+        <div class="excat-open" style="display:block">
+          <div class="row" style="align-items:center; gap:10px">
+            <div class="exdemo-thumb" style="background:var(--wash-sage); color:var(--sage-deep)">K</div>
+            <span class="excat-name" style="flex:1; min-width:0">
+              <span class="label-mono" style="color:var(--text-tertiary); margin-right:6px">#7</span>Kettlebell Swing
+            </span>
+          </div>
+          <div class="row" style="gap:6px; margin-top:10px; flex-wrap:wrap">
+            <span class="excat-tag" style="background:var(--wash-sage); color:var(--sage-deep)">Far</span>
+            <span class="excat-tag" style="background:var(--surface-2); color:var(--text-secondary)">compound</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="verdict">Az A-t javaslom: a rang és a kép ugyanazt a bal sávot akarja, és a rang egy <code>#1</code>-ként a név előtt semmit nem veszít — a B-ben a név 44 px-szel beljebb kezdődik minden soron.</p>
+  </div>
+
+  <!-- ============ 2. PICKER ============ -->
+  <div class="panel">
+    <h2>2 · Gyakorlatválasztó (meso-építés)</h2>
+    <p><b>A variáns:</b> bélyegkép a sor elején, a STIM-mérő marad.</p>
+    <div class="mkphone">
+      <div class="col gap-sm">
+        <div class="card" style="display:flex; align-items:center; gap:12px; padding:10px 12px; min-height:56px">
+          <img class="exdemo-thumb" src="../../../frontend/public/exercises/romanian-deadlift-a.jpg" alt="">
+          <div class="col" style="flex:1; min-width:0">
+            <span style="font-size:16px; font-weight:600">Romanian Deadlift</span>
+            <span class="label-mono text-tertiary">Lábhajlító · compound</span>
+          </div>
+          <div class="col" style="align-items:flex-end">
+            <span class="eyebrow" style="color:var(--primary-deep)">Stim</span>
+            <div class="excat-stim"><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i></i></div>
+          </div>
+          <span style="color:var(--primary-base); font-size:20px">+</span>
+        </div>
+        <div class="card" style="display:flex; align-items:center; gap:12px; padding:10px 12px; min-height:56px">
+          <img class="exdemo-thumb" src="../../../frontend/public/exercises/hip-thrust-a.jpg" alt="">
+          <div class="col" style="flex:1; min-width:0">
+            <span style="font-size:16px; font-weight:600">Hip Thrust</span>
+            <span class="label-mono text-tertiary">Far · compound</span>
+          </div>
+          <div class="col" style="align-items:flex-end">
+            <span class="eyebrow" style="color:var(--primary-deep)">Stim</span>
+            <div class="excat-stim"><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i></i></div>
+          </div>
+          <span style="color:var(--primary-base); font-size:20px">+</span>
+        </div>
+        <div class="card" style="display:flex; align-items:center; gap:12px; padding:10px 12px; min-height:56px">
+          <div class="exdemo-thumb" style="background:var(--wash-sage); color:var(--sage-deep)">K</div>
+          <div class="col" style="flex:1; min-width:0">
+            <span style="font-size:16px; font-weight:600">Kettlebell Swing</span>
+            <span class="label-mono text-tertiary">Far · compound</span>
+          </div>
+          <div class="col" style="align-items:flex-end">
+            <span class="eyebrow" style="color:var(--primary-deep)">Stim</span>
+            <div class="excat-stim"><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i style="background:var(--primary-base)"></i><i></i><i></i></div>
+          </div>
+          <span style="color:var(--primary-base); font-size:20px">+</span>
+        </div>
+      </div>
+    </div>
+    <p class="verdict">Itt éri a legtöbbet a kép: építés közben 20+ soron scrollozol, és a névnél gyorsabban ismered fel a mozgást. A STIM-mérő elfér mellette.</p>
+  </div>
+
+  <!-- ============ 3. PREP KÁRTYA ============ -->
+  <div class="panel">
+    <h2>3 · Edzés előtti briefing (prep)</h2>
+    <p>Bélyegkép a név elé — ugyanaz a 44 px-es tempó, mint a katalógusban.</p>
+    <div class="mkphone">
+      <div class="card" style="display:flex; overflow:hidden">
+        <div style="width:4px; background:var(--sky); flex:none"></div>
+        <div style="flex:1; padding:13px 14px 12px">
+          <div class="row" style="align-items:center; gap:10px">
+            <img class="exdemo-thumb" src="../../../frontend/public/exercises/lat-pulldown-pronated-a.jpg" alt="">
+            <div class="col" style="flex:1; min-width:0; gap:4px">
+              <span style="font-family:var(--ff-display); font-size:16px; font-weight:600">Lat Pulldown · Pronated</span>
+              <span class="excat-tag" style="background:var(--wash-run); color:var(--tag-run); align-self:flex-start">Hát (széles)</span>
+            </div>
+            <div style="text-align:right; flex:none">
+              <div style="font-family:var(--ff-display); font-size:15px; font-weight:800; color:var(--amber)">🏆 92 kg</div>
+              <div class="label-mono" style="color:var(--amber)">1RM</div>
+            </div>
+          </div>
+          <div class="row" style="gap:6px; margin-top:10px; flex-wrap:wrap">
+            <span class="metapill">2 bemelegítő</span>
+            <span class="metapill">3 × 8–12</span>
+            <span class="metapill">RIR 1</span>
+            <span class="metapill">62,5 kg-ról</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="verdict">A prep az egyetlen hely, ahol edzés ELŐTT, nyugodtan végignézed a napot — itt a kép emlékeztető, nem zaj.</p>
+  </div>
+
+  <!-- ============ 4. EDZÉS KÖZBEN ============ -->
+  <div class="panel">
+    <h2>4 · Edzés közben (aktív szett)</h2>
+    <p>Itt <b>nincs</b> alapból kép. A meglévő <code>▶ Demo</code> chip mellé kerül egy <code>⛶ Kép</code> chip; koppintásra nyílik, ugyanúgy, ahogy a videó.</p>
+    <div class="mkphone">
+      <div class="card" style="padding:16px">
+        <div class="row" style="align-items:center; gap:10px; margin-bottom:10px">
+          <span style="font-family:var(--ff-display); font-size:18px; font-weight:600; flex:1">Barbell Squat</span>
+          <span class="excat-tag" style="background:var(--wash-sage); color:var(--sage-deep)">Comb</span>
+        </div>
+        <div class="row gap-sm" style="margin-bottom:12px">
+          <button class="chip">▶ Demo</button>
+          <button class="chip brand">⛶ Kép</button>
+        </div>
+        <figure class="exdemo" style="border-inline-start-color:var(--sage)">
+          <img class="exdemo-frame" src="../../../frontend/public/exercises/barbell-squat-a.jpg" alt="" style="opacity:1">
+        </figure>
+        <div class="row gap-sm" style="margin-top:12px">
+          <span class="metapill">3. szett / 4</span>
+          <span class="metapill">102,5 kg × 8</span>
+          <span class="metapill">RIR 2</span>
+        </div>
+      </div>
+    </div>
+    <p class="verdict">Szett közben a képernyő a naplózásé. A kép egy koppintásra van, de nem lop helyet attól, aki tudja, mit csinál.</p>
+  </div>
+
+</div>
+</body>
+</html>
