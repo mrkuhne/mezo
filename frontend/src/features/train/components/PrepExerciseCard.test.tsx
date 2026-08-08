@@ -82,4 +82,24 @@ describe('PrepExerciseCard', () => {
     }} />)
     expect(screen.getByText('+1 rep')).toBeInTheDocument()
   })
+
+  test('the prep card leads with the exercise thumbnail when the catalog resolved one', () => {
+    const { container } = render(
+      <PrepExerciseCard
+        exercise={{ ...anchoredExercise, imageStartUrl: '/exercises/hip-thrust-a.jpg', imageEndUrl: '/exercises/hip-thrust-b.jpg' }}
+        oneRmKg={null}
+        accentChallenge={null}
+      />,
+    )
+    expect(container.querySelector('img.exdemo-thumb')).not.toBeNull()
+  })
+
+  test('the prep card falls back to the muscle tile when there is no image', () => {
+    const { container } = render(
+      <PrepExerciseCard exercise={anchoredExercise} oneRmKg={null} accentChallenge={null} />,
+    )
+    const tile = container.querySelector('.exdemo-thumb')
+    expect(tile).not.toBeNull()
+    expect(tile!.tagName).toBe('DIV')
+  })
 })

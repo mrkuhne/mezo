@@ -11,6 +11,7 @@ import type { LoggedWorkoutExercise } from '@/data/types'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { startWeightOf } from '@/features/train/logic/prepBriefing'
+import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 import { Icon } from '@/shared/ui/Icon'
 
 export function PrepExerciseCard({ exercise, oneRmKg, accentChallenge }: {
@@ -26,7 +27,14 @@ export function PrepExerciseCard({ exercise, oneRmKg, accentChallenge }: {
     <div className="card" style={{ display: 'flex', overflow: 'hidden' }}>
       <div style={{ width: 4, background: mc.rail, flexShrink: 0 }} aria-hidden="true" />
       <div style={{ flex: 1, padding: '13px 14px 12px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+          <ExerciseImage
+            start={e.imageStartUrl}
+            end={e.imageEndUrl}
+            name={e.name}
+            muscle={e.muscle}
+            variant="thumb"
+          />
           <div className="col" style={{ gap: 4, minWidth: 0, flex: 1 }}>
             <div className="row" style={{ alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
