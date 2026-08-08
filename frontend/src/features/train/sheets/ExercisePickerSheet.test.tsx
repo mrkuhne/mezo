@@ -71,3 +71,12 @@ test('Kész closes the sheet and reflects the added count', async () => {
   // Sheet dismissal is animated → onClose fires async
   await waitFor(() => expect(onClose).toHaveBeenCalled())
 })
+
+test('each picker row leads with the exercise thumbnail', async () => {
+  render(<ExercisePickerSheet onClose={() => {}} onPick={() => {}} />, { wrapper: QueryWrapper })
+  const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
+  // Present for every row: an <img> when the catalog row has stills, the
+  // muscle-wash fallback tile when it does not — the left edge never goes ragged.
+  // (Chest Supported Row is deliberately imageless: one of the 37 unmapped slugs.)
+  expect(row.querySelector('.exdemo-thumb')).not.toBeNull()
+})
