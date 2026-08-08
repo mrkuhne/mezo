@@ -2406,6 +2406,23 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
 }
 
+/* ═════════ Fuel WindowIsland — .isl-mealchip family (mezo-jgh9, window-river Task 4) ═════════
+   The window-island's plan-meal chip: name + kcal/P meta + an illik-score badge when the
+   meal-score/fit data exists. Terv nélküli ablakon (no real meal idea) the ghost variant
+   takes its place — dashed, muted, no fabricated numbers. */
+.isl-mealchip { display: flex; align-items: center; gap: 8px; background: var(--surface-recess);
+                border-radius: var(--r-lg); padding: 9px 11px; margin-top: 12px; text-align: left; }
+.isl-mealchip-em { font-size: 16px; }
+.isl-mealchip-tx { min-width: 0; }
+.isl-mealchip-t { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.isl-mealchip-m { font-size: 10.5px; color: var(--faint); margin-top: 1px; }
+.isl-mealchip-score { margin-left: auto; font-size: 10px; font-weight: 800; color: var(--success-hover);
+                       background: var(--success-bg); border-radius: var(--r-full); padding: 3px 8px;
+                       white-space: nowrap; }
+.isl-mealchip-ghost { display: flex; align-items: center; justify-content: center; gap: 6px;
+                       margin-top: 12px; padding: 11px; border: 1.5px dashed var(--line);
+                       border-radius: var(--r-lg); color: var(--faint); font-size: 12px; font-weight: 600; }
+
 /* ═════════ Fuel Keret-öv — .kbelt family (mezo-jgh9, window-river Task 3) ═════════
    Rides inside the shared Island shell (belt + tone="keret"): the collapsed row is
    richer than the generic capsule language (remaining kcal + 3 macro mini-bars), so
