@@ -12,7 +12,9 @@
 // lists with a straight left edge instead of ragged holes.
 //
 // The photos are tonally foreign to the DS — a man in a red-walled commercial
-// gym. Reconciling them lives HERE, once, not at each call site.
+// gym. Reconciling them lives HERE, once, not at each call site. The `thumb`
+// variant's image is always decorative (next to a visible label) — alt="" so
+// it does not double-announce the exercise name in the accessible name.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { muscleColor } from '@/features/train/logic/muscleColors'
@@ -78,7 +80,7 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero' }: Ex
       <img
         className="exdemo-thumb"
         src={start}
-        alt={name}
+        alt=""
         width={44}
         height={44}
         loading="lazy"
