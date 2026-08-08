@@ -26,7 +26,7 @@ test('default state ranks top exercises with best set and e1RM chip', async () =
   renderView()
   expect(await screen.findByText('Top gyakorlatok · rekordjaid')).toBeInTheDocument()
   const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  expect(within(row).getByText('1')).toBeInTheDocument()          // rank plaque (was '01')
+  expect(within(row).getByText('#1')).toBeInTheDocument()          // rank plaque (was '01')
   expect(within(row).getByText('102.5×9')).toBeInTheDocument()    // Legjobb szett cell
   expect(within(row).getByText('133.3 kg')).toBeInTheDocument()   // e1RM cell
   expect(within(row).getByText('182.5 t')).toBeInTheDocument()    // Összvolumen cell
@@ -261,4 +261,18 @@ describe('ExercisesPage (mock mode)', () => {
     expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Videó/ })).toBeNull()
   })
+})
+
+test('a record card leads with the catalog thumbnail and keeps the rank as a #n prefix', async () => {
+  renderView()
+  const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
+  // Chest Supported Row is one of the 37 unmapped slugs — the slot is still
+  // reserved, by the fallback TILE (a div), so the list's left edge stays straight.
+  const tile = row.querySelector('.exdemo-thumb')
+  expect(tile).not.toBeNull()
+  expect(tile!.tagName).toBe('DIV')
+  expect(within(row).getByText('#1')).toBeInTheDocument()
+  // Hip Thrust carries stills in the MSW catalog fixture (mezo-8xdl.3) → a real <img>.
+  const hip = await screen.findByRole('button', { name: /Hip Thrust/ })
+  expect(hip.querySelector('img.exdemo-thumb')).not.toBeNull()
 })
