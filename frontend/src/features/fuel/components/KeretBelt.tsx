@@ -31,14 +31,42 @@ export interface KeretBeltProps {
 // e.g. GrowthSummaryCard/medalLabels) — that groups from 5 digits up only (real HU typographic
 // convention: `1890`/`2400` render ungrouped), but the design mockup + brief spell out "1 160"/
 // "2 400" for exactly these 4-digit kcal values, so a manual grouper matches the spec verbatim.
+// Unicode minus (U+2212), not the ASCII hyphen — the ONE negative glyph used everywhere in this
+// file (fmt for a raw negative value, signed() for the explicitly-signed energy rows).
+const MINUS = '−'
 const fmt = (n: number) => {
   const neg = n < 0
   const grouped = Math.round(Math.abs(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-  return neg ? `-${grouped}` : grouped
+  return neg ? `${MINUS}${grouped}` : grouped
 }
-const signed = (n: number) => `${n < 0 ? '−' : '+'} ${fmt(Math.abs(n))}`
+const signed = (n: number) => `${n < 0 ? MINUS : '+'} ${fmt(Math.abs(n))}`
 const fmtL = (ml: number) => (ml / 1000).toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 const pct = (have: number, target: number) => (target > 0 ? Math.min(100, Math.max(0, Math.round((have / target) * 100))) : 0)
+
+// ── HU dative suffix (-hoz/-hez/-höz) — vowel harmony of the target number's LAST SPOKEN word,
+// not a digit shortcut: Hungarian numbers are read as a chain of words (e.g. 160 = "száz-hatvan",
+// 250 = "kétszáz-ötven", 75 = "hetven-öt") and harmony follows the LAST word's own vowels, which
+// can differ from a same-root word at another magnitude (öt → höz, but ötven → hez). So: the
+// lowest-magnitude nonzero digit group (units, else tens, else hundreds, else thousands) picks
+// the suffix off its own spoken word's harmony class.
+export type HuDative = 'hoz' | 'hez' | 'höz'
+const UNIT_DATIVE: Record<number, HuDative> = {
+  1: 'hez', 2: 'höz', 3: 'hoz', 4: 'hez', 5: 'höz', 6: 'hoz', 7: 'hez', 8: 'hoz', 9: 'hez',
+} // egy·kettő·három·négy·öt·hat·hét·nyolc·kilenc
+const TEN_DATIVE: Record<number, HuDative> = {
+  1: 'hez', 2: 'hoz', 3: 'hoz', 4: 'hez', 5: 'hez', 6: 'hoz', 7: 'hez', 8: 'hoz', 9: 'hez',
+} // tíz·húsz·harminc·negyven·ötven·hatvan·hetven·nyolcvan·kilencven
+export function huDative(n: number): HuDative {
+  const v = Math.round(Math.abs(n))
+  if (v === 0) return 'hoz' // nullához
+  const units = v % 10
+  if (units !== 0) return UNIT_DATIVE[units]
+  const tens = Math.floor(v / 10) % 10
+  if (tens !== 0) return TEN_DATIVE[tens]
+  const hundreds = Math.floor(v / 100) % 10
+  if (hundreds !== 0) return 'hoz' // száz
+  return 'hez' // ezer (an exact multiple of 1000)
+}
 
 type MacroKey = keyof Macro4 & ('p' | 'c' | 'f')
 const MACROS: { key: MacroKey; label: string; short: string; cssVar: string }[] = [
@@ -146,7 +174,7 @@ export function KeretBelt({ big, budget, consumed, water, activityLabel, onSelec
             <div key={m.key} className="kbelt-mf">
               <div className="kbelt-mf-head">
                 <span>{m.label} · {fmt(have)} g</span>
-                <span className="kbelt-mf-rem">még {fmt(remain)} g a {fmt(target)}-hoz</span>
+                <span className="kbelt-mf-rem">még {fmt(remain)} g a {fmt(target)}-{huDative(target)}</span>
               </div>
               <div className="kbelt-mf-bar">
                 <i style={{ width: `${pct(have, target)}%`, background: `var(${m.cssVar})` }} />

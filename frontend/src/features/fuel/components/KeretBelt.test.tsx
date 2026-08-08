@@ -6,7 +6,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { KeretBelt } from '@/features/fuel/components/KeretBelt'
+import { huDative, KeretBelt } from '@/features/fuel/components/KeretBelt'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 
 const budget: DayBudget = {
@@ -66,11 +66,20 @@ describe('KeretBelt — kibontott felépülés-nézet (big=true)', () => {
     expect(screen.getByText('2 400 kcal')).toBeInTheDocument()
   })
 
-  it('renders full macro rows with "még N g a C-hoz" copy', () => {
+  it('renders full macro rows with vowel-harmony-correct "még N g a C-hoz/-hez/-höz" copy', () => {
     render(<KeretBelt {...base} big />)
+    // p target 160 ("száz-hatvan" → hatvan → -hoz), c target 250 ("kétszáz-ötven" → ötven → -hez),
+    // f target 75 ("hetven-öt" → öt → -höz) — matches the design mockup's own examples verbatim.
     expect(screen.getByText('még 98 g a 160-hoz')).toBeInTheDocument()
-    expect(screen.getByText('még 120 g a 250-hoz')).toBeInTheDocument()
-    expect(screen.getByText('még 37 g a 75-hoz')).toBeInTheDocument()
+    expect(screen.getByText('még 120 g a 250-hez')).toBeInTheDocument()
+    expect(screen.getByText('még 37 g a 75-höz')).toBeInTheDocument()
+  })
+
+  it('remaining kcal uses the Unicode minus (not an ASCII hyphen) when over budget', () => {
+    const overBudget = { kcal: 2600, p: 62, c: 130, f: 38 } // consumed > budget.kcal(2400) → remaining -200
+    render(<KeretBelt {...base} big consumed={overBudget} />)
+    expect(screen.getAllByText(/−\s?200/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/-200/)).toBeNull() // no ASCII-hyphen sibling rendering
   })
 
   it('renders a water row with a +250 ml action wired to onAdd250', async () => {
@@ -91,5 +100,27 @@ describe('KeretBelt — kibontott felépülés-nézet (big=true)', () => {
     render(<KeretBelt {...base} big onAdHocLog={onAdHocLog} />)
     await userEvent.click(screen.getByRole('button', { name: /Log bármikor/ }))
     expect(onAdHocLog).toHaveBeenCalled()
+  })
+})
+
+describe('huDative — HU dative suffix (-hoz/-hez/-höz) by vowel harmony', () => {
+  // Harmony follows the number's LAST SPOKEN word (Hungarian numbers are read as a word chain),
+  // not a fixed digit→suffix table — hence exercising both bare units/tens AND combined numbers
+  // where a lower-magnitude nonzero digit overrides a higher one (46 → hat, not negyven; 160 →
+  // hatvan, not száz; 250 → ötven, not száz).
+  it.each([
+    [0, 'hoz'], // nullához
+    [5, 'höz'], // öt
+    [6, 'hoz'], // hat
+    [10, 'hez'], // tíz
+    [20, 'hoz'], // húsz
+    [46, 'hoz'], // negyvenhat → hat wins
+    [75, 'höz'], // hetvenöt → öt wins
+    [100, 'hoz'], // száz
+    [160, 'hoz'], // százhatvan → hatvan wins
+    [250, 'hez'], // kétszázötven → ötven wins
+    [1000, 'hez'], // ezer
+  ] as const)('huDative(%i) === %s', (n, expected) => {
+    expect(huDative(n)).toBe(expected)
   })
 })
