@@ -1,78 +1,106 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
+import { Fragment, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import type { FuelSlot, MealSlot } from '@/data/types'
 import {
-  useFuelDay, useFuelTimeline, useMealCoach, useMedication, useProtocol, useReplanScenarios, useTodayScenario,
-  useWaterActions,
+  useFuelDay, useFuelTimeline, useMedication, useProtocol, useReplanScenarios, useWaterActions,
 } from '@/data/hooks'
-import { daySpan, unwrapDayMinute } from '@/data/fuel/fuelConfig'
-import { buildDayZones, isMealSlot } from '@/features/fuel/logic/dayZones'
+import { toMin } from '@/data/fuel/fuelConfig'
 import { pickHeroWindow } from '@/features/fuel/logic/heroWindow'
-import { NowWindowCard } from '@/features/fuel/components/NowWindowCard'
-import { MissedStrip } from '@/features/fuel/components/MissedStrip'
-import { DayBudgetCard } from '@/features/fuel/components/DayBudgetCard'
-import { DayZoneCard } from '@/features/fuel/components/DayZoneCard'
-import { ZoneSlotRow } from '@/features/fuel/components/ZoneSlotRow'
+import { buildWindowRiver, type WindowRiverVM } from '@/features/fuel/logic/windowIslands'
+import { WindowIsland } from '@/features/fuel/components/WindowIsland'
+import { KeretBelt } from '@/features/fuel/components/KeretBelt'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Icon } from '@/shared/ui/Icon'
-import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
 import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
-import { EnergyBreakdownSheet, type EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { localDateString } from '@/shared/lib/dates'
 
-// Guided recomposition (spec 2026-07-28, mezo-rrtj): one-line header + Reta micro-strip → the
-// NowWindowCard hero (the day's single open decision) → MissedStrip → DayBudgetCard (remaining kcal,
-// "honnan a napi cél" chips, named macro rows incl. water) → napszak DayZoneCards → protocol footer.
-// Retired here: the "Mai cél" card + KcalGauge (they printed the SAME number twice), the static-seed
-// PacingCard prose and the static-seed weekly micronutrients, and the flat FuelTimeline/SlotCard
-// chain (its behaviour lives in ZoneSlotRow). Nothing that had a real source was dropped.
-// Phase class per cycle.week cell's OWN phaseKey (fix wave item 1) — never re-hardcoded, so this
-// can never disagree with the medication cycle FuelMedicationPage renders for the SAME day.
-const RETA_PHASE_CLS: Record<string, string> = { peak: 'pk', stable: 'stb', trough: 'tr' }
-
+// Ablak-folyam recomposition (spec 2026-08-08, mezo-jgh9): the Mai screen becomes a non-scrolling
+// sky of window-islands (one per meal slot, chronological) with the always-visible Keret-öv
+// sitting right after the NOW-island — Today's three-islands language (`shared/ui/Island`) applied
+// to Fuel's own unit, the eating window. `?w=` is the single source of truth for which island is
+// big (no param → river.defaultKey), mirroring TodayPage's `?dp=` rules exactly (replace: true,
+// delete on default, null/''/unknown all fall back).
+//
+// Retired here (mezo-jgh9 Task 5 — actual file deletion is Task 6's job): the `.pghead-np` header
+// row + the Reta D{n} link (Reta now leaks in as a FACT, via the now-island's subtitle —
+// `retaPeak`), `retamicro`, `NowWindowCard` (its `pickHeroWindow` projection survives, just feeds
+// `buildWindowRiver` now), `MissedStrip` (a missed window is just an island in the `missed` state),
+// `DayZoneCard`/`ZoneSlotRow` (zones retire — every meal slot is its own island), `DayBudgetCard`
+// (its content lives in the Keret-öv's kibontott view now). The meal-coach tagline/score-chip
+// surface (`useMealCoach`, `MealScoreSheet`, `getScoredMeal`) rode ONLY on the retired
+// `ZoneSlotRow` — `WindowIsland` has no equivalent slot, so it has no home here anymore (P8 scope
+// per spec §8: the window island's own day-score fact cell stays null until a per-window score
+// feed exists). Likewise `EnergyBreakdownSheet`'s drill-down chips: the Keret-öv's kibontott view
+// already prints the full breakdown inline, so there is no "honnan a cél" chip left to open it.
 export function FuelMaiPage() {
   const navigate = useNavigate()
+  const [params, setSearchParams] = useSearchParams()
   const { fuel } = useFuelDay()
-  const { plan, budget, blocks, weightKg, energyBreakdown, wake, bed, nowHHmm, getScoredMeal } = useFuelTimeline()
-  // Coach verdicts ride a SEPARATE request so the deterministic day never waits on an LLM
-  // roundtrip; `isPending` is what makes that expensive call visible (mezo-rrtj).
-  const { verdicts, isPending: coachPending } = useMealCoach(localDateString())
+  const { plan, budget, blocks, nowHHmm } = useFuelTimeline()
   const { protocol } = useProtocol()
-  const { retaDay } = useTodayScenario()
   const { cycle: medicationCycle } = useMedication()
   const { logWater } = useWaterActions()
   // Honest-empty in real mode (replan engine is P8) — no scenarios, no Replan CTA (mezo-t16y.4).
   const { scenarios: replanScenarios } = useReplanScenarios()
 
-  const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [replanOpen, setReplanOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
+  // L1 open/closed — belongs to whichever island is selected; a selection switch always closes it.
+  const [listOpen, setListOpen] = useState(false)
 
-  const zones = buildDayZones({ slots: plan.slots, wake, bed, blocks, weightKg })
-  const { hero, missed } = pickHeroWindow({
+  const heroResult = pickHeroWindow({
     slots: plan.slots, blocks, budget, consumed: { kcal: fuel.consumed.kcal, p: fuel.consumed.p }, nowHHmm,
   })
-  const windows = plan.slots.filter(isMealSlot)
-  const doneWindows = windows.filter(s => s.state === 'done')
-  // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
-  // activity/balance are 0, so the breakdown chips would be meaningless — hide them.
-  const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
-  const { wakeMin: dayWakeMin, span: dayspanMin, crossesMidnight } = daySpan(wake, bed)
-  const nowFrac = Math.min(1, Math.max(0, (unwrapDayMinute(nowHHmm, dayWakeMin, crossesMidnight) - dayWakeMin) / dayspanMin))
+  // Honest gym-only signal straight off today's REAL blocks (deriveBlocks, already composed by
+  // useFuelTimeline) — no second workoutTime hook, no invented source.
+  const workoutTime = blocks.find(b => b.kind === 'gym')?.time ?? null
+  // The cycle's OWN current-day phaseKey (never a page-local re-hardcoded phase model) — 'peak'
+  // is the one phase the design calls out as appetite-relevant (spec §3.2).
+  const retaPeak = medicationCycle.phaseKey === 'peak'
+  // Stack-dose badges inside a window need `matchMealsToStack`'s live day composition
+  // (useStackDay + today's/yesterday's logged meals) — out of this task's hook list; wiring it is
+  // future work, so every island's stack-dose group stays empty for now (never a fabricated dose).
+  const river: WindowRiverVM = buildWindowRiver({
+    plan, budget, hero: heroResult, stackVerdict: null, workoutTime, retaPeak, nowHHmm,
+  })
 
-  const getTagline = (slot: FuelSlot) => {
-    const meal = getScoredMeal(slot)
-    return meal ? (verdicts[meal.id]?.tagline ?? null) : null
+  // Same filter+sort `buildWindowRiver` uses internally (its own `islandKey` isn't exported —
+  // sight-unseen import contract, windowIslands.ts) so island key ↔ source FuelSlot stay in sync.
+  const mealSlots = plan.slots
+    .filter((s): s is FuelSlot & { slotKey: MealSlot } => s.slotKey != null)
+    .sort((a, z) => toMin(a.time) - toMin(z.time))
+  const slotByKey = new Map(mealSlots.map(s => [`${s.time}-${s.label}`, s]))
+
+  // "Pull A + lépések" | "lépések" — today's training blocks (already composed by
+  // useFuelTimeline) joined with the always-on steps tag.
+  const activityLabel = [...blocks.map(b => b.label), 'lépések'].join(' + ')
+
+  const validKeys = new Set<string>([...river.islands.map(i => i.key), 'keret'])
+  const raw = params.get('w')
+  const selected = raw != null && validKeys.has(raw) ? raw : river.defaultKey
+  const selectWindow = (key: string) => {
+    setListOpen(false)
+    const next = new URLSearchParams(params)
+    if (key === river.defaultKey) next.delete('w')
+    else next.set('w', key)
+    setSearchParams(next, { replace: true })
   }
+
+  const doneSummaryText = river.doneSummary.count > 0
+    ? [
+        `✓ ${river.doneSummary.count} ablak kész ma`,
+        `${river.doneSummary.kcal} kcal`,
+        river.doneSummary.avgScore != null ? `átlag ${river.doneSummary.avgScore} pont` : null,
+      ].filter(Boolean).join(' · ')
+    : null
 
   const openLog = (prefill: LogMealPrefill = null, slot?: MealSlot) => {
     setLogPrefill(prefill)
@@ -83,106 +111,49 @@ export function FuelMaiPage() {
     if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId })
     else openLog(null, slot.slotKey ?? 'snack')
   }
-  const handleLogOther = (slot: FuelSlot) => openLog(null, slot.slotKey ?? 'snack')
   const handleAiLog = (slot: FuelSlot) => {
     setAiSlot(slot.slotKey)
     setAiOpen(true)
   }
 
+  // The Keret-öv sits DOM-fixed right after the NOW-island (spec §2 sky diagram); with no now
+  // window (every window done) it lands after the last island instead.
+  const beltAfterKey = river.nowKey ?? river.islands.at(-1)?.key ?? null
+  const keretBelt = (
+    <KeretBelt
+      big={selected === 'keret'}
+      budget={budget}
+      consumed={fuel.consumed}
+      water={{ currentMl: fuel.consumed.water, targetMl: fuel.targets.water, onAdd250: () => logWater(250) }}
+      activityLabel={activityLabel}
+      onSelect={() => selectWindow('keret')}
+      onAdHocLog={() => openLog()}
+    />
+  )
+
   return (
     <>
-      {/* Header — one row; the Reta phase is the link to the medication page */}
-      <div className="pghead-np sage">
-        <div>
-          <button
-            type="button"
-            className="over"
-            aria-label="Reta ciklus megnyitása"
-            onClick={() => navigate('/fuel/gyogyszer')}
-            style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
-          >
-            Fuel · Reta D{retaDay} ›
-          </button>
-          <h1>A mai nap</h1>
-        </div>
-        <div className="row gap-xs" style={{ flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => { setAiSlot(undefined); setAiOpen(true) }}
-            className="pgact-np np-press"
-            aria-label="AI naplózás"
-            style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
-          >
-            <Icon name="sparkle" size={12} /> AI
-          </button>
-          <button
-            type="button"
-            onClick={() => openLog()}
-            className="pgact-np np-press"
-            aria-label="Logolás"
-            style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-          >
-            <Icon name="plus" size={12} /> Log
-          </button>
-        </div>
+      <div className="sky-islands">
+        {river.islands.map((vm) => (
+          <Fragment key={vm.key}>
+            <WindowIsland
+              vm={vm}
+              big={selected === vm.key}
+              nowRing={vm.key === river.nowKey}
+              open={selected === vm.key && listOpen}
+              doneSummary={vm.key === river.nowKey ? doneSummaryText : null}
+              onSelect={() => selectWindow(vm.key)}
+              onToggleOpen={() => setListOpen((o) => !o)}
+              onLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleLogMeal(slot) }}
+              onAiLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleAiLog(slot) }}
+              onSwap={() => navigate('/fuel/recipes')}
+              onStackDose={() => navigate('/fuel/stack')}
+            />
+            {vm.key === beltAfterKey && keretBelt}
+          </Fragment>
+        ))}
+        {beltAfterKey === null && keretBelt}
       </div>
-
-      {/* Honest empty: no cycle yet (real-mode ghost — no medication/doses) renders no strip at all,
-          rather than a fabricated or empty one. */}
-      {medicationCycle.week.length > 0 && (
-        <div className="retamicro" role="img" aria-label={`Reta ciklus — ${retaDay}. nap`}>
-          {medicationCycle.week.map((cell) => (
-            <i
-              key={cell.day}
-              className={`${RETA_PHASE_CLS[cell.phaseKey] ?? ''}${cell.current ? ' cur' : ''}`}
-            />
-          ))}
-        </div>
-      )}
-
-      <NowWindowCard
-        hero={hero}
-        onLogMeal={handleLogMeal}
-        onAiLog={handleAiLog}
-        onLogOther={handleLogOther}
-        onLogEmpty={() => openLog()}
-      />
-
-      <MissedStrip slots={missed} onLogMeal={handleLogMeal} />
-
-      <DayBudgetCard
-        consumed={fuel.consumed}
-        budget={budget}
-        waterTarget={fuel.targets.water}
-        energy={plan.energy}
-        staticEnergy={staticEnergy}
-        loggedKcals={doneWindows.map(s => s.kcal ?? 0)}
-        doneCount={doneWindows.length}
-        totalCount={windows.length}
-        nowFrac={hero.kind === 'open' ? nowFrac : null}
-        onOpenEnergy={(section) => energyBreakdown && setEnergyOpen(section)}
-        onLogWater={logWater}
-      />
-
-      {zones.map((zone, zi) => (
-        <DayZoneCard key={zone.key} zone={zone} index={zi}>
-          {zone.slots.map((slot, si) => (
-            <ZoneSlotRow
-              key={`${zone.key}-${si}`}
-              slot={slot}
-              scoredMeal={getScoredMeal(slot)}
-              tagline={getTagline(slot)}
-              coachPending={coachPending}
-              burnKcal={zone.burnKcal}
-              anchored={hero.kind === 'open' && slot === hero.slot}
-              onOpenScore={setScoreMeal}
-              onLogMeal={handleLogMeal}
-              onAiLog={handleAiLog}
-              onOpenStack={() => navigate('/fuel/stack')}
-            />
-          ))}
-        </DayZoneCard>
-      ))}
 
       {/* Kitchen close / caffeine cutoff — reference data, at the end of the day it belongs to */}
       <div className="zrow" style={{ margin: '0 24px 9px', background: 'var(--surface)', borderRadius: 20, boxShadow: 'var(--np-shadow-row)' }}>
@@ -226,13 +197,9 @@ export function FuelMaiPage() {
         </div>
       )}
 
-      {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
       {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
-      {energyOpen && energyBreakdown && (
-        <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
-      )}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}

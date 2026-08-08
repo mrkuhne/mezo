@@ -11,9 +11,11 @@ import { QueryWrapper } from '@/test/queryWrapper'
 // tap-to-log wiring we override useFuelTimeline with a crafted plan. Every OTHER hook the page
 // pulls from @/data/hooks stays real (mock mode) via the importOriginal spread; when
 // `hoisted.plan` is unset the real useFuelTimeline runs, so this override is inert elsewhere.
-// The page also reads wake/bed/nowHHmm/blocks/weightKg/energyBreakdown (mezo-rrtj, zone + hero
-// composition) — fixed, sensible values here since neither test cares about zone/hero placement,
-// only the tap-to-log wiring on the slot row itself.
+// The page also reads blocks/nowHHmm (workoutTime + hero/river composition) — fixed, sensible
+// values here since neither test cares about window placement/ordering, only the tap-to-log
+// wiring on the window island itself. Neither crafted slot carries a 'now' state, so the
+// river's default-big island is the Keret-öv (mezo-jgh9's act-anywhere model) — both tests
+// select the window's OWN capsule first, then act, exactly like a real user would.
 const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -60,7 +62,7 @@ const baseCtx = {
   energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
 }
 
-test('tapping a recipe-suggestion slot opens LogMealSheet pre-filled from that recipe', async () => {
+test('tapping a recipe-suggestion window opens LogMealSheet pre-filled from that recipe', async () => {
   const recipe = renderHook(() => useRecipes(), { wrapper }).result.current.recipes[0]
   hoisted.plan = {
     ...baseCtx,
@@ -69,14 +71,17 @@ test('tapping a recipe-suggestion slot opens LogMealSheet pre-filled from that r
     ],
   }
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: `${recipe.name} logolása` }))
+  // Act-anywhere: no 'now' window in this crafted plan, so the Keret-öv is big by default —
+  // select the window's own capsule first (its essence carries the recipe name), then act.
+  await userEvent.click(screen.getByRole('button', { name: `Reggeli · 08:00 · ${recipe.name} · megnyitás` }))
+  await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
   // The recipe surfaces as a pre-filled item line inside the sheet (source: recipe).
   expect(screen.getAllByText(recipe.name).length).toBeGreaterThanOrEqual(1)
   expect(screen.getByText('recept')).toBeInTheDocument()
 })
 
-test('tapping a budget-only slot opens LogMealSheet with the mapped slot pre-selected', async () => {
+test('tapping a budget-only window opens LogMealSheet with the mapped slot pre-selected', async () => {
   hoisted.plan = {
     ...baseCtx,
     slots: [
@@ -84,7 +89,8 @@ test('tapping a budget-only slot opens LogMealSheet with the mapped slot pre-sel
     ],
   }
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Vacsora logolása' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Vacsora · 19:30 · Vacsora · megnyitás' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
   // Vacsora → dinner: the sheet's slot segmented control opens with 'Vacsora' active.
   expect(screen.getByRole('button', { name: 'Vacsora', pressed: true })).toBeInTheDocument()
