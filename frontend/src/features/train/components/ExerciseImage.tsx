@@ -30,6 +30,7 @@ interface ExerciseImageProps {
   /** Catalog muscle token, for the rail tint + the no-image fallback tile. */
   muscle?: string
   variant?: 'hero' | 'thumb'
+  /** Caller-side placement (e.g. alignSelf). Component identity styles (muscle colours) always win. */
   style?: CSSProperties
 }
 
@@ -71,7 +72,7 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero', styl
         <div
           aria-hidden="true"
           className="exdemo-thumb"
-          style={{ background: colors.wash, color: colors.deep, ...style }}
+          style={{ ...style, background: colors.wash, color: colors.deep }}
         >
           {name.slice(0, 1).toUpperCase()}
         </div>
@@ -94,7 +95,7 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero', styl
   if (!start) return null
 
   return (
-    <figure className="exdemo" style={{ borderInlineStartColor: colors.rail, ...style }}>
+    <figure className="exdemo" style={{ ...style, borderInlineStartColor: colors.rail }}>
       {/* Both frames are stacked and cross-faded; the end frame is inert when absent. */}
       <img
         className="exdemo-frame"
