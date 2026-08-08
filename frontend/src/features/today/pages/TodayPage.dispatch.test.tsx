@@ -426,7 +426,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     const { container } = renderToday('/today?dp=reggel')
     // On the morning island it renders nowhere (that inert twin is what I5 was) — the only
     // trace of the session is the day CAPSULE's essence line…
-    const morning = container.querySelector('.isl[data-face="reggel"]') as HTMLElement
+    const morning = container.querySelector('.isl[data-tone="reggel"]') as HTMLElement
     expect(within(morning).queryByText(/Pull Day/)).toBeNull()
     // …and selecting the day island shows it as the hero with its real CTA.
     fireEvent.click(screen.getByRole('button', { name: /^Nap · 07:30 · Pull Day/ }))

@@ -34,7 +34,6 @@ import {
 import { AppHero } from '@/features/progression/components/AppHero'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { AnchorIsland } from '@/features/today/components/AnchorIsland'
-import { Island } from '@/features/today/components/Island'
 import { IslandDay, type DayHero } from '@/features/today/components/IslandDay'
 import { IslandEvening } from '@/features/today/components/IslandEvening'
 import { IslandMorning } from '@/features/today/components/IslandMorning'
@@ -55,7 +54,7 @@ import {
   dayBalance, fallbackHero, hrvFact, kcalFact, morningHero, proteinFact, sleepOutlook, weightFact,
   type IslandFact,
 } from '@/features/today/logic/islandFacts'
-import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
+import { DAY_FACES, dayFace, FACE_EMOJI, FACE_LABEL, type DayFace as Face } from '@/features/today/logic/dayFace'
 import {
   buildTodayItems, isFillableSlot, itemsForFace,
   type SessionItemInput, type TodayItem,
@@ -65,6 +64,7 @@ import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/fe
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
+import { Island, type IslandCapsule } from '@/shared/ui/Island'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
 
 const isFace = (v: string | null): v is Face => v !== null && (DAY_FACES as readonly string[]).includes(v)
@@ -322,12 +322,26 @@ export function TodayPage() {
 
   const dayHero: DayHero | null = heroSession ? heroCardOf(heroSession, () => navigate('/train')) : null
 
+  // The shared Island shell is domain-free (mezo-jgh9): this page supplies the tone's
+  // language (emoji/title/essence) and the full spoken label the old feature-local
+  // Island used to compose internally.
+  const islandCapsule = (face: Face): IslandCapsule => ({ emoji: FACE_EMOJI[face], title: FACE_LABEL[face], ...essence(face) })
+  const islandAriaLabel = (face: Face, nowRing: boolean, essenceText: string) =>
+    `${FACE_LABEL[face]}${nowRing ? ' · most' : ''} · ${essenceText} · megnyitás`
+  const reggelCapsule = islandCapsule('reggel')
+  const napCapsule = islandCapsule('nap')
+  const esteCapsule = islandCapsule('este')
+
   return (
     <>
       {appHero}
       {scenario.vulnerable && <VulnerabilityCard />}
       <IslandSky anchor={false} anchorContent={null}>
-        <Island face="reggel" big={selected === 'reggel'} nowClock={current === 'reggel'} capsule={essence('reggel')} onSelect={selectFace}>
+        <Island
+          tone="reggel" big={selected === 'reggel'} nowRing={current === 'reggel'}
+          capsule={reggelCapsule} ariaLabel={islandAriaLabel('reggel', current === 'reggel', reggelCapsule.essence)}
+          onSelect={() => selectFace('reggel')}
+        >
           {selected === 'reggel' && (
             <IslandMorning
               hero={mHero} facts={morningFacts} next={chainNext}
@@ -339,7 +353,11 @@ export function TodayPage() {
             />
           )}
         </Island>
-        <Island face="nap" big={selected === 'nap'} nowClock={current === 'nap'} capsule={essence('nap')} onSelect={selectFace}>
+        <Island
+          tone="nap" big={selected === 'nap'} nowRing={current === 'nap'}
+          capsule={napCapsule} ariaLabel={islandAriaLabel('nap', current === 'nap', napCapsule.essence)}
+          onSelect={() => selectFace('nap')}
+        >
           {selected === 'nap' && (
             <IslandDay
               hero={dayHero}
@@ -353,7 +371,11 @@ export function TodayPage() {
             />
           )}
         </Island>
-        <Island face="este" big={selected === 'este'} nowClock={current === 'este'} night={windPhase === 'night'} capsule={essence('este')} onSelect={selectFace}>
+        <Island
+          tone="este" big={selected === 'este'} nowRing={current === 'este'} night={windPhase === 'night'}
+          capsule={esteCapsule} ariaLabel={islandAriaLabel('este', current === 'este', esteCapsule.essence)}
+          onSelect={() => selectFace('este')}
+        >
           {selected === 'este' && (
             <IslandEvening
               open={open} done={done} dayXp={dayXp} facts={eveningFacts}
