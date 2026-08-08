@@ -14,6 +14,7 @@ import { KeretBelt } from '@/features/fuel/components/KeretBelt'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
+import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 
 // Ablak-folyam recomposition (spec 2026-08-08, mezo-jgh9): the Mai screen becomes a non-scrolling
 // sky of window-islands (one per meal slot, chronological) with the always-visible Keret-öv
@@ -35,9 +36,10 @@ import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
 // `WindowIsland` has no equivalent slot, so it has no home here anymore (P8 scope per spec §8: the
 // window island's own day-score fact cell stays null until a per-window score feed exists).
 // Likewise `EnergyBreakdownSheet`'s drill-down chips: the Keret-öv's kibontott view already prints
-// the full breakdown inline, so there is no "honnan a cél" chip left to open it. The `FuelSettingsSheet`
-// trigger (the retired row's "szerkeszt" chip) has NO replacement surface — `KeretBelt`'s note is
-// plain text by design (review fix #2) — see the Task 5 fix report for the flag on this.
+// the full breakdown inline, so there is no "honnan a cél" chip left to open it. The retired row's
+// "szerkeszt" chip (the only `FuelSettingsSheet` trigger in the app) is restored as a quiet
+// "szerkeszt ›" ghost button on the Keret-öv's note row (`KeretBelt`'s `onEditSettings`, Today's
+// `.isl-grouph-go` idiom) — review fix round 3.
 export function FuelMaiPage() {
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
@@ -59,6 +61,7 @@ export function FuelMaiPage() {
   const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   // L1 open/closed — belongs to whichever island is selected; a selection switch always closes it.
   const [listOpen, setListOpen] = useState(false)
 
@@ -138,6 +141,7 @@ export function FuelMaiPage() {
       water={{ currentMl: fuel.consumed.water, targetMl: fuel.targets.water, onAdd250: () => logWater(250) }}
       activityLabel={activityLabel}
       note={keretNote}
+      onEditSettings={() => setSettingsOpen(true)}
       onSelect={() => selectWindow('keret')}
       onAdHocLog={() => openLog()}
     />
@@ -172,6 +176,7 @@ export function FuelMaiPage() {
       </div>
 
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
+      {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}

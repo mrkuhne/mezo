@@ -25,6 +25,10 @@ export interface KeretBeltProps {
   /** Quiet informational footer line (Fraunces meta-voice, `.text-meta-sm`) — e.g. the kitchen
    *  close / caffeine cutoff reference the Mai sky has no other row for. Omitted when absent. */
   note?: string
+  /** Opens FuelSettingsSheet — renders a quiet trailing "szerkeszt ›" ghost button on the note
+   *  row (Today's `.isl-grouph-go` idiom). Settings stay reachable even when `note` is absent
+   *  (the button then renders alone on the row). Omitted entirely when this prop is absent. */
+  onEditSettings?: () => void
   onSelect: () => void
   /** Opens an empty LogMealSheet — a plan-independent ad-hoc log. */
   onAdHocLog: () => void
@@ -78,7 +82,9 @@ const MACROS: { key: MacroKey; label: string; short: string; cssVar: string }[] 
   { key: 'f', label: 'Zsír', short: 'F', cssVar: '--macro-fat' },
 ]
 
-export function KeretBelt({ big, budget, consumed, water, activityLabel, note, onSelect, onAdHocLog }: KeretBeltProps) {
+export function KeretBelt({
+  big, budget, consumed, water, activityLabel, note, onEditSettings, onSelect, onAdHocLog,
+}: KeretBeltProps) {
   const remaining = budget.kcal - consumed.kcal
 
   const beltContent = (
@@ -204,7 +210,21 @@ export function KeretBelt({ big, budget, consumed, water, activityLabel, note, o
         ariaLabel="Log bármikor"
         onAction={onAdHocLog}
       />
-      {note && <p className="text-meta-sm text-tertiary" style={{ margin: '10px 2px 0' }}>{note}</p>}
+      {(note || onEditSettings) && (
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, margin: '10px 2px 0' }}>
+          {note && <p className="text-meta-sm text-tertiary" style={{ margin: 0 }}>{note}</p>}
+          {onEditSettings && (
+            <button
+              type="button"
+              className="isl-grouph-go"
+              style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+              onClick={onEditSettings}
+            >
+              szerkeszt ›
+            </button>
+          )}
+        </div>
+      )}
     </Island>
   )
 }

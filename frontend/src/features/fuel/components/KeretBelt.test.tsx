@@ -109,6 +109,34 @@ describe('KeretBelt — kibontott felépülés-nézet (big=true)', () => {
     const note = screen.getByText('Konyha zár · 21:45 · kávé cutoff 14:00')
     expect(note).toHaveClass('text-meta-sm')
   })
+
+  it('no onEditSettings → no szerkeszt button, even with a note', () => {
+    render(<KeretBelt {...base} big note="Konyha zár · 21:45 · kávé cutoff 14:00" />)
+    expect(screen.queryByRole('button', { name: /szerkeszt/ })).toBeNull()
+  })
+
+  it('onEditSettings provided + note present → szerkeszt renders beside the note and fires the callback', async () => {
+    const onEditSettings = vi.fn()
+    render(
+      <KeretBelt
+        {...base} big
+        note="Konyha zár · 21:45 · kávé cutoff 14:00"
+        onEditSettings={onEditSettings}
+      />,
+    )
+    expect(screen.getByText('Konyha zár · 21:45 · kávé cutoff 14:00')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'szerkeszt ›' }))
+    expect(onEditSettings).toHaveBeenCalled()
+  })
+
+  it('onEditSettings provided + note ABSENT → szerkeszt still renders alone (settings stay reachable)', async () => {
+    const onEditSettings = vi.fn()
+    render(<KeretBelt {...base} big onEditSettings={onEditSettings} />)
+    const btn = screen.getByRole('button', { name: 'szerkeszt ›' })
+    expect(btn).toBeInTheDocument()
+    await userEvent.click(btn)
+    expect(onEditSettings).toHaveBeenCalled()
+  })
 })
 
 describe('huDative — HU dative suffix (-hoz/-hez/-höz) by vowel harmony', () => {

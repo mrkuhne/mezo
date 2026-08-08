@@ -258,6 +258,14 @@ test('real mode: the Keret-öv\'s footer note carries schedule-derived kitchen c
   }
 })
 
+test('the szerkeszt › button on the expanded Keret-öv opens FuelSettingsSheet (review round 3)', async () => {
+  renderView('/fuel?w=keret')
+  await userEvent.click(screen.getByRole('button', { name: 'szerkeszt ›' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Fuel beállítások' })
+  // Something real from the sheet, not just the title — the meals-per-day segmented control.
+  expect(within(dialog).getByText(/étkezés\/nap/i)).toBeInTheDocument()
+})
+
 test('real mode: today\'s gym block surfaces as workoutTime in the NOW window\'s subtitle', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   // Pin a Thursday (Csü) — the default fixtures' only gym day, with a gym-schedule time of
