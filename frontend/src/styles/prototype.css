@@ -82,6 +82,10 @@
   --gradient-cta: linear-gradient(135deg, var(--cta-g1), var(--cta-g2));
   --shadow-cta: 0 8px 20px rgba(255, 91, 54, 0.35);
 
+  /* ─── Sage CTA gradient — Fuel's own domain-accent CTAs (mezo-jgh9, D4) ─── */
+  --gradient-sage: linear-gradient(135deg, var(--success-base), var(--success-hover));
+  --shadow-sage: 0 8px 20px rgba(93, 132, 104, 0.35);
+
   /* ─── Halos · page-top ambient gradients ─── */
   --halo-amber:  radial-gradient(ellipse at 50% 30%, rgba(212,168,83,0.32) 0%, rgba(251,246,239,0) 55%);
   --halo-sage:   radial-gradient(ellipse at 50% 30%, rgba(154,184,143,0.30) 0%, rgba(244,208,111,0.10) 30%, rgba(251,246,239,0) 60%);
@@ -2347,6 +2351,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
            font-family: inherit; cursor: pointer; }
 .isl-cta.is-lav { background: linear-gradient(135deg, #8d7fc0, #6d5f9c);
                   box-shadow: 0 8px 20px rgba(109,95,156,.35); }
+.isl-cta.cta-sage { background: var(--gradient-sage); box-shadow: var(--shadow-sage); }
 .isl-more { display: inline-flex; padding: 9px 14px; border-radius: var(--r-full);
             background: transparent; color: var(--sub); font-size: 12px; font-weight: 600;
             border: 1px solid var(--line); cursor: pointer; font-family: inherit; }
@@ -2400,6 +2405,52 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   :where(.isl-phase) { animation: none; }
   .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
 }
+
+/* ═════════ Fuel Keret-öv — .kbelt family (mezo-jgh9, window-river Task 3) ═════════
+   Rides inside the shared Island shell (belt + tone="keret"): the collapsed row is
+   richer than the generic capsule language (remaining kcal + 3 macro mini-bars), so
+   it arrives via Island's `beltContent` override rather than `.isl-cap-t/-m/-n`. The
+   expanded (big) "keret felépülése" view reuses the shared `.isl-hero-*` hero-number
+   role (Today's IslandMorning idiom) for its own hero, then adds the eaten/remaining
+   bar, the energy-breakdown rows and the full macro bars below it. No new motion —
+   nothing here needs a reduced-motion exception. */
+/* ── belt (collapsed) row content ── */
+.kbelt-kv { flex: none; }
+.kbelt-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink);
+           white-space: nowrap; }
+.kbelt-vu { font-size: 9px; font-weight: 600; color: var(--faint); }
+.kbelt-l { font-size: 7.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+           color: var(--faint); margin-top: 1px; }
+.kbelt-bars { display: flex; gap: 8px; flex: 1; margin-left: 2px; }
+.kbelt-bar { flex: 1; }
+.kbelt-bar-track { height: 5px; border-radius: 3px; background: var(--surface-recess); overflow: hidden; }
+.kbelt-bar-track i { display: block; height: 100%; border-radius: inherit; }
+.kbelt-bar-t { font-size: 7.5px; font-weight: 700; color: var(--faint); margin-top: 3px; letter-spacing: .06em; }
+/* ── expanded (big) "keret felépülése" view ── */
+.kbelt-stackbar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin: 14px 2px 4px; }
+.kbelt-stackbar i { display: block; height: 100%; }
+.kbelt-eaten { background: var(--sage); }
+.kbelt-left { background: var(--success-soft); }
+.kbelt-stackcap { display: flex; justify-content: space-between; font-size: 9px; font-weight: 700;
+                   color: var(--faint); letter-spacing: .08em; margin: 0 2px; }
+.kbelt-bd { margin-top: 14px; text-align: left; }
+.kbelt-bdrow { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: var(--r-md);
+               font-size: 12px; font-weight: 600; color: var(--sub); }
+.kbelt-ic { width: 26px; height: 26px; border-radius: 8px; background: var(--surface-recess);
+            display: flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
+.kbelt-bdlabel { flex: 1; }
+.kbelt-val { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
+.kbelt-bdsep { border-top: 1px dashed var(--line); margin: 4px 10px; }
+.kbelt-bdrow-total { background: var(--accent-bg); border: 1px solid var(--accent-soft); margin-top: 4px; }
+.kbelt-bdrow-total .kbelt-val { color: var(--accent-deep); }
+.kbelt-macrofull { margin-top: 14px; text-align: left; }
+.kbelt-mf { margin-bottom: 7px; }
+.kbelt-mf-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--ink); }
+.kbelt-mf-rem { color: var(--faint); font-weight: 600; }
+.kbelt-mf-bar { height: 7px; border-radius: 4px; background: var(--surface-recess); overflow: hidden; margin-top: 4px; }
+.kbelt-mf-bar i { display: block; height: 100%; border-radius: inherit; }
+.isl[data-tone="keret"] .kbelt-macrofull + .itemrow { margin-top: 14px; }
+.isl[data-tone="keret"] .isl-bigview > .itemrow { margin-bottom: 6px; text-align: left; }
 
 /* ===== NightPage calm tools (mezo-d71m, spec D6) — literal dark, theme-independent ===== */
 .nb, .ns, .nw { display: flex; flex-direction: column; flex: 1; min-height: 0; }

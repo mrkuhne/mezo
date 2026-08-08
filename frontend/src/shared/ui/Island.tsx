@@ -34,13 +34,19 @@ export interface IslandProps {
   night?: boolean
   /** Belt variant: fixed 54px, no float — a row of shells rather than a sky of them. */
   belt?: boolean
+  /** Belt-only override: replaces the standard emoji/title/essence/count capsule row with
+   *  caller-supplied content when `belt` is true (e.g. KeretBelt's remaining-kcal + macro
+   *  mini-bars strip, which is richer than the generic capsule language). The shell stays
+   *  domain-free — this is opaque `ReactNode`, not a new domain-shaped prop. Ignored when
+   *  `belt` is false/absent, so every non-belt caller is unaffected. */
+  beltContent?: ReactNode
   /** Full spoken label for the capsule button — the caller composes it (tone name, now, essence). */
   ariaLabel: string
   onSelect: () => void
   children: ReactNode
 }
 
-export function Island({ tone, big, nowRing, capsule, night, belt, ariaLabel, onSelect, children }: IslandProps) {
+export function Island({ tone, big, nowRing, capsule, night, belt, beltContent, ariaLabel, onSelect, children }: IslandProps) {
   return (
     <section
       className={cn('isl', big && 'isl-big', nowRing && 'now-clock', night && 'isl-night', belt && 'isl-belt')}
@@ -55,13 +61,19 @@ export function Island({ tone, big, nowRing, capsule, night, belt, ariaLabel, on
         tabIndex={big ? -1 : undefined}
         onClick={onSelect}
       >
-        <span aria-hidden="true">{capsule.emoji}</span>
-        <span>
-          <span className="isl-cap-t">{capsule.title}</span>
-          <span className="isl-cap-m">{capsule.essence}</span>
-        </span>
-        {nowRing && <span className="isl-nowtag">{capsule.nowTag ?? 'MOST'}</span>}
-        <span className="isl-cap-n">{capsule.count}</span>
+        {belt && beltContent ? (
+          beltContent
+        ) : (
+          <>
+            <span aria-hidden="true">{capsule.emoji}</span>
+            <span>
+              <span className="isl-cap-t">{capsule.title}</span>
+              <span className="isl-cap-m">{capsule.essence}</span>
+            </span>
+            {nowRing && <span className="isl-nowtag">{capsule.nowTag ?? 'MOST'}</span>}
+            <span className="isl-cap-n">{capsule.count}</span>
+          </>
+        )}
       </button>
       <div className="isl-bigview" aria-current={big || undefined}>
         {big ? children : null}
