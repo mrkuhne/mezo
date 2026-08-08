@@ -47,7 +47,7 @@ function renderToday(path = '/today') {
 
 /** Which island is big right now — the selection's single observable. */
 const bigFace = (container: HTMLElement) =>
-  (container.querySelector('.isl.isl-big') as HTMLElement | null)?.dataset.face ?? null
+  (container.querySelector('.isl.isl-big') as HTMLElement | null)?.dataset.tone ?? null
 
 /** A capsule's button (the visible ones only — the big island's capsule is aria-hidden). */
 const capsule = (name: RegExp) => screen.getByRole('button', { name })

@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-08-07
+updated: 2026-08-08
 tags: [today, biometrics, frontend, data-layer, ritual]
 key_files:
   - frontend/src/features/today
@@ -10,6 +10,7 @@ key_files:
   - frontend/src/data/me/biometricsApi.ts
   - frontend/src/shared/ui/ItemCard.tsx
   - frontend/src/shared/ui/ItemRow.tsx
+  - frontend/src/shared/ui/Island.tsx
   - api/feature/checkin/checkin.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
 related: [_platform-data-layer, _platform-design-system, me, insights, train, growth, habit, intention, ritual]
@@ -197,8 +198,8 @@ The three goldens keep their names/paths/clocks (`today-reggel|nap|este` × ligh
 - **`TodaySkeleton.tsx`** (+ test) — the island-shaped loading mirror (1 big + 2 capsule placeholders in a `.sky-islands`), inert, `role="status"`.
 - `sheets/` — unchanged (CheckInSheet + observation, ActivityLogSheet, IntentionSheet, CreedSheet, ReflectSheet; cross-feature hosts: LogMealSheet, SleepLogSheet, CustomWorkoutSheet).
 
-**Frontend — the island components** (`frontend/src/features/today/components/`, all `mezo-euze`):
-- **`Island.tsx`** (+ test) — the shell: capsule↔big continuous bubble-morph, the halo blob, the `MOST` ring, the spoken capsule label, the `night` dark state. Content-agnostic.
+**Frontend — the island components** (`frontend/src/features/today/components/`, all `mezo-euze` unless noted):
+- **`shared/ui/Island.tsx`** (+ colocated test) — the shell: capsule↔big continuous bubble-morph, the halo blob, the `now`-ring tag, the spoken capsule label (`ariaLabel`, caller-composed), the `night` dark state, a `belt` variant (fixed 54px, no float). **Promoted out of `features/today/components/` to `shared/ui/` by `mezo-jgh9`** (Fuel's window-river became its 2nd consumer) — fully domain-free: `tone: IslandTone` (`'reggel'|'nap'|'este'|'fuel'|'keret'`) + a `capsule: {emoji,title,essence,count,nowTag?}` the caller supplies, `data-tone` on the root (was `data-face`). `TodayPage.tsx` is the Today-side caller: it builds `IslandCapsule`s from `FACE_EMOJI`/`FACE_LABEL` and composes the aria-label with the original formula.
 - **`IslandSky.tsx`** — the non-scrolling sky + the anchor-melt layout state.
 - **`IslandMorning.tsx` / `IslandDay.tsx` (exports `DayHero`) / `IslandEvening.tsx`** (+ tests) — the three big views (L0 closed / L1 open). `IslandEvening` self-fetches its phase/ritual/habit wiring (the `WindDownBanner` + `RitualCard` successor) and owns the L1 filter rules (`OWNED_BY_RITUAL_HERO`, the phase-scoped `wind_down` filter).
 - **`IslandList.tsx`** (+ test) — the L1 layer (the `TodoCard`+`DoneFold` successor): grouped `ItemRow`s, the quest-heading growth link, `head`/`focus` slots, the done block + day-XP line, `összecsuk`.
@@ -211,7 +212,7 @@ The three goldens keep their names/paths/clocks (`today-reggel|nap|este` × ligh
 
 **Frontend — data & shared:** `data/today/todayHooks.ts` (**`useFuelPreview` now returns `plan` too** — the one data-layer change), `checkinHooks.ts`, `briefingHooks.ts`, `today.ts`, `checkins.ts`; the face anchor `data/me/sleepHooks.ts` + `sleepGoal.ts`; new fact sources `data/me/weightHooks.ts` + `goalHooks.ts` + `sleepHooks.ts` (`useSleep`); `data/me/biometricsApi.ts`; `shared/ui/ItemCard.tsx` + `ItemRow.tsx` + `CoachBubble.tsx`; `app/AppLayout.tsx` / `PhoneFrame.tsx` / `router.tsx`.
 
-**CSS** (`frontend/src/styles/prototype.css`) — the Today-owned family is now **`.sky-islands` + `.isl*`** (`mezo-euze` section): the shell (`.isl`/`.isl-big`/`.isl-blob`/`.isl-cap*`/`.isl-nowtag`/`.now-clock`/`.isl-night`/`.isl-anchor`), the big view (`.isl-hero-*`/`.isl-facts`/`.isl-fact*`/`.isl-warnchip`/`.isl-act`/`.isl-cta`/`.isl-more`/`.isl-doneline`/`.isl-openhead`/`.isl-phase`/`.isl-nightrow`), the L1 (`.isl-l1*`/`.isl-grouph*`/`.isl-dayxp`), the keyframes (`isl-morph`/`isl-floaty`/`isl-rowin`/`isl-phasein`) and their `:where()`-guarded reduce block, plus the `.screen-content:has(.sky-islands)` flex flip. Shared families unchanged: `.itemrow*`, `.todaycard*`/`.metapill`/`.donebar*`, `.brief*`, `.creedchip*`/`.reflect*`, `.vuln*`, `.coach-bubble`/`.cb-*`, `.wdb-night*` (SleepPage's), `.anch-coach` (the melt's bubble tint). **Deleted:** `.greet*`, `.dfs*`, `.tdc*`, `.fhc*`, `.donefold*`, `.zoneline`/`.dayxp`, the `.faceswap` motion family, `.anch*` (minus `.anch-coach`). Catalogue in [`_platform-design-system.md`](_platform-design-system.md).
+**CSS** (`frontend/src/styles/prototype.css`) — the Today-owned family is now **`.sky-islands` + `.isl*`** (`mezo-euze` section, blob tone hooks retargeted to `[data-tone=…]` by `mezo-jgh9` when the shell left for `shared/ui`): the shell (`.isl`/`.isl-big`/`.isl-belt`/`.isl-blob`/`.isl-cap*`/`.isl-nowtag`/`.now-clock`/`.isl-night`/`.isl-anchor`), the big view (`.isl-hero-*`/`.isl-facts`/`.isl-fact*`/`.isl-warnchip`/`.isl-act`/`.isl-cta`/`.isl-more`/`.isl-doneline`/`.isl-openhead`/`.isl-phase`/`.isl-nightrow`), the L1 (`.isl-l1*`/`.isl-grouph*`/`.isl-dayxp`), the keyframes (`isl-morph`/`isl-floaty`/`isl-rowin`/`isl-phasein`) and their `:where()`-guarded reduce block, plus the `.screen-content:has(.sky-islands)` flex flip. Shared families unchanged: `.itemrow*`, `.todaycard*`/`.metapill`/`.donebar*`, `.brief*`, `.creedchip*`/`.reflect*`, `.vuln*`, `.coach-bubble`/`.cb-*`, `.wdb-night*` (SleepPage's), `.anch-coach` (the melt's bubble tint). **Deleted:** `.greet*`, `.dfs*`, `.tdc*`, `.fhc*`, `.donefold*`, `.zoneline`/`.dayxp`, the `.faceswap` motion family, `.anch*` (minus `.anch-coach`). Catalogue in [`_platform-design-system.md`](_platform-design-system.md).
 
 **Visual goldens:** `frontend/tests/visual/visual.spec.ts` + `today-{reggel,nap,este}-{light,dark}-{darwin,linux}.png` (§8).
 

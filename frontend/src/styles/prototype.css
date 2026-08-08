@@ -2256,19 +2256,26 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
        transition: flex .55s cubic-bezier(.3,.9,.35,1), border-radius .55s cubic-bezier(.3,.9,.35,1),
                    background .6s ease, opacity .45s ease; }
 .isl.isl-big { flex: 1 1 100%; border-radius: 34px; box-shadow: var(--shadow-md); }
+.isl.isl-belt { flex: 0 0 54px; border-radius: var(--r-xl); }
 .isl-blob { position: absolute; width: 300px; height: 300px; top: -100px; left: 50%;
             margin-left: -150px; filter: blur(2px); opacity: 0; transition: opacity .6s ease;
             pointer-events: none; z-index: 0; }
 .isl.isl-big .isl-blob { opacity: .9; }
 :where(.isl.isl-big) .isl-blob { animation: isl-morph 9s ease-in-out infinite alternate; }
-.isl[data-face="reggel"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+.isl[data-tone="reggel"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
     color-mix(in srgb, var(--accent-base) 34%, transparent),
     color-mix(in srgb, var(--primary-soft) 25%, transparent) 55%, transparent 75%); }
-.isl[data-face="nap"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+.isl[data-tone="nap"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
     color-mix(in srgb, var(--primary-base) 20%, transparent),
     color-mix(in srgb, var(--accent-base) 16%, transparent) 55%, transparent 75%); }
-.isl[data-face="este"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+.isl[data-tone="este"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
     color-mix(in srgb, var(--dv-lav) 30%, transparent), transparent 75%); }
+.isl[data-tone="fuel"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--sage) 32%, transparent),
+    color-mix(in srgb, var(--amber) 14%, transparent) 55%, transparent 75%); }
+.isl[data-tone="keret"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--amber) 32%, transparent),
+    color-mix(in srgb, var(--sage) 14%, transparent) 55%, transparent 75%); }
 .isl-cap { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; gap: 10px;
            padding: 0 16px; background: none; border: none; font-family: inherit; text-align: left;
            cursor: pointer; opacity: 1; transition: opacity .22s ease .18s; }
@@ -2284,8 +2291,9 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .isl.now-clock:not(.isl-big) { border-color: var(--accent-base);
               box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-base) 15%, transparent); }
 :where(.isl:not(.isl-big)) { animation: isl-floaty 5.4s ease-in-out infinite; }
-:where(.isl[data-face="reggel"]:not(.isl-big)) { animation-delay: .8s; }
-:where(.isl[data-face="este"]:not(.isl-big)) { animation-delay: 1.6s; }
+:where(.isl.isl-belt) { animation: none; }
+:where(.isl[data-tone="reggel"]:not(.isl-big)) { animation-delay: .8s; }
+:where(.isl[data-tone="este"]:not(.isl-big)) { animation-delay: 1.6s; }
 .isl-bigview { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%;
                padding: 22px 18px 16px; text-align: center; min-height: 0; opacity: 0;
                pointer-events: none; transition: opacity .32s ease .14s; }
