@@ -102,4 +102,17 @@ describe('PrepExerciseCard', () => {
     expect(tile).not.toBeNull()
     expect(tile!.tagName).toBe('DIV')
   })
+
+  test('preserves the head row flex-start alignment when the badge and challenge make the row taller than the tile', () => {
+    const { container } = render(
+      <PrepExerciseCard
+        exercise={anchoredExercise}
+        oneRmKg={42}
+        accentChallenge={{ typeLabel: 'PR-kísérlet', target: '3×10 @ 28 kg' }}
+      />,
+    )
+    const tile = container.querySelector('.exdemo-thumb')
+    const headRow = tile?.parentElement
+    expect(headRow?.style.alignItems).toBe('flex-start')
+  })
 })

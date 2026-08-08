@@ -27,13 +27,14 @@ export function PrepExerciseCard({ exercise, oneRmKg, accentChallenge }: {
     <div className="card" style={{ display: 'flex', overflow: 'hidden' }}>
       <div style={{ width: 4, background: mc.rail, flexShrink: 0 }} aria-hidden="true" />
       <div style={{ flex: 1, padding: '13px 14px 12px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
           <ExerciseImage
             start={e.imageStartUrl}
             end={e.imageEndUrl}
             name={e.name}
             muscle={e.muscle}
             variant="thumb"
+            style={{ alignSelf: 'center' }}
           />
           <div className="col" style={{ gap: 4, minWidth: 0, flex: 1 }}>
             <div className="row" style={{ alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
