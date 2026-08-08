@@ -22,6 +22,9 @@ export interface KeretBeltProps {
   water: { currentMl: number; targetMl: number; onAdd250: () => void } | null
   /** "Pull A + lépések" | "lépések" — the movement row's own label. */
   activityLabel: string
+  /** Quiet informational footer line (Fraunces meta-voice, `.text-meta-sm`) — e.g. the kitchen
+   *  close / caffeine cutoff reference the Mai sky has no other row for. Omitted when absent. */
+  note?: string
   onSelect: () => void
   /** Opens an empty LogMealSheet — a plan-independent ad-hoc log. */
   onAdHocLog: () => void
@@ -75,7 +78,7 @@ const MACROS: { key: MacroKey; label: string; short: string; cssVar: string }[] 
   { key: 'f', label: 'Zsír', short: 'F', cssVar: '--macro-fat' },
 ]
 
-export function KeretBelt({ big, budget, consumed, water, activityLabel, onSelect, onAdHocLog }: KeretBeltProps) {
+export function KeretBelt({ big, budget, consumed, water, activityLabel, note, onSelect, onAdHocLog }: KeretBeltProps) {
   const remaining = budget.kcal - consumed.kcal
 
   const beltContent = (
@@ -201,6 +204,7 @@ export function KeretBelt({ big, budget, consumed, water, activityLabel, onSelec
         ariaLabel="Log bármikor"
         onAction={onAdHocLog}
       />
+      {note && <p className="text-meta-sm text-tertiary" style={{ margin: '10px 2px 0' }}>{note}</p>}
     </Island>
   )
 }

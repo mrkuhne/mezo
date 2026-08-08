@@ -101,6 +101,14 @@ describe('KeretBelt — kibontott felépülés-nézet (big=true)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Log bármikor/ }))
     expect(onAdHocLog).toHaveBeenCalled()
   })
+
+  it('renders an optional quiet footer note (Fraunces meta-voice) at the bottom', () => {
+    const { rerender } = render(<KeretBelt {...base} big />)
+    expect(screen.queryByText(/Konyha zár/)).toBeNull()
+    rerender(<KeretBelt {...base} big note="Konyha zár · 21:45 · kávé cutoff 14:00" />)
+    const note = screen.getByText('Konyha zár · 21:45 · kávé cutoff 14:00')
+    expect(note).toHaveClass('text-meta-sm')
+  })
 })
 
 describe('huDative — HU dative suffix (-hoz/-hez/-höz) by vowel harmony', () => {

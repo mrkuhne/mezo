@@ -2,25 +2,29 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { http, HttpResponse } from 'msw'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { server } from '@/test/msw/server'
-import { API_BASE } from '@/test/msw/handlers'
 
 // The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch logged, the
-// midday/evening windows open (now/pending). To page-test the window-level AI chip and the
-// missed→Pótold CTA deterministically we inject a KNOWN extra slot (slotKey set) into the composed
-// timeline; both off by default, so every other test sees the unmodified real timeline. Idiom
-// mirrors AiLogSheet.test's hoisted single-hook override.
-const hoisted = vi.hoisted(() => ({ injectOpenSlot: false, injectMissedSlot: false }))
+// midday/evening windows open (now/pending). To page-test the window-level AI chip, the
+// missed→Pótold CTA, the all-done/keret-default seed, and the trailing-missed belt placement
+// deterministically, we can inject known slots into the composed timeline (either ADDED to the
+// real seed, or a full REPLACEMENT for scenarios that need a specific state shape end to end);
+// both off by default, so every other test sees the unmodified real timeline. Idiom mirrors
+// AiLogSheet.test's hoisted single-hook override.
+const hoisted = vi.hoisted(() => ({
+  injectOpenSlot: false,
+  injectMissedSlot: false,
+  overrideSlots: null as FuelSlot[] | null,
+}))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useFuelTimeline: (date?: string) => {
       const real = actual.useFuelTimeline(date)
+      if (hoisted.overrideSlots) return { ...real, plan: { ...real.plan, slots: hoisted.overrideSlots } }
       const extra: FuelSlot[] = []
       if (hoisted.injectOpenSlot) {
         extra.push({
@@ -43,7 +47,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 // FuelMaiPage reads the composed dual-mode useFuelDay/useFuelTimeline; pin mock mode for the static
 // Phase-1 seed and provide a QueryClientProvider.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => { vi.unstubAllEnvs(); hoisted.injectOpenSlot = false; hoisted.injectMissedSlot = false })
+afterEach(() => {
+  vi.unstubAllEnvs()
+  hoisted.injectOpenSlot = false
+  hoisted.injectMissedSlot = false
+  hoisted.overrideSlots = null
+})
 
 /** Reports the live URL so the `?w=` writes are observable. */
 function LocationProbe() {
@@ -77,9 +86,6 @@ test('renders the sky-islands sky: window-islands + the always-visible Keret-öv
   expect(bigTone(container)).toBe('fuel')
   expect(container.querySelectorAll('.isl.isl-big')).toHaveLength(1)
   expect(container.querySelector('.now-clock')).toBeInTheDocument()
-  // Kitchen close / coffee cutoff kept their real data, at the end of the day.
-  expect(screen.getByText(/Konyha zár/)).toBeInTheDocument()
-  expect(screen.getByText(/kávé cutoff/)).toBeInTheDocument()
 })
 
 test('the retired header row and Reta phase strip are gone — no fabricated page chrome', () => {
@@ -96,6 +102,30 @@ test('the Keret-öv sits DOM-fixed right after the NOW-island', () => {
   const beltIdx = shells.findIndex((el) => el.classList.contains('isl-belt'))
   expect(nowIdx).toBeGreaterThanOrEqual(0)
   expect(beltIdx).toBe(nowIdx + 1)
+})
+
+test('all windows done (no now) → the Keret-öv is the default big island', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  const { container } = renderView()
+  expect(bigTone(container)).toBe('keret')
+})
+
+test('a trailing missed window (no now) puts the belt after the last DONE island, not the chronologically last', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
+    { time: '20:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'missed', kcal: 600, p: 35, c: 60, f: 18 },
+  ]
+  const { container } = renderView()
+  const shells = Array.from(container.querySelectorAll('.sky-islands > .isl'))
+  expect(shells).toHaveLength(4) // Reggeli, Ebéd, belt, Vacsora
+  expect(shells[0].querySelector('.isl-cap')?.getAttribute('aria-label')).toMatch(/^Reggeli ·/)
+  expect(shells[1].querySelector('.isl-cap')?.getAttribute('aria-label')).toMatch(/^Ebéd ·/)
+  expect(shells[2].classList.contains('isl-belt')).toBe(true)
+  expect(shells[3].querySelector('.isl-cap')?.getAttribute('aria-label')).toMatch(/^Vacsora ·/)
 })
 
 // ── `?w=` URL derivation (the Today `?dp=` pattern) ──────────────────────────────────────────
@@ -174,6 +204,31 @@ test('a missed window\'s CTA reads Pótold and still opens LogMealSheet on that 
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
+// ── Stack doses (matchMealsToStack wiring, review fix #1) ───────────────────────────────────
+// The real mock demo day already carries a fat-bound protocol item matched against the logged
+// Ebéd (lunch) meal — matchMealsToStack's own zone-matching/verdict-derivation logic has its
+// dedicated unit coverage (matchMealsToStack.test.ts); this test owns the question
+// FuelMaiPage.tsx is responsible for: does a real verdict land in the RIGHT window's L1 (and
+// nowhere else) end to end, through useStackDay + useFuelDay + useRecipes → buildWindowRiver.
+
+test('the lunch (Ebéd) window\'s L1 carries its real stack-match dose, and no other window does', async () => {
+  renderView()
+
+  // The lunch window's L1 carries the dose, with a Pipa ✓ action.
+  await userEvent.click(screen.getByRole('button', { name: /^Ebéd ·/ }))
+  await userEvent.click(screen.getByRole('button', { name: /^még \d+ ›$/ }))
+  expect(screen.getByText('Ehhez az ablakhoz kötve', { selector: '.isl-grouph span' })).toBeInTheDocument()
+  expect(screen.getByText('18g zsír')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Pipa ✓' })).toBeInTheDocument()
+
+  // No other window's L1 carries a dose group — the verdict is zone-scoped, not day-wide.
+  for (const label of [/^Reggeli ·/, /^Uzsonna ·/, /^Vacsora ·/]) {
+    await userEvent.click(screen.getByRole('button', { name: label }))
+    await userEvent.click(screen.getByRole('button', { name: /^még \d+ ›$/ }))
+    expect(screen.queryByText('Ehhez az ablakhoz kötve')).toBeNull()
+  }
+})
+
 // ── Water ─────────────────────────────────────────────────────────────────────────────────────
 
 test('logs water via the +250 ml quick-add on the expanded Keret-öv', async () => {
@@ -183,50 +238,7 @@ test('logs water via the +250 ml quick-add on the expanded Keret-öv', async () 
   await waitFor(() => expect(screen.getByText(/\/ 4,0 l/).textContent).not.toBe(before))
 })
 
-// ── Carried over from the retired flat page (adapted queries only) ─────────────────────────────
-
-test('shows the protocol-meta row when a protocol is active (mock, v3)', () => {
-  renderView()
-  expect(screen.getByText(/Stack · v3/)).toBeInTheDocument()
-})
-
-test('hides the protocol-meta row when there is no active protocol (real-mode ghost v0)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  renderView()
-  await waitFor(() => expect(screen.queryByText(/Stack · v/)).not.toBeInTheDocument())
-  expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
-})
-
-test('hides the Replan CTA in real mode even with an active protocol — no fabricated scenarios (mezo-t16y.4)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  server.use(
-    http.get(`${API_BASE}/api/fuel/protocol`, () =>
-      HttpResponse.json({
-        active: { id: 'p1', version: 1, builtAt: '2026-07-05T06:00:00Z', status: 'active', confidence: 0.9, items: [] },
-        history: [{ version: 1, builtAt: '2026-07-05T06:00:00Z' }],
-      }),
-    ),
-  )
-  renderView()
-  // The meta row renders for the real v1 protocol, but the Replan CTA stays hidden:
-  // useReplanScenarios is honest-empty in real mode (the replan engine is P8).
-  expect(await screen.findByText(/Stack · v1/)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
-})
-
-test('Replan button opens the replan sheet', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Replan' }))
-  expect(await screen.findByText(/Replan · Mezo/)).toBeInTheDocument()
-})
-
-test('opens the FuelSettingsSheet from the szerkeszt chip', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Fuel beállítások' }))
-  expect(await screen.findByRole('dialog', { name: 'Fuel beállítások' })).toBeInTheDocument()
-})
-
-test('real mode: the kitchen-close row shows schedule-derived values (kitchen close, coffee cutoff)', async () => {
+test('real mode: the Keret-öv\'s footer note carries schedule-derived kitchen close / coffee cutoff', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   // Pin a Sunday (Vas) — a rest day in the default fixtures (gym is Csü, volleyball
   // Hét–Pén) — so no training block snaps the Vacsora main off kitchenClose, making
@@ -234,12 +246,13 @@ test('real mode: the kitchen-close row shows schedule-derived values (kitchen cl
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-07-05T10:00:00'))
   try {
-    renderView()
+    renderView('/fuel?w=keret')
     // Derived from the SLEEP goal's wake/bed anchor (mezo-dbsr) — the default MSW
     // /api/sleep/goal resolves to 06:45/23:15, so kitchen close = bed(23:15) − 90m =
-    // 21:45 (findByText waits out the sleep-goal fetch); caffeine cutoff pinned 14:00.
-    expect(screen.getByText(/kávé cutoff 14:00/)).toBeInTheDocument()
-    expect(await screen.findByText(/Konyha zár · 21:45/)).toBeInTheDocument()
+    // 21:45 (findByText waits out the sleep-goal fetch); caffeine cutoff pinned 14:00. The
+    // row moved into the Keret-öv's kibontott view as a quiet note (review fix #2a) — no
+    // below-sky row is left to host it.
+    expect(await screen.findByText(/Konyha zár · 21:45 · kávé cutoff 14:00/)).toBeInTheDocument()
   } finally {
     vi.useRealTimers()
   }
