@@ -8,6 +8,8 @@
 // Coral card tints follow the existing Insights/Fuel slice convention.
 // ============================================================
 import { useState } from 'react'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useTrain } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -78,17 +80,12 @@ export function SportPage() {
   return (
     <>
       {/* Header */}
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">Edzés · Sport</div>
-          <h1>Röplabda</h1>
+          <Eyebrow brand>Edzés · Sport</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>Röplabda</PageTitle>
         </div>
-        <button
-          type="button"
-          onClick={() => setLogOpen(true)}
-          className="pgact-np np-press"
-          style={{ background: 'var(--wash-sport)', color: 'var(--tag-sport)' }}
-        >
+        <button type="button" onClick={() => setLogOpen(true)} className="pgact">
           + Log
         </button>
       </div>
@@ -101,10 +98,10 @@ export function SportPage() {
         <div
           className="card"
           style={{
-            padding: 18,
+            padding: 'var(--sp-4)',
             background:
-              'linear-gradient(180deg, var(--wash-sport) 0%, var(--surface-1) 100%)',
-            borderColor: 'color-mix(in srgb, var(--tag-sport) 30%, transparent)',
+              'linear-gradient(165deg, var(--wash-sport), var(--surface-card) 72%)',
+            borderColor: 'color-mix(in srgb, var(--tag-sport) 16%, transparent)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -131,7 +128,7 @@ export function SportPage() {
                   <Display size="lg">{venue}</Display>
                 </div>
                 {volleyball.season && (
-                  <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
+                  <span className="text-secondary mt-sm" style={{ fontSize: 14 }}>
                     {volleyball.season}
                   </span>
                 )}
@@ -139,10 +136,7 @@ export function SportPage() {
             </div>
 
             {/* Week stats */}
-            <div
-              className="row gap-md mt-lg"
-              style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}
-            >
+            <div className="statstrip mt-lg">
               <SportStat label="Sessions" val={week.sessions} sub={`/${volleyball.sessions.length} heti`} />
               <SportStat label="Idő" val={`${week.hoursPlayed}h`} sub="court" highlight />
               <SportStat label="RPE" val={week.avgRPE.toFixed(1)} sub="átlag · 1-10" />
@@ -152,10 +146,10 @@ export function SportPage() {
             {/* RPE explainer */}
             <div
               className="row gap-sm mt-md"
-              style={{ padding: '8px 10px', background: 'var(--surface-2)', alignItems: 'flex-start' }}
+              style={{ padding: '10px 12px', borderRadius: 'var(--r-lg)', background: 'var(--surface-recess)', alignItems: 'flex-start' }}
             >
-              <Icon name="sparkle" size={10} color="var(--coral)" />
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
+              <Icon name="sparkle" size={14} color="var(--primary-base)" />
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
                 <SafeMarkdown text={RPE_EXPLAINER} />
               </span>
             </div>
@@ -165,31 +159,20 @@ export function SportPage() {
       </div>
 
       {/* View switcher */}
-      <div className="row gap-xs" style={{ padding: '0 24px 12px' }}>
-        {SUB_VIEWS.map((v) => {
-          const active = view === v.id
-          return (
-            <button
-              key={v.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setView(v.id)}
-              className="flex-1 rad-12"
-              style={{
-                padding: '10px',
-                background: active ? 'var(--wash-sport)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)'}`,
-                color: active ? 'var(--tag-sport)' : 'var(--text-secondary)',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {v.label}
-            </button>
-          )
-        })}
+      {/* The selected segment speaks PRIMARY, not the sport rose: ADR 0018 D5
+          keeps the domain accents in the data-viz band, off buttons. */}
+      <div className="segtabs" style={{ padding: '0 24px 12px' }}>
+        {SUB_VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            aria-pressed={view === v.id}
+            onClick={() => setView(v.id)}
+            className="segtab"
+          >
+            {v.label}
+          </button>
+        ))}
       </div>
 
       {view === 'week' && (
@@ -256,7 +239,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h</span>
         {onEdit && (
-          <button type="button" className="chip" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
+          <button type="button" className="chip tapchip" onClick={onEdit}>
             Szerkesztés
           </button>
         )}
@@ -271,7 +254,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
               className="card"
               style={{
                 padding: 0,
-                borderColor: isToday ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)',
+                borderColor: isToday ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--divider)',
                 background: isToday
                   ? 'var(--wash-sport)'
                   : daySlots.length
@@ -293,8 +276,8 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                 <span
                   className="label-mono"
                   style={{
-                    width: 36,
-                    fontSize: 11,
+                    width: 40,
+                    fontSize: 12,
                     color: isToday ? 'var(--tag-sport)' : daySlots.length ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   }}
                 >
@@ -311,28 +294,22 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                               {kind !== 'volleyball' && (
                                 <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
                               )}
-                              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.time}</span>
-                              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-tertiary)' }}>
+                              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{session.time}</span>
+                              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-tertiary)' }}>
                                 · {session.duration}p
                               </span>
                               {session.today && (
                                 <span
-                                  className="chip"
-                                  style={{
-                                    fontSize: 9,
-                                    padding: '2px 6px',
-                                    background: 'var(--wash-sport)',
-                                    borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)',
-                                    color: 'var(--tag-sport)',
-                                  }}
+                                  className="excat-tag"
+                                  style={{ background: 'var(--wash-sport)', color: 'var(--tag-sport)' }}
                                 >
                                   MA
                                 </span>
                               )}
                               {session.oneOff && (
                                 <span
-                                  className="chip"
-                                  style={{ fontSize: 9, padding: '2px 6px', color: 'var(--text-secondary)' }}
+                                  className="excat-tag"
+                                  style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}
                                 >
                                   EGYSZERI
                                 </span>
@@ -340,7 +317,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                             </div>
                             <span
                               className="text-tertiary"
-                              style={{ fontSize: 10, marginTop: 2 }}
+                              style={{ fontSize: 14, marginTop: 2 }}
                             >
                               {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
                             </span>
@@ -348,10 +325,10 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                         )
                       })}
                     </div>
-                    <Icon name="chevron-right" size={12} color="var(--text-tertiary)" />
+                    <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
                   </>
                 ) : (
-                  <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+                  <span className="text-meta-sm text-tertiary">
                     nincs session
                   </span>
                 )}
@@ -361,12 +338,12 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
         })}
       </div>
 
-      <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
+      <div className="card mt-lg" style={{ padding: 'var(--sp-4)', background: 'var(--wash-sport)' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--coral)" />
+          <Icon name="sparkle" size={16} color="var(--primary-base)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Heti ritmus · független</span>
-            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <p style={{ fontSize: 14, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
               A röplabda recurring · független a gym mesociklustól. Új meso indításakor a Mezo automatikusan beleépíti a
               volleyball cross-load-ot a volumen-tervbe.
             </p>
@@ -404,10 +381,10 @@ function SportEventsSection({ events, onAdd, onDelete }: {
                 <div key={e.id} className="card row" style={{ padding: '10px 12px', alignItems: 'center', gap: 10 }}>
                   <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
                   <div className="col flex-1">
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
                       {huMonthDayDow(e.date)} · {e.time}
                     </span>
-                    <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2 }}>
+                    <span className="text-tertiary" style={{ fontSize: 14, marginTop: 2 }}>
                       {[`${e.durationMin}p`, e.kind === 'match' ? 'meccs' : 'edzés', e.location]
                         .filter(Boolean)
                         .join(' · ')}
@@ -428,18 +405,8 @@ function SportEventsSection({ events, onAdd, onDelete }: {
           </div>
         </>
       )}
-      <button
-        type="button"
-        className="chip"
-        onClick={onAdd}
-        style={{
-          width: '100%',
-          padding: '10px',
-          fontSize: 10,
-          borderStyle: 'dashed',
-          color: 'var(--text-secondary)',
-        }}
-      >
+      {/* Same dashed "add one more" CTA the Mai/Heti lists close with. */}
+      <button type="button" className="card dashedcta" onClick={onAdd} style={{ color: 'var(--text-secondary)' }}>
         + Egyszeri esemény
       </button>
     </div>
@@ -451,7 +418,7 @@ function SportLogView({ sessions }: { sessions: SportSession[] }) {
   if (sessions.length === 0) {
     return (
       <div style={{ padding: '8px 24px 16px' }}>
-        <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+        <span className="text-meta-sm text-tertiary">
           Még nincs logolt session.
         </span>
       </div>
@@ -495,13 +462,13 @@ function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
     <div style={{ padding: '8px 24px 16px' }}>
       <div
         className="card"
-        style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)', marginBottom: 14 }}
+        style={{ padding: 'var(--sp-4)', background: 'var(--wash-sport)', marginBottom: 14 }}
       >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--coral)" />
+          <Icon name="sparkle" size={16} color="var(--primary-base)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo · keresztrendszer hatások</span>
-            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <p style={{ fontSize: 14, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
               <SafeMarkdown text={CROSSLOAD_INTRO} />
             </p>
           </div>

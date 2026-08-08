@@ -12,6 +12,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useRunning } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -70,49 +71,34 @@ export function RunningPage() {
   return (
     <>
       {/* Header — `＋ Új terv` chip lives on the Tervek (blocks) segment */}
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">Edzés · Futás</div>
-          <h1>Intervallum</h1>
+          <Eyebrow brand>Edzés · Futás</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>Intervallum</PageTitle>
         </div>
         {view === 'blocks' && (
-          <button
-            type="button"
-            onClick={createBlock}
-            className="pgact-np np-press"
-            style={{ background: 'var(--wash-run)', color: 'var(--tag-run)' }}
-          >
-            <Icon name="plus" size={12} /> Új terv
+          <button type="button" onClick={createBlock} className="pgact">
+            <Icon name="plus" size={14} /> Új terv
           </button>
         )}
       </div>
 
       {/* View switcher */}
-      <div className="row gap-xs" style={{ padding: '0 24px 12px' }}>
-        {SUB_VIEWS.map((v) => {
-          const active = view === v.id
-          return (
-            <button
-              key={v.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setView(v.id)}
-              className="flex-1 rad-12"
-              style={{
-                padding: '10px',
-                background: active ? 'var(--wash-run)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-run) 40%, transparent)' : 'var(--border-subtle)'}`,
-                color: active ? RUN : 'var(--text-secondary)',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {v.label}
-            </button>
-          )
-        })}
+      {/* Same `.segtabs` control Sport uses (mezo-setx.6.5): the selected segment
+          speaks PRIMARY, because ADR 0018 D5 keeps the run sky in the data-viz
+          band and off buttons. */}
+      <div className="segtabs" style={{ padding: '0 24px 12px' }}>
+        {SUB_VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            aria-pressed={view === v.id}
+            onClick={() => setView(v.id)}
+            className="segtab"
+          >
+            {v.label}
+          </button>
+        ))}
       </div>
 
       {view === 'week' && <RunWeekView block={activeRunningBlock} pending={runningPending} onLog={logRunSession} />}
@@ -182,7 +168,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
             <Display size="lg">Hét {block.currentWeek} / {block.weeks}</Display>
           </div>
           {week?.phaseLabel && (
-            <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>{week.phaseLabel}</span>
+            <span className="text-secondary mt-sm" style={{ fontSize: 14 }}>{week.phaseLabel}</span>
           )}
 
           <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
@@ -190,7 +176,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
           {/* Stat row */}
           <div
             className="row gap-md mt-lg"
-            style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}
+            style={{ paddingTop: 14, borderTop: '1px solid var(--divider)' }}
           >
             <RunStat val={`${block.weeks}`} unit="hét" label="blokk" />
             <RunStat val={`${sessions.length}`} unit="×/hét" label="edzés" />
@@ -225,7 +211,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
           </div>
         </>
       ) : (
-        <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+        <span className="text-meta-sm text-tertiary">
           Az aktuális hét ({block.currentWeek}) nincs a tervben.
         </span>
       )}
@@ -248,19 +234,10 @@ function RunStat({ val, unit, label }: { val: string; unit?: string; label: stri
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)' }}>
         {val}
         {unit && (
-          <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
+          <span style={{ fontSize: 14, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
         )}
       </div>
-      <span
-        style={{
-          fontSize: 9,
-          fontWeight: 600,
-          letterSpacing: '0.16em',
-          textTransform: 'uppercase',
-          color: 'var(--text-tertiary)',
-          marginTop: 3,
-        }}
-      >
+      <span className="statstrip-l" style={{ marginTop: 3 }}>
         {label}
       </span>
     </div>
@@ -272,7 +249,7 @@ function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
   if (sessions.length === 0) {
     return (
       <div style={{ padding: '8px 24px 16px' }}>
-        <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+        <span className="text-meta-sm text-tertiary">
           Még nincs logolt futás.
         </span>
       </div>
@@ -293,16 +270,7 @@ function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
 
 function RunLogChip({ text }: { text: string }) {
   return (
-    <span
-      className="chip"
-      style={{
-        fontSize: 9,
-        padding: '2px 7px',
-        background: 'var(--wash-run)',
-        borderColor: 'color-mix(in srgb, var(--tag-run) 35%, transparent)',
-        color: RUN,
-      }}
-    >
+    <span className="excat-tag" style={{ background: 'var(--wash-run)', color: RUN }}>
       {text}
     </span>
   )
@@ -320,7 +288,7 @@ function RunLogCard({ session }: { session: RunSessionLogResponse }) {
         <div className="row" style={{ alignItems: 'center', gap: 10 }}>
           <span className="stag stag-run">FUTÁS</span>
           <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{huMonthDayDow(session.date)}</span>
-          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{sessionKeyLabel(session.sessionKey)}</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{sessionKeyLabel(session.sessionKey)}</span>
         </div>
       </div>
       {chips.length > 0 && (
@@ -331,7 +299,7 @@ function RunLogCard({ session }: { session: RunSessionLogResponse }) {
         </div>
       )}
       {session.notes && (
-        <p className="text-secondary" style={{ fontSize: 12, marginTop: 8, lineHeight: 1.5 }}>{session.notes}</p>
+        <p className="text-secondary" style={{ fontSize: 14, marginTop: 8, lineHeight: 1.5 }}>{session.notes}</p>
       )}
     </div>
   )
@@ -389,16 +357,16 @@ function RunStatusChip({ status }: { status: RunningBlockResponse['status'] }) {
       ? { color: RUN, background: 'var(--wash-run)', borderColor: 'color-mix(in srgb, var(--tag-run) 40%, transparent)' }
       : status === 'planned'
         ? { color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.3)' }
-        : { color: 'var(--text-tertiary)', background: 'var(--surface-2)', borderColor: 'var(--border-subtle)' }
+        : { color: 'var(--text-tertiary)', background: 'var(--surface-2)', borderColor: 'var(--divider)' }
   return (
     <span
       style={{
-        fontSize: 9,
-        fontWeight: 600,
-        letterSpacing: '0.14em',
+        fontSize: 9.5,
+        fontWeight: 800,
+        letterSpacing: '0.10em',
         textTransform: 'uppercase',
         padding: '2px 7px',
-        borderRadius: 10,
+        borderRadius: 'var(--r-sm)',
         border: '1px solid',
         ...style,
       }}
@@ -432,7 +400,7 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
           <div style={{ marginTop: 5 }}>
             <Display size="md">{block.title}</Display>
           </div>
-          <span className="text-secondary" style={{ fontSize: 12, marginTop: 4 }}>
+          <span className="text-secondary" style={{ fontSize: 14, marginTop: 4 }}>
             {huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét
           </span>
         </div>
@@ -440,10 +408,10 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
       </div>
       <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <span className="text-tertiary" style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+        <span className="eyebrow text-tertiary">
           Hét {block.currentWeek} / {block.weeks}
         </span>
-        <span style={{ color: RUN, fontSize: 9, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+        <span className="eyebrow" style={{ color: RUN }}>
           Builder ▸
         </span>
       </div>
@@ -465,14 +433,14 @@ function RunCompactBlockCard({ block, onOpen }: { block: RunningBlockResponse; o
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="col">
           <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{block.title}</span>
-          <span className="text-tertiary" style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 4 }}>
+          <span className="eyebrow text-tertiary" style={{ marginTop: 4 }}>
             {huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét
           </span>
         </div>
         <RunStatusChip status={block.status} />
       </div>
       {isArchived && block.summary && (
-        <p className="text-secondary" style={{ fontSize: 12, marginTop: 8, lineHeight: 1.5 }}>{block.summary}</p>
+        <p className="text-secondary" style={{ fontSize: 14, marginTop: 8, lineHeight: 1.5 }}>{block.summary}</p>
       )}
     </div>
   )

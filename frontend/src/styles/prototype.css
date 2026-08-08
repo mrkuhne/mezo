@@ -3233,3 +3233,35 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   color: var(--tag-gym);
   font-size: 14px; font-weight: 600;
 }
+
+/* ── Segmented view switcher (mezo-setx.6.5) ────────────────────────────────
+   The full-width 2-4 way switcher a sub-page uses to swap what is BELOW it
+   (Sport: Hét/Napló/Terhelés; Futás: E heti/Napló/Tervek). It was a row of
+   10px uppercase buttons tinted in the page's domain accent — which ADR 0018
+   D5 forbids on buttons: the domain colours are legal in the data-viz band
+   only. The selected segment therefore speaks PRIMARY, like every other
+   selected control in the DS, and the domain accent stays on the numbers. */
+.segtabs { display: flex; gap: var(--sp-2); }
+.segtab {
+  flex: 1; min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--divider);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.segtab[aria-pressed='true'] {
+  background: var(--primary-bg);
+  border-color: var(--primary-base);
+  color: var(--primary-deep);
+  font-weight: 700;
+}
+.segtab:active { transform: scale(0.98); }
+@media (prefers-reduced-motion: reduce) {
+  .segtab { transition: none; }
+  .segtab:active { transform: none; }
+}
