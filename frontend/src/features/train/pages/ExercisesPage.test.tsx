@@ -26,7 +26,7 @@ test('default state ranks top exercises with best set and e1RM chip', async () =
   renderView()
   expect(await screen.findByText('Top gyakorlatok · rekordjaid')).toBeInTheDocument()
   const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  expect(within(row).getByText('#1')).toBeInTheDocument()          // rank plaque (was '01')
+  expect(within(row).getByText('#1')).toBeInTheDocument()          // inline #n rank prefix
   expect(within(row).getByText('102.5×9')).toBeInTheDocument()    // Legjobb szett cell
   expect(within(row).getByText('133.3 kg')).toBeInTheDocument()   // e1RM cell
   expect(within(row).getByText('182.5 t')).toBeInTheDocument()    // Összvolumen cell

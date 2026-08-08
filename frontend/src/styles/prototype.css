@@ -3093,15 +3093,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   color: var(--text-primary);
 }
 .excat.ghost .excat-name { color: var(--text-secondary); }
-.excat-rank {
-  flex: none;
-  width: 28px; height: 28px;
-  border-radius: var(--r-sm);
-  display: inline-flex; align-items: center; justify-content: center;
-  font: 700 12px/1 var(--ff-body);
-  letter-spacing: .02em;
-  font-variant-numeric: tabular-nums;
-}
 /* DS Tag stamp: 9.5 / 800 / 0.10em uppercase / r-sm / 2×7 — a descriptor, not a chip. */
 .excat-tag {
   display: inline-flex; align-items: center; gap: 4px;

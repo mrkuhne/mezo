@@ -186,7 +186,7 @@ function GhostRow({ item, onVideo, onEdit }: {
             muscle={item.muscle}
             variant="thumb"
           />
-          <span className="excat-name" style={{ flex: 1 }}>{item.name}</span>
+          <span className="excat-name" style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
           <div style={{ textAlign: 'right' }}>
             <div className="eyebrow" style={{ color: mc.deep }}>Stim</div>
             <div className="excat-stim" aria-hidden="true">

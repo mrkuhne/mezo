@@ -25,7 +25,9 @@ const FRAME_MS = 1200
 interface ExerciseImageProps {
   start: string | null | undefined
   end?: string | null
-  /** Exercise name — the alt text; never decorative-empty. */
+  /** Exercise name. `hero` uses it as the alt text (never decorative-empty); `thumb` is
+   * always decorative (alt="") since it sits next to a visible label, and `name` is used
+   * only for the no-image fallback tile's initial. */
   name: string
   /** Catalog muscle token, for the rail tint + the no-image fallback tile. */
   muscle?: string

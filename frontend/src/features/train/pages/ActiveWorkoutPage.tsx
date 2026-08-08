@@ -1265,12 +1265,15 @@ function ActiveWorkoutSession({
 
           {/* Inline demo media (catalog-resolved). The video wrapper renders only when a real
               YouTube id is extractable; the still is tap-to-reveal so it never steals the
-              logging surface mid-set (mezo-8xdl.4). */}
+              logging surface mid-set (mezo-8xdl.4). The image chip and Demo chip stay stacked
+              (not side by side) — merging them onto one row would mean restructuring
+              VideoDemo's chip+player unit, which mezo-setx.6.14/.6.17 own. */}
           {current.imageStartUrl && (
             <div className="mt-sm">
               <button
                 type="button"
                 className="chip"
+                style={{ fontSize: 9, alignSelf: 'flex-start' }}
                 aria-expanded={imageOpen}
                 onClick={() => setImageOpen((v) => !v)}
               >

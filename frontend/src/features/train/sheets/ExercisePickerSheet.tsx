@@ -179,7 +179,7 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                       </span>
                     </div>
                   </div>
-                  <div className="col" style={{ alignItems: 'flex-end', marginRight: 12 }}>
+                  <div className="col" style={{ alignItems: 'flex-end' }}>
                     <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>
                       STIM
                     </span>
