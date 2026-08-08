@@ -1,8 +1,13 @@
 // ============================================================
-// Mezo · SportStat — one stat cell in the SportPage hero card:
-// tiny mono label / big Antonio value / mono sub. The highlighted
-// variant glows in the Napiv --tag-sport (volleyball) accent.
-// Ported from prototype sport.jsx SportStat.
+// Mezo · SportStat — one stat cell in the SportPage hero card.
+// DS-migrated (mezo-setx.6.5) onto the shared StatStrip CELL vocabulary
+// (`.statstrip-c/-v/-l` + the optional `.statstrip-s` sub-caption), the same
+// move GymStat made in mezo-setx.6.4 — so every glance strip in Train measures
+// alike. It stays a feature component because the domain-free <StatStrip>
+// models neither the rose `highlight` accent nor a sub line.
+// The accent stays: a stat VALUE is data-viz, which is where the domain
+// colours are still legal (ADR 0018 D5) — unlike buttons, which this bead
+// moves off rose.
 // ============================================================
 interface SportStatProps {
   label: string
@@ -13,28 +18,15 @@ interface SportStatProps {
 
 export function SportStat({ label, val, sub, highlight = false }: SportStatProps) {
   return (
-    <div className="col flex-1">
-      <span className="label-mono" style={{ fontSize: 8 }}>
-        {label}
-      </span>
+    <div className="statstrip-c">
       <div
-        style={{
-          fontFamily: 'var(--ff-display)',
-          fontSize: 22,
-          fontWeight: 600,
-          marginTop: 2,
-          lineHeight: 1,
-          color: highlight ? 'var(--tag-sport)' : 'var(--text-primary)',
-          textShadow: highlight ? '0 0 12px color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'none',
-        }}
+        className="statstrip-v"
+        style={highlight ? { color: 'var(--tag-sport)' } : undefined}
       >
         {val}
       </div>
-      {sub && (
-        <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>
-          {sub}
-        </span>
-      )}
+      <div className="statstrip-l">{label}</div>
+      {sub && <div className="statstrip-s">{sub}</div>}
     </div>
   )
 }
