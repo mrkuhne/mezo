@@ -2256,6 +2256,11 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                    background .6s ease, opacity .45s ease; }
 .isl.isl-big { flex: 1 1 100%; border-radius: 34px; box-shadow: var(--shadow-md); }
 .isl.isl-belt { flex: 0 0 54px; border-radius: var(--r-xl); }
+/* Source order matters: `.isl-big` (above) alone loses to this belt rule on a
+   selected/expanded belt (equal specificity, `.isl-belt` comes later) — the belt
+   would stay clamped to a 54px bar instead of expanding. Mirrors the mockup's own
+   `.isl.belt.big` override (2026-08-08-fuel-window-river-mockup.html:106). */
+.isl.isl-big.isl-belt { flex: 1 1 100%; border-radius: 34px; }
 .isl-blob { position: absolute; width: 300px; height: 300px; top: -100px; left: 50%;
             margin-left: -150px; filter: blur(2px); opacity: 0; transition: opacity .6s ease;
             pointer-events: none; z-index: 0; }

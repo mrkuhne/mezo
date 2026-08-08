@@ -27,7 +27,7 @@ const heroFor = (nowSlot: FuelSlot | null): HeroResult =>
 
 const build = (opts: {
   slots: FuelSlot[]
-  stackVerdict?: MealMatchVerdict | null
+  stackVerdicts?: MealMatchVerdict[]
   workoutTime?: string | null
   retaPeak?: boolean
   nowHHmm?: string
@@ -37,7 +37,7 @@ const build = (opts: {
     plan: { ...PLAN_BASE, slots: opts.slots },
     budget: BUDGET,
     hero: heroFor(nowSlot),
-    stackVerdict: opts.stackVerdict ?? null,
+    stackVerdicts: opts.stackVerdicts ?? [],
     workoutTime: opts.workoutTime ?? null,
     retaPeak: opts.retaPeak ?? false,
     nowHHmm: opts.nowHHmm ?? '12:00',
@@ -103,11 +103,36 @@ test('a stack verdict lands only in its own zones island, both in stackDoses and
   const breakfast = slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done' })
   const lunch = slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: 'now' })
   const verdict: MealMatchVerdict = { zone: 'breakfast', dayLabel: 'ma', mealTitle: 'Zabkása', ok: false, metric: '6g zsír', advice: 'Tedd zsírosabbá.' }
-  const vm = build({ slots: [breakfast, lunch], stackVerdict: verdict })
+  const vm = build({ slots: [breakfast, lunch], stackVerdicts: [verdict] })
   const bIsland = vm.islands.find(i => i.key === '07:40-Reggeli')!
   const lIsland = vm.islands.find(i => i.key === '12:30-Ebéd')!
+  // L1 always renders 3 rows (ablak étkezése/tervezz + csere + AI) regardless of doses, so
+  // l1Count is 3 + doses.length, not doses.length alone.
   expect(bIsland.stackDoses).toHaveLength(1)
-  expect(bIsland.l1Count).toBe(1)
+  expect(bIsland.l1Count).toBe(4)
   expect(lIsland.stackDoses).toHaveLength(0)
-  expect(lIsland.l1Count).toBe(0)
+  expect(lIsland.l1Count).toBe(3)
+})
+
+test('two stack verdicts (breakfast + dinner zones) land doses on only their two matching islands', () => {
+  const breakfast = slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done' })
+  const lunch = slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: 'now' })
+  const dinner = slot({ time: '19:30', label: 'Vacsora', slotKey: 'dinner', state: 'pending' })
+  const breakfastVerdict: MealMatchVerdict = { zone: 'breakfast', dayLabel: 'ma', mealTitle: 'Zabkása', ok: false, metric: '6g zsír', advice: 'Tedd zsírosabbá.' }
+  const dinnerVerdict: MealMatchVerdict = { zone: 'dinner', dayLabel: 'ma', mealTitle: 'Csirke', ok: true, metric: '30g P', advice: null }
+  const vm = build({ slots: [breakfast, lunch, dinner], stackVerdicts: [breakfastVerdict, dinnerVerdict] })
+  const bIsland = vm.islands.find(i => i.key === '07:40-Reggeli')!
+  const lIsland = vm.islands.find(i => i.key === '12:30-Ebéd')!
+  const dIsland = vm.islands.find(i => i.key === '19:30-Vacsora')!
+  expect(bIsland.stackDoses.map(d => d.name)).toEqual(['Zabkása'])
+  expect(dIsland.stackDoses.map(d => d.name)).toEqual(['Csirke'])
+  expect(lIsland.stackDoses).toHaveLength(0)
+})
+
+test('a window with no doses still shows the real L1 row count, not "0 ›"', () => {
+  const now = slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: 'now' })
+  const vm = build({ slots: [now] })
+  const island = vm.islands[0]
+  expect(island.l1Count).toBe(3)
+  expect(island.count).toBe('3 ›')
 })

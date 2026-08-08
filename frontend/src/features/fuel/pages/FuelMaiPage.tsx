@@ -9,12 +9,40 @@ import { addDays, localDateString } from '@/shared/lib/dates'
 import { pickHeroWindow } from '@/features/fuel/logic/heroWindow'
 import { buildWindowRiver, type WindowRiverVM } from '@/features/fuel/logic/windowIslands'
 import { matchMealsToStack } from '@/features/fuel/logic/matchMealsToStack'
+import { Island } from '@/shared/ui/Island'
 import { WindowIsland } from '@/features/fuel/components/WindowIsland'
 import { KeretBelt } from '@/features/fuel/components/KeretBelt'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
 import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
+
+// Spec §8 empty-day state: no meal slots at all today → the sky shows this one static "üres nap"
+// island instead of a river with nothing in it (the Keret-öv still renders alongside it — an empty
+// day still has calorie/water targets). Always big — there is no capsule state to select, there is
+// nothing else on the sky to swap away from. Rides the same shared `Island` shell every other
+// window/belt uses (`tone="fuel"`), IslandDay's rest-day `is-word` hero idiom
+// (`features/today/components/IslandDay.tsx`).
+function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
+  return (
+    <Island
+      tone="fuel"
+      big
+      nowRing={false}
+      capsule={{ emoji: '🍽️', title: 'Üres nap', essence: 'Nincs mai terv', count: '' }}
+      ariaLabel="Üres nap · megnyitás"
+      onSelect={() => {}}
+    >
+      <div className="isl-hero-v is-word">
+        Üres nap
+      </div>
+      <div className="isl-hero-sub">Nincs mai terv — tervezz egyet.</div>
+      <div className="isl-act">
+        <button type="button" className="isl-cta cta-sage" onClick={onPlan}>＋ tervezz</button>
+      </div>
+    </Island>
+  )
+}
 
 // Ablak-folyam recomposition (spec 2026-08-08, mezo-jgh9): the Mai screen becomes a non-scrolling
 // sky of window-islands (one per meal slot, chronological) with the always-visible Keret-öv
@@ -48,9 +76,10 @@ export function FuelMaiPage() {
   const { cycle: medicationCycle } = useMedication()
   const { logWater } = useWaterActions()
   // The same stack/day composition FuelStackPage.tsx already uses, feeding matchMealsToStack —
-  // today's window-islands need only ONE representative verdict (buildWindowRiver's contract is
-  // `MealMatchVerdict | null`, singular), so this page picks the first TODAY ('ma') verdict; a
-  // 'tegnap' verdict describes yesterday's zone and has no honest home on today's sky.
+  // buildWindowRiver takes EVERY today ('ma') verdict (one per zone) and each window picks the
+  // ones matching its own slotKey, so a day with matches in multiple zones shows doses on every
+  // matching window, not just one. A 'tegnap' verdict describes yesterday's zone and has no
+  // honest home on today's sky, so it's filtered out here.
   const { slots: stackSlots } = useStackDay()
   const { recipes } = useRecipes()
   const yesterday = addDays(localDateString(), -1)
@@ -75,9 +104,9 @@ export function FuelMaiPage() {
   // is the one phase the design calls out as appetite-relevant (spec §3.2).
   const retaPeak = medicationCycle.phaseKey === 'peak'
   const matchResult = matchMealsToStack(stackSlots, recipes, fuel.meals, yesterdayFuel.meals)
-  const stackVerdict = matchResult.verdicts.find(v => v.dayLabel === 'ma') ?? null
+  const stackVerdicts = matchResult.verdicts.filter(v => v.dayLabel === 'ma')
   const river: WindowRiverVM = buildWindowRiver({
-    plan, budget, hero: heroResult, stackVerdict, workoutTime, retaPeak, nowHHmm,
+    plan, budget, hero: heroResult, stackVerdicts, workoutTime, retaPeak, nowHHmm,
   })
 
   // Same filter+sort `buildWindowRiver` uses internally (its own `islandKey` isn't exported —
@@ -150,6 +179,7 @@ export function FuelMaiPage() {
   return (
     <>
       <div className="sky-islands">
+        {river.islands.length === 0 && <EmptyDayIsland onPlan={() => navigate('/fuel/plan')} />}
         {river.islands.map((vm) => (
           <Fragment key={vm.key}>
             <WindowIsland

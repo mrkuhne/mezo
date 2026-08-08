@@ -128,6 +128,17 @@ test('a trailing missed window (no now) puts the belt after the last DONE island
   expect(shells[3].querySelector('.isl-cap')?.getAttribute('aria-label')).toMatch(/^Vacsora ·/)
 })
 
+test('an empty day (no meal slots) shows the üres nap island with a ＋ tervezz CTA that navigates to /fuel/plan', async () => {
+  hoisted.overrideSlots = []
+  const { container } = renderView()
+  expect(container.querySelector('.isl-hero-v')?.textContent).toBe('Üres nap')
+  expect(screen.getByText('Nincs mai terv — tervezz egyet.')).toBeInTheDocument()
+  const cta = screen.getByRole('button', { name: '＋ tervezz' })
+  expect(cta).toBeInTheDocument()
+  await userEvent.click(cta)
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel/plan')
+})
+
 // ── `?w=` URL derivation (the Today `?dp=` pattern) ──────────────────────────────────────────
 
 test('no ?w= → the NOW window is big (river.defaultKey)', () => {

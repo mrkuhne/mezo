@@ -57,6 +57,12 @@ function buildEssence(slot: FuelSlot): string {
   return `${slot.time} · ${slot.mealName ?? slot.label}`
 }
 
+// WindowIsland's L1 always renders three rows (ablak étkezése/tervezz, csere a tervben, AI
+// naplózás) regardless of doses — plus one row per stack dose. l1Count must mirror exactly what
+// the L1 renders (WindowIsland.tsx), or the capsule/hero "még N ›" handle undercounts (e.g. "0 ›"
+// on a window with no doses, when the L1 it opens actually has 3 rows).
+const L1_BASE_ROWS = 3
+
 // done: "✓ 420 kcal · 92 p" (kcal+protein, straight from the slot) · missed: "Pótold" · other: the
 // "még N ›" handle count.
 function buildCount(slot: FuelSlot, l1Count: number): string {
@@ -102,12 +108,12 @@ export function buildWindowRiver(input: {
   plan: FuelPlanToday
   budget: DayBudget
   hero: HeroResult
-  stackVerdict: MealMatchVerdict | null
+  stackVerdicts: MealMatchVerdict[]
   workoutTime: string | null
   retaPeak: boolean
   nowHHmm: string
 }): WindowRiverVM {
-  const { plan, budget, hero, stackVerdict, workoutTime, retaPeak } = input
+  const { plan, budget, hero, stackVerdicts, workoutTime, retaPeak } = input
 
   const mealSlots = plan.slots.filter(hasSlotKey).sort((a, z) => toMin(a.time) - toMin(z.time))
   const consumedProtein = mealSlots.filter(s => s.state === 'done').reduce((sum, s) => sum + (s.p ?? 0), 0)
@@ -115,10 +121,12 @@ export function buildWindowRiver(input: {
 
   const islands: WindowIslandVM[] = mealSlots.map((slot, i) => {
     const state = mapState(slot.state)
-    const doses =
-      stackVerdict && stackVerdict.zone === slot.slotKey
-        ? [{ name: stackVerdict.mealTitle, note: stackVerdict.advice ?? stackVerdict.metric }]
-        : []
+    // Every zone-matching verdict lands on this window's L1 — not just the first one found —
+    // so a day with matches in multiple zones doesn't silently drop doses from all but one.
+    const doses = stackVerdicts
+      .filter((v) => v.zone === slot.slotKey)
+      .map((v) => ({ name: v.mealTitle, note: v.advice ?? v.metric }))
+    const l1Count = L1_BASE_ROWS + doses.length
     const nextTime = mealSlots[i + 1]?.time ?? plan.kitchenClose
     return {
       key: islandKey(slot),
@@ -127,7 +135,7 @@ export function buildWindowRiver(input: {
       title: slot.label,
       time: slot.time,
       essence: buildEssence(slot),
-      count: buildCount(slot, doses.length),
+      count: buildCount(slot, l1Count),
       subtitle: buildSubtitle(slot, nextTime, workoutTime, retaPeak),
       meal: buildMeal(slot),
       facts: {
@@ -137,7 +145,7 @@ export function buildWindowRiver(input: {
         dayScore: null,
       },
       stackDoses: doses,
-      l1Count: doses.length,
+      l1Count,
     }
   })
 

@@ -61,6 +61,17 @@ describe('Island', () => {
     expect(container.querySelector('.isl.isl-belt')).not.toBeNull()
   })
 
+  it('belt + big carries BOTH classes (the expanded Keret-öv must win the CSS cascade — see the .isl.isl-big.isl-belt override comment in prototype.css)', () => {
+    const { container } = render(
+      <Island {...base} big belt>
+        x
+      </Island>,
+    )
+    const shell = container.querySelector('.isl')
+    expect(shell?.className).toContain('isl-big')
+    expect(shell?.className).toContain('isl-belt')
+  })
+
   it('belt renders beltContent instead of the standard capsule row', () => {
     render(
       <Island {...base} big={false} belt beltContent={<span>1 160 kcal maradt</span>}>
