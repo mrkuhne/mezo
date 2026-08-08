@@ -497,3 +497,13 @@ test('useTrain (real mode) updateSet/deleteSet hit the set sub-resource', async 
     expect(calls).toEqual(expect.arrayContaining(['put:w-1/st-7:82.5x9', 'del:w-1/st-7'])),
   )
 })
+
+test('useTrain (real mode) maps the catalog-resolved demo stills onto workout exercises', async () => {
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.workout?.exercises.length).toBeGreaterThan(0))
+  // The MSW /workouts/today fixture carries imageStartUrl/imageEndUrl on its first exercise;
+  // the mapping must pass both through untouched (null when absent, never undefined).
+  const first = result.current.workout!.exercises[0]
+  expect(first).toHaveProperty('imageStartUrl')
+  expect(first).toHaveProperty('imageEndUrl')
+})
