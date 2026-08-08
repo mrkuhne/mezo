@@ -285,7 +285,13 @@ test('real mode renders the today card and agenda from the active meso + /today'
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
-        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        // Contract-shaped TodayExercise (WorkoutTodayResponse.exercises[], api.gen.ts):
+        // workingSets/warmupSets/repMin/repMax — NOT the Phase-1 sets/targetReps pair
+        // the mapper (toWorkoutPlan, trainHooks.ts) ignores.
+        exercises: [{
+          id: 'e-1', name: 'Row', muscle: 'back', type: 'compound',
+          workingSets: 4, warmupSets: 2, repMin: 8, repMax: 10, targetRIR: 1,
+        }],
         openWorkout: null,
       }),
     ),
@@ -293,6 +299,18 @@ test('real mode renders the today card and agenda from the active meso + /today'
   renderView()
   expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
+  // Hand-computed duration (sessionLength.ts estimateSessionMinutes), never call the
+  // estimator here — single exercise: type=compound, workingSets=4, warmupSets=2,
+  // repMin=8, repMax=10.
+  //   avgReps = (8 + 10) / 2 = 9
+  //   repSec = 3.5 (compound is not plyo)
+  //   workingSeconds = workingSets * avgReps * repSec = 4 * 9 * 3.5 = 126
+  //   restSeconds = (workingSets - 1) * restSecondsFor('compound' = 150) = 3 * 150 = 450
+  //   warmupSeconds = warmupSets * (warmupSetSeconds 20 + warmupRestSeconds 45) = 2 * 65 = 130
+  //   transitionSeconds = 90
+  //   total = 126 + 450 + 130 + 90 = 796 seconds
+  //   minutes = Math.round(796 / 60) + warmupBlockMinutes(8) = Math.round(13.2667) + 8 = 13 + 8 = 21
+  expect(screen.getByText('~21 perc')).toBeInTheDocument()
 })
 
 test('real mode shows the rest-day note when /today is empty but a meso is active', async () => {
@@ -307,6 +325,8 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
   renderView()
   expect(await screen.findByText(/Ma pihenőnap/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+  // Zero-guard: an absent workout (`{}` — no exercises at all) must render no duration chip.
+  expect(screen.queryByText(/~\d+ perc/)).not.toBeInTheDocument()
 })
 
 // Review fix (mezo-9bbc): a genuine rest day flags NO agenda row `isToday` at all
@@ -344,7 +364,10 @@ test('real mode: an open custom instance on a rest day renders a resume card, no
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'cw-1', dayLabel: 'Ma', title: 'Saját HIIT', durationEst: 30,
-        exercises: [{ id: 'e-1', name: 'Burpee', muscle: 'full', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound' }],
+        exercises: [{
+          id: 'e-1', name: 'Burpee', muscle: 'full', type: 'compound',
+          workingSets: 3, warmupSets: 1, repMin: 10, repMax: 12, targetRIR: 2,
+        }],
         openWorkout: {
           id: 'w-9', templateSessionId: 'cw-1', date: localDateString(), status: 'active',
           sets: [{ id: 's-1', exerciseId: 'e-1', setIndex: 0, weightKg: 0, reps: 10, skipped: false }],
@@ -394,7 +417,10 @@ test('real mode: today\'s OWN chip on a rest day keeps the in-progress resume ca
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'cw-1', dayLabel: 'Ma', title: 'Saját HIIT', durationEst: 30,
-        exercises: [{ id: 'e-1', name: 'Burpee', muscle: 'full', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound' }],
+        exercises: [{
+          id: 'e-1', name: 'Burpee', muscle: 'full', type: 'compound',
+          workingSets: 3, warmupSets: 1, repMin: 10, repMax: 12, targetRIR: 2,
+        }],
         openWorkout: {
           id: 'w-9', templateSessionId: 'cw-1', date: localDateString(), status: 'active',
           sets: [{ id: 's-1', exerciseId: 'e-1', setIndex: 0, weightKg: 0, reps: 10, skipped: false }],
@@ -490,7 +516,10 @@ test('real mode orders the morning run hero above the evening gym hero', async (
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
-        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        exercises: [{
+          id: 'e-1', name: 'Row', muscle: 'back', type: 'compound',
+          workingSets: 4, warmupSets: 2, repMin: 8, repMax: 10, targetRIR: 1,
+        }],
         openWorkout: null,
       }),
     ),
@@ -694,7 +723,10 @@ test('real mode: a completed today instance renders the Kész hero with Megnéze
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
-        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        exercises: [{
+          id: 'e-1', name: 'Row', muscle: 'back', type: 'compound',
+          workingSets: 4, warmupSets: 2, repMin: 8, repMax: 10, targetRIR: 1,
+        }],
         openWorkout: null,
         // a completed instance of today's day — the hero must show the Kész/Megnézem review CTA
         completedWorkout: {
@@ -727,7 +759,10 @@ test('real mode: an open instance renders the Folyamatban hero with Folytassuk',
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
-        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        exercises: [{
+          id: 'e-1', name: 'Row', muscle: 'back', type: 'compound',
+          workingSets: 4, warmupSets: 2, repMin: 8, repMax: 10, targetRIR: 1,
+        }],
         // an open (active, unfinished) instance with two logged sets — hero flips to in-progress
         openWorkout: {
           id: 'w-open', templateSessionId: 'd-1', date: localDateString(), status: 'active',
