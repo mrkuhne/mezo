@@ -401,7 +401,10 @@ describe('TodayPage — the chain-completion celebration', () => {
 describe('TodayPage — the day island hero', () => {
   test('a rest day offers the custom-workout sheet instead of a session hero', async () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workout: null, workoutTime: null })
-    renderToday('/today?dp=nap')
+    const { container } = renderToday('/today?dp=nap')
+    // Zero-guard: no workout ⇒ no duration fact anywhere in the hero markup (the
+    // Pihenő placeholder's own `.isl-hero-u` reads "nap", never a `~X perc` chip).
+    expect(container.querySelector('.isl-hero-u')?.textContent).not.toMatch(/perc/)
     fireEvent.click(screen.getByRole('button', { name: 'Saját edzés' }))
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
   })
@@ -429,6 +432,24 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Nap · 07:30 · Pull Day/ }))
     expect(container.querySelector('.isl-hero-v')?.textContent).toContain('07:30')
     expect(container.querySelector('.isl-hero-u')?.textContent).toContain('Pull Day')
+    // Hand-computed duration (sessionLength.ts estimateSessionMinutes), never call the
+    // estimator here — derived from the mock `workout.exercises` (src/data/train/train.ts,
+    // 5 exercises). avgReps=(repMin+repMax)/2, repSec=3.5 (none plyo), restSecondsFor
+    // compound=150 / isolation=90, warmup set = warmupSetSeconds 20 + warmupRestSeconds 45
+    // = 65s/set, +90s transition per exercise, ONE Math.round on the summed seconds, +8min block.
+    //   ex1 Chest Supported Row  compound  warmupSets=2 workingSets=3 repMin=8  repMax=10
+    //     avgReps=9;    work=3*9*3.5=94.5;    rest=(3-1)*150=300; warmup=2*65=130; transition=90 -> 614.5
+    //   ex2 Lat Pulldown         compound  warmupSets=2 workingSets=3 repMin=10 repMax=12
+    //     avgReps=11;   work=3*11*3.5=115.5;  rest=2*150=300;     warmup=2*65=130; transition=90 -> 635.5
+    //   ex3 Cable Pull-Around    isolation warmupSets=1 workingSets=3 repMin=12 repMax=15
+    //     avgReps=13.5; work=3*13.5*3.5=141.75; rest=2*90=180;    warmup=1*65=65;  transition=90 -> 476.75
+    //   ex4 Hammer Curl          isolation warmupSets=1 workingSets=3 repMin=10 repMax=12
+    //     avgReps=11;   work=3*11*3.5=115.5;  rest=2*90=180;      warmup=1*65=65;  transition=90 -> 450.5
+    //   ex5 Face Pull            isolation warmupSets=1 workingSets=3 repMin=15 repMax=20
+    //     avgReps=17.5; work=3*17.5*3.5=183.75; rest=2*90=180;    warmup=1*65=65;  transition=90 -> 518.75
+    //   total seconds = 614.5 + 635.5 + 476.75 + 450.5 + 518.75 = 2696
+    //   minutes = Math.round(2696 / 60) + warmupBlockMinutes(8) = Math.round(44.9333) + 8 = 45 + 8 = 53
+    expect(container.querySelector('.isl-hero-u')?.textContent).toContain('~53 perc')
     expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
     openList()
     expect(l1Rows(container)).not.toContain('Pull Day')
