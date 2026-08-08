@@ -1956,7 +1956,6 @@ button.itemrow { cursor: pointer; }
 .slot.done { opacity: .78; }
 .slot.missed { opacity: .72; }
 .slot.missed .fav { filter: grayscale(1); opacity: .6; }
-.misstag { font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-quaternary); border: 1px solid var(--line); padding: 2px 6px; border-radius: 999px; margin-left: 6px; }
 .slot .fav { width: 42px; height: 42px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
 .slot .tx { flex: 1; min-width: 0; }
 .slot .t1 { font-size: 14px; font-weight: 800; color: var(--ink); }
@@ -1970,13 +1969,9 @@ button.itemrow { cursor: pointer; }
 
 /* ===== Napív fuel Mai — chips + macro soft bars (spec §4.4) ===== */
 .fuelchips { display: flex; gap: 7px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
-.macror { margin-top: 14px; }
-.mac { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.mac:last-child { margin-bottom: 0; }
-.mac .k { width: 70px; font-size: 11.5px; font-weight: 700; color: var(--sub); }
-.mac .bar { flex: 1; height: 11px; border-radius: 999px; background: var(--warm); overflow: hidden; }
-.mac .bar i { display: block; height: 100%; border-radius: 999px; }
-.mac .v { width: 78px; text-align: right; font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink); }
+/* .macror/.mac (the DayBudgetCard macro bars) RETIRED — window-river Task 6 (mezo-jgh9): DayBudgetCard
+   was their only consumer, deleted with the ablak-folyam recomposition (its job moved into KeretBelt's
+   .kbelt-macrofull rows). MacroCells (shared/ui) is an unrelated component and never used this family. */
 
 /* ===== Napív Me identity header (spec §4.6) ===== */
 .mehead { display: flex; align-items: center; gap: 14px; padding: 14px 24px 0; }
@@ -2816,175 +2811,54 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   width: 14px; height: 14px; border-radius: 50%; font-size: 9px; font-weight: 800; font-style: italic;
   display: flex; align-items: center; justify-content: center; background: var(--surface-glass); }
 
-/* ===== Napív Fuel Mai — guided recomposition (mezo-rrtj) =====
-   Hero now-window card, day-status card with the energy/macro breakdown, and the
-   napszak zone cards. Geometry mirrors docs/design/fuel-mai-hybrid-v1.html. */
-
-/* Reta micro-strip — replaces the full RetaPhaseBar block on this page */
-.retamicro { display: flex; gap: 3px; margin: 9px 24px 12px; }
-.retamicro i { flex: 1; height: 5px; border-radius: 999px; background: var(--warm); }
-.retamicro i.pk { background: var(--coral); }
-.retamicro i.stb { background: var(--sage); }
-.retamicro i.tr { background: var(--amber); }
-.retamicro i.cur { box-shadow: 0 0 0 2px var(--ink); }
-
-/* Hero — the day's single open decision */
-.nowcard { position: relative; margin: 0 24px 11px; border-radius: 26px; padding: 17px;
-  background: linear-gradient(152deg, #FFF3EC, #FFFDFB 62%);
-  box-shadow: 0 0 0 2px var(--coral), 0 16px 34px -10px rgba(255,107,74,.32); overflow: hidden; }
-:root[data-theme="dark"] .nowcard { background: linear-gradient(152deg, rgba(255,107,74,.16), rgba(255,255,255,.03) 62%); }
-.nowcard::after { content: ''; position: absolute; top: -52px; right: -52px; width: 168px; height: 168px;
-  border-radius: 50%; background: radial-gradient(circle, rgba(255,107,74,.15), transparent 68%); }
-.nowcard > * { position: relative; z-index: 1; }
-.nowcard .top { display: flex; align-items: center; gap: 8px; }
-.nowcard .lbl { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--coral-deep); }
-.nowcard .lbl .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); }
-.nowcard .clock { margin-left: auto; font-family: var(--ff-mono); font-size: 10.5px; font-weight: 600;
-  color: var(--sub); background: rgba(255,255,255,.82); border-radius: 999px; padding: 4px 9px; }
-:root[data-theme="dark"] .nowcard .clock { background: rgba(255,255,255,.1); }
-.nowcard h2 { font-family: var(--ff-display); font-size: 25px; font-weight: 800; letter-spacing: -.4px;
-  line-height: 1.1; margin-top: 10px; color: var(--ink); }
-.nowcard .why { font-size: 11.5px; color: var(--sub); margin-top: 5px; font-weight: 600; }
-.nowcard .budget { display: flex; align-items: center; gap: 7px; margin-top: 12px; flex-wrap: wrap; }
-.nowcard .bignum { font-family: var(--ff-display); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.nowcard .bignum small { font-size: 11px; color: var(--faint); font-weight: 800; }
-.nowcard .mpill { background: rgba(255,255,255,.82); border-radius: 999px; padding: 4px 9px; font-size: 10.5px; font-weight: 800; }
-:root[data-theme="dark"] .nowcard .mpill { background: rgba(255,255,255,.1); }
-.nowcard .ctas { display: flex; gap: 8px; margin-top: 14px; }
-.nowcard .primary { flex: 1; border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 14px 0;
-  text-align: center; font-size: 14.5px; font-weight: 800; color: #fff;
-  background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2));
-  box-shadow: 0 10px 22px rgba(255,107,74,.34), inset 0 1px 0 rgba(255,255,255,.25); }
-.nowcard .alt { width: 52px; flex-shrink: 0; border: 0; cursor: pointer; font: inherit; border-radius: 999px;
-  background: rgba(255,255,255,.88); box-shadow: var(--np-shadow-row); display: grid; place-items: center; font-size: 17px; }
-:root[data-theme="dark"] .nowcard .alt { background: rgba(255,255,255,.1); }
-.nowcard .foot { display: flex; gap: 10px; margin-top: 11px; }
-.nowcard .foot button { border: 0; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; color: var(--coral-deep); }
-.nowcard.closed { background: linear-gradient(152deg, #EDF3E7, #FFFDFB 62%);
-  box-shadow: 0 0 0 2px var(--sage), 0 16px 34px -10px rgba(127,164,138,.28); }
-:root[data-theme="dark"] .nowcard.closed { background: linear-gradient(152deg, rgba(127,164,138,.16), rgba(255,255,255,.03) 62%); }
-.nowcard.closed .lbl { color: var(--sage-deep); }
-.nowcard.closed .lbl .dot { background: var(--sage); }
-.nowcard.closed .primary { background: linear-gradient(135deg, #9CBCA6, var(--sage)); box-shadow: 0 10px 22px rgba(127,164,138,.32); }
-.nowcard.closed .foot button { color: var(--sage-deep); }
-
-/* Missed-window strip */
-.missedstrip { display: flex; align-items: center; gap: 9px; margin: 0 24px 11px; padding: 11px 14px;
-  border-radius: 18px; background: var(--wash-amber); }
-.missedstrip .mt { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 700; color: var(--amber-deep); }
-.missedstrip button { border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 6px 12px;
-  font-size: 10.5px; font-weight: 800; background: var(--surface); color: var(--amber-deep); flex-shrink: 0; }
-
-/* Day-status card */
-.daybudget { margin: 0 24px 12px; background: var(--surface); border-radius: 20px; padding: 14px 15px; box-shadow: var(--np-shadow-row); }
-.daybudget .r1 { display: flex; align-items: baseline; gap: 7px; }
-.daybudget .r1 .n { font-family: var(--ff-display); font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
-.daybudget .r1 .of { font-size: 11px; color: var(--faint); font-weight: 800; }
-.daybudget .r1 .pc { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
-  background: var(--wash-sage); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
-.daybudget .wins { font-size: 10.5px; font-weight: 700; color: var(--faint); margin-top: 7px; }
-.dayseg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
-.dayseg i { display: block; height: 100%; }
-.dayseg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }
-:root[data-theme="dark"] .dayseg .ghost { background: repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 4px, transparent 4px 9px); }
-.dayseg .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--coral); border-radius: 2px; }
-.brk { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
-.brk .cap2 { display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 800; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--faint); }
-.brk .cap2::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-.brk .chips { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
-.ebchip { display: inline-flex; align-items: baseline; gap: 5px; border: 0; cursor: pointer; font: inherit;
-  border-radius: 12px; padding: 6px 10px; font-size: 10px; font-weight: 800; }
-.ebchip b { font-family: var(--ff-display); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.2px; }
-.ebchip.base { background: var(--wash-sage); color: var(--sage-deep); }
-.ebchip.move { background: var(--wash-amber); color: var(--amber-deep); }
-.ebchip.def { background: var(--warm); color: var(--coral-deep); }
-.mac .v em { font-style: normal; color: var(--faint); font-weight: 700; }
-.mac.water .v { width: auto; }
-.mac.water .wq { display: flex; gap: 5px; flex-shrink: 0; }
-.mac.water .wq button { border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 5px 10px;
-  font-size: 10.5px; font-weight: 800; background: var(--wash-run); color: var(--tag-run); }
+/* ===== Napív Fuel Mai — guided recomposition (mezo-rrtj), RETIRED (mezo-jgh9, window-river Task 6) =====
+   .retamicro (Reta micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
+   .daybudget/.dayseg/.brk/.ebchip/.mac* (DayBudgetCard) were all deleted whole with their sole
+   consumer — the ablak-folyam recomposition replaced this page outright with the .sky-islands/.isl*
+   family (window-island hero + KeretBelt's kibontott view owns the energy-breakdown + macro bars
+   now). The napszak zone cards below this comment (.zcard/.zrow/.zh/.zn/.zk/.zt/.a/.b) SURVIVE —
+   FuelStackPage's StackZoneCard still rides that shared family — only their DayZoneCard/ZoneSlotRow-
+   only nested rules (donez/openz, .caps/.burn, .zf/.zv/.zacts/.log/.ai, .missedrow/.act/.anchor, .mm)
+   were pruned below, along with .misstag/.coachline/.cskel (ZoneSlotRow-only) further up this file. */
 
 /* Zone cards */
 .zcard { margin: 0 24px 9px; background: var(--surface); border-radius: 20px; box-shadow: var(--np-shadow-row); overflow: hidden; }
 .zcard .zh { display: flex; align-items: center; gap: 9px; padding: 11px 14px; background: var(--warm); }
 .zcard .zh .zn { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); }
 .zcard .zh .zk { margin-left: auto; font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink); }
-.zcard .zh .zk .burn { color: var(--tag-gym); }
-.zcard .zh .caps { display: flex; gap: 3px; }
-.zcard .zh .caps i { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--lav); box-sizing: border-box; }
-.zcard .zh .caps i.on { background: var(--lav); }
-.zcard.donez .zh { background: var(--wash-sage); }
-.zcard.donez .zh .zn, .zcard.donez .zh .zk { color: var(--sage-deep); }
-.zcard.openz { box-shadow: 0 0 0 2px var(--coral), 0 12px 28px -8px rgba(255,107,74,.24); }
-.zcard.openz .zh { background: var(--wash-gym); }
-.zcard.openz .zh .zn, .zcard.openz .zh .zk { color: var(--coral-deep); }
 .zrow { display: flex; align-items: center; gap: 10px; padding: 11px 14px; }
 /* Scoped to zone rows only — `:first-of-type` counted `div` siblings (never matched, since `.zh` is
    always the first div inside `.zcard`), and drew a stray hairline on the two standalone `.zrow`
    cards (kitchen-close, protocol footer) that sit among unrelated page-level siblings. */
 .zcard .zrow { border-top: 1px solid var(--line); }
 .zcard .zh + .zrow { border-top: 0; }
-.zrow .zf { width: 31px; height: 31px; border-radius: 11px; display: grid; place-items: center; font-size: 14px; flex-shrink: 0; }
 .zrow .zt { flex: 1; min-width: 0; }
 .zrow .zt .a { font-size: 12.5px; font-weight: 800; color: var(--ink); }
 .zrow .zt .b { display: flex; align-items: center; gap: 7px; font-size: 10px; color: var(--faint); font-weight: 700; margin-top: 2px; flex-wrap: wrap; }
 .zrow .zt .b b { color: var(--ink); font-weight: 800; font-size: 10.5px; }
-.zrow .zv { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--sub); flex-shrink: 0; }
-.zrow .zacts { display: flex; gap: 5px; flex-shrink: 0; }
-.zrow .zacts button { border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 800; }
-.zrow .zacts .log { background: var(--wash-sage); color: var(--sage-deep); }
-.zrow .zacts .log.pot { background: var(--warm); color: var(--coral-deep); }
-.zrow .zacts .ai { background: var(--wash-lav); color: var(--lav-deep); }
-.zrow.missedrow { opacity: .72; }
-.zrow.act { background: linear-gradient(110deg, var(--wash-gym), transparent 76%); }
-.zrow.act.sport { background: linear-gradient(110deg, var(--wash-sport), transparent 76%); }
-.zrow.act .bn { font-family: var(--ff-display); font-size: 15px; font-weight: 800; color: var(--tag-gym);
-  font-variant-numeric: tabular-nums; text-align: right; }
-.zrow.act.sport .bn { color: var(--tag-sport); }
-.zrow.act .bl { font-size: 7.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); text-align: right; }
-.zrow.anchor { background: linear-gradient(110deg, #FFF3EC, transparent 70%); box-shadow: inset 2px 0 0 var(--coral); }
-:root[data-theme="dark"] .zrow.anchor { background: linear-gradient(110deg, rgba(255,107,74,.12), transparent 70%); }
-.zrow.anchor .zt .a { color: var(--coral-deep); }
-/* Macro dots inside a zone row — the retired .slot .mm rules were wrapper-scoped (mezo-rrtj). */
-.zrow .mm { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; color: var(--sub); }
-.zrow .mm i { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+/* RETIRED (mezo-jgh9, window-river Task 6) — DayZoneCard/ZoneSlotRow were the only consumers of:
+   .zcard .zh .zk .burn / .caps* (stack-pip dots) / .donez/.openz (zone-state tints); .zrow .zf
+   (avatar) / .zv (kcal readout) / .zacts+.log/.ai (log/AI buttons) / .missedrow / .act(+.sport)
+   / .anchor / .mm (macro dots) — plus the standalone .misstag (further up this file) and
+   .coachline/.cskel below. StackZoneCard (FuelStackPage) only ever used the base .zcard/.zh/.zn/
+   .zk/.zrow/.zt/.a/.b rules above, which all survive untouched. */
 
-/* AI score chip + coach line */
+/* AI score chip */
 .aiscore { display: inline-flex; align-items: center; gap: 5px; border: 0; cursor: pointer; font: inherit;
   border-radius: 999px; padding: 4px 9px 4px 5px; font-size: 10px; font-weight: 800; flex-shrink: 0; }
 .aiscore .rg { width: 16px; height: 16px; flex-shrink: 0; }
 .aiscore.s-hi { background: var(--wash-sage); color: var(--sage-deep); }
 .aiscore.s-md { background: var(--wash-amber); color: var(--amber-deep); }
 .aiscore.s-lo { background: var(--wash-gym); color: var(--tag-gym); }
-.coachline { font-size: 10.5px; line-height: 1.35; color: var(--sub); margin-top: 3px; }
-/* NOT `.sk` — that class is the app-wide skeleton primitive (Skeleton.tsx, prototype.css:608) and
-   carries its own `.sk::after` shimmer overlay; reusing it here stacked a second shimmer layer on
-   top of this rule's own `np-sk-slide` sweep. `.cskel` is scoped to this coach-line placeholder only. */
-.coachline.cskel { height: 10px; border-radius: 5px; width: 78%; margin-top: 5px;
-  background: linear-gradient(90deg, var(--warm), var(--canvas), var(--warm)); background-size: 220% 100%; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .nowcard .lbl .dot { animation: np-hero-pulse 2.2s ease-out infinite; }
-  .nowcard .primary { transition: transform .18s var(--np-ease-spring); }
-  .nowcard .primary:active { transform: scale(.96); }
-  .dayseg i { animation: np-seg-grow 1.1s var(--np-ease-ios) both; }
   .aiscore { animation: np-chip-pop .5s var(--np-ease-spring); }
-  .coachline.cskel { animation: np-sk-slide 1.4s linear infinite; }
 }
-@keyframes np-hero-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255,107,74,.5); }
-  70% { box-shadow: 0 0 0 9px rgba(255,107,74,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,107,74,0); }
-}
-@keyframes np-seg-grow { from { width: 0 !important; } }
 @keyframes np-chip-pop {
   0% { transform: scale(.75); opacity: .4; }
   70% { transform: scale(1.12); }
   100% { transform: scale(1); opacity: 1; }
 }
-@keyframes np-sk-slide { to { background-position: -120% 0; } }
 
 /* ===== DS P2 primitives (mezo-setx.3) — Spinner · CoachBubble · AdherenceBar · Stepper · NumberInput ===== */
 
