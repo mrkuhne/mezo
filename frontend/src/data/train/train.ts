@@ -367,6 +367,8 @@ export const workout: WorkoutPlan = {
       id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
       warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, anchorWeightKg: null,
       sets: 5,
+      imageStartUrl: '/exercises/lat-pulldown-pronated-a.jpg',
+      imageEndUrl: '/exercises/lat-pulldown-pronated-b.jpg',
       rationale: 'Múlt hét 11 × 72 kg → +2.5 kg',
       prescribedSets: [
         { kind: 'warmup', targetWeightKg: 37.5, targetReps: 8, targetRIR: null },
@@ -396,6 +398,8 @@ export const workout: WorkoutPlan = {
       id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
       warmupSets: 1, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, anchorWeightKg: null,
       sets: 4,
+      imageStartUrl: '/exercises/hammer-curl-a.jpg',
+      imageEndUrl: '/exercises/hammer-curl-b.jpg',
       rationale: 'Múlt hét 11 × 18 kg → cél 12 ism.',
       prescribedSets: [
         { kind: 'warmup', targetWeightKg: 12.5, targetReps: 4, targetRIR: null },
