@@ -20,30 +20,28 @@ export function PlannedMesoCard({ meso, onOpen }: PlannedMesoCardProps) {
       type="button"
       onClick={onOpen}
       className="card"
-      style={{ padding: 16, width: '100%', textAlign: 'left', borderStyle: 'dashed' }}
+      style={{ padding: 'var(--sp-4)', width: '100%', textAlign: 'left', borderStyle: 'dashed' }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div className="col flex-1">
           <div className="row gap-sm">
             <span className="eyebrow text-tertiary">Tervezett</span>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-              · {meso.startDate}
-            </span>
+            <span className="label-mono text-tertiary">· {meso.startDate}</span>
           </div>
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 17, marginTop: 4, color: 'var(--text-primary)' }}>
+          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)' }}>
             {meso.title}
           </div>
-          <span className="text-secondary mt-sm" style={{ fontSize: 12, lineHeight: 1.4 }}>
+          <span className="text-secondary mt-sm" style={{ fontSize: 14, lineHeight: 1.4 }}>
             {meso.goal}
           </span>
           {meso.notes ? (
-            <p className="text-tertiary mt-sm" style={{ fontSize: 11, fontStyle: 'italic', lineHeight: 1.4 }}>
+            <p className="text-meta-sm text-tertiary mt-sm">
               "{meso.notes}"
             </p>
           ) : null}
           <div className="row gap-sm mt-md">
-            <Chip style={{ fontSize: 9, padding: '2px 6px' }}>{meso.weeks} hét</Chip>
-            <Chip style={{ fontSize: 9, padding: '2px 6px' }}>{splitHead}</Chip>
+            <Chip>{meso.weeks} hét</Chip>
+            <Chip>{splitHead}</Chip>
           </div>
         </div>
         <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />

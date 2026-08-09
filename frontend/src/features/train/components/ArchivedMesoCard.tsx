@@ -17,21 +17,21 @@ export function ArchivedMesoCard({ meso, onOpen }: ArchivedMesoCardProps) {
       type="button"
       onClick={onOpen}
       className="card"
-      style={{ padding: 14, width: '100%', textAlign: 'left', opacity: 0.7 }}
+      style={{ padding: 'var(--sp-4)', width: '100%', textAlign: 'left', opacity: 0.7 }}
     >
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div className="col flex-1">
           <span className="eyebrow text-tertiary">
             Archív · {meso.endDate}
           </span>
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, marginTop: 4 }}>{meso.title}</div>
+          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, marginTop: 4 }}>{meso.title}</div>
           {meso.summary ? (
-            <p className="text-secondary mt-sm" style={{ fontSize: 11, lineHeight: 1.4 }}>
+            <p className="text-secondary mt-sm" style={{ fontSize: 14, lineHeight: 1.4 }}>
               {meso.summary}
             </p>
           ) : null}
         </div>
-        <Icon name="chevron-right" size={14} color="var(--text-tertiary)" />
+        <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
       </div>
     </button>
   )

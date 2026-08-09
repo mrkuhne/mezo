@@ -8,6 +8,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { ActiveMesoCard } from '@/features/train/components/ActiveMesoCard'
@@ -34,18 +35,13 @@ export function MesocycleLibraryPage() {
   return (
     <>
       {/* Header */}
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">Edzés · Mesociklusok</div>
-          <h1>Mesociklusok</h1>
+          <Eyebrow brand>Edzés · Mesociklusok</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>Mesociklusok</PageTitle>
         </div>
-        <button
-          type="button"
-          onClick={openPlanner}
-          className="pgact-np np-press"
-          style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
-        >
-          <Icon name="plus" size={12} /> Új
+        <button type="button" onClick={openPlanner} className="pgact">
+          <Icon name="plus" size={14} /> Új
         </button>
       </div>
 
@@ -81,21 +77,8 @@ export function MesocycleLibraryPage() {
           {planned.map((m) => (
             <PlannedMesoCard key={m.id} meso={m} onOpen={() => openBuilder(m.id)} />
           ))}
-          <button
-            type="button"
-            onClick={openPlanner}
-            className="card"
-            style={{
-              padding: 16,
-              textAlign: 'center',
-              background: 'transparent',
-              borderStyle: 'dashed',
-              color: 'var(--coral)',
-              fontSize: 11,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-            }}
-          >
+          {/* The shared dashed "add one more" CTA the Mai/Heti/Sport lists close with. */}
+          <button type="button" onClick={openPlanner} className="card dashedcta">
             + Új mesociklus tervezése
           </button>
         </div>
