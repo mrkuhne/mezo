@@ -5,6 +5,8 @@ node_modules/
 
 # Claude Code local worktrees (harness-managed, never commit)
 .claude/worktrees/
+# Local browser-preview dev-server config — machine-specific, never shared.
+.claude/launch.json
 
 # Build output
 dist/
