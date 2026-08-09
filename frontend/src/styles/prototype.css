@@ -2423,6 +2423,57 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                        margin-top: 12px; padding: 11px; border: 1.5px dashed var(--line);
                        border-radius: var(--r-lg); color: var(--faint); font-size: 12px; font-weight: 600; }
 
+/* ═════════ Fuel Keret-hero — .khero family (mezo-c9t5, keret-hero Task 2) ═════════
+   Replaces the belt (below) atop FuelMaiPage, above the window-river sky: a halo-sage band
+   (no card frame) — a 2s ease-out count-up remaining-kcal number (KeretHero.tsx drives the
+   rAF; this CSS is static layout only), the "eddig X / Y · n/m ablak" of-line, a segmented
+   day-bar with a gold now-marker, the 3 energy chips, and the 5 macro/rost/víz progress
+   rings. Ring fill is a pure CSS `stroke-dashoffset` transition — KeretHero.tsx flips
+   `.khero-ring-fill`'s dashoffset from full-circumference (0%) to its target one frame after
+   mount, and the transition below carries the sweep; :where()-wrapped so the reduced-motion
+   override wins without !important (the `::where(.isl…)` precedent above). Design:
+   docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2, mockup asset
+   docs/superpowers/specs/assets/2026-08-09-fuel-keret-hero-mockup.html. */
+.khero { background: var(--halo-sage); padding: 16px 18px 12px; text-align: center; }
+.khero-n { font-family: var(--ff-display); font-size: 46px; font-weight: 200; letter-spacing: -0.04em;
+           line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.khero-u { font-size: 18px; font-weight: 300; color: var(--faint); margin-left: 5px; }
+.khero-of { font-size: 11.5px; color: var(--sub); font-weight: 500; margin-top: 5px; }
+.khero-of b { color: var(--sage-deep); font-weight: 700; }
+
+.khero-dayseg { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px auto 0;
+                position: relative; background: var(--surface-recess); max-width: 280px; }
+.khero-seg { display: block; height: 100%; background: var(--sage); }
+.khero-seg-alt { background: var(--sage-deep); }
+.khero-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--accent-base);
+              border-radius: 1px; box-shadow: 0 0 0 2px rgba(212, 168, 83, 0.25); }
+
+.khero-chips { display: flex; gap: 6px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
+.khero-chip { font-family: inherit; font-size: 10.5px; font-weight: 600; color: var(--sub);
+              background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-full);
+              padding: 4px 11px; cursor: pointer; }
+.khero-chip b { font-weight: 800; color: var(--ink); }
+.khero-chip-goal b { color: var(--sage-deep); }
+
+.khero-rings { display: flex; justify-content: center; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
+.khero-ring { text-align: center; border: none; background: none; padding: 0; font-family: inherit; }
+.khero-ring-water { cursor: pointer; }
+.khero-ring-water:active .khero-ringwrap { transform: scale(0.95); transition: transform 0.12s; }
+.khero-ring svg { transform: rotate(-90deg); }
+.khero-ring-track { stroke: var(--surface-recess); }
+:where(.khero-ring-fill) { transition: stroke-dashoffset 2s cubic-bezier(.2, .8, .2, 1); }
+.khero-ringwrap { position: relative; width: 58px; height: 58px; margin: 0 auto; }
+.khero-pctv { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.khero-pctv em { font-style: normal; font-size: 8px; font-weight: 600; color: var(--faint); margin-left: 1px; }
+.khero-lb { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
+.khero-gv { font-size: 10px; font-weight: 700; margin-top: 1px; color: var(--ink); }
+.khero-gv em { font-style: normal; font-weight: 500; color: var(--faint); }
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.khero-ring-fill) { transition: none; }
+}
+
 /* ═════════ Fuel Keret-öv — .kbelt family (mezo-jgh9, window-river Task 3) ═════════
    Rides inside the shared Island shell (belt + tone="keret"): the collapsed row is
    richer than the generic capsule language (remaining kcal + 3 macro mini-bars), so
