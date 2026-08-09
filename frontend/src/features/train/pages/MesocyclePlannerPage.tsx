@@ -17,6 +17,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, SplitOption } from '@/data/types'
 import type { MesocycleCreateRequest } from '@/data/train/trainApi'
 import { huMonthDay } from '@/shared/lib/dates'
@@ -33,8 +35,7 @@ import { MiniStat } from '@/features/train/components/MiniStat'
 
 const STEP_COUNT = 4
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
-const CORAL_TINT = 'color-mix(in srgb, var(--coral) 6%, transparent)'
-const CORAL_TINT_STRONG = 'color-mix(in srgb, var(--coral) 12%, transparent)'
+const CORAL_TINT = 'var(--primary-bg)'
 
 const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
@@ -255,9 +256,9 @@ export function MesocyclePlannerPage() {
               style={{
                 flex: 1,
                 height: 3,
-                background: i <= step ? 'var(--coral)' : 'var(--surface-2)',
-                boxShadow: i === step ? '0 0 6px var(--coral)' : 'none',
-                transition: 'all 0.3s ease',
+                background: i <= step ? 'var(--primary-base)' : 'var(--surface-2)',
+                boxShadow: i === step ? '0 0 6px var(--primary-base)' : 'none',
+                transition: 'all var(--duration-normal) var(--ease-out)',
                 padding: 0,
                 cursor: i < step ? 'pointer' : 'default',
               }}
@@ -269,10 +270,10 @@ export function MesocyclePlannerPage() {
           {String(step + 1).padStart(2, '0')} / {String(STEP_COUNT).padStart(2, '0')} · {stepLabels[step]}
         </span>
       </div>
-      <div className="pghead-np">
+      <div className="page-header">
         <div>
-          <div className="over">Edzés · Mesociklusok</div>
-          <h1>{PAGE_TITLES[step]}</h1>
+          <Eyebrow brand>Edzés · Mesociklusok</Eyebrow>
+          <PageTitle style={{ marginTop: 4 }}>{PAGE_TITLES[step]}</PageTitle>
         </div>
       </div>
 
@@ -381,7 +382,7 @@ export function MesocyclePlannerPage() {
 function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: GoalPreset) => void }) {
   return (
     <div style={{ padding: '8px 24px' }}>
-      <p className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
+      <p className="text-secondary" style={{ fontSize: 16, lineHeight: 1.5, marginBottom: 16 }}>
         <SafeMarkdown text="Daniel — most az fontos hogy **mit akarunk a következő blokkban**. A többit kitaláljuk együtt." />
       </p>
 
@@ -399,7 +400,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                 textAlign: 'left',
                 width: '100%',
                 background: selected ? CORAL_TINT : 'var(--surface-1)',
-                borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
+                borderColor: selected ? 'var(--line)' : 'var(--divider)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -413,7 +414,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                     width: 36,
                     height: 36,
                     background: CORAL_TINT,
-                    border: `1px solid ${selected ? g.color : 'var(--border-subtle)'}`,
+                    border: `1px solid ${selected ? g.color : 'var(--divider)'}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -430,15 +431,15 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                     >
                       {g.label}
                     </span>
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                    <span className="label-mono text-tertiary">
                       {g.defaultWeeks} hét
                     </span>
                   </div>
-                  <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
+                  <span className="text-tertiary" style={{ fontSize: 14, marginTop: 2 }}>
                     {g.sub}
                   </span>
                   {selected && (
-                    <p style={{ fontSize: 11, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 14, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                       {g.description}
                     </p>
                   )}
@@ -536,14 +537,14 @@ function Step1Length({
                 value={startDateIso}
                 onChange={(e) => setStartDateIso(e.target.value)}
                 aria-label="Kezdés dátuma"
-                style={{ width: '100%', fontSize: 13, color: 'var(--text-primary)', colorScheme: 'dark' }}
+                style={{ width: '100%', fontSize: 16, color: 'var(--text-primary)', colorScheme: 'dark' }}
               />
             </div>
           </div>
           <div className="col gap-sm flex-1">
             <span className="label-mono">Vége</span>
             <div className="card row" style={{ padding: '10px 12px', alignItems: 'center', opacity: 0.6 }}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>{addWeeks(startDate, weeks)}</span>
+              <span style={{ fontSize: 16, color: 'var(--text-secondary)', flex: 1 }}>{addWeeks(startDate, weeks)}</span>
             </div>
           </div>
         </div>
@@ -553,8 +554,8 @@ function Step1Length({
       <div className="col gap-sm mt-xl">
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span className="label-mono">Hossz</span>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--coral)' }}>
-            {weeks} <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>hét</span>
+          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--primary-base)' }}>
+            {weeks} <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>hét</span>
           </span>
         </div>
         <div className="row gap-xs">
@@ -566,17 +567,7 @@ function Step1Length({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setWeeks(w)}
-                className="flex-1 rad-12"
-                style={{
-                  padding: '10px 0',
-                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--coral)' : 'var(--text-secondary)',
-                  fontFamily: 'var(--ff-display)',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  boxShadow: active ? 'inset 0 0 0 1px color-mix(in srgb, var(--coral) 20%, transparent)' : 'none',
-                }}
+                className="segtab"
               >
                 {w}
               </button>
@@ -589,7 +580,7 @@ function Step1Length({
       <div className="col gap-sm mt-xl">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span className="label-mono">Fázis görbe · tappold a hetet</span>
-          <button type="button" className="chip" onClick={resetCurve} style={{ fontSize: 9 }}>
+          <button type="button" className="chip tapchip" onClick={resetCurve}>
             <Icon name="sparkle" size={10} /> Mezo reset
           </button>
         </div>
@@ -610,10 +601,10 @@ function Step1Length({
                     cursor: 'pointer',
                   }}
                 />
-                <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>
+                <span className="statstrip-l">
                   W{i + 1}
                 </span>
-                <span className="label-mono" style={{ fontSize: 7, color: MESOCYCLE_PHASE_COLORS[p], letterSpacing: '0.08em' }}>
+                <span className="statstrip-l" style={{ color: MESOCYCLE_PHASE_COLORS[p] }}>
                   {p}
                 </span>
               </div>
@@ -625,10 +616,10 @@ function Step1Length({
       {/* Mezo hint */}
       <div className="card mt-lg" style={{ padding: 12, background: CORAL_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--coral)" />
+          <Icon name="sparkle" size={16} color="var(--primary-base)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo javasolja</span>
-            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <p style={{ fontSize: 14, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
               {goal ? GOAL_HINTS[goal.id] : ''}
             </p>
           </div>
@@ -662,7 +653,7 @@ function Step2Split({
 }) {
   return (
     <div style={{ padding: '8px 24px' }}>
-      <p className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
+      <p className="text-secondary" style={{ fontSize: 16, lineHeight: 1.5, marginBottom: 16 }}>
         <SafeMarkdown text="Daniel — most a hét struktúrája. **5×/hét** a heti volleyball + gym mintád." />
       </p>
 
@@ -680,19 +671,19 @@ function Step2Split({
                 textAlign: 'left',
                 width: '100%',
                 background: selected ? CORAL_TINT : 'var(--surface-1)',
-                borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
+                borderColor: selected ? 'var(--line)' : 'var(--divider)',
               }}
             >
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="col">
                   <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{s.label}</span>
                   {s.best === goal?.id && goal && (
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', marginTop: 2 }}>
+                    <span className="label-mono" style={{ color: 'var(--primary-deep)', marginTop: 2 }}>
                       ★ Mezo ajánlja {goal.label}-hez
                     </span>
                   )}
                 </div>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                <span className="label-mono text-tertiary">
                   {s.days.join('/')}×/hét
                 </span>
               </div>
@@ -713,19 +704,10 @@ function Step2Split({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setDays(d)}
-                className="flex-1 rad-12"
-                style={{
-                  padding: '12px 0',
-                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--coral)' : 'var(--text-secondary)',
-                  fontFamily: 'var(--ff-display)',
-                  fontSize: 16,
-                  fontWeight: 600,
-                }}
+                className="segtab"
               >
                 {d}
-                <span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>×</span>
+                <span style={{ fontSize: 14, color: 'var(--text-tertiary)', marginLeft: 3 }}>×</span>
               </button>
             )
           })}
@@ -738,7 +720,7 @@ function Step2Split({
           <span className="label-mono">Melyik napokon?</span>
           <span
             className="label-mono"
-            style={{ fontSize: 9, color: selectedDays.length === days ? 'var(--coral)' : 'var(--warning)' }}
+            style={{ color: selectedDays.length === days ? 'var(--primary-deep)' : 'var(--warning-hover)' }}
           >
             {selectedDays.length}/{days}
           </span>
@@ -752,17 +734,7 @@ function Step2Split({
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleDay(d)}
-                className="flex-1 rad-12"
-                style={{
-                  padding: '10px 0',
-                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--coral)' : 'var(--text-tertiary)',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                }}
+                className="segtab"
               >
                 {d}
               </button>
@@ -770,7 +742,7 @@ function Step2Split({
           })}
         </div>
         {selectedDays.length !== days && (
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--warning)' }}>
+          <span className="label-mono" style={{ color: 'var(--warning-hover)' }}>
             Válassz pontosan {days} napot a folytatáshoz.
           </span>
         )}
@@ -780,14 +752,14 @@ function Step2Split({
       {selectedDays.length > 0 && (
         <div className="col gap-sm mt-xl">
           <span className="label-mono">Időpontok · mikor mész</span>
-          <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5 }}>
+          <p className="text-tertiary" style={{ fontSize: 14, lineHeight: 1.5 }}>
             Ebből számolja a Fuel a pre/post-workout étkezést és supplement-timing-ot.
           </p>
           <div className="col gap-sm">
             {DAY_ORDER.filter((d) => selectedDays.includes(d)).map((d) => (
               <div key={d} className="card" style={{ padding: 10 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="label-mono" style={{ width: 36, color: 'var(--coral)' }}>
+                  <span className="label-mono" style={{ width: 36, color: 'var(--primary-base)' }}>
                     {d}
                   </span>
                   <input
@@ -796,7 +768,7 @@ function Step2Split({
                     value={timeForDay(d)}
                     onChange={(e) => onTimeChange(d, e.target.value)}
                     style={{
-                      background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+                      background: 'var(--surface-2)', border: '1px solid var(--divider)',
                       color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontSize: 16,
                       padding: '8px 10px', width: 130,
                     }}
@@ -811,10 +783,10 @@ function Step2Split({
       {/* Exercise auto-fill option */}
       <div className="card mt-xl" style={{ padding: 14, background: CORAL_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--coral)" />
+          <Icon name="sparkle" size={16} color="var(--primary-base)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Gyakorlatok · automatikusan</span>
-            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <p style={{ fontSize: 14, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
               A Mezo a STIM/fatigue rangsor + niggle-aware substitúció + korábbi mesók kedvenc gyakorlatai alapján kitölti. A 4.
               lépésben átnézzük, és bármit cserélhetsz.
             </p>
@@ -864,13 +836,13 @@ function Step3Program({
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: 'var(--coral)',
+                background: 'var(--primary-base)',
                 animationDelay: `${i * 0.2}s`,
               }}
             />
           ))}
         </div>
-        <span className="text-secondary" style={{ fontSize: 12 }}>
+        <span className="text-secondary" style={{ fontSize: 14 }}>
           A Mezo összerakja a programot…
         </span>
       </div>
@@ -887,14 +859,14 @@ function Step3Program({
         className="card"
         style={{
           padding: 14,
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 6%, transparent) 0%, var(--surface-1) 100%)',
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--primary-base) 6%, transparent) 0%, var(--surface-1) 100%)',
           borderColor: 'var(--line)',
           position: 'relative',
           overflow: 'hidden',
           marginBottom: 14,
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: goal?.color ?? 'var(--coral)' }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: goal?.color ?? 'var(--primary-base)' }} />
         <div style={{ position: 'relative' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="col">
@@ -904,7 +876,7 @@ function Step3Program({
               </Display>
             </div>
           </div>
-          <div className="row gap-md mt-md" style={{ paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}>
+          <div className="row gap-md mt-md" style={{ paddingTop: 10, borderTop: '1px solid var(--divider)' }}>
             <MiniStat label="Hossz" val={`${weeks}h`} />
             <MiniStat label="Napok" val={`${days}×`} />
             <MiniStat label="Gyak" val={totalExercises} />
@@ -914,12 +886,12 @@ function Step3Program({
       </div>
 
       {/* AI hint */}
-      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}>
+      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--primary-base) 3%, transparent)', marginBottom: 14 }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--coral)" />
+          <Icon name="sparkle" size={16} color="var(--primary-base)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo · ezt raktam össze</span>
-            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <p style={{ fontSize: 14, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
               <SafeMarkdown
                 text={`STIM/fatigue rangsor + jobb váll niggle figyelembe vétele + a ${goal?.label ?? ''}-fókuszhoz illő szet/rep séma. **Bármit kicserélhetsz · drag-rendezhetsz · új gyakorlatot adhatsz hozzá.**`}
               />
