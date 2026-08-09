@@ -1,8 +1,7 @@
 // ============================================================
 // Mezo · WindowIsland — a single meal-window's bigview + L1 (mezo-jgh9,
-// Fuel window-river Task 4). Rides the shared `Island` shell (`tone="fuel"`)
-// the same way KeretBelt (Task 3) rides `tone="keret"`: L0 is hero (window
-// time + name) + meal-chip + 1–2 DS delta-fact cells + action row, mirroring
+// Fuel window-river Task 4). Rides the shared `Island` shell (`tone="fuel"`):
+// L0 is hero (window time + name) + meal-chip + 1–2 DS delta-fact cells + action row, mirroring
 // Today's `IslandMorning` idiom. `open` mutually exclusive-swaps L0 for the
 // L1 groups (ablak étkezése / csere / AI / stack-adagok), the same shape
 // `IslandList` uses on Today, but in the `ItemRow` language directly (no
@@ -19,8 +18,6 @@ export interface WindowIslandProps {
   nowRing: boolean
   /** L1 nyitva. */
   open: boolean
-  /** "✓ 2 ablak kész ma · 840 kcal · átlag 90 pont" — csak a now-szigeten. */
-  doneSummary: string | null
   onSelect: () => void
   onToggleOpen: () => void
   /** LogMealSheet a slotra. */
@@ -84,7 +81,7 @@ function buildFactCells(facts: WindowFacts): FactCell[] {
 }
 
 export function WindowIsland({
-  vm, big, nowRing, open, doneSummary, onSelect, onToggleOpen, onLog, onAiLog, onSwap, onStackDose,
+  vm, big, nowRing, open, onSelect, onToggleOpen, onLog, onAiLog, onSwap, onStackDose,
 }: WindowIslandProps) {
   const capsule: IslandCapsule = { emoji: vm.emoji, title: vm.title, essence: vm.essence, count: vm.count }
   const ariaLabel = `${vm.title}${nowRing ? ' · most' : ''} · ${vm.essence} · megnyitás`
@@ -182,10 +179,6 @@ export function WindowIsland({
             <button type="button" className="isl-more" onClick={onAiLog}>✨ AI</button>
             <button type="button" className="isl-more" onClick={onToggleOpen}>még {vm.l1Count} ›</button>
           </div>
-
-          {doneSummary && (
-            <button type="button" className="isl-doneline" onClick={onToggleOpen}>{doneSummary}</button>
-          )}
         </>
       )}
     </Island>

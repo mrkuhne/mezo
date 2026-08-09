@@ -70,7 +70,7 @@ const renderView = (path = '/fuel') =>
     </QueryWrapper>,
   )
 
-/** Which island/belt is big right now — the selection's single observable. */
+/** Which island is big right now — the selection's single observable. */
 const bigTone = (container: HTMLElement) =>
   (container.querySelector('.isl.isl-big') as HTMLElement | null)?.dataset.tone ?? null
 
@@ -265,13 +265,17 @@ test('no done windows today → no done capsule renders at all', () => {
 
 test('the víz ring opens WaterLogSheet; logging a chip amount updates the consumed water', async () => {
   renderView()
+  // The víz ring's own aria-label carries the current/target liters ("Víz logolása · 1,2 a 2,5
+  // literből") — the visible, accessible signal that a log actually landed, not just that the
+  // sheet closed. Capture it before, log +250ml, and assert it CHANGED after (not merely truthy).
+  const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
   await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
   expect(await screen.findByText('Mennyit ittál?')).toBeInTheDocument()
-  const before = screen.getByText(/ma eddig/).textContent
   await userEvent.click(screen.getByRole('button', { name: '250 ml' }))
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   await waitFor(() => expect(screen.queryByText('Mennyit ittál?')).toBeNull())
-  expect(before).toBeTruthy()
+  const after = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
+  expect(after).not.toBe(before)
 })
 
 // ── Chips → EnergyBreakdownSheet (restored wiring) ───────────────────────────────────────────

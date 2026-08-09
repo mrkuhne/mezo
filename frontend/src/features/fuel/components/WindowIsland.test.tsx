@@ -31,7 +31,6 @@ const base = {
   big: true,
   nowRing: true,
   open: false,
-  doneSummary: null as string | null,
   onSelect: vi.fn(),
   onToggleOpen: vi.fn(),
   onLog: vi.fn(),
@@ -120,17 +119,6 @@ describe('WindowIsland — L0 bigview', () => {
     const cta = screen.getByRole('button', { name: 'Pótold' })
     await userEvent.click(cta)
     expect(onLog).toHaveBeenCalled()
-  })
-
-  it('renders the doneSummary line, wired to onToggleOpen, only when provided', async () => {
-    const onToggleOpen = vi.fn()
-    const { rerender } = render(<WindowIsland {...base} doneSummary={null} onToggleOpen={onToggleOpen} />)
-    expect(screen.queryByText(/kész ma/)).toBeNull()
-
-    rerender(<WindowIsland {...base} doneSummary="✓ 2 ablak kész ma · 840 kcal · átlag 90 pont" onToggleOpen={onToggleOpen} />)
-    const line = screen.getByText('✓ 2 ablak kész ma · 840 kcal · átlag 90 pont')
-    await userEvent.click(line)
-    expect(onToggleOpen).toHaveBeenCalled()
   })
 
   it('the collapsed capsule shows the essence and count straight from the vm', () => {

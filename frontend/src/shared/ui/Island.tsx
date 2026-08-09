@@ -14,7 +14,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 
-export type IslandTone = 'reggel' | 'nap' | 'este' | 'fuel' | 'keret'
+export type IslandTone = 'reggel' | 'nap' | 'este' | 'fuel'
 
 export interface IslandCapsule {
   emoji: string
@@ -32,24 +32,16 @@ export interface IslandProps {
   capsule: IslandCapsule
   /** Night phase — the shell itself goes dark (theme-invariant, like the retired .wdb-night). */
   night?: boolean
-  /** Belt variant: fixed 54px, no float — a row of shells rather than a sky of them. */
-  belt?: boolean
-  /** Belt-only override: replaces the standard emoji/title/essence/count capsule row with
-   *  caller-supplied content when `belt` is true (e.g. KeretBelt's remaining-kcal + macro
-   *  mini-bars strip, which is richer than the generic capsule language). The shell stays
-   *  domain-free — this is opaque `ReactNode`, not a new domain-shaped prop. Ignored when
-   *  `belt` is false/absent, so every non-belt caller is unaffected. */
-  beltContent?: ReactNode
   /** Full spoken label for the capsule button — the caller composes it (tone name, now, essence). */
   ariaLabel: string
   onSelect: () => void
   children: ReactNode
 }
 
-export function Island({ tone, big, nowRing, capsule, night, belt, beltContent, ariaLabel, onSelect, children }: IslandProps) {
+export function Island({ tone, big, nowRing, capsule, night, ariaLabel, onSelect, children }: IslandProps) {
   return (
     <section
-      className={cn('isl', big && 'isl-big', nowRing && 'now-clock', night && 'isl-night', belt && 'isl-belt')}
+      className={cn('isl', big && 'isl-big', nowRing && 'now-clock', night && 'isl-night')}
       data-tone={tone}
     >
       <div className="isl-blob" />
@@ -61,19 +53,13 @@ export function Island({ tone, big, nowRing, capsule, night, belt, beltContent, 
         tabIndex={big ? -1 : undefined}
         onClick={onSelect}
       >
-        {belt && beltContent ? (
-          beltContent
-        ) : (
-          <>
-            <span aria-hidden="true">{capsule.emoji}</span>
-            <span>
-              <span className="isl-cap-t">{capsule.title}</span>
-              <span className="isl-cap-m">{capsule.essence}</span>
-            </span>
-            {nowRing && <span className="isl-nowtag">{capsule.nowTag ?? 'MOST'}</span>}
-            <span className="isl-cap-n">{capsule.count}</span>
-          </>
-        )}
+        <span aria-hidden="true">{capsule.emoji}</span>
+        <span>
+          <span className="isl-cap-t">{capsule.title}</span>
+          <span className="isl-cap-m">{capsule.essence}</span>
+        </span>
+        {nowRing && <span className="isl-nowtag">{capsule.nowTag ?? 'MOST'}</span>}
+        <span className="isl-cap-n">{capsule.count}</span>
       </button>
       <div className="isl-bigview" aria-current={big || undefined}>
         {big ? children : null}

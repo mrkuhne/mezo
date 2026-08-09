@@ -203,7 +203,6 @@ export function FuelMaiPage() {
             big={selected === vm.key}
             nowRing={vm.key === river.nowKey}
             open={selected === vm.key && listOpen}
-            doneSummary={null}
             onSelect={() => selectWindow(vm.key)}
             onToggleOpen={() => setListOpen((o) => !o)}
             onLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleLogMeal(slot) }}
