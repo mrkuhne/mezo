@@ -36,12 +36,12 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
         textAlign: 'left',
         overflow: 'hidden',
         background:
-          'linear-gradient(180deg, color-mix(in srgb, var(--coral) 6%, transparent) 0%, var(--surface-1) 70%)',
+          'linear-gradient(165deg, var(--primary-bg), var(--surface-card) 72%)',
         borderColor: 'var(--line)',
         position: 'relative',
       }}
     >
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--coral)' }} />
+      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--primary-base)' }} />
       <span
         style={{
           position: 'absolute',
@@ -50,11 +50,11 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
           width: 180,
           height: 180,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, color-mix(in srgb, var(--coral) 12%, transparent), transparent 70%)',
+          background: 'radial-gradient(circle, color-mix(in srgb, var(--primary-base) 12%, transparent), transparent 70%)',
         }}
       />
 
-      <div style={{ padding: 20, position: 'relative' }}>
+      <div style={{ padding: 'var(--sp-5)', position: 'relative' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div className="col">
             <Eyebrow brand>
@@ -63,20 +63,18 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
             <div style={{ marginTop: 6 }}>
               <Display size="lg">{meso.title}</Display>
             </div>
-            <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
+            <span className="text-secondary mt-sm" style={{ fontSize: 14 }}>
               {meso.goal}
             </span>
           </div>
-          <Icon name="chevron-right" size={20} color="var(--coral)" />
+          <Icon name="chevron-right" size={20} color="var(--primary-deep)" />
         </div>
 
         {/* Phase curve */}
         <div style={{ marginTop: 18 }}>
           <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-            <span className="label-mono" style={{ fontSize: 9 }}>
-              Fázis görbe
-            </span>
-            <span className="label-mono" style={{ fontSize: 9, color: MESOCYCLE_PHASE_COLORS[currentPhase] }}>
+            <span className="eyebrow">Fázis görbe</span>
+            <span className="eyebrow" style={{ color: MESOCYCLE_PHASE_COLORS[currentPhase] }}>
               {currentPhase} · most
             </span>
           </div>
@@ -84,10 +82,7 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
         </div>
 
         {/* Meta row */}
-        <div
-          className="row gap-md mt-lg"
-          style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}
-        >
+        <div className="statstrip mt-lg">
           <MetaStat label="Split" val={splitHead} sub={splitTail} />
           <MetaStat label="Stílus" val={styleHead} sub={styleTail} />
           <MetaStat label="Vége" val={meso.endDate} />
