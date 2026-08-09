@@ -18,6 +18,7 @@
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { hu1 } from '@/shared/lib/huNum'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import type { KeretHeroVM, RingVM } from '@/features/fuel/logic/keretHero'
 
@@ -31,6 +32,12 @@ const fmt = (n: number) => {
   return neg ? `${MINUS}${grouped}` : grouped
 }
 const signed = (n: number) => `${n < 0 ? MINUS : '+'}${fmt(Math.abs(n))}`
+
+// The víz ring's RingVM carries raw ml (Task 1's data, e.g. "1200 ml") — the mockup's
+// validated presentation is liters with one HU decimal ("1,2"), both on-ring and in the
+// button's aria-label. Presentation-only: parses the ml back out of the formatted string
+// rather than changing RingVM (Task 3 imports that shape sight-unseen).
+const litersOf = (mlLabel: string) => hu1(parseFloat(mlLabel) / 1000)
 
 // jsdom implements a real requestAnimationFrame — see shared/ui/CountUp.tsx's identical guard.
 function isJsdomEnv(): boolean {
@@ -74,8 +81,9 @@ const RING_C = 2 * Math.PI * RING_R
 
 // Shared inner markup for a ring — the SVG, the centered %, the label + value/target below.
 // The caller supplies the outer element (a progressbar `div` for the 4 macro/rost rings, a
-// real `button` for víz) so this stays semantics-free.
-function RingBody({ ring, filled }: { ring: RingVM; filled: boolean }) {
+// real `button` for víz) so this stays semantics-free. `gv`/`gvTarget` let the víz ring
+// override the raw-ml RingVM value/target with the liter presentation (see `litersOf`).
+function RingBody({ ring, filled, gv, gvTarget }: { ring: RingVM; filled: boolean; gv?: string; gvTarget?: string }) {
   const frac = Math.max(0, Math.min(1, ring.pct / 100))
   const offset = filled ? RING_C - frac * RING_C : RING_C
   return (
@@ -90,18 +98,20 @@ function RingBody({ ring, filled }: { ring: RingVM; filled: boolean }) {
         <span className="khero-pctv" aria-hidden="true">{ring.pct}<em>%</em></span>
       </div>
       <div className="khero-lb" style={{ color: ring.color }}>{ring.label}</div>
-      <div className="khero-gv">{ring.value} <em>/ {ring.target}</em></div>
+      <div className="khero-gv">{gv ?? ring.value} <em>/ {gvTarget ?? ring.target}</em></div>
     </>
   )
 }
 
-export function KeretHero({ vm, onChip, onWaterRing }: {
+export function KeretHero({ vm, onChip, onWaterRing, durationMs = 2000 }: {
   vm: KeretHeroVM
   onChip: (section: EnergySection) => void
   onWaterRing: () => void
+  /** Count-up duration in ms — test-only override (the CountUp.tsx precedent); default 2000. */
+  durationMs?: number
 }) {
   const reduced = useReducedMotion()
-  const displayKcal = useCountUpKcal(vm.remainingKcal)
+  const displayKcal = useCountUpKcal(vm.remainingKcal, durationMs)
 
   // Rings fill together with the count-up: starts empty (or already final under reduced
   // motion), flips true one frame after mount so the CSS transition carries the sweep.
@@ -146,10 +156,10 @@ export function KeretHero({ vm, onChip, onWaterRing }: {
             key={r.key}
             type="button"
             className="khero-ring khero-ring-water"
-            aria-label={`Víz logolása · ${r.value} a ${r.target}ből`}
+            aria-label={`Víz logolása · ${litersOf(r.value)} a ${litersOf(r.target)} literből`}
             onClick={onWaterRing}
           >
-            <RingBody ring={r} filled={filled} />
+            <RingBody ring={r} filled={filled} gv={litersOf(r.value)} gvTarget={`${litersOf(r.target)} l`} />
           </button>
         ) : (
           <div

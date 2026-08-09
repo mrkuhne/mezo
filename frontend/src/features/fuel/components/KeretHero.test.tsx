@@ -68,9 +68,11 @@ describe('KeretHero — count-up', () => {
 
   it('moving-path smoke: shows 0 at mount, then the final HU-grouped value once the rAF loop completes', async () => {
     // Bypass CountUp.tsx's jsdom short-circuit (same trick as CountUp.test.tsx) to exercise
-    // the real rAF branch instead of the reduced/jsdom instant-value branch.
+    // the real rAF branch instead of the reduced/jsdom instant-value branch. A short
+    // durationMs (CountUp.test.tsx precedent) keeps this fast/non-flaky under real rAF
+    // timing while the waitFor timeout stays generous.
     vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Test Browser)')
-    render(<KeretHero vm={VM({ remainingKcal: 30 })} onChip={vi.fn()} onWaterRing={vi.fn()} />)
+    render(<KeretHero vm={VM({ remainingKcal: 30 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
     expect(screen.getByText('0')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText('30')).toBeInTheDocument(), { timeout: 2000 })
   })
@@ -156,12 +158,23 @@ describe('KeretHero — rings', () => {
     expect(bars[0]).toHaveAttribute('aria-valuemax', '100')
   })
 
-  it('the water ring is a button (not a progressbar) with a full HU aria-label, calling onWaterRing on click', async () => {
+  it('the water ring is a button (not a progressbar) with a full HU aria-label in liters, calling onWaterRing on click', async () => {
     stubReduced()
     const onWaterRing = vi.fn()
     render(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={onWaterRing} />)
-    const waterBtn = screen.getByRole('button', { name: 'Víz logolása · 1200 ml a 2500 mlből' })
+    // 1200 ml / 2500 ml (RingVM's raw data, unchanged) presents as liters — the mockup's
+    // validated phrasing — both in the aria-label and the on-ring value/target text.
+    const waterBtn = screen.getByRole('button', { name: 'Víz logolása · 1,2 a 2,5 literből' })
     await userEvent.click(waterBtn)
     expect(onWaterRing).toHaveBeenCalledTimes(1)
+  })
+
+  it('the water ring shows its value/target in liters, not raw ml', () => {
+    stubReduced()
+    render(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} />)
+    const waterBtn = screen.getByRole('button', { name: /Víz logolása/ })
+    expect(waterBtn).toHaveTextContent('1,2')
+    expect(waterBtn).toHaveTextContent('/ 2,5 l')
+    expect(waterBtn).not.toHaveTextContent('ml')
   })
 })
