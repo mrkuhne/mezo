@@ -14,6 +14,11 @@ export const SLOT_WEIGHT = { main: 2, snack: 1, postWorkoutMain: 2.5 } as const
 export const RECIPE_FIT_TOLERANCE = 0.2
 export const FAT_KCAL_SHARE = 0.275
 
+// Keret-hero rost-gyűrű (mezo-c9t5, frontend-only rost-bővítés). Static default target — no
+// settings-field yet (scope-on-kívül a designban); consumed rost = the day's logged meals' summed
+// `fiberG` (missing per-meal field counts as 0, keretHero.ts).
+export const FIBER_TARGET_G = 30
+
 // Dynamic energy model (mezo-1oy5). Daily target = BMR×NEAT + Σ MET-based activity + goal balance,
 // where NEAT is read off `tdeeBootstrap.neat` from the wire (deriveDailyBudget) — not a static const here.
 // MET by training-block kind — kcal = MET × weightKg × hours. Conservative (indoor volleyball has lots of standing).

@@ -96,6 +96,9 @@ export interface MealItemLine {
 export interface FuelMeal {
   id: string; slot: string; title: string; score: number | null
   kcal: number; p: number; c: number; f: number
+  /** Rost-bővítés (mezo-c9t5, frontend-only) — absent/null on meals the wire doesn't carry fiber
+   *  for yet; keretHero.ts's rost-összegzés treats a missing value as 0, never fabricates one. */
+  fiberG?: number | null
   mealItems: MealItemLine[] // structured lines (real once logged)
   items: string[] // legacy free-text labels — kept for the mock score-sheet seeds
   tags: string[]
