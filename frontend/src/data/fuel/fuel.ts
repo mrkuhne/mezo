@@ -267,6 +267,7 @@ export const fuelDay: FuelDay = {
       p: 42,
       c: 78,
       f: 12,
+      fiberG: 8,
       loggedAt: `${TODAY}T09:15:00`,
       mealDate: TODAY,
       mealItems: [
@@ -303,6 +304,7 @@ export const fuelDay: FuelDay = {
       p: 58,
       c: 74,
       f: 18,
+      fiberG: 6,
       loggedAt: `${TODAY}T13:00:00`,
       mealDate: TODAY,
       mealItems: [

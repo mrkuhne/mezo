@@ -1,6 +1,7 @@
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import type { FuelSlot, MealSlot } from '@/data/types'
+import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 import {
   useFuelDay, useFuelTimeline, useMedication, useRecipes, useStackDay, useWaterActions,
 } from '@/data/hooks'
@@ -8,20 +9,23 @@ import { toMin } from '@/data/fuel/fuelConfig'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { pickHeroWindow } from '@/features/fuel/logic/heroWindow'
 import { buildWindowRiver, type WindowRiverVM } from '@/features/fuel/logic/windowIslands'
+import { buildKeretHero, deriveMealRole, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { matchMealsToStack } from '@/features/fuel/logic/matchMealsToStack'
 import { Island } from '@/shared/ui/Island'
 import { WindowIsland } from '@/features/fuel/components/WindowIsland'
-import { KeretBelt } from '@/features/fuel/components/KeretBelt'
+import { KeretHero } from '@/features/fuel/components/KeretHero'
+import { DoneWindowsCapsule, type DoneCapsuleRow } from '@/features/fuel/components/DoneWindowsCapsule'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
-import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
+import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
+import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
+import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
 // Spec §8 empty-day state: no meal slots at all today → the sky shows this one static "üres nap"
-// island instead of a river with nothing in it (the Keret-öv still renders alongside it — an empty
-// day still has calorie/water targets). Always big — there is no capsule state to select, there is
-// nothing else on the sky to swap away from. Rides the same shared `Island` shell every other
-// window/belt uses (`tone="fuel"`), IslandDay's rest-day `is-word` hero idiom
+// island instead of a river with nothing in it. Always big — there is no capsule state to select,
+// there is nothing else on the sky to swap away from. Rides the same shared `Island` shell every
+// other window/belt uses (`tone="fuel"`), IslandDay's rest-day `is-word` hero idiom
 // (`features/today/components/IslandDay.tsx`).
 function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
   return (
@@ -44,35 +48,30 @@ function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
   )
 }
 
-// Ablak-folyam recomposition (spec 2026-08-08, mezo-jgh9): the Mai screen becomes a non-scrolling
-// sky of window-islands (one per meal slot, chronological) with the always-visible Keret-öv
-// sitting right after the NOW-island — Today's three-islands language (`shared/ui/Island`) applied
-// to Fuel's own unit, the eating window. `?w=` is the single source of truth for which island is
-// big (no param → river.defaultKey), mirroring TodayPage's `?dp=` rules exactly (replace: true,
-// delete on default, null/''/unknown all fall back). Per spec §2 "L0 nem görgethető": the sky IS
-// the page — nothing renders below it except sheets (review fix, mezo-jgh9 Task 5 round 2).
+// Keret-hero recomposition (spec 2026-08-09, mezo-c9t5 — window-river iteration): the always-on
+// Keret-öv retires in favor of a `KeretHero` sitting at the top of the page, above the sky (the
+// retired `DayBudgetCard`'s content, hero-styled — remaining kcal count-up + segmented day-bar +
+// 3 energy chips + 5 macro/rost/víz rings). Its water ring opens `WaterLogSheet` (→
+// `useWaterActions`); its chips reopen `EnergyBreakdownSheet` (the retired page's wiring,
+// restored). `KeretHero` carries no settings entry — that moved to `FuelSection`'s
+// `SubNavDropdown` `extraAction` (the Me pattern), alongside every other Fuel sub-page.
 //
-// Retired here (mezo-jgh9 Task 5 — actual file deletion is Task 6's job): the `.pghead-np` header
-// row + the Reta D{n} link (Reta now leaks in as a FACT, via the now-island's subtitle —
-// `retaPeak`), `retamicro`, `NowWindowCard` (its `pickHeroWindow` projection survives, just feeds
-// `buildWindowRiver` now), `MissedStrip` (a missed window is just an island in the `missed` state),
-// `DayZoneCard`/`ZoneSlotRow` (zones retire — every meal slot is its own island), `DayBudgetCard`
-// (its content lives in the Keret-öv's kibontott view now), the kitchen-close/caffeine-cutoff row
-// (folded into `KeretBelt`'s `note` footer line), and the protocol-meta/Replan row (Stack's own
-// page is its home — no below-sky rows on Mai). The meal-coach tagline/score-chip surface
-// (`useMealCoach`, `MealScoreSheet`, `getScoredMeal`) rode ONLY on the retired `ZoneSlotRow` —
-// `WindowIsland` has no equivalent slot, so it has no home here anymore (P8 scope per spec §8: the
-// window island's own day-score fact cell stays null until a per-window score feed exists).
-// Likewise `EnergyBreakdownSheet`'s drill-down chips: the Keret-öv's kibontott view already prints
-// the full breakdown inline, so there is no "honnan a cél" chip left to open it. The retired row's
-// "szerkeszt" chip (the only `FuelSettingsSheet` trigger in the app) is restored as a quiet
-// "szerkeszt ›" ghost button on the Keret-öv's note row (`KeretBelt`'s `onEditSettings`, Today's
-// `.isl-grouph-go` idiom) — review fix round 3.
+// AI-score visszakötés (mezo-cs8b, solved here): the day's DONE windows no longer get their own
+// per-window capsule — they merge into ONE expandable `DoneWindowsCapsule` (VM: `windowIslands.ts`'s
+// `doneGroup`), sitting first in the sky (chronologically earliest). Each expanded row's `FuelMeal`
+// role is derived here (`deriveMealRole` — no honest FE field exists, Task 1's finding); tapping a
+// scored row reopens the existing `MealScoreSheet`, unchanged.
+//
+// Still-retired from the earlier window-river recomposition (mezo-jgh9 Task 5, unchanged by this
+// pass): the `.pghead-np` header row + the Reta D{n} link (Reta leaks in as a FACT via the
+// now-island's subtitle — `retaPeak`), `retamicro`, `NowWindowCard`, `MissedStrip`,
+// `DayZoneCard`/`ZoneSlotRow`, the protocol-meta/Replan row. Per spec §2 "L0 nem görgethető": the
+// sky IS the page — nothing renders below it except sheets.
 export function FuelMaiPage() {
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
   const { fuel } = useFuelDay()
-  const { plan, budget, blocks, nowHHmm } = useFuelTimeline()
+  const { plan, budget, blocks, nowHHmm, energyBreakdown } = useFuelTimeline()
   const { cycle: medicationCycle } = useMedication()
   const { logWater } = useWaterActions()
   // The same stack/day composition FuelStackPage.tsx already uses, feeding matchMealsToStack —
@@ -90,15 +89,20 @@ export function FuelMaiPage() {
   const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  // L1 open/closed — belongs to whichever island is selected; a selection switch always closes it.
+  const [waterOpen, setWaterOpen] = useState(false)
+  const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
+  const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
+  // Done-capsule kibontva — its own toggle, independent of `listOpen` below (a window's L1).
+  const [doneOpen, setDoneOpen] = useState(false)
+  // L1 open/closed — belongs to whichever WINDOW island is selected; a selection switch always closes it.
   const [listOpen, setListOpen] = useState(false)
 
   const heroResult = pickHeroWindow({
     slots: plan.slots, blocks, budget, consumed: { kcal: fuel.consumed.kcal, p: fuel.consumed.p }, nowHHmm,
   })
   // Honest gym-only signal straight off today's REAL blocks (deriveBlocks, already composed by
-  // useFuelTimeline) — no second workoutTime hook, no invented source.
+  // useFuelTimeline) — no second workoutTime hook, no invented source. Feeds both the window
+  // subtitles (edzés-kapcsolat) and the done rows' MealRole derivation below.
   const workoutTime = blocks.find(b => b.kind === 'gym')?.time ?? null
   // The cycle's OWN current-day phaseKey (never a page-local re-hardcoded phase model) — 'peak'
   // is the one phase the design calls out as appetite-relevant (spec §3.2).
@@ -106,7 +110,7 @@ export function FuelMaiPage() {
   const matchResult = matchMealsToStack(stackSlots, recipes, fuel.meals, yesterdayFuel.meals)
   const stackVerdicts = matchResult.verdicts.filter(v => v.dayLabel === 'ma')
   const river: WindowRiverVM = buildWindowRiver({
-    plan, budget, hero: heroResult, stackVerdicts, workoutTime, retaPeak, nowHHmm,
+    plan, budget, hero: heroResult, stackVerdicts, workoutTime, retaPeak, nowHHmm, meals: fuel.meals,
   })
 
   // Same filter+sort `buildWindowRiver` uses internally (its own `islandKey` isn't exported —
@@ -116,11 +120,39 @@ export function FuelMaiPage() {
     .sort((a, z) => toMin(a.time) - toMin(z.time))
   const slotByKey = new Map(mealSlots.map(s => [`${s.time}-${s.label}`, s]))
 
-  // "Pull A + lépések" | "lépések" — today's training blocks (already composed by
-  // useFuelTimeline) joined with the always-on steps tag.
-  const activityLabel = [...blocks.map(b => b.label), 'lépések'].join(' + ')
+  // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
+  // activity/balance are 0, so the breakdown chips would be meaningless — hide them (the retired
+  // `DayBudgetCard`'s `staticEnergy` rule, same source signal, now feeding `buildKeretHero`).
+  const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
+  const keretHeroVm = buildKeretHero({
+    budget, staticEnergy, consumed: fuel.consumed, meals: fuel.meals,
+    water: { currentMl: fuel.consumed.water, targetMl: fuel.targets.water },
+    slots: plan.slots, nowHHmm,
+  })
 
-  const validKeys = new Set<string>([...river.islands.map(i => i.key), 'keret'])
+  // Done-capsule rows: `doneMealRows` joins each done slot's own meal (role always null there — no
+  // honest FE field, per Task 1) — `deriveMealRole` fills it in here from today's workout time.
+  // `clickable` mirrors `MealScoreSheet`'s own guard (it renders null without `meal.breakdown`) so
+  // a breakdown-less row never offers a dead tap.
+  const doneRows: DoneCapsuleRow[] = doneMealRows(fuel.meals, plan.slots).map((row) => {
+    const meal = fuel.meals.find(m => m.id === row.mealId)
+    return {
+      mealId: row.mealId,
+      name: row.name,
+      time: row.time,
+      kcal: row.kcal,
+      proteinG: row.proteinG,
+      role: deriveMealRole(row.time, workoutTime),
+      scorePct: row.scorePct,
+      clickable: meal?.breakdown != null,
+    }
+  })
+
+  // `?w=` is the single source of truth for which WINDOW island is big — mirrors TodayPage's `?dp=`
+  // rules (replace: true, delete on default, null/''/unknown all fall back). The retired `keret`
+  // selection key is gone with the belt (mezo-c9t5) — a stale `?w=keret` link now simply falls back
+  // to the default, exactly like any other unknown key.
+  const validKeys = new Set<string>(river.islands.map(i => i.key))
   const raw = params.get('w')
   const selected = raw != null && validKeys.has(raw) ? raw : river.defaultKey
   const selectWindow = (key: string) => {
@@ -130,14 +162,6 @@ export function FuelMaiPage() {
     else next.set('w', key)
     setSearchParams(next, { replace: true })
   }
-
-  const doneSummaryText = river.doneSummary.count > 0
-    ? [
-        `✓ ${river.doneSummary.count} ablak kész ma`,
-        `${river.doneSummary.kcal} kcal`,
-        river.doneSummary.avgScore != null ? `átlag ${river.doneSummary.avgScore} pont` : null,
-      ].filter(Boolean).join(' · ')
-    : null
 
   const openLog = (prefill: LogMealPrefill = null, slot?: MealSlot) => {
     setLogPrefill(prefill)
@@ -152,61 +176,61 @@ export function FuelMaiPage() {
     setAiSlot(slot.slotKey)
     setAiOpen(true)
   }
-
-  // The Keret-öv sits DOM-fixed right after the NOW-island (spec §2 sky diagram); with no now
-  // window it lands after the last DONE island instead — NOT blindly the chronologically last
-  // island, which may be `missed` (review fix #4: a trailing missed window must not pull the
-  // belt past every window that's actually finished).
-  const doneKeys = river.islands.filter((i) => i.state === 'done').map((i) => i.key)
-  const beltAfterKey = river.nowKey ?? doneKeys.at(-1) ?? river.islands.at(-1)?.key ?? null
-  // Kitchen close / caffeine cutoff — a quiet informational footer on the Keret-öv's kibontott
-  // view (review fix #2a): the sky IS the page now, so there is no below-sky row left to host it.
-  const keretNote = `Konyha zár · ${plan.kitchenClose} · kávé cutoff ${plan.caffeineCutoff}`
-  const keretBelt = (
-    <KeretBelt
-      big={selected === 'keret'}
-      budget={budget}
-      consumed={fuel.consumed}
-      water={{ currentMl: fuel.consumed.water, targetMl: fuel.targets.water, onAdd250: () => logWater(250) }}
-      activityLabel={activityLabel}
-      note={keretNote}
-      onEditSettings={() => setSettingsOpen(true)}
-      onSelect={() => selectWindow('keret')}
-      onAdHocLog={() => openLog()}
-    />
-  )
+  const openScoreForMeal = (mealId: string) => {
+    const meal = fuel.meals.find(m => m.id === mealId)
+    if (meal) setScoreMeal(meal)
+  }
 
   return (
     <>
+      <KeretHero vm={keretHeroVm} onChip={(section) => setEnergyOpen(section)} onWaterRing={() => setWaterOpen(true)} />
+
       <div className="sky-islands">
-        {river.islands.length === 0 && <EmptyDayIsland onPlan={() => navigate('/fuel/plan')} />}
+        {mealSlots.length === 0 && <EmptyDayIsland onPlan={() => navigate('/fuel/plan')} />}
+        {river.doneGroup && (
+          <DoneWindowsCapsule
+            group={river.doneGroup}
+            rows={doneRows}
+            open={doneOpen}
+            onToggle={() => setDoneOpen((o) => !o)}
+            onRowSelect={openScoreForMeal}
+          />
+        )}
         {river.islands.map((vm) => (
-          <Fragment key={vm.key}>
-            <WindowIsland
-              vm={vm}
-              big={selected === vm.key}
-              nowRing={vm.key === river.nowKey}
-              open={selected === vm.key && listOpen}
-              doneSummary={vm.key === river.nowKey ? doneSummaryText : null}
-              onSelect={() => selectWindow(vm.key)}
-              onToggleOpen={() => setListOpen((o) => !o)}
-              onLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleLogMeal(slot) }}
-              onAiLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleAiLog(slot) }}
-              onSwap={() => navigate('/fuel/recipes')}
-              // stackDoses here come from a MealMatchVerdict (matchMealsToStack), which carries no
-              // pantryItemId/occurrence id — there is no honest per-dose "check" action reachable
-              // from this data shape (useStackActions().logIntake needs a real stack occurrence),
-              // so this stays a deep-link to the page that actually owns dose-ticking.
-              onStackDose={() => navigate('/fuel/stack')}
-            />
-            {vm.key === beltAfterKey && keretBelt}
-          </Fragment>
+          <WindowIsland
+            key={vm.key}
+            vm={vm}
+            big={selected === vm.key}
+            nowRing={vm.key === river.nowKey}
+            open={selected === vm.key && listOpen}
+            doneSummary={null}
+            onSelect={() => selectWindow(vm.key)}
+            onToggleOpen={() => setListOpen((o) => !o)}
+            onLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleLogMeal(slot) }}
+            onAiLog={() => { const slot = slotByKey.get(vm.key); if (slot) handleAiLog(slot) }}
+            onSwap={() => navigate('/fuel/recipes')}
+            // stackDoses here come from a MealMatchVerdict (matchMealsToStack), which carries no
+            // pantryItemId/occurrence id — there is no honest per-dose "check" action reachable
+            // from this data shape (useStackActions().logIntake needs a real stack occurrence),
+            // so this stays a deep-link to the page that actually owns dose-ticking.
+            onStackDose={() => navigate('/fuel/stack')}
+          />
         ))}
-        {beltAfterKey === null && keretBelt}
       </div>
 
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
-      {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
+      {waterOpen && (
+        <WaterLogSheet
+          currentMl={fuel.consumed.water}
+          targetMl={fuel.targets.water}
+          onLog={(ml) => logWater(ml)}
+          onClose={() => setWaterOpen(false)}
+        />
+      )}
+      {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
+      {energyOpen && energyBreakdown && (
+        <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
+      )}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}

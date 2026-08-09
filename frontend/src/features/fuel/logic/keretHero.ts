@@ -105,6 +105,26 @@ export function buildKeretHero(input: {
   }
 }
 
+export type MealRole = 'pre' | 'post' | 'standard'
+export const MEAL_ROLE_LABEL: Record<MealRole, string> = {
+  pre: 'EDZÉS ELŐTTI',
+  post: 'EDZÉS UTÁNI',
+  standard: 'STANDARD',
+}
+
+/** MealRole derivation (mezo-c9t5, controller decision — Task 1 found no FE field for this):
+ *  'pre' when the meal lands 0-90min BEFORE the workout's start, 'post' when 0-120min AFTER,
+ *  else 'standard'. No workout today (`workoutTime` null) → always 'standard'. The two windows
+ *  touch at the workout's own start minute (diff 0) — resolved as 'post' (a meal logged exactly
+ *  at kickoff reads as "after the whistle", not "before"), so the two ranges never overlap. */
+export function deriveMealRole(mealTimeHHmm: string, workoutTime: string | null): MealRole {
+  if (workoutTime == null) return 'standard'
+  const diff = toMin(mealTimeHHmm) - toMin(workoutTime)
+  if (diff >= 0 && diff <= 120) return 'post'
+  if (diff < 0 && diff >= -90) return 'pre'
+  return 'standard'
+}
+
 export interface DoneMealRow { mealId: string; name: string; time: string; kcal: number | null; proteinG: number | null; role: string | null; scorePct: number | null }
 
 /** The day's done meal windows, chronologically, each row's meal joined off `slot.mealId` (the join

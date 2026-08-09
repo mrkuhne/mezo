@@ -1,4 +1,4 @@
-import { aiAverage, buildKeretHero, doneMealRows } from '@/features/fuel/logic/keretHero'
+import { aiAverage, buildKeretHero, deriveMealRole, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
@@ -222,4 +222,29 @@ test('aiAverage is null when no row carries a score', () => {
 
 test('aiAverage is null on an empty row list', () => {
   expect(aiAverage([])).toBeNull()
+})
+
+// ── deriveMealRole ───────────────────────────────────────────────────────────
+
+test('no workout today → always standard, regardless of meal time', () => {
+  expect(deriveMealRole('12:30', null)).toBe('standard')
+})
+
+test('a meal 0-90min before the workout start is pre', () => {
+  expect(deriveMealRole('12:30', '13:00')).toBe('pre') // 30 min before
+  expect(deriveMealRole('11:30', '13:00')).toBe('pre') // exactly 90 min before
+})
+
+test('a meal more than 90min before the workout is standard, not pre', () => {
+  expect(deriveMealRole('11:29', '13:00')).toBe('standard') // 91 min before
+})
+
+test('a meal 0-120min after the workout start is post', () => {
+  expect(deriveMealRole('13:00', '13:00')).toBe('post') // exactly at kickoff
+  expect(deriveMealRole('13:40', '13:00')).toBe('post') // 40 min after
+  expect(deriveMealRole('15:00', '13:00')).toBe('post') // exactly 120 min after
+})
+
+test('a meal more than 120min after the workout is standard, not post', () => {
+  expect(deriveMealRole('15:01', '13:00')).toBe('standard') // 121 min after
 })
