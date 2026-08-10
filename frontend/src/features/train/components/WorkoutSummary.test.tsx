@@ -59,6 +59,32 @@ describe('WorkoutSummary', () => {
     expect(screen.getByText(/80\s*×\s*8/)).toBeInTheDocument()
     expect(screen.getByText('@1')).toBeInTheDocument()
     expect(screen.queryByLabelText(/Edzés-jegyzet/)).toBeNull() // note is closing-only
+    // ghost chip for the partial Bench Press (plannedSets 4, only 1 logged)
+    expect(screen.getByText('— kimaradt')).toBeInTheDocument()
+    // the "1/4" set counter carries the .part class on that same partial exercise
+    const partCounter = document.querySelector('.wsum-exc .setn.part') as HTMLElement
+    expect(partCounter).not.toBeNull()
+    expect(partCounter.textContent).toBe('1/4')
+  })
+
+  it('omits the "Kihívások" section entirely when challenges is empty', () => {
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={[]} onExit={() => {}} />)
+    expect(screen.queryByText('Kihívások')).toBeNull()
+  })
+
+  it('omits the "~N perc" fragment when durationMin is not provided', () => {
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
+      exercises={exercises} challenges={challenges} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
+    expect(screen.queryByText(/perc/)).toBeNull()
+  })
+
+  it('shows a dash in the Ø RIR strip cell when no sets are logged', () => {
+    const noSets = exercises.map((e) => ({ ...e, sets: [] }))
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={noSets} challenges={challenges} onExit={() => {}} />)
+    const cells = document.querySelectorAll('.wsum-strip .cell')
+    expect(cells[3].textContent).toContain('–')
   })
 
   it('closing mode still renders the note textarea', () => {
