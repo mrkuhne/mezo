@@ -65,8 +65,12 @@ function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
 // Still-retired from the earlier window-river recomposition (mezo-jgh9 Task 5, unchanged by this
 // pass): the `.pghead-np` header row + the Reta D{n} link (Reta leaks in as a FACT via the
 // now-island's subtitle — `retaPeak`), `retamicro`, `NowWindowCard`, `MissedStrip`,
-// `DayZoneCard`/`ZoneSlotRow`, the protocol-meta/Replan row. Per spec §2 "L0 nem görgethető": the
-// sky IS the page — nothing renders below it except sheets.
+// `DayZoneCard`/`ZoneSlotRow`, the protocol-meta/Replan row.
+//
+// Scrolling (mezo-gllr): spec §2's "L0 nem görgethető" was written when the sky WAS the page
+// (Today's model). With the KeretHero above it that no longer holds on a real phone — the sky
+// carries `sky-flow`, so an island is never squeezed below its own content and the page scrolls
+// when the day needs more room than the viewport gives it.
 export function FuelMaiPage() {
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
@@ -185,7 +189,10 @@ export function FuelMaiPage() {
     <>
       <KeretHero vm={keretHeroVm} onChip={(section) => setEnergyOpen(section)} onWaterRing={() => setWaterOpen(true)} />
 
-      <div className="sky-islands">
+      {/* `sky-flow`: this page carries the KeretHero above the sky, so the islands must never
+          be squeezed below their own content — the page scrolls instead (mezo-gllr). Today's
+          plain `.sky-islands` keeps the viewport-fill model. */}
+      <div className="sky-islands sky-flow">
         {mealSlots.length === 0 && <EmptyDayIsland onPlan={() => navigate('/fuel/plan')} />}
         {river.doneGroup && (
           <DoneWindowsCapsule
