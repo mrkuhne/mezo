@@ -2257,6 +2257,22 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
        transition: flex .55s cubic-bezier(.3,.9,.35,1), border-radius .55s cubic-bezier(.3,.9,.35,1),
                    background .6s ease, opacity .45s ease; }
 .isl.isl-big { flex: 1 1 100%; border-radius: 34px; box-shadow: var(--shadow-md); }
+/* `.sky-flow` — the sky variant for a page that carries content ABOVE it (Fuel's Mai, whose
+   KeretHero is ~255px tall). Today's viewport-fill model (ADR 0022, "L0 nem görgethető")
+   assumes the sky IS the page: `.sky-islands { flex: 1; min-height: 0 }` hands the islands
+   whatever is left and `.isl.isl-big { flex: 1 1 100% }` lets the big one shrink to
+   `min-height`, so on any phone shorter than ~950px the island fell below its own content
+   height and `.isl { overflow: hidden }` CLIPPED the CTA row — while the flex fill kept
+   `scrollHeight === clientHeight`, so the page could not scroll to it either (mezo-gllr;
+   measured: 66px clipped at 852px, 118px at 800px, 0 at the goldens' 956px).
+   The flow variant keeps the fill-when-there-is-room look (`flex-grow: 1`) but sets
+   `flex-shrink: 0` with a content-sized basis everywhere, so an island can never be
+   squeezed below its content; the sky then genuinely overflows `.screen-content`, which
+   is the app's scroller. Trade-off: the capsule↔big morph's height step no longer
+   interpolates (basis `auto` is not animatable) — the cross-fade and radius morph still do. */
+.sky-islands.sky-flow { flex: 1 0 auto; }
+.sky-flow .isl { flex: 0 0 auto; }
+.sky-flow .isl.isl-big { flex: 1 0 auto; }
 .isl-blob { position: absolute; width: 300px; height: 300px; top: -100px; left: 50%;
             margin-left: -150px; filter: blur(2px); opacity: 0; transition: opacity .6s ease;
             pointer-events: none; z-index: 0; }
