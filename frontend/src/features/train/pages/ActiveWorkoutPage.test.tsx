@@ -823,6 +823,9 @@ test('summary → Edzés lezárása shows the level-up overlay, then the closed 
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
   // The read-only closed summary is revealed underneath.
   expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
+  // Workout identity still holds on the closed summary (was asserted via the old
+  // title-suffix framing "Pull Day · N medál" — the title itself renders standalone now).
+  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
   // ex2..ex5's working sets all hit their prescribed target (and several also beat
   // lastWeek), so the session's real medal count (mezo-wp6n) drives the redesigned
   // Medálok section's count — replaces the old hadPrFromSignal / title-suffix framing.
