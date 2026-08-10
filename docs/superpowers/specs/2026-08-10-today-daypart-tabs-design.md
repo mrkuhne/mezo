@@ -130,9 +130,21 @@ Változatlan Napív rampok. A napszak identitását eddig a sziget blob-tintje h
 
 **CSS:** új Today-scoped `.daytabs` / `.dayview` / `.dv-*` család + a `.coach-bubble.cb-band` modifier.
 
-- **Megmarad, mert az új nézet is használja:** `.isl-facts`/`.isl-fact*` (az `IslandFactsStrip`), `.isl-grouph*` (a csoportfejlécek), `.isl-cta` (+ `is-lav`), `.isl-more` (a `mai-logrow` és a másodlagos CTA-k), `.isl-warnchip`.
-- **Retirálandó, ha és amint az egyenkénti ellenőrzés kimondja, hogy a Fuel nem használja:** `.sky-islands`, `.screen-content:has(.sky-islands)`, `.isl-l1*`, `.isl-doneline`, `.isl-openhead`, `.isl-bigview`, `.isl-hero-*`, `.isl-nightrow*`, `.isl-phase`, és az `isl-morph`/`isl-floaty`/`isl-rowin` keyframe-ek.
-- **Nem nyúlunk hozzá:** `.isl`, `.isl-big`, `.isl-blob`, `.isl-cap*`, `.isl-nowtag`, `.sky-flow`, `.isl-mealchip*` — a `shared/ui/Island` héj és a Fuel „Mai” élő fogyasztói.
+**Az `.isl-*` család gyakorlatilag NEM törölhető** — a tervezéskor elvégzett egyenkénti ellenőrzés kimondta, hogy a Fuel „Mai” (`FuelMaiPage.tsx` + `WindowIsland.tsx`) a szókincs túlnyomó részének élő fogyasztója:
+
+| Osztály | Fuel-fogyasztó | Sors |
+|---|---|---|
+| `.sky-islands` (+ `.sky-flow`, `.screen-content:has()` flip) | `FuelMaiPage:195` | **marad** |
+| `.isl`, `.isl-big`, `.isl-blob`, `.isl-cap*`, `.isl-nowtag`, `.isl-bigview`, `isl-morph`/`isl-floaty` | a `shared/ui/Island` héj, amit a `WindowIsland` renderel | **marad** |
+| `.isl-hero-v/-u/-sub` (+ `is-word`) | `WindowIsland:149-150`, `FuelMaiPage:40-43` | **marad** |
+| `.isl-act`, `.isl-cta` (+ `cta-sage`), `.isl-more` | `WindowIsland:177-180`, `FuelMaiPage:44-45,231-234` | **marad** |
+| `.isl-openhead`, `.isl-l1`, `.isl-l1-close`, `isl-rowin` | `WindowIsland:96-97,144` | **marad** |
+| `.isl-grouph*`, `.isl-facts`/`.isl-fact*`, `.isl-mealchip*` | `WindowIsland:98-171` | **marad** |
+| `.isl-warnchip` | — (Today-only, de az új nézet is használja) | **marad** |
+
+**Ténylegesen törölhető:** `.isl-doneline`, `.isl-nightrow*`, `.isl-phase` — kizárólag a Today szigetjei használták. Az `isl-phasein` keyframe **nem** törlendő: az esti fázisváltás és az új tabváltás is erre a mozgásra épül.
+
+Következmény: az új `.dv-*` család **nem** az `.isl-*` helyére lép, hanem mellé — a Today saját, dobozolatlan nyelve, míg az `.isl-*` a Fuel szigeteinek (és a `shared/ui/Island` héjnak) a nyelve marad. Ahol az új nézet ugyanazt a mikro-komponenst rendereli (ténystrip, csoportfejléc, CTA-pirula), ott **az `.isl-*` osztályt használja tovább**, nem másolja át `.dv-*` alá.
 
 ## 10. A11y
 
