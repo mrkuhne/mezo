@@ -8,8 +8,9 @@
 import { toMin } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { HeroResult } from '@/features/fuel/logic/heroWindow'
+import { aiAverage } from '@/features/fuel/logic/keretHero'
 import type { MealMatchVerdict } from '@/features/fuel/logic/matchMealsToStack'
-import type { FuelPlanToday, FuelSlot, MealSlot } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, FuelSlot, MealSlot } from '@/data/types'
 
 export type WindowIslandState = 'done' | 'now' | 'missed' | 'future'
 export interface WindowFacts {
@@ -33,8 +34,17 @@ export interface WindowIslandVM {
 export interface WindowRiverVM {
   islands: WindowIslandVM[]
   nowKey: string | null
-  defaultKey: string
-  doneSummary: { count: number; kcal: number; avgScore: number | null }
+  /** The `?w=` key that should be big absent a valid param — the now-window, else the
+   *  chronologically first remaining island (a trailing missed run with no now window),
+   *  else null when nothing is left to select (every window done — mezo-c9t5: the retired
+   *  `keret` fallback is gone, there is no belt to fall back onto anymore). */
+  defaultKey: string | null
+  /** The day's done windows, merged (mezo-c9t5 — replaces the old belt/per-island done
+   *  capsules): null when nothing is done yet (no fabricated empty capsule). `avgScore` is
+   *  the scored done meals' average `scorePct` (meals joined off each done slot's `mealId`,
+   *  the same join `keretHero.ts`'s `doneMealRows` does) — null when none of today's done
+   *  meals carry a score. */
+  doneGroup: { count: number; kcal: number; avgScore: number | null } | null
 }
 
 const SLOT_EMOJI: Record<MealSlot, string> = { breakfast: '🍳', lunch: '🥙', snack: '🥜', dinner: '🍲' }
@@ -63,10 +73,9 @@ function buildEssence(slot: FuelSlot): string {
 // on a window with no doses, when the L1 it opens actually has 3 rows).
 const L1_BASE_ROWS = 3
 
-// done: "✓ 420 kcal · 92 p" (kcal+protein, straight from the slot) · missed: "Pótold" · other: the
-// "még N ›" handle count.
+// missed: "Pótold" · other: the "még N ›" handle count. (Done windows never reach this function —
+// buildWindowRiver filters them out before building islands; they merge into `doneGroup` instead.)
 function buildCount(slot: FuelSlot, l1Count: number): string {
-  if (slot.state === 'done') return `✓ ${slot.kcal ?? 0} kcal · ${slot.p ?? 0} p`
   if (slot.state === 'missed') return 'Pótold'
   return `${l1Count} ›`
 }
@@ -112,49 +121,64 @@ export function buildWindowRiver(input: {
   workoutTime: string | null
   retaPeak: boolean
   nowHHmm: string
+  /** Today's logged meals — joined against each done slot's `mealId` to build `doneGroup.avgScore`
+   *  (mezo-c9t5). Not otherwise threaded into the islands: a per-window logged-meal score is still
+   *  P8 scope (facts.dayScore stays null below, unchanged). */
+  meals: FuelMeal[]
 }): WindowRiverVM {
-  const { plan, budget, hero, stackVerdicts, workoutTime, retaPeak } = input
+  const { plan, budget, hero, stackVerdicts, workoutTime, retaPeak, meals } = input
 
   const mealSlots = plan.slots.filter(hasSlotKey).sort((a, z) => toMin(a.time) - toMin(z.time))
   const consumedProtein = mealSlots.filter(s => s.state === 'done').reduce((sum, s) => sum + (s.p ?? 0), 0)
   const nowKey = hero.hero.kind === 'open' ? islandKey(hero.hero.slot) : null
 
-  const islands: WindowIslandVM[] = mealSlots.map((slot, i) => {
-    const state = mapState(slot.state)
-    // Every zone-matching verdict lands on this window's L1 — not just the first one found —
-    // so a day with matches in multiple zones doesn't silently drop doses from all but one.
-    const doses = stackVerdicts
-      .filter((v) => v.zone === slot.slotKey)
-      .map((v) => ({ name: v.mealTitle, note: v.advice ?? v.metric }))
-    const l1Count = L1_BASE_ROWS + doses.length
-    const nextTime = mealSlots[i + 1]?.time ?? plan.kitchenClose
-    return {
-      key: islandKey(slot),
-      state,
-      emoji: SLOT_EMOJI[slot.slotKey],
-      title: slot.label,
-      time: slot.time,
-      essence: buildEssence(slot),
-      count: buildCount(slot, l1Count),
-      subtitle: buildSubtitle(slot, nextTime, workoutTime, retaPeak),
-      meal: buildMeal(slot),
-      facts: {
-        proteinJump: state === 'now' || state === 'future' ? buildProteinJump(slot, consumedProtein, budget.p) : null,
-        // No per-slot logged meal-score field exists on FuelSlot (and buildWindowRiver's input
-        // carries no meals array to look one up by mealId) — always null until that's threaded in.
-        dayScore: null,
-      },
-      stackDoses: doses,
-      l1Count,
-    }
-  })
+  // Done windows merge into `doneGroup` (mezo-c9t5) — they no longer get their own island, so the
+  // river only builds islands for the still-open ones (now/missed/future). `nextTime` below still
+  // reads the ORIGINAL (unfiltered) `mealSlots[i + 1]` so a remaining window's subtitle boundary
+  // math is unaffected by a done neighbor being skipped.
+  const islands: WindowIslandVM[] = mealSlots
+    .map((slot, i) => ({ slot, i }))
+    .filter(({ slot }) => slot.state !== 'done')
+    .map(({ slot, i }) => {
+      const state = mapState(slot.state)
+      // Every zone-matching verdict lands on this window's L1 — not just the first one found —
+      // so a day with matches in multiple zones doesn't silently drop doses from all but one.
+      const doses = stackVerdicts
+        .filter((v) => v.zone === slot.slotKey)
+        .map((v) => ({ name: v.mealTitle, note: v.advice ?? v.metric }))
+      const l1Count = L1_BASE_ROWS + doses.length
+      const nextTime = mealSlots[i + 1]?.time ?? plan.kitchenClose
+      return {
+        key: islandKey(slot),
+        state,
+        emoji: SLOT_EMOJI[slot.slotKey],
+        title: slot.label,
+        time: slot.time,
+        essence: buildEssence(slot),
+        count: buildCount(slot, l1Count),
+        subtitle: buildSubtitle(slot, nextTime, workoutTime, retaPeak),
+        meal: buildMeal(slot),
+        facts: {
+          proteinJump: state === 'now' || state === 'future' ? buildProteinJump(slot, consumedProtein, budget.p) : null,
+          // No per-slot logged meal-score field exists on FuelSlot — always null until a per-window
+          // score feed exists (P8 scope); the day's done-meal scores now live in `doneGroup` instead.
+          dayScore: null,
+        },
+        stackDoses: doses,
+        l1Count,
+      }
+    })
 
   const doneMealSlots = mealSlots.filter(s => s.state === 'done')
-  const doneSummary = {
-    count: doneMealSlots.length,
-    kcal: doneMealSlots.reduce((sum, s) => sum + (s.kcal ?? 0), 0),
-    avgScore: null,
-  }
+  const mealById = new Map(meals.map(m => [m.id, m]))
+  const scoredPct = doneMealSlots.map(s => {
+    const score = s.mealId != null ? mealById.get(s.mealId)?.score : null
+    return score != null ? Math.round(score * 100) : null
+  })
+  const avgScore = aiAverage(scoredPct)
+  const doneGroup = doneMealSlots.length > 0
+    ? { count: doneMealSlots.length, kcal: doneMealSlots.reduce((sum, s) => sum + (s.kcal ?? 0), 0), avgScore }
+    : null
 
-  return { islands, nowKey, defaultKey: nowKey ?? 'keret', doneSummary }
+  return { islands, nowKey, defaultKey: nowKey ?? islands[0]?.key ?? null, doneGroup }
 }

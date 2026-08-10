@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuel · Keret-hero v4 — 5 karika + víz-logoló</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary-soft:#FFDFD3;
+    --secondary-hover:#2B2118;
+    --accent-bg:#fdf8ec; --accent-soft:#faecc8; --accent-base:#d4a853; --accent-deep:#8e6e1f;
+    --success-bg:#eef5ec; --success-soft:#d8e6d4; --success-base:#6b8a5d; --success-hover:#4a6a3d;
+    --error-soft:#f5d5cc; --error-base:#c4634b;
+    --surface-page:#FBF6EF; --surface-card:#ffffff; --surface-recess:rgba(43,33,24,0.05);
+    --text-primary:#2B2118; --text-secondary:#5F5346; --text-muted:#8A7A6A;
+    --divider:rgba(43,33,24,0.10);
+    --sage:#7FA48A; --sage-deep:#4a6a3d; --amber:#d4a853; --lav:#9B8FC4; --sky:#6FA7D8;
+    --macro-protein:#e26b67; --macro-carbs:#d49245; --macro-fat:#c4a020; --macro-fiber:#6ba24a;
+    --coral:#FF6B4A;
+    --gradient-sage:linear-gradient(135deg,#7FA48A,#5d8468);
+    --shadow-sage:0 8px 20px rgba(93,132,104,0.35);
+    --shadow-sm:0 2px 6px rgba(43,33,24,0.06);
+    --shadow-md:0 6px 18px rgba(43,33,24,0.10);
+    --r-md:10px; --r-lg:14px; --r-xl:18px; --r-full:9999px;
+    --halo-sage:radial-gradient(ellipse at 50% 15%, rgba(154,184,143,0.30) 0%, rgba(244,208,111,0.10) 35%, rgba(251,246,239,0) 70%);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Geist',system-ui,sans-serif; background:#efe8dd; color:var(--text-primary); padding:32px 24px 80px;}
+  .wrap{max-width:1280px; margin:0 auto;}
+  h1{font-size:28px; font-weight:700; letter-spacing:-0.02em;}
+  .lede{font-size:14.5px; color:var(--text-secondary); margin-top:6px; max-width:840px; line-height:1.55;}
+  .lede b{color:var(--text-primary);}
+  .cols{display:flex; gap:36px; margin-top:26px; flex-wrap:wrap; justify-content:center;}
+  .left{flex:none;}
+  .right{flex:1; min-width:420px; max-width:620px;}
+  .tip{text-align:center; font-size:12px; color:var(--text-muted); margin-bottom:12px;}
+
+  .phone{width:372px; height:772px; border-radius:44px; border:8px solid #17120d; background:var(--surface-page); overflow:hidden; position:relative; box-shadow:0 22px 48px rgba(43,33,24,0.25); margin:0 auto;}
+  .screen{position:absolute; inset:0; overflow-y:auto; scrollbar-width:none; display:flex; flex-direction:column;}
+  .screen::-webkit-scrollbar{display:none;}
+  .apphero{display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--divider); background:rgba(251,246,239,0.92); position:sticky; top:0; z-index:10; flex:none;}
+  .av{width:34px; height:34px; border-radius:var(--r-full); background:linear-gradient(135deg,#FF7A55,#FF5B36); color:#fff; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--primary-soft);}
+  .apphero .nm{font-size:13px; font-weight:700;}
+  .apphero .ti{font-size:10px; color:var(--text-muted); font-family:'Fraunces',serif; font-style:italic;}
+  .subnav{margin-left:auto; font-size:11px; font-weight:700; color:var(--sage-deep); background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-full); padding:6px 12px;}
+  .tabbar{display:flex; justify-content:space-around; padding:9px 8px 14px; background:rgba(251,246,239,0.94); border-top:1px solid var(--divider); flex:none; margin-top:auto; position:sticky; bottom:0; z-index:10;}
+  .tabbar span{font-size:10px; font-weight:600; color:var(--text-muted); text-align:center;}
+  .tabbar .on{color:var(--sage-deep);}
+  .tabbar i{display:block; font-style:normal; font-size:15px; margin-bottom:2px;}
+
+  /* ═══ KERET-HERO v2 — centered count-up + rings ═══ */
+  .khero{background:var(--halo-sage); padding:16px 18px 12px; flex:none; text-align:center;}
+  .khero .n{font-size:48px; font-weight:200; letter-spacing:-0.04em; line-height:1; font-variant-numeric:tabular-nums;}
+  .khero .n .u{font-size:19px; font-weight:300; color:var(--text-muted); margin-left:5px;}
+  .khero .of{font-size:11.5px; color:var(--text-secondary); font-weight:500; margin-top:5px;}
+  .khero .of b{color:var(--sage-deep); font-weight:700;}
+  .dayseg{display:flex; height:8px; border-radius:4px; overflow:hidden; margin:10px auto 0; position:relative; background:var(--surface-recess); max-width:280px;}
+  .dayseg i{display:block; height:100%;}
+  .dayseg .mark{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--accent-base); border-radius:1px; box-shadow:0 0 0 2px rgba(212,168,83,0.25);}
+  .ebchips{display:flex; gap:6px; margin-top:10px; justify-content:center;}
+  .ebchip{font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-full); padding:4px 11px; cursor:pointer; font-family:inherit;}
+  .ebchip b{font-weight:800; color:var(--text-primary);}
+  .ebchip.goal b{color:var(--sage-deep);}
+  .rings{display:flex; justify-content:center; gap:9px; margin-top:14px;}
+  .ring{text-align:center;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring .track{stroke:var(--surface-recess);}
+  .ring .fill{stroke-linecap:round; transition:stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);}
+  .ringwrap{position:relative; width:58px; height:58px; margin:0 auto;}
+  .ring .pctv{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .ring .pctv em{font-style:normal; font-size:8px; font-weight:600; color:var(--text-muted); margin-left:1px;}
+  .ring .lb{font-size:8px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; margin-top:5px;}
+  .ring .gv{font-size:10px; font-weight:700; margin-top:1px;}
+  .ring .gv em{font-style:normal; font-weight:500; color:var(--text-muted);}
+  .ring.p .lb{color:var(--macro-protein);}
+  .ring.c .lb{color:var(--macro-carbs);}
+  .ring.f .lb{color:var(--macro-fat);}
+  .ring.r .lb{color:var(--macro-fiber);}
+  .ring.w .lb{color:var(--sky);}
+  .ring.w:active .ringwrap{transform:scale(.95); transition:transform .12s;}
+  /* water logger sheet */
+  .wsheet{position:absolute; left:0; right:0; bottom:0; background:var(--surface-card); border-radius:24px 24px 0 0; z-index:21; padding:16px 18px 22px; transform:translateY(105%); transition:transform .34s cubic-bezier(.2,.8,.25,1);}
+  .wsheet.on{transform:none;}
+  .wsheet .grab{width:36px; height:4px; border-radius:2px; background:var(--divider); margin:0 auto 12px;}
+  .wsheet .wt{font-size:15px; font-weight:700; text-align:center;}
+  .wsheet .ws{font-size:11px; color:var(--text-muted); text-align:center; margin-top:3px;}
+  .wchips{display:flex; gap:8px; justify-content:center; margin-top:14px;}
+  .wchip{font-size:13px; font-weight:700; color:var(--text-secondary); background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-full); padding:10px 16px; cursor:pointer; font-family:inherit;}
+  .wchip.sel{color:#fff; background:var(--sky); border-color:var(--sky);}
+  .wmanual{display:flex; gap:8px; margin-top:12px; justify-content:center; align-items:center;}
+  .wmanual input{width:90px; font-family:inherit; font-size:13px; font-weight:700; padding:9px 12px; border:1px solid var(--divider); border-radius:var(--r-lg); background:var(--surface-page); color:var(--text-primary); text-align:right;}
+  .wmanual .ml{font-size:11px; font-weight:600; color:var(--text-muted);}
+  .wsave{display:block; margin:14px auto 0; padding:10px 26px; border-radius:var(--r-full); background:var(--gradient-sage); color:#fff; font-size:13px; font-weight:700; border:none; font-family:inherit; cursor:pointer; box-shadow:var(--shadow-sage);}
+  .wq{display:flex; gap:4px; justify-content:center;}
+  .wq button{font-size:8.5px; font-weight:700; color:var(--sage-deep); background:var(--success-bg); border:1px solid var(--success-soft); border-radius:var(--r-full); padding:1px 6px; cursor:pointer; font-family:inherit;}
+  .waterrow{display:flex; align-items:center; justify-content:center; gap:6px; margin-top:11px; font-size:11px; font-weight:600; color:var(--text-secondary);}
+  .waterrow b{font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;}
+  .waterrow em{font-style:normal; font-weight:500; color:var(--text-muted); font-size:10px;}
+  .waterrow .wq{margin-left:4px;}
+  .khero .foot{display:flex; gap:12px; margin-top:8px; justify-content:center;}
+  .khero .foot button{font-size:10px; font-weight:600; color:var(--text-muted); background:none; border:none; cursor:pointer; font-family:inherit;}
+
+  /* islands */
+  .sky{flex:1; display:flex; flex-direction:column; gap:8px; padding:10px 13px 10px; min-height:0;}
+  .isl{position:relative; overflow:hidden; border:1px solid var(--divider); background:var(--surface-card); box-shadow:var(--shadow-sm); border-radius:24px; flex:none; cursor:pointer;}
+  .isl .blob{position:absolute; width:280px; height:280px; filter:blur(2px); z-index:0; pointer-events:none; top:-95px; left:50%; margin-left:-140px; background:radial-gradient(ellipse at 50% 45%, rgba(154,184,143,0.30), rgba(244,208,111,0.13) 55%, transparent 75%); animation:morph 9s ease-in-out infinite alternate;}
+  @keyframes morph{
+    0%{border-radius:58% 42% 55% 45%/50% 58% 42% 50%; transform:translate(-8px,-6px);}
+    100%{border-radius:52% 48% 60% 40%/44% 54% 46% 56%; transform:translate(6px,4px) scale(1.05);}
+  }
+  .isl.big{flex:1 1 auto; border-radius:30px; box-shadow:var(--shadow-md); min-height:186px; cursor:default;}
+  .cap{display:flex; align-items:center; gap:9px; padding:10px 14px; position:relative; z-index:1;}
+  .cap .em{font-size:15px;}
+  .cap .t{font-size:12px; font-weight:700;}
+  .cap .m{font-size:10px; color:var(--text-muted); margin-top:1px;}
+  .cap .n{margin-left:auto; font-size:10px; font-weight:700; color:var(--text-secondary); background:var(--surface-recess); padding:3px 9px; border-radius:var(--r-full); white-space:nowrap;}
+  .cap .n.done{color:var(--success-hover); background:var(--success-bg);}
+  .isl.nowring{border-color:var(--accent-base); box-shadow:0 0 0 4px rgba(212,168,83,0.14);}
+  .nowtag{font-size:7.5px; font-weight:800; letter-spacing:0.14em; color:var(--accent-deep); background:var(--accent-bg); border:1px solid var(--accent-soft); padding:2px 6px; border-radius:var(--r-full);}
+  .bigin{position:relative; z-index:1; display:flex; flex-direction:column; height:100%; padding:14px 16px 12px; text-align:center;}
+  .bigin .hero{font-size:32px; font-weight:200; letter-spacing:-0.04em; line-height:1; font-variant-numeric:tabular-nums;}
+  .bigin .hero .u{font-size:14px; font-weight:300; color:var(--text-muted); margin-left:4px;}
+  .bigin .sub{font-size:11px; color:var(--text-secondary); font-weight:500; margin-top:5px;}
+  .mealchip{display:flex; align-items:center; gap:8px; background:var(--surface-recess); border-radius:var(--r-lg); padding:8px 10px; margin-top:9px; text-align:left;}
+  .mealchip .em{font-size:15px;}
+  .mealchip .t{font-size:12px; font-weight:700;}
+  .mealchip .m{font-size:10px; color:var(--text-muted);}
+  .actrow{margin-top:auto; padding-top:9px; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .cta{display:inline-flex; padding:9px 17px; border-radius:var(--r-full); background:var(--gradient-sage); color:#fff; font-size:12px; font-weight:700; box-shadow:var(--shadow-sage); border:none; font-family:inherit; cursor:pointer;}
+  .ghostcta{display:inline-flex; padding:7px 12px; border-radius:var(--r-full); background:transparent; color:var(--text-secondary); font-size:11px; font-weight:600; border:1px solid var(--divider); cursor:pointer; font-family:inherit;}
+
+  /* done fold: logged meals with AI score */
+  .donelist{overflow:hidden; max-height:0; opacity:0; transition:max-height .45s ease, opacity .35s ease;}
+  .isl.open .donelist{max-height:300px; opacity:1;}
+  .drow{display:flex; align-items:center; gap:9px; padding:9px 14px; border-top:1px solid var(--divider); position:relative; z-index:1; cursor:pointer;}
+  .drow:hover{background:var(--surface-recess);}
+  .drow .em{font-size:15px;}
+  .drow .t{font-size:12px; font-weight:700;}
+  .drow .m{font-size:10px; color:var(--text-muted); margin-top:1px;}
+  .roletag{font-size:7.5px; font-weight:800; letter-spacing:0.1em; padding:2px 6px; border-radius:var(--r-full); margin-left:6px; vertical-align:1px;}
+  .roletag.pre{color:#a4503c; background:#fdf0ec; border:1px solid var(--error-soft);}
+  .roletag.std{color:var(--text-muted); background:var(--surface-recess); border:1px solid var(--divider);}
+  .scorechip{margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:800; color:var(--success-hover); background:var(--success-bg); border:1px solid var(--success-soft); border-radius:var(--r-full); padding:3px 9px; white-space:nowrap;}
+  .scorechip.mid{color:var(--accent-deep); background:var(--accent-bg); border-color:var(--accent-soft);}
+
+  /* score sheet overlay */
+  .sheetbk{position:absolute; inset:0; background:rgba(43,33,24,0.35); z-index:20; opacity:0; pointer-events:none; transition:opacity .3s ease;}
+  .sheetbk.on{opacity:1; pointer-events:auto;}
+  .sheet{position:absolute; left:0; right:0; bottom:0; background:var(--surface-card); border-radius:24px 24px 0 0; z-index:21; padding:16px 18px 22px; transform:translateY(105%); transition:transform .38s cubic-bezier(.2,.8,.25,1);}
+  .sheet.on{transform:none;}
+  .sheet .grab{width:36px; height:4px; border-radius:2px; background:var(--divider); margin:0 auto 12px;}
+  .shead{display:flex; align-items:center; gap:12px;}
+  .scorering{position:relative; width:64px; height:64px; flex:none;}
+  .scorering svg{transform:rotate(-90deg);}
+  .scorering .v{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:200; letter-spacing:-0.02em;}
+  .shead .t{font-size:15px; font-weight:700;}
+  .shead .m{font-size:10.5px; color:var(--text-muted); margin-top:2px;}
+  .sheet{max-height:86%;}
+  .sheetscroll{overflow-y:auto; max-height:calc(86vh - 60px); scrollbar-width:none; margin:0 -4px; padding:0 4px 4px;}
+  .sheetscroll::-webkit-scrollbar{display:none;}
+  .eyebrow-c{font-size:8.5px; font-weight:800; letter-spacing:0.16em; color:var(--text-secondary);}
+  .sheet .eyebrow-c:first-child{color:var(--sage-deep); margin-bottom:8px;}
+  .olvasat{display:flex; gap:8px; align-items:flex-start; background:rgba(255,107,74,0.05); border:1px solid var(--divider); border-radius:var(--r-lg); padding:11px 12px; margin-top:12px;}
+  .olvasat .sp{font-size:12px;}
+  .olvasat p{font-size:12px; line-height:1.5; color:var(--text-primary); margin-top:5px;}
+  .secrow{display:flex; justify-content:space-between; margin:16px 0 8px;}
+  .dim{background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-lg); padding:11px 12px; margin-bottom:8px;}
+  .dim .dh{display:flex; align-items:flex-start; gap:10px;}
+  .dim .dl{font-size:8.5px; font-weight:800; letter-spacing:0.12em;}
+  .dim .ds{margin-top:3px;}
+  .dim .ds b{font-size:22px; font-weight:600; line-height:1;}
+  .dim .ds em{font-style:normal; font-size:9px; color:var(--text-muted); margin-left:5px;}
+  .dim .dbar{margin-left:auto; width:72px; height:6px; border-radius:3px; background:var(--surface-recess); overflow:hidden; margin-top:4px;}
+  .dim .dbar i{display:block; height:100%; border-radius:3px;}
+  .dim p{font-size:11.5px; line-height:1.5; color:var(--text-primary); margin-top:8px;}
+  .dim .dpanel{font-size:10px; color:var(--text-muted); background:var(--surface-recess); border-radius:var(--r-md); padding:6px 9px; margin-top:8px; font-variant-numeric:tabular-nums;}
+  .improve{background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-lg); padding:2px 0;}
+  .irow2{display:flex; gap:8px; align-items:flex-start; padding:9px 12px; border-bottom:1px solid var(--divider); font-size:11.5px; line-height:1.45;}
+  .irow2:last-child{border-bottom:none;}
+  .irow2 .num{flex:none; width:16px; height:16px; display:flex; align-items:center; justify-content:center; font-size:8.5px; font-weight:700; color:#8a6918; background:rgba(201,151,26,0.12); border-radius:4px; margin-top:1px;}
+  .irow2 .tx{flex:1; color:var(--text-primary);}
+  .irow2 .tx b{font-weight:700;}
+  .irow2 .imp{flex:none; font-size:9px; font-weight:800; color:#8a6918; margin-top:2px;}
+  .tools{display:flex; gap:6px; flex-wrap:wrap;}
+  .tool{font-size:9.5px; font-weight:600; color:var(--text-secondary); background:var(--surface-recess); border:1px solid var(--divider); border-radius:var(--r-full); padding:4px 9px;}
+  .sheet .close{display:block; margin:14px auto 0; font-size:12px; font-weight:700; color:var(--text-secondary); background:none; border:none; cursor:pointer; font-family:inherit;}
+
+  .spec{background:var(--surface-card); border:1px solid var(--divider); border-radius:22px; padding:20px 22px; margin-bottom:18px; box-shadow:var(--shadow-sm);}
+  .spec h3{font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .spec h3 .no{width:22px; height:22px; border-radius:var(--r-full); background:var(--secondary-hover); color:#fff; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+  .spec p, .spec li{font-size:13px; line-height:1.6; color:var(--text-secondary);}
+  .spec p{margin-top:8px;}
+  .spec ul{margin:8px 0 0 18px;}
+  .spec b{color:var(--text-primary); font-weight:600;}
+  .qs{background:var(--accent-bg); border-color:var(--accent-soft);}
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fuel · Keret-hero v4 — 5 karika, víz-logoló a gyűrűn, tiszta láb</h1>
+  <p class="lede"><b>Amit kértél:</b> <b>5 gyűrű</b> — Fehérje · Szénhidrát · Zsír · Rost · <b>Víz</b> —, gombok nélkül: a <b>víz-gyűrűre koppintva</b> jön fel a logoló (250 / 400 / 500 vagy kézi ml-input — próbáld ki!). A „＋ Log bármikor” és a „szerkeszt ›” láb-sor <b>törölve</b>: az ad-hoc logot a már létező központi <b>+ FAB</b> viszi (QuickInputSheet), a Fuel-beállítások pedig a <b>Mai ▾ menübe</b> költöznek ⚙️ sorként — pontosan ahogy a Me szekció csinálja a saját beállításaival. A sheet továbbra is a valódi MealScoreSheet mása.</p>
+
+  <div class="cols">
+    <div class="left">
+      <p class="tip">koppints: a számra (újra-pörgetés) · a ✓ kapszulára (kibontás) · egy logolt ételre (elemzés-sheet)</p>
+      <div class="phone"><div class="screen">
+        <div class="apphero"><div class="av">D</div><div><div class="nm">Daniel</div><div class="ti">A Következetes</div></div><div class="subnav">Mai ▾</div></div>
+
+        <!-- ═══ KERET-HERO v2 ═══ -->
+        <div class="khero">
+          <div class="n" id="cnt" onclick="countUp()">0<span class="u">kcal hátra</span></div>
+          <div class="of">eddig 1 240 / <b>2 400</b> · 2/4 ablak</div>
+          <div class="dayseg">
+            <i style="width:18%; background:var(--sage);"></i>
+            <i style="width:34%; background:var(--sage-deep);"></i>
+            <span class="mark" style="left:49%;"></span>
+          </div>
+          <div class="ebchips">
+            <button class="ebchip">Alap <b>1 890</b></button>
+            <button class="ebchip">Mozgás <b>+910</b></button>
+            <button class="ebchip goal">Cél <b>−400</b></button>
+          </div>
+          <div class="rings">
+            <div class="ring p">
+              <div class="ringwrap"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="track" cx="29" cy="29" r="25" fill="none" stroke-width="5"/><circle class="fill" cx="29" cy="29" r="25" fill="none" stroke-width="5" stroke="var(--macro-protein)" stroke-dasharray="157" stroke-dashoffset="157" data-pct="39"/></svg><span class="pctv">39<em>%</em></span></div>
+              <div class="lb">Fehérje</div><div class="gv">62 <em>/ 160 g</em></div>
+            </div>
+            <div class="ring c">
+              <div class="ringwrap"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="track" cx="29" cy="29" r="25" fill="none" stroke-width="5"/><circle class="fill" cx="29" cy="29" r="25" fill="none" stroke-width="5" stroke="var(--macro-carbs)" stroke-dasharray="157" stroke-dashoffset="157" data-pct="52"/></svg><span class="pctv">52<em>%</em></span></div>
+              <div class="lb">Szénhidrát</div><div class="gv">130 <em>/ 250 g</em></div>
+            </div>
+            <div class="ring f">
+              <div class="ringwrap"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="track" cx="29" cy="29" r="25" fill="none" stroke-width="5"/><circle class="fill" cx="29" cy="29" r="25" fill="none" stroke-width="5" stroke="var(--macro-fat)" stroke-dasharray="157" stroke-dashoffset="157" data-pct="51"/></svg><span class="pctv">51<em>%</em></span></div>
+              <div class="lb">Zsír</div><div class="gv">38 <em>/ 75 g</em></div>
+            </div>
+            <div class="ring r">
+              <div class="ringwrap"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="track" cx="29" cy="29" r="25" fill="none" stroke-width="5"/><circle class="fill" cx="29" cy="29" r="25" fill="none" stroke-width="5" stroke="var(--macro-fiber)" stroke-dasharray="157" stroke-dashoffset="157" data-pct="43"/></svg><span class="pctv">43<em>%</em></span></div>
+              <div class="lb">Rost</div><div class="gv">13 <em>/ 30 g</em></div>
+            </div>
+            <div class="ring w" onclick="openWater()" role="button" aria-label="Víz logolása · 1,2 a 2,5 literből" style="cursor:pointer;">
+              <div class="ringwrap"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="track" cx="29" cy="29" r="25" fill="none" stroke-width="5"/><circle class="fill" cx="29" cy="29" r="25" fill="none" stroke-width="5" stroke="var(--sky)" stroke-dasharray="157" stroke-dashoffset="157" data-pct="48"/></svg><span class="pctv">48<em>%</em></span></div>
+              <div class="lb">Víz</div><div class="gv">1,2 <em>/ 2,5 l</em></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ ABLAK-FOLYAM ═══ -->
+        <div class="sky">
+          <div class="isl" id="donefold" onclick="toggleDone()">
+            <div class="cap"><span class="em">✓</span><div><div class="t">2 kész ablak</div><div class="m">1 240 kcal · AI-átlag 90 p</div></div><span class="n done" id="donearrow">✓ ›</span></div>
+            <div class="donelist">
+              <div class="drow" onclick="event.stopPropagation(); openSheet();">
+                <span class="em">🍳</span>
+                <div><div class="t">Túrós zabkása áfonyával<span class="roletag std">STANDARD</span></div><div class="m">07:40 · 580 kcal · 42 g P</div></div>
+                <span class="scorechip">✨ 92</span>
+              </div>
+              <div class="drow" onclick="event.stopPropagation(); openSheet();">
+                <span class="em">🥙</span>
+                <div><div class="t">Csirke + édesburgonya<span class="roletag pre">EDZÉS ELŐTTI</span></div><div class="m">12:30 · 660 kcal · 48 g P</div></div>
+                <span class="scorechip mid">✨ 87</span>
+              </div>
+            </div>
+          </div>
+          <div class="isl big nowring">
+            <div class="blob"></div>
+            <div class="bigin">
+              <div style="display:flex; justify-content:center;"><span class="nowtag">MOST NYITVA · 16:45-IG</span></div>
+              <div class="hero" style="margin-top:7px;">16:00<span class="u">Uzsonna</span></div>
+              <div class="sub">edzés után 40 perccel — fehérje-fókusz</div>
+              <div class="mealchip"><span class="em">🥤</span><div style="text-align:left;"><div class="t">Fehérje-turmix + banán</div><div class="m">a tervből · 320 kcal · 34 g P · edzés utáni</div></div></div>
+              <div class="actrow">
+                <button class="cta">Logold</button>
+                <button class="ghostcta">✨ AI</button>
+                <button class="ghostcta">még 4 ›</button>
+              </div>
+            </div>
+          </div>
+          <div class="isl">
+            <div class="cap"><span class="em">🍲</span><div><div class="t">Vacsora</div><div class="m">19:00 · Mg + D3 a stackből</div></div><span class="n">5 ›</span></div>
+          </div>
+        </div>
+        <div class="tabbar"><span><i>☉</i>Ma</span><span><i>⚒</i>Edzés</span><span class="on"><i>◍</i>Fuel</span><span><i>◑</i>Én</span></div>
+
+        <!-- ═══ SCORE SHEET ═══ -->
+        <div class="sheetbk" id="sheetbk" onclick="closeSheet()"></div>
+        <div class="sheet" id="sheet">
+          <div class="grab"></div>
+          <div class="sheetscroll">
+            <div class="eyebrow-c">AI SCORE · RÉSZLETEK</div>
+            <div class="shead">
+              <div class="scorering">
+                <svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="var(--surface-recess)" stroke-width="6"/><circle cx="32" cy="32" r="27" fill="none" stroke="var(--accent-base)" stroke-width="6" stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="22"/></svg>
+                <span class="v">87</span>
+              </div>
+              <div>
+                <div class="t">Csirke + édesburgonya</div>
+                <div class="m">12:30 · Ebéd · 660 kcal · 48 g P<span class="roletag pre" style="margin-left:6px;">EDZÉS ELŐTTI</span></div>
+                <div class="m" style="margin-top:3px;">konfidencia 82% · fotóból becsült adag</div>
+              </div>
+            </div>
+
+            <div class="olvasat">
+              <span class="sp">✨</span>
+              <div><div class="eyebrow-c" style="color:var(--coral);">MEZO · OLVASAT</div>
+              <p>Edzés előtt 30 perccel ideális: a lassú szénhidrát kitart a szettek végéig, a fehérje bőven fedez. Ami a 90+ ponthoz hiányzik: több zöld a tányéron.</p></div>
+            </div>
+
+            <div class="secrow"><span class="eyebrow-c">SÚLYOZOTT BONTÁS</span><span class="eyebrow-c" style="color:var(--text-muted);">4 DIMENZIÓ</span></div>
+
+            <div class="dim">
+              <div class="dh"><div><div class="dl" style="color:var(--macro-protein);">KCAL & MAKRÓ</div><div class="ds"><b style="color:var(--macro-protein);">84</b><em>× súly 40% = 33,6 pt</em></div></div><span class="dbar"><i style="width:84%; background:var(--macro-protein);"></i></span></div>
+              <p>A 48 g fehérje a napi cél 30%-a egyetlen ablakban — pont amit egy edzés-előtti ebédtől várunk. A zsír a keret alatt maradt.</p>
+              <div class="dpanel">P 48 g · C 62 g · F 14 g — az ablak-célhoz képest 104% · 96% · 61%</div>
+            </div>
+            <div class="dim">
+              <div class="dh"><div><div class="dl" style="color:var(--lav);">MIKRO-MAKRÓ</div><div class="ds"><b style="color:var(--lav);">72</b><em>× súly 20% = 14,4 pt</em></div></div><span class="dbar"><i style="width:72%; background:var(--lav);"></i></span></div>
+              <p>Kálium és B6 rendben az édesburgonyából; a C-vitamin és a folát alacsony — egy marék spenót megoldotta volna.</p>
+              <div class="dpanel">lefedett mikrok: 9/14 · hiányzók: C, folát, K2, Mg, cink</div>
+            </div>
+            <div class="dim">
+              <div class="dh"><div><div class="dl" style="color:var(--sage-deep);">NOVA FELDOLGOZOTTSÁG</div><div class="ds"><b style="color:var(--sage-deep);">90</b><em>× súly 20% = 18,0 pt</em></div></div><span class="dbar"><i style="width:90%; background:var(--sage-deep);"></i></span></div>
+              <p>Minden összetevő NOVA 1–2 — házi készítés, nincs ultra-feldolgozott elem.</p>
+              <div class="dpanel">NOVA-megoszlás: 82% friss · 18% feldolgozott alapanyag</div>
+            </div>
+            <div class="dim">
+              <div class="dh"><div><div class="dl" style="color:var(--accent-deep);">KONTEXTUS · EDZÉS ELŐTTI</div><div class="ds"><b style="color:var(--accent-deep);">95</b><em>× súly 20% = 19,0 pt</em></div></div><span class="dbar"><i style="width:95%; background:var(--accent-deep);"></i></span></div>
+              <p>Időzítés telitalálat: 30 perccel a 13:00-s Pull A előtt, a glikémiás profil az edzésablakhoz illeszkedik.</p>
+              <div class="dpanel">edzés-távolság: −30′ · GI-illeszkedés: magas · hidratáció: rendben</div>
+            </div>
+
+            <div class="secrow"><span class="eyebrow-c" style="color:var(--accent-hover, #b8902e);">LEHETNE JOBB</span><span class="eyebrow-c" style="color:var(--text-muted);">2</span></div>
+            <div class="improve">
+              <div class="irow2"><span class="num">1</span><span class="tx">Adj egy marék <b>spenótot vagy brokkolit</b> — a mikro-lefedettség 9/14-ről 12/14-re ugrik.</span><span class="imp">+4 pt</span></div>
+              <div class="irow2"><span class="num">2</span><span class="tx"><b>Barna rizs</b> az édesburgonya felében: +6 g rost a napi célhoz.</span><span class="imp">+2 pt</span></div>
+            </div>
+
+            <div class="secrow"><span class="eyebrow-c">HOGYAN SZÁMOLTAM</span></div>
+            <div class="tools">
+              <span class="tool">🧮 makró-kalkulátor</span>
+              <span class="tool">🥦 mikro-adatbázis</span>
+              <span class="tool">🏷️ NOVA-osztályozó</span>
+              <span class="tool">🏋️ edzésablak-illesztő</span>
+            </div>
+
+            <button class="close" onclick="closeSheet()">bezár ↓</button>
+          </div>
+        </div>
+
+        <!-- ═══ VÍZ-LOGOLÓ ═══ -->
+        <div class="wsheet" id="wsheet">
+          <div class="grab"></div>
+          <div class="wt">💧 Víz logolása</div>
+          <div class="ws">ma eddig 1,2 / 2,5 l</div>
+          <div class="wchips">
+            <button class="wchip" onclick="pickW(this)">250 ml</button>
+            <button class="wchip sel" onclick="pickW(this)">400 ml</button>
+            <button class="wchip" onclick="pickW(this)">500 ml</button>
+          </div>
+          <div class="wmanual"><input type="number" placeholder="pl. 330" inputmode="numeric"><span class="ml">ml kézzel</span></div>
+          <button class="wsave" onclick="closeWater()">Mentés</button>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="right">
+      <div class="spec">
+        <h3><span class="no">1</span>A hero-változások</h3>
+        <ul>
+          <li><b>5 gyűrű:</b> Fehérje · Szénhidrát · Zsír · Rost · <b>Víz</b> — % a gyűrűben, címke + érték/cél alatta. A rost-bővítés (budget-cél + log-összegzés) az implementáció része.</li>
+          <li><b>Víz-logoló a gyűrűn:</b> a víz-gyűrű koppintható (nyomd meg!) — kis sheet: <b>250 / 400 / 500 ml</b> chipek vagy kézi ml-input + Mentés. Nincs több gomb a hero-ban.</li>
+          <li><b>A láb-sor törölve:</b> ad-hoc log = a meglévő központi <b>+ FAB</b> (QuickInputSheet — már ma is globális gyors-log); <b>Fuel-beállítások</b> = a Mai ▾ SubNavDropdown ⚙️ extra-sora (a Me szekció mintája). A hero csak adat.</li>
+          <li><b>Felpörgő szám:</b> 0 → 1 160, 2 mp, ease-out; a gyűrűk vele telnek. Koppints a számra az újrajátszáshoz. <code>prefers-reduced-motion</code> alatt azonnal a végérték.</li>
+          <li><b>Chipek:</b> <b>Alap · Mozgás · Cél</b>; a Cél előjeles (−400 deficit / +400 surplus), mind az EnergyBreakdownSheet szekcióit nyitja.</li>
+        </ul>
+      </div>
+      <div class="spec">
+        <h3><span class="no">2</span>Az AI-score visszatér (a mezo-cs8b bead megoldása)</h3>
+        <ul>
+          <li><b>Kapszula-szint:</b> a „✓ kész” összevont kapszula az <b>AI-átlagot</b> mutatja; kibontva étel-soronként ott a <b>✨ score-chip</b> (zöld ≥90, amber alatta) és a <b>szerep-címke</b> (EDZÉS ELŐTTI / EDZÉS UTÁNI / STANDARD — a meglévő MealRole).</li>
+          <li><b>Étel-koppintás → teljes elemzés:</b> a meglévő MealScoreSheet/ScoreBreakdown éled újra — score-gyűrű, a szerep-kontextus, a „miért ennyi” próza és a tételes pont-bontás (fehérje-sűrűség, glikémiás illeszkedés, NOVA, mikrotápanyag, rost). Semmi új backend: a P7 score-adat már ott van a logolt mealeken.</li>
+          <li><b>A NOW-ablakban</b> a terv-étel sora is jelzi a szerepét („edzés utáni”), a score ott csak logolás után születik — nem hamisítunk előre.</li>
+        </ul>
+      </div>
+      <div class="spec">
+        <h3><span class="no">3</span>Miért volt „vékonyabb” a v2 elemzése — és mi az igazság</h3>
+        <ul>
+          <li><b>Semmi nem veszett el a kódból.</b> A v2 sheet-je az én kézzel rajzolt vázlatom volt — a valódi <b>MealScoreSheet</b> (+ ScoreBreakdownBody + DimensionCard + ScoreHero + useMealCoachFor) végig érintetlenül élt a kódbázisban, csak a Mai-ról vezető belépőpontja árvult el a DayZoneCard retirálásakor.</li>
+          <li><b>A valódi sheet</b> (amit most már ez a mockup is tükröz): konfidencia a hero-ban · <b>Mezo-olvasat</b> (LLM-próza, igény szerint generálva) · <b>súlyozott dimenzió-kártyák</b> pont × súly = pt matekkal, magyarázó prózával és dimenziónkénti vizuális panellel (makró/mikró/NOVA/kontextus — összesen 8 dimenzió-típus) · <b>„Lehetne jobb”</b> számozott javaslatok impact-tel · <b>„Hogyan számoltam”</b> tool-transzparencia chipek.</li>
+          <li><b>Az implementáció ezt a kész sheetet köti vissza változatlanul</b> — a munka a belépőpont (score-chip a logolt étel-sorokon) + a kapszula AI-átlag, nem a sheet újraépítése.</li>
+        </ul>
+      </div>
+      <div class="spec qs">
+        <h3><span class="no">✓</span>Rögzítve ebből a körből</h3>
+        <ul>
+          <li><b>Rost-bővítés jóváhagyva</b> — budget rost-cél + log-összegzés + gyűrű; <b>5 gyűrű</b> P/C/F/Rost/Víz.</li>
+          <li><b>Víz-logolás a gyűrű-koppintásból</b> (250/400/500 + kézi input), gombok nélkül; a láb-sor törölve (+ FAB és ⚙️ a Mai ▾ menüben viszi a szerepüket).</li>
+          <li><b>52% törölve</b>; chipek: Alap · Mozgás · Cél (előjeles).</li>
+          <li>Ha ez így jó, frissítem a spec-et + ADR-t és indul az implementációs lánc a deployig.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countUp(){
+    const el = document.getElementById('cnt');
+    const target = 1160, dur = 2000, t0 = performance.now();
+    if (REDUCED) { el.innerHTML = '1 160<span class="u">kcal hátra</span>'; fillRings(); return; }
+    resetRings();
+    function frame(t){
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const v = Math.round(target * eased);
+      el.innerHTML = v.toLocaleString('hu-HU').replace(/ | |,/g, ' ') + '<span class="u">kcal hátra</span>';
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    setTimeout(fillRings, 150);
+  }
+  function resetRings(){ document.querySelectorAll('.ring .fill').forEach(c => { c.style.transition = 'none'; c.style.strokeDashoffset = 157; void c.getBoundingClientRect(); c.style.transition = ''; }); }
+  function fillRings(){ document.querySelectorAll('.ring .fill').forEach(c => { const pct = +c.dataset.pct; c.style.strokeDashoffset = String(157 * (1 - pct / 100)); }); }
+  function toggleDone(){
+    const f = document.getElementById('donefold');
+    f.classList.toggle('open');
+    document.getElementById('donearrow').textContent = f.classList.contains('open') ? '✓ ˅' : '✓ ›';
+  }
+  function openSheet(){ document.getElementById('sheetbk').classList.add('on'); document.getElementById('sheet').classList.add('on'); }
+  function closeSheet(){ document.getElementById('sheetbk').classList.remove('on'); document.getElementById('sheet').classList.remove('on'); closeWater(); }
+  function openWater(){ document.getElementById('sheetbk').classList.add('on'); document.getElementById('wsheet').classList.add('on'); }
+  function closeWater(){ document.getElementById('wsheet').classList.remove('on'); if(!document.getElementById('sheet').classList.contains('on')) document.getElementById('sheetbk').classList.remove('on'); }
+  function pickW(el){ document.querySelectorAll('.wchip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); }
+  countUp();
+</script>
+</body>
+</html>

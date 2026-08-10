@@ -52,36 +52,6 @@ describe('Island', () => {
     expect(screen.getByText('NOW')).toBeInTheDocument()
   })
 
-  it('belt sets the .isl-belt class', () => {
-    const { container } = render(
-      <Island {...base} big={false} belt>
-        x
-      </Island>,
-    )
-    expect(container.querySelector('.isl.isl-belt')).not.toBeNull()
-  })
-
-  it('belt + big carries BOTH classes (the expanded Keret-öv must win the CSS cascade — see the .isl.isl-big.isl-belt override comment in prototype.css)', () => {
-    const { container } = render(
-      <Island {...base} big belt>
-        x
-      </Island>,
-    )
-    const shell = container.querySelector('.isl')
-    expect(shell?.className).toContain('isl-big')
-    expect(shell?.className).toContain('isl-belt')
-  })
-
-  it('belt renders beltContent instead of the standard capsule row', () => {
-    render(
-      <Island {...base} big={false} belt beltContent={<span>1 160 kcal maradt</span>}>
-        x
-      </Island>,
-    )
-    expect(screen.getByText('1 160 kcal maradt')).toBeInTheDocument()
-    expect(screen.queryByText(base.capsule.title)).toBeNull()
-  })
-
   it('night flag darkens the shell', () => {
     const { container } = render(
       <Island {...base} tone="este" big night>

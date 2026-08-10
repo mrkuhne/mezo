@@ -1971,7 +1971,9 @@ button.itemrow { cursor: pointer; }
 .fuelchips { display: flex; gap: 7px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
 /* .macror/.mac (the DayBudgetCard macro bars) RETIRED — window-river Task 6 (mezo-jgh9): DayBudgetCard
    was their only consumer, deleted with the ablak-folyam recomposition (its job moved into KeretBelt's
-   .kbelt-macrofull rows). MacroCells (shared/ui) is an unrelated component and never used this family. */
+   own macro-bar rows, itself since retired in turn — keret-hero Task 4, mezo-c9t5 — the macro readout
+   now lives in KeretHero's `.khero-rings`). MacroCells (shared/ui) is an unrelated component and never
+   used this family. */
 
 /* ===== Napív Me identity header (spec §4.6) ===== */
 .mehead { display: flex; align-items: center; gap: 14px; padding: 14px 24px 0; }
@@ -2255,12 +2257,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
        transition: flex .55s cubic-bezier(.3,.9,.35,1), border-radius .55s cubic-bezier(.3,.9,.35,1),
                    background .6s ease, opacity .45s ease; }
 .isl.isl-big { flex: 1 1 100%; border-radius: 34px; box-shadow: var(--shadow-md); }
-.isl.isl-belt { flex: 0 0 54px; border-radius: var(--r-xl); }
-/* Source order matters: `.isl-big` (above) alone loses to this belt rule on a
-   selected/expanded belt (equal specificity, `.isl-belt` comes later) — the belt
-   would stay clamped to a 54px bar instead of expanding. Mirrors the mockup's own
-   `.isl.belt.big` override (2026-08-08-fuel-window-river-mockup.html:106). */
-.isl.isl-big.isl-belt { flex: 1 1 100%; border-radius: 34px; }
 .isl-blob { position: absolute; width: 300px; height: 300px; top: -100px; left: 50%;
             margin-left: -150px; filter: blur(2px); opacity: 0; transition: opacity .6s ease;
             pointer-events: none; z-index: 0; }
@@ -2277,9 +2273,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .isl[data-tone="fuel"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
     color-mix(in srgb, var(--sage) 32%, transparent),
     color-mix(in srgb, var(--amber) 14%, transparent) 55%, transparent 75%); }
-.isl[data-tone="keret"] .isl-blob { background: radial-gradient(ellipse at 50% 45%,
-    color-mix(in srgb, var(--amber) 32%, transparent),
-    color-mix(in srgb, var(--sage) 14%, transparent) 55%, transparent 75%); }
 .isl-cap { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; gap: 10px;
            padding: 0 16px; background: none; border: none; font-family: inherit; text-align: left;
            cursor: pointer; opacity: 1; transition: opacity .22s ease .18s; }
@@ -2295,7 +2288,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .isl.now-clock:not(.isl-big) { border-color: var(--accent-base);
               box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-base) 15%, transparent); }
 :where(.isl:not(.isl-big)) { animation: isl-floaty 5.4s ease-in-out infinite; }
-:where(.isl.isl-belt) { animation: none; }
 :where(.isl[data-tone="reggel"]:not(.isl-big)) { animation-delay: .8s; }
 :where(.isl[data-tone="este"]:not(.isl-big)) { animation-delay: 1.6s; }
 .isl-bigview { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%;
@@ -2423,51 +2415,89 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                        margin-top: 12px; padding: 11px; border: 1.5px dashed var(--line);
                        border-radius: var(--r-lg); color: var(--faint); font-size: 12px; font-weight: 600; }
 
-/* ═════════ Fuel Keret-öv — .kbelt family (mezo-jgh9, window-river Task 3) ═════════
-   Rides inside the shared Island shell (belt + tone="keret"): the collapsed row is
-   richer than the generic capsule language (remaining kcal + 3 macro mini-bars), so
-   it arrives via Island's `beltContent` override rather than `.isl-cap-t/-m/-n`. The
-   expanded (big) "keret felépülése" view reuses the shared `.isl-hero-*` hero-number
-   role (Today's IslandMorning idiom) for its own hero, then adds the eaten/remaining
-   bar, the energy-breakdown rows and the full macro bars below it. No new motion —
-   nothing here needs a reduced-motion exception. */
-/* ── belt (collapsed) row content ── */
-.kbelt-kv { flex: none; }
-.kbelt-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink);
-           white-space: nowrap; }
-.kbelt-vu { font-size: 9px; font-weight: 600; color: var(--faint); }
-.kbelt-l { font-size: 7.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-           color: var(--faint); margin-top: 1px; }
-.kbelt-bars { display: flex; gap: 8px; flex: 1; margin-left: 2px; }
-.kbelt-bar { flex: 1; }
-.kbelt-bar-track { height: 5px; border-radius: 3px; background: var(--surface-recess); overflow: hidden; }
-.kbelt-bar-track i { display: block; height: 100%; border-radius: inherit; }
-.kbelt-bar-t { font-size: 7.5px; font-weight: 700; color: var(--faint); margin-top: 3px; letter-spacing: .06em; }
-/* ── expanded (big) "keret felépülése" view ── */
-.kbelt-stackbar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin: 14px 2px 4px; }
-.kbelt-stackbar i { display: block; height: 100%; }
-.kbelt-eaten { background: var(--sage); }
-.kbelt-left { background: var(--success-soft); }
-.kbelt-stackcap { display: flex; justify-content: space-between; font-size: 9px; font-weight: 700;
-                   color: var(--faint); letter-spacing: .08em; margin: 0 2px; }
-.kbelt-bd { margin-top: 14px; text-align: left; }
-.kbelt-bdrow { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: var(--r-md);
-               font-size: 12px; font-weight: 600; color: var(--sub); }
-.kbelt-ic { width: 26px; height: 26px; border-radius: 8px; background: var(--surface-recess);
-            display: flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
-.kbelt-bdlabel { flex: 1; }
-.kbelt-val { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
-.kbelt-bdsep { border-top: 1px dashed var(--line); margin: 4px 10px; }
-.kbelt-bdrow-total { background: var(--accent-bg); border: 1px solid var(--accent-soft); margin-top: 4px; }
-.kbelt-bdrow-total .kbelt-val { color: var(--accent-deep); }
-.kbelt-macrofull { margin-top: 14px; text-align: left; }
-.kbelt-mf { margin-bottom: 7px; }
-.kbelt-mf-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--ink); }
-.kbelt-mf-rem { color: var(--faint); font-weight: 600; }
-.kbelt-mf-bar { height: 7px; border-radius: 4px; background: var(--surface-recess); overflow: hidden; margin-top: 4px; }
-.kbelt-mf-bar i { display: block; height: 100%; border-radius: inherit; }
-.isl[data-tone="keret"] .kbelt-macrofull + .itemrow { margin-top: 14px; }
-.isl[data-tone="keret"] .isl-bigview > .itemrow { margin-bottom: 6px; text-align: left; }
+/* ═════════ Fuel Keret-hero — .khero family (mezo-c9t5, keret-hero Task 2) ═════════
+   Replaces the belt (below) atop FuelMaiPage, above the window-river sky: a halo-sage band
+   (no card frame) — a 2s ease-out count-up remaining-kcal number (KeretHero.tsx drives the
+   rAF; this CSS is static layout only), the "eddig X / Y · n/m ablak" of-line, a segmented
+   day-bar with a gold now-marker, the 3 energy chips, and the 5 macro/rost/víz progress
+   rings. Ring fill is a pure CSS `stroke-dashoffset` transition — KeretHero.tsx flips
+   `.khero-ring-fill`'s dashoffset from full-circumference (0%) to its target one frame after
+   mount, and the transition below carries the sweep; :where()-wrapped so the reduced-motion
+   override wins without !important (the `::where(.isl…)` precedent above). Design:
+   docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2, mockup asset
+   docs/superpowers/specs/assets/2026-08-09-fuel-keret-hero-mockup.html. */
+.khero { background: var(--halo-sage); padding: 16px 18px 12px; text-align: center; }
+.khero-n { font-family: var(--ff-display); font-size: 46px; font-weight: 200; letter-spacing: -0.04em;
+           line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.khero-u { font-size: 18px; font-weight: 300; color: var(--faint); margin-left: 5px; }
+.khero-of { font-size: 11.5px; color: var(--sub); font-weight: 500; margin-top: 5px; }
+.khero-of b { color: var(--sage-deep); font-weight: 700; }
+
+.khero-dayseg { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px auto 0;
+                position: relative; background: var(--surface-recess); max-width: 280px; }
+.khero-seg { display: block; height: 100%; background: var(--sage); }
+.khero-seg-alt { background: var(--sage-deep); }
+.khero-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--accent-base);
+              border-radius: 1px; box-shadow: 0 0 0 2px rgba(212, 168, 83, 0.25); }
+
+.khero-chips { display: flex; gap: 6px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
+.khero-chip { font-family: inherit; font-size: 10.5px; font-weight: 600; color: var(--sub);
+              background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-full);
+              padding: 4px 11px; cursor: pointer; }
+.khero-chip b { font-weight: 800; color: var(--ink); }
+.khero-chip-goal b { color: var(--sage-deep); }
+
+.khero-rings { display: flex; justify-content: center; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
+.khero-ring { text-align: center; border: none; background: none; padding: 0; font-family: inherit; }
+.khero-ring-water { cursor: pointer; }
+.khero-ring-water:active .khero-ringwrap { transform: scale(0.95); transition: transform 0.12s; }
+.khero-ring svg { transform: rotate(-90deg); }
+.khero-ring-track { stroke: var(--surface-recess); }
+:where(.khero-ring-fill) { transition: stroke-dashoffset 2s cubic-bezier(.2, .8, .2, 1); }
+.khero-ringwrap { position: relative; width: 58px; height: 58px; margin: 0 auto; }
+.khero-pctv { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.khero-pctv em { font-style: normal; font-size: 8px; font-weight: 600; color: var(--faint); margin-left: 1px; }
+.khero-lb { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
+.khero-gv { font-size: 10px; font-weight: 700; margin-top: 1px; color: var(--ink); }
+.khero-gv em { font-style: normal; font-weight: 500; color: var(--faint); }
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.khero-ring-fill) { transition: none; }
+}
+
+/* ═════════ Fuel done-window capsule — .kdone family (mezo-c9t5, keret-hero Task 3) ═════════
+   The day's done meal windows, merged into ONE expandable capsule sitting first in the sky
+   (`DoneWindowsCapsule.tsx`) — replaces the retired per-window done capsules + the belt's own
+   done-summary line. Rides the shared `.isl` shell for the sky's visual chrome, but overrides its
+   fixed-height/overflow-hidden flex sizing (content-driven height instead — the shell's `isl-big`
+   morph mechanism doesn't apply here, this capsule is never "big"/selected). No new motion beyond
+   the list's own height/opacity reveal. */
+.isl.kdone { flex: 0 0 auto; overflow: visible; min-height: 0; }
+.kdone-cap { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 16px;
+             background: none; border: none; cursor: pointer; font-family: inherit; text-align: left;
+             color: var(--success-hover); font-size: 15px; }
+.kdone-cap-tx { flex: 1; font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.kdone-arrow { font-size: 13px; color: var(--success-hover); flex: none; }
+.kdone-list { border-top: 1px solid var(--divider); }
+.kdone-row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 16px;
+             background: none; border: none; border-top: 1px solid var(--divider); cursor: pointer;
+             font-family: inherit; text-align: left; }
+.kdone-row:first-child { border-top: none; }
+.kdone-row-inert { cursor: default; }
+.kdone-row-tx { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.kdone-row-t { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.kdone-row-m { font-size: 10px; color: var(--text-muted); }
+.kdone-roletag { font-size: 7.5px; font-weight: 800; letter-spacing: .1em; padding: 2px 6px;
+                 border-radius: var(--r-full); margin-left: 6px; vertical-align: 1px;
+                 color: var(--text-muted); background: var(--surface-recess); border: 1px solid var(--divider); }
+.kdone-roletag-pre, .kdone-roletag-post { color: var(--accent-deep); background: var(--accent-bg);
+                                           border-color: var(--accent-soft); }
+.kdone-chip { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 4px;
+              font-size: 11px; font-weight: 800; color: var(--success-hover); background: var(--success-bg);
+              border: 1px solid var(--success-soft); border-radius: var(--r-full); padding: 3px 9px;
+              white-space: nowrap; }
+.kdone-chip-mid { color: var(--accent-deep); background: var(--accent-bg); border-color: var(--accent-soft); }
 
 /* ===== NightPage calm tools (mezo-d71m, spec D6) — literal dark, theme-independent ===== */
 .nb, .ns, .nw { display: flex; flex-direction: column; flex: 1; min-height: 0; }

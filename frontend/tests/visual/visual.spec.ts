@@ -43,7 +43,6 @@ const SCREENS: Array<[string, string, string?]> = [
   ['train-gym', '/train/gym'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
-  ['fuel-keret', '/fuel?w=keret'],
   ['fuel-terv', '/fuel/plan'],
   ['me', '/me'],
   ['me-cel', '/me/goals'],

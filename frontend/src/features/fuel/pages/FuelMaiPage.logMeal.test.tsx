@@ -13,9 +13,10 @@ import { QueryWrapper } from '@/test/queryWrapper'
 // `hoisted.plan` is unset the real useFuelTimeline runs, so this override is inert elsewhere.
 // The page also reads blocks/nowHHmm (workoutTime + hero/river composition) — fixed, sensible
 // values here since neither test cares about window placement/ordering, only the tap-to-log
-// wiring on the window island itself. Neither crafted slot carries a 'now' state, so the
-// river's default-big island is the Keret-öv (mezo-jgh9's act-anywhere model) — both tests
-// select the window's OWN capsule first, then act, exactly like a real user would.
+// wiring on the window island itself. Neither crafted slot carries a 'now' state, so it's the
+// ONLY remaining window (mezo-c9t5: done windows merge away, there is no more belt to fall back
+// onto) — `windowIslands.ts`'s `defaultKey` picks it directly, so both tests act on it right away
+// (already big), no capsule-select step needed first.
 const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -71,9 +72,8 @@ test('tapping a recipe-suggestion window opens LogMealSheet pre-filled from that
     ],
   }
   renderView()
-  // Act-anywhere: no 'now' window in this crafted plan, so the Keret-öv is big by default —
-  // select the window's own capsule first (its essence carries the recipe name), then act.
-  await userEvent.click(screen.getByRole('button', { name: `Reggeli · 08:00 · ${recipe.name} · megnyitás` }))
+  // No 'now' window in this crafted single-slot plan, so this window IS the default big island
+  // already (no belt to fall back onto anymore) — act directly.
   await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
   // The recipe surfaces as a pre-filled item line inside the sheet (source: recipe).
@@ -89,7 +89,7 @@ test('tapping a budget-only window opens LogMealSheet with the mapped slot pre-s
     ],
   }
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Vacsora · 19:30 · Vacsora · megnyitás' }))
+  // Same "already big" default as above.
   await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
   // Vacsora → dinner: the sheet's slot segmented control opens with 'Vacsora' active.
