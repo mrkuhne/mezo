@@ -9,7 +9,15 @@ export const medalsMock: Medal[] = [
   {
     type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Chest Supported Row',
     catalogId: 'exl-1', muscle: 'back-mid', date: '2026-06-22',
-    workoutSessionId: 'w1', setIndex: 2,
+    // Scoped to the review-page fixture (mezo-w943 final review, Finding 2): matches
+    // `workoutDetailMock.id` (data/train/train.ts) so /train/review renders a "Medálok"
+    // section in mock mode at all — every OTHER seeded medal points at a 'w1'..'w6' id
+    // that no mock workout detail carries, so the review page's medal filter never
+    // matched anything before this. setIndex 2 also lands on a real logged set of
+    // `workoutDetailMock`'s "Chest Supported Row" (index 2, 85 kg × 8) — renders both
+    // the medal card AND that set's 🏅 record chip. workoutSessionId is not rendered
+    // anywhere, so this is content-neutral for every other consumer (MedalsPage, visual).
+    workoutSessionId: 'wd-mock-1', setIndex: 2,
     value: 100, unit: 'KG', weightKg: 100, reps: 8,
     previousValue: 97.5, previousDate: '2026-06-08',
   },
