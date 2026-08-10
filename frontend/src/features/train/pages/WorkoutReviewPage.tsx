@@ -1,12 +1,14 @@
 // ============================================================
 // Mezo · WorkoutReviewPage — read-only review of a COMPLETED workout
-// (/train/review/:workoutId — spec 2026-07-15 done-day review, option B).
-// Data: GET /api/train/workouts/{id} + the day's challenges (server
-// outcomes). Renders the shared WorkoutSummary in 'closed' mode.
+// (/train/review/:workoutId — spec 2026-07-15 done-day review, option B;
+// visual redesign mezo-w943). Data: GET /api/train/workouts/{id}, the day's
+// challenges (server outcomes) and the medal cabinet filtered to this
+// workout (workoutSessionId). Renders the shared WorkoutSummary in
+// 'closed' mode.
 // ============================================================
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useChallenges, useWorkoutDetail } from '@/data/hooks'
+import { useChallenges, useMedals, useWorkoutDetail } from '@/data/hooks'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
@@ -18,6 +20,7 @@ export function WorkoutReviewPage() {
   const goBack = useBackNav('/train')
   const { detail, pending, error } = useWorkoutDetail(workoutId ?? null)
   const { challenges } = useChallenges(detail?.templateSessionId ?? null, detail?.date ?? '')
+  const { data: allMedals } = useMedals()
 
   if (pending) return <ScreenSkeleton />
   if (error || !detail) {
@@ -31,6 +34,7 @@ export function WorkoutReviewPage() {
   const exercises: SummaryExercise[] = detail.exercises.map((e) => ({
     id: e.exerciseId,
     name: e.name,
+    muscle: e.muscle,
     plannedSets: e.warmupSets + e.workingSets,
     sets: e.sets.map((s) => ({ weight: Number(s.weightKg ?? 0), reps: s.reps ?? 0, rir: s.rir ?? 0 })),
     skipped: e.skipped,
@@ -44,15 +48,18 @@ export function WorkoutReviewPage() {
     state: c.status === 'hit' || c.status === 'miss' || c.status === 'inconclusive' ? c.status : 'skipped',
     detail: c.outcome ?? undefined,
   }))
+  // The medal cabinet scoped to this workout — empty filter → no medal section.
+  const medals = allMedals.filter((m) => m.workoutSessionId === detail.id)
 
   return (
     <WorkoutSummary
       title={detail.title}
       eyebrow={`Lezárva · ${huMonthDayDow(detail.date)}`}
       mode="closed"
-      showSetLines
       exercises={exercises}
       challenges={challengeRows}
+      medals={medals}
+      durationMin={detail.durationEst ?? null}
       onExit={goBack}
     />
   )

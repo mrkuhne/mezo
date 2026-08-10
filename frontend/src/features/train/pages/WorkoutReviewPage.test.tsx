@@ -22,9 +22,10 @@ function setup() {
 test('renders the closed summary from the workout detail (mock fixture)', () => {
   setup()
   expect(screen.getByText('Pull Day')).toBeInTheDocument()
-  expect(screen.getByText('Mai mérleg')).toBeInTheDocument()
-  // per-set lines render in review mode, with RIR (user fix 1 shows here too)
-  expect(screen.getByText(/85.*×.*8.*@RIR 1/)).toBeInTheDocument()
+  expect(screen.getByText('Lezárva ·', { exact: false })).toBeInTheDocument()
+  // per-set chips render in review mode, with RIR (new pill format: "{n} × {m} @{rir}")
+  expect(screen.getByText(/85.*×.*8/)).toBeInTheDocument()
+  expect(screen.getByText('@1')).toBeInTheDocument()
   // the abandoned exercise is struck "kihagyva"
   expect(screen.getByText('kihagyva')).toBeInTheDocument()
   // no finish CTA in review
