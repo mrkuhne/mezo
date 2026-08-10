@@ -215,6 +215,21 @@ export function FuelMaiPage() {
             onStackDose={() => navigate('/fuel/stack')}
           />
         ))}
+
+        {/* Standing log row (mezo-66te) — the page's always-available meal-log entry. The
+            Logold/AI CTAs live on the big window-island, which vanishes once every window is
+            done; the + FAB's Étkezés tile only navigates here (QuickInputSheet is
+            navigation-only, S1). Without this row an all-done evening has zero log paths. */}
+        <div className="mai-logrow">
+          <button type="button" className="isl-more" onClick={() => openLog()}>＋ Logolás</button>
+          <button
+            type="button"
+            className="isl-more"
+            onClick={() => { setAiSlot(undefined); setAiOpen(true) }}
+          >
+            ✨ AI naplózás
+          </button>
+        </div>
       </div>
 
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}

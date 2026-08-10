@@ -2347,6 +2347,10 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .isl-more { display: inline-flex; padding: 9px 14px; border-radius: var(--r-full);
             background: transparent; color: var(--sub); font-size: 12px; font-weight: 600;
             border: 1px solid var(--line); cursor: pointer; font-family: inherit; }
+/* Mai standing log row (mezo-66te) — the always-available meal/AI log entry under the sky.
+   Quiet ghost pair; exists in every day state because the big island's CTAs vanish on an
+   all-done day and the + FAB's Étkezés tile only navigates here. */
+.mai-logrow { display: flex; justify-content: center; gap: 10px; padding: 2px 0 4px; }
 .isl-doneline { margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--success-hover);
                 background: none; border: none; font-family: inherit; cursor: pointer; }
 .isl-openhead { font-size: 10.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;

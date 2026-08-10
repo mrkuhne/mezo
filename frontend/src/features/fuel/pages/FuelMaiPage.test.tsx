@@ -136,6 +136,39 @@ test('all windows done (no now, nothing left to select) → no island is big; th
   expect(screen.getByText('2 kész ablak · 1 200 kcal')).toBeInTheDocument()
 })
 
+// ── the standing log row (mezo-66te) ─────────────────────────────────────────────────────────
+// The Logold/AI CTAs live on the big window-island, which does not exist once every window is
+// done — and the + FAB's Étkezés tile only navigates here (QuickInputSheet is navigation-only).
+// So the page itself must always carry a meal-log entry point, whatever the day state.
+
+test('an all-done day still offers meal logging: the standing ＋ Logolás row opens LogMealSheet', async () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  renderView()
+  const log = screen.getByRole('button', { name: '＋ Logolás' })
+  await userEvent.click(log)
+  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
+})
+
+test('an all-done day still offers AI logging: the standing ✨ AI naplózás row opens AiLogSheet', async () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+  ]
+  renderView()
+  const ai = screen.getByRole('button', { name: '✨ AI naplózás' })
+  await userEvent.click(ai)
+  expect(await screen.findByText('AI naplózás · mai nap')).toBeInTheDocument()
+})
+
+test('the standing log row is present on a normal day too (below the islands)', () => {
+  const { container } = renderView()
+  expect(screen.getByRole('button', { name: '＋ Logolás' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '✨ AI naplózás' })).toBeInTheDocument()
+  expect(container.querySelector('.sky-islands + .mai-logrow, .mai-logrow')).toBeInTheDocument()
+})
+
 test('a trailing missed window (no now) becomes the default big island — the chronologically first remaining one', () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
