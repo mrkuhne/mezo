@@ -15,10 +15,14 @@ function hint(row: WeekZoneRow): { text: string; color: string } | null {
     case 'entering': return { text: '▲ a mai edzéssel zónába érsz', color: 'var(--sage-deep)' }
     case 'in': return row.mev === null ? null : { text: '✓ zónában', color: 'var(--sage-deep)' }
     case 'over': return { text: '⚠ a mai edzéssel túlmennél a kereten', color: 'var(--error)' }
-    case 'below': {
-      const missing = (row.mev ?? 0) - row.doneSets - row.todaySets
-      return { text: `↓ a zóna alatt — még ${missing} szett hiányzik a héten`, color: 'var(--text-tertiary)' }
-    }
+    // Mid-week "below" is the norm on day 1 — the missing sets are usually still ahead
+    // in the week's plan. Only call it a shortfall when the WHOLE week's plan misses MEV
+    // (setsToZone > 0), which is exactly the planner card's `under` level; otherwise say
+    // what's still coming, so the two cards stop reading as contradictory (mezo-zr6p).
+    case 'below':
+      return row.setsToZone > 0
+        ? { text: `↓ a heti terv is a zóna alatt — még ${row.setsToZone} szett kellene`, color: 'var(--text-tertiary)' }
+        : { text: `→ a héten még +${row.remainingPlanSets} szett jön a terv szerint`, color: 'var(--text-tertiary)' }
   }
 }
 

@@ -34,6 +34,14 @@ export interface WeekZoneRow {
   doneBudget: number
   todayBudget: number
   planBudget: number
+  /** Working sets the week's PLAN still holds after done+today — what's yet to come. */
+  remainingPlanSets: number
+  /**
+   * Sets still missing to MEV once the WHOLE week's plan is counted (0 = the plan
+   * gets there on its own). Mirrors MuscleBudgetRow.setsToZone, so a `below` row with
+   * setsToZone 0 is merely early in the week — not under-planned (mezo-zr6p).
+   */
+  setsToZone: number
   status: WeekZoneStatus
 }
 
@@ -91,6 +99,12 @@ export function weekZoneRows({ plannedDays, completed, todayPlan }: {
     const refBudget = plannedSets > 0 ? planBudget : doneBudget + todayBudget
     const zoneStart = mev !== null && refSets > 0 ? Math.min(1, (refBudget * mev) / refSets) : null
     const liveBudget = doneBudget + todayBudget
+    // The week's own outlook: what the plan still owes, and whether plan + live work
+    // clears the MEV floor at all. `below` says "not there YET"; setsToZone > 0 is the
+    // stronger "the week as planned never gets there" (the planner's `under` level).
+    const remainingPlanSets = Math.max(0, plannedSets - doneSets - todaySets)
+    const projectedSets = Math.max(plannedSets, doneSets + todaySets)
+    const setsToZone = mev === null ? 0 : Math.max(0, mev - projectedSets)
     const status: WeekZoneStatus =
       liveBudget > 1 ? 'over'
         : mev === null ? 'in'
@@ -101,7 +115,8 @@ export function weekZoneRows({ plannedDays, completed, todayPlan }: {
       group,
       label: BUDGET_GROUP_LABELS[group] ?? group,
       colorMuscle: p?.colorMuscle ?? d?.colorMuscle ?? t?.colorMuscle ?? group,
-      mev, zoneStart, doneSets, todaySets, plannedSets, doneBudget, todayBudget, planBudget, status,
+      mev, zoneStart, doneSets, todaySets, plannedSets, doneBudget, todayBudget, planBudget,
+      remainingPlanSets, setsToZone, status,
     }
   })
 }

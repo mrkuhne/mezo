@@ -6,7 +6,7 @@ import { ZoneMiniGrid } from '@/features/train/components/ZoneMiniGrid'
 const row = (over: Partial<WeekZoneRow>): WeekZoneRow => ({
   group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', mev: 4, zoneStart: 0.2,
   doneSets: 4, todaySets: 0, plannedSets: 10, doneBudget: 0.2, todayBudget: 0, planBudget: 0.5,
-  status: 'in', ...over,
+  remainingPlanSets: 6, setsToZone: 0, status: 'in', ...over,
 })
 
 describe('ZoneMiniGrid', () => {
