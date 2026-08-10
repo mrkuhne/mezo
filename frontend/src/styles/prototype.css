@@ -3279,3 +3279,13 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   .segtab { transition: none; }
   .segtab:active { transform: none; }
 }
+
+/* ═══ Mai · a mezo-üzenet sávja (mezo-puci) ═══
+   The CoachBubble stripped of its card framing: edge-to-edge, no left rule,
+   no radius, no avatar gap. Only a hairline separates it from the day view. */
+.coach-bubble.cb-band { margin: 0; padding: 16px 20px 18px; border-left: 0; border-radius: 0;
+                        border-bottom: 1px solid color-mix(in srgb, var(--primary-base) 16%, transparent);
+                        gap: 0; }
+.cb-band .cb-head { margin-bottom: 8px; }
+.cb-band .brief-lead { margin: 0; }
+.cb-band .brief-refs { margin-top: 14px; }
