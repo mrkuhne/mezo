@@ -3270,3 +3270,94 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   .segtab { transition: none; }
   .segtab:active { transform: none; }
 }
+
+/* ===== WorkoutSummary redesign (mezo-w943) — hero+halo, region pills,
+   mérleg strip, medal cards, challenge rows, set-chip map. Feature-scoped
+   vocabulary (same precedent as .setdots/.excard); tokens only. ===== */
+.wsum-top { display: flex; align-items: center; gap: 7px; padding: 16px 20px 0; }
+.wsum-top button { display: flex; align-items: center; gap: 6px; background: none; border: none; font: inherit; cursor: pointer; color: var(--text-secondary); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.wsum-top .wsum-xi { width: 26px; height: 26px; border-radius: var(--r-full); background: var(--surface-recess); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.wsum-hero { position: relative; text-align: center; padding: 18px 22px 0; }
+.wsum-halo { position: absolute; width: 300px; height: 300px; top: -110px; left: 50%; margin-left: -150px; filter: blur(2px); z-index: 0; pointer-events: none; animation: wsum-morph 9s ease-in-out infinite alternate; }
+.wsum-halo.fire { background: radial-gradient(ellipse at 50% 45%, rgba(255,107,74,.20), rgba(255,179,71,.14) 55%, transparent 75%); }
+.wsum-halo.calm { background: radial-gradient(ellipse at 50% 45%, rgba(127,164,138,.22), rgba(212,168,83,.10) 55%, transparent 75%); animation-duration: 14s; }
+:root[data-theme="dark"] .wsum-halo { opacity: .35; }
+@keyframes wsum-morph {
+  0% { border-radius: 58% 42% 55% 45%/50% 58% 42% 50%; transform: translate(-8px,-6px); }
+  100% { border-radius: 52% 48% 60% 40%/44% 54% 46% 56%; transform: translate(6px,4px) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) { .wsum-halo { animation: none; } }
+.wsum-hero > :not(.wsum-halo) { position: relative; z-index: 1; }
+.wsum-hero .wsum-over { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--coral-deep); }
+.wsum-hero .wsum-over.closed { color: var(--text-muted); }
+.wsum-hero h2 { font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.02em; margin-top: 5px; color: var(--ink); }
+.wsum-num { font-size: 54px; font-weight: 200; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; margin-top: 14px; color: var(--ink); }
+.wsum-num .of { font-size: 26px; font-weight: 200; color: var(--text-muted); }
+.wsum-num .unit { font-size: 17px; font-weight: 300; color: var(--text-muted); margin-left: 6px; }
+.wsum-sub { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-top: 8px; }
+.wsum-sub b { font-weight: 700; color: var(--ink); }
+.wsum-regrow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 14px 22px 0; position: relative; z-index: 1; }
+.wsum-reg { display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-full); padding: 5px 11px; font-size: 10.5px; font-weight: 800; background: var(--fam-wash, var(--surface-recess)); color: var(--fam-deep, var(--text-secondary)); }
+.wsum-reg .n { font-family: var(--ff-mono); font-weight: 600; font-size: 9.5px; opacity: .85; }
+.wsum-reg.off { background: var(--surface-recess); color: var(--text-disabled); text-decoration: line-through; }
+.wsum-stripwrap { padding: 16px 20px 0; }
+.wsum-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--divider); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+.wsum-strip .cell { background: var(--surface-card); padding: 11px 4px 10px; text-align: center; }
+.wsum-strip .v { font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.wsum-strip .v .u { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
+.wsum-strip .v.gold { color: var(--amber-deep); }
+.wsum-strip .v.green { color: var(--sage-deep); }
+.wsum-strip .l { font-size: 7.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
+.wsum-sec { padding: 20px 20px 0; }
+.wsum-slabel { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
+.wsum-slabel .cnt { font-family: var(--ff-mono); font-size: 9px; color: var(--text-disabled); font-weight: 600; letter-spacing: 0; }
+.wsum-medal { display: flex; align-items: center; gap: 10px; background: linear-gradient(120deg, var(--accent-bg), var(--surface-card) 70%); border: 1px solid var(--accent-soft); border-radius: var(--r-xl); padding: 11px 13px; box-shadow: var(--shadow-sm); }
+.wsum-medal + .wsum-medal { margin-top: 8px; }
+.wsum-medal .disc { width: 34px; height: 34px; border-radius: var(--r-full); background: var(--wash-amber); display: flex; align-items: center; justify-content: center; font-size: 16px; flex: none; box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
+.wsum-medal .tx { flex: 1; min-width: 0; }
+.wsum-medal .tx .t { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.wsum-medal .tx .m { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.wsum-medal .val { text-align: right; flex: none; }
+.wsum-medal .val .now { font-family: var(--ff-mono); font-size: 12px; font-weight: 700; color: var(--amber-deep); white-space: nowrap; }
+.wsum-medal .val .prev { font-family: var(--ff-mono); font-size: 8.5px; color: var(--text-disabled); margin-top: 2px; white-space: nowrap; }
+.wsum-targets { display: flex; align-items: center; gap: 9px; background: var(--success-bg); border: 1px solid var(--success-soft); border-radius: var(--r-xl); padding: 10px 13px; margin-top: 8px; }
+.wsum-targets .tick { width: 24px; height: 24px; border-radius: var(--r-full); background: var(--surface-card); color: var(--sage-deep); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+.wsum-targets .t { font-size: 11.5px; font-weight: 700; color: var(--success-hover); }
+.wsum-targets .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.wsum-targets .chips span { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 600; color: var(--sage-deep); background: var(--surface-card); border-radius: var(--r-full); padding: 2px 7px; }
+.wsum-chal { display: flex; align-items: center; gap: 10px; background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-xl); padding: 10px 12px; box-shadow: var(--shadow-sm); }
+.wsum-chal + .wsum-chal { margin-top: 8px; }
+.wsum-chal .st { width: 28px; height: 28px; border-radius: var(--r-full); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex: none; }
+.wsum-chal.hit .st { background: var(--wash-sage); color: var(--sage-deep); }
+.wsum-chal.miss .st { background: var(--warning-bg); color: var(--warning-hover); }
+.wsum-chal.skip .st { background: var(--surface-recess); color: var(--text-disabled); }
+.wsum-chal .tx { flex: 1; min-width: 0; }
+.wsum-chal .tx .t { font-size: 12px; font-weight: 700; color: var(--ink); }
+.wsum-chal .tx .m { font-family: var(--ff-mono); font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.wsum-chal .out { font-size: 9.5px; font-weight: 800; border-radius: var(--r-full); padding: 4px 9px; white-space: nowrap; flex: none; }
+.wsum-chal.hit .out { background: var(--wash-sage); color: var(--sage-deep); }
+.wsum-chal.miss .out { background: var(--warning-bg); color: var(--warning-hover); }
+.wsum-chal.skip .out { background: var(--surface-recess); color: var(--text-disabled); }
+.wsum-exc { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--fam-rail) 10%, transparent) 0%, var(--surface-card) 55%); border: 1px solid var(--divider); border-left: 5px solid var(--fam-rail); border-radius: var(--r-xl); padding: 12px 13px 13px; box-shadow: var(--shadow-sm); }
+.wsum-exc + .wsum-exc { margin-top: 9px; }
+.wsum-exc .hd { display: flex; align-items: center; gap: 8px; }
+.wsum-exc .nm { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; color: var(--ink); }
+.wsum-exc .mus { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; border-radius: var(--r-sm); padding: 3px 6px; background: var(--fam-wash); color: var(--fam-deep); flex: none; }
+.wsum-exc .setn { font-family: var(--ff-mono); font-size: 9.5px; font-weight: 700; color: var(--fam-deep); flex: none; }
+.wsum-exc .setn.part { color: var(--warning-hover); }
+.wsum-exc .setn.dead { color: var(--text-disabled); }
+.wsum-exc .setn .skipmark { font-weight: 600; color: var(--text-disabled); }
+.wsum-exc .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.wsum-chip { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--ff-mono); font-size: 10px; font-weight: 600; color: var(--ink); background: var(--surface-recess); border: 1px solid transparent; border-radius: var(--r-full); padding: 4px 9px; font-variant-numeric: tabular-nums; }
+.wsum-chip .rir { font-size: 8px; color: var(--text-muted); }
+.wsum-chip.top { border-color: color-mix(in srgb, var(--fam-rail) 55%, transparent); background: var(--fam-wash); color: var(--fam-deep); }
+.wsum-chip.top .rir { color: var(--fam-deep); opacity: .7; }
+.wsum-chip.rec { background: var(--wash-amber); border-color: var(--accent-soft); color: var(--amber-deep); }
+.wsum-chip.rec .rir { color: var(--amber-deep); opacity: .75; }
+.wsum-chip.ghost { background: transparent; border: 1px dashed var(--divider); color: var(--text-disabled); }
+.wsum-exc.dead { background: var(--surface-card); border-left-color: var(--text-disabled); opacity: .72; }
+.wsum-exc.dead .nm { color: var(--text-muted); text-decoration: line-through; }
+.wsum-note { background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-xl); padding: 12px 13px; box-shadow: var(--shadow-sm); }
+.wsum-note .l { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 600; color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; }
+.wsum-note textarea { width: 100%; margin-top: 8px; min-height: 52px; resize: none; font-size: 13px; line-height: 1.45; }
+.wsum-ctas { padding: 20px 20px 26px; display: flex; flex-direction: column; gap: 9px; }

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Train · Edzés-összefoglaló + lezárt részletek — redesign mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* — mezo DS tokens (prototype.css kivonat) — */
+    --primary-bg:#FFF4EF; --primary-soft:#FFDFD3; --primary-base:#FF6B4A; --primary-deep:#A84A26;
+    --accent-bg:#FDF8EC; --accent-soft:#FAECC8; --accent-base:#D4A853; --accent-deep:#8E6E1F;
+    --success-bg:#EEF5EC; --success-soft:#D8E6D4; --success-base:#6B8A5D; --success-hover:#4A6A3D;
+    --warning-bg:#FEF6E2; --warning-soft:#F6DC8A; --warning-base:#C9971A; --warning-hover:#8A6918;
+    --surface-page:#FBF6EF; --surface-card:#FFFFFF; --surface-recess:rgba(43,33,24,0.05);
+    --text-primary:#2B2118; --text-secondary:#5F5346; --text-muted:#8A7A6A; --text-disabled:#A5978A;
+    --divider:rgba(43,33,24,0.10);
+    --coral:#FF6B4A; --coral-deep:#A84A26;
+    --sky:#6FA7D8;   --sage:#7FA48A; --sage-deep:#4A6A3D;
+    --lav:#9B8FC4;   --lav-deep:#7A6DA8;
+    --rose:#E27A8B;  --amber:#FFB347; --amber-deep:#8E6E1F;
+    --wash-gym:#FFEDE6; --tag-gym:#C4622F;
+    --wash-run:#E7F0F8; --tag-run:#3E6E9E;
+    --wash-sport:#FBE9EC; --tag-sport:#B14B5E;
+    --wash-sage:#EAF0E3; --wash-amber:#FFF3E4; --wash-lav:#EEEBF6;
+    --gradient-cta:linear-gradient(135deg,#FF7A55,#FF5B36);
+    --shadow-cta:0 8px 20px rgba(255,91,54,0.35);
+    --shadow-sm:0 2px 6px rgba(43,33,24,0.06);
+    --shadow-md:0 6px 18px rgba(43,33,24,0.10);
+    --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px; --r-2xl:22px; --r-full:9999px;
+    --ff-display:'Geist',system-ui,sans-serif;
+    --ff-mono:'Geist Mono',monospace;
+    --ff-serif:'Fraunces',Georgia,serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:var(--ff-display); background:#efe8dd; color:var(--text-primary); padding:32px 24px 80px;}
+  .wrap{max-width:1280px; margin:0 auto;}
+  h1{font-size:28px; font-weight:700; letter-spacing:-0.02em;}
+  .lede{font-size:14.5px; color:var(--text-secondary); margin-top:6px; max-width:860px; line-height:1.55;}
+  .lede b{color:var(--text-primary);}
+  .cols{display:flex; gap:40px; margin-top:28px; flex-wrap:wrap; justify-content:center;}
+  .phonecol{flex:none;}
+  .phonecol .plabel{text-align:center; font-size:13px; font-weight:800; margin-bottom:4px;}
+  .phonecol .psub{text-align:center; font-size:11.5px; color:var(--text-muted); margin-bottom:12px;}
+
+  .phone{width:372px; height:806px; border-radius:44px; border:8px solid #17120d; background:var(--surface-page); overflow:hidden; position:relative; box-shadow:0 22px 48px rgba(43,33,24,0.25);}
+  .screen{position:absolute; inset:0; overflow-y:auto; scrollbar-width:none;}
+  .screen::-webkit-scrollbar{display:none;}
+
+  /* ── top bar ── */
+  .topbar{display:flex; align-items:center; gap:7px; padding:16px 20px 0;}
+  .topbar button{display:flex; align-items:center; gap:6px; background:none; border:none; font-family:inherit; cursor:pointer; color:var(--text-secondary); font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase;}
+  .topbar .xi{width:26px; height:26px; border-radius:var(--r-full); background:var(--surface-recess); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-secondary);}
+
+  /* ── hero ── */
+  .hero{position:relative; text-align:center; padding:18px 22px 0; overflow:visible;}
+  .halo{position:absolute; width:300px; height:300px; top:-110px; left:50%; margin-left:-150px; filter:blur(2px); z-index:0; pointer-events:none;
+        animation:morph 9s ease-in-out infinite alternate;}
+  .halo.fire{background:radial-gradient(ellipse at 50% 45%, rgba(255,107,74,0.20), rgba(255,179,71,0.14) 55%, transparent 75%);}
+  .halo.calm{background:radial-gradient(ellipse at 50% 45%, rgba(127,164,138,0.22), rgba(212,168,83,0.10) 55%, transparent 75%); animation-duration:14s;}
+  @keyframes morph{
+    0%{border-radius:58% 42% 55% 45%/50% 58% 42% 50%; transform:translate(-8px,-6px);}
+    100%{border-radius:52% 48% 60% 40%/44% 54% 46% 56%; transform:translate(6px,4px) scale(1.05);}
+  }
+  @media (prefers-reduced-motion: reduce){ .halo{animation:none;} }
+  .hero > *:not(.halo){position:relative; z-index:1;}
+  .hero .over{font-size:10px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--coral-deep);}
+  .hero .over.closed{color:var(--text-muted);}
+  .hero h2{font-size:20px; font-weight:800; letter-spacing:-0.02em; margin-top:5px;}
+  .heronum{font-size:54px; font-weight:200; letter-spacing:-0.04em; line-height:1; font-variant-numeric:tabular-nums; margin-top:14px;}
+  .heronum .of{font-size:26px; font-weight:200; color:var(--text-muted);}
+  .heronum .unit{font-size:17px; font-weight:300; color:var(--text-muted); margin-left:6px;}
+  .herosub{font-size:12px; color:var(--text-secondary); font-weight:500; margin-top:8px;}
+  .herosub b{font-weight:700; color:var(--text-primary);}
+
+  /* ── muscle region pills ── */
+  .regrow{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding:14px 22px 0; position:relative; z-index:1;}
+  .reg{display:inline-flex; align-items:center; gap:5px; border-radius:var(--r-full); padding:5px 11px; font-size:10.5px; font-weight:800;}
+  .reg .n{font-family:var(--ff-mono); font-weight:600; font-size:9.5px; opacity:0.85;}
+  .reg.sky{background:var(--wash-run); color:var(--tag-run);}
+  .reg.lav{background:var(--wash-lav); color:var(--lav-deep);}
+  .reg.rose{background:var(--wash-sport); color:var(--tag-sport);}
+  .reg.coral{background:var(--wash-gym); color:var(--tag-gym);}
+  .reg.sage{background:var(--wash-sage); color:var(--sage-deep);}
+  .reg.amber{background:var(--wash-amber); color:var(--amber-deep);}
+  .reg.off{background:var(--surface-recess); color:var(--text-disabled); text-decoration:line-through;}
+
+  /* ── mérleg strip ── */
+  .stripwrap{padding:16px 20px 0;}
+  .strip{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--divider); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow-sm);}
+  .strip .cell{background:var(--surface-card); padding:11px 4px 10px; text-align:center;}
+  .strip .v{font-size:17px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;}
+  .strip .v .u{font-size:9.5px; font-weight:500; color:var(--text-muted); margin-left:1px;}
+  .strip .v.gold{color:var(--amber-deep);}
+  .strip .v.green{color:var(--sage-deep);}
+  .strip .l{font-size:7.5px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-muted); margin-top:3px;}
+
+  /* ── sections ── */
+  .sec{padding:20px 20px 0;}
+  .sec .slabel{font-size:9.5px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-muted); margin-bottom:9px; display:flex; align-items:center; gap:6px;}
+  .sec .slabel .cnt{font-family:var(--ff-mono); font-size:9px; color:var(--text-disabled); font-weight:600; letter-spacing:0;}
+
+  /* medál — RECORD celebration card */
+  .medal{display:flex; align-items:center; gap:10px; background:linear-gradient(120deg, var(--accent-bg), var(--surface-card) 70%); border:1px solid var(--accent-soft); border-radius:var(--r-xl); padding:11px 13px; box-shadow:var(--shadow-sm);}
+  .medal + .medal{margin-top:8px;}
+  .medal .disc{width:34px; height:34px; border-radius:var(--r-full); background:var(--wash-amber); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none; box-shadow:inset 0 0 0 1.5px var(--accent-soft);}
+  .medal .tx{flex:1; min-width:0;}
+  .medal .tx .t{font-size:12.5px; font-weight:700;}
+  .medal .tx .m{font-size:10px; color:var(--text-muted); margin-top:2px;}
+  .medal .val{text-align:right; flex:none;}
+  .medal .val .now{font-family:var(--ff-mono); font-size:12px; font-weight:700; color:var(--amber-deep); white-space:nowrap;}
+  .medal .val .prev{font-family:var(--ff-mono); font-size:8.5px; color:var(--text-disabled); margin-top:2px; white-space:nowrap;}
+
+  /* target-hit összegző sor */
+  .targets{display:flex; align-items:center; gap:9px; background:var(--success-bg); border:1px solid var(--success-soft); border-radius:var(--r-xl); padding:10px 13px; margin-top:8px;}
+  .targets .tick{width:24px; height:24px; border-radius:var(--r-full); background:var(--surface-card); color:var(--sage-deep); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none;}
+  .targets .t{font-size:11.5px; font-weight:700; color:var(--success-hover);}
+  .targets .chips{display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;}
+  .targets .chips span{font-family:var(--ff-mono); font-size:8.5px; font-weight:600; color:var(--sage-deep); background:var(--surface-card); border-radius:var(--r-full); padding:2px 7px;}
+
+  /* kihívás rows */
+  .chal{display:flex; align-items:center; gap:10px; background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-xl); padding:10px 12px; box-shadow:var(--shadow-sm);}
+  .chal + .chal{margin-top:8px;}
+  .chal .st{width:28px; height:28px; border-radius:var(--r-full); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; flex:none;}
+  .chal.hit .st{background:var(--wash-sage); color:var(--sage-deep);}
+  .chal.miss .st{background:var(--warning-bg); color:var(--warning-hover);}
+  .chal.skip .st{background:var(--surface-recess); color:var(--text-disabled);}
+  .chal .tx{flex:1; min-width:0;}
+  .chal .tx .t{font-size:12px; font-weight:700;}
+  .chal .tx .m{font-family:var(--ff-mono); font-size:9px; color:var(--text-muted); margin-top:2px;}
+  .chal .out{font-size:9.5px; font-weight:800; border-radius:var(--r-full); padding:4px 9px; white-space:nowrap; flex:none;}
+  .chal.hit .out{background:var(--wash-sage); color:var(--sage-deep);}
+  .chal.miss .out{background:var(--warning-bg); color:var(--warning-hover);}
+  .chal.skip .out{background:var(--surface-recess); color:var(--text-disabled);}
+
+  /* ── gyakorlat-kártya: family rail + szett-chip-térkép ── */
+  .exc{position:relative; background:linear-gradient(180deg, color-mix(in srgb, var(--fam-rail) 10%, transparent) 0%, var(--surface-card) 55%); border:1px solid var(--divider); border-left:5px solid var(--fam-rail); border-radius:var(--r-xl); padding:12px 13px 13px; box-shadow:var(--shadow-sm);}
+  .exc + .exc{margin-top:9px;}
+  .exc .hd{display:flex; align-items:center; gap:8px;}
+  .exc .nm{font-size:13px; font-weight:700; flex:1; min-width:0;}
+  .exc .mus{font-size:8.5px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; border-radius:var(--r-sm); padding:3px 6px; background:var(--fam-wash); color:var(--fam-deep); flex:none;}
+  .exc .setn{font-family:var(--ff-mono); font-size:9.5px; font-weight:700; color:var(--fam-deep); flex:none;}
+  .exc .setn.part{color:var(--warning-hover);}
+  .exc .chips{display:flex; flex-wrap:wrap; gap:5px; margin-top:9px;}
+  .setchip{display:inline-flex; align-items:baseline; gap:4px; font-family:var(--ff-mono); font-size:10px; font-weight:600; color:var(--text-primary); background:var(--surface-recess); border:1px solid transparent; border-radius:var(--r-full); padding:4px 9px; font-variant-numeric:tabular-nums;}
+  .setchip .rir{font-size:8px; color:var(--text-muted);}
+  .setchip.top{border-color:color-mix(in srgb, var(--fam-rail) 55%, transparent); background:var(--fam-wash); color:var(--fam-deep);}
+  .setchip.top .rir{color:var(--fam-deep); opacity:0.7;}
+  .setchip.rec{background:var(--wash-amber); border-color:var(--accent-soft); color:var(--amber-deep);}
+  .setchip.rec .rir{color:var(--amber-deep); opacity:0.75;}
+  .setchip.ghost{background:transparent; border:1px dashed var(--divider); color:var(--text-disabled);}
+  .exc.dead{background:var(--surface-card); border-left-color:var(--text-disabled); opacity:0.72;}
+  .exc.dead .nm{color:var(--text-muted); text-decoration:line-through;}
+  .exc .why{font-size:10px; color:var(--text-muted); margin-top:7px;}
+  .exc .why i{font-family:var(--ff-serif); font-style:italic;}
+
+  /* jegyzet */
+  .note{background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-xl); padding:12px 13px; box-shadow:var(--shadow-sm);}
+  .note .l{font-family:var(--ff-mono); font-size:8.5px; font-weight:600; color:var(--text-muted); letter-spacing:0.08em;}
+  .note .ph{margin-top:7px; font-size:12.5px; color:var(--text-disabled); font-family:var(--ff-serif); font-style:italic;}
+  .note.saved .ph{color:var(--text-secondary);}
+
+  /* CTA-k */
+  .ctas{padding:20px 20px 26px; display:flex; flex-direction:column; gap:9px;}
+  .cta{display:flex; align-items:center; justify-content:center; gap:7px; padding:14px 18px; border-radius:var(--r-full); background:var(--gradient-cta); color:#fff; font-size:14px; font-weight:800; box-shadow:var(--shadow-cta); border:none; font-family:inherit; cursor:pointer;}
+  .ghost{display:flex; align-items:center; justify-content:center; gap:6px; padding:11px; border-radius:var(--r-full); background:transparent; color:var(--text-secondary); font-size:12.5px; font-weight:600; border:1px solid var(--divider); cursor:pointer; font-family:inherit;}
+
+  /* ── annotations ── */
+  .notes{margin-top:40px;}
+  .notes h3{font-size:17px; font-weight:800; margin-bottom:14px;}
+  .ngrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px;}
+  .ncard{background:var(--surface-card); border:1px solid var(--divider); border-radius:var(--r-xl); padding:16px 18px; box-shadow:var(--shadow-sm);}
+  .ncard .nt{font-size:12.5px; font-weight:800; display:flex; align-items:center; gap:7px;}
+  .ncard .nb{font-size:12px; color:var(--text-secondary); line-height:1.55; margin-top:7px;}
+  .ncard .nb b{color:var(--text-primary);}
+  .ncard .nb code{font-family:var(--ff-mono); font-size:10.5px; background:var(--surface-recess); border-radius:4px; padding:1px 5px;}
+  .dot{width:10px; height:10px; border-radius:var(--r-full); flex:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Edzés-összefoglaló + lezárt edzés — egységes redesign</h1>
+  <p class="lede">A két képernyő ugyanaz a <b>WorkoutSummary</b> két módban — a redesign is egyben kezeli őket. A szürke listák helyét a ház színes nyelve veszi át: <b>izomcsalád-pillek</b> a hero alatt, <b>family-rail gyakorlatkártyák</b> a szett-<b>chip-térképpel</b>, amber <b>medál-kártyák</b>, sage/amber <b>kihívás-chipek</b>. Balra a lezárás előtti összefoglaló (ünneplő korall halo), jobbra a lezárt nézet (nyugodt sage halo) — minden adat meglévő forrásból.</p>
+
+  <div class="cols">
+
+    <!-- ═══════════ PHONE 1 — EDZÉS VÉGE (closing) ═══════════ -->
+    <div class="phonecol">
+      <div class="plabel">Edzés vége — összefoglaló</div>
+      <div class="psub">mode: closing · az „Edzés lezárása ✓" előtti képernyő</div>
+      <div class="phone"><div class="screen">
+
+        <div class="topbar"><button><span class="xi">✕</span> Bezárás</button></div>
+
+        <div class="hero">
+          <div class="halo fire"></div>
+          <div class="over">Edzés vége</div>
+          <h2>Pull Day</h2>
+          <div class="heronum">16<span class="of">/20</span><span class="unit">szett</span></div>
+          <div class="herosub"><b>6,1 t</b> összvolumen · <b>5/6</b> gyakorlat · ~65 perc</div>
+        </div>
+
+        <div class="regrow">
+          <span class="reg sky">Hát <span class="n">10 szett</span></span>
+          <span class="reg lav">Váll <span class="n">3</span></span>
+          <span class="reg rose">Kar <span class="n">3</span></span>
+          <span class="reg off">Core</span>
+        </div>
+
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell"><div class="v">6,1<span class="u">t</span></div><div class="l">Volumen</div></div>
+            <div class="cell"><div class="v gold">2<span class="u">🏅</span></div><div class="l">Rekord</div></div>
+            <div class="cell"><div class="v green">9<span class="u">✓</span></div><div class="l">Célszett</div></div>
+            <div class="cell"><div class="v">1,8</div><div class="l">Ø RIR</div></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="slabel">Medálok <span class="cnt">2 rekord · 9 cél</span></div>
+          <div class="medal">
+            <div class="disc">🏅</div>
+            <div class="tx"><div class="t">Súly-rekord</div><div class="m">Kábeles evezés</div></div>
+            <div class="val"><div class="now">70 kg × 8</div><div class="prev">előző: 67,5 kg × 8</div></div>
+          </div>
+          <div class="medal">
+            <div class="disc">🏅</div>
+            <div class="tx"><div class="t">1RM-rekord</div><div class="m">Bicepsz curl · 14 × 12-ből becsülve</div></div>
+            <div class="val"><div class="now">19,6 kg</div><div class="prev">előző: 18,9 kg</div></div>
+          </div>
+          <div class="targets">
+            <div class="tick">✓</div>
+            <div style="flex:1;">
+              <div class="t">9 célszett teljesítve</div>
+              <div class="chips"><span>Evezés ×4</span><span>Face pull ×3</span><span>Húzódzkodás ×2</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="slabel">Kihívások <span class="cnt">1 megvan · 1 kimaradt</span></div>
+          <div class="chal hit">
+            <div class="st">✓</div>
+            <div class="tx"><div class="t">Súly-kihívás · Kábeles evezés</div><div class="m">cél: 70 kg × 8 → 70 kg × 8 @RIR 1</div></div>
+            <div class="out">megvan</div>
+          </div>
+          <div class="chal miss">
+            <div class="st">◯</div>
+            <div class="tx"><div class="t">Rep-kihívás · Lat lehúzás</div><div class="m">cél: 60 × 13 → max 60 × 12</div></div>
+            <div class="out">nem jött össze</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="slabel">Gyakorlatonként <span class="cnt">szett-térkép</span></div>
+
+          <div class="exc" style="--fam-rail:var(--sky); --fam-wash:var(--wash-run); --fam-deep:var(--tag-run);">
+            <div class="hd"><span class="nm">Súlyozott húzódzkodás</span><span class="mus">Hát-széles</span><span class="setn">3/3</span></div>
+            <div class="chips">
+              <span class="setchip">10 × 8 <span class="rir">@2</span></span>
+              <span class="setchip">10 × 8 <span class="rir">@2</span></span>
+              <span class="setchip top">10 × 6 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--sky); --fam-wash:var(--wash-run); --fam-deep:var(--tag-run);">
+            <div class="hd"><span class="nm">Kábeles evezés</span><span class="mus">Hát-közép</span><span class="setn">4/4</span></div>
+            <div class="chips">
+              <span class="setchip">65 × 10 <span class="rir">@2</span></span>
+              <span class="setchip">65 × 10 <span class="rir">@2</span></span>
+              <span class="setchip rec">🏅 70 × 8 <span class="rir">@1</span></span>
+              <span class="setchip">70 × 7 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--sky); --fam-wash:var(--wash-run); --fam-deep:var(--tag-run);">
+            <div class="hd"><span class="nm">Lat lehúzás</span><span class="mus">Hát-széles</span><span class="setn part">3/4</span></div>
+            <div class="chips">
+              <span class="setchip top">60 × 12 <span class="rir">@3</span></span>
+              <span class="setchip">60 × 11 <span class="rir">@2</span></span>
+              <span class="setchip">60 × 10 <span class="rir">@2</span></span>
+              <span class="setchip ghost">— kimaradt</span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--lav); --fam-wash:var(--wash-lav); --fam-deep:var(--lav-deep);">
+            <div class="hd"><span class="nm">Face pull</span><span class="mus">Váll-hátsó</span><span class="setn">3/3</span></div>
+            <div class="chips">
+              <span class="setchip top">25 × 15 <span class="rir">@2</span></span>
+              <span class="setchip">25 × 15 <span class="rir">@2</span></span>
+              <span class="setchip">25 × 15 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--rose); --fam-wash:var(--wash-sport); --fam-deep:var(--tag-sport);">
+            <div class="hd"><span class="nm">Bicepsz curl</span><span class="mus">Bicepsz</span><span class="setn">3/3</span></div>
+            <div class="chips">
+              <span class="setchip rec">🏅 14 × 12 <span class="rir">@2</span></span>
+              <span class="setchip">14 × 11 <span class="rir">@1</span></span>
+              <span class="setchip">14 × 10 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc dead" style="--fam-rail:var(--amber); --fam-wash:var(--wash-amber); --fam-deep:var(--amber-deep);">
+            <div class="hd"><span class="nm">Kábeles has-behúzás</span><span class="mus">Core</span><span class="setn" style="color:var(--text-disabled);">kihagyva</span></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="note">
+            <div class="l">EDZÉS-JEGYZET · OPCIONÁLIS</div>
+            <div class="ph">pl. „pumpa brutális volt"</div>
+          </div>
+        </div>
+
+        <div class="ctas">
+          <button class="cta">Edzés lezárása ✓</button>
+          <button class="ghost">← Vissza az edzéshez</button>
+        </div>
+
+      </div></div>
+    </div>
+
+    <!-- ═══════════ PHONE 2 — LEZÁRT EDZÉS (closed) ═══════════ -->
+    <div class="phonecol">
+      <div class="plabel">Lezárt edzés — részletek</div>
+      <div class="psub">mode: closed · /train/review/:id — ugyanaz a váz, read-only</div>
+      <div class="phone"><div class="screen">
+
+        <div class="topbar"><button><span class="xi">←</span> Vissza</button></div>
+
+        <div class="hero">
+          <div class="halo calm"></div>
+          <div class="over closed">Lezárva · aug. 4. kedd</div>
+          <h2>Pull Day</h2>
+          <div class="heronum">16<span class="of">/20</span><span class="unit">szett</span></div>
+          <div class="herosub"><b>6,1 t</b> összvolumen · <b>5/6</b> gyakorlat · ~65 perc</div>
+        </div>
+
+        <div class="regrow">
+          <span class="reg sky">Hát <span class="n">10 szett</span></span>
+          <span class="reg lav">Váll <span class="n">3</span></span>
+          <span class="reg rose">Kar <span class="n">3</span></span>
+          <span class="reg off">Core</span>
+        </div>
+
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell"><div class="v">6,1<span class="u">t</span></div><div class="l">Volumen</div></div>
+            <div class="cell"><div class="v gold">2<span class="u">🏅</span></div><div class="l">Rekord</div></div>
+            <div class="cell"><div class="v green">9<span class="u">✓</span></div><div class="l">Célszett</div></div>
+            <div class="cell"><div class="v">1,8</div><div class="l">Ø RIR</div></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="slabel">Medálok <span class="cnt">2 rekord · 9 cél</span></div>
+          <div class="medal">
+            <div class="disc">🏅</div>
+            <div class="tx"><div class="t">Súly-rekord</div><div class="m">Kábeles evezés</div></div>
+            <div class="val"><div class="now">70 kg × 8</div><div class="prev">előző: 67,5 kg × 8</div></div>
+          </div>
+          <div class="medal">
+            <div class="disc">🏅</div>
+            <div class="tx"><div class="t">1RM-rekord</div><div class="m">Bicepsz curl · 14 × 12-ből becsülve</div></div>
+            <div class="val"><div class="now">19,6 kg</div><div class="prev">előző: 18,9 kg</div></div>
+          </div>
+          <div class="targets">
+            <div class="tick">✓</div>
+            <div style="flex:1;">
+              <div class="t">9 célszett teljesítve</div>
+              <div class="chips"><span>Evezés ×4</span><span>Face pull ×3</span><span>Húzódzkodás ×2</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="slabel">Kihívások <span class="cnt">1 megvan · 1 kimaradt</span></div>
+          <div class="chal hit">
+            <div class="st">✓</div>
+            <div class="tx"><div class="t">Súly-kihívás · Kábeles evezés</div><div class="m">cél: 70 kg × 8 → 70 kg × 8 @RIR 1</div></div>
+            <div class="out">megvan</div>
+          </div>
+          <div class="chal miss">
+            <div class="st">◯</div>
+            <div class="tx"><div class="t">Rep-kihívás · Lat lehúzás</div><div class="m">cél: 60 × 13 → max 60 × 12</div></div>
+            <div class="out">nem jött össze</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="slabel">Gyakorlatonként <span class="cnt">szett-térkép</span></div>
+
+          <div class="exc" style="--fam-rail:var(--sky); --fam-wash:var(--wash-run); --fam-deep:var(--tag-run);">
+            <div class="hd"><span class="nm">Súlyozott húzódzkodás</span><span class="mus">Hát-széles</span><span class="setn">3/3</span></div>
+            <div class="chips">
+              <span class="setchip">10 × 8 <span class="rir">@2</span></span>
+              <span class="setchip">10 × 8 <span class="rir">@2</span></span>
+              <span class="setchip top">10 × 6 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--sky); --fam-wash:var(--wash-run); --fam-deep:var(--tag-run);">
+            <div class="hd"><span class="nm">Kábeles evezés</span><span class="mus">Hát-közép</span><span class="setn">4/4</span></div>
+            <div class="chips">
+              <span class="setchip">65 × 10 <span class="rir">@2</span></span>
+              <span class="setchip">65 × 10 <span class="rir">@2</span></span>
+              <span class="setchip rec">🏅 70 × 8 <span class="rir">@1</span></span>
+              <span class="setchip">70 × 7 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--sky); --fam-wash:var(--wash-run); --fam-deep:var(--tag-run);">
+            <div class="hd"><span class="nm">Lat lehúzás</span><span class="mus">Hát-széles</span><span class="setn part">3/4</span></div>
+            <div class="chips">
+              <span class="setchip top">60 × 12 <span class="rir">@3</span></span>
+              <span class="setchip">60 × 11 <span class="rir">@2</span></span>
+              <span class="setchip">60 × 10 <span class="rir">@2</span></span>
+              <span class="setchip ghost">— kimaradt</span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--lav); --fam-wash:var(--wash-lav); --fam-deep:var(--lav-deep);">
+            <div class="hd"><span class="nm">Face pull</span><span class="mus">Váll-hátsó</span><span class="setn">3/3</span></div>
+            <div class="chips">
+              <span class="setchip top">25 × 15 <span class="rir">@2</span></span>
+              <span class="setchip">25 × 15 <span class="rir">@2</span></span>
+              <span class="setchip">25 × 15 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc" style="--fam-rail:var(--rose); --fam-wash:var(--wash-sport); --fam-deep:var(--tag-sport);">
+            <div class="hd"><span class="nm">Bicepsz curl</span><span class="mus">Bicepsz</span><span class="setn">3/3</span></div>
+            <div class="chips">
+              <span class="setchip rec">🏅 14 × 12 <span class="rir">@2</span></span>
+              <span class="setchip">14 × 11 <span class="rir">@1</span></span>
+              <span class="setchip">14 × 10 <span class="rir">@1</span></span>
+            </div>
+          </div>
+
+          <div class="exc dead" style="--fam-rail:var(--amber); --fam-wash:var(--wash-amber); --fam-deep:var(--amber-deep);">
+            <div class="hd"><span class="nm">Kábeles has-behúzás</span><span class="mus">Core</span><span class="setn" style="color:var(--text-disabled);">kihagyva</span></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="note saved">
+            <div class="l">EDZÉS-JEGYZET</div>
+            <div class="ph">„pumpa brutális volt, az evezés végre elmozdult"</div>
+          </div>
+        </div>
+
+        <div class="ctas">
+          <button class="ghost">← Vissza</button>
+        </div>
+
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ANNOTATIONS ═══════════ -->
+  <div class="notes">
+    <h3>Mi változott — és miből él</h3>
+    <div class="ngrid">
+      <div class="ncard">
+        <div class="nt"><span class="dot" style="background:var(--coral);"></span>Hero + halo</div>
+        <div class="nb">A Today/Fuel <b>hero-szám idióma</b>: 16/20 szett Geist 200-ban, alatta a tény-sor. A closing mód <b>korall-amber ünneplő halot</b> kap (a sziget-blob nyelve), a lezárt nézet nyugodt sage-et — ettől érzed a különbséget úgy, hogy a váz ugyanaz. <code>durationEst</code> a contractban már létezik.</div>
+      </div>
+      <div class="ncard">
+        <div class="nt"><span class="dot" style="background:var(--sky);"></span>Izomcsalád-pillek</div>
+        <div class="nb">A hero alatt <b>régió-pillek</b> (Hát · Váll · Kar · Core) a muscleColors családokkal és szett-számmal — a kihagyott régió áthúzva, halványan. Forrás: a gyakorlatok meglévő <code>muscle</code> mezője → <code>muscleRegion()</code>.</div>
+      </div>
+      <div class="ncard">
+        <div class="nt"><span class="dot" style="background:var(--amber);"></span>Mérleg-strip + medálok</div>
+        <div class="nb">A 3 fehér doboz helyett <b>4-cellás StatStrip</b> (Volumen · Rekord · Célszett · Ø RIR — mind számolható a szettekből). A RECORD medálok <b>amber ünneplő kártyák</b> „előző" értékkel; a sok TARGET_HIT <b>egyetlen sage összegzősorrá</b> csomagolódik gyakorlat-chipekkel — nem nyomja el a rekordokat.</div>
+      </div>
+      <div class="ncard">
+        <div class="nt"><span class="dot" style="background:var(--rose);"></span>Szett-chip-térkép</div>
+        <div class="nb">A mono szett-sor helyett minden szett <b>chip</b>: <code>65 × 10 @2</code>. A gyakorlatkártya az execution card v2 nyelvét viszi tovább: <b>family-rail + wash</b>, izom-tag pill, <code>n/m</code> szett-számláló (részleges → amber). A rekord-szett 🏅 amber chipet kap, a top szett family-wash kiemelést, a kimaradt szett szellem-chipet.</div>
+      </div>
+      <div class="ncard">
+        <div class="nt"><span class="dot" style="background:var(--sage);"></span>Egyben a két mód</div>
+        <div class="nb">Egy komponens marad, két móddal: a closing a jegyzet-mezőt + korall CTA-t teszi hozzá, a closed a dátum-eyebrow-t + mentett jegyzetet. A chip-térkép <b>mindkét módban teljes</b> (ma a closing csak top-szettet mutat) — a „csináljuk egyben" itt vizuálisan is összeér.</div>
+      </div>
+      <div class="ncard">
+        <div class="nt"><span class="dot" style="background:var(--text-muted);"></span>Nyílt kérdés</div>
+        <div class="nb"><b>1)</b> A jegyzet ma csak dísz (nem perzisztál) — a redesignnal érdemes-e bekötni (API-bővítés)? <b>2)</b> Ø RIR cella maradjon, vagy inkább „Munkaszett 16" negyedikként? <b>3)</b> A kihívás-blokk maradjon a medálok után, vagy költözzön feljebb?</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
