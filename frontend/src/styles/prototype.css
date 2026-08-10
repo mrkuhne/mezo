@@ -3289,3 +3289,40 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .cb-band .cb-head { margin-bottom: 8px; }
 .cb-band .brief-lead { margin: 0; }
 .cb-band .brief-refs { margin-top: 14px; }
+
+/* ═══ Mai · napszak-nézet (mezo-puci) ═══
+   No card: the content sits on the canvas. Boxes only inside — the fact
+   strip, the ItemRows, the chips. The .isl-* micro-components are reused
+   as-is (they are Fuel's language too), only the frame is new. */
+.dayview { padding: 2px 20px 6px; }
+:where(.dayview) { animation: isl-phasein .32s ease both; }
+.dv-hero { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.dv-hero-v { font-size: 30px; font-weight: 200; letter-spacing: -.03em; line-height: 1.1;
+             color: var(--ink); font-variant-numeric: tabular-nums; }
+.dv-hero-u { font-size: 14px; font-weight: 300; color: var(--faint); letter-spacing: 0; }
+.dv-hero-sub { width: 100%; font-size: 11.5px; color: var(--sub); font-weight: 500; margin-top: 4px; }
+.dayview .isl-facts { margin-top: 14px; }
+.dayview .isl-warnchip { margin: 12px 0 0; }
+.dv-act { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.dayview .isl-cta { padding: 10px 18px; font-size: 13px; }
+.dayview .isl-grouph { margin: 18px 2px 8px; }
+.dayview .itemrow { margin-bottom: 6px; }
+.dayview .creedchip { margin: 0 0 6px; }
+.dv-done { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 12px;
+           padding: 10px 14px; border-radius: var(--r-full); border: 1px solid var(--line);
+           background: transparent; font-family: inherit; font-size: 12px; font-weight: 700;
+           color: var(--success-hover); cursor: pointer; }
+.dv-done-arr { margin-left: auto; color: var(--faint); font-weight: 600; }
+/* night: the view itself goes theme-invariant dark (the .isl-night heritage) */
+.dayview.is-night { background: linear-gradient(165deg, #28223c, #1d1930); border-radius: var(--r-xl);
+                    padding: 18px 20px 14px; margin: 0 6px; }
+.dayview.is-night .dv-hero-v { color: #F5EFE6; }
+.dayview.is-night .dv-hero-u, .dayview.is-night .dv-hero-sub { color: #9c92b8; }
+.dv-nightrow { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px;
+               background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+               border-radius: var(--r-xl); color: #E8E2F5; font-size: 13px; font-weight: 600;
+               text-decoration: none; }
+.dv-nightrow-arr { margin-left: auto; color: #9c92b8; }
+@media (prefers-reduced-motion: reduce) {
+  .dayview { animation: none; }
+}
