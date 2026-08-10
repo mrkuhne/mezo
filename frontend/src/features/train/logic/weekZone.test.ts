@@ -71,6 +71,28 @@ describe('weekZoneRows — status boundaries', () => {
     })
     expect(overRow[0].status).toBe('over')
   })
+  it('a below row whose weekly plan reaches MEV reports the remaining plan, not a shortfall (mezo-zr6p)', () => {
+    // biceps MEV 8; plan 10 sets over two days, 4 of them today, nothing logged yet
+    const rows = weekZoneRows({
+      plannedDays: [day('Hét', [ex('biceps-long', 4, 0)]), day('Sze', [ex('biceps-long', 6, 0)])],
+      completed: [],
+      todayPlan: [{ muscle: 'biceps-long', type: 'isolation', workingSets: 4, targetRIR: 0 }],
+    })
+    expect(rows[0]).toMatchObject({ group: 'biceps', status: 'below', remainingPlanSets: 6, setsToZone: 0 })
+  })
+  it('a below row whose whole weekly plan misses MEV reports the plan-level shortfall (mezo-zr6p)', () => {
+    // glute MEV 6; the entire week plans 3 sets → the plan itself is short by 3
+    const rows = weekZoneRows({
+      plannedDays: [day('Csü', [ex('glute', 3, 0)])],
+      completed: [],
+      todayPlan: [{ muscle: 'glute', type: 'compound', workingSets: 3, targetRIR: 0 }],
+    })
+    expect(rows[0]).toMatchObject({ group: 'glute', status: 'below', remainingPlanSets: 0, setsToZone: 3 })
+  })
+  it('plan-less (custom-only) groups short of MEV keep the shortfall wording data', () => {
+    const rows = weekZoneRows({ plannedDays: [], completed: [detail([{ muscle: 'biceps', setRirs: [1, 1] }])] })
+    expect(rows[0]).toMatchObject({ group: 'biceps', status: 'below', remainingPlanSets: 0, setsToZone: 6 })
+  })
   it('traps/core never report below/entering', () => {
     const rows = weekZoneRows({ plannedDays: [day('Hét', [ex('traps', 2, 2)])], completed: [], todayPlan: [{ muscle: 'traps', type: 'isolation', workingSets: 2, targetRIR: 2 }] })
     expect(rows[0]).toMatchObject({ group: 'traps', mev: null, zoneStart: null, status: 'in' })
