@@ -6,6 +6,7 @@
 // docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.4, mockup asset
 // docs/superpowers/specs/assets/2026-08-09-fuel-keret-hero-mockup.html (`#donefold`).
 // ============================================================
+import { huInt } from '@/shared/lib/huNum'
 import { MEAL_ROLE_LABEL, type MealRole } from '@/features/fuel/logic/keretHero'
 
 export interface DoneCapsuleRow {
@@ -55,8 +56,8 @@ export function DoneWindowsCapsule({ group, rows, open, onToggle, onRowSelect }:
   onRowSelect: (mealId: string) => void
 }) {
   const summary = [
-    `✓ ${group.count} kész ablak`,
-    `${group.kcal} kcal`,
+    `${group.count} kész ablak`,
+    `${huInt(group.kcal)} kcal`,
     group.avgScore != null ? `AI-átlag ${group.avgScore} p` : null,
   ].filter(Boolean).join(' · ')
 

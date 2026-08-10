@@ -16,21 +16,16 @@
 // math needed. Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2,
 // mockup docs/superpowers/specs/assets/2026-08-09-fuel-keret-hero-mockup.html.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { hu1 } from '@/shared/lib/huNum'
+import { hu1, huInt } from '@/shared/lib/huNum'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import type { KeretHeroVM, RingVM } from '@/features/fuel/logic/keretHero'
 
-// HU thousands, regular space (not `toLocaleString('hu-HU')`, which only groups from 5
-// digits up) — the KeretBelt.tsx precedent, verbatim, for the same 4-digit kcal values.
-// Unicode minus (U+2212), never the ASCII hyphen.
+// HU thousands grouping (shared/lib/huNum's `huInt`, the KeretBelt.tsx precedent) for the same
+// 4-digit kcal values. Unicode minus (U+2212), never the ASCII hyphen.
 const MINUS = '−'
-const fmt = (n: number) => {
-  const neg = n < 0
-  const grouped = Math.round(Math.abs(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-  return neg ? `${MINUS}${grouped}` : grouped
-}
+const fmt = huInt
 const signed = (n: number) => `${n < 0 ? MINUS : '+'}${fmt(Math.abs(n))}`
 
 // The víz ring's RingVM carries raw ml (Task 1's data, e.g. "1200 ml") — the mockup's
@@ -45,26 +40,36 @@ function isJsdomEnv(): boolean {
     && navigator.userAgent.includes('jsdom')
 }
 
-/** 0 → `to` over `durationMs`, cubic ease-out, skipped (instant final value, no rAF) under
+/** `prev` → `to` over `durationMs`, cubic ease-out, skipped (instant final value, no rAF) under
  *  reduced motion or jsdom. Local fork of shared/ui/CountUp's hook — this one returns the
- *  raw number so the caller can HU-format it (CountUp renders plain unformatted digits). */
+ *  raw number so the caller can HU-format it (CountUp renders plain unformatted digits).
+ *  `prev` is the last value this hook actually displayed (kept in a ref, not state — it must
+ *  survive across the `to` change without itself triggering a render): first mount animates
+ *  0→to same as before, but a LATER `to` change (e.g. a fresh water/meal log while the hero is
+ *  already on screen) animates from wherever the sweep last landed, never restarts at 0 — a
+ *  restart would flash the number down through the whole 0..to range on every small update. */
 function useCountUpKcal(to: number, durationMs = 2000): number {
   const reduced = useReducedMotion()
   const skip = reduced || isJsdomEnv()
   const [val, setVal] = useState(skip ? to : 0)
+  const displayedRef = useRef(skip ? to : 0)
 
   useEffect(() => {
     if (skip) {
       setVal(to)
+      displayedRef.current = to
       return
     }
+    const from = displayedRef.current
     let raf = 0
     let start: number | null = null
     const tick = (now: number) => {
       if (start === null) start = now
       const p = Math.min(1, (now - start) / durationMs)
       const eased = 1 - Math.pow(1 - p, 3)
-      setVal(Math.round(to * eased))
+      const next = Math.round(from + (to - from) * eased)
+      setVal(next)
+      displayedRef.current = next
       if (p < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)

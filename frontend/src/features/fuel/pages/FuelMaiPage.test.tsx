@@ -133,7 +133,7 @@ test('all windows done (no now, nothing left to select) → no island is big; th
   const { container } = renderView()
   expect(bigTone(container)).toBeNull()
   expect(container.querySelectorAll('.sky-islands > .isl[data-tone="fuel"]')).toHaveLength(0)
-  expect(screen.getByText('✓ 2 kész ablak · 1200 kcal')).toBeInTheDocument()
+  expect(screen.getByText('2 kész ablak · 1 200 kcal')).toBeInTheDocument()
 })
 
 test('a trailing missed window (no now) becomes the default big island — the chronologically first remaining one', () => {
@@ -233,7 +233,7 @@ test('an already-done zone\'s stack verdict has no L1 surface anymore; no still-
 
 test('the merged done capsule shows count/kcal/AI-average and expands into per-meal rows', async () => {
   renderView()
-  expect(screen.getByText('✓ 2 kész ablak · 1300 kcal · AI-átlag 92 p')).toBeInTheDocument()
+  expect(screen.getByText('2 kész ablak · 1 300 kcal · AI-átlag 92 p')).toBeInTheDocument()
   expect(screen.queryByText('Túrós zabkása · áfonyával')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: /kész ablak/ }))
   expect(screen.getByText('Túrós zabkása · áfonyával')).toBeInTheDocument()

@@ -57,8 +57,9 @@ export function buildKeretHero(input: {
   const doneWindows = windows.filter(s => s.state === 'done')
 
   const segments: DaySegVM[] = doneWindows.map((s, i) => ({
-    // Segments share ONE denominator (budget.kcal) with the ghost remainder the component draws
-    // alongside them, so an individual window can never blow the bar past 100% on its own — an
+    // Segments share ONE denominator (budget.kcal) with the track background the component draws
+    // behind them (the day-bar's unfilled remainder now plays that role, no separate ghost
+    // element), so an individual window can never blow the bar past 100% on its own — an
     // overshoot day still shows a legible (if crowded) bar rather than a broken layout.
     widthPct: pct(s.kcal ?? 0, budget.kcal),
     toneAlt: i % 2 === 1,
@@ -90,7 +91,9 @@ export function buildKeretHero(input: {
   ]
 
   return {
-    remainingKcal: Math.max(0, budget.kcal - consumed.kcal),
+    // Honest negative on an overshoot day — no clamp. `KeretHero` already formats a negative
+    // remainingKcal with the Unicode minus (U+2212) via its `fmt` helper.
+    remainingKcal: budget.kcal - consumed.kcal,
     consumedKcal: consumed.kcal,
     targetKcal: budget.kcal,
     doneCount: doneWindows.length,
@@ -125,7 +128,7 @@ export function deriveMealRole(mealTimeHHmm: string, workoutTime: string | null)
   return 'standard'
 }
 
-export interface DoneMealRow { mealId: string; name: string; time: string; kcal: number | null; proteinG: number | null; role: string | null; scorePct: number | null }
+export interface DoneMealRow { mealId: string; name: string; time: string; kcal: number | null; proteinG: number | null; scorePct: number | null }
 
 /** The day's done meal windows, chronologically, each row's meal joined off `slot.mealId` (the join
  *  windowIslands.ts's `buildWindowRiver` couldn't do — it never received a `meals` array). */
@@ -143,18 +146,19 @@ export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[
         time: s.time,
         kcal: meal?.kcal ?? s.kcal ?? null,
         proteinG: meal?.p ?? s.p ?? null,
-        // No MealRole/role field exists anywhere on the FE meal shape (FuelMeal, FuelSlot, nor the
-        // MealResponse wire contract carry one today) — honest null, never fabricated. See
-        // task-1-report.md for the grep evidence.
-        role: null,
         scorePct: meal?.score != null ? Math.round(meal.score * 100) : null,
       }
     })
 }
 
-/** The score-os done-window rows' average `scorePct`, rounded; no scored row → null (never a fake 0). */
-export function aiAverage(rows: DoneMealRow[]): number | null {
-  const scored = rows.map(r => r.scorePct).filter((v): v is number => v != null)
+/** The average of the given score percentages, rounded; null/undefined entries ignored (a
+ *  score-less done meal), no scored value at all → null (never a fake 0). Shared by this
+ *  module's own `doneMealRows` (each row's `scorePct`) and windowIslands.ts's `buildWindowRiver`
+ *  (a done slot's joined meal score) — both need "average of today's done-meal AI scores", so it
+ *  lives here (the module that owns `DoneMealRow`/`doneMealRows`) rather than each computing its
+ *  own reduce. */
+export function aiAverage(scorePcts: (number | null | undefined)[]): number | null {
+  const scored = scorePcts.filter((v): v is number => v != null)
   if (scored.length === 0) return null
   return Math.round(scored.reduce((sum, v) => sum + v, 0) / scored.length)
 }

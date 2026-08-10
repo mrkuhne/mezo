@@ -137,9 +137,9 @@ test('doneCount/totalCount count meal windows regardless of state', () => {
 
 // ── remaining/consumed/target kcal ────────────────────────────────────────────
 
-test('remaining kcal is clamped at 0 on an overshoot day, never negative', () => {
+test('remaining kcal passes through negative on an overshoot day — no clamp, honest overshoot', () => {
   const vm = build({ consumed: { kcal: 3000, p: 32, c: 50, f: 10 }, budget: BUDGET })
-  expect(vm.remainingKcal).toBe(0)
+  expect(vm.remainingKcal).toBe(-600)
   expect(vm.consumedKcal).toBe(3000)
   expect(vm.targetKcal).toBe(2400)
 })
@@ -176,7 +176,7 @@ test('doneMealRows lists the done windows chronologically, carrying name/time/kc
   const s2 = slot({ time: '07:40', slotKey: 'breakfast', label: 'Reggeli', state: 'done', mealId: 'breakfast', mealName: 'Zabkása', kcal: 420, p: 32 })
   const rows = doneMealRows([lunch, breakfast], [s1, s2])
   expect(rows.map(r => r.mealId)).toEqual(['breakfast', 'lunch'])
-  expect(rows[0]).toEqual({ mealId: 'breakfast', name: 'Zabkása', time: '07:40', kcal: 420, proteinG: 32, role: null, scorePct: 70 })
+  expect(rows[0]).toEqual({ mealId: 'breakfast', name: 'Zabkása', time: '07:40', kcal: 420, proteinG: 32, scorePct: 70 })
   expect(rows[1].scorePct).toBe(92)
 })
 
@@ -197,30 +197,17 @@ test('doneMealRows excludes pending/now/missed windows and non-meal slots', () =
   expect(rows[0].mealId).toBe('m1')
 })
 
-test('role has no honest source on the FE meal shape — every row carries role: null, never fabricated', () => {
-  const m = meal({ id: 'm1' })
-  const s = slot({ mealId: 'm1' })
-  const rows = doneMealRows([m], [s])
-  expect(rows[0].role).toBeNull()
-})
-
 // ── aiAverage ────────────────────────────────────────────────────────────────
 
-test('aiAverage averages only the scored rows, ignoring score-less ones', () => {
-  const rows = [
-    { mealId: '1', name: 'a', time: '07:40', kcal: 1, proteinG: 1, role: null, scorePct: 90 },
-    { mealId: '2', name: 'b', time: '12:30', kcal: 1, proteinG: 1, role: null, scorePct: null },
-    { mealId: '3', name: 'c', time: '19:30', kcal: 1, proteinG: 1, role: null, scorePct: 70 },
-  ]
-  expect(aiAverage(rows)).toBe(80)
+test('aiAverage averages only the scored values, ignoring null ones', () => {
+  expect(aiAverage([90, null, 70])).toBe(80)
 })
 
-test('aiAverage is null when no row carries a score', () => {
-  const rows = [{ mealId: '1', name: 'a', time: '07:40', kcal: 1, proteinG: 1, role: null, scorePct: null }]
-  expect(aiAverage(rows)).toBeNull()
+test('aiAverage is null when no value is scored', () => {
+  expect(aiAverage([null])).toBeNull()
 })
 
-test('aiAverage is null on an empty row list', () => {
+test('aiAverage is null on an empty list', () => {
   expect(aiAverage([])).toBeNull()
 })
 

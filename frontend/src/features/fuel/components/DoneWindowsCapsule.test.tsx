@@ -17,7 +17,7 @@ test('the collapsed capsule shows the merged summary line, avg segment included 
       onRowSelect={() => {}}
     />,
   )
-  expect(screen.getByText('✓ 2 kész ablak · 1240 kcal · AI-átlag 90 p')).toBeInTheDocument()
+  expect(screen.getByText('2 kész ablak · 1 240 kcal · AI-átlag 90 p')).toBeInTheDocument()
 })
 
 test('the avg segment is omitted when no done meal is scored', () => {
@@ -30,7 +30,7 @@ test('the avg segment is omitted when no done meal is scored', () => {
       onRowSelect={() => {}}
     />,
   )
-  expect(screen.getByText('✓ 1 kész ablak · 420 kcal')).toBeInTheDocument()
+  expect(screen.getByText('1 kész ablak · 420 kcal')).toBeInTheDocument()
 })
 
 test('closed by default — the row list is not rendered until toggled open', () => {

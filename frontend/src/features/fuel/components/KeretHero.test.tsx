@@ -2,7 +2,7 @@
 // Mezo · KeretHero tests (mezo-c9t5, keret-hero Task 2). See
 // .superpowers/sdd/2026-08-09-fuel-keret-hero/task-2-brief.md.
 // ============================================================
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
@@ -66,6 +66,13 @@ describe('KeretHero — count-up', () => {
     expect(el).not.toHaveAttribute('aria-live')
   })
 
+  it('an overshoot day (negative remainingKcal) renders the honest negative with the Unicode minus, in both the numeral and the aria-label', () => {
+    stubReduced()
+    render(<KeretHero vm={VM({ remainingKcal: -240 })} onChip={vi.fn()} onWaterRing={vi.fn()} />)
+    expect(screen.getByText('−240')).toBeInTheDocument()
+    expect(screen.getByLabelText('−240 kcal hátra')).toBeInTheDocument()
+  })
+
   it('moving-path smoke: shows 0 at mount, then the final HU-grouped value once the rAF loop completes', async () => {
     // Bypass CountUp.tsx's jsdom short-circuit (same trick as CountUp.test.tsx) to exercise
     // the real rAF branch instead of the reduced/jsdom instant-value branch. A short
@@ -75,6 +82,38 @@ describe('KeretHero — count-up', () => {
     render(<KeretHero vm={VM({ remainingKcal: 30 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
     expect(screen.getByText('0')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText('30')).toBeInTheDocument(), { timeout: 2000 })
+  })
+
+  it('a later vm.remainingKcal change animates from the previously displayed value, not a restart from 0', () => {
+    // A manually-flushed rAF queue (rather than real timers) makes the very first animation
+    // frame after the `to` change deterministically observable — real rAF timing can't prove
+    // "never touches 0 on frame 1" without either a flaky race or a full-duration wait that
+    // would miss the bug (the old code's brief 0-flash only exists on that first frame).
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Test Browser)')
+    let queue: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      queue.push(cb)
+      return queue.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    const flush = (now: number) => {
+      const cbs = queue
+      queue = []
+      act(() => cbs.forEach((cb) => cb(now)))
+    }
+
+    const { rerender } = render(<KeretHero vm={VM({ remainingKcal: 800 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
+    flush(1000) // first frame: p=0, eased=0 — 0→800 sweep starts at 0, same as always
+    flush(1040) // p=1 — sweep lands on the mount target
+    expect(screen.getByText('800')).toBeInTheDocument()
+
+    rerender(<KeretHero vm={VM({ remainingKcal: 300 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
+    flush(2000) // first frame of the NEW sweep: p=0, eased=0 — must render `from` (800), not 0
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.getByText('800')).toBeInTheDocument()
+
+    flush(2040) // p=1 — the new sweep lands on the new target
+    expect(screen.getByText('300')).toBeInTheDocument()
   })
 })
 

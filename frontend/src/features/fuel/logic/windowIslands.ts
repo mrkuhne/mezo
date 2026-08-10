@@ -8,6 +8,7 @@
 import { toMin } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { HeroResult } from '@/features/fuel/logic/heroWindow'
+import { aiAverage } from '@/features/fuel/logic/keretHero'
 import type { MealMatchVerdict } from '@/features/fuel/logic/matchMealsToStack'
 import type { FuelMeal, FuelPlanToday, FuelSlot, MealSlot } from '@/data/types'
 
@@ -170,11 +171,11 @@ export function buildWindowRiver(input: {
 
   const doneMealSlots = mealSlots.filter(s => s.state === 'done')
   const mealById = new Map(meals.map(m => [m.id, m]))
-  const scoredPct = doneMealSlots
-    .map(s => (s.mealId != null ? mealById.get(s.mealId)?.score : null))
-    .filter((v): v is number => v != null)
-    .map(v => Math.round(v * 100))
-  const avgScore = scoredPct.length > 0 ? Math.round(scoredPct.reduce((sum, v) => sum + v, 0) / scoredPct.length) : null
+  const scoredPct = doneMealSlots.map(s => {
+    const score = s.mealId != null ? mealById.get(s.mealId)?.score : null
+    return score != null ? Math.round(score * 100) : null
+  })
+  const avgScore = aiAverage(scoredPct)
   const doneGroup = doneMealSlots.length > 0
     ? { count: doneMealSlots.length, kcal: doneMealSlots.reduce((sum, s) => sum + (s.kcal ?? 0), 0), avgScore }
     : null
