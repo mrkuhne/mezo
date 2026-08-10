@@ -4,25 +4,34 @@
 // the per-exercise set-chip map (record/top/ghost marking). Table-tested;
 // keeps WorkoutSummary.tsx presentational.
 // ============================================================
-import type { LastWeekSet } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { REGION_LABELS, REGION_ORDER, muscleRegion, type RegionKey } from '@/features/train/logic/muscleColors'
 
+// Local set shape (not `LastWeekSet`): RIR is honestly `number | null` here — the review-mode
+// caller's warmup sets carry no RIR at all (the API contract's `rir` is null on every warmup
+// row), and averaging that as 0 would drag Ø RIR toward zero and disagree with the SAME
+// workout's in-memory `complete`-phase average (mezo-w943 final review, Finding 1). Field
+// names match `LastWeekSet` on purpose so the closing-mode caller's `LastWeekSet[]` (always
+// a real number — the active session never logs a null RIR) stays assignable here.
+export interface SummarySet { weight: number; reps: number; rir: number | null }
 export interface SummaryExerciseInput {
   id: string
   name: string
   muscle: string
   plannedSets: number
-  sets: LastWeekSet[]
+  sets: SummarySet[]
   skipped: boolean
 }
-export interface SummarySetChip { weight: number; reps: number; rir: number; record: boolean; top: boolean }
+export interface SummarySetChip { weight: number; reps: number; rir: number | null; record: boolean; top: boolean }
 export interface SummaryExerciseView {
   id: string; name: string; muscle: string
   plannedSets: number; doneSets: number
   abandoned: boolean
   partial: boolean
   missing: number
+  /** Explicitly skipped mid-exercise (some sets logged, then abandoned) — distinct from
+   *  `abandoned` (zero sets logged at all); drives the `· kihagyva` marker on a partial card. */
+  skipped: boolean
   chips: SummarySetChip[]
 }
 export interface RegionPill { region: RegionKey; label: string; sets: number; off: boolean }
@@ -40,7 +49,7 @@ export interface SummaryStats {
 }
 
 /** The heaviest set's index — ties break to more reps, then to the earlier set. */
-function topSetIndex(sets: LastWeekSet[]): number {
+function topSetIndex(sets: SummarySet[]): number {
   let best = -1
   sets.forEach((s, i) => {
     if (best === -1) { best = i; return }
@@ -51,7 +60,7 @@ function topSetIndex(sets: LastWeekSet[]): number {
 }
 
 /** Chip index a RECORD medal points at: valid setIndex wins, else first weight+reps match. */
-function recordChipIndex(medal: Medal, sets: LastWeekSet[]): number {
+function recordChipIndex(medal: Medal, sets: SummarySet[]): number {
   if (medal.setIndex != null && medal.setIndex >= 0 && medal.setIndex < sets.length) return medal.setIndex
   if (medal.weightKg != null && medal.reps != null) {
     return sets.findIndex((s) => s.weight === medal.weightKg && s.reps === medal.reps)
@@ -79,6 +88,7 @@ export function deriveSummaryStats(exercises: SummaryExerciseInput[], medals: Me
       abandoned: doneSets === 0,
       partial: doneSets > 0 && doneSets < e.plannedSets,
       missing: Math.max(0, e.plannedSets - doneSets),
+      skipped: e.skipped,
       chips,
     }
   })
@@ -105,7 +115,10 @@ export function deriveSummaryStats(exercises: SummaryExerciseInput[], medals: Me
 
   const allSets = exercises.flatMap((e) => e.sets)
   const volumeT = allSets.reduce((a, s) => a + s.weight * s.reps, 0) / 1000
-  const avgRir = allSets.length === 0 ? null : Math.round((allSets.reduce((a, s) => a + s.rir, 0) / allSets.length) * 10) / 10
+  // Ø RIR honesty (Finding 1): a warmup set logs no RIR at all — average only the sets that
+  // actually carry one, never fabricate a 0 for the rest.
+  const ratedSets = allSets.filter((s): s is SummarySet & { rir: number } => s.rir != null)
+  const avgRir = ratedSets.length === 0 ? null : Math.round((ratedSets.reduce((a, s) => a + s.rir, 0) / ratedSets.length) * 10) / 10
 
   return {
     doneSets: allSets.length,

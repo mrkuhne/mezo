@@ -36,7 +36,12 @@ export function WorkoutReviewPage() {
     name: e.name,
     muscle: e.muscle,
     plannedSets: e.warmupSets + e.workingSets,
-    sets: e.sets.map((s) => ({ weight: Number(s.weightKg ?? 0), reps: s.reps ?? 0, rir: s.rir ?? 0 })),
+    // rir is honestly nullable (Finding 1): the API contract gives `rir: null` on every
+    // warmup set — mapping it to 0 fabricated a fake worst-case RIR that dragged the Ø RIR
+    // average toward zero and disagreed with the same workout's in-memory `complete`-phase
+    // average (which only ever holds real RIRs). summaryStats.deriveSummaryStats averages
+    // only non-null rirs.
+    sets: e.sets.map((s) => ({ weight: Number(s.weightKg ?? 0), reps: s.reps ?? 0, rir: s.rir ?? null })),
     skipped: e.skipped,
   }))
   // Server-resolved outcomes; anything not hit/miss/inconclusive reads as skipped.

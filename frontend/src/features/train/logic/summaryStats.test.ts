@@ -41,6 +41,20 @@ describe('deriveSummaryStats', () => {
     expect(deriveSummaryStats([ex({ sets: [] })], []).avgRir).toBeNull()
   })
 
+  it('avgRir excludes null-rir sets (warmups) from the average', () => {
+    const s = deriveSummaryStats([
+      ex({ sets: [{ weight: 60, reps: 10, rir: null }, { weight: 80, reps: 8, rir: 2 }, { weight: 80, reps: 8, rir: 2 }] }),
+    ], [])
+    expect(s.avgRir).toBe(2) // the null-rir warmup is excluded, not averaged as 0
+  })
+
+  it('avgRir is null when every logged set has a null rir', () => {
+    const s = deriveSummaryStats([
+      ex({ sets: [{ weight: 60, reps: 10, rir: null }, { weight: 60, reps: 10, rir: null }] }),
+    ], [])
+    expect(s.avgRir).toBeNull()
+  })
+
   it('regions: aggregated, sorted by done sets, off region last + unknown muscle skipped', () => {
     const s = deriveSummaryStats([...exercises, ex({ id: 'e', name: 'Mystery', muscle: 'not-a-muscle', sets: [{ weight: 1, reps: 1, rir: 0 }] })], [])
     expect(s.regions).toEqual([
@@ -83,6 +97,15 @@ describe('deriveSummaryStats', () => {
     const dead = s.exercises.find((e) => e.name === 'Cable crunch')!
     expect(dead.abandoned).toBe(true)
     expect(dead.chips).toEqual([])
+  })
+
+  it('threads the skipped flag through to the exercise view', () => {
+    const s = deriveSummaryStats([
+      ex({ id: 'p', name: 'Partial', sets: [{ weight: 40, reps: 10, rir: 2 }], plannedSets: 3, skipped: true }),
+      ex({ id: 'q', name: 'Full', sets: [{ weight: 40, reps: 10, rir: 2 }], plannedSets: 1, skipped: false }),
+    ], [])
+    expect(s.exercises.find((e) => e.id === 'p')!.skipped).toBe(true)
+    expect(s.exercises.find((e) => e.id === 'q')!.skipped).toBe(false)
   })
 
   it('target groups: counted per exercise, count desc, targetCount totals', () => {

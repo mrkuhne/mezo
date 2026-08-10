@@ -3346,6 +3346,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wsum-exc .setn { font-family: var(--ff-mono); font-size: 9.5px; font-weight: 700; color: var(--fam-deep); flex: none; }
 .wsum-exc .setn.part { color: var(--warning-hover); }
 .wsum-exc .setn.dead { color: var(--text-disabled); }
+.wsum-exc .setn .skipmark { font-weight: 600; color: var(--text-disabled); }
 .wsum-exc .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .wsum-chip { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--ff-mono); font-size: 10px; font-weight: 600; color: var(--ink); background: var(--surface-recess); border: 1px solid transparent; border-radius: var(--r-full); padding: 4px 9px; font-variant-numeric: tabular-nums; }
 .wsum-chip .rir { font-size: 8px; color: var(--text-muted); }

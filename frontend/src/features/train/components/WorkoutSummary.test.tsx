@@ -73,6 +73,36 @@ describe('WorkoutSummary', () => {
     expect(screen.queryByText('Kihívások')).toBeNull()
   })
 
+  it('the hero number carries a full aria-label for screen readers, decorative markup hidden', () => {
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing" durationMin={65}
+      exercises={exercises} challenges={challenges} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
+    const num = document.querySelector('.wsum-num') as HTMLElement
+    expect(num.getAttribute('aria-label')).toBe('1 / 6 szett')
+    expect(num.querySelector(':scope > [aria-hidden="true"]')).not.toBeNull()
+    expect(num.textContent).toBe('1/6szett') // visual layout unchanged
+  })
+
+  it('a chip with a null rir (warmup) renders no "@" fragment', () => {
+    const withWarmup = [
+      { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 2, sets: [{ weight: 40, reps: 10, rir: null }], skipped: false },
+    ]
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={withWarmup} challenges={[]} onExit={() => {}} />)
+    const chip = screen.getByText(/40\s*×\s*10/).closest('.wsum-chip') as HTMLElement
+    expect(chip.textContent).not.toContain('@')
+    expect(chip.querySelector('.rir')).toBeNull()
+  })
+
+  it('a partially-logged exercise the user explicitly skipped keeps the "· kihagyva" marker', () => {
+    const partiallySkipped = [
+      { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 4, sets: [{ weight: 80, reps: 8, rir: 1 }], skipped: true },
+    ]
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={partiallySkipped} challenges={[]} onExit={() => {}} />)
+    const counter = document.querySelector('.wsum-exc .setn') as HTMLElement
+    expect(counter.textContent).toBe('1/4 · kihagyva')
+  })
+
   it('omits the "~N perc" fragment when durationMin is not provided', () => {
     render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
       exercises={exercises} challenges={challenges} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)

@@ -67,8 +67,10 @@ export function WorkoutSummary({
         <div className={`wsum-halo ${mode === 'closing' ? 'fire' : 'calm'}`} aria-hidden="true" />
         <div className={`wsum-over${mode === 'closed' ? ' closed' : ''}`}>{eyebrow}</div>
         <h2>{title}</h2>
-        <div className="wsum-num">
-          {s.doneSets}<span className="of">/{s.plannedSets}</span><span className="unit">szett</span>
+        <div className="wsum-num" aria-label={`${s.doneSets} / ${s.plannedSets} szett`}>
+          <span aria-hidden="true">
+            {s.doneSets}<span className="of">/{s.plannedSets}</span><span className="unit">szett</span>
+          </span>
         </div>
         <div className="wsum-sub">
           <b>{hu(s.volumeT)} t</b> összvolumen · <b>{s.doneEx}/{s.totalEx}</b> gyakorlat
@@ -103,7 +105,7 @@ export function WorkoutSummary({
         <div className="wsum-sec">
           <div className="wsum-slabel">Medálok <span className="cnt">{s.records.length} rekord · {s.targetCount} cél</span></div>
           {s.records.map((m, i) => (
-            <div key={`${m.type}-${m.exerciseName}-${m.setIndex ?? i}`} className="wsum-medal">
+            <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="wsum-medal">
               <div className="disc" aria-hidden="true">🏅</div>
               <div className="tx">
                 <div className="t">{MEDAL_TYPE_LABEL[m.type] ?? m.type}</div>
@@ -162,13 +164,19 @@ export function WorkoutSummary({
                 <span className="mus">{MUSCLE_LABELS[e.muscle] ?? e.muscle}</span>
                 {e.abandoned
                   ? <span className="setn dead">kihagyva</span>
-                  : <span className={`setn${e.partial ? ' part' : ''}`}>{e.doneSets}/{e.plannedSets}</span>}
+                  : (
+                    <span className={`setn${e.partial ? ' part' : ''}`}>
+                      {e.doneSets}/{e.plannedSets}
+                      {e.skipped && <span className="skipmark"> · kihagyva</span>}
+                    </span>
+                  )}
               </div>
               {e.chips.length > 0 && (
                 <div className="chips">
                   {e.chips.map((c, i) => (
                     <span key={i} className={`wsum-chip${c.record ? ' rec' : c.top ? ' top' : ''}`}>
-                      {c.record ? '🏅 ' : ''}{hu(c.weight)} × {c.reps} <span className="rir">@{c.rir}</span>
+                      {c.record ? '🏅 ' : ''}{hu(c.weight)} × {c.reps}
+                      {c.rir != null && <span className="rir"> @{c.rir}</span>}
                     </span>
                   ))}
                   {e.missing > 0 && <span className="wsum-chip ghost">— kimaradt</span>}
