@@ -70,7 +70,7 @@ describe('ViewDay', () => {
   })
 
   test('the companion note renders above the groups when present', () => {
-    renderDay({ note: { text: 'Igyál egy pohár vizet.', tone: 'calm' } as never })
+    renderDay({ note: { window: 'Ebéd', kind: 'nudge', text: 'Igyál egy pohár vizet.' } })
     expect(screen.getByText(/Igyál egy pohár vizet/)).toBeInTheDocument()
   })
 })
