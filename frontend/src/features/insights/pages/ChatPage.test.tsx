@@ -1,4 +1,5 @@
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -6,7 +7,15 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { cannedReply } from '@/data/insights/chat'
 
-const renderPage = () => render(<ChatPage />, { wrapper: QueryWrapper })
+// The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
+const renderPage = (path = '/insights/chat') =>
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[path]}>
+        <ChatPage />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
 
 describe('ChatPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -20,6 +29,15 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
     // V1.3: the mock seed never carries a degraded answer — no badge
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
+  })
+
+  test('parks the view on the newest message on open (mezo-at8x.2)', async () => {
+    // jsdom has no layout and no scrollIntoView — stubbing it is how we observe the intent.
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    renderPage()
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+    expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ block: 'end' })
   })
 
   test('sending a message appends it and then simulates a reply', async () => {
@@ -179,6 +197,66 @@ describe('ChatPage (real mode)', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(screen.getByText('bizonytalan válasz')).toBeInTheDocument())
     expect(screen.getByText('nem ellenőrzött')).toBeInTheDocument()
+  })
+
+  test('renders the answer markdown as blocks, not raw ** marks (mezo-at8x.1)', async () => {
+    const answer = '**Összegzés**\n\n- alvás 7h 12p\n- súly -0.4 kg\n\nEz a trend jó.'
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, () => {
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(frame('delta', { text: answer })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-md', role: 'assistant', content: answer,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+    const { container } = renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Hogy állok?' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => expect(screen.getByText('Összegzés')).toBeInTheDocument())
+    expect(container.querySelectorAll('.md-prose ul li')).toHaveLength(2)
+    expect(container.textContent).not.toContain('**')
+  })
+
+  test('opens an empty draft thread on "Új beszélgetés" (mezo-at8x.3)', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    fireEvent.click(screen.getByLabelText('Új beszélgetés'))
+    expect(await screen.findByText(/Új beszélgetés — kérdezz bármit/)).toBeInTheDocument()
+    expect(screen.queryByText(/Jó reggelt\. Tegnap a Push Day/)).not.toBeInTheDocument()
+  })
+
+  test('a draft thread creates its conversation on the first send (mezo-at8x.3)', async () => {
+    const created: string[] = []
+    server.use(http.post(`${API_BASE}/api/companion/conversation`, () => {
+      created.push('c-new')
+      return HttpResponse.json(
+        { id: 'c-new', title: null, startedAt: '2026-07-03T07:00:00Z', lastMessageAt: null },
+        { status: 201 },
+      )
+    }))
+    renderPage('/insights/chat?c=new')
+    const input = await screen.findByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(created).toHaveLength(1))
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+  })
+
+  test('the picker lists the persisted conversations (mezo-at8x.3)', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    fireEvent.click(screen.getByLabelText('Beszélgetések'))
+    expect(await screen.findByText('Aludtam 7h-t…')).toBeInTheDocument()
   })
 
   test('renders the honest degraded state when the companion switch is off', async () => {

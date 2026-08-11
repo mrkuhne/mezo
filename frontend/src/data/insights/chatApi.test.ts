@@ -1,4 +1,7 @@
-import { toChatMessage } from '@/data/insights/chatApi'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { chatApi, toChatMessage } from '@/data/insights/chatApi'
 
 test('maps a wire MessageResponse to the FE ChatMessage shape', () => {
   const mapped = toChatMessage({
@@ -31,4 +34,21 @@ test('maps a degraded answer so the bubble can render the flag (V1.3)', () => {
     tools: [], refs: [], degraded: true,
   })
   expect(mapped.degraded).toBe(true)
+})
+
+test('transcribe posts the clip as multipart and returns the text (mezo-at8x.4)', async () => {
+  let contentType: string | null = null
+  let audioPart: unknown
+  server.use(http.post(`${API_BASE}/api/companion/transcribe`, async ({ request }) => {
+    contentType = request.headers.get('content-type')
+    audioPart = (await request.formData()).get('audio')
+    return HttpResponse.json({ text: 'Fáradt vagyok.' })
+  }))
+
+  const text = await chatApi.transcribe(new Blob([new Uint8Array(16)], { type: 'audio/wav' }))
+
+  expect(text).toBe('Fáradt vagyok.')
+  // The browser (not apiFetch) sets the multipart boundary — the request must NOT be JSON.
+  expect(contentType).toMatch(/^multipart\/form-data; boundary=/)
+  expect(audioPart).not.toBeNull()
 })

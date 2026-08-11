@@ -9,6 +9,7 @@ export type SendMessageRequest = components['schemas']['SendMessageRequest']
 export type StreamDelta = components['schemas']['StreamDelta']
 export type StreamToolCall = components['schemas']['StreamToolCall']
 export type StreamError = components['schemas']['StreamError']
+export type TranscriptionResponse = components['schemas']['TranscriptionResponse']
 
 const CONVERSATION = '/api/companion/conversation'
 
@@ -26,6 +27,18 @@ export function toChatMessage(m: MessageResponse): ChatMessage {
 }
 
 export const chatApi = {
+  /**
+   * Voice note → text (mezo-at8x.4). Multipart: the browser sets the boundary (apiFetch omits
+   * its JSON Content-Type for FormData). The extension only labels the part — the backend
+   * matches on the blob's own mime type.
+   */
+  transcribe: (audio: Blob): Promise<string> => {
+    const form = new FormData()
+    form.append('audio', audio, audio.type.includes('wav') ? 'note.wav' : 'note.bin')
+    return apiFetch<TranscriptionResponse>('/api/companion/transcribe', { method: 'POST', body: form })
+      .then((r) => r.text)
+  },
+
   listConversations: () => apiFetch<ConversationResponse[]>(CONVERSATION),
   createConversation: () => apiFetch<ConversationResponse>(CONVERSATION, { method: 'POST' }),
   listMessages: (conversationId: string) =>

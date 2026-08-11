@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-08-06
+updated: 2026-08-11
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -159,6 +159,7 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 | `GET /recipe/{id}/breakdown` | `RecipeApi` (`RecipeController`) | Lazy template-breakdown read (`mezo-bw3y`) — the deterministic 3-dim envelope is recomputed each call; LLM prose enrichment (Hungarian summary/details/improve/fitsFor) rides the **recipe-owned `RecipeBreakdownLlm` port** ([ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)) behind `mezo.feature.recipe-ai-score.enabled` and is persisted in `recipe.breakdown` jsonb only on success; the deterministic core stays ON with the flag/companion off (**silent prose-less degrade, no 503**) — see [`fuel.md`](fuel.md) §4 |
 | `GET/POST /companion/conversation`, `GET .../{id}/messages`, `POST .../{id}/message` | `CompanionApi` | companion chat spine (V0.2, `mezo-fnnq.2`) — sync JSON turn; see [`companion.md`](companion.md) §4 |
 | `POST /companion/conversation/{id}/message/stream` | `CompanionStreamApi` (**hand-written impl** — the V0.4 SSE precedent, §9) | streamed chat turn (`text/event-stream`: `(delta\|tool)*, done\|error` — the live `tool` event added mezo-280), `mezo-fnnq.4` |
+| `POST /companion/transcribe` (multipart) | `CompanionVoiceApi` (`CompanionVoiceController`) | chat voice input (`mezo-at8x.4`) — multipart `audio` → `{text}`; **its own tag** so the generated interface stays separate from the conversation CRUD surface. Ephemeral like `/sleep/screenshot`: ONE multimodal call, nothing persisted. Service-level size/mime caps (`mezo.companion.transcription.*`, base-mime match — `MediaRecorder` writes `;codecs=opus`) → 400 `VALIDATION_INVALID_VALUE`; a narrating model ⇒ **502** `COMPANION_TRANSCRIBE_FAILED`; **empty transcript is a 200** (silence is not an error). Companion off ⇒ the whole surface 404s |
 | `GET/POST /companion/fact`, `PATCH /companion/fact/{id}` | `CompanionApi` | knowledge-fact CRUD (V1.1, `mezo-fnnq.6`) — first PATCH endpoint (partial update); see [`companion.md`](companion.md) §4 |
 | `GET /companion/fact/candidate`, `POST .../candidate/{id}/decision` | `CompanionApi` | extraction-candidate inbox + accept/refine/reject decision (V1.2, `mezo-fnnq.7`) |
 | `GET /ritual/day/{date}`, `POST /ritual/close` | `RitualApi` | daily closing-ritual state/window + idempotent today-only close (`mezo-hvmx`) — window from `SleepAnchorPort`; 409 `RITUAL_NOT_TODAY`. See [`ritual.md`](ritual.md) and the [ritual design spec](../superpowers/specs/2026-07-24-daily-closing-ritual-design.md) |

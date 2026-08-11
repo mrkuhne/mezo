@@ -1,3 +1,4 @@
+import { Markdown } from '@/shared/lib/markdown'
 import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
@@ -10,7 +11,7 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
           className="card"
           style={{ padding: '10px 14px', background: 'var(--surface-2)', borderColor: 'var(--border-subtle)' }}
         >
-          <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{m.text}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'pre-line' }}>{m.text}</p>
         </div>
         <span
           style={{
@@ -46,7 +47,8 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
       </div>
       {m.tools && <ToolChipRow tools={m.tools} />}
       <div className="card" style={{ padding: 14 }}>
-        <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.55 }}>{m.text}</p>
+        {/* Model prose — blocks, not one <p>: the answer carries real markdown (mezo-at8x.1). */}
+        <div className="md-prose"><Markdown text={m.text} /></div>
         {m.refs && (
           <div
             className="row gap-xs flex-wrap mt-md"

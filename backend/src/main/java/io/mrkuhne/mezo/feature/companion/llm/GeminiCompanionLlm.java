@@ -124,6 +124,27 @@ public class GeminiCompanionLlm implements CompanionLlm {
             .chatResponse());
     }
 
+    @Override
+    public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
+        // Audio MARKERS only — like the vision path, the bytes are ephemeral and never logged.
+        // They ride the same image_* columns (count/bytes/mime), which are the generic media block.
+        CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, chatModel(), systemPrompt, userMessage,
+            1, (long) (audio.bytes() == null ? 0 : audio.bytes().length), audio.mimeType(), false);
+        GeminiRoundUsage tally = new GeminiRoundUsage();
+        return recorded(spec, tally, () -> chatClient.prompt()
+            .system(systemPrompt)
+            .user(u -> {
+                u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage);
+                u.media(Media.builder()
+                    .mimeType(MimeTypeUtils.parseMimeType(audio.mimeType()))
+                    .data(new ByteArrayResource(audio.bytes()))
+                    .build());
+            })
+            .advisors(a -> a.param(GeminiRoundUsage.CONTEXT_KEY, tally))
+            .call()
+            .chatResponse());
+    }
+
     /**
      * The streamed twin of {@link #recorded}: the outcome is only known when the Flux terminates, so
      * the record is emitted from the terminal signals instead of a try/catch.
