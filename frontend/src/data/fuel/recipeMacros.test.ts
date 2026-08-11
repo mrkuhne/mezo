@@ -172,7 +172,8 @@ test('an overridden line rescales from the live source when one resolves', () =>
     price: 0, priceUnit: '', pkg: '', micros: [], nova: 1 as const, stock: null,
     lastUsed: '', usedInRecipes: 0,
   }]
-  expect(computeRecipeNutrientsWithOverrides(lines, ingredients, { 0: 100 }).fiberG).toBe(3.2)
+  expect(computeRecipeNutrientsWithOverrides(lines, ingredients, { 0: 100 })).toEqual(
+    { fiberG: 3.2, sugarG: null, saltG: 0.4, saturatedFatG: 2.8 })
 })
 
 test('rescaleFrozenNutrients falls back to the frozen contribution when the source is gone', () => {

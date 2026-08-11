@@ -162,24 +162,31 @@ export function computeRecipeNutrients(lines: RecipeIngredientLine[]): Nutrients
   return sumNutrients(lines.map(l => l.nutrients ?? NO_NUTRIENTS))
 }
 
+/** An ingredient's own facts as a `Nutrients` record (missing fields stay `null`, never 0). */
+function ingredientNutrients(ing: Ingredient): Nutrients {
+  return {
+    fiberG: ing.fiberG ?? null, sugarG: ing.sugarG ?? null,
+    saltG: ing.saltG ?? null, saturatedFatG: ing.saturatedFatG ?? null,
+  }
+}
+
 /**
  * Whole-recipe nutrients with per-line amount substitutions — the nutrient twin of
  * `computeRecipeMacrosWithOverrides`, branching identically: an UNTOUCHED line keeps the
- * server-frozen facts; an OVERRIDDEN line is rescaled from the live pantry row when one resolves,
- * else from its own frozen facts (the backend also scales its own snapshot, never the pantry).
+ * server-frozen facts, falling back to a live-ingredient computation only when the line itself
+ * carries no frozen facts (bare fixtures / unsaved drafts — mirrors the macro twin's
+ * `line.contribution ?? (ing ? lineContribution(...) : zero)`); an OVERRIDDEN line is rescaled
+ * from the live pantry row when one resolves, else from its own frozen facts (the backend also
+ * scales its own snapshot, never the pantry).
  */
 export function computeRecipeNutrientsWithOverrides(
   lines: RecipeIngredientLine[], ingredients: Ingredient[], overrides: Record<number, number>,
 ): Nutrients {
   return sumNutrients(lines.map((line, i) => {
-    const amount = overrides[i]
-    if (amount === undefined) return line.nutrients ?? NO_NUTRIENTS
     const ing = ingredients.find(x => x.id === line.refId)
-    return ing
-      ? lineNutrients(amount, ing.per, {
-        fiberG: ing.fiberG ?? null, sugarG: ing.sugarG ?? null,
-        saltG: ing.saltG ?? null, saturatedFatG: ing.saturatedFatG ?? null,
-      })
-      : rescaleFrozenNutrients(line.nutrients, amount, line.amount)
+    const amount = overrides[i]
+    return amount === undefined
+      ? (line.nutrients ?? (ing ? lineNutrients(line.amount, ing.per, ingredientNutrients(ing)) : NO_NUTRIENTS))
+      : (ing ? lineNutrients(amount, ing.per, ingredientNutrients(ing)) : rescaleFrozenNutrients(line.nutrients, amount, line.amount))
   }))
 }
