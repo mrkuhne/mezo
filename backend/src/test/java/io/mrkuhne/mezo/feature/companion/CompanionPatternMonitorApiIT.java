@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -37,6 +38,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternDetectionService patternDetectionService;
+    @Autowired private PatternRepository patternRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -94,7 +96,8 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(pair.getVerdict()).isEqualTo("few_days");
         assertThat(pair.getAlignedDays()).isEqualTo(5);
         assertThat(pair.getMissingDays()).isEqualTo(3);
-        assertThat(pair.getBottleneckMetricKey()).isNotBlank();
+        // checkin-stress és sleep-quality is 5-5 napot fed le — döntetlennél A nyer (thinnerMetric)
+        assertThat(pair.getBottleneckMetricKey()).isEqualTo("checkin-stress");
         assertThat(pair.getR()).isNull();
     }
 
@@ -112,19 +115,73 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(pair.getMissingDays()).isNull();
     }
 
+    /**
+     * A kérés-szintű cache szélesebb ablakot tölt be ({@code windowTo + maxLag}), mint amit a job
+     * ténylegesen néz ({@code windowTo} = tegnap) — a {@code window(...)} vágás nélkül a mai napra
+     * eső adat is bekerülhetne a szériákba. Ha valaki ma is naplózott, az alignedDays-nek attól
+     * még pontosan annyinak kell maradnia, amennyit a job (a [from,to] ablakon) is látna.
+     */
+    @Test
+    void testPatternMonitor_shouldExcludeTodaysLogging_whenComputingAlignedDays() {
+        UUID owner = ownerId();
+        seedStressAndSleep(owner, 10);
+
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 3, 5, null);
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("7.0"), 5);
+
+        PatternMonitorPair pair = pair(monitor(), STRESS_SLEEP_PAIR);
+
+        assertThat(pair.getVerdict()).isEqualTo("live");
+        assertThat(pair.getAlignedDays()).isEqualTo(10); // a mai nap NEM számít bele
+        assertThat(pair.getN()).isEqualTo(10);
+    }
+
+    @Test
+    void testPatternMonitor_shouldReturnDegenerateWithBottleneck_whenSeriesIsConstant() {
+        UUID owner = ownerId();
+        LocalDate to = LocalDate.now().minusDays(1);
+        for (int i = 0; i < 10; i++) {
+            LocalDate day = to.minusDays(i);
+            // stressz KONSTANS (4) — a sleep-quality változó marad, hogy a DEGENERATE a
+            // stressz oldalról (Side.A) jöjjön, ne a párból adódó véletlen egybeesésből.
+            checkInPopulator.createCheckIn(owner, day, "08:00", 3, 4, null);
+            sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 1 + (i * 2) % 5);
+        }
+
+        PatternMonitorPair pair = pair(monitor(), STRESS_SLEEP_PAIR);
+
+        assertThat(pair.getVerdict()).isEqualTo("degenerate");
+        assertThat(pair.getAlignedDays()).isEqualTo(10); // eléri a min-n-t, tehát valóban a Pearson lép DEGENERATE-re
+        assertThat(pair.getBottleneckMetricKey()).isEqualTo("checkin-stress");
+        assertThat(pair.getR()).isNull();
+        assertThat(pair.getN()).isNull();
+    }
+
     @Test
     void testPatternMonitor_shouldAgreeWithTheNightlyJob_whenVerdictIsLive() {
         seedStressAndSleep(ownerId(), 10);
-        PatternMonitorResponse before = monitor();
+        PatternMonitorPair liveBefore = pair(monitor(), STRESS_SLEEP_PAIR);
+        assertThat(liveBefore.getVerdict()).isEqualTo("live");
 
-        patternDetectionService.detect(ownerId());
+        int upserted = patternDetectionService.detect(ownerId());
         PatternMonitorResponse after = monitor();
 
-        // amit a monitor live-nak mondott, arra a job írt sort (a frozen ág nem érinti)
-        assertThat(pair(before, STRESS_SLEEP_PAIR).getVerdict()).isEqualTo("live");
+        // csak a STRESS_SLEEP_PAIR éri el a min-n-t ebben a fixture-ben — a job pontosan egy sort ír
+        assertThat(upserted).isEqualTo(1);
         assertThat(pair(after, STRESS_SLEEP_PAIR).getVerdict()).isEqualTo("live");
         assertThat(after.getLastRunAt()).isNotNull();
-        // amit few_days-nek, arra nem
+
+        // a lényegi ígéret: amit a monitor live-nak r/n-nel mondott, PONT azt perzisztálta a job
+        PatternEntity persisted = patternRepository
+                .findByCreatedByAndKindAndPairKeyAndDeletedFalse(
+                        ownerId(), PatternEntity.KIND_STATISTICAL, STRESS_SLEEP_PAIR)
+                .orElseThrow();
+        assertThat(persisted.getN()).isEqualTo(liveBefore.getN());
+        assertThat(persisted.getR().doubleValue()).isCloseTo(liveBefore.getR(), within(1e-4));
+
+        // egy pár, amire nincs elég adat (nincs seedelve semmi rá): a monitor a job lefutása UTÁN
+        // is no_data-t mond — a job nem hozott létre sort, amit a monitor "frozen"-ként olvashatna
         assertThat(pair(after, "reta-cycle-day~daily-kcal").getVerdict()).isEqualTo("no_data");
     }
 
