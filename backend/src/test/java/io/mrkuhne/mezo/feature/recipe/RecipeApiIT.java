@@ -41,6 +41,26 @@ class RecipeApiIT extends ApiIntegrationTest {
         return created.getId();
     }
 
+    /** Creates a per-100g food that also carries all four nutrient facts (mezo-m6uv), owned by the authenticated owner. */
+    private UUID createFoodWithNutrients(HttpHeaders auth, String name) {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName(name);
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal("110"));
+        r.setProteinG(new BigDecimal("13.0"));
+        r.setCarbsG(new BigDecimal("4.0"));
+        r.setFatG(new BigDecimal("4.5"));
+        r.setFiberG(new BigDecimal("3.2"));
+        r.setSugarG(new BigDecimal("4.1"));
+        r.setSaltG(new BigDecimal("0.4"));
+        r.setSaturatedFatG(new BigDecimal("2.8"));
+        PantryItemResponse created =
+            postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class);
+        return created.getId();
+    }
+
     private RecipeIngredientRequest line(UUID pantryItemId, String amount) {
         RecipeIngredientRequest l = new RecipeIngredientRequest();
         l.setPantryItemId(pantryItemId);
@@ -102,6 +122,24 @@ class RecipeApiIT extends ApiIntegrationTest {
         RecipeListResponse list = getForBody("/api/recipe", auth, HttpStatus.OK, RecipeListResponse.class);
 
         assertThat(list.getRecipes()).extracting(RecipeResponse::getName).contains("Túrós tál");
+    }
+
+    @Test
+    void testListRecipes_shouldCarryNutrients_whenALineCarriesFrozenFacts() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID withFacts = createFoodWithNutrients(auth, "Túró");
+        UUID withoutFacts = createFood(auth, "Zabpehely", "100", "10", "20", "5");
+        RecipeResponse created =
+            postForBody("/api/recipe", recipeReq(withFacts, withoutFacts), auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        RecipeListResponse body = getForBody("/api/recipe", auth, HttpStatus.OK, RecipeListResponse.class);
+
+        RecipeResponse recipe = body.getRecipes().stream()
+            .filter(r -> r.getId().equals(created.getId()))
+            .findFirst().orElseThrow();
+        assertThat(recipe.getNutrients().getFiberG()).isNotNull();
+        assertThat(recipe.getIngredients().get(0).getNutrients().getSaltG()).isNotNull();
+        assertThat(recipe.getIngredients().get(1).getNutrients().getSaltG()).isNull();
     }
 
     @Test
