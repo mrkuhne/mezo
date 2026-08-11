@@ -3839,6 +3839,7 @@ export interface components {
             lineOrder: number;
             name: string;
             contribution: components["schemas"]["RecipeContribution"];
+            nutrients?: components["schemas"]["Nutrients"];
         };
         RecipeRequest: {
             name: string;
@@ -3876,6 +3877,7 @@ export interface components {
             /** @description NOVA class 1..4 (converged with meal_item.nova — mezo-2dy) */
             novaDominant: number;
             macros: components["schemas"]["RecipeMacros"];
+            nutrients?: components["schemas"]["Nutrients"];
             mezoFit: components["schemas"]["RecipeMezoFit"];
             timesLogged: number;
             avgScore: number;
@@ -3897,6 +3899,13 @@ export interface components {
             c: number;
             f: number;
             water: number;
+        };
+        /** @description Nutrition-quality facts (mezo-m6uv), frozen per line exactly like the macros. Grams, one decimal. A null field means the SOURCE carried no value — it is NOT zero; a rollup field is null only when every contributing line was null (otherwise it is the sum of the known ones). */
+        Nutrients: {
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
         };
         MealScore: {
             value?: number | null;
@@ -4038,6 +4047,7 @@ export interface components {
             name: string;
             nova?: number | null;
             contribution: components["schemas"]["Macros"];
+            nutrients?: components["schemas"]["Nutrients"];
             ingredientOverrides?: components["schemas"]["MealIngredientOverrideResponse"][] | null;
         };
         MealRequest: {
@@ -4058,6 +4068,7 @@ export interface components {
             mealDate: string;
             title?: string | null;
             macros: components["schemas"]["Macros"];
+            nutrients?: components["schemas"]["Nutrients"];
             score: components["schemas"]["MealScore"];
             items: components["schemas"]["MealItemResponse"][];
         };
