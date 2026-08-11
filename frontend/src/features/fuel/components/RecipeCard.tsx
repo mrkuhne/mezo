@@ -4,7 +4,7 @@
 // gradient placeholder) with a slot tag + star top-left and the Mezo-fit badge
 // top-right; the Antonio name lives on the card surface below the band
 // (var(--ink) — Napiv de-darkening, mezo-8141: the retired dark-media text token),
-// followed by a MacroCells strip (whole-recipe macros) and a meta line. v1
+// followed by a MacroCells strip (/adag basis) and a meta line. v1
 // fit_score is null → the badge shows the P2 pending sparkle.
 // ============================================================
 import type { Recipe } from '@/data/types'
@@ -17,6 +17,15 @@ const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warn
 
 export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) => void }) {
   const totalMins = recipe.prepMins + recipe.cookMins
+  // A kártya EGY ADAGOT mutat, mint a recept-detail heróján a default bázis és a MealPickerSheet —
+  // az egész-recept értéke félrevezető volt egy több adagos receptnél (mezo-m6uv).
+  const s = Math.max(1, recipe.servings)
+  const perServing = {
+    kcal: Math.round(recipe.macros.kcal / s),
+    p: Math.round(recipe.macros.p / s),
+    c: Math.round(recipe.macros.c / s),
+    f: Math.round(recipe.macros.f / s),
+  }
   return (
     <button
       onClick={() => onOpen(recipe)}
@@ -57,7 +66,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
         >
           {recipe.name}
         </div>
-        <MacroCells macros={recipe.macros} />
+        <MacroCells macros={perServing} perLabel="/adag" />
         <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontVariantNumeric: 'tabular-nums', fontSize: 8, color: 'var(--text-tertiary)' }}>
           <span>{recipe.ingredients.length} hozzávaló</span>
           <span>·</span>
