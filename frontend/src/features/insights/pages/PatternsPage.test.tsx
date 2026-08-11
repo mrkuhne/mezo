@@ -1,11 +1,18 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 
-const renderPage = () => render(<PatternsPage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <PatternsPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 describe('PatternsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

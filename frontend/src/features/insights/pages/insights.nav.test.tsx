@@ -47,6 +47,11 @@ describe('insights nav (real mode default)', () => {
     expect(
       await screen.findByText('Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.'),
     ).toBeInTheDocument()
+
+    // Motor — az átláthatósági al-oldal (mezo-viqs)
+    await userEvent.click(screen.getByRole('button', { name: 'Kísérletek' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Motor' }))
+    expect(await screen.findByText('A motor állapota')).toBeInTheDocument()
   })
 })
 
