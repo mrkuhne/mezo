@@ -25,8 +25,8 @@ import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownShee
 // Spec §8 empty-day state: no meal slots at all today → the sky shows this one static "üres nap"
 // island instead of a river with nothing in it. Always big — there is no capsule state to select,
 // there is nothing else on the sky to swap away from. Rides the same shared `Island` shell every
-// other window/belt uses (`tone="fuel"`), IslandDay's rest-day `is-word` hero idiom
-// (`features/today/components/IslandDay.tsx`).
+// other window/belt uses (`tone="fuel"`), the `is-word` hero idiom Today's now-retired `IslandDay`
+// once used for its rest-day state (deleted with the daypart-tabs re-composition, ADR 0025).
 function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
   return (
     <Island

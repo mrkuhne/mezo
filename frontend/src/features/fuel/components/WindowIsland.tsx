@@ -2,10 +2,11 @@
 // Mezo · WindowIsland — a single meal-window's bigview + L1 (mezo-jgh9,
 // Fuel window-river Task 4). Rides the shared `Island` shell (`tone="fuel"`):
 // L0 is hero (window time + name) + meal-chip + 1–2 DS delta-fact cells + action row, mirroring
-// Today's `IslandMorning` idiom. `open` mutually exclusive-swaps L0 for the
-// L1 groups (ablak étkezése / csere / AI / stack-adagok), the same shape
-// `IslandList` uses on Today, but in the `ItemRow` language directly (no
-// `TodayItem` — this is Fuel's own VM).
+// the capsule↔big idiom Today's now-retired `IslandMorning` once used (ADR 0025 —
+// Fuel is this pattern's sole surviving consumer). `open` mutually exclusive-swaps
+// L0 for the L1 groups (ablak étkezése / csere / AI / stack-adagok), the same
+// L0/L1 shape Today's now-retired `IslandList` once used, but in the `ItemRow`
+// language directly (no `TodayItem` — this is Fuel's own VM).
 // Design: docs/superpowers/specs/2026-08-08-fuel-window-river-design.md §3.
 // ============================================================
 import { Island, type IslandCapsule } from '@/shared/ui/Island'

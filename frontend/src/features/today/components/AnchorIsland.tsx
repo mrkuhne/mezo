@@ -1,12 +1,13 @@
 // ============================================================
 // Mezo · AnchorIsland — the „rough day" melt content (mezo-euze).
 // The AnchorModeView successor: `?day=rough` no longer swaps to a
-// separate full-screen view — the three islands collapse and this one
-// warm island fills the sky (IslandSky's `anchor` state). Same three
-// anchors, same companion voice; this is the ONE place a greeting-tone
-// sentence survives on Today, because the warmth IS the mode. The
-// anchor rows are demo affordances (no handler yet — Phase-3 signal
-// work): ticking one only flips it locally.
+// separate full-screen view — this component's content fills the whole
+// panel instead (wrapped in a constant `DaypartPanel tone="reggel"` by
+// TodayPage, mezo-puci — see ADR 0025 §9's anchor-tone gotcha). Same
+// three anchors, same companion voice; this is the ONE place a
+// greeting-tone sentence survives on Today, because the warmth IS the
+// mode. The anchor rows are demo affordances (no handler yet — Phase-3
+// signal work): ticking one only flips it locally.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'

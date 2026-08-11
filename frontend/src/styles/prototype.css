@@ -2313,17 +2313,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 /* night: the shell itself darkens — theme-invariant literal dark, the .wdb-night heritage */
 .isl.isl-night { background: linear-gradient(165deg, #28223c, #1d1930);
                  border-color: rgba(255,255,255,.09); }
-/* anchor melt (?day=rough): the three islands collapse, one warm island fills the sky */
-.isl.isl-anchor { flex: 0 1 0px; min-height: 0; opacity: 0; pointer-events: none; border-width: 0; }
-.sky-islands.is-anchor { gap: 0; }
-.sky-islands.is-anchor .isl:not(.isl-anchor) { flex: 0 1 0px; min-height: 0; opacity: 0;
-                 pointer-events: none; border-width: 0; margin: 0; }
-.sky-islands.is-anchor .isl-anchor { flex: 1 1 100%; opacity: 1; pointer-events: auto;
-                 border-width: 1px; border-radius: 34px;
-                 background: linear-gradient(170deg, var(--primary-bg), var(--surface-page)); }
-.isl-anchor .isl-blob { opacity: .9; background: radial-gradient(ellipse at 50% 45%,
-    color-mix(in srgb, var(--rose) 26%, transparent),
-    color-mix(in srgb, var(--accent-base) 16%, transparent) 55%, transparent 78%); }
 @keyframes isl-morph {
   0%   { border-radius: 58% 42% 55% 45% / 50% 58% 42% 50%; transform: translate(-8px,-6px); }
   50%  { border-radius: 45% 55% 48% 52% / 58% 44% 56% 42%; }
@@ -2411,8 +2400,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    The house .segtabs control in the Today gutter; the gold dot marks the
    chronologically-current daypart independently of the pressed segment. */
 .daytabs { padding: 4px 20px 12px; }
-.daytabs .segtab { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-                   min-height: 40px; font-size: 13.5px; }
+.daytabs .segtab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .daytab-now { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-base);
               box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-base) 22%, transparent); }
 
