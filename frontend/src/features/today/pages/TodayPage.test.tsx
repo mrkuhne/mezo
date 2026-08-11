@@ -168,11 +168,23 @@ describe('TodayPage — composition', () => {
   test('?day=rough replaces the day with the single anchor island', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday('/today?day=rough')
-    // no switcher, no message band, no daypart — just the warm island
+    // no switcher, no message band, no daypart content — just the warm island
     expect(screen.queryByRole('group', { name: 'Napszak' })).toBeNull()
-    expect(container.querySelector('.dayview')).toBeNull()
+    expect(container.querySelector('.coach-bubble.cb-band')).toBeNull()
     expect(screen.getByText(/Horgony mód/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Kilépés a horgony módból' })).toBeInTheDocument()
+  })
+
+  test('the anchor melt sits in the padded page frame, not flush against the edges', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    // AnchorIsland's own elements took their horizontal inset from the retired island shell;
+    // `.dayview` (padding, no card) is what replaces it. Bare content would hug the screen edge.
+    const { container } = renderToday('/today?day=rough')
+    const frame = container.querySelector('.dayview')
+    expect(frame).toContainElement(screen.getByText(/Horgony mód/))
+    expect(frame).toContainElement(screen.getByRole('button', { name: 'Kilépés a horgony módból' }))
+    // …and the frame really is the bare surface, not a resurrected card
+    expect(container.querySelector('.isl-blob')).toBeNull()
   })
 
   test('the morning chain\'s first open step is a ROW — there is no promoted CTA duplicate', () => {
