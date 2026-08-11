@@ -97,9 +97,11 @@ public class RecipeService {
     }
 
     /**
-     * Per-serving {@link ScoredLine}s: macros from the frozen line snapshots (÷ servings, same
-     * formula as the mapper's contribution), NOVA + nutrition-quality facts from the LIVE pantry
-     * rows (a gone/fact-less source just lowers coverage — honest degrade, never fabricated).
+     * Per-serving {@link ScoredLine}s: macros AND the four nutrition-quality facts from the frozen
+     * line snapshots (mezo-m6uv), both scaled by the SAME ÷ servings factor as the mapper's
+     * contribution — a pantry row that drifted after the recipe was saved can no longer rewrite the
+     * fit. NOVA + category stay LIVE pantry reads (freezing NOVA is the sibling mezo-4tzf); a
+     * gone/fact-less source just lowers coverage — honest degrade, never fabricated.
      * Package-private since mezo-bw3y: RecipeBreakdownService scores the same lines.
      */
     List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
@@ -116,23 +118,20 @@ public class RecipeService {
                 .divide(per, 6, RoundingMode.HALF_UP)
                 .divide(servings, 6, RoundingMode.HALF_UP);
             PantryItemEntity p = pantryById.get(line.getPantryItemId());
-            boolean hasFacts = p != null && (p.getFiberG() != null || p.getSugarG() != null
-                || p.getSaltG() != null || p.getSaturatedFatG() != null);
-            BigDecimal factFactor = p == null ? BigDecimal.ZERO
-                : line.getAmount().divide(
-                    p.getServingAmount() == null || p.getServingAmount().signum() == 0
-                        ? BigDecimal.ONE : p.getServingAmount(), 6, RoundingMode.HALF_UP)
-                    .divide(servings, 6, RoundingMode.HALF_UP);
+            // Frozen facts (mezo-m6uv): same snapshot, same factor as the macros — the separate
+            // live-pantry factFactor is gone. NOVA + category stay live reads (cf. mezo-4tzf).
+            boolean hasFacts = line.getSnapshotFiberG() != null || line.getSnapshotSugarG() != null
+                || line.getSnapshotSaltG() != null || line.getSnapshotSaturatedFatG() != null;
             return new ScoredLine(
                 line.getSnapshotName(),
                 line.getAmount().stripTrailingZeros().toPlainString() + line.getUnit(),
                 mul(line.getSnapshotKcal(), factor), mul(line.getSnapshotProteinG(), factor),
                 mul(line.getSnapshotCarbsG(), factor), mul(line.getSnapshotFatG(), factor),
                 p == null ? null : p.getNova(),
-                hasFacts ? mulOrNull(p.getFiberG(), factFactor) : null,
-                hasFacts ? mulOrNull(p.getSugarG(), factFactor) : null,
-                hasFacts ? mulOrNull(p.getSaltG(), factFactor) : null,
-                hasFacts ? mulOrNull(p.getSaturatedFatG(), factFactor) : null,
+                mulOrNull(line.getSnapshotFiberG(), factor),
+                mulOrNull(line.getSnapshotSugarG(), factor),
+                mulOrNull(line.getSnapshotSaltG(), factor),
+                mulOrNull(line.getSnapshotSaturatedFatG(), factor),
                 hasFacts,
                 p == null ? null : p.getCategory(),
                 mulOrNull(gramAmount(line.getAmount(), line.getUnit()), servingScale));
