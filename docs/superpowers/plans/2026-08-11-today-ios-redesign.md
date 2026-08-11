@@ -221,6 +221,11 @@ erre:
                    color: var(--text-inverse); }
 .td-link { flex: 0 0 auto; width: 44px; height: 44px; display: inline-flex; align-items: center;
            justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 14px; }
+/* az egész-sor-gomb alak: a találati felület a soron BELÜL él, hogy a `↗` link a
+   testvére lehessen (sosem a gombba ágyazva — érvénytelen HTML + kattintás-ütközés) */
+.td-row-hit { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
+              background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+              font-family: inherit; color: inherit; }
 .td-row.is-done .td-t1 { color: var(--text-muted); text-decoration: line-through; }
 .td-row.is-done .td-ic { opacity: .45; }
 
@@ -1051,9 +1056,7 @@ export function TodayRow({
   // chevron — az EGÉSZ sor a gomb. A link SOSEM kerül a gomb belsejébe.
   if (accessory === 'chevron') {
     const hit = (
-      <button type="button" className="td-row-hit np-press" onClick={onAction} aria-label={title}
-        style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0,
-                 background: 'none', border: 0, padding: 0, textAlign: 'left', cursor: 'pointer' }}>
+      <button type="button" className="td-row-hit np-press" onClick={onAction} aria-label={title}>
         {core}
         <span className="td-chev" aria-hidden="true">›</span>
       </button>
@@ -2190,14 +2193,24 @@ erre:
 A `TodaySkeleton.tsx` ma a tab-sor + sáv + nézet vázát rajzolja. Cseréld a sáv vázát chip-vázra, a sorokét listadoboz-vázra:
 
 ```tsx
-      <div className="daytabs td-segwrap"><Skeleton height={44} radius={999} /></div>
-      <div style={{ padding: '0 16px 18px' }}><Skeleton height={44} radius={14} /></div>
-      <div style={{ padding: '2px 16px 0' }}><Skeleton height={44} width="60%" /></div>
-      <div style={{ padding: '14px 16px 0' }}><Skeleton height={78} radius={14} /></div>
-      <div style={{ padding: '26px 16px 0' }}><Skeleton height={168} radius={14} /></div>
+      <div className="daytabs td-segwrap"><Skeleton height={44} /></div>
+      <div className="td-skel td-skel-chip"><Skeleton height={44} /></div>
+      <div className="td-skel td-skel-hero"><Skeleton height={44} width="60%" /></div>
+      <div className="td-skel td-skel-stats"><Skeleton height={78} /></div>
+      <div className="td-skel td-skel-list"><Skeleton height={168} /></div>
 ```
 
-> A `Skeleton` prop-nevei a `@/shared/ui/Skeleton`-ból jönnek — **olvasd el a fájlt**, és a valódi propokat használd (ha nincs `radius`, hagyd el). Ne találj ki propot.
+És vedd fel a `prototype.css` `.td-*` blokkjának végére a váz elrendezését (inline `style` helyett — a lap CSS-e egy helyen él):
+
+```css
+.td-skel { padding: 0 var(--td-gut); }
+.td-skel-chip  { padding-bottom: 18px; }
+.td-skel-hero  { padding-top: 2px; }
+.td-skel-stats { padding-top: 14px; }
+.td-skel-list  { padding-top: 26px; }
+```
+
+> A `Skeleton` prop-nevei a `@/shared/ui/Skeleton`-ból jönnek — **olvasd el a fájlt**, és a valódi propokat használd. Ha nincs `height`/`width` prop, a valódiakat használd; **ne találj ki propot**.
 
 A `TodaySkeleton.test.tsx` állítása (hogy a váz a tabos layoutot tükrözi) maradjon; ha szelektorra állít, igazítsd.
 
