@@ -4,7 +4,7 @@
  * Storage keeps three decimals, so a real value can be smaller than the display step: a positive
  * value that would round to 0 prints as `<0,1` rather than `0`, because "0" reads as "none" and
  * that is the same lie as printing 0 for a null. A genuine 0 still prints as `0`.
- * The `+ EPSILON` guards the float representation (12.45 * 10 is 124.49999999999999).
+ * The `+ EPSILON` guards floating-point drift that can occur during arithmetic.
  */
 export function formatGram(v: number | null | undefined): string {
   if (v == null) return '—'
