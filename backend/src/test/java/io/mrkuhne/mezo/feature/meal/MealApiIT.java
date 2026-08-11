@@ -89,6 +89,44 @@ class MealApiIT extends ApiIntegrationTest {
         return i;
     }
 
+    /** Creates a per-100g food carrying nutrition-quality facts (fiber 4 / sugar 22 / salt 0.4 /
+     *  saturatedFat 0.6 — the same fixture the NOVA/context tests above use) and returns its id. */
+    private UUID createFoodWithFacts(HttpHeaders auth, String name) {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName(name);
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal("250"));
+        r.setProteinG(new BigDecimal("6"));
+        r.setCarbsG(new BigDecimal("48"));
+        r.setFatG(new BigDecimal("3"));
+        r.setNova(4);
+        r.setFiberG(new BigDecimal("4"));
+        r.setSugarG(new BigDecimal("22"));
+        r.setSaltG(new BigDecimal("0.4"));
+        r.setSaturatedFatG(new BigDecimal("0.6"));
+        return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
+    }
+
+    /** Logs a single pantry-arm item of {@code amount} grams of a facts-carrying food (mezo-m6uv). */
+    private MealResponse logPantryMeal(BigDecimal amount) {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Mézes banán toast");
+        return postForBody("/api/meal", mealReq(pantryItem(food, amount.toPlainString())),
+            auth, HttpStatus.CREATED, MealResponse.class);
+    }
+
+    /** Logs a single recipe-arm item of {@code servings} adag of a 2-serving, 200 g-of-facts-food
+     *  recipe (mezo-m6uv). */
+    private MealResponse logRecipeMeal(BigDecimal servings) {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Zabkása alap");
+        RecipeResponse recipe = createRecipe(auth, food);
+        return postForBody("/api/meal", mealReq(recipeItem(recipe.getId(), servings.toPlainString())),
+            auth, HttpStatus.CREATED, MealResponse.class);
+    }
+
     /** An estimate-arm meal item: source=estimate, verbatim name + per-basis macro snapshot, no FK. */
     private MealItemRequest estimateItem() {
         MealItemRequest i = new MealItemRequest();
@@ -290,6 +328,20 @@ class MealApiIT extends ApiIntegrationTest {
         // context rows present (timing 13:20 is outside the breakfast window -> penalized, not absent)
         assertThat(b.getDimensions().get(7).getContext()).hasSize(3);
         assertThat(b.getTools()).extracting(t -> t.getType()).contains("read", "compute");
+    }
+
+    @Test
+    void testCreateMeal_shouldFreezeNutrients_onBothArms() {
+        // pantry arm: 150 g of a per-100 g source carrying facts → factor 1.5
+        MealResponse pantryMeal = logPantryMeal(new BigDecimal("150"));
+        assertThat(pantryMeal.getItems().get(0).getNutrients().getFiberG()).isEqualByComparingTo("6.0");
+        assertThat(pantryMeal.getNutrients().getFiberG()).isEqualByComparingTo("6.0");
+
+        // recipe arm: 1 adag of a 2-serving recipe → the per-serving half of the whole rollup
+        MealResponse recipeMeal = logRecipeMeal(new BigDecimal("1"));
+        assertThat(recipeMeal.getItems().get(0).getNutrients().getSaltG()).isNotNull();
+        assertThat(recipeMeal.getItems().get(0).getNutrients().getSaltG())
+            .isEqualByComparingTo(recipeMeal.getNutrients().getSaltG());
     }
 
     @Test

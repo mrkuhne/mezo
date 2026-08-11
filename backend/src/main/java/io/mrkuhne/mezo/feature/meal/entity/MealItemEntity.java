@@ -101,6 +101,20 @@ public class MealItemEntity extends OwnedEntity {
     @Column(name = "snapshot_fat_g", nullable = false)
     private BigDecimal snapshotFatG;
 
+    // Nutrition-quality facts frozen with the macros (mezo-m6uv). Recipe arm: per "adag"; pantry
+    // arm: per the item's own snapshot_per. Nullable — "no data" is not "0 g".
+    @Column(name = "snapshot_fiber_g")
+    private BigDecimal snapshotFiberG;
+
+    @Column(name = "snapshot_sugar_g")
+    private BigDecimal snapshotSugarG;
+
+    @Column(name = "snapshot_salt_g")
+    private BigDecimal snapshotSaltG;
+
+    @Column(name = "snapshot_saturated_fat_g")
+    private BigDecimal snapshotSaturatedFatG;
+
     @Column(name = "snapshot_nova")
     private Short snapshotNova;
 

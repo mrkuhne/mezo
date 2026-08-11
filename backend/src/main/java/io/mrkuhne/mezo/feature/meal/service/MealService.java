@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
@@ -341,6 +342,13 @@ public class MealService {
             item.setSnapshotProteinG(perServing(whole.getP(), servings));
             item.setSnapshotCarbsG(perServing(whole.getC(), servings));
             item.setSnapshotFatG(perServing(whole.getF(), servings));
+            // The nutrient facts follow the SAME frozen-from-the-overridden-set rule as the macros
+            // (mezo-m6uv): an empty override map reproduces the stored rollup exactly.
+            Nutrients wholeNutrients = recipeMapper.rollupNutrientsWithOverrides(recipe, overrides);
+            item.setSnapshotFiberG(perServingGram(wholeNutrients.getFiberG(), servings));
+            item.setSnapshotSugarG(perServingGram(wholeNutrients.getSugarG(), servings));
+            item.setSnapshotSaltG(perServingGram(wholeNutrients.getSaltG(), servings));
+            item.setSnapshotSaturatedFatG(perServingGram(wholeNutrients.getSaturatedFatG(), servings));
             // Only a line dropped to 0 changes WHICH ingredients went in, so only then can the
             // dominant NOVA move. A non-zero amount change leaves the ingredient set — and with it
             // the recipe's frozen novaDominant — intact; recomputing there would swap a frozen value
@@ -359,6 +367,10 @@ public class MealService {
             item.setSnapshotProteinG(orDefault(p.getProteinG(), BigDecimal.ZERO));
             item.setSnapshotCarbsG(orDefault(p.getCarbsG(), BigDecimal.ZERO));
             item.setSnapshotFatG(orDefault(p.getFatG(), BigDecimal.ZERO));
+            item.setSnapshotFiberG(p.getFiberG());
+            item.setSnapshotSugarG(p.getSugarG());
+            item.setSnapshotSaltG(p.getSaltG());
+            item.setSnapshotSaturatedFatG(p.getSaturatedFatG());
             item.setSnapshotNova(p.getNova());
         } else if ("estimate".equals(req.getSource())) {
             // AI/manual estimate arm: NO recipe/pantry FK — the request carries its own verbatim
@@ -517,6 +529,12 @@ public class MealService {
     static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
         BigDecimal v = whole == null ? BigDecimal.ZERO : whole;
         return v.divide(servings, 6, RoundingMode.HALF_UP);
+    }
+
+    /** Per-serving grams at ONE decimal — the nutrient sibling of {@link #perServing}; null stays
+     *  null so a fact-less recipe does not turn into a fake 0 g (mezo-m6uv). */
+    private static BigDecimal perServingGram(BigDecimal whole, BigDecimal servings) {
+        return whole == null ? null : whole.divide(servings, 1, RoundingMode.HALF_UP);
     }
 
     private static BigDecimal orDefault(BigDecimal value, BigDecimal fallback) {
