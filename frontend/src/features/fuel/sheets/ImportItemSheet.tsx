@@ -19,11 +19,23 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { StatCell } from '@/shared/ui/StatCell'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
+import { NutrientCells } from '@/features/fuel/components/NutrientCells'
 import { usePantry, usePantryActions } from '@/data/hooks'
-import type { PantryLookupItem, PantryScrapeDraft } from '@/data/types'
+import type { Nutrients, PantryLookupItem, PantryScrapeDraft } from '@/data/types'
 
 type Phase = 'input' | 'searching' | 'preview'
 type Mode = 'search' | 'link' | 'photo'
+
+/** Draft (minden tápérték-mező opcionális) → NutrientCells bemenet — mindhárom import-ág
+ *  (OFF-keresés, Link-scrape, Fotó) ugyanazt a normalizálót hívja (mezo-m6uv). */
+function draftNutrients(d: PantryLookupItem): Nutrients {
+  return {
+    fiberG: d.fiberG ?? null,
+    sugarG: d.sugarG ?? null,
+    saltG: d.saltG ?? null,
+    saturatedFatG: d.saturatedFatG ?? null,
+  }
+}
 
 // The contract's PantryImportRequest category enum — the draft's pick list.
 const CONTRACT_CATEGORIES = [
@@ -447,6 +459,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                     <StatCell label="C" val={(results[picked].carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
                     <StatCell label="F" val={(results[picked].fatG ?? '—') + 'g'} sub="" color="var(--cat-preference)" />
                   </div>
+                  <div style={{ marginTop: 8 }}>
+                    <NutrientCells nutrients={draftNutrients(results[picked])} />
+                  </div>
                 </div>
               )}
 
@@ -512,6 +527,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                     <StatCell label="P" val={(draft.proteinG ?? '—') + 'g'} sub="" color="var(--cat-physiology)" />
                     <StatCell label="C" val={(draft.carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
                     <StatCell label="F" val={(draft.fatG ?? '—') + 'g'} sub="" color="var(--cat-preference)" />
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <NutrientCells nutrients={draftNutrients(draft)} />
                   </div>
                   {draft.needsReview && (
                     <p style={{ fontSize: 11, color: 'var(--warning)', marginTop: 10 }}>

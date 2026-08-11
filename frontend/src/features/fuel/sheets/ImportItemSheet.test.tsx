@@ -93,6 +93,21 @@ test('Polcra imports the picked draft and closes the sheet', async () => {
   await waitFor(() => expect(onClose).toHaveBeenCalled())
 })
 
+test('az OFF-találat visszaigazolása a telített/cukor/rost/só értéket is mutatja', async () => {
+  vi.useFakeTimers()
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+
+  fireEvent.change(screen.getByPlaceholderText(/skyr/), { target: { value: 'skyr' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+  await act(async () => { vi.advanceTimersByTime(800) })
+  vi.useRealTimers()
+
+  expect(await screen.findByText('Telített')).toBeInTheDocument()
+  expect(screen.getByText('Cukor')).toBeInTheDocument()
+  expect(screen.getByText('Rost')).toBeInTheDocument()
+  expect(screen.getByText('Só')).toBeInTheDocument()
+})
+
 // ---- Link mode (URL scrape wizard, mezo-8vum) ---------------------------------------------
 
 const MYPROTEIN_URL = 'https://www.myprotein.hu/p/impact-whey/10530943/'
@@ -121,6 +136,22 @@ test('Beolvasás scrapes the URL and previews the mock draft with a myprotein.hu
   // Canned MOCK_SCRAPE_DRAFT lands as the editable draft; source badge shows the derived vendor.
   expect(screen.getByLabelText('Tétel neve')).toHaveValue('Impact Whey Protein · vanília')
   expect(screen.getByText('myprotein.hu')).toBeInTheDocument()
+})
+
+test('a link-scrape draft visszaigazolása is mutatja a négy tápértéket', async () => {
+  vi.useFakeTimers()
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+
+  fireEvent.click(screen.getByRole('button', { name: 'Link' }))
+  fireEvent.change(screen.getByPlaceholderText(/https/), { target: { value: MYPROTEIN_URL } })
+  fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
+  await act(async () => { vi.advanceTimersByTime(700) })
+  vi.useRealTimers()
+
+  expect(await screen.findByText('Telített')).toBeInTheDocument()
+  expect(screen.getByText('Cukor')).toBeInTheDocument()
+  expect(screen.getByText('Rost')).toBeInTheDocument()
+  expect(screen.getByText('Só')).toBeInTheDocument()
 })
 
 test('a needsReview draft renders the AI-uncertainty warning line', async () => {
@@ -174,6 +205,23 @@ test('photo mode: selecting a label photo enables Beolvasás and lands on the sh
   await act(async () => { vi.advanceTimersByTime(700) }) // mock photoExtract demo delay
   expect(screen.getByDisplayValue('Skyr · epres')).toBeInTheDocument() // MOCK_PHOTO_DRAFT preview
   vi.useRealTimers()
+})
+
+test('a fotó-draft visszaigazolása is mutatja a négy tápértéket', async () => {
+  vi.useFakeTimers()
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+
+  fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
+  fireEvent.change(screen.getByLabelText('Címke fotó'),
+    { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
+  fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
+  await act(async () => { vi.advanceTimersByTime(700) })
+  vi.useRealTimers()
+
+  expect(await screen.findByText('Telített')).toBeInTheDocument()
+  expect(screen.getByText('Cukor')).toBeInTheDocument()
+  expect(screen.getByText('Rost')).toBeInTheDocument()
+  expect(screen.getByText('Só')).toBeInTheDocument()
 })
 
 test('photo mode: empty-name draft disables Polcra until a name is typed (mezo-a74c)', async () => {
