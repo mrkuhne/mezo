@@ -53,7 +53,9 @@ describe('TodayPage — sleep-anchor pending gate', () => {
     // The skeleton, not the live screen: no daypart switcher, but the same silhouette.
     expect(switcher()).toBeNull()
     expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
-    expect(container.querySelectorAll('.isl')).toHaveLength(3)
+    expect(container.querySelector('.daytabs')).toBeTruthy()
+    expect(container.querySelector('.cb-band')).toBeTruthy()
+    expect(container.querySelector('.dayview')).toBeTruthy()
   })
 
   test('once useSleepGoal resolves, the live daypart screen renders instead', () => {

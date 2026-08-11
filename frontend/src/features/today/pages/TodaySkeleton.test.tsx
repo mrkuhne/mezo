@@ -1,27 +1,20 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
 
 describe('TodaySkeleton', () => {
-  test('mirrors the island layout: one big island and two capsules in the sky', () => {
+  test('mirrors the tabs + band + view layout, inert', () => {
     const { container } = render(<TodaySkeleton />)
-    expect(container.querySelector('.sky-islands')).toBeTruthy()
-    expect(container.querySelectorAll('.isl')).toHaveLength(3)
-    expect(container.querySelectorAll('.isl.isl-big')).toHaveLength(1)
+    expect(container.querySelector('.sky-islands')).toBeNull()
+    expect(container.querySelectorAll('.segtab')).toHaveLength(0)   // inert: no buttons
+    expect(container.querySelector('.daytabs')).toBeInTheDocument()
+    expect(container.querySelector('.cb-band')).toBeInTheDocument()
+    expect(container.querySelector('.dayview')).toBeInTheDocument()
+    expect(container.querySelectorAll('button')).toHaveLength(0)
   })
 
-  test('is inert — no buttons, no tablist semantics', () => {
-    const { container, queryByRole } = render(<TodaySkeleton />)
-    expect(queryByRole('button')).toBeNull()
-    expect(queryByRole('tablist')).toBeNull()
-    expect(queryByRole('tab')).toBeNull()
-    expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
-  })
-
-  // TrainTodaySkeleton precedent: `role="status"` makes the busy state an implicit
-  // live region so it gets announced, not just marked `aria-busy`.
-  test('is an announced live region', () => {
-    const { getByRole } = render(<TodaySkeleton />)
-    expect(getByRole('status')).toBeTruthy()
+  test('announces itself as a loading status', () => {
+    render(<TodaySkeleton />)
+    expect(screen.getByRole('status', { name: 'Betöltés' })).toBeInTheDocument()
   })
 })

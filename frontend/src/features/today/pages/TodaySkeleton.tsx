@@ -1,36 +1,39 @@
 // ============================================================
-// Mezo · TodaySkeleton — the real-mode loading mirror of the
-// three-islands layout (mezo-euze). Renders while `useSleepGoal`
-// resolves (the face anchor): one big-island placeholder + two
-// capsule bars in the same sky flex, so the resolve swap does not
-// shift the page. Inert by design — no buttons, no tablist; a
-// `role="status"` live region announces loading.
-// AppHero is NOT here: TodayPage renders the same `appHero` element
-// above both branches (node-identity contract, TodayPage.skeleton.test).
+// Mezo · TodaySkeleton — the real-mode loading mirror of the daypart-tabs
+// layout (mezo-puci). Renders while `useSleepGoal` resolves (the daypart
+// anchor): a tab-row placeholder, the message band, and one day view, so
+// the resolve swap does not shift the page. Inert by design — no buttons;
+// a `role="status"` live region announces loading.
+// AppHero is NOT here: TodayPage renders the same `appHero` element above
+// both branches (node-identity contract, TodayPage.skeleton.test).
 // ============================================================
 import { Skeleton } from '@/shared/ui/Skeleton'
 
 export default function TodaySkeleton() {
   return (
-    <div role="status" aria-busy="true" aria-label="Betöltés" className="sky-islands">
-      <div className="isl isl-big" style={{ animation: 'none' }}>
-        <div className="isl-bigview" style={{ opacity: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 26 }}>
-            <Skeleton width={140} height={52} radius={12} />
-            <Skeleton width={200} height={12} radius={6} />
-            <Skeleton width={260} height={64} radius={14} />
-          </div>
-          <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'center', gap: 10, paddingTop: 14 }}>
-            <Skeleton width={150} height={40} radius={999} />
-            <Skeleton width={80} height={36} radius={999} />
-          </div>
+    <div role="status" aria-busy="true" aria-label="Betöltés">
+      <div className="daytabs">
+        <div className="segtabs">
+          <Skeleton width="100%" height={40} radius={12} />
+          <Skeleton width="100%" height={40} radius={12} />
+          <Skeleton width="100%" height={40} radius={12} />
         </div>
       </div>
-      <div className="isl" style={{ animation: 'none', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
-        <Skeleton width="70%" height={14} radius={7} />
+      <div className="coach-bubble cb-band">
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Skeleton width={160} height={11} radius={6} />
+          <Skeleton width="100%" height={54} radius={10} />
+          <Skeleton width="85%" height={40} radius={10} />
+        </div>
       </div>
-      <div className="isl" style={{ animation: 'none', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
-        <Skeleton width="60%" height={14} radius={7} />
+      <div className="dayview" data-tone="nap" style={{ animation: 'none' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+          <Skeleton width={180} height={32} radius={10} />
+          <Skeleton width={220} height={12} radius={6} />
+          <Skeleton width="100%" height={72} radius={14} />
+          <Skeleton width="100%" height={56} radius={14} />
+          <Skeleton width="100%" height={56} radius={14} />
+        </div>
       </div>
     </div>
   )
