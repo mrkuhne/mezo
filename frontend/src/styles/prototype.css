@@ -3463,12 +3463,14 @@ ol.md-list { list-style: decimal; }
    ============================================================ */
 .dayview, .daytabs, .todaychip { --td-gut: 16px; }
 
-/* ── szegmentált napszak-váltó — egy vályú + csúszó bélyeg ── */
+/* ── szegmentált napszak-váltó — egy vályú + csúszó bélyeg ──
+   min-height 44px a tap-target-minimumhoz (code review, mezo-e26w Finding 2) — a vályú emiatt
+   50px-re nő (3px padding + 44px gomb + 3px padding), ez szándékos. */
 .td-segwrap { padding: 6px var(--td-gut) 14px; }
 .td-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
           background: var(--surface-recess); border-radius: var(--r-full); padding: 3px; }
 .td-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-                 min-height: 38px; border: 0; background: transparent; border-radius: var(--r-full);
+                 min-height: 44px; border: 0; background: transparent; border-radius: var(--r-full);
                  font-family: var(--ff-body); font-size: 13.5px; font-weight: 600; letter-spacing: -.01em;
                  color: var(--text-secondary); cursor: pointer;
                  transition: background var(--duration-fast) var(--ease-out),
@@ -3575,12 +3577,20 @@ ol.md-list { list-style: decimal; }
           font-family: var(--ff-body); font-size: 14.5px; font-weight: 600; letter-spacing: -.01em;
           color: var(--primary-hover); white-space: nowrap; }
 .td-act.is-inert { color: var(--text-disabled); cursor: default; }
-/* kísérő #2 — pipáló karika */
-.td-tick { flex: 0 0 auto; width: 26px; height: 26px; margin: 9px 0 9px 10px; border-radius: 50%;
-           border: 1.6px solid var(--text-disabled); background: none; cursor: pointer;
+/* kísérő #2 — pipáló karika: a GOMB 44×44 (tap-target-minimum), a látható 26px kör csak a
+   rajz — a `::before`-ban, a gombon belül középre igazítva, hogy a nagyobb találati felület
+   ne nagyítsa fel magát a kört (code review, mezo-e26w Finding 1). Az `isolation: isolate` +
+   a kör negatív z-indexe a rétegsorrendet a gombon BELÜLRE zárja: a pipa-glyph (a gomb
+   szövegtartalma) így mindig a kör fölött fest, anélkül hogy a kör kiszökne a `.td-list`
+   kártya háttere mögé. */
+.td-tick { flex: 0 0 auto; position: relative; isolation: isolate; width: 44px; height: 44px;
+           border: 0; background: none; cursor: pointer;
            display: grid; place-items: center; font-size: 14px; color: transparent; }
-.td-tick.is-done { border-color: var(--success-base); background: var(--success-base);
-                   color: var(--text-inverse); }
+.td-tick::before { content: ''; position: absolute; inset: 0; margin: auto; z-index: -1;
+                    width: 26px; height: 26px; border-radius: 50%;
+                    border: 1.6px solid var(--text-disabled); }
+.td-tick.is-done { color: var(--text-inverse); }
+.td-tick.is-done::before { border-color: var(--success-base); background: var(--success-base); }
 .td-link { flex: 0 0 auto; width: 44px; height: 44px; display: inline-flex; align-items: center;
            justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 14px; }
 /* az egész-sor-gomb alak: a találati felület a soron BELÜL él, hogy a `↗` link a
