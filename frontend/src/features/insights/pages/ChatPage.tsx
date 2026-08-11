@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { NEW_CHAT, useChat, useChatActions, useConversations } from '@/data/hooks'
@@ -42,12 +42,9 @@ export function ChatPage() {
   const selection = params.get('c')
   const [pickerOpen, setPickerOpen] = useState(false)
   const { endRef, scrollToBottom, scrollIfStuck } = useStickToBottom<HTMLDivElement>()
-  const bootstrapped = useRef(false)
 
   const selectConversation = (id: string | null) => {
     setParams(id ? { c: id } : {}, { replace: true })
-    // the next thread opens parked at its bottom, without the smooth "catch-up" scroll
-    bootstrapped.current = false
   }
 
   const { data, isPending } = useChat(selection)
@@ -65,9 +62,7 @@ export function ChatPage() {
   // Landing on the conversation (or gaining a message) parks the view on the newest turn —
   // a chat opens at the bottom, never at its first line (mezo-at8x.2).
   useEffect(() => {
-    if (!messages.length) return
-    scrollToBottom(bootstrapped.current ? 'smooth' : 'auto')
-    bootstrapped.current = true
+    if (messages.length) scrollToBottom()
   }, [messages.length, scrollToBottom])
 
   // The user just sent something — follow it down unconditionally...
@@ -87,7 +82,7 @@ export function ChatPage() {
   }
 
   return (
-    <div className="col gap-md">
+    <div className="col gap-md chat-page">
       <div className="row gap-sm" style={{ justifyContent: 'space-between' }}>
         <div className="col">
           <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · társ</span>
@@ -138,7 +133,7 @@ export function ChatPage() {
         </div>
       )}
 
-      <div className="col gap-md" style={{ minHeight: 320 }}>
+      <div className="col gap-md chat-thread">
         {isPending && !degraded && !isNew && messages.length === 0 && !turn && <ThinkingDots />}
         {!degraded && !isPending && messages.length === 0 && !turn && (
           <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>

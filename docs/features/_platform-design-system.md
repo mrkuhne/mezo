@@ -222,9 +222,15 @@ Three additions the companion chat needed, all reusable beyond it:
   pre-line` paragraphs (the model uses single newlines for line breaks inside one thought),
   an 18px list indent with `--text-tertiary` markers, and a mono `--surface-2` code chip.
   Scoped under `.md-prose` so the primitives cannot leak into curated app copy.
-- **`.chat-composer`** — `position: sticky; bottom: var(--screen-bottom-pad)`. The app has ONE
-  scroller (`.screen-content`), so an input that must stay reachable at the end of a long
-  transcript pins itself above the tab bar rather than owning a scroll container of its own.
+- **`.chat-composer` + `.chat-page`/`.chat-thread`** — `position: sticky; bottom:
+  var(--screen-bottom-pad)`. The app has ONE scroller (`.screen-content`), so an input that must
+  stay reachable at the end of a long transcript pins itself above the tab bar rather than owning
+  a scroll container of its own. Two gotchas the browser QA surfaced, both documented at the rule:
+  the scroller's own bottom padding is **zeroed** while the composer is mounted (engines disagree
+  on whether a sticky `bottom` is measured against the scrollport's padding box or its content
+  box; at 0 both agree) and the composer's margin reserves that clearance instead; and
+  `.screen-content` becomes a **flex column** (the `:has(.sky-islands)` idiom) so `.chat-thread`
+  absorbs the slack and a two-message thread does not leave the bar floating mid-screen.
 - **`--screen-bottom-pad: 96px`** — the bottom breathing room `.screen-content` already reserved
   for the tab bar, now a token. Anything pinning itself above the tab bar offsets by this same
   value instead of re-deriving 88 + gap.

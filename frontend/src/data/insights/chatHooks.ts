@@ -54,6 +54,20 @@ const MOCK_CONVERSATIONS: ChatConversations = {
   }],
 }
 
+/**
+ * Mock-mode thread for a selection. Only the seeded demo conversation carries the Phase-1
+ * transcript: a `NEW_CHAT` draft — and any conversation started during this session — opens
+ * EMPTY, exactly as it would against the backend. (Returning the seed for every id made a
+ * brand-new mock conversation inherit the demo's messages.)
+ */
+const mockThread = (selection: ChatSelection): ChatBootstrap => {
+  if (selection === NEW_CHAT) return { ...EMPTY_CHAT, mode: 'mock' }
+  if (selection && selection !== MOCK_CONVERSATION_ID) {
+    return { ...EMPTY_CHAT, conversationId: selection, mode: 'mock' }
+  }
+  return MOCK_CHAT
+}
+
 const nowTs = () => new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
 const nowIso = () => new Date().toISOString()
 
@@ -90,7 +104,7 @@ export function useConversations() {
 export function useChat(selection?: ChatSelection) {
   return useDualQuery<ChatBootstrap>({
     queryKey: chatKey(selection),
-    mockData: selection === NEW_CHAT ? { ...EMPTY_CHAT, mode: 'mock' } : MOCK_CHAT,
+    mockData: mockThread(selection),
     realFetch: async () => {
       try {
         // A brand-new thread has nothing to load — and nothing to report: the degraded state
@@ -160,12 +174,13 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
   const refreshConversations = () =>
     void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
 
-  const seedMockConversation = (id: string) => {
+  const seedMockConversation = (id: string, title: string) => {
     queryClient.setQueryData<ChatConversations>(CONVERSATIONS_KEY, (old) => ({
       mode: 'mock',
       degraded: false,
       conversations: [
-        { id, title: null, startedAt: nowIso(), lastMessageAt: nowIso() },
+        // title-from-first-message, same as the backend's auto-title
+        { id, title: title.slice(0, 80), startedAt: nowIso(), lastMessageAt: nowIso() },
         ...(old?.conversations ?? MOCK_CONVERSATIONS.conversations),
       ],
     }))
@@ -176,7 +191,7 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
     const isNew = selection === NEW_CHAT
     const conversationId = isNew ? crypto.randomUUID() : MOCK_CONVERSATION_ID
     if (isNew) {
-      seedMockConversation(conversationId)
+      seedMockConversation(conversationId, text)
       onConversationCreated?.(conversationId)
     }
     setTimeout(() => {
