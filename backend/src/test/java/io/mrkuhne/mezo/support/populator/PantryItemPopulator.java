@@ -40,6 +40,29 @@ public class PantryItemPopulator {
         return repository.saveAndFlush(e);
     }
 
+    /** A food row that DOES carry the four nutrition-quality facts per 100 g (mezo-m6uv). The plain
+     *  {@link #createFood} stays fact-less on purpose — it is the null-arm fixture. */
+    public PantryItemEntity createFoodWithNutrients(UUID owner, String name) {
+        PantryItemEntity e = new PantryItemEntity();
+        e.setCreatedBy(owner);
+        e.setKind("food");
+        e.setName(name);
+        e.setSource("manual");
+        e.setCategory("dairy"); // valid ck_pantry_item_category enum value
+        e.setServingAmount(new BigDecimal("100"));
+        e.setServingUnit("g");
+        e.setKcal(new BigDecimal("110"));
+        e.setProteinG(new BigDecimal("13.0"));
+        e.setCarbsG(new BigDecimal("4.0"));
+        e.setFatG(new BigDecimal("4.5"));
+        e.setFiberG(new BigDecimal("3.2"));
+        e.setSugarG(new BigDecimal("4.1"));
+        e.setSaltG(new BigDecimal("0.4"));
+        e.setSaturatedFatG(new BigDecimal("2.8"));
+        e.setNova((short) 1);
+        return repository.saveAndFlush(e);
+    }
+
     /** A minimal food row with an explicit category, price and NOVA — the suggestion-heuristic fixture (P6). */
     public PantryItemEntity createPricedFood(UUID owner, String name, String category,
                                              Integer priceHuf, String priceUnit, Short nova) {

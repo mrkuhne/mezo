@@ -217,6 +217,12 @@ public class RecipeService {
         line.setSnapshotProteinG(orDefault(item.getProteinG(), BigDecimal.ZERO));
         line.setSnapshotCarbsG(orDefault(item.getCarbsG(), BigDecimal.ZERO));
         line.setSnapshotFatG(orDefault(item.getFatG(), BigDecimal.ZERO));
+        // Nutrition-quality facts (mezo-m6uv): NO orDefault — a missing fact stays null, because
+        // "the source carried no value" is not "0 g" and the scorer distinguishes the two.
+        line.setSnapshotFiberG(item.getFiberG());
+        line.setSnapshotSugarG(item.getSugarG());
+        line.setSnapshotSaltG(item.getSaltG());
+        line.setSnapshotSaturatedFatG(item.getSaturatedFatG());
         return line;
     }
 
