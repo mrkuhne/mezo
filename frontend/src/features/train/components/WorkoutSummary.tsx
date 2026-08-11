@@ -1,23 +1,20 @@
 // ============================================================
-// Mezo · WorkoutSummary — the explicit-finish summary / review screen
-// (spec 2026-07-15, mockups finish-screen + done-day-review).
-// mode 'closing': pre-finish — stats + challenge outcome preview +
-//   per-exercise recap + "Edzés lezárása ✓" (the ONLY thing that
-//   completes the workout) + "← Vissza az edzéshez".
-// mode 'closed': the same layout read-only (post-finish + review route).
+// Mezo · WorkoutSummary — the explicit-finish summary / review screen,
+// colorful pill/chip redesign (mezo-w943, spec 2026-08-10; supersedes the
+// grey 2026-07-15 layout). One shell, two modes:
+//   'closing': pre-finish — hero + halo(fire) + note + "Edzés lezárása ✓".
+//   'closed':  the same shell read-only (post-finish + /train/review).
+// All numbers come from logic/summaryStats (pure, table-tested).
 // ============================================================
-import type { LastWeekSet } from '@/data/types'
+import type { CSSProperties } from 'react'
 import type { Medal } from '@/data/train/medalTypes'
+import { MUSCLE_LABELS } from '@/data/train/train'
+import { muscleColor, regionColor } from '@/features/train/logic/muscleColors'
+import { MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel } from '@/features/train/logic/medalLabels'
+import { deriveSummaryStats, type SummaryExerciseInput } from '@/features/train/logic/summaryStats'
 import { Icon } from '@/shared/ui/Icon'
-import { MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
 
-export interface SummaryExercise {
-  id: string
-  name: string
-  plannedSets: number
-  sets: LastWeekSet[]
-  skipped: boolean
-}
+export type SummaryExercise = SummaryExerciseInput
 
 export interface SummaryChallenge {
   id: string
@@ -28,24 +25,17 @@ export interface SummaryChallenge {
   detail?: string
 }
 
-const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: string; color: string }> = {
-  hit: { glyph: '✓', label: 'megcsináltad', color: 'var(--success)' },
-  miss: { glyph: '◯', label: 'nem jött össze', color: 'var(--warning)' },
-  skipped: { glyph: '⊘', label: 'skippelted', color: 'var(--text-tertiary)' },
-  inconclusive: { glyph: '◌', label: 'nem értékelhető', color: 'var(--text-tertiary)' },
+const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: string; cls: string }> = {
+  hit: { glyph: '✓', label: 'megcsináltad', cls: 'hit' },
+  miss: { glyph: '◯', label: 'nem jött össze', cls: 'miss' },
+  skipped: { glyph: '⊘', label: 'skippelted', cls: 'skip' },
+  inconclusive: { glyph: '◌', label: 'nem értékelhető', cls: 'skip' },
 }
 
-function Stat({ label, val }: { label: string; val: string }) {
-  return (
-    <div className="flex-1 card" style={{ padding: 14, textAlign: 'center', background: 'var(--surface-1)' }}>
-      <div className="label-mono" style={{ fontSize: 9 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)' }}>{val}</div>
-    </div>
-  )
-}
+const hu = (n: number, digits = 1) => n.toLocaleString('hu-HU', { maximumFractionDigits: digits })
 
 export function WorkoutSummary({
-  title, eyebrow, mode, exercises, challenges, medals = [], showSetLines = false,
+  title, eyebrow, mode, exercises, challenges, medals = [], durationMin = null,
   onFinish, finishPending = false, onBack, onExit,
 }: {
   title: string
@@ -53,161 +43,175 @@ export function WorkoutSummary({
   mode: 'closing' | 'closed'
   exercises: SummaryExercise[]
   challenges: SummaryChallenge[]
-  // The session's earned medals (mezo-wp6n) — replaces the old boolean PR flag. The
-  // medal list block itself is a later addition (Task 9); this component still owns
-  // the title-suffix framing.
   medals?: Medal[]
-  showSetLines?: boolean
+  durationMin?: number | null
   onFinish?: () => void
   finishPending?: boolean
   onBack?: () => void
   onExit: () => void
 }) {
-  const doneSets = exercises.reduce((a, e) => a + e.sets.length, 0)
-  const plannedSets = exercises.reduce((a, e) => a + e.plannedSets, 0)
-  const volumeT = exercises.reduce((a, e) => a + e.sets.reduce((b, s) => b + s.weight * s.reps, 0), 0) / 1000
-  const doneEx = exercises.filter((e) => e.sets.length > 0).length
+  const s = deriveSummaryStats(exercises, medals)
+  const chalHit = challenges.filter((c) => c.state === 'hit').length
+  const chalMiss = challenges.filter((c) => c.state !== 'hit').length
 
   return (
     <div>
-      <div style={{ padding: '20px 24px 8px' }}>
-        <button className="row gap-sm" onClick={onExit} style={{ marginBottom: 16 }}>
-          <Icon name="x" size={16} color="var(--text-secondary)" />
-          <span className="eyebrow">{mode === 'closing' ? 'Bezárás' : 'Vissza'}</span>
+      <div className="wsum-top">
+        <button onClick={onExit}>
+          <span className="wsum-xi" aria-hidden="true">{mode === 'closing' ? '✕' : '←'}</span>
+          {mode === 'closing' ? 'Bezárás' : 'Vissza'}
         </button>
-        <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>{eyebrow}</span>
-        <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, marginTop: 6, color: 'var(--text-primary)' }}>
-          {title}{medals.length ? ` · ${medals.length} medál` : ''}
-        </h2>
       </div>
 
-      {/* Mai mérleg */}
-      <div style={{ padding: '8px 24px 16px' }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Mai mérleg</div>
-        <div className="row gap-sm">
-          <Stat label="Szett" val={`${doneSets}/${plannedSets}`} />
-          <Stat label="Volumen" val={`${volumeT.toLocaleString('hu-HU', { maximumFractionDigits: 1 })} t`} />
-          <Stat label="Gyakorlat" val={`${doneEx}/${exercises.length}`} />
+      <div className="wsum-hero">
+        <div className={`wsum-halo ${mode === 'closing' ? 'fire' : 'calm'}`} aria-hidden="true" />
+        <div className={`wsum-over${mode === 'closed' ? ' closed' : ''}`}>{eyebrow}</div>
+        <h2>{title}</h2>
+        <div className="wsum-num" aria-label={`${s.doneSets} / ${s.plannedSets} szett`}>
+          <span aria-hidden="true">
+            {s.doneSets}<span className="of">/{s.plannedSets}</span><span className="unit">szett</span>
+          </span>
+        </div>
+        <div className="wsum-sub">
+          <b>{hu(s.volumeT)} t</b> összvolumen · <b>{s.doneEx}/{s.totalEx}</b> gyakorlat
+          {durationMin ? <> · ~{durationMin} perc</> : null}
         </div>
       </div>
 
-      {/* Medálok — the session's earned medals (mezo-wp6n). Sorted RECORD-first so a
-          long run of TARGET_HIT rows (one per on-target working set — a session can
-          legitimately produce 15+) doesn't bury the rare RECORD achievements below the
-          fold; nothing is grouped or truncated, the same as the Gyakorlatonként list
-          below, which already relies on the screen's natural scroll for long sessions. */}
-      {medals.length > 0 && (
-        <div style={{ padding: '0 24px 16px' }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Medálok</div>
-          <div className="col gap-sm">
-            {[...medals]
-              .sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'RECORD' ? -1 : 1))
-              .map((m, i) => {
-                const tierCopy = MEDAL_TIER_COPY[m.tier]
-                const typeLabel = MEDAL_TYPE_LABEL[m.type] ?? m.type
-                return (
-                  <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
-                    <span aria-hidden="true" style={{ color: tierCopy.color, fontSize: 14, width: 20, textAlign: 'center' }}>{tierCopy.glyph}</span>
-                    <span className="col flex-1" style={{ minWidth: 0 }}>
-                      <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{m.exerciseName}</span>
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 2 }}>{typeLabel}</span>
-                    </span>
-                    <span className="label-mono" style={{ fontSize: 9, color: tierCopy.color }}>{medalValueLabel(m)}</span>
-                  </div>
-                )
-              })}
-          </div>
-        </div>
-      )}
-
-      {/* Kihívások */}
-      {challenges.length > 0 && (
-        <div style={{ padding: '0 24px 16px' }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Kihívások</div>
-          <div className="col gap-sm">
-            {challenges.map((c) => {
-              const copy = CHALLENGE_COPY[c.state]
-              return (
-                <div key={c.id} className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
-                  <span aria-hidden="true" style={{ color: copy.color, fontSize: 14, width: 20, textAlign: 'center' }}>{copy.glyph}</span>
-                  <span className="col flex-1" style={{ minWidth: 0 }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{c.typeLabel}{c.exercise ? ` · ${c.exercise}` : ''}</span>
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 2 }}>{c.detail ?? c.target}</span>
-                  </span>
-                  <span className="label-mono" style={{ fontSize: 9, color: copy.color }}>{copy.label}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Gyakorlatonként */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Gyakorlatonként</div>
-        <div className="col gap-sm">
-          {exercises.map((e) => {
-            const best = e.sets.reduce<LastWeekSet | null>((b, s) => (s.weight > (b?.weight ?? -1) ? s : b), null)
-            const abandoned = e.sets.length === 0
+      {s.regions.length > 0 && (
+        <div className="wsum-regrow">
+          {s.regions.map((r) => {
+            const fam = regionColor(r.region)
             return (
-              <div key={e.id} className="card" style={{ padding: 12 }}>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 13, color: abandoned ? 'var(--text-tertiary)' : 'var(--text-primary)', flex: 1, paddingRight: 8, textDecoration: abandoned ? 'line-through' : 'none' }}>
-                    {e.name}
-                  </span>
-                  {abandoned ? (
-                    <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>kihagyva</span>
-                  ) : (
-                    <span className="row gap-xs" style={{ alignItems: 'baseline' }}>
-                      <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral-deep)' }}>{e.sets.length}/{e.plannedSets} szet</span>
-                      {e.skipped && <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>· kihagyva</span>}
-                    </span>
-                  )}
+              <span key={r.region} className={`wsum-reg${r.off ? ' off' : ''}`}
+                style={r.off ? undefined : { '--fam-wash': fam.wash, '--fam-deep': fam.deep } as CSSProperties}>
+                {r.label}{r.off ? null : <span className="n">{r.sets} szett</span>}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="wsum-stripwrap">
+        <div className="wsum-strip">
+          <div className="cell"><div className="v">{hu(s.volumeT)}<span className="u">t</span></div><div className="l">Volumen</div></div>
+          <div className="cell"><div className={`v${s.records.length ? ' gold' : ''}`}>{s.records.length}<span className="u">🏅</span></div><div className="l">Rekord</div></div>
+          <div className="cell"><div className={`v${s.targetCount ? ' green' : ''}`}>{s.targetCount}<span className="u">✓</span></div><div className="l">Célszett</div></div>
+          <div className="cell"><div className="v">{s.avgRir == null ? '–' : hu(s.avgRir)}</div><div className="l">Ø RIR</div></div>
+        </div>
+      </div>
+
+      {medals.length > 0 && (
+        <div className="wsum-sec">
+          <div className="wsum-slabel">Medálok <span className="cnt">{s.records.length} rekord · {s.targetCount} cél</span></div>
+          {s.records.map((m, i) => (
+            <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="wsum-medal">
+              <div className="disc" aria-hidden="true">🏅</div>
+              <div className="tx">
+                <div className="t">{MEDAL_TYPE_LABEL[m.type] ?? m.type}</div>
+                <div className="m">{m.exerciseName}{m.type === 'E1RM' && m.weightKg != null && m.reps != null ? ` · ${formatMedalNumber(m.weightKg)} × ${m.reps}-ből becsülve` : ''}</div>
+              </div>
+              <div className="val">
+                <div className="now">{medalValueLabel(m)}</div>
+                {m.previousValue != null && (
+                  <div className="prev">előző: {formatMedalNumber(m.previousValue)} {MEDAL_UNIT_LABEL[m.unit] ?? ''}</div>
+                )}
+              </div>
+            </div>
+          ))}
+          {s.targetCount > 0 && (
+            <div className="wsum-targets">
+              <div className="tick" aria-hidden="true">✓</div>
+              <div style={{ flex: 1 }}>
+                <div className="t">{s.targetCount} célszett teljesítve</div>
+                <div className="chips">
+                  {s.targetGroups.map((g) => <span key={g.exerciseName}>{g.exerciseName} ×{g.count}</span>)}
                 </div>
-                {showSetLines && e.sets.length > 0 ? (
-                  <div className="label-mono" style={{ fontSize: 10, marginTop: 6, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                    {e.sets.map((s, i) => `${i + 1}: ${s.weight.toLocaleString('hu-HU')} × ${s.reps} @RIR ${s.rir}`).join(' · ')}
-                  </div>
-                ) : best ? (
-                  <div className="row gap-md mt-sm" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
-                    <span><span style={{ color: 'var(--text-tertiary)' }}>top</span> <span style={{ color: 'var(--text-primary)' }}>{best.weight.toLocaleString('hu-HU')}kg × {best.reps}</span></span>
-                    <span><span style={{ color: 'var(--text-tertiary)' }}>RIR</span> <span style={{ color: 'var(--text-primary)' }}>{best.rir}</span></span>
-                  </div>
-                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {challenges.length > 0 && (
+        <div className="wsum-sec">
+          <div className="wsum-slabel">Kihívások <span className="cnt">{chalHit} megvan · {chalMiss} kimaradt</span></div>
+          {challenges.map((c) => {
+            const copy = CHALLENGE_COPY[c.state]
+            return (
+              <div key={c.id} className={`wsum-chal ${copy.cls}`}>
+                <div className="st" aria-hidden="true">{copy.glyph}</div>
+                <div className="tx">
+                  <div className="t">{c.typeLabel}{c.exercise ? ` · ${c.exercise}` : ''}</div>
+                  <div className="m">{c.detail ?? c.target}</div>
+                </div>
+                <div className="out">{copy.label}</div>
               </div>
             )
           })}
         </div>
+      )}
+
+      <div className="wsum-sec">
+        <div className="wsum-slabel">Gyakorlatonként <span className="cnt">szett-térkép</span></div>
+        {s.exercises.map((e) => {
+          const fam = muscleColor(e.muscle)
+          const famStyle = { '--fam-rail': fam.rail, '--fam-wash': fam.wash, '--fam-deep': fam.deep } as CSSProperties
+          return (
+            <div key={e.id} className={`wsum-exc${e.abandoned ? ' dead' : ''}`} style={famStyle}>
+              <div className="hd">
+                <span className="nm">{e.name}</span>
+                <span className="mus">{MUSCLE_LABELS[e.muscle] ?? e.muscle}</span>
+                {e.abandoned
+                  ? <span className="setn dead">kihagyva</span>
+                  : (
+                    <span className={`setn${e.partial ? ' part' : ''}`}>
+                      {e.doneSets}/{e.plannedSets}
+                      {e.skipped && <span className="skipmark"> · kihagyva</span>}
+                    </span>
+                  )}
+              </div>
+              {e.chips.length > 0 && (
+                <div className="chips">
+                  {e.chips.map((c, i) => (
+                    <span key={i} className={`wsum-chip${c.record ? ' rec' : c.top ? ' top' : ''}`}>
+                      {c.record ? '🏅 ' : ''}{hu(c.weight)} × {c.reps}
+                      {c.rir != null && <span className="rir"> @{c.rir}</span>}
+                    </span>
+                  ))}
+                  {e.missing > 0 && <span className="wsum-chip ghost">— kimaradt</span>}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
-      {/* Note (presentational, as before) + actions */}
       {mode === 'closing' && (
-        <div style={{ padding: '0 24px 16px' }}>
-          <div className="card" style={{ padding: 14 }}>
-            <span className="label-mono" style={{ fontSize: 9 }}>Edzés-jegyzet · opcionális</span>
-            <textarea aria-label="Edzés-jegyzet · opcionális" placeholder='pl. "pumpa brutális volt"'
-              style={{ width: '100%', marginTop: 8, minHeight: 52, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
+        <div className="wsum-sec">
+          <div className="wsum-note">
+            <div className="l">Edzés-jegyzet · opcionális</div>
+            <textarea aria-label="Edzés-jegyzet · opcionális" placeholder='pl. "pumpa brutális volt"' />
           </div>
         </div>
       )}
-      <div style={{ padding: '0 24px 28px' }}>
-        <div className="col gap-sm">
-          {mode === 'closing' ? (
-            <>
-              <button className="cta-primary" disabled={finishPending} onClick={onFinish}>
-                <Icon name="check" size={16} />
-                <span>Edzés lezárása ✓</span>
-              </button>
-              <button type="button" className="cta-ghost" style={{ padding: 12 }} onClick={onBack}>
-                ← Vissza az edzéshez
-              </button>
-            </>
-          ) : (
-            <button className="cta-ghost" style={{ padding: 12 }} onClick={onExit}>
-              ← Vissza
+
+      <div className="wsum-ctas">
+        {mode === 'closing' ? (
+          <>
+            <button className="cta-primary" disabled={finishPending} onClick={onFinish}>
+              <Icon name="check" size={16} />
+              <span>Edzés lezárása ✓</span>
             </button>
-          )}
-        </div>
+            <button type="button" className="cta-ghost" style={{ padding: 12 }} onClick={onBack}>
+              ← Vissza az edzéshez
+            </button>
+          </>
+        ) : (
+          <button className="cta-ghost" style={{ padding: 12 }} onClick={onExit}>
+            ← Vissza
+          </button>
+        )}
       </div>
     </div>
   )

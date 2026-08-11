@@ -172,9 +172,15 @@ export function FuelMaiPage() {
     setLogInitialSlot(slot)
     setLogOpen(true)
   }
+  // A log opened FROM a window always carries that window's slotKey — both branches (mezo-bnsf).
+  // `buildDayPlan` files logged meals by slotKey alone (`loggedByKey[w.slotKey]`, never by
+  // timestamp), so seeding the sheet from the wall clock instead — which the recipe-suggestion
+  // branch used to do by omitting `initialSlot` — filled a DIFFERENT window and left this one
+  // `missed`, still offering the same Pótold for a meal already logged.
   const handleLogMeal = (slot: FuelSlot) => {
-    if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId })
-    else openLog(null, slot.slotKey ?? 'snack')
+    const slotKey = slot.slotKey ?? 'snack'
+    if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId }, slotKey)
+    else openLog(null, slotKey)
   }
   const handleAiLog = (slot: FuelSlot) => {
     setAiSlot(slot.slotKey)

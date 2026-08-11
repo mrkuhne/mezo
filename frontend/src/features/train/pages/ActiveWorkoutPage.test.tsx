@@ -276,7 +276,7 @@ test('mock mode: reaching the summary screen (workout end) shows no rest bar', a
     await user.click(cta)
     if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
   }
-  expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
+  expect(await screen.findByText('Edzés vége')).toBeInTheDocument()
   await waitFor(() => expect(container.querySelector('.restbar')).toBeNull())
 })
 
@@ -814,7 +814,7 @@ test('summary → Edzés lezárása shows the level-up overlay, then the closed 
     if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
   }
   // New flow: the last debrief lands on the summary; the explicit CTA finishes.
-  expect(await screen.findByText('Mai mérleg')).toBeInTheDocument()
+  expect(await screen.findByText('Edzés vége')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: /Edzés lezárása/ }))
   // Mock finish returns the seeded gym fixture → the level-up overlay shows over the closed summary.
   const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
@@ -823,10 +823,13 @@ test('summary → Edzés lezárása shows the level-up overlay, then the closed 
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
   // The read-only closed summary is revealed underneath.
   expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
+  // Workout identity still holds on the closed summary (was asserted via the old
+  // title-suffix framing "Pull Day · N medál" — the title itself renders standalone now).
+  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
   // ex2..ex5's working sets all hit their prescribed target (and several also beat
-  // lastWeek), so the session's real medal count (mezo-wp6n) drives the title suffix
-  // now — replaces the old hadPrFromSignal / 105 kg demo framing.
-  expect(screen.getByText(/Pull Day · \d+ medál/)).toBeInTheDocument()
+  // lastWeek), so the session's real medal count (mezo-wp6n) drives the redesigned
+  // Medálok section's count — replaces the old hadPrFromSignal / title-suffix framing.
+  expect(screen.getByText(/\d+ rekord · \d+ cél/)).toBeInTheDocument()
 })
 
 test('the ⋯ menu offers early finish and it lands on the summary screen', async () => {
@@ -835,7 +838,7 @@ test('the ⋯ menu offers early finish and it lands on the summary screen', asyn
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Edzés befejezése…'))
-  expect(screen.getByText('Mai mérleg')).toBeInTheDocument()
+  expect(screen.getByText('Edzés vége')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeInTheDocument()
 })
 
@@ -1197,7 +1200,7 @@ test('real mode: a failed finish POST re-enables the "Edzés lezárása ✓" CTA
   // (regression guard for the reset living only in onSuccess — mezo-cd8s).
   await waitFor(() => expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeEnabled())
   // Still on the closing summary — never advanced to the read-only closed view.
-  expect(screen.getByText(/Edzés vége ·/)).toBeInTheDocument()
+  expect(screen.getByText('Edzés vége')).toBeInTheDocument()
 })
 
 test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {

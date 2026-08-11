@@ -429,6 +429,7 @@ function ActiveWorkoutSession({
   const summaryExercises: SummaryExercise[] = W.exercises.map((e) => ({
     id: e.id,
     name: e.name,
+    muscle: e.muscle,
     plannedSets: effectiveSetCount(session, e.id),
     sets: session.logged[e.id] ?? [],
     skipped: session.skipped.includes(e.id),
@@ -901,12 +902,12 @@ function ActiveWorkoutSession({
     return (
       <WorkoutSummary
         title={W.title}
-        eyebrow={closing ? `Edzés vége · ${W.title}` : 'Lezárva · ma'}
+        eyebrow={closing ? 'Edzés vége' : 'Lezárva · ma'}
         mode={closing ? 'closing' : 'closed'}
         exercises={summaryExercises}
         challenges={summaryChallenges}
         medals={sessionMedals}
-        showSetLines={!closing}
+        durationMin={W.durationEst}
         onFinish={finishAndCelebrate}
         finishPending={finishPending}
         onBack={() => setPhase('active')}

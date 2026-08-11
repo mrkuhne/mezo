@@ -136,6 +136,48 @@ test('all windows done (no now, nothing left to select) → no island is big; th
   expect(screen.getByText('2 kész ablak · 1 200 kcal')).toBeInTheDocument()
 })
 
+// ── logging from a window lands in THAT window's slot (mezo-bnsf) ─────────────────────────────
+// `buildDayPlan` files logged meals by `slotKey` ONLY (`loggedByKey[w.slotKey]`), never by
+// timestamp — so a meal logged from the Ebéd window under the wall-clock's slot fills the
+// *dinner* window instead, and Ebéd stays `missed`, still offering the same Pótold. The window
+// IS the slot; every log opened from one must carry its slotKey.
+
+test('Pótold on a suggestion-carrying window logs into THAT window\'s slot, not the wall-clock one', async () => {
+  hoisted.overrideSlots = [
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
+      kcal: 660, p: 48, c: 62, f: 14, suggestedRecipeId: 'rec-1' },
+  ]
+  // 16:35 wall clock → LogMealSheet's `defaultSlot()` returns 'dinner'. The tapped window is lunch.
+  // Fake ONLY Date so userEvent/findBy keep their real timers (the `edzés 18:30` test's precedent).
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
+  try {
+    renderView()
+    await userEvent.click(screen.getByRole('button', { name: 'Pótold' }))
+    const ebed = await screen.findByRole('button', { name: 'Ebéd' })
+    expect(ebed).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Vacsora' })).toHaveAttribute('aria-pressed', 'false')
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('a window with no suggestion also seeds its own slot (the branch that already did)', async () => {
+  hoisted.overrideSlots = [
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
+      kcal: 660, p: 48, c: 62, f: 14 },
+  ]
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
+  try {
+    renderView()
+    await userEvent.click(screen.getByRole('button', { name: 'Pótold' }))
+    expect(await screen.findByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'true')
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 // ── the standing log row (mezo-66te) ─────────────────────────────────────────────────────────
 // The Logold/AI CTAs live on the big window-island, which does not exist once every window is
 // done — and the + FAB's Étkezés tile only navigates here (QuickInputSheet is navigation-only).
@@ -205,11 +247,21 @@ test('tapping a capsule grows that island', async () => {
 })
 
 test('selecting a non-default window writes ?w= with that window key; re-selecting the NOW window drops it', () => {
-  renderView('/fuel')
-  fireEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel?w=21%3A45-Vacsora')
-  fireEvent.click(screen.getByRole('button', { name: /^Uzsonna · most ·/ }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel')
+  // The window keys and which one wears `· most ·` are both derived from the wall clock, so this
+  // case only holds at a pinned time — unfrozen, `Vacsora` drifts (21:45 → 19:45) and the NOW
+  // window moves off Uzsonna, which made the test red for whole stretches of the real day
+  // (mezo-pxwc). Same 16:35 anchor and Date-only fake the Pótold cases above use.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
+  try {
+    renderView('/fuel')
+    fireEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
+    expect(screen.getByTestId('loc').textContent).toBe('/fuel?w=21%3A45-Vacsora')
+    fireEvent.click(screen.getByRole('button', { name: /^Uzsonna · most ·/ }))
+    expect(screen.getByTestId('loc').textContent).toBe('/fuel')
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 // ── Logging / AI ──────────────────────────────────────────────────────────────────────────────
