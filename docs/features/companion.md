@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-06
+updated: 2026-08-11
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -361,6 +361,34 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   PatternCard's decision buttons persist, critique bars render only when present (V3.2),
   degraded card on switch-off 404.
 
+**The gate extracted into `PatternGate` + a live monitor (`mezo-viqs`, post-epic):** the
+surfacing gate `detectPair` ran inline (the `aligned < min-n` and constant-series checks) moved
+into `PatternGate` (`service/PatternGate.java`) — package-private, static, Spring-free, the
+`PearsonCorrelation` precedent. `evaluate(seriesA, seriesB, lagDays, minN)` (`PatternGate.java:33-54`) `→ Outcome(Verdict,
+alignedDays, PearsonCorrelation.Result, Side constantSide)` (types at `PatternGate.java:17-24`),
+`Verdict ∈ {LIVE, FEW_DAYS, NO_DATA, DEGENERATE}`, `Side ∈ {A, B, BOTH}` (which series is
+constant, `DEGENERATE`-only). **`FROZEN` is deliberately NOT in `Verdict`** — it is the
+consequence of a persisted row's `confirmed`/`rejected` status, decided by the caller, never by
+the gate math. `detectPair` now calls `PatternGate.evaluate` and upserts only on `LIVE`
+(`PatternDetectionService.java:66-78`); the per-pair `try/catch` isolation and the
+`upsert`/`reinforcePromotedFact` logic are unchanged, and `PatternDetectionServiceIT` is
+untouched. **`PatternMonitorService`** (`service/PatternMonitorService.java`, read-only,
+switch-gated) sits behind the new `GET /api/companion/pattern/monitor` — for every catalog pair
+it re-runs `PatternGate.evaluate` over the EXACT SAME windows the nightly job would use
+(`to = yesterday`, `from = to − (lookbackDays−1)`, B lag-shifted) and reports the **5-verdict
+model**: `live` (gate passed, live `r`/`n`/`p`) / `few_days` (aligned days below `min-n`, with
+`missingDays` + the thinner-covered bottleneck metric) / `no_data` (zero aligned days) /
+`degenerate` (enough days but a constant series) / `frozen` (a `confirmed`/`rejected` row — no
+recompute, its own frozen `r`/`n`/`p` are reported) — plus per-metric coverage for all 12
+`MetricKey`s (series pulled once per metric into a request-scoped cache, so the pair verdicts and
+the coverage block share one snapshot). Because the nightly job and the monitor call the
+**identical** `PatternGate.evaluate`, the monitor cannot say anything other than what the job
+would decide — that shared code is the whole credibility of the diagnostic; the service writes
+nothing (no new table, no migration). **A known, left-as-is quirk (spec §3.5):** the job reads
+`lag=1` pairs' B-series up to `to + 1` — i.e. the current, partially-logged day — while the
+A-series stops at yesterday; the monitor prints the window bounds so this is now at least
+visible, but it is **not fixed** in this change.
+
 **V3.2 (`mezo-fnnq.13`) shipped the AI hypothesis loop — propose → critique → revise:**
 
 - **The weekly smart-tier pipeline** — `HypothesisPipelineService` (cron `HypothesisJob`, Sunday
@@ -420,7 +448,7 @@ COMPLETE (all 14 slices):**
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
-| Statistical patterns + Inbox | ✅ V3.1 | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`). |
+| Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
 | LLM call audit log (`mezo-2zyu`) | ✅ v1 | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (off by default, ON in k8s). DB-only v1 — query with SQL. [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
@@ -861,6 +889,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
+| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict (+ `missingDays`/bottleneck metric for `few_days`/`no_data`/`degenerate`) and per-`MetricKey` coverage. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
 `MessageResponse {id, role, content, createdAt, tools[], refs[], degraded}` (**filled since

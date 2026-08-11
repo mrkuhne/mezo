@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-08-03
+updated: 2026-08-11
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -17,7 +17,7 @@ related: [_platform-data-layer, _platform-design-system, today, me, companion]
 
 # Insights — Feature Documentation
 
-> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All seven Insights tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete). **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
+> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All seven proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the 8th, post-epic **Motor** tab (§2.8, `mezo-viqs`), never phase-gated, for **all eight Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Reached via the `sparkle`-icon link in the Today `AppHero` (no bottom `TabBar` entry).
 
 ---
 
@@ -29,8 +29,8 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 
 | Layer | Status | Notes |
 |---|---|---|
-| FE mock | ✅ done | 7 sub-tabs, all views + tests present |
-| FE real-mode | ✅ all 7 tabs (Chat + Patterns + Knowledge + Weekly + Memoir + Predictions + **Experiments**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes the review client-side from existing fuel/train/biometrics reads (no Insights backend); its „heti tervjavaslat" prose is live since **proactive W1 (`mezo-h4wp.3`)** off `GET /api/proactive/weekly-suggestion`; **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), demo reactions/anniversary/archive mock-only; **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose. **No mock-only Insights tab remains** — all 7 are real (§2). |
+| FE mock | ✅ done | 8 sub-tabs, all views + tests present |
+| FE real-mode | ✅ all 8 tabs (Chat + Patterns + Knowledge + Weekly + Memoir + Predictions + Experiments + **Motor**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes the review client-side from existing fuel/train/biometrics reads (no Insights backend); its „heti tervjavaslat" prose is live since **proactive W1 (`mezo-h4wp.3`)** off `GET /api/proactive/weekly-suggestion`; **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), demo reactions/anniversary/archive mock-only; **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose; **Motor** real (both modes) since **`mezo-viqs`** (post-epic) — `data/insights/monitorHooks.ts` reads `GET /api/companion/pattern/monitor`, §2.8. **No mock-only Insights tab remains** — all 8 are real (§2). |
 | Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train (the barrel is app-wide shared — unrelated domains' re-export additions, e.g. the `mezo-53su` `useFuelSettings` export, move this key_file without touching Insights' own data path). There are **two distinct roadmap stages** the doc keeps separate:
@@ -43,7 +43,7 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 ## 2. User-facing behavior
 
-**Route:** `/insights` (`frontend/src/app/TabBar.tsx:10`, icon `insights`). Shell + 7 sub-tabs wired in `frontend/src/app/router.tsx:76-87` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
+**Route:** `/insights` (entered via the `sparkle`-icon link in the Today `AppHero`, `frontend/src/features/today/pages/TodayPage.tsx:221` — no bottom `TabBar` entry). Shell + 8 sub-tabs wired in `frontend/src/app/router.tsx:105-118` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
 
 | Sub-tab | Route | Pill label (verbatim) | View | Real mode |
 |---|---|---|---|---|
@@ -54,10 +54,11 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 | chat | `/insights/chat` | `Chat` | `ChatPage` | shown |
 | predictions | `/insights/predictions` | `Előrejelzések` | `PredictionsPage` | **real** (P1) |
 | experiments | `/insights/experiments` | `Kísérletek` | `ExperimentsPage` | **real** (P2) |
+| motor | `/insights/motor` | `Motor` | `MotorPage` | shown (both modes, since mezo-viqs) |
 
 **`InsightsTab.title` was dropped (compact-header redesign, `mezo-ugqb`, 2026-07-18)** — with the per-section `.pghead-np.lav` big header gone (below), the field's only consumer disappeared, so it was removed from the type/array; the pill `label` above is now the only per-tab copy.
 
-**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; the shared `SubNavDropdown` maps that instead of `INSIGHTS_TABS`). **Memoir left `PHASE3_TAB_IDS` at W2 (`mezo-h4wp.4`), Predictions at P1 (`mezo-h4wp.7`), and Experiments at P2 (`mezo-h4wp.8`)** — the set is now **EMPTY**, so `visibleInsightsTabs()` returns all seven tabs in both modes. No `PhaseTeaserCard` ghost is reachable any more; every tab renders real data or an honest null-state. (The `PhaseTeaserCard` component was **deleted** in the Napív S8 shell migration once it had no reachable consumer — the un-ghost/ghost-guard recipe lives on only in git history.)
+**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; the shared `SubNavDropdown` maps that instead of `INSIGHTS_TABS`). **Memoir left `PHASE3_TAB_IDS` at W2 (`mezo-h4wp.4`), Predictions at P1 (`mezo-h4wp.7`), and Experiments at P2 (`mezo-h4wp.8`)** — the set is now **EMPTY**, so `visibleInsightsTabs()` returns all eight tabs (the 8th, **Motor**, was never added to the set either) in both modes. No `PhaseTeaserCard` ghost is reachable any more; every tab renders real data or an honest null-state. (The `PhaseTeaserCard` component was **deleted** in the Napív S8 shell migration once it had no reachable consumer — the un-ghost/ghost-guard recipe lives on only in git history.)
 
 **Header (compact-header redesign, `mezo-ugqb`, 2026-07-18):** `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) no longer renders its own `.pghead-np.lav` page-head — it mounts the shared **`AppHero`** (the same identity/progression row Today/Train/Fuel/Me carry) and passes a **`SubNavDropdown`** (`items={visibleInsightsTabs()}`, `accent="var(--lav-deep)"`, `aria-label="Insights alnavigáció"`) as its `utilities` prop, then an `<Outlet/>` (padding unchanged). `InsightsSubNav` and the `.pghead-np.lav`/`.np-pills` markup it used to render are **deleted** — Insights joined the same AppHero family as the other 4 sections (§ [`_platform-design-system.md`](_platform-design-system.md) §3 "AppHero v2" / "`SubNavDropdown`"). **No leaf page has a section `h1` any more** — the chip showing the active tab's label (`"Minták ▾"` etc.) carries the location instead; each leaf view's own content (score cards, chat, journal…) starts directly below the sticky header.
 
@@ -68,7 +69,9 @@ recentlyConfirmed, degraded, mode}` — real mode maps `GET /api/companion/patte
 degraded card; mock keeps the `insights.ts` seeds). Filter: rows with a `confidence` gate on
 `MIN_PATTERN_CONFIDENCE` (`0.65`); **statistical rows (confidence null) always list** — they
 passed the server-side n-gate. Header: `Új minták · {count}` + `min. 65% conf`; empty-state and
-empty-confirmed copy. "Recently confirmed · L3" = confirmed rows' titles in real mode.
+empty-confirmed copy. "Recently confirmed · L3" = confirmed rows' titles in real mode. **Since
+mezo-viqs, both the empty-pattern state and the degraded card link to `/insights/motor`**
+("Miért nincs még minta? →", `PatternsPage.tsx:19,42`) — the pattern-gate transparency page, §2.8.
 
 **`PatternCard`** (`components/PatternCard.tsx`): left accent bar in the category color
 (`patternCategoryColor(cat)` → `var(--cat-{cat})`), category chip + `conf NN%` **or „tanulom"**
@@ -122,6 +125,29 @@ dismiss → gone); the footer **„+ Új kísérlet javasol Mezo"** button reall
 in live mode. An empty live list renders the honest null-state *"Az első N=1 kísérletet a megerősített
 mintákból javasolja Mezo."*. **Mock mode** keeps the Phase-1 seed (active + completed cards, the inert
 propose CTA — no proposed rows, so no accept/dismiss buttons). Behavior detail in [proactive.md §2](proactive.md).
+
+### 2.8 Motor (`pages/MotorPage.tsx`) — read-only pattern-gate diagnostics since mezo-viqs
+Not another results tab — a transparency page onto the **gate** that decides which correlations
+even reach the Patterns Inbox (§2.1). Reads `usePatternMonitor()`
+(`data/insights/monitorHooks.ts`, `['pattern-monitor']` dual-read; real mode maps
+`GET /api/companion/pattern/monitor`, 404 ⇒ the same honest degraded card as Patterns; mock
+returns the `patternMonitor` seed in `insights.ts`) and renders three blocks top to bottom: an
+**engine-state header** (the correlation window, `min-n`, the raw cron expression — the FE never
+parses cron — and the last actual run or "még nem futott"); the **pair verdicts**, one
+`GateVerdictRow` (`components/GateVerdictRow.tsx`) per catalog pair with a verdict chip, a
+deterministic Hungarian sentence, and the raw `n`/`r`/`p` chips; and **metric coverage**, one
+`MetricCoverageRow` (`components/MetricCoverageRow.tsx`) per `MetricKey` (all 12) with a mini bar,
+last day with data, and how many catalog pairs reference it. The 5 verdicts in one line each:
+**live** = passed the gate, `r`/`n`/`p` are live; **few_days** = aligned days below `min-n`
+(reports `missingDays` + the thinner-covered bottleneck metric); **no_data** = zero aligned days;
+**degenerate** = enough aligned days but a constant series; **frozen** = the row is user-judged
+`confirmed`/`rejected`, so the nightly job never re-touches it and the row's own frozen `r`/`n`/`p`
+are shown — no live recompute. Ordering (`MotorPage.tsx:7-21`, `comparePairs`): pairs
+`live → few_days (fewest missing days first) → degenerate → no_data → frozen`; coverage rows sort
+thinnest-covered first. **Every number on this page is a LIVE recomputation over the job's exact
+windows for this request** — the page persists nothing and reads no historical log, so it can
+never disagree with what the nightly job would decide ([`companion.md`](companion.md) §1 V3.1 /
+mezo-viqs).
 
 ---
 
@@ -336,12 +362,14 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 **Feature (`frontend/src/features/insights/`):**
 - `InsightsSection.tsx` — shell: mounts the shared `AppHero` with a `SubNavDropdown` (`items={visibleInsightsTabs()}`, `accent="var(--lav-deep)"`) as its `utilities` prop, then the outlet (compact-header redesign, `mezo-ugqb` — the old `.pghead-np.lav` head + `InsightsSubNav` are gone)
 - **`InsightsSubNav.tsx` is DELETED (`mezo-ugqb`)** — superseded by the shared `@/shared/ui/SubNavDropdown` mounted via `InsightsSection`
-- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2; all 7 tabs visible in both modes)
-- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
+- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`; **8th entry `motor` added `mezo-viqs`**) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2, motor never gated; all 8 tabs visible in both modes)
+- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
+- `pages/MotorPage.tsx` — **mezo-viqs**, the 8th sub-tab: read-only pattern-gate diagnostics (§2.8), three blocks (engine-state header / pair verdicts / metric coverage), honest degraded + "még nem futott" states, shown in both modes
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
+- `components/GateVerdictRow.tsx` + `MetricCoverageRow.tsx` — **mezo-viqs**, the Motor page's two presentational rows (verdict chip + deterministic Hungarian sentence + raw chips; coverage bar + last-day + pair count) — pure props, no `@/data/*` import, per `frontend_conventions.md`
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows
 - **`components/PhaseTeaserCard.tsx` — DELETED in the Napív S8 shell migration (`mezo-mifi`):** with `PHASE3_TAB_IDS` empty no tab is Phase-gated, so the ghost had no reachable consumer; the component is gone and the un-ghost/ghost-guard recipe survives only in git history (§2).
 - Tests: `pages/*.test.tsx`, `components/PatternCard.test.tsx`, `insights.nav.test.tsx` (`InsightsSubNav.test.tsx` deleted with the component, `mezo-ugqb`)
@@ -355,8 +383,9 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `growthWeekApi.ts` — **E3** `growthWeekApi.get(date)` → Progression `GET /api/progression/growth-week/{date}` (wire → `WeeklyGrowth`; caller `.catch(()=>null)`)
 - `memoirHooks.ts` — **`useMemoir` (W2)**: dual-mode `['memoir']` read (mock seed no-fetch / real `GET /api/proactive/memoir`, 404→null); returns `{ memoir, anniversaryNote, mode }`
 - `memoirApi.ts` — **W2** `memoirApi.latest()` → proactive `GET /api/proactive/memoir` (wire → FE `Memoir` via `toMemoir`, `Hét N …` week label derived client-side)
+- `monitorApi.ts` + `monitorHooks.ts` — **mezo-viqs** `usePatternMonitor()` (`['pattern-monitor']` dual-mode, real → `GET /api/companion/pattern/monitor`, 404→degraded) — read-only, no writes; the mock seed `patternMonitor` (`insights.ts`) deliberately mixes all 5 verdicts + a spread of metric coverage so every render state is visible in mock/demo mode
 - `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′; its `memoir`/`anniversaryNote` fields no longer consumed since W2 — only `predictions`/`experiments` are live)
-- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
+- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`**, **`usePatternMonitor`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
 - `types.ts:349-418` — all Insights/Knowledge/Chat types
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 
