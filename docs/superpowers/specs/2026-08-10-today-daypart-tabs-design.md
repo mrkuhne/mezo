@@ -27,7 +27,7 @@ AppHero                       (változatlan chrome; Today a ✨ Insights linket 
 VulnerabilityCard?            (változatlan, ?vulnerable=on)
 DaypartTabs                   ÚJ — .segtabs: 🌅 Reggel | ☀️ Nap | 🌙 Este, a MOST arany pöttyével
 MezoMessage                   ÚJ forma — full-bleed CoachBubble sáv, avatar nélkül, teljes szöveggel
-DayView(selected)             ÚJ — a kiválasztott napszak TELJES tartalma, külső kártyakeret nélkül
+DaypartPanel(selected)             ÚJ — a kiválasztott napszak TELJES tartalma, külső kártyakeret nélkül
   ├─ hero (szám + egység + alsor)
   ├─ IslandFactsStrip         (változatlan komponens)
   ├─ warn-chip?               (nap: niggle)
@@ -66,7 +66,7 @@ A mai `BriefingCard` → `CoachBubble` kompozíció **marad**, három módosít�
 
 Real módban a briefing prózája demó tartalom → az őszinte `Demo tartalom` címke marad; a `confidence` % viselkedése változatlan. A `bővebben`/`összecsuk` kapcsoló **megszűnik** (nincs mit kinyitni).
 
-## 5. A napszak-nézet (`DayView`)
+## 5. A napszak-nézet (`DaypartPanel`)
 
 **Nincs külső kártya.** Se keret, se `surface-1` háttér, se árnyék, se halo-blob — a tartalom a vásznon ül, ahogy az üzenetsáv is. Ez a felhasználó explicit döntése („a fő dobozt vegyük ki, azon belül lehetnek kisebbek”).
 
@@ -91,7 +91,7 @@ Real módban a briefing prózája demó tartalom → az őszinte `Demo tartalom`
 | 🌙 normál | countdown-hero + tények + lavendula CTA |
 | 🌘 ráhangolódás | a tények a REM/hűvös-szoba evidenciára váltanak, alsor: fény &lt;30 lux · ~18 °C |
 | 🌒 leállás | a CTA-sor mellé belép a `Leállás megvolt ✓` ghost; a `wind_down` sor **csak ekkor** hiányzik a listából (offered-exactly-once szabály, változatlanul) |
-| 🌑 éjszaka | a **nézet** sötétedik (nem a kártya — nincs kártya): a `DayView` `data-night` állapota adja a theme-invariáns sötét szövegpárokat; countdown `elmúlt`; egyetlen `Éjszakai mód megnyitása ›` sor; nincs tény, nincs CTA |
+| 🌑 éjszaka | a **nézet** sötétedik (nem a kártya — nincs kártya): a `DaypartPanel` `data-night` állapota adja a theme-invariáns sötét szövegpárokat; countdown `elmúlt`; egyetlen `Éjszakai mód megnyitása ›` sor; nincs tény, nincs CTA |
 
 A ritual-birtokolt sorok (`ritual:day`, `habit:evening_ritual`) továbbra is ki vannak szűrve az esti listából — a CTA birtokolja azt az aktust.
 
@@ -103,7 +103,7 @@ A ritual-birtokolt sorok (`ritual:day`, `habit:evening_ritual`) továbbra is ki 
 
 A buborék-morf (`isl-morph`), a lebegés (`isl-floaty`) és az L1 stagger-létra (`isl-rowin`) **kikerül a Today-ból** — nincs kapszula, nincs kinyíló réteg. Ami marad:
 
-- tabváltáskor a `DayView` finom keresztfade + 8px felúszás (az `isl-phasein` mintája, újrahasznált keyframe),
+- tabváltáskor a `DaypartPanel` finom keresztfade + 8px felúszás (az `isl-phasein` mintája, újrahasznált keyframe),
 - az esti fázisváltás keresztfade-je változatlanul,
 - a kész-hajtás magasság-animációja.
 
@@ -120,8 +120,8 @@ Változatlan Napív rampok. A napszak identitását eddig a sziget blob-tintje h
 **Új / átalakuló (`features/today/`):**
 - `components/DaypartTabs.tsx` — a `.segtabs` váltó + MOST-pötty; propokból dolgozik (`selected`, `current`, `onSelect`), domain-mentes a nap-modellen túl.
 - `components/MezoMessage.tsx` — a full-bleed sáv (a `BriefingCard` utódja: ugyanaz a `CoachBubble`, avatar nélkül, `cb-band` modifierrel, csonkolás nélkül).
-- `components/DayView.tsx` — a közös váz: hero-slot, ténystrip, CTA-sor, jegyzet-slot, csoportok, kész-hajtás. A három napszak ennek a konfigurációja.
-- `components/ViewMorning|ViewDay|ViewEvening.tsx` — a mai `IslandMorning`/`IslandDay`/`IslandEvening` tartalmi utódai, ugyanabban a névmintában (`ViewEvening` viszi tovább a négy fázist és a saját ritual/habit wiring-et).
+- `components/DaypartPanel.tsx` — a közös váz: hero-slot, ténystrip, CTA-sor, jegyzet-slot, csoportok, kész-hajtás. A három napszak ennek a konfigurációja.
+- `components/DaypartMorning|DaypartDay|DaypartEvening.tsx` — a mai `IslandMorning`/`IslandDay`/`IslandEvening` tartalmi utódai, ugyanabban a névmintában (`DaypartEvening` viszi tovább a négy fázist és a saját ritual/habit wiring-et).
 - `components/DayGroups.tsx` — az `IslandList` csoportosító logikája `összecsuk` és belső scroller nélkül + a kész-hajtás.
 
 **Visszavonul (Today-oldalról):** `IslandSky`, `IslandMorning`, `IslandDay`, `IslandEvening`, `IslandList`, `BriefingCard`. **A `shared/ui/Island.tsx` MARAD** — a Fuel „Mai” ablak-folyója a második fogyasztója (`mezo-jgh9`); csak a Today hagyja ott.
@@ -156,7 +156,7 @@ Következmény: az új `.dv-*` család **nem** az `.isl-*` helyére lép, hanem 
 ## 11. Tesztelés
 
 - **Pure logika:** érintetlen — `dayFace`, `todayItems`, `islandFacts`, `windDown`, `questAction`, `habitAction`, `growthToday` tesztjei egy sort sem változnak. Ez a bizonyíték, hogy a modell megint túlélte a render-cserét.
-- **Komponens:** `DaypartTabs.test` (kiválasztás, MOST-pötty a kiválasztástól függetlenül, `onSelect` payload), `MezoMessage.test` (nincs avatar, nincs csonkolás/`bővebben`, a teljes szöveg + refek renderelnek), `DayView.test` (hero/tény/CTA slot, kész-hajtás nyit-zár, csoport-sorrend, a küldetés-fejléc growth linkje), `EveningView.test` (a négy fázis + a `wind_down` offered-exactly-once trió + a ritual-sor szűrés).
+- **Komponens:** `DaypartTabs.test` (kiválasztás, MOST-pötty a kiválasztástól függetlenül, `onSelect` payload), `MezoMessage.test` (nincs avatar, nincs csonkolás/`bővebben`, a teljes szöveg + refek renderelnek), `DaypartPanel.test` (hero/tény/CTA slot, kész-hajtás nyit-zár, csoport-sorrend, a küldetés-fejléc growth linkje), `EveningView.test` (a négy fázis + a `wind_down` offered-exactly-once trió + a ritual-sor szűrés).
 - **Kompozíció:** a `TodayPage.test.tsx` és `TodayPage.dispatch.test.tsx` **átcímzése** — minden viselkedési állítás megmarad, de eltűnik belőlük az „előbb nyisd ki az L1-et” lépés; új állítások: minden sor és a briefing **kinyitás nélkül** látszik, tabváltás a lap tetejére görget, a retirált felületek (`.isl-l1`, `.sky-islands`, `még N ›`, `összecsuk`) hiánya. A skeleton `.apphero` node-azonosság teszt és az `anchorMode`-wins-over-pending teszt változatlan.
 - **Mindkét mód:** `pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test`.
 - **Vizuális goldenek:** `today-{reggel,nap,este}-{light,dark}` újragenerálása darwinon (a `?dp=` most tabot választ, a nevek/órák változatlanok); a linux baseline-ok az `update-visual-baselines.yml` workflow-val.

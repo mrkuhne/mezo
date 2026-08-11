@@ -28,10 +28,10 @@
 | `features/today/components/DaypartTabs.tsx` (+ test) | a `.segtabs` napszak-váltó + MOST-jelölés | 1 |
 | `features/today/components/MezoMessage.tsx` (+ test) | a full-bleed briefing sáv (a `BriefingCard` utódja) | 2 |
 | `features/today/components/DayGroups.tsx` (+ test) | csoportosított `ItemRow`-k + kész-hajtás (az `IslandList` utódja) | 3 |
-| `features/today/components/DayView.tsx` (+ test) | a keret nélküli nézet váza + `DayHeroLine` | 4 |
-| `features/today/components/ViewMorning.tsx` (+ test) | reggeli nézet | 5 |
-| `features/today/components/ViewDay.tsx` (+ test) | nappali nézet, exportálja a `DayHero` típust | 6 |
-| `features/today/components/ViewEvening.tsx` (+ test) | esti nézet a négy fázissal | 7 |
+| `features/today/components/DaypartPanel.tsx` (+ test) | a keret nélküli nézet váza + `DaypartHero` | 4 |
+| `features/today/components/DaypartMorning.tsx` (+ test) | reggeli nézet | 5 |
+| `features/today/components/DaypartDay.tsx` (+ test) | nappali nézet, exportálja a `DayHero` típust | 6 |
+| `features/today/components/DaypartEvening.tsx` (+ test) | esti nézet a négy fázissal | 7 |
 | `features/today/pages/TodayPage.tsx` (+ 2 teszt átcímzése) | kompozíciós gyökér — a render-fa cseréje | 8 |
 | `features/today/pages/TodaySkeleton.tsx` (+ test) | az új layout betöltő tükre | 9 |
 | `styles/prototype.css` | `.daytabs`, `.dayview`/`.dv-*`, `.cb-band`; 3 szabály törlése | 1, 2, 4, 10 |
@@ -622,31 +622,31 @@ git commit -m "feat(today): DayGroups — teljes lista, egyetlen kész-hajtássa
 
 ---
 
-### Task 4: `DayView` + `DayHeroLine` — a keret nélküli váz
+### Task 4: `DaypartPanel` + `DaypartHero` — a keret nélküli váz
 
 **Files:**
-- Create: `frontend/src/features/today/components/DayView.tsx`
-- Test: `frontend/src/features/today/components/DayView.test.tsx`
+- Create: `frontend/src/features/today/components/DaypartPanel.tsx`
+- Test: `frontend/src/features/today/components/DaypartPanel.test.tsx`
 - Modify: `frontend/src/styles/prototype.css`
 
 **Interfaces:**
 - Consumes: `type DayFace` (`@/features/today/logic/dayFace`), `cn` (`@/shared/lib/cn`).
 - Produces:
-  - `DayView({ tone, night, children })` — `tone: DayFace`, `night?: boolean`, `children: ReactNode`.
-  - `DayHeroLine({ value, unit, sub })` — `value: string`, `unit?: string | null`, `sub?: string | null`.
+  - `DaypartPanel({ tone, night, children })` — `tone: DayFace`, `night?: boolean`, `children: ReactNode`.
+  - `DaypartHero({ value, unit, sub })` — `value: string`, `unit?: string | null`, `sub?: string | null`.
 
 - [ ] **Step 1: Write the failing test**
 
-`frontend/src/features/today/components/DayView.test.tsx`:
+`frontend/src/features/today/components/DaypartPanel.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import { DayHeroLine, DayView } from '@/features/today/components/DayView'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 
-describe('DayView', () => {
+describe('DaypartPanel', () => {
   test('carries the daypart tone and NO card shell', () => {
-    const { container } = render(<DayView tone="nap"><div>tartalom</div></DayView>)
+    const { container } = render(<DaypartPanel tone="nap"><div>tartalom</div></DaypartPanel>)
     const view = container.querySelector('.dayview')!
     expect(view).toHaveAttribute('data-tone', 'nap')
     // the retired island shell must not come back
@@ -655,21 +655,21 @@ describe('DayView', () => {
   })
 
   test('the night phase darkens the view itself', () => {
-    const { container } = render(<DayView tone="este" night><div /></DayView>)
+    const { container } = render(<DaypartPanel tone="este" night><div /></DaypartPanel>)
     expect(container.querySelector('.dayview.is-night')).toBeInTheDocument()
   })
 })
 
-describe('DayHeroLine', () => {
+describe('DaypartHero', () => {
   test('value, unit and sub all render', () => {
-    render(<DayHeroLine value="13:00" unit="· Pull A" sub="~55 perc · 3. mezóhét" />)
+    render(<DaypartHero value="13:00" unit="· Pull A" sub="~55 perc · 3. mezóhét" />)
     expect(screen.getByText('13:00')).toBeInTheDocument()
     expect(screen.getByText('· Pull A')).toBeInTheDocument()
     expect(screen.getByText('~55 perc · 3. mezóhét')).toBeInTheDocument()
   })
 
   test('a missing unit or sub simply does not render', () => {
-    const { container } = render(<DayHeroLine value="Pihenő" />)
+    const { container } = render(<DaypartHero value="Pihenő" />)
     expect(container.querySelector('.dv-hero-u')).toBeNull()
     expect(container.querySelector('.dv-hero-sub')).toBeNull()
   })
@@ -679,31 +679,31 @@ describe('DayHeroLine', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/DayView.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartPanel.test.tsx
 ```
 
 Expected: FAIL — a modul nem oldható fel.
 
 - [ ] **Step 3: Write the component**
 
-`frontend/src/features/today/components/DayView.tsx`:
+`frontend/src/features/today/components/DaypartPanel.tsx`:
 
 ```tsx
 // ============================================================
-// Mezo · DayView — the frame a daypart's content sits in (mezo-puci).
+// Mezo · DaypartPanel — the frame a daypart's content sits in (mezo-puci).
 // The point of this component is what it does NOT draw: there is no
 // card, no border, no blob, no shadow. The content sits straight on
 // the canvas, exactly like the mezo message band above it — boxes
 // exist only INSIDE (fact strip, ItemRows, chips). The `key={tone}`
 // on the root is what makes a tab switch cross-fade rather than
 // mutate in place (the isl-phasein motion, reused).
-// `DayHeroLine` is the daypart's one big number, left-aligned.
+// `DaypartHero` is the daypart's one big number, left-aligned.
 // ============================================================
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import type { DayFace } from '@/features/today/logic/dayFace'
 
-export function DayView({ tone, night, children }: {
+export function DaypartPanel({ tone, night, children }: {
   tone: DayFace
   /** The evening's night phase — the VIEW darkens, since there is no card to darken. */
   night?: boolean
@@ -716,7 +716,7 @@ export function DayView({ tone, night, children }: {
   )
 }
 
-export function DayHeroLine({ value, unit, sub }: {
+export function DaypartHero({ value, unit, sub }: {
   value: string
   unit?: string | null
   sub?: string | null
@@ -779,7 +779,7 @@ A `.cb-band` blokk után:
 - [ ] **Step 5: Run the test to verify it passes**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/DayView.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartPanel.test.tsx
 ```
 
 Expected: PASS — 4 test.
@@ -787,24 +787,24 @@ Expected: PASS — 4 test.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add frontend/src/features/today/components/DayView.tsx frontend/src/features/today/components/DayView.test.tsx frontend/src/styles/prototype.css
-git commit -m "feat(today): DayView váz kártyakeret nélkül + DayHeroLine (mezo-puci)"
+git add frontend/src/features/today/components/DaypartPanel.tsx frontend/src/features/today/components/DaypartPanel.test.tsx frontend/src/styles/prototype.css
+git commit -m "feat(today): DaypartPanel váz kártyakeret nélkül + DaypartHero (mezo-puci)"
 ```
 
 ---
 
-### Task 5: `ViewMorning`
+### Task 5: `DaypartMorning`
 
 **Files:**
-- Create: `frontend/src/features/today/components/ViewMorning.tsx`
-- Test: `frontend/src/features/today/components/ViewMorning.test.tsx`
+- Create: `frontend/src/features/today/components/DaypartMorning.tsx`
+- Test: `frontend/src/features/today/components/DaypartMorning.test.tsx`
 
 **Interfaces:**
-- Consumes: `DayView`, `DayHeroLine` (Task 4), `DayGroups` (Task 3), `ChainCelebrations` + `type ChainCelebrationInput`, `IntentionBanner`, `IslandFactsStrip` (mind létező), `type IslandFact`/`IslandHero` (`logic/islandFacts`), `type TodayItem`, `type GrowthTodaySummary`.
+- Consumes: `DaypartPanel`, `DaypartHero` (Task 4), `DayGroups` (Task 3), `ChainCelebrations` + `type ChainCelebrationInput`, `IntentionBanner`, `IslandFactsStrip` (mind létező), `type IslandFact`/`IslandHero` (`logic/islandFacts`), `type TodayItem`, `type GrowthTodaySummary`.
 - Produces:
 
 ```ts
-export interface ViewMorningProps {
+export interface DaypartMorningProps {
   hero: IslandHero
   facts: IslandFact[]
   open: TodayItem[]
@@ -821,14 +821,14 @@ Vedd észre: **nincs `next`/promotált CTA és nincs `briefing` prop** — a lá
 
 - [ ] **Step 1: Write the failing test**
 
-`frontend/src/features/today/components/ViewMorning.test.tsx`:
+`frontend/src/features/today/components/DaypartMorning.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
-import { ViewMorning } from '@/features/today/components/ViewMorning'
+import { DaypartMorning } from '@/features/today/components/DaypartMorning'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { QueryWrapper } from '@/test/queryWrapper'
 
@@ -839,11 +839,11 @@ const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   linkUrl: null, ...over,
 })
 
-const renderMorning = (over: Partial<Parameters<typeof ViewMorning>[0]> = {}) =>
+const renderMorning = (over: Partial<Parameters<typeof DaypartMorning>[0]> = {}) =>
   render(
     <QueryWrapper>
       <MemoryRouter>
-        <ViewMorning
+        <DaypartMorning
           hero={{ value: '7,2', unit: 'óra alvás', sub: 'céltól −18 perc' }}
           facts={[{ label: 'Súly', value: '78,4', unit: 'kg', delta: { text: '−0,3 kg · 7 nap', tone: 'good' } }]}
           open={[item(), item({ id: 'habit:b', title: 'Fehérjés reggeli' })]}
@@ -857,7 +857,7 @@ const renderMorning = (over: Partial<Parameters<typeof ViewMorning>[0]> = {}) =>
     </QueryWrapper>,
   )
 
-describe('ViewMorning', () => {
+describe('DaypartMorning', () => {
   test('hero and facts render', () => {
     renderMorning()
     expect(screen.getByText('7,2')).toBeInTheDocument()
@@ -898,18 +898,18 @@ describe('ViewMorning', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/ViewMorning.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartMorning.test.tsx
 ```
 
 Expected: FAIL — a modul nem oldható fel.
 
 - [ ] **Step 3: Write the component**
 
-`frontend/src/features/today/components/ViewMorning.tsx`:
+`frontend/src/features/today/components/DaypartMorning.tsx`:
 
 ```tsx
 // ============================================================
-// Mezo · ViewMorning — the morning daypart's view (mezo-puci), the
+// Mezo · DaypartMorning — the morning daypart's view (mezo-puci), the
 // IslandMorning successor. Two things the island had are gone on
 // purpose: the promoted chain CTA (the step is right there as a row —
 // the button was a duplicate) and the briefing head (it moved up into
@@ -919,14 +919,14 @@ Expected: FAIL — a modul nem oldható fel.
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { DayGroups } from '@/features/today/components/DayGroups'
-import { DayHeroLine, DayView } from '@/features/today/components/DayView'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact, IslandHero } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
-export interface ViewMorningProps {
+export interface DaypartMorningProps {
   hero: IslandHero
   facts: IslandFact[]
   open: TodayItem[]
@@ -938,13 +938,13 @@ export interface ViewMorningProps {
   onAct: (item: TodayItem) => void
 }
 
-export function ViewMorning({
+export function DaypartMorning({
   hero, facts, open, done, doneXp, celebrations, growth, habitPending, onAct,
-}: ViewMorningProps) {
+}: DaypartMorningProps) {
   return (
-    <DayView tone="reggel">
+    <DaypartPanel tone="reggel">
       <ChainCelebrations chains={celebrations} />
-      <DayHeroLine value={hero.value} unit={hero.unit} sub={hero.sub} />
+      <DaypartHero value={hero.value} unit={hero.unit} sub={hero.sub} />
       <IslandFactsStrip facts={facts} />
       <DayGroups
         open={open}
@@ -955,7 +955,7 @@ export function ViewMorning({
         habitPending={habitPending}
         onAct={onAct}
       />
-    </DayView>
+    </DaypartPanel>
   )
 }
 ```
@@ -963,7 +963,7 @@ export function ViewMorning({
 - [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/ViewMorning.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartMorning.test.tsx
 ```
 
 Expected: PASS — 5 test.
@@ -971,24 +971,24 @@ Expected: PASS — 5 test.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/src/features/today/components/ViewMorning.tsx frontend/src/features/today/components/ViewMorning.test.tsx
-git commit -m "feat(today): ViewMorning — a teljes reggel egy nézetben (mezo-puci)"
+git add frontend/src/features/today/components/DaypartMorning.tsx frontend/src/features/today/components/DaypartMorning.test.tsx
+git commit -m "feat(today): DaypartMorning — a teljes reggel egy nézetben (mezo-puci)"
 ```
 
 ---
 
-### Task 6: `ViewDay`
+### Task 6: `DaypartDay`
 
 **Files:**
-- Create: `frontend/src/features/today/components/ViewDay.tsx`
-- Test: `frontend/src/features/today/components/ViewDay.test.tsx`
+- Create: `frontend/src/features/today/components/DaypartDay.tsx`
+- Test: `frontend/src/features/today/components/DaypartDay.test.tsx`
 
 **Interfaces:**
 - Consumes: Task 3 + 4 komponensei, `CompanionNoteCard`, `IntentionBanner`, `IslandFactsStrip`, `ChainCelebrations`, `type CompanionNote` (`@/data/types`), `type ItemTone` (`@/shared/ui/ItemCard`).
 - Produces: **a `DayHero` típus új otthona** (a törlésre ítélt `IslandDay.tsx`-ből költözik ide, változatlan mezőkkel), és:
 
 ```ts
-export interface ViewDayProps {
+export interface DaypartDayProps {
   hero: DayHero | null
   heroWarn?: string | null
   facts: IslandFact[]
@@ -1007,14 +1007,14 @@ export interface ViewDayProps {
 
 - [ ] **Step 1: Write the failing test**
 
-`frontend/src/features/today/components/ViewDay.test.tsx`:
+`frontend/src/features/today/components/DaypartDay.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
-import { ViewDay, type DayHero } from '@/features/today/components/ViewDay'
+import { DaypartDay, type DayHero } from '@/features/today/components/DaypartDay'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { QueryWrapper } from '@/test/queryWrapper'
 
@@ -1030,11 +1030,11 @@ const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   linkUrl: null, ...over,
 })
 
-const renderDay = (over: Partial<Parameters<typeof ViewDay>[0]> = {}) =>
+const renderDay = (over: Partial<Parameters<typeof DaypartDay>[0]> = {}) =>
   render(
     <QueryWrapper>
       <MemoryRouter>
-        <ViewDay
+        <DaypartDay
           hero={hero}
           facts={[{ label: 'Fehérje', value: '84', unit: '/160 g', delta: { text: '76 g van hátra', tone: 'warn' } }]}
           mesoLine="3. mezóhét"
@@ -1051,7 +1051,7 @@ const renderDay = (over: Partial<Parameters<typeof ViewDay>[0]> = {}) =>
     </QueryWrapper>,
   )
 
-describe('ViewDay', () => {
+describe('DaypartDay', () => {
   test('the session hero renders with its CTA', async () => {
     const onLog = vi.fn()
     renderDay({ hero: { ...hero, onLog } })
@@ -1091,18 +1091,18 @@ describe('ViewDay', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/ViewDay.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartDay.test.tsx
 ```
 
 Expected: FAIL — a modul nem oldható fel.
 
 - [ ] **Step 3: Write the component**
 
-`frontend/src/features/today/components/ViewDay.tsx`:
+`frontend/src/features/today/components/DaypartDay.tsx`:
 
 ```tsx
 // ============================================================
-// Mezo · ViewDay — the day daypart's view (mezo-puci), the IslandDay
+// Mezo · DaypartDay — the day daypart's view (mezo-puci), the IslandDay
 // successor. The hero is the day's session (`13:00 · Pull A`), rest
 // days read `Pihenő` with the `Saját edzés` CTA; the niggle warning
 // survives as the one safety chip. The `DayHero` shape lives here now
@@ -1115,7 +1115,7 @@ import type { ChainCelebrationInput } from '@/features/today/components/ChainCel
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { DayGroups } from '@/features/today/components/DayGroups'
-import { DayHeroLine, DayView } from '@/features/today/components/DayView'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
@@ -1136,7 +1136,7 @@ export interface DayHero {
   onLog?: () => void
 }
 
-export interface ViewDayProps {
+export interface DaypartDayProps {
   hero: DayHero | null
   heroWarn?: string | null
   facts: IslandFact[]
@@ -1152,17 +1152,17 @@ export interface ViewDayProps {
   onCustom: () => void
 }
 
-export function ViewDay({
+export function DaypartDay({
   hero, heroWarn, facts, mesoLine, open, done, doneXp, note, celebrations,
   growth, habitPending, onAct, onCustom,
-}: ViewDayProps) {
+}: DaypartDayProps) {
   const durationFact = hero?.facts.find((f) => typeof f === 'string' && /perc|′/.test(f))
   const heroUnit = hero ? `${hero.title}${durationFact ? ` · ${durationFact}` : ''}` : 'nap'
 
   return (
-    <DayView tone="nap">
+    <DaypartPanel tone="nap">
       <ChainCelebrations chains={celebrations} />
-      <DayHeroLine
+      <DaypartHero
         value={hero ? hero.time ?? '—' : 'Pihenő'}
         unit={heroUnit}
         sub={hero ? mesoLine : 'Ma nincs tervezett edzés'}
@@ -1190,7 +1190,7 @@ export function ViewDay({
         habitPending={habitPending}
         onAct={onAct}
       />
-    </DayView>
+    </DaypartPanel>
   )
 }
 ```
@@ -1198,7 +1198,7 @@ export function ViewDay({
 - [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/ViewDay.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartDay.test.tsx
 ```
 
 Expected: PASS — 5 test.
@@ -1206,26 +1206,26 @@ Expected: PASS — 5 test.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/src/features/today/components/ViewDay.tsx frontend/src/features/today/components/ViewDay.test.tsx
-git commit -m "feat(today): ViewDay — session-hero + teljes nappali lista (mezo-puci)"
+git add frontend/src/features/today/components/DaypartDay.tsx frontend/src/features/today/components/DaypartDay.test.tsx
+git commit -m "feat(today): DaypartDay — session-hero + teljes nappali lista (mezo-puci)"
 ```
 
 ---
 
-### Task 7: `ViewEvening` — a négy fázissal
+### Task 7: `DaypartEvening` — a négy fázissal
 
 **Files:**
-- Create: `frontend/src/features/today/components/ViewEvening.tsx`
-- Test: `frontend/src/features/today/components/ViewEvening.test.tsx`
+- Create: `frontend/src/features/today/components/DaypartEvening.tsx`
+- Test: `frontend/src/features/today/components/DaypartEvening.test.tsx`
 - Reference: `frontend/src/features/today/components/IslandEvening.tsx` (a forrás, amit átalakítasz — MÉG NE töröld)
 - Reference: `frontend/src/features/today/components/IslandEvening.test.tsx` (a fázis-esetek, amiket átveszel)
 
 **Interfaces:**
 - Consumes: Task 3 + 4 komponensei; `useHabitActions`, `useHabitDay`, `useRitualDay`, `useTodayScenario` (`@/data/hooks`); `useWindDownPhase` (`@/features/today/logic/useWindDownPhase`); `bedCountdown` (`@/features/today/logic/islandFacts`); `ritualWindowState` (`@/features/ritual/logic/ritualWindow`); `useLevelUp`; `localDateString`.
-- Produces: `ViewEvening(props)` — az `IslandEveningProps` propjai **`listOpen`/`onToggleList` nélkül**:
+- Produces: `DaypartEvening(props)` — az `IslandEveningProps` propjai **`listOpen`/`onToggleList` nélkül**:
 
 ```ts
-export interface ViewEveningProps {
+export interface DaypartEveningProps {
   open: TodayItem[]
   done: TodayItem[]
   dayXp: number
@@ -1240,13 +1240,13 @@ export interface ViewEveningProps {
 
 - [ ] **Step 1: Write the failing test**
 
-`frontend/src/features/today/components/ViewEvening.test.tsx` — a meglévő `IslandEvening.test.tsx` mock-mintáit vedd át (ugyanaz a `useWindDownPhase` mockolás), az `openList()` lépés nélkül:
+`frontend/src/features/today/components/DaypartEvening.test.tsx` — a meglévő `IslandEvening.test.tsx` mock-mintáit vedd át (ugyanaz a `useWindDownPhase` mockolás), az `openList()` lépés nélkül:
 
 ```tsx
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { ViewEvening } from '@/features/today/components/ViewEvening'
+import { DaypartEvening } from '@/features/today/components/DaypartEvening'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -1265,12 +1265,12 @@ const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   linkUrl: null, ...over,
 })
 
-const renderEvening = (over: Partial<Parameters<typeof ViewEvening>[0]> = {}) =>
+const renderEvening = (over: Partial<Parameters<typeof DaypartEvening>[0]> = {}) =>
   render(
     <QueryWrapper>
       <LevelUpProvider>
         <MemoryRouter>
-          <ViewEvening
+          <DaypartEvening
             open={[item()]}
             done={[]}
             dayXp={120}
@@ -1285,7 +1285,7 @@ const renderEvening = (over: Partial<Parameters<typeof ViewEvening>[0]> = {}) =>
     </QueryWrapper>,
   )
 
-describe('ViewEvening', () => {
+describe('DaypartEvening', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
@@ -1348,19 +1348,19 @@ describe('ViewEvening', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/ViewEvening.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartEvening.test.tsx
 ```
 
 Expected: FAIL — a modul nem oldható fel.
 
 - [ ] **Step 3: Write the component**
 
-`frontend/src/features/today/components/ViewEvening.tsx` — másold át az `IslandEvening.tsx` teljes tartalmát, és alkalmazd ezt a hat változtatást:
+`frontend/src/features/today/components/DaypartEvening.tsx` — másold át az `IslandEvening.tsx` teljes tartalmát, és alkalmazd ezt a hat változtatást:
 
-1. Fájlfejléc és név: `ViewEvening`, `(mezo-puci)`, a szigetre utaló mondatok átírva a nézetre.
+1. Fájlfejléc és név: `DaypartEvening`, `(mezo-puci)`, a szigetre utaló mondatok átírva a nézetre.
 2. **Töröld** a `listOpen` / `onToggleList` propokat és a `if (listOpen) { … }` ágat.
-3. A gyökér `<div className="isl-phase" key={ph}>` helyére `<DayView tone="este" night={ph === 'night'} key={ph}>` kerül (a night ág is ezt használja, `night` propal).
-4. A hero blokk `<div className="isl-hero-v">…<span className="isl-hero-u">` + `<div className="isl-hero-sub">` hármasa helyére `<DayHeroLine value={hero.value} unit={hero.unit} sub={sub} />` kerül; a night ág subja `'minden várhat reggelig — jó éjt'`.
+3. A gyökér `<div className="isl-phase" key={ph}>` helyére `<DaypartPanel tone="este" night={ph === 'night'} key={ph}>` kerül (a night ág is ezt használja, `night` propal).
+4. A hero blokk `<div className="isl-hero-v">…<span className="isl-hero-u">` + `<div className="isl-hero-sub">` hármasa helyére `<DaypartHero value={hero.value} unit={hero.unit} sub={sub} />` kerül; a night ág subja `'minden várhat reggelig — jó éjt'`.
 5. Az `isl-act` sor `className`-je `dv-act`; a `még N ›` gomb **törlendő** (nincs mit nyitni). A `Zárjuk le a napot`, a `Napzárás {opensAt}-kor nyílik` ghost és a `Leállás megvolt ✓` gomb változatlan.
 6. Az `isl-doneline` sorok helyére: a `wdDone` és a `ritualState === 'done'` állapotjelzők maradnak, de `className="dv-doneline"` helyett használd a meglévő `.isl-dayxp` idiómát — konkrétan cseréld mindkettőt erre az egy sorra: `<div className="dv-state">Leállás megvolt ✓</div>` illetve `<div className="dv-state">Napzárás kész ✓</div>`, és a Task 4 CSS-blokkja mellé vedd fel:
 
@@ -1389,7 +1389,7 @@ A `night` ágban a `DayGroups` **nem** renderel (éjszaka minden várhat reggeli
 - [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
-cd frontend && pnpm vitest run src/features/today/components/ViewEvening.test.tsx
+cd frontend && pnpm vitest run src/features/today/components/DaypartEvening.test.tsx
 ```
 
 Expected: PASS — 7 test.
@@ -1397,8 +1397,8 @@ Expected: PASS — 7 test.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/src/features/today/components/ViewEvening.tsx frontend/src/features/today/components/ViewEvening.test.tsx frontend/src/styles/prototype.css
-git commit -m "feat(today): ViewEvening — négy fázis kártyakeret nélkül (mezo-puci)"
+git add frontend/src/features/today/components/DaypartEvening.tsx frontend/src/features/today/components/DaypartEvening.test.tsx frontend/src/styles/prototype.css
+git commit -m "feat(today): DaypartEvening — négy fázis kártyakeret nélkül (mezo-puci)"
 ```
 
 ---
@@ -1411,7 +1411,7 @@ git commit -m "feat(today): ViewEvening — négy fázis kártyakeret nélkül (
 - Modify: `frontend/src/features/today/pages/TodayPage.dispatch.test.tsx`
 
 **Interfaces:**
-- Consumes: `DaypartTabs` (1), `MezoMessage` (2), `ViewMorning` (5), `ViewDay` + `type DayHero` (6), `ViewEvening` (7).
+- Consumes: `DaypartTabs` (1), `MezoMessage` (2), `DaypartMorning` (5), `DaypartDay` + `type DayHero` (6), `DaypartEvening` (7).
 - Produces: a `/today` új felülete. A `?dp=` szemantika, az `act()` diszpécser, a `servableAction` szűrés, a `sessions`/`heroItemId` szerzőség, a consume-once level-upok és a hét sheet **változatlanok**.
 
 - [ ] **Step 1: Rewrite the render tree**
@@ -1424,9 +1424,9 @@ A `TodayPage.tsx`-ben:
 import { AnchorIsland } from '@/features/today/components/AnchorIsland'
 import { DaypartTabs } from '@/features/today/components/DaypartTabs'
 import { MezoMessage } from '@/features/today/components/MezoMessage'
-import { ViewDay, type DayHero } from '@/features/today/components/ViewDay'
-import { ViewEvening } from '@/features/today/components/ViewEvening'
-import { ViewMorning } from '@/features/today/components/ViewMorning'
+import { DaypartDay, type DayHero } from '@/features/today/components/DaypartDay'
+import { DaypartEvening } from '@/features/today/components/DaypartEvening'
+import { DaypartMorning } from '@/features/today/components/DaypartMorning'
 ```
 
 Az `Island`/`IslandCapsule` import a `@/shared/ui/Island`-ból **törlendő** (a héj marad a fájlban a Fuelnek, csak a Today nem használja), és a `FACE_EMOJI`/`FACE_LABEL` import is, ha csak a kapszulákhoz kellett — a `DAY_FACES`/`dayFace`/`DayFace` marad.
@@ -1470,7 +1470,7 @@ Az `Island`/`IslandCapsule` import a `@/shared/ui/Island`-ból **törlendő** (a
       <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
       <MezoMessage briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
       {selected === 'reggel' && (
-        <ViewMorning
+        <DaypartMorning
           hero={mHero} facts={morningFacts}
           open={open} done={done} doneXp={doneXp}
           celebrations={celebrationsFor('MORNING')} growth={growth}
@@ -1478,7 +1478,7 @@ Az `Island`/`IslandCapsule` import a `@/shared/ui/Island`-ból **törlendő** (a
         />
       )}
       {selected === 'nap' && (
-        <ViewDay
+        <DaypartDay
           hero={dayHero}
           heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
           facts={dayFacts}
@@ -1489,7 +1489,7 @@ Az `Island`/`IslandCapsule` import a `@/shared/ui/Island`-ból **törlendő** (a
         />
       )}
       {selected === 'este' && (
-        <ViewEvening
+        <DaypartEvening
           open={open} done={done} dayXp={dayXp} facts={eveningFacts}
           note={companionNote} celebrations={celebrationsFor('EVENING')} growth={growth}
           habitPending={habitPending} onAct={act}
@@ -1497,7 +1497,7 @@ Az `Island`/`IslandCapsule` import a `@/shared/ui/Island`-ból **törlendő** (a
       )}
 ```
 
-6. A `useWindDownPhase()` hívás **törölhető a `TodayPage`-ből** (a `windPhase` csak az `Island night` propjához kellett; a `ViewEvening` maga fetcheli). Töröld az importot is.
+6. A `useWindDownPhase()` hívás **törölhető a `TodayPage`-ből** (a `windPhase` csak az `Island night` propjához kellett; a `DaypartEvening` maga fetcheli). Töröld az importot is.
 
 7. A fájlfejléc kommentjét írd át: a „non-scrolling SKY of three islands” bekezdés helyére a tabos modell kerül, a `?dp=` és az `act()`/`servableAction` bekezdések változatlanul maradnak.
 
@@ -1847,4 +1847,4 @@ Ezután nyisd meg a self-PR-t (CI-kapu), várd meg a zöldet, és `--no-ff` merg
 
 **Placeholder-ellenőrzés:** minden lépés konkrét kódot vagy konkrét parancsot ad. A 7. és a 10. feladat két helyen ítéletet kér (az `IslandEvening` átmásolása, a reduced-motion esetek átcímzése) — mindkettőnél explicit döntési szabály van megadva, nem „intézd el valahogy”.
 
-**Típus-konzisztencia:** `DayHero` a 6. feladatban születik és a 8. importálja onnan · `DayGroupsProps.doneLabel` mindhárom nézetben string-interpolációval készül · `ViewEveningProps` nem tartalmaz `listOpen`/`onToggleList`-et, és a 8. feladat sem ad át ilyet · a `DaypartTabs` `onSelect: (face: DayFace) => void` szignatúrája megegyezik a `TodayPage` `selectFace`-ével.
+**Típus-konzisztencia:** `DayHero` a 6. feladatban születik és a 8. importálja onnan · `DayGroupsProps.doneLabel` mindhárom nézetben string-interpolációval készül · `DaypartEveningProps` nem tartalmaz `listOpen`/`onToggleList`-et, és a 8. feladat sem ad át ilyet · a `DaypartTabs` `onSelect: (face: DayFace) => void` szignatúrája megegyezik a `TodayPage` `selectFace`-ével.
