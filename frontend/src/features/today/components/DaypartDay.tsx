@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · ViewDay — the day daypart's view (mezo-puci), the IslandDay
+// Mezo · DaypartDay — the day daypart's view (mezo-puci), the IslandDay
 // successor. The hero is the day's session (`13:00 · Pull A`), rest
 // days read `Pihenő` with the `Saját edzés` CTA; the niggle warning
 // survives as the one safety chip. The `DayHero` shape lives here now
@@ -12,7 +12,7 @@ import type { ChainCelebrationInput } from '@/features/today/components/ChainCel
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { DayGroups } from '@/features/today/components/DayGroups'
-import { DayHeroLine, DayView } from '@/features/today/components/DayView'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
@@ -33,7 +33,7 @@ export interface DayHero {
   onLog?: () => void
 }
 
-export interface ViewDayProps {
+export interface DaypartDayProps {
   hero: DayHero | null
   heroWarn?: string | null
   facts: IslandFact[]
@@ -49,17 +49,17 @@ export interface ViewDayProps {
   onCustom: () => void
 }
 
-export function ViewDay({
+export function DaypartDay({
   hero, heroWarn, facts, mesoLine, open, done, doneXp, note, celebrations,
   growth, habitPending, onAct, onCustom,
-}: ViewDayProps) {
+}: DaypartDayProps) {
   const durationFact = hero?.facts.find((f) => typeof f === 'string' && /perc|′/.test(f))
   const heroUnit = hero ? `${hero.title}${durationFact ? ` · ${durationFact}` : ''}` : 'nap'
 
   return (
-    <DayView tone="nap">
+    <DaypartPanel tone="nap">
       <ChainCelebrations chains={celebrations} />
-      <DayHeroLine
+      <DaypartHero
         value={hero ? hero.time ?? '—' : 'Pihenő'}
         unit={heroUnit}
         sub={hero ? mesoLine : 'Ma nincs tervezett edzés'}
@@ -87,6 +87,6 @@ export function ViewDay({
         habitPending={habitPending}
         onAct={onAct}
       />
-    </DayView>
+    </DaypartPanel>
   )
 }

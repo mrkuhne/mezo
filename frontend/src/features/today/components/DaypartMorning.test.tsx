@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
-import { ViewMorning } from '@/features/today/components/ViewMorning'
+import { DaypartMorning } from '@/features/today/components/DaypartMorning'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { QueryWrapper } from '@/test/queryWrapper'
 
@@ -13,11 +13,11 @@ const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   linkUrl: null, ...over,
 })
 
-const renderMorning = (over: Partial<Parameters<typeof ViewMorning>[0]> = {}) =>
+const renderMorning = (over: Partial<Parameters<typeof DaypartMorning>[0]> = {}) =>
   render(
     <QueryWrapper>
       <MemoryRouter>
-        <ViewMorning
+        <DaypartMorning
           hero={{ value: '7,2', unit: 'óra alvás', sub: 'céltól −18 perc' }}
           facts={[{ label: 'Súly', value: '78,4', unit: 'kg', delta: { text: '−0,3 kg · 7 nap', tone: 'good' } }]}
           open={[item(), item({ id: 'habit:b', title: 'Fehérjés reggeli' })]}
@@ -31,7 +31,7 @@ const renderMorning = (over: Partial<Parameters<typeof ViewMorning>[0]> = {}) =>
     </QueryWrapper>,
   )
 
-describe('ViewMorning', () => {
+describe('DaypartMorning', () => {
   test('hero and facts render', () => {
     renderMorning()
     expect(screen.getByText('7,2')).toBeInTheDocument()

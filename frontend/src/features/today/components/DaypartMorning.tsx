@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · ViewMorning — the morning daypart's view (mezo-puci), the
+// Mezo · DaypartMorning — the morning daypart's view (mezo-puci), the
 // IslandMorning successor. Two things the island had are gone on
 // purpose: the promoted chain CTA (the step is right there as a row —
 // the button was a duplicate) and the briefing head (it moved up into
@@ -9,14 +9,14 @@
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { DayGroups } from '@/features/today/components/DayGroups'
-import { DayHeroLine, DayView } from '@/features/today/components/DayView'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact, IslandHero } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
-export interface ViewMorningProps {
+export interface DaypartMorningProps {
   hero: IslandHero
   facts: IslandFact[]
   open: TodayItem[]
@@ -28,13 +28,13 @@ export interface ViewMorningProps {
   onAct: (item: TodayItem) => void
 }
 
-export function ViewMorning({
+export function DaypartMorning({
   hero, facts, open, done, doneXp, celebrations, growth, habitPending, onAct,
-}: ViewMorningProps) {
+}: DaypartMorningProps) {
   return (
-    <DayView tone="reggel">
+    <DaypartPanel tone="reggel">
       <ChainCelebrations chains={celebrations} />
-      <DayHeroLine value={hero.value} unit={hero.unit} sub={hero.sub} />
+      <DaypartHero value={hero.value} unit={hero.unit} sub={hero.sub} />
       <IslandFactsStrip facts={facts} />
       <DayGroups
         open={open}
@@ -45,6 +45,6 @@ export function ViewMorning({
         habitPending={habitPending}
         onAct={onAct}
       />
-    </DayView>
+    </DaypartPanel>
   )
 }

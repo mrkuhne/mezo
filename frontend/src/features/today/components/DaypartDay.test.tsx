@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
-import { ViewDay, type DayHero } from '@/features/today/components/ViewDay'
+import { DaypartDay, type DayHero } from '@/features/today/components/DaypartDay'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { QueryWrapper } from '@/test/queryWrapper'
 
@@ -18,11 +18,11 @@ const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   linkUrl: null, ...over,
 })
 
-const renderDay = (over: Partial<Parameters<typeof ViewDay>[0]> = {}) =>
+const renderDay = (over: Partial<Parameters<typeof DaypartDay>[0]> = {}) =>
   render(
     <QueryWrapper>
       <MemoryRouter>
-        <ViewDay
+        <DaypartDay
           hero={hero}
           facts={[{ label: 'Fehérje', value: '84', unit: '/160 g', delta: { text: '76 g van hátra', tone: 'warn' } }]}
           mesoLine="3. mezóhét"
@@ -39,7 +39,7 @@ const renderDay = (over: Partial<Parameters<typeof ViewDay>[0]> = {}) =>
     </QueryWrapper>,
   )
 
-describe('ViewDay', () => {
+describe('DaypartDay', () => {
   test('the session hero renders with its CTA', async () => {
     const onLog = vi.fn()
     renderDay({ hero: { ...hero, onLog } })
