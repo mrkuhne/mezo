@@ -17,6 +17,7 @@
 // legitimately appears here.
 // ============================================================
 import { faceOf, type DayFace, DAY_FACES } from '@/features/today/logic/dayFace'
+import { habitIcon } from '@/features/today/logic/itemIcon'
 import { questAction } from '@/features/today/logic/questAction'
 import type { AnchorTimes } from '@/features/today/logic/windDown'
 import type {
@@ -117,7 +118,6 @@ const FUEL_STATUS: Record<string, ItemStatus> = { done: 'done', missed: 'missed'
 // `CHAIN_GROUP`/`CHAIN_FACE` maps. A chain's `daypart` decides its face; DAY is new (the editor
 // lets a custom chain anchor to midday, which the old two-map design had no slot for).
 const DAYPART_FACE: Record<HabitDaypart, DayFace> = { MORNING: 'reggel', DAY: 'nap', EVENING: 'este' }
-const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀️', EVENING: '🌙' }
 const DAYPART_TONE: Record<HabitDaypart, ItemTone> = { MORNING: 'body', DAY: 'mind', EVENING: 'mind' }
 
 export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
@@ -158,7 +158,7 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       face: DAYPART_FACE[chain.daypart],
       status: HABIT_STATUS[h.status] ?? 'open',
       tone: DAYPART_TONE[chain.daypart],
-      emoji: DAYPART_EMOJI[chain.daypart],
+      emoji: habitIcon(h.key, chain),
       tag: chain.title.toUpperCase(),
       title: h.title,
       subtitle: h.anchorCopy || null,
