@@ -3275,7 +3275,11 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    No card: the content sits on the canvas. Boxes only inside — the fact
    strip, the ItemRows, the chips. The .isl-* micro-components are reused
    as-is (they are Fuel's language too), only the frame is new. */
-.dayview { padding: 2px 20px 6px; }
+/* A Today lapnyelve a 16px-es sínt ELEMENKÉNT hordozza (`--td-gut`), nem a panelen —
+   így a listadobozok, a hero és a CTA mind pontosan egy vonalban ülnek. A `.dayview`
+   megmarad, mert ő viszi a tabváltás `isl-phasein` fade-jét és az `is-night` állapotot
+   (lásd `todayReducedMotion.test.ts`). */
+.dayview { padding: 2px 0 6px; }
 :where(.dayview) { animation: isl-phasein .32s ease both; }
 .dv-hero { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .dv-hero-v { font-size: 30px; font-weight: 200; letter-spacing: -.03em; line-height: 1.1;
@@ -3449,3 +3453,197 @@ ol.md-list { list-style: decimal; }
 /* Recording mic (mezo-at8x.4) — a slow breath while the composer is listening. */
 .chat-mic-live { animation: pulse-soft 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }
+
+/* ============================================================
+   Today · iOS list language (mezo-e26w)
+   Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
+   16px-es sín (`--td-gut`). Árnyék helyett .5px hajszálvonal. A sorelválasztó
+   a vezető ikon szélességétől (52px) indul, nem a doboz élétől.
+   Kizárólag meglévő DS-tokenekből épül — nincs új szín, nincs új token.
+   ============================================================ */
+.dayview, .daytabs, .todaychip { --td-gut: 16px; }
+
+/* ── szegmentált napszak-váltó — egy vályú + csúszó bélyeg ── */
+.td-segwrap { padding: 6px var(--td-gut) 14px; }
+.td-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+          background: var(--surface-recess); border-radius: var(--r-full); padding: 3px; }
+.td-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+                 min-height: 38px; border: 0; background: transparent; border-radius: var(--r-full);
+                 font-family: var(--ff-body); font-size: 13.5px; font-weight: 600; letter-spacing: -.01em;
+                 color: var(--text-secondary); cursor: pointer;
+                 transition: background var(--duration-fast) var(--ease-out),
+                             color var(--duration-fast) var(--ease-out); }
+.td-seg button em { font-style: normal; font-size: 13px; opacity: .9; }
+.td-seg button[aria-pressed='true'] { background: var(--surface-card); color: var(--text-primary);
+                                      box-shadow: 0 1px 3px rgba(43, 33, 24, .10),
+                                                  0 0 0 .5px rgba(43, 33, 24, .04); }
+.td-now { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-base);
+          box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--accent-base) 24%, transparent); }
+
+/* ── MezoChip ── */
+.td-chip { display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--td-gut));
+           margin: 0 var(--td-gut) 18px; padding: 11px 14px; min-height: 44px;
+           border-radius: var(--r-lg); background: var(--surface-card);
+           border: .5px solid var(--divider); cursor: pointer; text-align: left;
+           box-shadow: 0 1px 2px rgba(43, 33, 24, .05); font-family: var(--ff-body); }
+.td-av { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; position: relative;
+         background: var(--gradient-cta); color: var(--text-inverse); display: grid;
+         place-items: center; font-size: 12px; box-shadow: 0 2px 6px rgba(255, 91, 54, .30); }
+.td-av.is-unread::after { content: ''; position: absolute; top: -1px; right: -1px;
+                          width: 9px; height: 9px; border-radius: 50%; background: var(--primary-base);
+                          box-shadow: 0 0 0 2px var(--surface-card); }
+.td-chip-t { flex: 1; min-width: 0; }
+.td-chip-t b { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary);
+               letter-spacing: -.01em; }
+.td-chip-t i { display: block; font-style: normal; font-size: 12px; color: var(--text-muted);
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.td-chip-n { flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-full);
+             background: var(--primary-base); color: var(--text-inverse); font-size: 11.5px;
+             font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.td-chev { flex: 0 0 auto; color: var(--text-disabled); font-size: 16px; font-weight: 600; }
+
+/* ── napszak-hero ── */
+.td-hero { padding: 2px var(--td-gut) 0; }
+.td-hero-l { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.td-hero-v { font-family: var(--ff-display); font-size: 36px; font-weight: 250; line-height: 1.05;
+             letter-spacing: -.035em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.td-hero-u { font-size: 15px; font-weight: 400; color: var(--text-secondary); letter-spacing: -.01em; }
+.td-hero-s { display: block; font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted);
+             margin-top: 5px; letter-spacing: -.005em; }
+
+/* ── statisztika-csoport: EGY doboz, függőleges hajszálvonallal ── */
+.td-stats { display: grid; margin: 14px var(--td-gut) 0; background: var(--surface-card);
+            border: .5px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
+.td-stat { padding: 12px 14px; }
+.td-stat + .td-stat { border-left: .5px solid var(--divider); }
+.td-stat-v { font-family: var(--ff-display); font-size: 21px; font-weight: 400; letter-spacing: -.02em;
+             color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.td-stat-v small { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+.td-stat-l { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+             text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
+.td-stat-d { font-family: var(--ff-body); font-size: 11.5px; margin-top: 4px; color: var(--text-secondary); }
+.td-stat-d.is-good { color: var(--success-hover); }
+.td-stat-d.is-warn { color: var(--warning-hover); }
+.td-stat-d.is-muted { color: var(--text-muted); }
+
+/* ── elsődleges CTA + ghost ── */
+.td-cta { display: flex; align-items: center; justify-content: center; gap: 8px;
+          width: calc(100% - 2 * var(--td-gut)); margin: 16px var(--td-gut) 0; min-height: 50px;
+          border: 0; border-radius: var(--r-lg); background: var(--gradient-cta);
+          color: var(--text-inverse); font-family: var(--ff-body); font-size: 16px; font-weight: 600;
+          letter-spacing: -.01em; box-shadow: var(--shadow-cta); cursor: pointer; }
+.td-cta.is-lav { background: linear-gradient(135deg, #A99BD3, #8B7CC0);
+                 box-shadow: 0 8px 20px rgba(139, 124, 192, .32); }
+.td-ghost { display: block; width: calc(100% - 2 * var(--td-gut)); margin: 8px var(--td-gut) 0;
+            min-height: 44px; border-radius: var(--r-lg); border: .5px solid var(--divider);
+            background: var(--surface-card); font-family: var(--ff-body); font-size: 14.5px;
+            font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+
+/* ── szekció + inset grouped list ── */
+.td-sec { margin-top: 26px; }
+.td-sech { display: flex; align-items: baseline; padding: 0 var(--td-gut) 7px; }
+.td-sech b { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .075em;
+             text-transform: uppercase; color: var(--text-muted); }
+.td-sech a, .td-sech button { margin-left: auto; font-family: var(--ff-body); font-size: 12.5px;
+                              font-weight: 600; color: var(--primary-hover); text-decoration: none;
+                              letter-spacing: -.005em; border: 0; background: none; cursor: pointer;
+                              padding: 6px 0 6px 8px; }
+.td-list { margin: 0 var(--td-gut); background: var(--surface-card); border: .5px solid var(--divider);
+           border-radius: var(--r-lg); overflow: hidden; }
+.td-row { display: flex; align-items: center; gap: 11px; padding: 9px 13px; min-height: 56px;
+          position: relative; background: transparent; width: 100%; text-align: left;
+          font-family: var(--ff-body); }
+/* iOS-elválasztó: a vezető ikon szélességétől indul, nem a doboz élétől */
+.td-row + .td-row::before { content: ''; position: absolute; top: 0; left: 52px; right: 0;
+                            border-top: .5px solid var(--divider); }
+.td-ic { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: grid;
+         place-items: center; font-size: 15px; background: var(--surface-recess); }
+.td-ic.t-habit { background: color-mix(in srgb, var(--dv-lav) 18%, transparent); }
+.td-ic.t-quest { background: color-mix(in srgb, var(--accent-base) 20%, transparent); }
+.td-ic.t-fuel  { background: color-mix(in srgb, var(--dv-sage) 22%, transparent); }
+.td-ic.t-check { background: color-mix(in srgb, var(--dv-rose) 20%, transparent); }
+.td-ic.t-train { background: color-mix(in srgb, var(--primary-base) 16%, transparent); }
+.td-tx { flex: 1; min-width: 0; }
+.td-t1 { display: block; font-size: 15.5px; font-weight: 500; letter-spacing: -.015em;
+         color: var(--text-primary); line-height: 1.25; }
+.td-t2 { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px;
+         letter-spacing: -.005em; line-height: 1.3; }
+.td-tm { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--text-muted);
+         font-variant-numeric: tabular-nums; }
+/* kísérő #1 — tintás szöveggomb (NEM szürke pirula) */
+.td-act { flex: 0 0 auto; border: 0; background: none; padding: 12px 2px 12px 10px; cursor: pointer;
+          font-family: var(--ff-body); font-size: 14.5px; font-weight: 600; letter-spacing: -.01em;
+          color: var(--primary-hover); white-space: nowrap; }
+.td-act.is-inert { color: var(--text-disabled); cursor: default; }
+/* kísérő #2 — pipáló karika */
+.td-tick { flex: 0 0 auto; width: 26px; height: 26px; margin: 9px 0 9px 10px; border-radius: 50%;
+           border: 1.6px solid var(--text-disabled); background: none; cursor: pointer;
+           display: grid; place-items: center; font-size: 14px; color: transparent; }
+.td-tick.is-done { border-color: var(--success-base); background: var(--success-base);
+                   color: var(--text-inverse); }
+.td-link { flex: 0 0 auto; width: 44px; height: 44px; display: inline-flex; align-items: center;
+           justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 14px; }
+/* az egész-sor-gomb alak: a találati felület a soron BELÜL él, hogy a `↗` link a
+   testvére lehessen (sosem a gombba ágyazva — érvénytelen HTML + kattintás-ütközés) */
+.td-row-hit { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
+              background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+              font-family: inherit; color: inherit; }
+.td-row.is-done .td-t1 { color: var(--text-muted); text-decoration: line-through; }
+.td-row.is-done .td-ic { opacity: .45; }
+
+/* ── lábjegyzet a csoport alatt — doboz nélkül ── */
+.td-foot { padding: 7px var(--td-gut) 0; font-family: var(--ff-body); font-size: 12px;
+           line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
+.td-foot.is-warn { color: var(--warning-hover); }
+
+/* ── kész-hajtás ── */
+.td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--td-gut));
+           margin: 12px var(--td-gut) 0; padding: 11px 14px; min-height: 44px; border-radius: var(--r-lg);
+           background: transparent; border: .5px dashed var(--divider); cursor: pointer;
+           font-family: var(--ff-body); font-size: 13px; font-weight: 600;
+           color: var(--success-hover); letter-spacing: -.005em; }
+.td-done span { margin-left: auto; color: var(--text-disabled); }
+.td-dayxp { text-align: center; font-family: var(--ff-body); font-size: 12px; font-weight: 700;
+            color: var(--success-hover); padding: 10px var(--td-gut) 0; }
+
+/* ── fókusz (creed) — ugyanaz a listadoboz, halk levendula fejjel ── */
+.td-creed { padding: 12px 14px; background: color-mix(in srgb, var(--dv-lav) 9%, var(--surface-card)); }
+.td-creed-q { display: block; width: 100%; text-align: left; border: 0; background: none;
+              cursor: pointer; font-family: var(--ff-display); font-size: 14.5px; font-style: italic;
+              font-weight: 300; color: var(--secondary-base); line-height: 1.45; }
+
+/* ── MezoMessagesSheet ── */
+.td-sheet-h { display: flex; align-items: center; padding: 4px 16px 12px;
+              border-bottom: .5px solid var(--divider); }
+.td-sheet-h h2 { font-family: var(--ff-body); font-size: 16.5px; font-weight: 700;
+                 letter-spacing: -.02em; color: var(--text-primary); }
+.td-sheet-h button { margin-left: auto; font-family: var(--ff-body); font-size: 15px; font-weight: 600;
+                     color: var(--primary-hover); border: 0; background: none; cursor: pointer;
+                     padding: 10px 0 10px 12px; }
+.td-thread { padding: 14px 0 0; overflow-y: auto; max-height: 62vh; }
+.td-daysep { text-align: center; font-family: var(--ff-body); font-size: 11px; font-weight: 700;
+             letter-spacing: .07em; text-transform: uppercase; color: var(--text-disabled);
+             margin: 2px 0 12px; }
+.td-msg { display: flex; gap: 9px; align-items: flex-end; padding: 0 16px 14px; }
+.td-msg .td-av { margin-bottom: 2px; }
+.td-bub { flex: 1; min-width: 0; background: var(--surface-card); border: .5px solid var(--divider);
+          border-radius: 20px; border-bottom-left-radius: 6px; padding: 11px 14px 12px;
+          box-shadow: 0 1px 2px rgba(43, 33, 24, .05); }
+.td-bub-h { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+.td-bub-n { font-family: var(--ff-body); font-size: 12.5px; font-weight: 700;
+            color: var(--primary-deep); letter-spacing: -.005em; }
+.td-bub-t { font-family: var(--ff-body); font-size: 11.5px; color: var(--text-muted);
+            font-variant-numeric: tabular-nums; }
+.td-bub-x { font-family: var(--ff-body); font-size: 14.5px; line-height: 1.47;
+            color: var(--text-primary); margin: 0; letter-spacing: -.005em; }
+.td-bub-x + .td-bub-x { margin-top: 9px; }
+.td-bub-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.td-bub-meta { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+               text-transform: uppercase; color: var(--text-disabled); margin-top: 9px; }
+
+/* a betöltő váz elrendezése — inline style helyett, hogy a lap CSS-e egy helyen éljen */
+.td-skel { padding: 0 var(--td-gut); }
+.td-skel-chip  { padding-bottom: 18px; }
+.td-skel-hero  { padding-top: 2px; }
+.td-skel-stats { padding-top: 14px; }
+.td-skel-list  { padding-top: 26px; }
