@@ -114,6 +114,10 @@
   --r-3xl: 28px;
   --r-full: 9999px;
 
+  /* Bottom breathing room the app scroller reserves for the tab bar (88px + gap). Anything
+     that pins itself above the tab bar (a sticky composer) offsets by this same token. */
+  --screen-bottom-pad: 96px;
+
   /* ─── Shadows ─── */
   --shadow-xs: 0 1px 2px rgba(43, 33, 24, 0.04);
   --shadow-sm: 0 2px 6px rgba(43, 33, 24, 0.06);
@@ -406,7 +410,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
   padding-top: 54px;
-  padding-bottom: 96px;
+  padding-bottom: var(--screen-bottom-pad);
   scroll-behavior: smooth;
   position: relative;
 }
@@ -3361,3 +3365,35 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wsum-note .l { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 600; color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; }
 .wsum-note textarea { width: 100%; margin-top: 8px; min-height: 52px; resize: none; font-size: 13px; line-height: 1.45; }
 .wsum-ctas { padding: 20px 20px 26px; display: flex; flex-direction: column; gap: 9px; }
+
+/* ===== Markdown prose (mezo-at8x.1) — the companion's model-written answers ==========
+   The chat bubble renders real markdown blocks (@/shared/lib/markdown), so the prose needs
+   the block rhythm a single <p> never had: paragraph spacing, list indents, a heading weight.
+   Scoped under .md-prose so the primitives can't leak into curated app copy. */
+.md-prose { font-size: 14px; line-height: 1.55; color: var(--text-primary); }
+.md-prose > * + * { margin-top: 10px; }
+.md-p { white-space: pre-line; }
+.md-h { font-weight: 700; font-size: 13.5px; letter-spacing: -0.01em; }
+.md-prose .md-h + * { margin-top: 6px; }
+.md-list { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+ul.md-list { list-style: disc; }
+ol.md-list { list-style: decimal; }
+.md-list li { padding-left: 2px; }
+.md-list li::marker { color: var(--text-tertiary); }
+.md-code {
+  font-family: var(--ff-mono); font-size: 12.5px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm); padding: 1px 5px;
+}
+
+/* ===== Chat composer (mezo-at8x.2) ==================================================
+   The chat rides the single app scroller, so the input pins itself just above the tab bar
+   instead of scrolling away at the end of a long transcript. `bottom` is the scroller's own
+   bottom padding — the composer's bottom edge lands exactly on the tab bar's top edge. */
+.chat-composer {
+  position: sticky;
+  bottom: var(--screen-bottom-pad);
+  z-index: 20;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-md);
+}

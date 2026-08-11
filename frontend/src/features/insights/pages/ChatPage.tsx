@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
-import { useChat, useChatActions } from '@/data/hooks'
+import { NEW_CHAT, useChat, useChatActions, useConversations } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
+import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
+import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 
 const SUBTITLE = { mock: 'demo beszélgetés', live: 'Gemini · élő' } as const
 
@@ -31,10 +34,46 @@ function ThinkingDots() {
 }
 
 export function ChatPage() {
-  const { data, isPending } = useChat()
-  const { send, turn, error } = useChatActions()
+  // Which conversation is on screen lives in the URL (`?c=<id>` / `?c=new`) — a shared link,
+  // a back navigation and a reload all land on the same thread (mezo-at8x.3).
+  const [params, setParams] = useSearchParams()
+  const selection = params.get('c')
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const { endRef, scrollToBottom, scrollIfStuck } = useStickToBottom<HTMLDivElement>()
+  const bootstrapped = useRef(false)
+
+  const selectConversation = (id: string | null) => {
+    setParams(id ? { c: id } : {}, { replace: true })
+    // the next thread opens parked at its bottom, without the smooth "catch-up" scroll
+    bootstrapped.current = false
+  }
+
+  const { data, isPending } = useChat(selection)
+  const { conversations, degraded: companionOff } = useConversations().data
+  const { send, turn, error } = useChatActions(selection, selectConversation)
   const [draft, setDraft] = useState('')
-  const { messages, degraded, mode } = data
+  const { messages, mode } = data
+  // The switch-off 404 can surface on either read; a draft thread makes no read of its own.
+  const degraded = data.degraded || companionOff
+  const isNew = selection === NEW_CHAT
+
+  // Landing on the conversation (or gaining a message) parks the view on the newest turn —
+  // a chat opens at the bottom, never at its first line (mezo-at8x.2).
+  useEffect(() => {
+    if (!messages.length) return
+    scrollToBottom(bootstrapped.current ? 'smooth' : 'auto')
+    bootstrapped.current = true
+  }, [messages.length, scrollToBottom])
+
+  // The user just sent something — follow it down unconditionally...
+  useEffect(() => {
+    if (turn?.userText) scrollToBottom()
+  }, [turn?.userText, scrollToBottom])
+
+  // ...but a streaming answer only pulls the view along while the user is still at the bottom.
+  useEffect(() => {
+    if (turn) scrollIfStuck()
+  }, [turn, turn?.draft, turn?.tools.length, scrollIfStuck])
 
   const submit = () => {
     if (!draft.trim() || degraded || turn) return
@@ -48,10 +87,42 @@ export function ChatPage() {
         <div className="col">
           <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · társ</span>
           <span className="text-tertiary" style={{ fontSize: 11 }}>
-            {degraded ? 'a társ most nem elérhető' : SUBTITLE[mode]}
+            {degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
           </span>
         </div>
+        <div className="row gap-xs">
+          <button
+            type="button"
+            className="chip"
+            style={{ padding: 8 }}
+            onClick={() => setPickerOpen(true)}
+            disabled={degraded}
+            aria-label="Beszélgetések"
+          >
+            <Icon name="bookmark" size={14} />
+          </button>
+          <button
+            type="button"
+            className="chip"
+            style={{ padding: 8 }}
+            onClick={() => selectConversation(NEW_CHAT)}
+            disabled={degraded || isNew}
+            aria-label="Új beszélgetés"
+          >
+            <Icon name="plus" size={14} />
+          </button>
+        </div>
       </div>
+
+      {pickerOpen && (
+        <ConversationPickerSheet
+          conversations={conversations}
+          activeId={isNew ? null : (selection ?? data.conversationId)}
+          onSelect={(id) => { selectConversation(id); setPickerOpen(false) }}
+          onNew={() => { selectConversation(NEW_CHAT); setPickerOpen(false) }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
 
       {degraded && (
         <div className="card" style={{ padding: 14 }}>
@@ -63,7 +134,14 @@ export function ChatPage() {
       )}
 
       <div className="col gap-md" style={{ minHeight: 320 }}>
-        {isPending && !degraded && messages.length === 0 && !turn && <ThinkingDots />}
+        {isPending && !degraded && !isNew && messages.length === 0 && !turn && <ThinkingDots />}
+        {!degraded && !isPending && messages.length === 0 && !turn && (
+          <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Új beszélgetés — kérdezz bármit, vagy mondd fel a mikrofonnal.
+            </p>
+          </div>
+        )}
         {messages.map((m, i) => (
           <ChatMessage key={i} m={m} />
         ))}
@@ -87,9 +165,11 @@ export function ChatPage() {
             <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{error}</p>
           </div>
         )}
+        {/* The scroll anchor useStickToBottom pins the view to. */}
+        <div ref={endRef} aria-hidden style={{ height: 1 }} />
       </div>
 
-      <div className="card" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="card chat-composer" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
         <button type="button" className="chip" style={{ padding: 8 }} aria-label="Hangbevitel">
           <Icon name="mic" size={14} />
         </button>
