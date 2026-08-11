@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív" → Mezo Edition DS)
 type: feature-platform
 status: in-progress
-updated: 2026-08-10
+updated: 2026-08-11
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -212,6 +212,22 @@ The sleep C-éj slice appended two feature-scoped CSS families to `prototype.css
 - **`.wdb*` — RETIRED except `.wdb-night*`.** It was the Today evening/night band (`WindDownBanner.tsx`). The theme-aware light-surface rules (the `.wdb` dim/winddown card shell + header/tip/footer/habit-Pipa sub-classes) went when the banner adopted the shared `ItemCard` (`mezo-j7u4`), and the **component itself was deleted by the three-islands re-composition (`mezo-euze`, [ADR 0022](../decisions/0022-today-three-islands.md))** — its job is the evening island's phase content now (`IslandEvening`, the `.isl*` family below: the winddown Pipa is the `Leállás megvolt ✓` ghost, the facts became `.isl-fact` cells). **`.wdb-night*` survives** — the night entry row, **literal-dark in both themes** (its own dark surface + `#F5EFE6`/`#B7A899`/`#B9ACD9` text, matching the NightPage it links into; the idiom the retired `.dynamic-island.live` capsule used before its `mezo-xt65` deletion) — its one remaining consumer is **`SleepPage`'s untimed „Éjszakai mód" entry row** ([me.md §2](me.md)); the evening island's own night phase darkens the island shell instead (`.isl-night`, the `.wdb-night` heritage).
 - **`.sstat*` / `.sesc*` — the Sleep education layer** (slice C3, `mezo-hd8k`). **Theme-aware** (Napív aliases): `.sstat` (the daily-rotating Walker stat card on `SleepPage` — a whole-card `button` over a `--wash-lav` gradient) + `.sstat-eye`/`.sstat-title`/`.sstat-text`/`.sstat-src`, `.sstat-row` (the deck-sheet list rows) and `.sstat-foot` (the sources footer); `.sesc` (the escalation card — a `--wash-amber` gradient, deliberately amber not red, ADR 0010 tone) + `.sesc-actions`/`.sesc-cta`/`.sesc-quiet`, and the sheet-side `.sesc-sheet`/`.sesc-lead`/`.sesc-body` escalation section. Consumed by `SleepStatCard.tsx`/`SleepEscalationCard.tsx`/`SleepStatsSheet.tsx` — see [me.md](me.md) §2 Alvás.
 - **`.night*` / `.nb-*` / `.ns-*` / `.nw-*` — the full-screen NightPage, literal-dark in BOTH themes** (`#0E0B09` canvas, `#F5EFE6`/`#B7A899`/`#6E6156` text, `#B9ACD9` lavender accent — hardcoded hex, deliberately exempt from the tokens-only rule, same always-dark rationale the retired `.dynamic-island.live` capsule used (deleted in `mezo-xt65`): a 3 a.m. sub-30-lux surface reads as always-dark). `.night`/`.night-back`/`.night-body`/`.night-eye`/`.night-moon`/`.night-glow`/`.night-title`/`.night-tx`/`.night-cta`/`.night-quiet` (the idle/getup frames), `.night-orb` (the numberless breathing orb, `nb-breath 18s`) + `.night-tools`/`.night-tool` (the waiting-frame tool menu), `.night-steps` (the get-up list); and the three tool families **`.nb-*`** (breathing: `.nb-stage`/`.nb-orb` + the CSS-only `nb-lb-in/-hold/-out` label cycle over the 18 s `nb-breath` cycle), **`.ns-*`** (body scan: `.ns-card`/`.ns-part`/`.ns-tx`/`.ns-dots`/`.ns-dot`), **`.nw-*`** (4K-walk: `.nw-stage`/`.nw-setup`/`.nw-remind`/`.nw-t`/`.nw-tx`/`.nw-rtx`). **All transform/scale motion is reduced-motion-guarded** — `@media (prefers-reduced-motion: reduce)` stills `.nb-orb`/`.night-orb`; the `nb-lb-in/-hold/-out` **label opacity fades intentionally keep cycling** under reduce (spec D6: the 5-6-7 pacing must survive without motion), a deliberate, documented exception to the §3.5 "all infinite animation behind a reduce guard" rule.
+
+### Chat prose + composer — the `.md-*` family, `.chat-composer`, `--screen-bottom-pad` (`mezo-at8x`, 2026-08-11)
+
+Three additions the companion chat needed, all reusable beyond it:
+
+- **`.md-prose` / `.md-p` / `.md-h` / `.md-list` / `.md-code`** — the block rhythm for
+  model-written markdown (`@/shared/lib/markdown`, §6): 10px between blocks, `white-space:
+  pre-line` paragraphs (the model uses single newlines for line breaks inside one thought),
+  an 18px list indent with `--text-tertiary` markers, and a mono `--surface-2` code chip.
+  Scoped under `.md-prose` so the primitives cannot leak into curated app copy.
+- **`.chat-composer`** — `position: sticky; bottom: var(--screen-bottom-pad)`. The app has ONE
+  scroller (`.screen-content`), so an input that must stay reachable at the end of a long
+  transcript pins itself above the tab bar rather than owning a scroll container of its own.
+- **`--screen-bottom-pad: 96px`** — the bottom breathing room `.screen-content` already reserved
+  for the tab bar, now a token. Anything pinning itself above the tab bar offsets by this same
+  value instead of re-deriving 88 + gap.
 
 ### `.segtabs` — the segmented view switcher (`mezo-setx.6.5`/`.6.6`, 2026-08-08)
 
@@ -527,7 +543,7 @@ function Example({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 Key shapes: cards are plain `<div className="card">` (radius from `.card` or a `.rad-12/-16/-20/-24` utility; accent strip/tint via inline `color-mix` — see §5's on-brand-screen idiom). `Sheet` children may be a render-prop `(close) => ReactNode` so in-sheet buttons dismiss with the same slide-down. `Icon` takes `name: IconName`, `size=24`, `color='currentColor'`, `strokeWidth=1.5`. For theme: `const { theme, toggle } = useTheme()` from `@/app/ThemeProvider`.
 
-For XSS-safe inline copy with `**bold**` markers, use `SafeMarkdown` from `@/shared/lib/safeMarkdown` — never `dangerouslySetInnerHTML`.
+For XSS-safe **inline** copy with `**bold**` markers, use `SafeMarkdown` from `@/shared/lib/safeMarkdown` — never `dangerouslySetInnerHTML`. For **model-written prose** (LLM answers, which arrive as real markdown) use `<Markdown>` from `@/shared/lib/markdown` instead: it renders blocks (paragraphs, `-`/`1.` lists, `##` headings) plus inline bold/italic/`code`, scoped by the `.md-prose` wrapper. One parser backs both — `SafeMarkdown` is its `boldOnly` mode, so curated app copy keeps its exact old behavior (`_underscore_` italics are deliberately unsupported: this app's copy is full of snake_case identifiers).
 
 ---
 
