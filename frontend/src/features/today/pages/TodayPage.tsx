@@ -227,13 +227,19 @@ export function TodayPage() {
   // The melt REPLACES the day: no tabs, no message band, no daypart — one warm island.
   // It still sits in `DaypartPanel`, which is the page's margin, not a card: AnchorIsland's
   // own elements used to take their horizontal inset from the retired island shell
-  // (`.isl-bigview`), and `.dayview`'s padding is what gives it back. `current` is a pure
-  // synchronous clock derivation (line above), so reading it here cannot defer this guard.
+  // (`.isl-bigview`), and `.dayview`'s padding is what gives it back.
   if (scenario.anchorMode) {
     return (
       <>
         {appHero}
-        <DaypartPanel tone={current}><AnchorIsland /></DaypartPanel>
+        {/* The tone is a CONSTANT here, never `current` — `DaypartPanel` puts `key={tone}` on
+            its root to cross-fade a tab switch, and `current` is re-derived from `new Date()`
+            on every render. A clock-derived tone would flip the key the first time a render
+            (a focus refetch, or just the ghost → real sleep-anchor re-render) landed on the far
+            side of a daypart boundary, remounting the melt and silently discarding
+            AnchorIsland's local tick state, which is persisted nowhere. The melt is not a
+            daypart, so it has no tone of its own to be right about. Keep it constant. */}
+        <DaypartPanel tone="reggel"><AnchorIsland /></DaypartPanel>
       </>
     )
   }

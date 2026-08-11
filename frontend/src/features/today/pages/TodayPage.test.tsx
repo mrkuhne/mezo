@@ -32,17 +32,20 @@ function LocationProbe() {
   return <div data-testid="loc">{loc.pathname}{loc.search}</div>
 }
 
+/** Fresh JSX per call — a re-render must not be handed the SAME element, or React bails out. */
+const todayTree = (path = '/today') => (
+  <QueryWrapper>
+    <LevelUpProvider>
+      <MemoryRouter initialEntries={[path]}>
+        <TodayPage />
+        <LocationProbe />
+      </MemoryRouter>
+    </LevelUpProvider>
+  </QueryWrapper>
+)
+
 function renderToday(path = '/today') {
-  return render(
-    <QueryWrapper>
-      <LevelUpProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <TodayPage />
-          <LocationProbe />
-        </MemoryRouter>
-      </LevelUpProvider>
-    </QueryWrapper>,
-  )
+  return render(todayTree(path))
 }
 
 /** Which daypart the screen is showing — the selection's single observable. */
@@ -185,6 +188,25 @@ describe('TodayPage — composition', () => {
     expect(frame).toContainElement(screen.getByRole('button', { name: 'Kilépés a horgony módból' }))
     // …and the frame really is the bare surface, not a resurrected card
     expect(container.querySelector('.isl-blob')).toBeNull()
+  })
+
+  test('the anchor melt keeps its ticks when a re-render crosses a daypart boundary', () => {
+    // `DaypartPanel` puts `key={tone}` on its root (it drives the tab cross-fade), so a
+    // clock-derived tone would remount the melt — and AnchorIsland's three ticks are local
+    // state, persisted nowhere. The tone must therefore be a constant on this branch.
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container, rerender } = render(todayTree('/today?day=rough'))
+    expect(screen.getAllByRole('button', { name: 'Megvolt ✓' })).toHaveLength(3)
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Megvolt ✓' })[0])
+    expect(screen.getAllByRole('button', { name: 'Megvolt ✓' })).toHaveLength(2)
+
+    // The clock walks into the evening and something re-renders the page (a focus refetch is
+    // enough in the real app). The tick must survive.
+    vi.setSystemTime(at('21:05'))
+    rerender(todayTree('/today?day=rough'))
+    expect(screen.getAllByRole('button', { name: 'Megvolt ✓' })).toHaveLength(2)
+    expect(container.querySelectorAll('.itemrow.is-done')).toHaveLength(1)
   })
 
   test('the morning chain\'s first open step is a ROW — there is no promoted CTA duplicate', () => {
