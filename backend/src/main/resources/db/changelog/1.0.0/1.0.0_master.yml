@@ -573,3 +573,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608052135_mezo-8xdl.1_exercise_catalog_images.sql
+  - changeSet:
+      id: "1.0.0:202608111200_mezo-m6uv_recipe_ingredient_nutrient_snapshot"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608111200_mezo-m6uv_recipe_ingredient_nutrient_snapshot.sql
