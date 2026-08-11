@@ -2,20 +2,20 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-08-07
+updated: 2026-08-11
 tags: [today, habit, growth, intention, proactive, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
   - frontend/src/features/ritual
   - frontend/src/data/ritual
   - api/feature/ritual/ritual.yml
-  - frontend/src/features/today/components/IslandEvening.tsx
+  - frontend/src/features/today/components/DaypartEvening.tsx
 related: [today, habit, growth, intention, proactive, _platform-design-system]
 ---
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
 
-> A full-screen, sleep-anchored **5-act evening closing ritual** at route `/ritual` (`AppLayout` child, tab bar hidden — the `train/session` precedent), entered from the Today evening island's **Napzárás CTA** (`IslandEvening` — since the three-islands re-composition, `mezo-euze`) or the evening habit chain. **Status: ✅ done** (backend R1+R2 + FE R3); `/ritual` visual goldens + the formal reduced-motion audit shipped in **R4** (`mezo-mzbz`).
+> A full-screen, sleep-anchored **5-act evening closing ritual** at route `/ritual` (`AppLayout` child, tab bar hidden — the `train/session` precedent), entered from the Today evening daypart's **Napzárás CTA** (`DaypartEvening`, the `IslandEvening` successor — see [today.md](today.md)) or the evening habit chain. **Status: ✅ done** (backend R1+R2 + FE R3); `/ritual` visual goldens + the formal reduced-motion audit shipped in **R4** (`mezo-mzbz`).
 
 ## 1. Summary
 
