@@ -1,6 +1,8 @@
 // ============================================================
 // Mezo · TodayPage dispatch coverage (mezo-j7u4 fix round 1, re-anchored onto the
-// three-islands composition by mezo-euze — the behavioral guarantees are unchanged).
+// daypart-tabs composition by mezo-puci — the behavioral guarantees are unchanged;
+// only the surface the assertions reach through changed: the rows are part of the
+// daypart view now, so nothing has to be unfolded first).
 // The screen is the sheet host the retired cards were, so the dead-control risk lives
 // HERE: `buildTodayItems` gives every habit an action pill, and a kind `act()` does not
 // serve renders a button that does nothing. This file walks EVERY `habitAction` kind and
@@ -60,8 +62,8 @@ const SEED_CHAINS: HabitChainInfo[] = [
 ]
 
 /**
- * One habit per `habitAction` kind, all on the EVENING chain so every row lands in the
- * evening island's L1. `chain` is plain data — `habitAction` keys off `key` + `mode`.
+ * One habit per `habitAction` kind, all on the EVENING chain so every row lands on the
+ * evening daypart. `chain` is plain data — `habitAction` keys off `key` + `mode`.
  */
 const KIND_FIXTURES = [
   { kind: 'check', key: 'caffeine_cutoff', title: 'MANUAL lánc', mode: 'MANUAL' as const, pill: 'Pipa' },
@@ -104,8 +106,13 @@ function renderToday(path = '/today?dp=este') {
   return render(tree(path))
 }
 
-/** Opens the selected island's L1 list (the rows live there since mezo-euze). */
-const openList = () => fireEvent.click(screen.getByRole('button', { name: /^még \d+ ›$/ }))
+/** Which daypart the screen is showing — the selection's single observable. */
+const shownFace = (container: HTMLElement) =>
+  (container.querySelector('.dayview') as HTMLElement | null)?.dataset.tone ?? null
+
+/** A daypart segment in the switcher, scoped so no row/CTA label can be mistaken for a tab. */
+const tab = (name: RegExp) =>
+  within(screen.getByRole('group', { name: 'Napszak' })).getByRole('button', { name })
 
 const rowOf = (title: string) => screen.getByText(title).closest('.itemrow') as HTMLElement
 
@@ -154,7 +161,6 @@ afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); vi.clearAllMocks() })
 describe('TodayPage — no habitAction kind is a dead control', () => {
   test('every kind that offers a pill is served, and the one that cannot is pill-less', () => {
     renderToday()
-    openList()
     for (const f of KIND_FIXTURES) {
       const row = rowOf(f.title)
       const btn = within(row).queryByRole('button')
@@ -171,14 +177,12 @@ describe('TodayPage — no habitAction kind is a dead control', () => {
 
   test("'check' performs the habit check (ADR 0010: MANUAL only)", () => {
     renderToday()
-    openList()
     fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button'))
     expect(check).toHaveBeenCalledWith('caffeine_cutoff')
   })
 
   test("'nav' follows the habit's own log route rather than self-completing", () => {
     renderToday()
-    openList()
     fireEvent.click(within(rowOf('DERIVED nav')).getByRole('button'))
     expect(screen.getByTestId('loc').textContent).toBe('/fuel/stack')
     expect(check).not.toHaveBeenCalled()
@@ -191,7 +195,6 @@ describe('TodayPage — no habitAction kind is a dead control', () => {
     ['intention-reflect', 'DERIVED reflexió', 'Szándékkal élted a napot?'],
   ])("'%s' opens its sheet in place", (_kind, title, sheetName) => {
     renderToday()
-    openList()
     fireEvent.click(within(rowOf(title)).getByRole('button'))
     expect(screen.getByRole('dialog')).toHaveAccessibleName(sheetName)
     expect(screen.getByTestId('loc').textContent).toBe('/today') // it did not navigate away
@@ -234,7 +237,6 @@ describe('TodayPage — no quest row is a dead control either', () => {
   test('an unmapped metric renders NO button — the production growth_intention case', () => {
     setup({ quests: [quest({ id: 'gi', title: 'Fogalmazd meg a mai szándékod', metric: 'intention_focus_set' })] })
     renderToday()
-    openList()
     const row = rowOf('Fogalmazd meg a mai szándékod')
     expect(within(row).queryByRole('button')).toBeNull()
   })
@@ -244,7 +246,6 @@ describe('TodayPage — no quest row is a dead control either', () => {
   test('the water quest\'s pill reads +250 ml and performs the log in place', () => {
     setup({ quests: [quest({ id: 'w', title: 'Igyál vizet', metric: 'water_target' })] })
     renderToday()
-    openList()
     fireEvent.click(within(rowOf('Igyál vizet')).getByRole('button', { name: '+250 ml' }))
     expect(screen.getByTestId('loc').textContent).toBe('/today') // it did not navigate
     expect(screen.queryByRole('dialog')).toBeNull()              // and opened no sheet
@@ -253,7 +254,6 @@ describe('TodayPage — no quest row is a dead control either', () => {
   test('a nav quest keeps its own destination label', () => {
     setup({ quests: [quest({ id: 'wl', title: 'Mérd meg magad', metric: 'weight_logged' })] })
     renderToday()
-    openList()
     fireEvent.click(within(rowOf('Mérd meg magad')).getByRole('button', { name: 'Mérés' }))
     expect(screen.getByTestId('loc').textContent).toBe('/me/weight')
   })
@@ -264,7 +264,6 @@ describe('TodayPage — no quest row is a dead control either', () => {
       checkins: [slot('06:30', 'done'), slot('10:00', 'done'), slot('14:00', 'done'), slot('20:00', 'done')],
     })
     renderToday()
-    openList()
     expect(within(rowOf('Töltsd ki a check-int')).queryByRole('button')).toBeNull()
   })
 
@@ -274,7 +273,6 @@ describe('TodayPage — no quest row is a dead control either', () => {
       checkins: [slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'done'), slot('20:00', 'pending')],
     })
     renderToday()
-    openList()
     fireEvent.click(within(rowOf('Töltsd ki a check-int')).getByRole('button', { name: 'Check-in' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
@@ -287,7 +285,6 @@ describe('TodayPage — no quest row is a dead control either', () => {
       checkins: [slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'skipped'), slot('20:00', 'skipped')],
     })
     renderToday()
-    openList()
     fireEvent.click(within(rowOf('Töltsd ki a check-int')).getByRole('button', { name: 'Check-in' }))
     expect(screen.getByRole('dialog').textContent).toContain('10:00')
   })
@@ -303,10 +300,9 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
     ({ time, state, values: null, note: null })
   const AT_15 = [slot('06:30', 'skipped'), slot('10:00', 'skipped'), slot('14:00', 'now'), slot('20:00', 'pending')]
 
-  test('the morning island renders BOTH passed slots, each with a Pótold pill', () => {
+  test('the morning daypart renders BOTH passed slots, each with a Pótold pill', () => {
     setup({ habits: [], checkins: AT_15 })
     renderToday('/today?dp=reggel')
-    openList()
     const rows = screen.getAllByText('Hogy voltál?')
     expect(rows).toHaveLength(2)
     for (const r of rows) {
@@ -317,7 +313,6 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
   test('the copy does not pretend it was on time — past tense + „elmaradt" + its own clock time', () => {
     setup({ habits: [], checkins: AT_15 })
     renderToday('/today?dp=reggel')
-    openList()
     const row = screen.getAllByText('Hogy voltál?')[0].closest('.itemrow') as HTMLElement
     expect(row).toHaveTextContent('06:30 · elmaradt')
     expect(within(row).queryByText('Koppints')).toBeNull()
@@ -326,7 +321,6 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
   test('Pótold opens the sheet for THAT slot, so the morning can be recorded', () => {
     setup({ habits: [], checkins: AT_15 })
     renderToday('/today?dp=reggel')
-    openList()
     const row = screen.getAllByText('Hogy voltál?')[0].closest('.itemrow') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Pótold' }))
     expect(screen.getByRole('dialog').textContent).toContain('06:30')
@@ -334,26 +328,26 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
 })
 
 describe('TodayPage — an in-flight habit write withdraws its controls', () => {
-  test('a pending check withdraws the L1 habit rows', () => {
-    setup({ habits: ALL_KINDS, pending: true })
+  const waterQuest: DailyQuest = {
+    id: 'w', questDate: '2026-05-21', slot: 'GROWTH', skillKey: 'mindset',
+    title: 'Igyál vizet', why: 'w', targetLabel: 't', metric: 'water_target', xp: 20,
+    status: 'offered', completionMode: 'DERIVED',
+  }
+
+  test('an in-flight habit write withdraws habit pills but leaves quest pills live', () => {
+    setup({ habits: ALL_KINDS, quests: [waterQuest], pending: true })
     const { container } = renderToday('/today?dp=este')
-    openList()
-    // the labels stay as inert copy — no clickable control survives
+    // the labels stay as inert copy — no clickable control survives on a HABIT row
     expect(within(rowOf('MANUAL lánc')).queryByRole('button')).toBeNull()
     expect(within(rowOf('MANUAL lánc')).getByText('Pipa')).toBeInTheDocument()
     expect(container.querySelector('.itemrow-act.is-inert')).toBeTruthy()
-  })
-
-  test('the morning promoted CTA is disabled while a check is in flight', () => {
-    setup({ habits: [habit({ key: 'morning_sunlight', chain: 'MORNING', title: 'Napfény', mode: 'MANUAL' })], pending: true })
-    renderToday('/today?dp=reggel')
-    expect(screen.getByRole('button', { name: 'Napfény' })).toBeDisabled()
+    // …while a quest row, which the habit write cannot double-fire, stays live
+    expect(within(rowOf('Igyál vizet')).getByRole('button', { name: '+250 ml' })).toBeInTheDocument()
   })
 
   test('with no write in flight the controls are live', () => {
     setup({ habits: ALL_KINDS })
     renderToday('/today?dp=este')
-    openList()
     fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button', { name: 'Pipa' }))
     expect(check).toHaveBeenCalledWith('caffeine_cutoff')
   })
@@ -368,7 +362,7 @@ describe('TodayPage — the chain-completion celebration', () => {
     }),
   ]
 
-  test('the morning island toasts once when its chain completes', () => {
+  test('the morning daypart toasts once when its chain completes', () => {
     const seen: ToastMessage[] = []
     const off = onToast((t) => seen.push(t))
     setup({ habits: chain('MORNING', true) })
@@ -379,7 +373,7 @@ describe('TodayPage — the chain-completion celebration', () => {
     expect(seen).toEqual([{ kind: 'success', text: '🌅 Tökéletes reggel' }])
   })
 
-  test('the evening island toasts once when its chain completes', () => {
+  test('the evening daypart toasts once when its chain completes', () => {
     const seen: ToastMessage[] = []
     const off = onToast((t) => seen.push(t))
     setup({ habits: chain('EVENING', true) })
@@ -398,13 +392,13 @@ describe('TodayPage — the chain-completion celebration', () => {
   })
 })
 
-describe('TodayPage — the day island hero', () => {
+describe('TodayPage — the day daypart hero', () => {
   test('a rest day offers the custom-workout sheet instead of a session hero', async () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workout: null, workoutTime: null })
     const { container } = renderToday('/today?dp=nap')
     // Zero-guard: no workout ⇒ no duration fact anywhere in the hero markup (the
-    // Pihenő placeholder's own `.isl-hero-u` reads "nap", never a `~X perc` chip).
-    expect(container.querySelector('.isl-hero-u')?.textContent).not.toMatch(/perc/)
+    // Pihenő placeholder's own `.dv-hero-u` reads "nap", never a `~X perc` chip).
+    expect(container.querySelector('.dv-hero-u')?.textContent).not.toMatch(/perc/)
     fireEvent.click(screen.getByRole('button', { name: 'Saját edzés' }))
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
   })
@@ -412,26 +406,30 @@ describe('TodayPage — the day island hero', () => {
 
 /**
  * I3 + I5 heritage (mezo-mvb4.1): the session is authored once — the hero is a reference to
- * the same object the item is built from, and the islands filter it by ID. An early gym slot
- * must render exactly once (the day island's hero), and a stacked day's non-hero session must
- * still render as a row on its own island.
+ * the same object the item is built from, and the daypart views filter it by ID. An early gym
+ * slot must render exactly once (the day view's hero), and a stacked day's non-hero session
+ * must still render as a row on its own daypart.
  */
 describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
-  const l1Rows = (container: HTMLElement) =>
-    [...container.querySelectorAll('.isl-l1 .itemrow')]
+  const rows = (container: HTMLElement) =>
+    [...container.querySelectorAll('.dv-groups .itemrow')]
       .map((r) => r.querySelector('.itemrow-t1')?.textContent)
 
-  test('an EARLY gym slot renders once — the day hero, never a twin row on the morning island', () => {
+  test('the promoted session renders on the day view only', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workoutTime: '07:30' })
     const { container } = renderToday('/today?dp=reggel')
-    // On the morning island it renders nowhere (that inert twin is what I5 was) — the only
-    // trace of the session is the day CAPSULE's essence line…
-    const morning = container.querySelector('.isl[data-tone="reggel"]') as HTMLElement
+    // On the morning daypart it renders NOWHERE (that inert twin is what I5 was) — the
+    // capsule essence line that used to carry it is gone with the islands…
+    expect(shownFace(container)).toBe('reggel')
+    // scoped to the daypart view: the standing mezo message's prose names Pull Day too,
+    // and that band is not the morning's content.
+    const morning = container.querySelector('.dayview') as HTMLElement
     expect(within(morning).queryByText(/Pull Day/)).toBeNull()
-    // …and selecting the day island shows it as the hero with its real CTA.
-    fireEvent.click(screen.getByRole('button', { name: /^Nap · 07:30 · Pull Day/ }))
-    expect(container.querySelector('.isl-hero-v')?.textContent).toContain('07:30')
-    expect(container.querySelector('.isl-hero-u')?.textContent).toContain('Pull Day')
+    // …and switching to the day tab shows it as the hero with its real CTA.
+    fireEvent.click(tab(/Nap/))
+    expect(shownFace(container)).toBe('nap')
+    expect(container.querySelector('.dv-hero-v')?.textContent).toContain('07:30')
+    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('Pull Day')
     // Hand-computed duration (sessionLength.ts estimateSessionMinutes), never call the
     // estimator here — derived from the mock `workout.exercises` (src/data/train/train.ts,
     // 5 exercises). avgReps=(repMin+repMax)/2, repSec=3.5 (none plyo), restSecondsFor
@@ -449,15 +447,14 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     //     avgReps=17.5; work=3*17.5*3.5=183.75; rest=2*90=180;    warmup=1*65=65;  transition=90 -> 518.75
     //   total seconds = 614.5 + 635.5 + 476.75 + 450.5 + 518.75 = 2696
     //   minutes = Math.round(2696 / 60) + warmupBlockMinutes(8) = Math.round(44.9333) + 8 = 45 + 8 = 53
-    expect(container.querySelector('.isl-hero-u')?.textContent).toContain('~53 perc')
+    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('~53 perc')
     expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
-    openList()
-    expect(l1Rows(container)).not.toContain('Pull Day')
+    expect(rows(container)).not.toContain('Pull Day')
   })
 
-  test('on a STACKED day the non-hero session still renders as a row on its own island', () => {
+  test('on a STACKED day the non-hero session still renders as a row on its own daypart', () => {
     // Gym + a 17:00 sport session: the nap window is 11:45–19:15, so 17:00 is `nap` — the same
-    // island the gym hero occupies. The sport session must surface as an L1 row with its facts.
+    // daypart the gym hero occupies. The sport session must surface as a row with its facts.
     const session: VolleyballSession = {
       day: 'Csü', time: '17:00', duration: 90, court: 'BVSC csarnok',
       intensity: 'közepes', role: 'edzés', today: true,
@@ -465,10 +462,9 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, volleyballSessions: [session] })
     const { container } = renderToday('/today?dp=nap')
     // the gym is the hero…
-    expect(container.querySelector('.isl-hero-u')?.textContent).toContain('Pull Day')
+    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('Pull Day')
     // …and the volleyball session is a row, with its own facts
-    openList()
-    expect(l1Rows(container)).toContain('Volleyball')
+    expect(rows(container)).toContain('Volleyball')
     const row = screen.getByText('Volleyball').closest('.itemrow') as HTMLElement
     expect(row).toHaveTextContent('90 perc · BVSC csarnok · edzés')
     expect(row).toHaveTextContent('17:00')
@@ -483,9 +479,8 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
       ...baseToday, workout: null, workoutTime: null, volleyballSessions: [session],
     })
     const { container } = renderToday('/today?dp=nap')
-    expect(container.querySelector('.isl-hero-u')?.textContent).toContain('Volleyball')
-    openList()
-    expect(l1Rows(container)).not.toContain('Volleyball')
+    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('Volleyball')
+    expect(rows(container)).not.toContain('Volleyball')
   })
 })
 
@@ -497,20 +492,19 @@ describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', 
   test('an unresolved catalog ({chains: []}) skips every habit row without crashing', () => {
     setup({ habits: ALL_KINDS, catalogChains: [], catalogPending: true })
     renderToday('/today?dp=este')
-    openList()
     // Every chain lookup misses while the catalog is unresolved — every habit row vanishes
     // rather than the page throwing on an undefined chain; reaching this assertion at all
     // is itself the no-crash proof.
     for (const f of KIND_FIXTURES) {
       expect(screen.queryByText(f.title)).toBeNull()
     }
-    expect(screen.getAllByRole('button', { name: /megnyitás/ }).length).toBeGreaterThan(0)
+    // the screen itself is still standing — the daypart switcher renders as always
+    expect(screen.getByRole('group', { name: 'Napszak' })).toBeInTheDocument()
   })
 
   test('habit rows appear the moment the catalog resolves — the items memo tracks catalog.chains', () => {
     setup({ habits: ALL_KINDS, catalogChains: [], catalogPending: true })
     const { rerender } = renderToday('/today?dp=este')
-    openList()
     expect(screen.queryByText('MANUAL lánc')).toBeNull()
 
     mocks.useHabitCatalog.mockReturnValue({ catalog: { chains: SEED_CHAINS }, isPending: false })
