@@ -29,4 +29,12 @@ public enum MetricKey {
     public String labelHu() {
         return labelHu;
     }
+
+    /**
+     * A wire/config kulcs (kebab-case), pl. {@code SLEEP_DURATION_H → "sleep-duration-h"} —
+     * pontosan az, amit a {@code mezo.companion.patterns.pairs} katalógus is használ.
+     */
+    public String wireKey() {
+        return name().toLowerCase(java.util.Locale.ROOT).replace('_', '-');
+    }
 }

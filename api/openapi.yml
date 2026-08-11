@@ -4069,6 +4069,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/pattern/monitor:
+    get:
+      tags:
+        - Companion
+      operationId: patternMonitor
+      summary: >-
+        Élő kapu-diagnosztika (mezo-viqs) — a katalógus minden párjára ugyanaz a
+        kiértékelés fut, amit az éjszakai job végezne, de ÍRÁS NÉLKÜL: verdikt +
+        illesztett napok + a hiányzó metrika, plusz a 12 metrika lefedettsége a
+        korrelációs ablakban.
+      responses:
+        '200':
+          description: A motor pillanatnyi állapota
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatternMonitorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/companion/conversation/{conversationId}/message/stream':
     post:
       tags:
@@ -11365,6 +11388,145 @@ components:
         decision:
           type: string
           pattern: ^(confirm|monitor|reject)$
+    PatternMonitorResponse:
+      type: object
+      required:
+        - windowFrom
+        - windowTo
+        - lookbackDays
+        - minN
+        - cron
+        - pairs
+        - metrics
+      properties:
+        windowFrom:
+          type: string
+          format: date
+          description: A korrelációs ablak első napja.
+        windowTo:
+          type: string
+          format: date
+          description: >-
+            Az ablak utolsó napja (tegnap — a job is befejezett napokkal
+            dolgozik).
+        lookbackDays:
+          type: integer
+          description: mezo.companion.patterns.lookback-days
+        minN:
+          type: integer
+          description: mezo.companion.patterns.min-n — a felszínre-engedő kapu.
+        cron:
+          type: string
+          description: 'A nyers cron-kifejezés (a FE nem parse-olja, csak megjeleníti).'
+        lastRunAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            A user statisztikai sorainak max(lastDetectedAt)-ja; null = a job
+            még sosem írt sort.
+        pairs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternMonitorPair'
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternMetricCoverage'
+    PatternMonitorPair:
+      type: object
+      required:
+        - key
+        - title
+        - category
+        - categoryLabel
+        - lagDays
+        - metricAKey
+        - metricALabel
+        - metricBKey
+        - metricBLabel
+        - verdict
+        - alignedDays
+      properties:
+        key:
+          type: string
+          description: A pár stabil identitása (pair_key).
+        title:
+          type: string
+        category:
+          type: string
+          pattern: ^(physiology|trigger|response)$
+        categoryLabel:
+          type: string
+        lagDays:
+          type: integer
+          description: metric-b ennyi nappal metric-a napja UTÁN olvasódik.
+        metricAKey:
+          type: string
+        metricALabel:
+          type: string
+        metricBKey:
+          type: string
+        metricBLabel:
+          type: string
+        verdict:
+          type: string
+          pattern: ^(live|few_days|no_data|degenerate|frozen)$
+        alignedDays:
+          type: integer
+          description: Az illesztett napok száma (frozen sornál a befagyasztott n).
+        missingDays:
+          type: integer
+          nullable: true
+          description: minN - alignedDays — csak few_days.
+        bottleneckMetricKey:
+          type: string
+          nullable: true
+          description: A szűk keresztmetszet metrikája — few_days / no_data / degenerate.
+        r:
+          type: number
+          format: double
+          nullable: true
+          description: 'live: élő számítás · frozen: a befagyasztott sor értéke.'
+        'n':
+          type: integer
+          nullable: true
+        p:
+          type: number
+          format: double
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          pattern: ^(confirmed|rejected)$
+          description: Csak frozen sorokon — a user ítélete.
+    PatternMetricCoverage:
+      type: object
+      required:
+        - key
+        - label
+        - coveredDays
+        - windowDays
+        - pairCount
+      properties:
+        key:
+          type: string
+          description: 'kebab-case metrika-kulcs, egyezően a pairs katalógussal.'
+        label:
+          type: string
+          description: Magyar metrika-címke.
+        coveredDays:
+          type: integer
+          description: Hány napon van érték az ablakban.
+        windowDays:
+          type: integer
+        lastDayWithData:
+          type: string
+          format: date
+          nullable: true
+        pairCount:
+          type: integer
+          description: Hány katalógus-pár hivatkozik erre a metrikára.
     LogMentionRequest:
       type: object
       required:

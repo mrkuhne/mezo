@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
+import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
@@ -15,6 +16,7 @@ import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -35,6 +37,7 @@ public class CompanionController implements CompanionApi {
     private final KnowledgeFactService knowledgeFactService;
     private final FactCandidateService factCandidateService;
     private final PatternService patternService;
+    private final PatternMonitorService patternMonitorService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -85,6 +88,11 @@ public class CompanionController implements CompanionApi {
     @Override
     public PatternResponse decidePattern(UUID patternId, PatternDecisionRequest request) {
         return patternService.decide(currentUserId.get(), patternId, request);
+    }
+
+    @Override
+    public PatternMonitorResponse patternMonitor() {
+        return patternMonitorService.monitor(currentUserId.get());
     }
 
     @Override
