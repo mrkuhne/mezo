@@ -889,7 +889,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
-| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict (+ `missingDays`/bottleneck metric for `few_days`/`no_data`/`degenerate`) and per-`MetricKey` coverage. |
+| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
 `MessageResponse {id, role, content, createdAt, tools[], refs[], degraded}` (**filled since

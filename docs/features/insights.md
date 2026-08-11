@@ -290,7 +290,7 @@ const { memoir, anniversaryNote, mode } = useMemoir()
 
 Two pure helpers may be imported straight from the data module (stateless constants/utils, not data): `MIN_PATTERN_CONFIDENCE` and `patternCategoryColor` from `@/data/insights/insights`; `factCategoryColor` and `FACT_CATEGORIES` from `@/data/insights/knowledge`.
 
-Today these return **synchronous static data** (safe to read in render with no loading/null guard). **When Phase 3 lands they may become async** — write new consumers defensively now (ghost-guard for null), matching the real-mode convention used by biometrics/Train. To render a full sub-tab, mount the corresponding `pages/*View.tsx` under a child route of `/insights` (see `router.tsx:76-87` + `tabs.ts`).
+Today these return **synchronous static data** (safe to read in render with no loading/null guard). **When Phase 3 lands they may become async** — write new consumers defensively now (ghost-guard for null), matching the real-mode convention used by biometrics/Train. To render a full sub-tab, mount the corresponding `pages/*View.tsx` under a child route of `/insights` (see `router.tsx:105-118` + `tabs.ts`).
 
 ---
 
@@ -300,7 +300,7 @@ Today these return **synchronous static data** (safe to read in render with no l
 1. Add/extend the type in `frontend/src/data/types.ts` (Insights/Knowledge region).
 2. Add mock instances in `data/insights/insights.ts` (or `knowledge.ts`/`chat.ts`).
 3. Surface via the relevant hook in `hooks.ts` — **keep the returned object's shape stable** so the Phase-3 swap stays mechanical.
-4. New sub-tab: add to `INSIGHTS_TABS` (`tabs.ts`) + a child route in `router.tsx:78-86` + a view in `pages/`.
+4. New sub-tab: add to `INSIGHTS_TABS` (`tabs.ts`) + a child route in `router.tsx:105-118` + a view in `pages/`.
 5. Add a Vitest test mirroring the existing per-view + per-data tests (§8).
 
 ### 7.2 Make it real (Phase 3 / Slice D) — the recipe
@@ -328,8 +328,9 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **Weekly hook (dual-mode):** `data/insights/weeklyHooks.test.tsx` — real-mode composition/null-state cases + (W1) `weeklySuggestion` served from the GET / kept null on the default 404 (MSW `/api/proactive/weekly-suggestion` defaults to 404) + (E3) `growthWeek` from the MSW default honest-zeros. Card: `components/GrowthWeekCard.test.tsx` (E3 — renders the rows on data, the honest empty line on a zero/null week).
 - **Memoir hook (dual-mode, W2):** `data/insights/memoirHooks.test.tsx` (3) — real mode maps the server memoir with a derived `Hét N …` week label (anniversaryNote null, mode live); returns null memoir on the default 404; mock returns the seed + anniversaryNote without fetching (MSW `/api/proactive/memoir` defaults to 404).
 - **`ChatPage.test` gotcha** (documented in-file): `userEvent.type` deadlocks under `vi.useFakeTimers()`; the test uses `fireEvent.change` + `fireEvent.keyDown` and `vi.advanceTimersByTime(1300)` to exercise the 1200 ms canned-reply timer.
-- **Nav/shell:** `insights.nav.test.tsx` (real: opens the `Minták` chip's dropdown and reaches `Heti`/`Memoár`/`Előrejelzések`/**`Kísérletek`** via `menuitem` clicks → their null-states; mock: `Memoár` navigation renders the demo) — since the compact-header redesign (`mezo-ugqb`) it drives navigation through the shared `SubNavDropdown` popover rather than the retired `InsightsSubNav`'s pills. The dedicated `InsightsSubNav.test.tsx` (which asserted **both modes render all 7 `.np-pill`s since P2 — nothing hidden**) is gone; the dropdown mechanics themselves are covered generically by `shared/ui/SubNavDropdown.test.tsx`, and `insights.nav.test.tsx` still exercises `visibleInsightsTabs()` end-to-end by reaching every tab via the popover in both modes. Plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark, and `features/progression/components/appHeroMount.test.tsx` asserts `.apphero` renders on `/insights` too.
+- **Nav/shell:** `insights.nav.test.tsx` (real: opens the `Minták` chip's dropdown and reaches `Heti`/`Memoár`/`Előrejelzések`/**`Kísérletek`** via `menuitem` clicks → their null-states; mock: `Memoár` navigation renders the demo) — since the compact-header redesign (`mezo-ugqb`) it drives navigation through the shared `SubNavDropdown` popover rather than the retired `InsightsSubNav`'s pills. The dedicated `InsightsSubNav.test.tsx` (which asserted **both modes render all 7 `.np-pill`s since P2 — nothing hidden**) is gone; the dropdown mechanics themselves are covered generically by `shared/ui/SubNavDropdown.test.tsx`, and `insights.nav.test.tsx` still exercises `visibleInsightsTabs()` end-to-end by reaching every tab via the popover in both modes. Plus app-level `src/app/navigation.test.tsx` clicks the `aria-label="Insights"` sparkle entry link and asserts the `aria-label="Insights alnavigáció"` landmark (§2); `TabBar.test.tsx` asserts the opposite — the bottom `TabBar` renders only the four tab labels (`Ma`/`Edzés`/`Fuel`/`Én`) and explicitly has **no** `Insights` tab; and `features/progression/components/appHeroMount.test.tsx` asserts `.apphero` renders on `/insights` too.
 - **No ghost pages remain (since P2):** every page test now has a `(mock mode)` + `(real mode)` describe asserting real data / the honest null-state — no test asserts a `hamarosan` teaser any more. `ExperimentsPage.test.tsx` real-mode: an MSW proposed row renders `◇ Javaslat` + Elfogadom/Elvetem and clicking Elfogadom POSTs the decision; the default empty array shows the still-learning null-state. `experimentsHooks.test.tsx` mirrors the P1 `predictionsHooks.test.tsx` idiom (maps a wire row, `[]` default, mock no-fetch). Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
+- **`MotorPage.test.tsx` (`mezo-viqs`):** `(mock mode)` — the engine-state header (window/lookback/min-n/raw cron), all 5 verdicts' derived sentences render, pair ordering (`live → few_days fewest-missing-first → degenerate → no_data → frozen`), and coverage-row ordering (thinnest-covered first, proving the page's own sort against a deliberately unsorted seed); `(real mode)` — the 404 degraded card and the "még nem futott" (never run) `lastRunAt: null` case via MSW.
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -390,7 +391,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 
 **Cross-feature seams:**
-- `frontend/src/app/router.tsx:76-87` — route wiring · `frontend/src/app/TabBar.tsx:10`
+- `frontend/src/app/router.tsx:105-118` — route wiring · `frontend/src/features/today/pages/TodayPage.tsx:221` — the `sparkle`-icon entry link (no bottom `TabBar` entry, §2)
 - `frontend/src/features/me/pages/KnowledgePage.tsx` + `ProfilePage.tsx` — share `useKnowledge`
 - `frontend/src/features/me/components/InsightCard.tsx` — `TrendInsight` (lightweight insight, used by Goals/Sleep)
 - `frontend/src/data/train/train.ts:57` · `sleep.ts:25-33` · `fuelWeek.ts:55,151,156` · `goals.ts:50` — "pattern engine" references (shared `P2`/`P3` IDs)
