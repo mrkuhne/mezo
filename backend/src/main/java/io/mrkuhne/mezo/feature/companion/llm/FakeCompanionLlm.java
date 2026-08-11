@@ -51,6 +51,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
+    /** Scripted transcript (mezo-at8x.4): {@code [fake-transcript:…]} decoded from AUDIO BYTES. */
+    public static final Pattern TRANSCRIPT_SENTINEL =
+            Pattern.compile("\\[fake-transcript:([^\\]]*)]", Pattern.DOTALL);
+
     /** Scripted extraction (V1.2): {@code [fake-facts:<json-array>]} is returned verbatim to extraction calls. */
     public static final Pattern FACTS_SENTINEL =
             Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
@@ -379,6 +383,17 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
         }
         return complete(systemPrompt, userMessage);
+    }
+
+    /**
+     * Voice input (mezo-at8x.4): an IT "recording" is the UTF-8 sentinel text, so the whole
+     * multipart -> service -> port chain runs deterministically. No sentinel -> prompt echo,
+     * which is what the "unusable model answer" path asserts.
+     */
+    @Override
+    public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
+        Matcher m = TRANSCRIPT_SENTINEL.matcher(new String(audio.bytes(), StandardCharsets.UTF_8));
+        return m.find() ? m.group(1) : complete(systemPrompt, userMessage);
     }
 
     /** {@link #SUGGEST_COUNT_SENTINEL}: N valid, distinct, grounded suggestions — fixed skillKey

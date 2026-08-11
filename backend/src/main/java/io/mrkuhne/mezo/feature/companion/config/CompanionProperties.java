@@ -29,7 +29,8 @@ public record CompanionProperties(
     @NotNull @Valid Recall recall,
     @NotNull @Valid Patterns patterns,
     @NotNull @Valid Hypotheses hypotheses,
-    @NotNull @Valid HabitSuggest habitSuggest
+    @NotNull @Valid HabitSuggest habitSuggest,
+    @NotNull @Valid Transcription transcription
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -120,6 +121,14 @@ public record CompanionProperties(
         /** Max suggestions the adapter asks the model for / returns (HabitAiService's own
          *  sanitize step is a defensive bounds check, not a count clamp). */
         @Min(1) @Max(20) int maxSuggestions
+    ) {}
+
+    /** Chat voice input (mezo-at8x.4) — the caps on an uploaded voice note. */
+    public record Transcription(
+        /** Service-level upload cap in bytes (container multipart caps sit above this). */
+        @Min(1) int maxAudioBytes,
+        /** Accepted audio mime types, base type only (MediaRecorder's `;codecs=` is stripped). */
+        @NotEmpty List<String> allowedMimeTypes
     ) {}
 
     /** V3.1 nightly statistical pattern engine — Pearson over the metric-pair catalog. */

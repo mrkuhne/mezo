@@ -97,6 +97,12 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
             captured = contextHolder.get();
             return answer;
         }
+
+        @Override
+        public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
+            captured = contextHolder.get();
+            return answer;
+        }
     }
 
     @TestConfiguration

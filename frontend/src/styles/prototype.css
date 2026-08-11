@@ -3397,3 +3397,7 @@ ol.md-list { list-style: decimal; }
   background: var(--surface-card);
   box-shadow: var(--shadow-md);
 }
+
+/* Recording mic (mezo-at8x.4) — a slow breath while the composer is listening. */
+.chat-mic-live { animation: pulse-soft 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }

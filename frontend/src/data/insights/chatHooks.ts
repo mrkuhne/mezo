@@ -109,6 +109,25 @@ export function useChat(selection?: ChatSelection) {
   })
 }
 
+/** The mock-mode transcript — the demo surface never touches the network (mezo-at8x.4). */
+const MOCK_TRANSCRIPT = 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?'
+
+/**
+ * Speech-to-text for the chat composer (mezo-at8x.4). Stateless: a recorded clip goes up,
+ * a transcript comes back, nothing is persisted on either side.
+ */
+export function useTranscribe() {
+  return {
+    transcribe: async (audio: Blob): Promise<string> => {
+      if (isMockMode()) {
+        await new Promise((resolve) => setTimeout(resolve, 600))
+        return MOCK_TRANSCRIPT
+      }
+      return chatApi.transcribe(audio)
+    },
+  }
+}
+
 /**
  * Send/stream state machine for ONE selected conversation. Mock mode keeps the Phase-1 demo
  * flow (1.2s thinking → canned reply) but through the shared query cache; real mode ensures a

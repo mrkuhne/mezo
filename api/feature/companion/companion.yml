@@ -10,6 +10,11 @@ tags:
       is outside the generator's vocabulary, so the endpoint is hand-written
       (CompanionStreamController) while the contract stays the single source of truth.
       See docs/features/_platform-api-backend.md §9.
+  - name: CompanionVoice
+    description: >-
+      Phase-3 companion voice input (mezo-at8x.4) — stateless speech-to-text for the chat
+      composer. Its own tag so the generated interface stays separate from the conversation
+      CRUD surface.
 paths:
   /api/companion/conversation:
     get:
@@ -349,8 +354,62 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/transcribe:
+    post:
+      tags: [CompanionVoice]
+      operationId: transcribeVoiceNote
+      summary: >-
+        Transcribe a short spoken message to text (mezo-at8x.4). Stateless and ephemeral —
+        the audio is never stored, nothing is persisted, and the transcript is only handed
+        back for the client to put in its composer. Server-side transcription (rather than
+        the browser's Web Speech API) is what makes voice input work on iOS/PWA at all.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: The recorded voice note (wav/webm/ogg/mp4/mpeg, size capped by mezo.companion.transcription.max-audio-bytes)
+      responses:
+        '200':
+          description: The transcript — empty text when nothing intelligible was said
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TranscriptionResponse' }
+        '400':
+          description: Missing/oversized/unsupported audio
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '502':
+          description: COMPANION_TRANSCRIBE_FAILED — the model answer was unusable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
+    TranscriptionResponse:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: The transcript in the speaker's own language; empty string when the recording carried no speech.
     ConversationResponse:
       type: object
       required: [id, startedAt]

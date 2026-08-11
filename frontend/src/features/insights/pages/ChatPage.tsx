@@ -5,6 +5,8 @@ import { NEW_CHAT, useChat, useChatActions, useConversations } from '@/data/hook
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
+import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { cn } from '@/shared/lib/cn'
 
 const SUBTITLE = { mock: 'demo beszélgetés', live: 'Gemini · élő' } as const
 
@@ -52,6 +54,9 @@ export function ChatPage() {
   const { conversations, degraded: companionOff } = useConversations().data
   const { send, turn, error } = useChatActions(selection, selectConversation)
   const [draft, setDraft] = useState('')
+  // The transcript lands in the composer rather than being sent — the user checks it first.
+  const voice = useVoiceInput((text) => setDraft((d) => (d ? `${d} ${text}` : text)))
+  const recording = voice.state === 'recording'
   const { messages, mode } = data
   // The switch-off 404 can surface on either read; a draft thread makes no read of its own.
   const degraded = data.degraded || companionOff
@@ -169,15 +174,36 @@ export function ChatPage() {
         <div ref={endRef} aria-hidden style={{ height: 1 }} />
       </div>
 
+      {voice.error && (
+        <p className="text-tertiary" style={{ fontSize: 11, textAlign: 'center' }}>{voice.error}</p>
+      )}
+
       <div className="card chat-composer" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button type="button" className="chip" style={{ padding: 8 }} aria-label="Hangbevitel">
-          <Icon name="mic" size={14} />
+        <button
+          type="button"
+          className={cn('chip', recording && 'chat-mic-live')}
+          style={{
+            padding: 8,
+            ...(recording
+              ? { background: 'var(--wash-amber)', borderColor: 'var(--coral-deep)', color: 'var(--coral-deep)' }
+              : null),
+          }}
+          onClick={voice.toggle}
+          disabled={degraded || voice.state === 'unsupported' || voice.state === 'transcribing'}
+          aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
+          aria-pressed={recording}
+        >
+          <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
         </button>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder="Mondj valamit..."
+          placeholder={
+            recording ? 'Hallgatlak…'
+              : voice.state === 'transcribing' ? 'Leiratozom…'
+                : 'Mondj valamit...'
+          }
           disabled={degraded}
           style={{ flex: 1, padding: '8px 4px', fontSize: 13 }}
         />

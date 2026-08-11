@@ -46,6 +46,16 @@ public interface CompanionLlm {
         return complete(systemPrompt, userMessage, List.of(new InlineImage(imageBytes, mimeType)));
     }
 
+    /** An ephemeral inline audio clip for a multimodal call — bytes live only for the call. */
+    record InlineAudio(byte[] bytes, String mimeType) {}
+
+    /**
+     * One-shot completion on the cheap tier with an ephemeral inline audio clip (mezo-at8x.4 —
+     * chat voice input). Nothing is stored. Same contract as the vision overload: the bytes
+     * never leave the call, and the answer is plain text.
+     */
+    String complete(String systemPrompt, String userMessage, InlineAudio audio);
+
     /**
      * One-shot completion on the SMART tier (V3.2 — the heavy weekly pipelines; ADR 0008 model
      * tiers). Defaults to the cheap tier so the fake (and any adapter without a smart model)
