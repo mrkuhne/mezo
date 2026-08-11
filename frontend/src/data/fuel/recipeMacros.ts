@@ -1,3 +1,4 @@
+import type { components } from '@/data/_client/api.gen'
 import type { Ingredient, Nutrients, RecipeIngredientLine } from '@/data/types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
@@ -103,6 +104,25 @@ export function computeRecipeMacrosWithOverrides(
     { ...zero },
   )
   return { kcal: roundMacro(sum.kcal), p: roundMacro(sum.p), c: roundMacro(sum.c), f: roundMacro(sum.f) }
+}
+
+/**
+ * Wire `nutrients` (every field OPTIONAL — `number | null | undefined`) → domain `Nutrients`
+ * (every field always present, `number | null`). `null`/absent on the wire is never turned into
+ * 0 — that is the entire point of this normalizer: an ingredient/line/recipe the backend has no
+ * fact for stays honestly `null`, not a fabricated zero.
+ *
+ * Lives here (not in recipeApi.ts, where the brief first sketched it) because recipeApi.ts already
+ * imports `fromBreakdown` from mealApi.ts — a second, reverse import of this helper from recipeApi
+ * into mealApi would close a cycle between the two API modules. Both import it from here instead.
+ */
+export function toNutrients(n: components['schemas']['Nutrients'] | undefined): Nutrients {
+  return {
+    fiberG: n?.fiberG ?? null,
+    sugarG: n?.sugarG ?? null,
+    saltG: n?.saltG ?? null,
+    saturatedFatG: n?.saturatedFatG ?? null,
+  }
 }
 
 export const NO_NUTRIENTS: Nutrients = { fiberG: null, sugarG: null, saltG: null, saturatedFatG: null }

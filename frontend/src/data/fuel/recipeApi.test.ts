@@ -94,3 +94,24 @@ describe('recipeApi', () => {
     await expect(recipeApi.remove('r1')).resolves.toBeUndefined()
   })
 })
+
+describe('nutrients mapping', () => {
+  it('fromResponse carries the nutrients rollup and the per-line facts', () => {
+    const recipe = fromResponse({
+      ...apiRecipe,
+      nutrients: { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 },
+      ingredients: [{
+        ...apiRecipe.ingredients[0],
+        nutrients: { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 },
+      }, apiRecipe.ingredients[1]],
+    } as never)
+
+    expect(recipe.nutrients).toEqual({ fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 })
+    expect(recipe.ingredients[0].nutrients?.saltG).toBe(0.8)
+  })
+
+  it('fromResponse yields all-null nutrients when the wire omits them', () => {
+    const recipe = fromResponse(apiRecipe as never)
+    expect(recipe.nutrients).toEqual({ fiberG: null, sugarG: null, saltG: null, saturatedFatG: null })
+  })
+})

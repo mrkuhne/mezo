@@ -12,7 +12,7 @@ import type {
   FuelMeal,
 } from '@/data/types'
 import { fuelDay } from '@/data/fuel/fuel'
-import { enrichLine, computeRecipeMacros } from '@/data/fuel/recipeMacros'
+import { enrichLine, computeRecipeMacros, computeRecipeNutrients } from '@/data/fuel/recipeMacros'
 
 // pantrySources already ported in Task 4 — re-export, do not redefine.
 export { pantrySources } from '@/data/pantrySources'
@@ -53,6 +53,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-csirkemell', name: 'Csirkemell · friss', brand: 'Bonafarm', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
     macros: { kcal: 110, p: 23.0, c: 0, f: 1.5 },
+    fiberG: 0, sugarG: 0, saltG: 0.1, saturatedFatG: 0.4,
     price: 3290, priceUnit: 'Ft/kg', pkg: '500g tálca',
     micros: [{ name: 'B6', pct: 92 }, { name: 'Niacin', pct: 88 }, { name: 'Se', pct: 76 }],
     nova: 1, stock: { qty: 400, unit: 'g', expires: 'Máj 25' },
@@ -61,6 +62,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-turo', name: 'Túró · félzsíros', brand: 'Mizo', source: 'kifli.hu', category: 'dairy', per: 100, unit: 'g',
     macros: { kcal: 130, p: 18.0, c: 3.5, f: 5.0 },
+    fiberG: 0, sugarG: 3.5, saltG: 0.1, saturatedFatG: 3.2,
     price: 2190, priceUnit: 'Ft/kg', pkg: '250g pohár',
     micros: [{ name: 'Ca', pct: 92 }, { name: 'B12', pct: 88 }, { name: 'Casein', pct: 95 }],
     nova: 3, stock: { qty: 250, unit: 'g', expires: 'Máj 26' },
@@ -69,6 +71,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-lazac', name: 'Lazacfilé · norvég', brand: 'Kifli Premium', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
     macros: { kcal: 208, p: 20.4, c: 0, f: 13.4 },
+    fiberG: 0, sugarG: 0, saltG: 0.12, saturatedFatG: 2.7,
     price: 14990, priceUnit: 'Ft/kg', pkg: '300g vákuum',
     micros: [{ name: 'Omega-3', pct: 95 }, { name: 'D3', pct: 72 }, { name: 'B12', pct: 88 }],
     nova: 1, stock: { qty: 300, unit: 'g', expires: 'Máj 24', lowExpiry: true },
@@ -87,6 +90,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-zab', name: 'Zabpehely · gluténmentes', brand: 'Naturmind', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 372, p: 13.5, c: 60.0, f: 7.0 },
+    fiberG: 10.6, sugarG: 1.0, saltG: 0.02, saturatedFatG: 1.2,
     price: 1490, priceUnit: 'Ft/500g', pkg: '500g',
     micros: [{ name: 'Béta-glükán', pct: 95 }, { name: 'Fiber', pct: 92 }, { name: 'Mg', pct: 38 }],
     nova: 1, stock: { qty: 320, unit: 'g', expires: '2026.09' },
@@ -95,6 +99,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-edesburg', name: 'Édesburgonya', brand: 'Bio piac', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 86, p: 1.6, c: 20.1, f: 0.1 },
+    fiberG: 3.0, sugarG: 4.2, saltG: 0.03, saturatedFatG: 0.02,
     price: 1490, priceUnit: 'Ft/kg', pkg: '1kg',
     micros: [{ name: 'Vit A', pct: 100 }, { name: 'K', pct: 76 }, { name: 'Béta-karotin', pct: 95 }],
     nova: 1, stock: { qty: 600, unit: 'g', expires: 'Jún 05' },
@@ -103,6 +108,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-rizs', name: 'Barna rizs · hosszú szemű', brand: 'Lassi Bio', source: 'tesco.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 360, p: 7.4, c: 76.0, f: 2.8 },
+    fiberG: 3.5, sugarG: 0.7, saltG: 0.01, saturatedFatG: 0.6,
     price: 990, priceUnit: 'Ft/500g', pkg: '500g',
     micros: [{ name: 'Mg', pct: 62 }, { name: 'B3', pct: 58 }, { name: 'Fiber', pct: 44 }],
     nova: 1, stock: { qty: 480, unit: 'g', expires: '2026.11' },
@@ -129,6 +135,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-brokkoli', name: 'Brokkoli', brand: 'Eco', source: 'kifli.hu', category: 'veggie', per: 100, unit: 'g',
     macros: { kcal: 34, p: 2.8, c: 6.6, f: 0.4 },
+    fiberG: 2.6, sugarG: 1.7, saltG: 0.08, saturatedFatG: 0.05,
     price: 1290, priceUnit: 'Ft/db', pkg: '1db ~400g',
     micros: [{ name: 'Vit C', pct: 96 }, { name: 'Folát', pct: 68 }, { name: 'Sulforaphane', pct: 92 }],
     nova: 1, stock: null,
@@ -137,6 +144,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-afonya', name: 'Áfonya · fagyasztott', brand: 'Frozen', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
     macros: { kcal: 57, p: 0.7, c: 14.5, f: 0.3 },
+    fiberG: 2.4, sugarG: 9.7, saltG: 0.003, saturatedFatG: 0.03,
     price: 2490, priceUnit: 'Ft/300g', pkg: '300g zacskó',
     micros: [{ name: 'Antocianin', pct: 100 }, { name: 'Vit C', pct: 48 }, { name: 'Fiber', pct: 38 }],
     nova: 1, stock: { qty: 220, unit: 'g', expires: '2027.02' },
@@ -153,6 +161,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-olivao', name: 'Olívaolaj · extra szűz', brand: 'Casa Olearia', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
     macros: { kcal: 884, p: 0, c: 0, f: 100 },
+    fiberG: 0, sugarG: 0, saltG: 0, saturatedFatG: 14.0,
     price: 5490, priceUnit: 'Ft/500ml', pkg: '500ml',
     micros: [{ name: 'Polifenolok', pct: 88 }, { name: 'Vit E', pct: 72 }],
     nova: 2, stock: { qty: 380, unit: 'ml', expires: '2027.01' },
@@ -161,6 +170,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-mez', name: 'Akácméz · hazai', brand: 'Hungaria Méz', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 304, p: 0.3, c: 82.4, f: 0 },
+    fiberG: 0, sugarG: 82.1, saltG: 0.01, saturatedFatG: 0,
     price: 3490, priceUnit: 'Ft/500g', pkg: '500g üveg',
     micros: [{ name: 'Antioxidánsok', pct: 42 }],
     nova: 2, stock: { qty: 320, unit: 'g', expires: '2028.03' },
@@ -169,6 +179,7 @@ export const ingredients: Ingredient[] = [
   {
     id: 'ing-mandula', name: 'Mandula · pörkölt', brand: 'Naturmind', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
     macros: { kcal: 579, p: 21.2, c: 21.6, f: 49.9 },
+    fiberG: 12.5, sugarG: 4.4, saltG: 0.01, saturatedFatG: 4.0,
     price: 2890, priceUnit: 'Ft/200g', pkg: '200g',
     micros: [{ name: 'Vit E', pct: 100 }, { name: 'Mg', pct: 68 }, { name: 'Fiber', pct: 52 }],
     nova: 1, stock: { qty: 120, unit: 'g', expires: '2026.08' },
@@ -627,6 +638,7 @@ export const recipes: Recipe[] = recipesBase.map(r => {
     enrichLine(line, ingredients.find(i => i.id === line.refId)),
   )
   const macros = computeRecipeMacros(enrichedIngredients)
+  const nutrients = computeRecipeNutrients(enrichedIngredients)
 
-  return { ...r, ingredients: enrichedIngredients, macros, recentLogs, templateBreakdown }
+  return { ...r, ingredients: enrichedIngredients, macros, nutrients, recentLogs, templateBreakdown }
 })

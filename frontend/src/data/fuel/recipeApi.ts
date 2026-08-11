@@ -1,6 +1,7 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import { fromBreakdown } from '@/data/fuel/mealApi'
+import { toNutrients } from '@/data/fuel/recipeMacros'
 import type { MealBreakdown, Recipe, RecipeInput, RecipeIngredientLine } from '@/data/types'
 
 type RecipeRequest = components['schemas']['RecipeRequest']
@@ -64,9 +65,11 @@ export function fromResponse(r: RecipeResponse): Recipe {
         note: l.note ?? undefined,
         name: l.name,
         contribution: l.contribution,
+        nutrients: toNutrients(l.nutrients),
       }),
     ),
     macros: r.macros,
+    nutrients: toNutrients(r.nutrients),
     novaDominant: r.novaDominant as Recipe['novaDominant'],
     mezoFit: { score: r.mezoFit.score ?? null, fitsFor: r.mezoFit.fitsFor },
     starred: r.starred,
