@@ -55,9 +55,14 @@ class MealApiIT extends ApiIntegrationTest {
 
     /** Creates a 2-serving recipe via POST /api/recipe from one 200 g pantry line and returns it. */
     private RecipeResponse createRecipe(HttpHeaders auth, UUID foodId) {
+        return createRecipe(auth, foodId, "200");
+    }
+
+    /** Same 2-serving recipe, caller-chosen line amount — for the gram-precision fixture. */
+    private RecipeResponse createRecipe(HttpHeaders auth, UUID foodId, String grams) {
         RecipeIngredientRequest line = new RecipeIngredientRequest();
         line.setPantryItemId(foodId);
-        line.setAmount(new BigDecimal("200"));
+        line.setAmount(new BigDecimal(grams));
         line.setUnit("g");
         RecipeRequest r = new RecipeRequest();
         r.setName("Túrós tál");
@@ -342,6 +347,30 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(recipeMeal.getItems().get(0).getNutrients().getSaltG()).isNotNull();
         assertThat(recipeMeal.getItems().get(0).getNutrients().getSaltG())
             .isEqualByComparingTo(recipeMeal.getNutrients().getSaltG());
+    }
+
+    /**
+     * The gram precision guard (mezo-m6uv, review fix 1). Grams are rounded PER LINE and then the
+     * whole-recipe sum is divided by servings, so a one-decimal scale quantizes twice: this line is
+     * truly 0.4 g/100 g × 20 g = 0.08 g whole → ÷ 2 servings = <b>0.040 g/adag</b>, which the old
+     * rule inflated to 0.1 g (0.08→0.1, then 0.1÷2=0.05→0.1) — 2.5×, on salt, the number this
+     * feature exists to show. Deliberately a fixture that is NOT exact at one decimal: every other
+     * nutrient assertion in the suite lands on a round value and would survive a revert to
+     * {@code setScale(1)}. This one fails on a revert of ANY of the three hops —
+     * {@code RecipeMapper.scaledGram} (→0.050), {@code MealService.perServingGram} (→0.0) or
+     * {@code MealMapper.scaledGram} (→0.0).
+     */
+    @Test
+    void testCreateMeal_shouldKeepThreeDecimalGrams_whenTheWholeRollupIsDividedByServings() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Sós keksz"); // salt 0.4 g / 100 g
+        RecipeResponse recipe = createRecipe(auth, food, "20"); // 20 g line, 2 servings
+
+        MealResponse meal = postForBody("/api/meal", mealReq(recipeItem(recipe.getId(), "1")),
+            auth, HttpStatus.CREATED, MealResponse.class);
+
+        assertThat(meal.getItems().get(0).getNutrients().getSaltG())
+            .isEqualByComparingTo(new BigDecimal("0.040"));
     }
 
     @Test
