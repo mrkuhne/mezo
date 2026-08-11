@@ -14,15 +14,22 @@ Phase-3 agy) — a determinisztikus párokon túl a hipotézis-körnek is gazdag
 
 ## 2. Cél / nem cél
 
-**Cél:** (A) 20 új metrika + 21 új pár (össz-katalógus: 32 metrika, 29 pár) — tisztán
+**Cél:** (A) 19 új metrika + 21 új pár (össz-katalógus: 31 metrika, 29 pár) — tisztán
 additív bővítés; (B) három AI-kontextus tétel: digest-gazdagítás, heti metrika-tábla és
 kapu-diagnosztika a `gather()`-ben.
 
 **Nem cél:** a detektálási matek, az upsert-szabályok, az inbox vagy a FE változtatása
 (az új párok maguktól jelennek meg); szöveg→szám leképezések (említés-tónus pontozás,
-note-szentiment — az értelmezés az LLM dolga, nem a determinisztikus motoré); új tábla.
+note-szentiment — az értelmezés az LLM dolga, nem a determinisztikus motoré); új tábla;
+mélyalvás-metrika (`deepMin`/`remMin` — wearable-import felület nélkül permanensen üres
+sorozat lenne; ha egyszer lesz wearable-import, V3.5-ként kerül be).
 
-## 3. A) Új metrikák (20)
+**Gyűjtő-UI audit (2026-08-11):** minden felvett metrika mögött MÁR LÉTEZIK gyűjtő-felület —
+gym-feedback: a FeedbackModal „Set debrief" (pump/jointPain/workload, valódi POST);
+body/mental: CheckInSheet; bedtime/wakeup/awakenings: SleepLogSheet; hrRecovery: RunLogSheet;
+mentions: PersonLogSheet (Slice E). Új gyűjtő-UI-t a bővítés NEM igényel.
+
+## 3. A) Új metrikák (19)
 
 A `MetricKey` bővül (labelHu + a monitor-spec `sourceHu` mezője — amelyik spec előbb
 implementálódik, az adja hozzá a mezőt, a másik követi); extraktoruk a
@@ -45,21 +52,20 @@ találunk ki értéket.
 | 10 | `daily-xp` | ActivityLog + HabitDay + DailyQuest `xpAwarded`/`xp` | összeg |
 | 11 | `meal-score` | Meal `score` | átlag |
 | 12 | `reta-dose-mg` | MedicationCycleService derivált aktuális dózis (a cycle JSON lépcsőjéből, a ciklusnap-deriválás mintájára) | napi érték |
-| 13 | `sleep-deep-min` | SleepLog `deepMin` (wearable-napok) | max |
-| 14 | `wakeup-hour` | SleepLog `wakeup` | törtóra |
-| 15 | `run-hr-recovery-s` | RunSessionLog `hrRecoverySec` | átlag (ritka adat — a kapu kezeli) |
-| 16 | `social-mentions` | Mention (People) napi darabszám (`ts` napja) | darabszám |
+| 13 | `wakeup-hour` | SleepLog `wakeup` | törtóra |
+| 14 | `run-hr-recovery-s` | RunSessionLog `hrRecoverySec` | átlag (ritka adat — a kapu kezeli) |
+| 15 | `social-mentions` | Mention (People) napi darabszám (`ts` napja) | darabszám |
 
 ### Derivált metrikák (sport-tudományi jelek)
 
 | # | Kulcs | Számítás |
 |---|---|---|
-| 17 | `acwr` | 7 napos / 28 napos gördülő napi-terhelés arány; terhelés = sport-perc + gym-volumen közös skálára normalizálva. Az extraktor az ablak ELŐTTI 28 napot is beolvassa (belső ablak-kiterjesztés — a hívó `[from,to]`-ja változatlan). |
-| 18 | `training-monotony` | Foster-monotónia: 7 napos gördülő átlag/szórás a napi terhelésen; szórás=0 → nincs adatpont (definiálatlan, nem ∞) |
-| 19 | `bedtime-variability` | a `bedtime-hour` 7 napos gördülő szórása (social jetlag jel); min. 3 nap adat a gördülő ablakban |
-| 20 | `weekend` | 0/1 (szo–vas) — tiszta naptári sorozat, minden napra létezik; kontroll-változó / hétvége-hatás |
+| 16 | `acwr` | 7 napos / 28 napos gördülő napi-terhelés arány; terhelés = sport-perc + gym-volumen közös skálára normalizálva. Az extraktor az ablak ELŐTTI 28 napot is beolvassa (belső ablak-kiterjesztés — a hívó `[from,to]`-ja változatlan). |
+| 17 | `training-monotony` | Foster-monotónia: 7 napos gördülő átlag/szórás a napi terhelésen; szórás=0 → nincs adatpont (definiálatlan, nem ∞) |
+| 18 | `bedtime-variability` | a `bedtime-hour` 7 napos gördülő szórása (social jetlag jel); min. 3 nap adat a gördülő ablakban |
+| 19 | `weekend` | 0/1 (szo–vas) — tiszta naptári sorozat, minden napra létezik; kontroll-változó / hétvége-hatás |
 
-## 4. A) Új párok (21 — össz 29)
+## 4. A) Új párok (21 — össz 29; mindegyik metrikája mögött élő gyűjtő-UI van, ld. §2 audit)
 
 Konvenciók változatlanok (kulcs = stabil identitás, sosem nevezzük át élőben; kategória +
 magyar címke + cím a configban).
@@ -79,7 +85,7 @@ magyar címke + cím a configban).
 | `daily-xp~checkin-mental` | 0 | response | aktív nap → hangulat |
 | `meal-score~next-day-checkin-energy` | 1 | physiology | étkezés-minőség → energia |
 | `reta-dose~daily-kcal` | 0 | physiology | étvágy-elnyomás dózisfüggése |
-| `sport-load~next-sleep-deep-min` | 1 | physiology | edzés → alvásszerkezet |
+| `sport-load~next-sleep-quality` | 1 | physiology | edzés → rákövetkező alvásminőség (az edzés→alvás irány eddig lefedetlen volt) |
 | `wakeup-hour~checkin-energy` | 0 | trigger | |
 | `sleep-quality~next-day-hr-recovery` | 1 | physiology | regeneráció-jel |
 | `social-mentions~checkin-mental` | 0 | response | társas nap → hangulat |
