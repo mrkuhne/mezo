@@ -3326,3 +3326,4 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 @media (prefers-reduced-motion: reduce) {
   .dayview { animation: none; }
 }
+.dv-state { margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--success-hover); }
