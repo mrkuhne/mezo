@@ -143,10 +143,13 @@ public interface MealMapper {
         return v.multiply(factor).setScale(0, RoundingMode.HALF_UP);
     }
 
-    /** Grams at ONE decimal, HALF_UP — the nutrient sibling of {@link #scaled} (cf. RecipeMapper's
-     *  {@code scaledGram}). A null base stays null — "no data" is not "0 g" (mezo-m6uv). */
+    /** Grams at THREE decimals, HALF_UP — the nutrient sibling of {@link #scaled} (cf. RecipeMapper's
+     *  {@code scaledGram}, same rule). Grams are stored and summed at three decimals precisely
+     *  because they are rounded-then-summed per line; the ONE-decimal rounding is a DISPLAY concern
+     *  the frontend formatter owns, so the wire carries the precise value. A null base stays null —
+     *  "no data" is not "0 g" (mezo-m6uv). */
     private static BigDecimal scaledGram(BigDecimal base, BigDecimal factor) {
-        return base == null ? null : base.multiply(factor).setScale(1, RoundingMode.HALF_UP);
+        return base == null ? null : base.multiply(factor).setScale(3, RoundingMode.HALF_UP);
     }
 
     /** Null-preserving Σ: the accumulator stays null until a line actually carries a value, so a

@@ -457,10 +457,18 @@ public class MealService {
         return v.divide(servings, 6, RoundingMode.HALF_UP);
     }
 
-    /** Per-serving grams at ONE decimal — the nutrient sibling of {@link #perServing}; null stays
-     *  null so a fact-less recipe does not turn into a fake 0 g (mezo-m6uv). */
+    /**
+     * Per-serving grams at THREE decimals — the nutrient sibling of {@link #perServing}. Three, not
+     * one: the whole-recipe rollup this divides is already a per-line rounded sum
+     * ({@code RecipeMapper.scaledGram}), so a second 1-decimal quantum here would compound the first
+     * (a 20 g line of a 0.4 g/100 g source in a 2-serving recipe is truly 0.04 g/adag, which double
+     * 1-decimal rounding inflates to 0.1 g — 2.5×, and it is salt, the number this feature exists to
+     * show). Grams are stored and summed at three decimals; rounding to one decimal is a DISPLAY
+     * concern the frontend formatter owns. Matches the migrations' {@code round(…, 3)} backfill.
+     * Null stays null so a fact-less recipe does not turn into a fake 0 g (mezo-m6uv).
+     */
     private static BigDecimal perServingGram(BigDecimal whole, BigDecimal servings) {
-        return whole == null ? null : whole.divide(servings, 1, RoundingMode.HALF_UP);
+        return whole == null ? null : whole.divide(servings, 3, RoundingMode.HALF_UP);
     }
 
     private static BigDecimal orDefault(BigDecimal value, BigDecimal fallback) {

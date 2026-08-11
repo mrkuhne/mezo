@@ -204,12 +204,17 @@ public interface RecipeMapper {
     }
 
     /**
-     * Grams at ONE decimal, HALF_UP. The macros' whole-number rule is unusable here: salt is
-     * typically 0.4–1.8 g, so rounding to an integer would throw away most of the signal.
-     * A null base stays null — the rollup must be able to say "no data" (mezo-m6uv).
+     * Grams at THREE decimals, HALF_UP. The macros' whole-number rule is unusable here: salt is
+     * typically 0.4–1.8 g, so rounding to an integer would throw away most of the signal — and one
+     * decimal is not enough either, because these values are ROUNDED-THEN-SUMMED per line and then
+     * divided by servings, so a per-line 1-decimal quantum compounds (a 20 g line of a 0.4 g/100 g
+     * source is truly 0.08 g, which 1 decimal inflates to 0.1 g). Storage and accumulation happen at
+     * three decimals; the ONE-decimal rounding is a DISPLAY concern and belongs to the frontend
+     * formatter, so the wire carries the precise value. Matches the migrations' `round(…, 3)`
+     * backfill. A null base stays null — the rollup must be able to say "no data" (mezo-m6uv).
      */
     private static BigDecimal scaledGram(BigDecimal base, BigDecimal factor) {
-        return base == null ? null : base.multiply(factor).setScale(1, RoundingMode.HALF_UP);
+        return base == null ? null : base.multiply(factor).setScale(3, RoundingMode.HALF_UP);
     }
 
     /** Null-preserving Σ: the accumulator stays null until a line actually carries a value, so a

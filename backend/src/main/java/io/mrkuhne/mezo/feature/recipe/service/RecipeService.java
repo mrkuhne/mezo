@@ -100,9 +100,14 @@ public class RecipeService {
      * Per-serving {@link ScoredLine}s: macros AND the four nutrition-quality facts from the frozen
      * line snapshots (mezo-m6uv), both scaled by the SAME ÷ servings factor as the mapper's
      * contribution — a pantry row that drifted after the recipe was saved can no longer rewrite the
-     * fit. NOVA + category stay LIVE pantry reads (freezing NOVA is the sibling mezo-4tzf); a
-     * gone/fact-less source just lowers coverage — honest degrade, never fabricated.
-     * Package-private since mezo-bw3y: RecipeBreakdownService scores the same lines.
+     * fit. NOVA + category stay LIVE pantry reads (freezing NOVA is the sibling mezo-4tzf).
+     *
+     * <p>Since the freeze the two degrade paths are SEPARATE, and neither fabricates a number:
+     * a GONE pantry row now only lowers the coverage of the dimensions still fed live — {@code nova}
+     * and {@code plant_diversity} — while the fact-driven {@code micro}/{@code who}/
+     * {@code fat_quality} keep scoring off the line's own snapshot; conversely a line whose snapshot
+     * carries none of the four facts ({@code hasFacts == false}) lowers exactly those three and
+     * leaves NOVA alone. Package-private since mezo-bw3y: RecipeBreakdownService scores the same lines.
      */
     List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
         BigDecimal servings = BigDecimal.valueOf(
