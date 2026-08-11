@@ -16,7 +16,7 @@
 - **Négy mező, fix nevek mindenhol:** `fiberG`, `sugarG`, `saltG`, `saturatedFatG` (wire + FE); DB: `snapshot_fiber_g`, `snapshot_sugar_g`, `snapshot_salt_g`, `snapshot_saturated_fat_g`; entity: `snapshotFiberG`, `snapshotSugarG`, `snapshotSaltG`, `snapshotSaturatedFatG`.
 - **Kijelzési sorrend mindenhol:** TELÍTETT · CUKOR · ROST · SÓ.
 - **`null` ≠ `0`.** Minden új oszlop és minden DTO-mező nullable. Ahol a forrás nem hordozott értéket, ott `null` marad, és a felület `—`-t ír. Soha ne írj 0-t „nincs adat" helyett.
-- **Kerekítés:** grammok **1 tizedes**, `RoundingMode.HALF_UP` (backend) / `Math.round(v * 10 + Number.EPSILON) / 10` (FE). A `kcal/P/C/F` 0-tizedes szabálya **változatlan**.
+- **Kerekítés (a user 2026-08-11-i döntése, felülírja a terv eredeti 1-tizedes szabályát):** a grammok **3 tizedessel tárolódnak és összegződnek** (`setScale(3, HALF_UP)` backend / `Math.round(v * 1000 + Number.EPSILON) / 1000` FE), és **csak a megjelenítés kerekít 1 tizedesre** (`formatGram`). Ok: soronkénti 1-tizedes kerekítés mellett egy 0,04 g-os só-hozzájárulás 0,1 g-ként tárolódott, és a hiba soronként halmozódott — a sónál ez 10–25% torzítás. A 3 tizedes egyben egyezik a migrációk `round(..., 3)` backfilljével is. A `kcal/P/C/F` 0-tizedes szabálya **változatlan**.
 - **Null-őrző összegzés:** a rollup akkor és csak akkor `null`, ha minden sor `null` az adott mezőre; különben a nem-null sorok összege (részleges Σ).
 - **Kontraktus-sorrend (`api_contract_conventions.md`):** először a fragment-YAML → merge → csak utána backend-implementáció és FE-típusok. Boundary DTO-t soha ne írj kézzel.
 - **Backend házirend:** konstruktor-injektálás (`@RequiredArgsConstructor`), `@Transactional` csak metóduson, AssertJ-only asszertálás, integration-first tesztek (`AbstractIntegrationTest` / `ApiIntegrationTest`), teszt-adat Java populátorból.
@@ -978,9 +978,16 @@ import {
   computeRecipeNutrientsWithOverrides, rescaleFrozenNutrients,
 } from '@/data/fuel/recipeMacros'
 
-test('lineNutrients scales per-basis facts and rounds grams to one decimal', () => {
+test('lineNutrients scales per-basis facts and keeps three decimals', () => {
   const src = { fiberG: 3.25, sugarG: 4.1, saltG: 0.4, saturatedFatG: 2.8 }
   expect(lineNutrients(200, 100, src)).toEqual({ fiberG: 6.5, sugarG: 8.2, saltG: 0.8, saturatedFatG: 5.6 })
+})
+
+// The FE twin of the backend's boundary test (MealApiIT, mezo-m6uv): a small salt contribution must
+// NOT collapse to 0.1 the way one-decimal storage rounding did. Fails if roundGram goes back to /10.
+test('lineNutrients keeps a small salt contribution intact instead of rounding it up', () => {
+  const src = { fiberG: null, sugarG: null, saltG: 0.4, saturatedFatG: null }
+  expect(lineNutrients(20, 100, src).saltG).toBe(0.08)
 })
 
 test('lineNutrients keeps a missing fact null — never 0', () => {
@@ -1058,12 +1065,14 @@ export const NO_NUTRIENTS: Nutrients = { fiberG: null, sugarG: null, saltG: null
 const NUTRIENT_KEYS = ['fiberG', 'sugarG', 'saltG', 'saturatedFatG'] as const
 
 /**
- * Grams to ONE decimal — mirrors `RecipeMapper.scaledGram` (BigDecimal HALF_UP). The `+ EPSILON`
- * guards the float representation (0.15 * 10 is 1.4999999999999998, which would round DOWN);
- * `null` stays null so "no data" never becomes a fake 0.
+ * Grams to THREE decimals — mirrors `RecipeMapper.scaledGram` (BigDecimal setScale(3, HALF_UP)).
+ * Storage/summation precision, NOT display: `formatGram` does the one-decimal rounding at the edge.
+ * Rounding per line at one decimal turned a true 0.04 g salt contribution into 0.1 g and compounded
+ * across lines. The `+ EPSILON` guards the float representation (0.0155 * 1000 is 15.499999999999998,
+ * which would round DOWN); `null` stays null so "no data" never becomes a fake 0.
  */
 export function roundGram(n: number | null | undefined): number | null {
-  return n == null ? null : Math.round(n * 10 + Number.EPSILON) / 10
+  return n == null ? null : Math.round(n * 1000 + Number.EPSILON) / 1000
 }
 
 /** One line's nutrient facts at `amount`, from a per-`per`-basis source. */
@@ -1311,6 +1320,15 @@ test('formatGram prints Hungarian decimals, drops a trailing zero, and dashes a 
   expect(formatGram(null)).toBe('—')
   expect(formatGram(undefined)).toBe('—')
 })
+
+// Since the storage precision went to three decimals (the user's 2026-08-11 ruling), a real but tiny
+// value reaches the display layer. Printing "0" for it would read as "no salt", which is the same lie
+// as printing 0 for a null — so it gets its own marker. An honest 0 still prints as 0.
+test('formatGram marks a present-but-sub-0,1 value instead of printing it as zero', () => {
+  expect(formatGram(0.04)).toBe('<0,1')
+  expect(formatGram(0.001)).toBe('<0,1')
+  expect(formatGram(0)).toBe('0')
+})
 ```
 
 `frontend/src/features/fuel/components/NutrientCells.test.tsx`:
@@ -1361,11 +1379,15 @@ Elvárt: FAIL — a modulok nem léteznek.
 /**
  * Gram display for the nutrition facts (mezo-m6uv): Hungarian decimal comma, at most one decimal,
  * no trailing `,0`, and an em-dash for "no data" — a missing fact is never printed as 0.
+ * Storage keeps three decimals, so a real value can be smaller than the display step: a positive
+ * value that would round to 0 prints as `<0,1` rather than `0`, because "0" reads as "none" and
+ * that is the same lie as printing 0 for a null. A genuine 0 still prints as `0`.
  * The `+ EPSILON` guards the float representation (12.45 * 10 is 124.49999999999999).
  */
 export function formatGram(v: number | null | undefined): string {
   if (v == null) return '—'
   const rounded = Math.round(v * 10 + Number.EPSILON) / 10
+  if (rounded === 0 && v > 0) return '<0,1'
   return (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)).replace('.', ',')
 }
 ```
