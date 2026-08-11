@@ -641,6 +641,48 @@ export interface Pattern {
   kind?: 'statistical' | 'ai_hypothesis'
 }
 
+export type PatternGateVerdict = 'live' | 'few_days' | 'no_data' | 'degenerate' | 'frozen'
+
+export interface PatternMonitorPair {
+  key: string
+  title: string
+  category: PatternCategory
+  categoryLabel: string
+  lagDays: number
+  metricAKey: string
+  metricALabel: string
+  metricBKey: string
+  metricBLabel: string
+  verdict: PatternGateVerdict
+  alignedDays: number
+  missingDays: number | null
+  bottleneckMetricKey: string | null
+  r: number | null
+  n: number | null
+  p: number | null
+  status: 'confirmed' | 'rejected' | null
+}
+
+export interface PatternMetricCoverage {
+  key: string
+  label: string
+  coveredDays: number
+  windowDays: number
+  lastDayWithData: string | null
+  pairCount: number
+}
+
+export interface PatternMonitor {
+  windowFrom: string
+  windowTo: string
+  lookbackDays: number
+  minN: number
+  cron: string
+  lastRunAt: string | null
+  pairs: PatternMonitorPair[]
+  metrics: PatternMetricCoverage[]
+}
+
 export interface MemoirAnchor { kind: string; label: string }
 export interface Memoir {
   week: string
