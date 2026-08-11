@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -67,28 +66,14 @@ public class PatternDetectionService {
     private boolean detectPair(UUID userId, CompanionProperties.PatternPair pair,
                                LocalDate from, LocalDate to, int minN) {
         Map<LocalDate, Double> seriesA = metricSeriesService.series(userId, pair.metricA(), from, to);
-        if (seriesA.isEmpty()) {
-            return false;
-        }
         Map<LocalDate, Double> seriesB = metricSeriesService.series(userId, pair.metricB(),
                 from.plusDays(pair.lagDays()), to.plusDays(pair.lagDays()));
-        List<double[]> aligned = new ArrayList<>();
-        seriesA.forEach((day, a) -> {
-            Double b = seriesB.get(day.plusDays(pair.lagDays()));
-            if (b != null) {
-                aligned.add(new double[] {a, b});
-            }
-        });
-        if (aligned.size() < minN) {
-            return false; // below the surfacing gate — not persisted at all
+        // A kapu KÖZÖS a monitorral (PatternMonitorService) — a diagnosztika ettől hiteles.
+        PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(), minN);
+        if (outcome.verdict() != PatternGate.Verdict.LIVE) {
+            return false; // a kapun kívül semmit nem perzisztálunk (kevés nap / nincs adat / degenerált)
         }
-        double[] xs = aligned.stream().mapToDouble(v -> v[0]).toArray();
-        double[] ys = aligned.stream().mapToDouble(v -> v[1]).toArray();
-        var result = PearsonCorrelation.correlate(xs, ys).orElse(null);
-        if (result == null) {
-            return false; // degenerate (constant series) — no statistic, nothing to claim
-        }
-        upsert(userId, pair, result, from, to);
+        upsert(userId, pair, outcome.result(), from, to);
         return true;
     }
 
