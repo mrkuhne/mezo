@@ -52,10 +52,24 @@ describe('MotorPage (mock mode)', () => {
   })
 
   test('orders the coverage list thinnest-first', () => {
+    // The seed's metrics array is deliberately unsorted (insights.ts) — this asserts the full
+    // 12-label sequence so the test proves MotorPage's own sort, not an already-sorted fixture.
     renderPage()
     const labels = screen.getAllByTestId('coverage-label').map((el) => el.textContent)
-    expect(labels[0]).toBe('sportterhelés')
-    expect(labels[labels.length - 1]).toBe('alvásminőség')
+    expect(labels).toEqual([
+      'sportterhelés',
+      'gym-volumen',
+      'reggeli súlyváltozás',
+      'edzés-RPE',
+      'utolsó étkezés ideje',
+      'vízbevitel',
+      'alváshossz',
+      'napi kalória',
+      'Reta-ciklusnap',
+      'stressz-szint',
+      'energia-szint',
+      'alvásminőség',
+    ])
   })
 })
 

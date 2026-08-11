@@ -237,18 +237,21 @@ export const patternMonitor: PatternMonitor = {
       r: 0.55, n: 28, p: 0.002, status: 'confirmed',
     },
   ],
+  // Deliberately NOT ascending by coveredDays (a wire response carries no ordering guarantee) —
+  // this is what makes MotorPage.test.tsx's "orders the coverage list thinnest-first" assertion
+  // actually prove MotorPage's own sort, rather than passing on an already-sorted fixture.
   metrics: [
-    { key: 'sport-load-min', label: 'sportterhelés', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
-    { key: 'gym-volume-kg', label: 'gym-volumen', coveredDays: 4, windowDays: 60, lastDayWithData: '2026-07-02', pairCount: 1 },
-    { key: 'weight-delta-kg', label: 'reggeli súlyváltozás', coveredDays: 9, windowDays: 60, lastDayWithData: '2026-08-06', pairCount: 1 },
-    { key: 'training-rpe', label: 'edzés-RPE', coveredDays: 12, windowDays: 60, lastDayWithData: '2026-08-09', pairCount: 2 },
-    { key: 'late-meal-hour', label: 'utolsó étkezés ideje', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-    { key: 'daily-water-ml', label: 'vízbevitel', coveredDays: 19, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-    { key: 'sleep-duration-h', label: 'alváshossz', coveredDays: 22, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-    { key: 'daily-kcal', label: 'napi kalória', coveredDays: 27, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 2 },
-    { key: 'reta-cycle-day', label: 'Reta-ciklusnap', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-    { key: 'checkin-energy', label: 'energia-szint', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-    { key: 'checkin-stress', label: 'stressz-szint', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'sleep-quality', label: 'alvásminőség', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
+    { key: 'training-rpe', label: 'edzés-RPE', coveredDays: 12, windowDays: 60, lastDayWithData: '2026-08-09', pairCount: 2 },
+    { key: 'reta-cycle-day', label: 'Reta-ciklusnap', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'sport-load-min', label: 'sportterhelés', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
+    { key: 'checkin-stress', label: 'stressz-szint', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'late-meal-hour', label: 'utolsó étkezés ideje', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'daily-kcal', label: 'napi kalória', coveredDays: 27, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 2 },
+    { key: 'gym-volume-kg', label: 'gym-volumen', coveredDays: 4, windowDays: 60, lastDayWithData: '2026-07-02', pairCount: 1 },
+    { key: 'checkin-energy', label: 'energia-szint', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'sleep-duration-h', label: 'alváshossz', coveredDays: 22, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'weight-delta-kg', label: 'reggeli súlyváltozás', coveredDays: 9, windowDays: 60, lastDayWithData: '2026-08-06', pairCount: 1 },
+    { key: 'daily-water-ml', label: 'vízbevitel', coveredDays: 19, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
   ],
 }
