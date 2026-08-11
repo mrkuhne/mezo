@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mezo · Mai — napszak-tabok, dobozolatlan tartalom (mockup)</title>
+<link rel="stylesheet" href="../../../../frontend/src/styles/fonts.css" />
+<link rel="stylesheet" href="../../../../frontend/src/styles/prototype.css" />
+<style>
+/* ── PROPOSED: the mezo message as a FULL-BLEED band, no avatar, never clamped ── */
+.coach-bubble.cb-band { margin: 0; padding: 16px 20px 18px; border-left: 0; border-radius: 0;
+                        border-bottom: 1px solid color-mix(in srgb, var(--primary-base) 16%, transparent);
+                        gap: 0; }
+.cb-band .cb-head { margin-bottom: 8px; }
+.cb-band .brief-lead { margin: 0; }
+.cb-band .brief-refs { margin-top: 14px; }
+
+/* ── PROPOSED: the daypart switcher — the house .segtabs control (Sport/Futás precedent),
+      with a gold MOST dot on the chronologically-current daypart. ── */
+.daytabs { padding: 4px 20px 12px; }
+.daytabs .segtab { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+                   min-height: 40px; font-size: 13.5px; }
+.daytab-now { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-base);
+              box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-base) 22%, transparent); }
+
+/* ── PROPOSED: the day view — NO outer card. The content sits straight on the canvas;
+      only the fact strip and the item rows keep their own small surfaces. ── */
+.dayview { padding: 2px 20px 6px; }
+.dayview[hidden] { display: none; }
+.dv-hero { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.dv-hero-v { font-size: 30px; font-weight: 200; letter-spacing: -.03em; line-height: 1.1;
+             color: var(--ink); font-variant-numeric: tabular-nums; }
+.dv-hero-u { font-size: 14px; font-weight: 300; color: var(--faint); letter-spacing: 0; }
+.dv-hero-sub { width: 100%; font-size: 11.5px; color: var(--sub); font-weight: 500; margin-top: 4px; }
+.dayview .isl-facts { margin-top: 14px; }
+.dayview .isl-warnchip { margin: 12px 0 0; }
+.dv-act { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.dayview .isl-cta { padding: 10px 18px; font-size: 13px; }
+.dayview .isl-grouph { margin: 18px 2px 8px; }
+.dayview .itemrow { margin-bottom: 6px; }
+.dayview .creedchip { margin: 0 0 6px; }
+.dv-done { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 12px;
+           padding: 10px 14px; border-radius: var(--r-full); border: 1px solid var(--line);
+           background: transparent; font-family: inherit; font-size: 12px; font-weight: 700;
+           color: var(--success-hover); cursor: pointer; }
+.dv-done-arr { margin-left: auto; color: var(--faint); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="app-root">
+  <div class="phone">
+    <div class="phone-screen" data-day="delutan">
+      <div class="sky" aria-hidden="true"></div>
+      <div class="dynamic-island"></div>
+      <div class="status-bar"><span>13:42</span><span class="status-icons">
+        <svg viewBox="0 0 24 24"><path d="M2 17h3v4H2zm5-3h3v7H7zm5-4h3v11h-3zm5-5h3v16h-3z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 18.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0-4.6c1.5 0 2.9.6 3.9 1.6l-1.4 1.4a3.5 3.5 0 00-5 0L8.1 15.5a5.5 5.5 0 013.9-1.6zm0-4.6c2.8 0 5.3 1.1 7.2 2.9l-1.4 1.4A8 8 0 0012 11a8 8 0 00-5.8 2.4L4.8 12A10 10 0 0112 9.3z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M4 8h13v8H4zm14 2h2v4h-2z"/></svg>
+      </span></div>
+
+      <div class="screen-content">
+
+        <!-- ── chrome: AppHero, unchanged ── -->
+        <div class="apphero">
+          <div class="avwrap">
+            <a class="avlink np-press" aria-label="Profil">
+              <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+                <circle cx="24" cy="24" r="22" fill="none" stroke="var(--line)" stroke-width="3"/>
+                <circle cx="24" cy="24" r="22" fill="none" stroke="var(--coral)" stroke-width="3"
+                        stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="48"
+                        transform="rotate(-90 24 24)"/>
+              </svg>
+              <span class="avatar" aria-hidden="true">MK</span>
+            </a>
+            <a class="lvbadge np-press" aria-label="Szint 7">7</a>
+          </div>
+          <div class="idcol">
+            <a class="t1">Márk</a>
+            <button type="button" class="t2 np-press">A Kitartó</button>
+          </div>
+          <div class="counters">
+            <button type="button" class="cnt fire np-press">🔥 12</button>
+            <a class="cnt quest np-press">⚡ 2/5</a>
+            <button type="button" class="cnt coin np-press">🪙 340</button>
+          </div>
+          <div class="util"><a class="icon-btn" aria-label="Insights">✨</a></div>
+        </div>
+
+        <!-- ── the daypart switcher, above the message ── -->
+        <div class="daytabs">
+          <div class="segtabs" role="group" aria-label="Napszak">
+            <button type="button" class="segtab" aria-pressed="false" data-tab="reggel">🌅 Reggel</button>
+            <button type="button" class="segtab" aria-pressed="true" data-tab="nap">☀️ Nap <span class="daytab-now" aria-label="most"></span></button>
+            <button type="button" class="segtab" aria-pressed="false" data-tab="este">🌙 Este</button>
+          </div>
+        </div>
+
+        <!-- ── mezo üzenete — full-bleed band, always visible, always in full ── -->
+        <div class="coach-bubble cb-band">
+          <div style="flex:1;min-width:0">
+            <div class="cb-head"><span class="cb-eyebrow">Mezo · reggeli briefing</span></div>
+            <div class="cb-body">
+              <div class="briefing-body">
+                <p class="brief-lead">Jól aludtál — 7,2 óra, a heti átlagod fölött. A HRV-d is feljött, szóval a délutáni Pull A-ra nyugodtan rámehetsz a tervezett súlyokkal.</p>
+                <p class="brief-rest">Fehérjéből reggel óta 84 g van meg. Ez a nap végére kevés lesz a 160 g-os célhoz, úgyhogy az ebédnél és az edzés utáni étkezésnél tegyél rá — különben este kell behoznod 76 g-ot.</p>
+                <p class="brief-rest">A bal vállad a múlt heti Pull A-n jelzett, ezért a nyomásoknál most lassabb tempót írtam elő. Ha bármi éles fájdalom jön, hagyd ki a sorozatot.</p>
+              </div>
+              <div class="brief-refs">
+                <span class="brief-refs-l">Hivatkozott</span>
+                <span class="toolchip" style="padding:2px 6px;font-size:9px">[alvás]&nbsp;7,2 óra</span>
+                <span class="toolchip" style="padding:2px 6px;font-size:9px">[edzés]&nbsp;Pull A · múlt hét</span>
+                <span class="toolchip" style="padding:2px 6px;font-size:9px">[fuel]&nbsp;Fehérje 84 g</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ 🌅 REGGEL ══ -->
+        <div class="dayview" data-tone="reggel" data-view="reggel" hidden>
+          <div class="dv-hero">
+            <span class="dv-hero-v">7,2<span class="dv-hero-u"> óra alvás</span></span>
+            <span class="dv-hero-sub">Céltól −18 perc · heti adósság 1,4 óra</span>
+          </div>
+
+          <div class="isl-facts" style="grid-template-columns:repeat(2,1fr)">
+            <div class="isl-fact">
+              <div class="isl-fact-v">78,4<span class="isl-fact-u">kg</span></div>
+              <div class="isl-fact-l">Súly</div>
+              <div class="isl-fact-d is-good">−0,3 kg · 7 nap</div>
+            </div>
+            <div class="isl-fact">
+              <div class="isl-fact-v">62<span class="isl-fact-u">ms</span></div>
+              <div class="isl-fact-l">HRV</div>
+              <div class="isl-fact-d is-good">+4 az átlaghoz</div>
+            </div>
+          </div>
+
+          <div class="isl-grouph"><span>Reggeli rutin · 2</span></div>
+          <div class="itemrow itemrow-lav">
+            <span class="itemrow-ic" aria-hidden="true">⚖️</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Súlymérés</span>
+              <span class="itemrow-t2">Ébredés után, wc előtt</span></span>
+            <button type="button" class="itemrow-act np-press">Logold</button>
+          </div>
+          <div class="itemrow itemrow-coral">
+            <span class="itemrow-ic" aria-hidden="true">🍳</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Fehérjés reggeli</span>
+              <span class="itemrow-t2">Cél: 40 g</span></span>
+            <button type="button" class="itemrow-act np-press">Logold</button>
+          </div>
+
+          <div class="isl-grouph"><span>Fókusz</span></div>
+          <div class="creedchip">
+            <div class="creedchip-hd">
+              <span class="creedchip-st" aria-hidden="true">✦</span>
+              <button type="button" class="creedchip-tx">Nem a maximumot, a következőt.</button>
+              <span class="creedchip-cnt">2 FÓKUSZ</span>
+            </div>
+          </div>
+
+          <button type="button" class="dv-done">✓ 3 kész ma · +40 XP <span class="dv-done-arr">▾</span></button>
+        </div>
+
+        <!-- ══ ☀️ NAP ══ -->
+        <div class="dayview" data-tone="nap" data-view="nap">
+          <div class="dv-hero">
+            <span class="dv-hero-v">13:00<span class="dv-hero-u"> · Pull A</span></span>
+            <span class="dv-hero-sub">~55 perc · 3. mezóhét · 6 gyakorlat</span>
+          </div>
+
+          <div class="isl-facts" style="grid-template-columns:repeat(2,1fr)">
+            <div class="isl-fact">
+              <div class="isl-fact-v">84<span class="isl-fact-u">/160 g</span></div>
+              <div class="isl-fact-l">Fehérje</div>
+              <div class="isl-fact-d is-warn">76 g van hátra</div>
+            </div>
+            <div class="isl-fact">
+              <div class="isl-fact-v">1180<span class="isl-fact-u">kcal</span></div>
+              <div class="isl-fact-l">Energia</div>
+              <div class="isl-fact-d is-muted">2450 a keret</div>
+            </div>
+          </div>
+
+          <div class="isl-warnchip">⚠️ Bal váll — a nyomásoknál figyelj a tempóra</div>
+
+          <div class="dv-act">
+            <button type="button" class="isl-cta np-press">Indítsuk</button>
+            <button type="button" class="isl-more">Saját edzés</button>
+          </div>
+
+          <div class="isl-grouph"><span>Étkezés · 2</span></div>
+          <div class="itemrow itemrow-coral">
+            <span class="itemrow-ic" aria-hidden="true">🥗</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Ebéd</span>
+              <span class="itemrow-t2">Csirke + rizs · ~650 kcal</span></span>
+            <button type="button" class="itemrow-act np-press">Logold</button>
+          </div>
+          <div class="itemrow itemrow-coral">
+            <span class="itemrow-ic" aria-hidden="true">🥤</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Edzés előtti snack</span>
+              <span class="itemrow-t2">12:15</span></span>
+            <button type="button" class="itemrow-act np-press">Logold</button>
+          </div>
+
+          <div class="isl-grouph">
+            <span>Napi küldetések · 2</span>
+            <a class="isl-grouph-go">2/5 · +120 XP ›</a>
+          </div>
+          <div class="itemrow itemrow-sky">
+            <span class="itemrow-ic" aria-hidden="true">💧</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Vízbevitel</span>
+              <span class="itemrow-t2">1,5 / 2,5 l</span></span>
+            <button type="button" class="itemrow-act np-press">+250 ml</button>
+          </div>
+          <div class="itemrow itemrow-lav">
+            <span class="itemrow-ic" aria-hidden="true">📝</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Hogy voltál?</span>
+              <span class="itemrow-t2">Délutáni check-in</span></span>
+            <button type="button" class="itemrow-act np-press">Check-in</button>
+          </div>
+
+          <button type="button" class="dv-done">✓ 1 kész · +15 XP <span class="dv-done-arr">▾</span></button>
+        </div>
+
+        <!-- ══ 🌙 ESTE ══ -->
+        <div class="dayview" data-tone="este" data-view="este" hidden>
+          <div class="dv-hero">
+            <span class="dv-hero-v">9:33<span class="dv-hero-u"> a villanyoltásig</span></span>
+            <span class="dv-hero-sub">Napzárás 21:45-től · lámpaoltás 23:15</span>
+          </div>
+
+          <div class="isl-facts" style="grid-template-columns:repeat(2,1fr)">
+            <div class="isl-fact">
+              <div class="isl-fact-v">+55<span class="isl-fact-u">XP</span></div>
+              <div class="isl-fact-l">Napi mérleg</div>
+              <div class="isl-fact-d is-muted">4 / 11 kész</div>
+            </div>
+            <div class="isl-fact">
+              <div class="isl-fact-v">7,5<span class="isl-fact-u">óra</span></div>
+              <div class="isl-fact-l">Alvás-kilátás</div>
+              <div class="isl-fact-d is-good">ha 23:15-re lefekszel</div>
+            </div>
+          </div>
+
+          <div class="dv-act">
+            <button type="button" class="isl-cta is-lav np-press">Napzárás</button>
+          </div>
+
+          <div class="isl-grouph"><span>Esti rutin · 3</span></div>
+          <div class="itemrow itemrow-lav">
+            <span class="itemrow-ic" aria-hidden="true">🛑</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Leállás</span>
+              <span class="itemrow-t2">22:15-től · képernyő le</span></span>
+            <button type="button" class="itemrow-act np-press">Pipa</button>
+          </div>
+          <div class="itemrow itemrow-lav">
+            <span class="itemrow-ic" aria-hidden="true">📖</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Olvasás</span>
+              <span class="itemrow-t2">15 perc</span></span>
+            <button type="button" class="itemrow-act np-press">Pipa</button>
+          </div>
+          <div class="itemrow itemrow-lav">
+            <span class="itemrow-ic" aria-hidden="true">🌡️</span>
+            <span class="itemrow-tx"><span class="itemrow-t1">Hűvös szoba</span>
+              <span class="itemrow-t2">~18 °C</span></span>
+            <button type="button" class="itemrow-act np-press">Pipa</button>
+          </div>
+
+          <div class="isl-grouph"><span>Reflexió</span></div>
+          <div class="reflect">
+            <div class="reflect-q">Szándékkal élted a napot?</div>
+            <div class="reflect-opts">
+              <button class="reflect-opt">Igen</button>
+              <button class="reflect-opt">Részben</button>
+              <button class="reflect-opt">Nem</button>
+            </div>
+          </div>
+
+          <button type="button" class="dv-done">✓ 0 kész <span class="dv-done-arr">▾</span></button>
+        </div>
+
+        <!-- the standing Fuel log entry row, unchanged -->
+        <div class="mai-logrow">
+          <button type="button" class="isl-more">🍽️ Logolás</button>
+          <button type="button" class="isl-more">✨ AI naplózás</button>
+        </div>
+
+      </div>
+
+      <nav class="tab-bar">
+        <a class="tab-item active"><span class="tab-dot"></span><span class="tab-ico">📅</span><span>Ma</span></a>
+        <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🏋️</span><span>Edzés</span></a>
+        <button type="button" class="tab-fab" aria-label="Gyors logolás">＋</button>
+        <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🍽️</span><span>Fuel</span></a>
+        <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">👤</span><span>Én</span></a>
+      </nav>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('.segtab').forEach((b) => {
+  b.addEventListener('click', () => {
+    const tab = b.dataset.tab
+    document.querySelectorAll('.segtab').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    document.querySelectorAll('.dayview').forEach((v) => { v.hidden = v.dataset.view !== tab })
+    document.querySelector('.screen-content').scrollTop = 0
+  })
+})
+</script>
+</body>
+</html>

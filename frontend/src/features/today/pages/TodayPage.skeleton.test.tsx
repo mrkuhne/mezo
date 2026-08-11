@@ -39,20 +39,29 @@ function renderToday(path?: string) {
 
 afterEach(() => vi.clearAllMocks())
 
+/**
+ * The live screen's face-independent landmark (mezo-puci): the daypart switcher. It replaced
+ * the islands' „… · megnyitás" capsule buttons this file used to look for, and — unlike any
+ * single daypart's content — it renders identically whatever the clock says.
+ */
+const switcher = () => screen.queryByRole('group', { name: 'Napszak' })
+
 describe('TodayPage — sleep-anchor pending gate', () => {
-  test('while useSleepGoal is pending, the layout-matched skeleton renders instead of an island', () => {
+  test('while useSleepGoal is pending, the layout-matched skeleton renders instead of a daypart', () => {
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: true })
     const { container } = renderToday()
-    // The skeleton, not the live sky: no capsule buttons, but the same island silhouette.
-    expect(screen.queryByRole('button', { name: /megnyitás/ })).toBeNull()
+    // The skeleton, not the live screen: no daypart switcher, but the same silhouette.
+    expect(switcher()).toBeNull()
     expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
-    expect(container.querySelectorAll('.isl')).toHaveLength(3)
+    expect(container.querySelector('.daytabs')).toBeTruthy()
+    expect(container.querySelector('.cb-band')).toBeTruthy()
+    expect(container.querySelector('.dayview')).toBeTruthy()
   })
 
-  test('once useSleepGoal resolves, the live island sky renders instead', () => {
+  test('once useSleepGoal resolves, the live daypart screen renders instead', () => {
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: false })
     const { container } = renderToday()
-    expect(screen.getAllByRole('button', { name: /megnyitás/ }).length).toBeGreaterThan(0)
+    expect(switcher()).toBeInTheDocument()
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
   })
 
@@ -66,7 +75,7 @@ describe('TodayPage — sleep-anchor pending gate', () => {
 
     mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: false })
     rerender(tree())
-    expect(screen.getAllByRole('button', { name: /megnyitás/ }).length).toBeGreaterThan(0)
+    expect(switcher()).toBeInTheDocument()
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
   })
 
@@ -112,6 +121,6 @@ describe('TodayPage — sleep-anchor pending gate', () => {
     const { container } = renderToday('/today?day=rough')
     expect(screen.getByText(/Horgony mód/)).toBeTruthy()
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
-    expect(screen.queryByRole('button', { name: /megnyitás/ })).toBeNull()
+    expect(switcher()).toBeNull()
   })
 })

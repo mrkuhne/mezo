@@ -1,16 +1,17 @@
 // ============================================================
-// Mezo · IslandEvening — the evening island's big view (mezo-euze).
-// ONE hero slot whose content swaps by the windDown phase (normál →
-// ráhangolódás → leállás → éjszaka) with a soft cross-slide; the hero
-// number is always the countdown to lights-out. The WindDownBanner +
-// RitualCard successors: the winddown phase carries the wind_down
-// habit's Pipa (same ['habitDay', date] cache), the CTA is the
-// Napzárás entry (?ritual= override wins, the ?day= precedent), and
-// night darkens the whole island (the shell's `night` prop is driven
-// by TodayPage off the same useWindDownPhase derivation).
+// Mezo · DaypartEvening — the evening daypart's view (mezo-puci), the
+// IslandEvening successor. ONE hero slot whose content swaps by the
+// windDown phase (normál → ráhangolódás → leállás → éjszaka) with a
+// soft cross-slide; the hero number is always the countdown to
+// lights-out. The winddown phase carries the wind_down habit's Pipa
+// (same ['habitDay', date] cache), the CTA is the Napzárás entry
+// (?ritual= override wins, the ?day= precedent), and night darkens
+// the whole VIEW — there is no card any more, so `DaypartPanel`'s
+// `night` prop darkens the view itself instead of a card.
 // The ritual row + the evening_ritual habit row are filtered out of
-// L1 — the hero owns those acts (the FaceEvening rule, mezo-mvb4.1);
-// the wind_down row only while THIS view offers its own Pipa.
+// the list — the hero owns those acts (the FaceEvening rule,
+// mezo-mvb4.1); the wind_down row only while THIS view offers its
+// own Pipa (the „offered exactly once" rule).
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { useHabitActions, useHabitDay, useRitualDay, useTodayScenario } from '@/data/hooks'
@@ -19,9 +20,10 @@ import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
+import { DayGroups } from '@/features/today/components/DayGroups'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
-import { IslandList } from '@/features/today/components/IslandList'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact } from '@/features/today/logic/islandFacts'
 import { bedCountdown } from '@/features/today/logic/islandFacts'
@@ -40,14 +42,12 @@ const REM_FACT: IslandFact = {
   delta: { text: '18 °C-os szobában — Walker mérése', tone: 'muted' },
 }
 
-export interface IslandEveningProps {
+export interface DaypartEveningProps {
   open: TodayItem[]
   done: TodayItem[]
   dayXp: number
   /** [dayBalance, sleepOutlook] — the dim phase swaps the first cell for the REM evidence. */
   facts: IslandFact[]
-  listOpen: boolean
-  onToggleList: (open: boolean) => void
   note: CompanionNote | null
   celebrations: ChainCelebrationInput[]
   growth?: GrowthTodaySummary | null
@@ -55,10 +55,10 @@ export interface IslandEveningProps {
   onAct: (item: TodayItem) => void
 }
 
-export function IslandEvening({
-  open, done, dayXp, facts, listOpen, onToggleList,
+export function DaypartEvening({
+  open, done, dayXp, facts,
   note, celebrations, growth, habitPending, onAct,
-}: IslandEveningProps) {
+}: DaypartEveningProps) {
   const date = localDateString()
   const { phase, now, goal } = useWindDownPhase()
   const { data: ritualDay } = useRitualDay(date)
@@ -70,7 +70,7 @@ export function IslandEvening({
 
   const ph = phase ?? 'none'
   // The hero CTA owns the Napzárás act and the winddown Pipa owns wind_down while shown —
-  // neither may appear as an L1 row at the same time (the „offered exactly once" rule).
+  // neither may appear as a list row at the same time (the „offered exactly once" rule).
   const visibleOpen = open.filter(
     (i) =>
       i.source !== 'ritual' &&
@@ -78,47 +78,22 @@ export function IslandEvening({
       !(ph === 'winddown' && i.id === WIND_DOWN_ID),
   )
 
-  if (listOpen) {
-    return (
-      <>
-        <ChainCelebrations chains={celebrations} />
-        <div className="isl-openhead">🌙 Este</div>
-        <IslandList
-          open={visibleOpen}
-          done={done}
-          doneHeading="Ahogy a nap telt"
-          dayXp={dayXp}
-          head={note ? <CompanionNoteCard note={note} /> : undefined}
-          focus={<IntentionBanner variant="reflect" />}
-          growth={growth}
-          habitPending={habitPending}
-          onAct={onAct}
-          onClose={() => onToggleList(false)}
-        />
-      </>
-    )
-  }
-
   const hero = bedCountdown(now, goal)
   const { opensAt, bedTime } = ritualDay.window
   const ritualState = ritual ?? (ritualDay.closed ? 'done' : ritualWindowState(now, ritualDay.window))
 
   if (ph === 'night') {
     return (
-      <div className="isl-phase" key="night">
-        <div className="isl-hero-v">
-          {hero.value}
-          <span className="isl-hero-u">{hero.unit}</span>
-        </div>
-        <div className="isl-hero-sub">minden várhat reggelig — jó éjt</div>
+      <DaypartPanel tone="este" night key="night">
+        <DaypartHero value={hero.value} unit={hero.unit} sub="minden várhat reggelig — jó éjt" />
         <a
-          className="isl-nightrow"
+          className="dv-nightrow"
           href="/me/sleep/night"
           onClick={(e) => { e.preventDefault(); navigate('/me/sleep/night') }}
         >
-          🌙 Éjszakai mód megnyitása<span className="isl-nightrow-arr" aria-hidden="true">›</span>
+          🌙 Éjszakai mód megnyitása<span className="dv-nightrow-arr" aria-hidden="true">›</span>
         </a>
-      </div>
+      </DaypartPanel>
     )
   }
 
@@ -138,15 +113,11 @@ export function IslandEvening({
   }
 
   return (
-    <div className="isl-phase" key={ph}>
+    <DaypartPanel tone="este" key={ph}>
       <ChainCelebrations chains={celebrations} />
-      <div className="isl-hero-v">
-        {hero.value}
-        <span className="isl-hero-u">{hero.unit}</span>
-      </div>
-      <div className="isl-hero-sub">{sub}</div>
+      <DaypartHero value={hero.value} unit={hero.unit} sub={sub} />
       <IslandFactsStrip facts={phaseFacts} />
-      <div className="isl-act">
+      <div className="dv-act">
         {ritualState === 'open' && (
           <button type="button" className="isl-cta is-lav np-press" onClick={() => navigate('/ritual')}>
             Zárjuk le a napot
@@ -162,19 +133,20 @@ export function IslandEvening({
             Leállás megvolt ✓
           </button>
         )}
-        {visibleOpen.length > 0 && (
-          <button type="button" className="isl-more" onClick={() => onToggleList(true)}>
-            még {visibleOpen.length} ›
-          </button>
-        )}
       </div>
-      {ph === 'winddown' && wdDone && <div className="isl-doneline">Leállás megvolt ✓</div>}
-      {ritualState === 'done' && <div className="isl-doneline">Napzárás kész ✓</div>}
-      {done.length > 0 && (
-        <button type="button" className="isl-doneline" onClick={() => onToggleList(true)}>
-          Ahogy a nap telt · {done.length} tétel ›
-        </button>
-      )}
-    </div>
+      {ph === 'winddown' && wdDone && <div className="dv-state">Leállás megvolt ✓</div>}
+      {ritualState === 'done' && <div className="dv-state">Napzárás kész ✓</div>}
+      <DayGroups
+        open={visibleOpen}
+        done={done}
+        doneLabel={`Ahogy a nap telt · ${done.length} tétel`}
+        dayXp={dayXp}
+        head={note ? <CompanionNoteCard note={note} /> : undefined}
+        focus={<IntentionBanner variant="reflect" />}
+        growth={growth}
+        habitPending={habitPending}
+        onAct={onAct}
+      />
+    </DaypartPanel>
   )
 }

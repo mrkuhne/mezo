@@ -1,15 +1,17 @@
 // ============================================================
-// Mezo · TodayPage — the Mai screen's composition root (mezo-euze,
-// three-islands re-composition over the mezo-j7u4 wiring).
-// The screen is a non-scrolling SKY of three sleep-anchored islands
-// (dayFace.ts): exactly one island is big (hero + 1–2 facts + one
-// CTA), the other two are floating capsules. `?dp=` stays the single
-// source of truth for which island is big, derived from the URL and
-// never mirrored into state — the TrainTodayPage `?day=` precedent,
-// including its two traps: `params.get()` returns `null` when absent
-// and `''` when blank, and both must mean "the current face".
-// Every source is normalized by todayItems.ts; this file only wires
-// hooks to islands and dispatches row actions.
+// Mezo · TodayPage — the Mai screen's composition root (mezo-puci,
+// daypart-tabs re-composition over the mezo-euze wiring).
+// The screen is a SCROLLING page in three fixed bands: the daypart
+// switcher (DaypartTabs), the companion's standing word (MezoMessage,
+// the same on every daypart) and the SELECTED daypart's complete
+// content — hero, facts, CTA and every row, with no card frame and
+// nothing folded away but the day's finished items. `?dp=` stays the
+// single source of truth for which daypart is shown, derived from the
+// URL and never mirrored into state — the TrainTodayPage `?day=`
+// precedent, including its two traps: `params.get()` returns `null`
+// when absent and `''` when blank, and both must mean "the current
+// face". Every source is normalized by todayItems.ts; this file only
+// wires hooks to the daypart views and dispatches row actions.
 //
 // This page is also the sheet host the retired cards were: `act()`
 // serves every habitAction kind and every questAction kind it can
@@ -34,10 +36,12 @@ import {
 import { AppHero } from '@/features/progression/components/AppHero'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { AnchorIsland } from '@/features/today/components/AnchorIsland'
-import { IslandDay, type DayHero } from '@/features/today/components/IslandDay'
-import { IslandEvening } from '@/features/today/components/IslandEvening'
-import { IslandMorning } from '@/features/today/components/IslandMorning'
-import { IslandSky } from '@/features/today/components/IslandSky'
+import { DaypartDay, type DayHero } from '@/features/today/components/DaypartDay'
+import { DaypartEvening } from '@/features/today/components/DaypartEvening'
+import { DaypartMorning } from '@/features/today/components/DaypartMorning'
+import { DaypartPanel } from '@/features/today/components/DaypartPanel'
+import { DaypartTabs } from '@/features/today/components/DaypartTabs'
+import { MezoMessage } from '@/features/today/components/MezoMessage'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
@@ -54,17 +58,15 @@ import {
   dayBalance, fallbackHero, hrvFact, kcalFact, morningHero, proteinFact, sleepOutlook, weightFact,
   type IslandFact,
 } from '@/features/today/logic/islandFacts'
-import { DAY_FACES, dayFace, FACE_EMOJI, FACE_LABEL, type DayFace as Face } from '@/features/today/logic/dayFace'
+import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
 import {
   buildTodayItems, isFillableSlot, itemsForFace,
   type SessionItemInput, type TodayItem,
 } from '@/features/today/logic/todayItems'
-import { useWindDownPhase } from '@/features/today/logic/useWindDownPhase'
 import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/features/train/logic/sportKinds'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
-import { Island, type IslandCapsule } from '@/shared/ui/Island'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
 
 const isFace = (v: string | null): v is Face => v !== null && (DAY_FACES as readonly string[]).includes(v)
@@ -90,7 +92,7 @@ function servableAction(item: TodayItem, hasFillableCheckin: boolean): boolean {
 
 /**
  * One session of the day, shaped so a SINGLE object serves both of its roles: the normalizer's
- * `SessionItemInput` (the row) and the day island's `DayHero` (the hero), keyed by the id the
+ * `SessionItemInput` (the row) and the day view's `DayHero` (the hero), keyed by the id the
  * item carries. Authored once (`sessions` below) and never re-derived.
  */
 type DaySession = SessionItemInput & { ctaLabel: string }
@@ -125,7 +127,6 @@ export function TodayPage() {
   const { addFocus, reflect } = useIntentionActions(date)
   const stats = useQuickStats()
   const companionNote = useCompanionNote()
-  const { phase: windPhase } = useWindDownPhase()
   const { showLevelUp } = useLevelUp()
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
@@ -136,8 +137,6 @@ export function TodayPage() {
   const [sleepOpen, setSleepOpen] = useState(false)
   const [focusOpen, setFocusOpen] = useState(false)
   const [reflectOpen, setReflectOpen] = useState(false)
-  // L1 open/closed — belongs to the SELECTED island; a face switch always closes it.
-  const [listOpen, setListOpen] = useState(false)
 
   // Consume-once level-ups: quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
@@ -188,7 +187,7 @@ export function TodayPage() {
     // the pill goes. A stripped habit picks up `habitHint`'s explainer.
     const hasFillableCheckin = checkins.some(isFillableSlot)
     return built.map((i) => {
-      // The promoted session's face follows its HERO: the day island is where it renders,
+      // The promoted session's face follows its HERO: the day view is where it renders,
       // so the item belongs to `nap` whatever the session's start.
       const faced = i.id === heroItemId ? { ...i, face: 'nap' as const } : i
       if (servableAction(faced, hasFillableCheckin)) return faced
@@ -203,11 +202,15 @@ export function TodayPage() {
   const raw = params.get('dp')
   const selected: Face = isFace(raw) ? raw : current
   const selectFace = (face: Face) => {
-    setListOpen(false)
     const next = new URLSearchParams(params)
     if (face === current) next.delete('dp')
     else next.set('dp', face)
     setSearchParams(next, { replace: true })
+    // The app's single scroller. `?dp=` is a search-param change, so ScreenContent's
+    // pathname-keyed reset does NOT fire — a tab switch must land at the top itself.
+    // scrollTop assignment (not scrollTo) — works in every engine incl. jsdom.
+    const scroller = document.querySelector('.screen-content')
+    if (scroller instanceof HTMLElement) scroller.scrollTop = 0
   }
 
   // The identity header is rendered ONCE, above every branch (mezo-mvb4.1): `.apphero` is a
@@ -221,20 +224,30 @@ export function TodayPage() {
 
   // `anchorMode` derives SYNCHRONOUSLY from `?day=` — checked FIRST, before the pending gate,
   // so a real-mode `/today?day=rough` visit never flashes the skeleton before the calm view.
-  // The melt is the same sky in its anchor state (IslandSky), no separate route/screen.
+  // The melt REPLACES the day: no tabs, no message band, no daypart — one warm island.
+  // It still sits in `DaypartPanel`, which is the page's margin, not a card: AnchorIsland's
+  // own elements used to take their horizontal inset from the retired island shell
+  // (`.isl-bigview`), and `.dayview`'s padding is what gives it back.
   if (scenario.anchorMode) {
     return (
       <>
         {appHero}
-        <IslandSky anchor anchorContent={<AnchorIsland />}>{null}</IslandSky>
+        {/* The tone is a CONSTANT here, never `current` — `DaypartPanel` puts `key={tone}` on
+            its root to cross-fade a tab switch, and `current` is re-derived from `new Date()`
+            on every render. A clock-derived tone would flip the key the first time a render
+            (a focus refetch, or just the ghost → real sleep-anchor re-render) landed on the far
+            side of a daypart boundary, remounting the melt and silently discarding
+            AnchorIsland's local tick state, which is persisted nowhere. The melt is not a
+            daypart, so it has no tone of its own to be right about. Keep it constant. */}
+        <DaypartPanel tone="reggel"><AnchorIsland /></DaypartPanel>
       </>
     )
   }
   // The face selection depends on the sleep anchor; rendering before it resolves would
-  // flash the wrong island in real mode. The skeleton mirrors the island layout.
+  // flash the wrong daypart in real mode. The skeleton mirrors the page layout.
   if (sleepGoalPending) return <>{appHero}<TodaySkeleton /></>
 
-  // An island never renders its hero twice: the promoted session leaves the row lists by ID.
+  // A daypart never renders its hero twice: the promoted session leaves the row lists by ID.
   const faceItems = itemsForFace(items, selected)
   const open = faceItems.open.filter((i) => i.id !== heroItemId)
   const done = faceItems.done.filter((i) => i.id !== heroItemId)
@@ -293,12 +306,9 @@ export function TodayPage() {
       .filter((c) => c.daypart === daypart)
       .map((c) => ({ id: c.id, text: chainCelebrationText(c), ...chainProgress(c.chainKey) }))
 
-  // The morning island promotes the chain's FIRST open actionable step; the rest live in L1.
-  const chainNext = open.find((i) => i.source === 'habit' && i.face === 'reggel' && i.action) ?? null
-
   const growth = growthTodaySummary(quests, activities ?? [])
 
-  // ── Island facts (pure derivations; a missing source means a missing cell, never `—`) ──
+  // ── Daypart facts (pure derivations; a missing source means a missing cell, never `—`) ──
   const morningFacts = [weightFact(weightLog, userGoal?.targetWeight ?? null), hrvFact(stats)]
     .filter((f): f is IslandFact => f != null)
   const dayFacts = [proteinFact(fuelPlan?.slots ?? []), kcalFact(fuelPlan?.energy)]
@@ -307,85 +317,40 @@ export function TodayPage() {
   const mHero = morningHero(lastNight, sleepLog, sleepGoal)
     ?? fallbackHero(itemsForFace(items, 'reggel').open.length)
 
-  // One-line capsule essence per island (v3 decision: next item / anchor time, not counters).
-  const essence = (face: Face): { essence: string; count: string } => {
-    const f = itemsForFace(items, face)
-    const count = f.open.length > 0 ? `${f.open.length} ›` : f.done.length > 0 ? '✓ kész' : '—'
-    if (face === 'nap') {
-      const s = sessions[0]
-      return { essence: s ? [s.time, s.title].filter(Boolean).join(' · ') : 'Pihenőnap', count }
-    }
-    if (face === 'este') return { essence: `Napzárás ${ritualDay.window.opensAt}-től`, count }
-    const next = f.open.find((i) => i.action != null)
-    return { essence: next ? `${next.title} a következő` : 'Szabad reggel', count }
-  }
-
   const dayHero: DayHero | null = heroSession ? heroCardOf(heroSession, () => navigate('/train')) : null
-
-  // The shared Island shell is domain-free (mezo-jgh9): this page supplies the tone's
-  // language (emoji/title/essence) and the full spoken label the old feature-local
-  // Island used to compose internally.
-  const islandCapsule = (face: Face): IslandCapsule => ({ emoji: FACE_EMOJI[face], title: FACE_LABEL[face], ...essence(face) })
-  const islandAriaLabel = (face: Face, nowRing: boolean, essenceText: string) =>
-    `${FACE_LABEL[face]}${nowRing ? ' · most' : ''} · ${essenceText} · megnyitás`
-  const reggelCapsule = islandCapsule('reggel')
-  const napCapsule = islandCapsule('nap')
-  const esteCapsule = islandCapsule('este')
 
   return (
     <>
       {appHero}
       {scenario.vulnerable && <VulnerabilityCard />}
-      <IslandSky anchor={false} anchorContent={null}>
-        <Island
-          tone="reggel" big={selected === 'reggel'} nowRing={current === 'reggel'}
-          capsule={reggelCapsule} ariaLabel={islandAriaLabel('reggel', current === 'reggel', reggelCapsule.essence)}
-          onSelect={() => selectFace('reggel')}
-        >
-          {selected === 'reggel' && (
-            <IslandMorning
-              hero={mHero} facts={morningFacts} next={chainNext}
-              open={open} done={done} doneXp={doneXp}
-              listOpen={listOpen} onToggleList={setListOpen}
-              briefing={briefing ?? resolveBriefing(scenario.dayState)} briefingDemo={briefingDemo}
-              celebrations={celebrationsFor('MORNING')} growth={growth}
-              habitPending={habitPending} onAct={act}
-            />
-          )}
-        </Island>
-        <Island
-          tone="nap" big={selected === 'nap'} nowRing={current === 'nap'}
-          capsule={napCapsule} ariaLabel={islandAriaLabel('nap', current === 'nap', napCapsule.essence)}
-          onSelect={() => selectFace('nap')}
-        >
-          {selected === 'nap' && (
-            <IslandDay
-              hero={dayHero}
-              heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
-              facts={dayFacts}
-              mesoLine={user.weekInMeso ? `${user.weekInMeso}. mezóhét` : null}
-              open={open} done={done} doneXp={doneXp}
-              listOpen={listOpen} onToggleList={setListOpen}
-              note={companionNote} celebrations={celebrationsFor('DAY')} growth={growth}
-              habitPending={habitPending} onAct={act} onCustom={() => setCustomOpen(true)}
-            />
-          )}
-        </Island>
-        <Island
-          tone="este" big={selected === 'este'} nowRing={current === 'este'} night={windPhase === 'night'}
-          capsule={esteCapsule} ariaLabel={islandAriaLabel('este', current === 'este', esteCapsule.essence)}
-          onSelect={() => selectFace('este')}
-        >
-          {selected === 'este' && (
-            <IslandEvening
-              open={open} done={done} dayXp={dayXp} facts={eveningFacts}
-              listOpen={listOpen} onToggleList={setListOpen}
-              note={companionNote} celebrations={celebrationsFor('EVENING')} growth={growth}
-              habitPending={habitPending} onAct={act}
-            />
-          )}
-        </Island>
-      </IslandSky>
+      <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
+      <MezoMessage briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
+      {selected === 'reggel' && (
+        <DaypartMorning
+          hero={mHero} facts={morningFacts}
+          open={open} done={done} doneXp={doneXp}
+          celebrations={celebrationsFor('MORNING')} growth={growth}
+          habitPending={habitPending} onAct={act}
+        />
+      )}
+      {selected === 'nap' && (
+        <DaypartDay
+          hero={dayHero}
+          heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
+          facts={dayFacts}
+          mesoLine={user.weekInMeso ? `${user.weekInMeso}. mezóhét` : null}
+          open={open} done={done} doneXp={doneXp}
+          note={companionNote} celebrations={celebrationsFor('DAY')} growth={growth}
+          habitPending={habitPending} onAct={act} onCustom={() => setCustomOpen(true)}
+        />
+      )}
+      {selected === 'este' && (
+        <DaypartEvening
+          open={open} done={done} dayXp={dayXp} facts={eveningFacts}
+          note={companionNote} celebrations={celebrationsFor('EVENING')} growth={growth}
+          habitPending={habitPending} onAct={act}
+        />
+      )}
 
       {checkInIdx !== null && (
         <CheckInSheet

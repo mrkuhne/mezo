@@ -247,11 +247,21 @@ test('tapping a capsule grows that island', async () => {
 })
 
 test('selecting a non-default window writes ?w= with that window key; re-selecting the NOW window drops it', () => {
-  renderView('/fuel')
-  fireEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel?w=21%3A45-Vacsora')
-  fireEvent.click(screen.getByRole('button', { name: /^Uzsonna · most ·/ }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel')
+  // The window keys and which one wears `· most ·` are both derived from the wall clock, so this
+  // case only holds at a pinned time — unfrozen, `Vacsora` drifts (21:45 → 19:45) and the NOW
+  // window moves off Uzsonna, which made the test red for whole stretches of the real day
+  // (mezo-pxwc). Same 16:35 anchor and Date-only fake the Pótold cases above use.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
+  try {
+    renderView('/fuel')
+    fireEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
+    expect(screen.getByTestId('loc').textContent).toBe('/fuel?w=21%3A45-Vacsora')
+    fireEvent.click(screen.getByRole('button', { name: /^Uzsonna · most ·/ }))
+    expect(screen.getByTestId('loc').textContent).toBe('/fuel')
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 // ── Logging / AI ──────────────────────────────────────────────────────────────────────────────

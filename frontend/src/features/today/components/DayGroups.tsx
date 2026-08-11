@@ -1,38 +1,41 @@
 // ============================================================
-// Mezo · IslandList — the L1 layer of a big island (mezo-euze).
-// The TodoCard + DoneFold successor: the island's FULL item list in
-// the shared ItemRow language with small-caps group headings, plus
-// two content slots (`head` for the briefing / companion CoachBubble,
-// `focus` for the IntentionBanner under a Fókusz heading) and the done
-// block (`doneHeading`; the evening closes it with `Ma összesen +N XP`).
-// Grouping preserves first-appearance order (the buildTodayItems order);
-// the quest group heading carries the ONE Today → /me/growth route.
+// Mezo · DayGroups — a daypart view's item list (mezo-puci), the
+// IslandList successor. Two things left with the islands: the internal
+// scroller (the page is the scroller now) and the `összecsuk` handle
+// (nothing is folded away). What survives verbatim: grouping in
+// first-appearance order, the group heading's count, the quest
+// heading's single Today → /me/growth route, the head/focus slots,
+// and the ItemRow language.
+// The ONE collapsed thing on the whole screen is the done fold — the
+// day's finished items, behind a quiet line.
 // ============================================================
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ItemRow } from '@/shared/ui/ItemRow'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
-export interface IslandListProps {
+export interface DayGroupsProps {
   open: TodayItem[]
   done: TodayItem[]
-  doneHeading: string
-  /** Evening retrospective total — closes the done group with `Ma összesen +N XP`. */
+  /** The whole label on the collapsed fold, e.g. „✓ 3 kész ma · +40 XP". */
+  doneLabel: string
+  /** Evening retrospective total — closes the expanded done block. */
   dayXp?: number | null
-  /** BriefingCard / CompanionNoteCard slot, above the groups. */
+  /** The day/evening companion note, above the groups. */
   head?: ReactNode
-  /** IntentionBanner slot — rendered under a 'Fókusz' group heading. */
+  /** IntentionBanner slot — rendered under a „Fókusz" group heading. */
   focus?: ReactNode
   growth?: GrowthTodaySummary | null
   habitPending?: boolean
   onAct: (item: TodayItem) => void
-  onClose: () => void
 }
 
-export function IslandList({
-  open, done, doneHeading, dayXp, head, focus, growth, habitPending, onAct, onClose,
-}: IslandListProps) {
+export function DayGroups({
+  open, done, doneLabel, dayXp, head, focus, growth, habitPending, onAct,
+}: DayGroupsProps) {
+  const [doneOpen, setDoneOpen] = useState(false)
+
   // Group in first-appearance order — a Map preserves insertion order.
   const groups = new Map<string, TodayItem[]>()
   for (const it of open) {
@@ -59,7 +62,7 @@ export function IslandList({
     ))
 
   return (
-    <div className="isl-l1">
+    <div className="dv-groups">
       {head}
       {[...groups].map(([group, rows]) => (
         <div key={group}>
@@ -82,12 +85,23 @@ export function IslandList({
       )}
       {done.length > 0 && (
         <div>
-          <div className="isl-grouph"><span>{doneHeading} · {done.length}</span></div>
-          {rowsOf(done, true)}
-          {dayXp != null && <div className="isl-dayxp">Ma összesen +{dayXp} XP</div>}
+          <button
+            type="button"
+            className="dv-done"
+            aria-expanded={doneOpen}
+            onClick={() => setDoneOpen((v) => !v)}
+          >
+            {doneLabel}
+            <span className="dv-done-arr" aria-hidden="true">{doneOpen ? '▴' : '▾'}</span>
+          </button>
+          {doneOpen && (
+            <>
+              {rowsOf(done, true)}
+              {dayXp != null && <div className="isl-dayxp">Ma összesen +{dayXp} XP</div>}
+            </>
+          )}
         </div>
       )}
-      <button type="button" className="isl-l1-close" onClick={onClose}>összecsuk ↑</button>
     </div>
   )
 }

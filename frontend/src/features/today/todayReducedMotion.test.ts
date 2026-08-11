@@ -5,10 +5,15 @@ import { describe, expect, test } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
 
 /**
- * Guard (mezo-1khu heritage, re-anchored onto the three-islands CSS by mezo-euze): every
- * Today motion — the blob morph, the floating capsules, the L1 row stagger and the evening
- * phase-swap — must be neutralized under `prefers-reduced-motion`, or the Playwright goldens
- * (which run `reducedMotion: 'reduce'`) flake on in-flight frames.
+ * Guard (mezo-1khu heritage, re-anchored onto the three-islands CSS by mezo-euze, and again
+ * onto the daypart-tabs CSS by mezo-puci): the `.isl-*` blob morph, floating capsules and L1
+ * row stagger are now Fuel's alone (`shared/ui/Island.tsx` + `features/fuel/components/
+ * WindowIsland.tsx` — the „Mai" window island) and the evening phase-swap (`.isl-phase`) that
+ * used to live here was retired with the island components. Today's own motion is now the
+ * `.dayview` fade-in (`isl-phasein`, reused). Every one of these must be neutralized under
+ * `prefers-reduced-motion`, or the Playwright goldens (which run `reducedMotion: 'reduce'`)
+ * flake on in-flight frames — Fuel's islands and Today's day view share the same CSS file and
+ * the same guard, so this file keeps testing both.
  *
  * Structural contract carried over from the retired `.faceswap` guard: every modifier
  * qualifier (delay variants, nth-child stagger) is `:where()`-wrapped, so no active selector
@@ -19,17 +24,24 @@ const REDUCED_BLOCKS = [...rawCss.matchAll(/@media \(prefers-reduced-motion: red
   .map((m) => m[1])
   .join('\n')
 
-describe('Today motion is reduced-motion safe', () => {
+describe('the island family (now Fuel-owned) and Today day-view motion are reduced-motion safe', () => {
+  // These three are Fuel's — the `.isl`/`.isl-l1` shell lives in `shared/ui/Island.tsx` and
+  // `features/fuel/components/WindowIsland.tsx` now, not Today.
   test.each([
     ':where(.isl.isl-big) .isl-blob',
     ':where(.isl:not(.isl-big))',
     ':where(.isl-l1) .itemrow',
-    ':where(.isl-phase)',
   ])('%s is disabled under prefers-reduced-motion', (selector) => {
     expect(REDUCED_BLOCKS).toContain(selector)
   })
 
-  test('every Today-specific keyframe animation has a matching reduce rule', () => {
+  test('the day view animation is guarded by a :where()-wrapped reduce override', () => {
+    expect(rawCss).toMatch(/:where\(\.dayview\)\s*\{\s*animation:\s*isl-phasein/)
+    const reduce = rawCss.slice(rawCss.indexOf('@media (prefers-reduced-motion: reduce)'))
+    expect(reduce).toMatch(/\.dayview\s*\{\s*animation:\s*none/)
+  })
+
+  test('every island-motion keyframe (Fuel + Today) has a matching reduce rule', () => {
     for (const name of ['isl-morph', 'isl-floaty', 'isl-rowin', 'isl-phasein']) {
       expect(rawCss).toContain(`@keyframes ${name}`)
     }
@@ -139,16 +151,18 @@ function cmpSpecificity(a: [number, number, number], b: [number, number, number]
 const rules = parseRules(rawCss)
 const isActive = (r: Rule) => r.media !== 'reduce' && r.media !== 'no-preference'
 
-/** The four island motion families: which ACTIVE selectors belong to each (by token) and
- *  which reduce-block override must dominate them. */
+/** The three island motion families (Fuel-owned: `shared/ui/Island.tsx` +
+ *  `features/fuel/components/WindowIsland.tsx`): which ACTIVE selectors belong to each (by
+ *  token) and which reduce-block override must dominate them. The fourth family this guard
+ *  used to cover — the evening `.isl-phase` swap — was retired with the island components
+ *  (mezo-puci); Today's own phase-in motion is `.dayview`, covered separately above. */
 const FAMILIES = [
   { name: 'blob morph', token: '.isl-blob', override: ':where(.isl.isl-big) .isl-blob' },
   { name: 'capsule floaty', token: ':not(.isl-big)', override: ':where(.isl:not(.isl-big))' },
   { name: 'L1 row stagger', token: '.isl-l1', override: ':where(.isl-l1) .itemrow' },
-  { name: 'phase swap', token: '.isl-phase', override: ':where(.isl-phase)' },
 ] as const
 
-describe('the island reduced-motion overrides cannot be outranked (cascade guard)', () => {
+describe('the Fuel island reduced-motion overrides cannot be outranked (cascade guard)', () => {
   const animating = rules
     .filter(isActive)
     .filter((r) => /animation(-\w+)?\s*:/.test(r.body))
@@ -156,8 +170,8 @@ describe('the island reduced-motion overrides cannot be outranked (cascade guard
     .filter(({ sel }) => sel.includes('.isl'))
 
   test('parses a non-trivial set of animating island selectors (guards against a vacuous pass)', () => {
-    // blob + floaty base + 2 delay variants + rowin base + 7 stagger steps + tail + phase ≥ 12.
-    expect(animating.length).toBeGreaterThanOrEqual(12)
+    // blob + floaty base + rowin base + 7 stagger steps (nth-child 2-7 + open tail) = 10.
+    expect(animating.length).toBeGreaterThanOrEqual(10)
   })
 
   test.each(FAMILIES.map((f) => [f.name, f] as const))('%s: override exists, dominates and is declared last', (_n, family) => {

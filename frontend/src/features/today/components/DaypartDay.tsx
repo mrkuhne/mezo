@@ -1,18 +1,20 @@
 // ============================================================
-// Mezo · IslandDay — the day island's big view (mezo-euze). Hero is
-// the session's time (`13:00 · Pull A · 55′`), rest days read `Pihenő`
-// with the `Saját edzés` CTA. Facts: protein + energy from the fuel
-// plan. The niggle warning survives as the ONE safety chip allowed on
-// L0. The `DayHero` shape moved here from the retired FaceDay.
+// Mezo · DaypartDay — the day daypart's view (mezo-puci), the IslandDay
+// successor. The hero is the day's session (`13:00 · Pull A`), rest
+// days read `Pihenő` with the `Saját edzés` CTA; the niggle warning
+// survives as the one safety chip. The `DayHero` shape lives here now
+// (it moved from the retired IslandDay, unchanged) — TodayPage's
+// `heroCardOf` builds it, so the row and the hero stay one object.
 // ============================================================
 import type { CompanionNote } from '@/data/types'
 import type { ItemTone } from '@/shared/ui/ItemCard'
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
+import { DayGroups } from '@/features/today/components/DayGroups'
+import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
-import { IslandList } from '@/features/today/components/IslandList'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
@@ -31,7 +33,7 @@ export interface DayHero {
   onLog?: () => void
 }
 
-export interface IslandDayProps {
+export interface DaypartDayProps {
   hero: DayHero | null
   heroWarn?: string | null
   facts: IslandFact[]
@@ -39,8 +41,6 @@ export interface IslandDayProps {
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
-  listOpen: boolean
-  onToggleList: (open: boolean) => void
   note: CompanionNote | null
   celebrations: ChainCelebrationInput[]
   growth?: GrowthTodaySummary | null
@@ -49,52 +49,24 @@ export interface IslandDayProps {
   onCustom: () => void
 }
 
-export function IslandDay({
-  hero, heroWarn, facts, mesoLine, open, done, doneXp, listOpen, onToggleList,
-  note, celebrations, growth, habitPending, onAct, onCustom,
-}: IslandDayProps) {
-  if (listOpen) {
-    return (
-      <>
-        <ChainCelebrations chains={celebrations} />
-        <div className="isl-openhead">☀️ Nap</div>
-        <IslandList
-          open={open}
-          done={done}
-          doneHeading="Kész ma"
-          head={note ? <CompanionNoteCard note={note} /> : undefined}
-          focus={<IntentionBanner variant="chip" />}
-          growth={growth}
-          habitPending={habitPending}
-          onAct={onAct}
-          onClose={() => onToggleList(false)}
-        />
-      </>
-    )
-  }
-
+export function DaypartDay({
+  hero, heroWarn, facts, mesoLine, open, done, doneXp, note, celebrations,
+  growth, habitPending, onAct, onCustom,
+}: DaypartDayProps) {
   const durationFact = hero?.facts.find((f) => typeof f === 'string' && /perc|′/.test(f))
+  const heroUnit = hero ? `${hero.title}${durationFact ? ` · ${durationFact}` : ''}` : 'nap'
+
   return (
-    <>
+    <DaypartPanel tone="nap">
       <ChainCelebrations chains={celebrations} />
-      {hero ? (
-        <div className="isl-hero-v">
-          {hero.time ?? '—'}
-          <span className="isl-hero-u">
-            {hero.title}
-            {durationFact ? ` · ${durationFact}` : ''}
-          </span>
-        </div>
-      ) : (
-        <div className="isl-hero-v is-word">
-          Pihenő
-          <span className="isl-hero-u">nap</span>
-        </div>
-      )}
-      <div className="isl-hero-sub">{hero ? mesoLine : 'Ma nincs tervezett edzés'}</div>
+      <DaypartHero
+        value={hero ? hero.time ?? '—' : 'Pihenő'}
+        unit={heroUnit}
+        sub={hero ? mesoLine : 'Ma nincs tervezett edzés'}
+      />
       <IslandFactsStrip facts={facts} />
       {heroWarn && <div className="isl-warnchip">⚠️ {heroWarn}</div>}
-      <div className="isl-act">
+      <div className="dv-act">
         {hero ? (
           <button type="button" className="isl-cta np-press" onClick={() => hero.onLog?.()}>
             {hero.ctaLabel ?? 'Indítsuk'}
@@ -104,17 +76,17 @@ export function IslandDay({
             Saját edzés
           </button>
         )}
-        {open.length > 0 && (
-          <button type="button" className="isl-more" onClick={() => onToggleList(true)}>
-            még {open.length} ›
-          </button>
-        )}
       </div>
-      {done.length > 0 && (
-        <button type="button" className="isl-doneline" onClick={() => onToggleList(true)}>
-          ✓ {done.length} kész ma · +{doneXp} XP
-        </button>
-      )}
-    </>
+      <DayGroups
+        open={open}
+        done={done}
+        doneLabel={`✓ ${done.length} kész ma · +${doneXp} XP`}
+        head={note ? <CompanionNoteCard note={note} /> : undefined}
+        focus={<IntentionBanner variant="chip" />}
+        growth={growth}
+        habitPending={habitPending}
+        onAct={onAct}
+      />
+    </DaypartPanel>
   )
 }
