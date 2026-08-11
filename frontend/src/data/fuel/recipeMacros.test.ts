@@ -126,3 +126,57 @@ describe('computeRecipeMacrosWithOverrides', () => {
       { kcal: 28, p: 3, c: 1, f: 1 })
   })
 })
+
+import {
+  NO_NUTRIENTS, lineNutrients, sumNutrients, computeRecipeNutrients,
+  computeRecipeNutrientsWithOverrides, rescaleFrozenNutrients,
+} from '@/data/fuel/recipeMacros'
+
+test('lineNutrients scales per-basis facts and keeps three decimals', () => {
+  const src = { fiberG: 3.25, sugarG: 4.1, saltG: 0.4, saturatedFatG: 2.8 }
+  expect(lineNutrients(200, 100, src)).toEqual({ fiberG: 6.5, sugarG: 8.2, saltG: 0.8, saturatedFatG: 5.6 })
+})
+
+// The FE twin of the backend's boundary test (MealApiIT, mezo-m6uv): a small salt contribution must
+// NOT collapse to 0.1 the way one-decimal storage rounding did. Fails if roundGram goes back to /10.
+test('lineNutrients keeps a small salt contribution intact instead of rounding it up', () => {
+  const src = { fiberG: null, sugarG: null, saltG: 0.4, saturatedFatG: null }
+  expect(lineNutrients(20, 100, src).saltG).toBe(0.08)
+})
+
+test('lineNutrients keeps a missing fact null — never 0', () => {
+  const src = { fiberG: null, sugarG: 4, saltG: null, saturatedFatG: null }
+  expect(lineNutrients(100, 100, src)).toEqual({ fiberG: null, sugarG: 4, saltG: null, saturatedFatG: null })
+})
+
+test('sumNutrients is null-preserving: partial sum, null only when every line is null', () => {
+  const withFacts = { fiberG: 3, sugarG: null, saltG: 0.4, saturatedFatG: null }
+  expect(sumNutrients([withFacts, NO_NUTRIENTS])).toEqual({ fiberG: 3, sugarG: null, saltG: 0.4, saturatedFatG: null })
+  expect(sumNutrients([NO_NUTRIENTS, NO_NUTRIENTS])).toEqual(NO_NUTRIENTS)
+})
+
+test('an empty override map reproduces the plain nutrient rollup', () => {
+  const lines = [
+    { refId: 'a', amount: 200, unit: 'g', nutrients: { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 } },
+    { refId: 'b', amount: 150, unit: 'g' },
+  ]
+  expect(computeRecipeNutrientsWithOverrides(lines, [], {})).toEqual(computeRecipeNutrients(lines))
+})
+
+test('an overridden line rescales from the live source when one resolves', () => {
+  const lines = [{ refId: 'a', amount: 200, unit: 'g', nutrients: { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 } }]
+  const ingredients = [{
+    id: 'a', name: 'Túró', brand: '', source: 'manual' as const, category: 'dairy',
+    per: 100, unit: 'g', macros: { kcal: 110, p: 13, c: 4, f: 4.5 },
+    fiberG: 3.2, sugarG: null, saltG: 0.4, saturatedFatG: 2.8,
+    price: 0, priceUnit: '', pkg: '', micros: [], nova: 1 as const, stock: null,
+    lastUsed: '', usedInRecipes: 0,
+  }]
+  expect(computeRecipeNutrientsWithOverrides(lines, ingredients, { 0: 100 }).fiberG).toBe(3.2)
+})
+
+test('rescaleFrozenNutrients falls back to the frozen contribution when the source is gone', () => {
+  const frozen = { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 }
+  expect(rescaleFrozenNutrients(frozen, 100, 200)).toEqual({ fiberG: 3.2, sugarG: null, saltG: 0.4, saturatedFatG: 2.8 })
+  expect(rescaleFrozenNutrients(undefined, 100, 200)).toEqual(NO_NUTRIENTS)
+})

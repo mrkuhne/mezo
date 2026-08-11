@@ -91,6 +91,7 @@ export interface MealItemLine {
   unit: string
   name: string // server snapshot name (frozen at log time)
   contribution: { kcal: number; p: number; c: number; f: number }
+  nutrients?: Nutrients // this line's nutrition-quality facts (mezo-m6uv), frozen like contribution
   nova?: number // 1..4, carried for the future NOVA score dimension
 }
 export interface FuelMeal {
@@ -99,6 +100,8 @@ export interface FuelMeal {
   /** Rost-bővítés (mezo-c9t5, frontend-only) — absent/null on meals the wire doesn't carry fiber
    *  for yet; keretHero.ts's rost-összegzés treats a missing value as 0, never fabricates one. */
   fiberG?: number | null
+  /** Whole-meal nutrition-quality facts (mezo-m6uv), null-preserving Σ of the item lines. */
+  nutrients?: Nutrients
   mealItems: MealItemLine[] // structured lines (real once logged)
   items: string[] // legacy free-text labels — kept for the mock score-sheet seeds
   tags: string[]
@@ -293,15 +296,25 @@ export interface RecipeIngredientLine {
   note?: string
   name?: string // server-computed snapshot name (present on persisted/loaded recipes)
   contribution?: { kcal: number; p: number; c: number; f: number } // this line's macro share
+  nutrients?: Nutrients // this line's nutrition-quality facts (mezo-m6uv), frozen like contribution
 }
 /** Template meal role (mezo-uavr) — selects the scoring rubric overlay on the recipe surface. */
 export type RecipeRole = 'standard' | 'pre_workout' | 'post_workout'
+/** Nutrition-quality facts, frozen per line like the macros (mezo-m6uv). `null` = the source
+ *  carried no value — NOT zero; a rollup field is null only when every line was null. Grams. */
+export interface Nutrients {
+  fiberG: number | null
+  sugarG: number | null
+  saltG: number | null
+  saturatedFatG: number | null
+}
 export interface Recipe {
   id: string; name: string; slot: string; category: RecipeCategory
   createdDate: string; timesLogged: number; avgScore: number; lastLogged: string
   servings: number; prepMins: number; cookMins: number; tags: string[]
   ingredients: RecipeIngredientLine[]
   macros: { kcal: number; p: number; c: number; f: number }
+  nutrients?: Nutrients
   novaDominant: NovaGroup
   mezoFit: { score: number | null; fitsFor: string[] }
   starred: boolean

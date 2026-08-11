@@ -1,4 +1,4 @@
-import type { Ingredient, RecipeIngredientLine } from '@/data/types'
+import type { Ingredient, Nutrients, RecipeIngredientLine } from '@/data/types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
 
@@ -26,8 +26,16 @@ export function lineContribution(amount: number, per: number, src: Macros): Macr
 
 /** Fill a line's snapshot name + contribution from its source ingredient (zeros if missing). */
 export function enrichLine(line: RecipeIngredientLine, ing: Ingredient | undefined): RecipeIngredientLine {
-  if (!ing) return { ...line, name: line.refId, contribution: { kcal: 0, p: 0, c: 0, f: 0 } }
-  return { ...line, name: ing.name, contribution: lineContribution(line.amount, ing.per, ing.macros) }
+  if (!ing) return { ...line, name: line.refId, contribution: { kcal: 0, p: 0, c: 0, f: 0 }, nutrients: { ...NO_NUTRIENTS } }
+  return {
+    ...line,
+    name: ing.name,
+    contribution: lineContribution(line.amount, ing.per, ing.macros),
+    nutrients: lineNutrients(line.amount, ing.per, {
+      fiberG: ing.fiberG ?? null, sugarG: ing.sugarG ?? null,
+      saltG: ing.saltG ?? null, saturatedFatG: ing.saturatedFatG ?? null,
+    }),
+  }
 }
 
 /**
@@ -95,4 +103,83 @@ export function computeRecipeMacrosWithOverrides(
     { ...zero },
   )
   return { kcal: roundMacro(sum.kcal), p: roundMacro(sum.p), c: roundMacro(sum.c), f: roundMacro(sum.f) }
+}
+
+export const NO_NUTRIENTS: Nutrients = { fiberG: null, sugarG: null, saltG: null, saturatedFatG: null }
+
+const NUTRIENT_KEYS = ['fiberG', 'sugarG', 'saltG', 'saturatedFatG'] as const
+
+/**
+ * Grams to THREE decimals — mirrors `RecipeMapper.scaledGram` (BigDecimal setScale(3, HALF_UP)).
+ * Storage/summation precision, NOT display: `formatGram` does the one-decimal rounding at the edge.
+ * Rounding per line at one decimal turned a true 0.04 g salt contribution into 0.1 g and compounded
+ * across lines. The `+ EPSILON` guards the float representation (0.0155 * 1000 is 15.499999999999998,
+ * which would round DOWN); `null` stays null so "no data" never becomes a fake 0.
+ */
+export function roundGram(n: number | null | undefined): number | null {
+  return n == null ? null : Math.round(n * 1000 + Number.EPSILON) / 1000
+}
+
+/** One line's nutrient facts at `amount`, from a per-`per`-basis source. */
+export function lineNutrients(amount: number, per: number, src: Nutrients): Nutrients {
+  const factor = amount / (per || 1)
+  return {
+    fiberG: roundGram(src.fiberG == null ? null : src.fiberG * factor),
+    sugarG: roundGram(src.sugarG == null ? null : src.sugarG * factor),
+    saltG: roundGram(src.saltG == null ? null : src.saltG * factor),
+    saturatedFatG: roundGram(src.saturatedFatG == null ? null : src.saturatedFatG * factor),
+  }
+}
+
+/** Multiply every present fact (e.g. whole-recipe → per adag). */
+export function scaleNutrients(n: Nutrients, mult: number): Nutrients {
+  return lineNutrients(mult, 1, n)
+}
+
+/** Null-preserving Σ — null only when EVERY input was null for that field (cf. RecipeMapper.addNullable). */
+export function sumNutrients(list: Nutrients[]): Nutrients {
+  const out: Nutrients = { ...NO_NUTRIENTS }
+  for (const n of list) {
+    for (const k of NUTRIENT_KEYS) {
+      const v = n[k]
+      if (v != null) out[k] = (out[k] ?? 0) + v
+    }
+  }
+  for (const k of NUTRIENT_KEYS) out[k] = roundGram(out[k])
+  return out
+}
+
+/** Rescale a frozen nutrient contribution to a different amount — the `rescaleFrozen` sibling. */
+export function rescaleFrozenNutrients(
+  n: Nutrients | undefined, amount: number, originalAmount: number,
+): Nutrients {
+  if (!n || !originalAmount) return { ...NO_NUTRIENTS }
+  return lineNutrients(amount, originalAmount, n)
+}
+
+/** Whole-recipe nutrients = null-preserving Σ of the line facts. */
+export function computeRecipeNutrients(lines: RecipeIngredientLine[]): Nutrients {
+  return sumNutrients(lines.map(l => l.nutrients ?? NO_NUTRIENTS))
+}
+
+/**
+ * Whole-recipe nutrients with per-line amount substitutions — the nutrient twin of
+ * `computeRecipeMacrosWithOverrides`, branching identically: an UNTOUCHED line keeps the
+ * server-frozen facts; an OVERRIDDEN line is rescaled from the live pantry row when one resolves,
+ * else from its own frozen facts (the backend also scales its own snapshot, never the pantry).
+ */
+export function computeRecipeNutrientsWithOverrides(
+  lines: RecipeIngredientLine[], ingredients: Ingredient[], overrides: Record<number, number>,
+): Nutrients {
+  return sumNutrients(lines.map((line, i) => {
+    const amount = overrides[i]
+    if (amount === undefined) return line.nutrients ?? NO_NUTRIENTS
+    const ing = ingredients.find(x => x.id === line.refId)
+    return ing
+      ? lineNutrients(amount, ing.per, {
+        fiberG: ing.fiberG ?? null, sugarG: ing.sugarG ?? null,
+        saltG: ing.saltG ?? null, saturatedFatG: ing.saturatedFatG ?? null,
+      })
+      : rescaleFrozenNutrients(line.nutrients, amount, line.amount)
+  }))
 }
