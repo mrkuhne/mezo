@@ -68,6 +68,18 @@ describe('Today tap targets are >= 44px (mezo-e26w code review fix)', () => {
     expect(before).toMatch(/z-index:\s*-1/)
   })
 
+  test('.td-act (the ink text-button accessory — "Logolás"/"Naplózz"/"Koppints"/"Logold") is ' +
+    'itself >= 44px tall, centering its label rather than growing the row (pre-merge review ' +
+    'Finding 3 — the screen\'s most-tapped accessory was the one `.td-*` control the earlier ' +
+    '`.td-tick`/`.td-seg button` guard missed)', () => {
+    const body = ruleBody(rawCss, '.td-act')
+    expect(pxDeclaration(body, 'min-height')).toBeGreaterThanOrEqual(44)
+    // Flex-centered so the label stays vertically centered in the taller box — `.td-row`'s own
+    // 56px min-height + `align-items: center` already keeps the row itself from growing.
+    expect(body).toMatch(/display:\s*flex/)
+    expect(body).toMatch(/align-items:\s*center/)
+  })
+
   test('.td-row-hit stretches to the row\'s full 56px height — the chevron rows\' tap target ' +
     'is the whole row, not the collapsed content height', () => {
     // `.td-row` centers rather than stretches its children, so without an explicit

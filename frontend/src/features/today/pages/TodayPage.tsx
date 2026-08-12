@@ -233,7 +233,8 @@ export function TodayPage() {
   // The melt REPLACES the day: no tabs, no message band, no daypart — one warm island.
   // It still sits in `DaypartPanel`, which is the page's margin, not a card: AnchorIsland's
   // own elements used to take their horizontal inset from the retired island shell
-  // (`.isl-bigview`), and `.dayview`'s padding is what gives it back.
+  // (`.isl-bigview`) via `.dayview`'s old padding; now that `.dayview` carries none, AnchorIsland
+  // gives itself the rail directly via its own `.anch-melt` wrapper (pre-merge review Finding 1).
   if (scenario.anchorMode) {
     return (
       <>
