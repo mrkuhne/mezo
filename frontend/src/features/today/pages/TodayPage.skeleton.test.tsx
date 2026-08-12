@@ -54,8 +54,8 @@ describe('TodayPage — sleep-anchor pending gate', () => {
     expect(switcher()).toBeNull()
     expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
     expect(container.querySelector('.daytabs')).toBeTruthy()
-    expect(container.querySelector('.cb-band')).toBeTruthy()
-    expect(container.querySelector('.dayview')).toBeTruthy()
+    expect(container.querySelector('.td-skel-chip')).toBeTruthy()
+    expect(container.querySelector('.td-skel-list')).toBeTruthy()
   })
 
   test('once useSleepGoal resolves, the live daypart screen renders instead', () => {

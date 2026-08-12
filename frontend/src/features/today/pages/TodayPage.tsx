@@ -2,8 +2,9 @@
 // Mezo · TodayPage — the Mai screen's composition root (mezo-puci,
 // daypart-tabs re-composition over the mezo-euze wiring).
 // The screen is a SCROLLING page in three fixed bands: the daypart
-// switcher (DaypartTabs), the companion's standing word (MezoMessage,
-// the same on every daypart) and the SELECTED daypart's complete
+// switcher (DaypartTabs), the companion's voice as a single 44px chip
+// (MezoChip, the same on every daypart — the full thread lives in
+// MezoMessagesSheet, opened on tap) and the SELECTED daypart's complete
 // content — hero, facts, CTA and every row, with no card frame and
 // nothing folded away but the day's finished items. `?dp=` stays the
 // single source of truth for which daypart is shown, derived from the
@@ -41,7 +42,8 @@ import { DaypartEvening } from '@/features/today/components/DaypartEvening'
 import { DaypartMorning } from '@/features/today/components/DaypartMorning'
 import { DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { DaypartTabs } from '@/features/today/components/DaypartTabs'
-import { MezoMessage } from '@/features/today/components/MezoMessage'
+import { MezoChip } from '@/features/today/components/MezoChip'
+import { MezoMessagesSheet } from '@/features/today/components/MezoMessagesSheet'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
@@ -59,6 +61,7 @@ import {
   type IslandFact,
 } from '@/features/today/logic/islandFacts'
 import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
+import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import {
   buildTodayItems, isFillableSlot, itemsForFace,
   type SessionItemInput, type TodayItem,
@@ -66,6 +69,7 @@ import {
 import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/features/train/logic/sportKinds'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
+import { lastSeenMessage, markMessagesSeen } from '@/shared/lib/seenMessages'
 import { Icon } from '@/shared/ui/Icon'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
 
@@ -137,6 +141,8 @@ export function TodayPage() {
   const [sleepOpen, setSleepOpen] = useState(false)
   const [focusOpen, setFocusOpen] = useState(false)
   const [reflectOpen, setReflectOpen] = useState(false)
+  const [msgsOpen, setMsgsOpen] = useState(false)
+  const [seenId, setSeenId] = useState<string | null>(() => lastSeenMessage(date))
 
   // Consume-once level-ups: quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
@@ -308,6 +314,24 @@ export function TodayPage() {
 
   const growth = growthTodaySummary(quests, activities ?? [])
 
+  // A mezo hangja: a nap üzenet-szála a MÁR MEGLÉVŐ két hookból — nincs új adatforrás.
+  // Az olvasatlan-jelzés a szál UTOLSÓ elemének id-jét hasonlítja a napra mentett
+  // `localStorage` értékhez; a napváltás magától elavulttá teszi a kulcsot.
+  const messages = buildMezoMessages({
+    briefing: briefing ?? resolveBriefing(scenario.dayState),
+    note: companionNote,
+    briefingDemo,
+  })
+  const latestId = messages.length > 0 ? messages[messages.length - 1].id : null
+  const msgsUnread = latestId != null && latestId !== seenId
+  const openMessages = () => {
+    setMsgsOpen(true)
+    if (latestId) {
+      markMessagesSeen(date, latestId)
+      setSeenId(latestId)
+    }
+  }
+
   // ── Daypart facts (pure derivations; a missing source means a missing cell, never `—`) ──
   const morningFacts = [weightFact(weightLog, userGoal?.targetWeight ?? null), hrvFact(stats)]
     .filter((f): f is IslandFact => f != null)
@@ -324,7 +348,7 @@ export function TodayPage() {
       {appHero}
       {scenario.vulnerable && <VulnerabilityCard />}
       <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
-      <MezoMessage briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
+      <MezoChip messages={messages} unread={msgsUnread} onOpen={openMessages} />
       {selected === 'reggel' && (
         <DaypartMorning
           hero={mHero} facts={morningFacts}
@@ -365,6 +389,7 @@ export function TodayPage() {
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
+      {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} />}
     </>
   )
 }

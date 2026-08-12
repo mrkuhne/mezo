@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -170,10 +171,10 @@ describe('TodayPage — composition', () => {
 
   test('?day=rough replaces the day with the single anchor island', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday('/today?day=rough')
-    // no switcher, no message band, no daypart content — just the warm island
+    renderToday('/today?day=rough')
+    // no switcher, no message chip, no daypart content — just the warm island
     expect(screen.queryByRole('group', { name: 'Napszak' })).toBeNull()
-    expect(container.querySelector('.coach-bubble.cb-band')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Mezo üzenetei/ })).toBeNull()
     expect(screen.getByText(/Horgony mód/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Kilépés a horgony módból' })).toBeInTheDocument()
   })
@@ -206,15 +207,18 @@ describe('TodayPage — composition', () => {
     vi.setSystemTime(at('21:05'))
     rerender(todayTree('/today?day=rough'))
     expect(screen.getAllByRole('button', { name: 'Megvolt ✓' })).toHaveLength(2)
+    // AnchorIsland renders through the shared `ItemRow` (untouched by this redesign — spec
+    // §7), not `TodayRow`, so this row still carries the OLD `.itemrow` class, unlike every
+    // daypart-view row elsewhere in this file.
     expect(container.querySelectorAll('.itemrow.is-done')).toHaveLength(1)
   })
 
   test('the morning chain\'s first open step is a ROW — there is no promoted CTA duplicate', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday()
-    const row = screen.getByText('50 fekvőtámasz').closest('.itemrow') as HTMLElement
+    const row = screen.getByText('50 fekvőtámasz').closest('.td-row') as HTMLElement
     expect(row).toBeTruthy()
-    expect(within(row).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: /kipipálása/ })).toBeInTheDocument()
     // it appears exactly once — not also as a hero CTA above the list
     expect(screen.getAllByText('50 fekvőtámasz')).toHaveLength(1)
     // the other two dayparts are one tap away, not folded content
@@ -225,17 +229,19 @@ describe('TodayPage — composition', () => {
   test('the morning hero is the sleep number with contextual facts', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday()
-    expect(container.querySelector('.dv-hero-v')?.textContent).toContain('óra alvás')
+    // `.td-hero-l` is the value+unit pair together (`DaypartHero` splits them into their own
+    // `.td-hero-v`/`.td-hero-u` spans — the unit carries "óra alvás").
+    expect(container.querySelector('.td-hero-l')?.textContent).toContain('óra alvás')
     // facts are contextualized (delta lines), not raw numbers
-    expect(container.querySelectorAll('.isl-fact').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('.td-stat').length).toBeGreaterThan(0)
   })
 
   test('EVERY pending morning-chain step is actionable', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     const { container } = renderToday()
-    const group = [...container.querySelectorAll('.isl-grouph')]
+    const group = [...container.querySelectorAll('.td-sech')]
       .find((g) => g.textContent?.startsWith('Reggeli rutin'))!
-    const rows = [...group.parentElement!.querySelectorAll('.itemrow')]
+    const rows = [...group.parentElement!.querySelectorAll('.td-row')]
     expect(rows.length).toBeGreaterThan(0)
     for (const r of rows) {
       expect(within(r as HTMLElement).getByRole('button')).toBeInTheDocument()
@@ -245,7 +251,7 @@ describe('TodayPage — composition', () => {
   test('a middle chain step can be ticked without touching the ones before it', () => {
     clockAt('09:12')
     renderToday()
-    const row = screen.getByText('Gombakávé').closest('.itemrow') as HTMLElement
+    const row = screen.getByText('Gombakávé').closest('.td-row') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Logolás' }))
     expect(screen.getByTestId('loc').textContent).toBe('/fuel/stack')
   })
@@ -256,27 +262,29 @@ describe('TodayPage — composition', () => {
     const link = screen.getByRole('link', { name: 'Reggeli videó megnyitása' })
     expect(link).toHaveAttribute('href', expect.stringContaining('facebook.com'))
     expect(link).toHaveAttribute('target', '_blank')
-    // …and its own Pipa action survives beside it
-    const row = link.closest('.itemrow') as HTMLElement
-    expect(within(row).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+    // …and its own kipipálás action survives beside it
+    const row = link.closest('.td-row') as HTMLElement
+    expect(within(row).getByRole('button', { name: /kipipálása/ })).toBeInTheDocument()
   })
 
-  test('the mezo message is visible on every daypart, in full', () => {
-    vi.useFakeTimers().setSystemTime(at('13:42'))
+  test('a briefing NEM a lapon áll — a chip csak az első mondatát mutatja', async () => {
+    renderToday()
+    expect(await screen.findByRole('button', { name: /Mezo üzenetei/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Ma Pull Day, és a Chest Supported Row/)).not.toBeInTheDocument()
+  })
+
+  test('a chip megnyitja a szálat, és abban ott a teljes briefing', async () => {
+    renderToday()
+    await userEvent.click(await screen.findByRole('button', { name: /Mezo üzenetei/ }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Mezo üzenetei')).toBeInTheDocument()
+  })
+
+  test('megnyitás után a chip már nem olvasatlan', async () => {
     const { container } = renderToday()
-    // The standing band — full-bleed, never clamped, above the daypart content…
-    expect(container.querySelector('.coach-bubble.cb-band')).toBeInTheDocument()
-    expect(screen.getByText('Reggeli briefing · 06:30')).toBeInTheDocument()
-    // every paragraph is there — the last one too, so nothing is clamped away
-    expect(screen.getByText(/18:00 volleyball után/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'bővebben' })).toBeNull()
-    // …and it does not change with the selected tab.
-    for (const [pattern, face] of [[/Reggel/, 'reggel'], [/Nap/, 'nap'], [/Este/, 'este']] as const) {
-      fireEvent.click(tab(pattern))
-      expect(shownFace(container)).toBe(face)
-      expect(container.querySelector('.coach-bubble.cb-band')).toBeInTheDocument()
-      expect(screen.getByText(/18:00 volleyball után/)).toBeInTheDocument()
-    }
+    await userEvent.click(await screen.findByRole('button', { name: /Mezo üzenetei/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Kész' }))
+    await waitFor(() => expect(container.querySelector('.td-av.is-unread')).toBeNull())
   })
 
   test('the evening daypart owns the Napzárás act — it is never also a row', () => {
@@ -285,7 +293,7 @@ describe('TodayPage — composition', () => {
     // Inside the window the CTA is the one affordance…
     expect(screen.getByRole('button', { name: 'Zárjuk le a napot' })).toBeInTheDocument()
     // …and the list never repeats it as a row (neither the ritual item nor evening_ritual).
-    const rowTitles = [...container.querySelectorAll('.dayview .itemrow .itemrow-t1')].map((n) => n.textContent)
+    const rowTitles = [...container.querySelectorAll('.dayview .td-row .td-t1')].map((n) => n.textContent)
     expect(rowTitles).not.toContain('Zárjuk le a napot')
     expect(rowTitles.filter((t) => t?.includes('Napzárás'))).toHaveLength(0)
   })
@@ -293,10 +301,10 @@ describe('TodayPage — composition', () => {
   test('the day daypart keeps the workout niggle warning, and ?niggle=off suppresses it', () => {
     clockAt('13:42')
     const { container, unmount } = renderToday()
-    expect(container.querySelector('.isl-warnchip')?.textContent).toContain('niggle')
+    expect(container.querySelector('.td-foot.is-warn')?.textContent).toContain('niggle')
     unmount()
     const off = renderToday('/today?niggle=off')
-    expect(off.container.querySelector('.isl-warnchip')).toBeNull()
+    expect(off.container.querySelector('.td-foot.is-warn')).toBeNull()
   })
 
   test('the quest group heading links into quest management', () => {
@@ -312,7 +320,7 @@ describe('TodayPage — composition', () => {
     renderToday()
     // The seed evening chain is entirely pending, so the retrospective is honestly absent…
     expect(screen.queryByRole('button', { name: /Ahogy a nap telt/ })).toBeNull()
-    fireEvent.click(screen.getAllByRole('button', { name: 'Pipa' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /kipipálása/ })[0])
     // …and appears — as the day's ONE fold — the moment the first item lands.
     const fold = await screen.findByRole('button', { name: /Ahogy a nap telt/ })
     expect(screen.queryByText(/Ma összesen/)).toBeNull() // collapsed by default
@@ -342,8 +350,8 @@ describe('TodayPage — the wind-down habit is offered exactly once', () => {
     clockAt('22:00')
     renderToday()
     expect(screen.queryByRole('button', { name: /Leállás megvolt/ })).toBeNull()
-    const row = screen.getByText('Wind-down, képernyő le').closest('.itemrow') as HTMLElement
-    expect(within(row).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+    const row = screen.getByText('Wind-down, képernyő le').closest('.td-row') as HTMLElement
+    expect(within(row).getByRole('button', { name: /kipipálása/ })).toBeInTheDocument()
   })
 
   test('outside the wind-down windows the row is still there', () => {
@@ -367,9 +375,9 @@ describe('TodayPage — no daypart renders a control that does nothing', () => {
   test.each(['reggel', 'nap', 'este'])('every row control on the %s daypart does something', async (face) => {
     clockAt('09:12')
     const first = renderToday(`/today?dp=${face}`)
-    const titles = [...first.container.querySelectorAll('.dv-groups .itemrow')]
+    const titles = [...first.container.querySelectorAll('.dv-groups .td-row')]
       .filter((row) => row.querySelector('button'))
-      .map((row) => row.querySelector('.itemrow-t1')?.textContent)
+      .map((row) => row.querySelector('.td-t1')?.textContent)
     expect(titles.length).toBeGreaterThan(0)
     first.unmount()
 
@@ -377,8 +385,8 @@ describe('TodayPage — no daypart renders a control that does nothing', () => {
       // Fresh mount per control: a served action changes the tree, which would invalidate
       // the node handles collected above.
       const one = renderToday(`/today?dp=${face}`)
-      const row = [...one.container.querySelectorAll('.dv-groups .itemrow')]
-        .find((r) => r.querySelector('.itemrow-t1')?.textContent === title)!
+      const row = [...one.container.querySelectorAll('.dv-groups .td-row')]
+        .find((r) => r.querySelector('.td-t1')?.textContent === title)!
       const btn = row.querySelector('button')!
       const before = one.container.innerHTML
       fireEvent.click(btn)
@@ -403,7 +411,7 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   test('an ACTIVITY quest row opens the activity log sheet, it never self-completes', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday()
-    const row = screen.getByText('Olvass ma legalább 10 percet').closest('.itemrow') as HTMLElement
+    const row = screen.getByText('Olvass ma legalább 10 percet').closest('.td-row') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Naplózz' }))
     expect(screen.getByText('Mi történt ma?')).toBeInTheDocument()
   })
@@ -411,8 +419,8 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   test('a MANUAL habit row routes to check() and the chain advances', async () => {
     clockAt('09:12')
     renderToday()
-    const row = screen.getByText('50 fekvőtámasz').closest('.itemrow') as HTMLElement
-    fireEvent.click(within(row).getByRole('button', { name: 'Pipa' }))
+    const row = screen.getByText('50 fekvőtámasz').closest('.td-row') as HTMLElement
+    fireEvent.click(within(row).getByRole('button', { name: /kipipálása/ }))
     // it left the open list for the done fold — the chain moved on to the next step
     await waitFor(() => expect(screen.queryByText('50 fekvőtámasz')).toBeNull())
     expect(screen.getByText('Reggeli videó')).toBeInTheDocument()
@@ -421,7 +429,7 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   test('a fuel row logs IN PLACE instead of navigating to /fuel', () => {
     vi.useFakeTimers().setSystemTime(at('13:42'))
     const { container } = renderToday()
-    const fuelRow = [...container.querySelectorAll('.dv-groups .itemrow')]
+    const fuelRow = [...container.querySelectorAll('.dv-groups .td-row')]
       .find((r) => within(r as HTMLElement).queryByRole('button', { name: 'Logold' })) as HTMLElement
     fireEvent.click(within(fuelRow).getByRole('button', { name: 'Logold' }))
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Mit ettél?')
@@ -431,7 +439,7 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   test('a check-in row opens the check-in sheet for its own slot', () => {
     vi.useFakeTimers().setSystemTime(at('13:42'))
     renderToday()
-    const row = screen.getByText('Hogy vagy?').closest('.itemrow') as HTMLElement
+    const row = screen.getByText('Hogy vagy?').closest('.td-row') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Koppints' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('dialog').textContent).toContain('14:00')

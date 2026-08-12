@@ -66,7 +66,8 @@ const SEED_CHAINS: HabitChainInfo[] = [
  * evening daypart. `chain` is plain data — `habitAction` keys off `key` + `mode`.
  */
 const KIND_FIXTURES = [
-  { kind: 'check', key: 'caffeine_cutoff', title: 'MANUAL lánc', mode: 'MANUAL' as const, pill: 'Pipa' },
+  // MANUAL lands on TodayRow's `tick` accessory (a ✓ circle, not a text pill — mezo-e26w).
+  { kind: 'check', key: 'caffeine_cutoff', title: 'MANUAL lánc', mode: 'MANUAL' as const, pill: '✓' },
   { kind: 'nav', key: 'morning_coffee', title: 'DERIVED nav', mode: 'DERIVED' as const, pill: 'Logolás' },
   { kind: 'meal-sheet', key: 'protein_breakfast', title: 'DERIVED étkezés', mode: 'DERIVED' as const, pill: 'Logolás' },
   { kind: 'sleep-sheet', key: 'wake_on_time', title: 'DERIVED alvás', mode: 'DERIVED' as const, pill: 'Logolás' },
@@ -114,7 +115,7 @@ const shownFace = (container: HTMLElement) =>
 const tab = (name: RegExp) =>
   within(screen.getByRole('group', { name: 'Napszak' })).getByRole('button', { name })
 
-const rowOf = (title: string) => screen.getByText(title).closest('.itemrow') as HTMLElement
+const rowOf = (title: string) => screen.getByText(title).closest('.td-row') as HTMLElement
 
 let check: ReturnType<typeof vi.fn>
 let consumeHabitLevelUps: ReturnType<typeof vi.fn>
@@ -306,14 +307,14 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
     const rows = screen.getAllByText('Hogy voltál?')
     expect(rows).toHaveLength(2)
     for (const r of rows) {
-      expect(within(r.closest('.itemrow') as HTMLElement).getByRole('button')).toHaveTextContent('Pótold')
+      expect(within(r.closest('.td-row') as HTMLElement).getByRole('button')).toHaveTextContent('Pótold')
     }
   })
 
   test('the copy does not pretend it was on time — past tense + „elmaradt" + its own clock time', () => {
     setup({ habits: [], checkins: AT_15 })
     renderToday('/today?dp=reggel')
-    const row = screen.getAllByText('Hogy voltál?')[0].closest('.itemrow') as HTMLElement
+    const row = screen.getAllByText('Hogy voltál?')[0].closest('.td-row') as HTMLElement
     expect(row).toHaveTextContent('06:30 · elmaradt')
     expect(within(row).queryByText('Koppints')).toBeNull()
   })
@@ -321,7 +322,7 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
   test('Pótold opens the sheet for THAT slot, so the morning can be recorded', () => {
     setup({ habits: [], checkins: AT_15 })
     renderToday('/today?dp=reggel')
-    const row = screen.getAllByText('Hogy voltál?')[0].closest('.itemrow') as HTMLElement
+    const row = screen.getAllByText('Hogy voltál?')[0].closest('.td-row') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Pótold' }))
     expect(screen.getByRole('dialog').textContent).toContain('06:30')
   })
@@ -337,10 +338,12 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
   test('an in-flight habit write withdraws habit pills but leaves quest pills live', () => {
     setup({ habits: ALL_KINDS, quests: [waterQuest], pending: true })
     const { container } = renderToday('/today?dp=este')
-    // the labels stay as inert copy — no clickable control survives on a HABIT row
+    // no clickable control survives on a HABIT row — the DERIVED rows' pills stay as inert
+    // copy (`.td-act.is-inert`), but the MANUAL row's tick WITHDRAWS entirely (TodayRow's own
+    // rule: it withdraws, it does not dim), so no button and no leftover ✓ ghost either.
     expect(within(rowOf('MANUAL lánc')).queryByRole('button')).toBeNull()
-    expect(within(rowOf('MANUAL lánc')).getByText('Pipa')).toBeInTheDocument()
-    expect(container.querySelector('.itemrow-act.is-inert')).toBeTruthy()
+    expect(rowOf('MANUAL lánc').querySelector('.td-tick')).toBeNull()
+    expect(container.querySelector('.td-act.is-inert')).toBeTruthy()
     // …while a quest row, which the habit write cannot double-fire, stays live
     expect(within(rowOf('Igyál vizet')).getByRole('button', { name: '+250 ml' })).toBeInTheDocument()
   })
@@ -348,7 +351,7 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
   test('with no write in flight the controls are live', () => {
     setup({ habits: ALL_KINDS })
     renderToday('/today?dp=este')
-    fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button', { name: 'Pipa' }))
+    fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button', { name: /kipipálása/ }))
     expect(check).toHaveBeenCalledWith('caffeine_cutoff')
   })
 })
@@ -397,8 +400,8 @@ describe('TodayPage — the day daypart hero', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workout: null, workoutTime: null })
     const { container } = renderToday('/today?dp=nap')
     // Zero-guard: no workout ⇒ no duration fact anywhere in the hero markup (the
-    // Pihenő placeholder's own `.dv-hero-u` reads "nap", never a `~X perc` chip).
-    expect(container.querySelector('.dv-hero-u')?.textContent).not.toMatch(/perc/)
+    // Pihenő placeholder's own `.td-hero-u` reads "nap", never a `~X perc` chip).
+    expect(container.querySelector('.td-hero-u')?.textContent).not.toMatch(/perc/)
     fireEvent.click(screen.getByRole('button', { name: 'Saját edzés' }))
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
   })
@@ -412,8 +415,8 @@ describe('TodayPage — the day daypart hero', () => {
  */
 describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
   const rows = (container: HTMLElement) =>
-    [...container.querySelectorAll('.dv-groups .itemrow')]
-      .map((r) => r.querySelector('.itemrow-t1')?.textContent)
+    [...container.querySelectorAll('.dv-groups .td-row')]
+      .map((r) => r.querySelector('.td-t1')?.textContent)
 
   test('the promoted session renders on the day view only', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workoutTime: '07:30' })
@@ -428,8 +431,8 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     // …and switching to the day tab shows it as the hero with its real CTA.
     fireEvent.click(tab(/Nap/))
     expect(shownFace(container)).toBe('nap')
-    expect(container.querySelector('.dv-hero-v')?.textContent).toContain('07:30')
-    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('Pull Day')
+    expect(container.querySelector('.td-hero-v')?.textContent).toContain('07:30')
+    expect(container.querySelector('.td-hero-u')?.textContent).toContain('Pull Day')
     // Hand-computed duration (sessionLength.ts estimateSessionMinutes), never call the
     // estimator here — derived from the mock `workout.exercises` (src/data/train/train.ts,
     // 5 exercises). avgReps=(repMin+repMax)/2, repSec=3.5 (none plyo), restSecondsFor
@@ -447,7 +450,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     //     avgReps=17.5; work=3*17.5*3.5=183.75; rest=2*90=180;    warmup=1*65=65;  transition=90 -> 518.75
     //   total seconds = 614.5 + 635.5 + 476.75 + 450.5 + 518.75 = 2696
     //   minutes = Math.round(2696 / 60) + warmupBlockMinutes(8) = Math.round(44.9333) + 8 = 45 + 8 = 53
-    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('~53 perc')
+    expect(container.querySelector('.td-hero-u')?.textContent).toContain('~53 perc')
     expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
     expect(rows(container)).not.toContain('Pull Day')
   })
@@ -462,10 +465,10 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, volleyballSessions: [session] })
     const { container } = renderToday('/today?dp=nap')
     // the gym is the hero…
-    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('Pull Day')
+    expect(container.querySelector('.td-hero-u')?.textContent).toContain('Pull Day')
     // …and the volleyball session is a row, with its own facts
     expect(rows(container)).toContain('Volleyball')
-    const row = screen.getByText('Volleyball').closest('.itemrow') as HTMLElement
+    const row = screen.getByText('Volleyball').closest('.td-row') as HTMLElement
     expect(row).toHaveTextContent('90 perc · BVSC csarnok · edzés')
     expect(row).toHaveTextContent('17:00')
   })
@@ -479,7 +482,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
       ...baseToday, workout: null, workoutTime: null, volleyballSessions: [session],
     })
     const { container } = renderToday('/today?dp=nap')
-    expect(container.querySelector('.dv-hero-u')?.textContent).toContain('Volleyball')
+    expect(container.querySelector('.td-hero-u')?.textContent).toContain('Volleyball')
     expect(rows(container)).not.toContain('Volleyball')
   })
 })
@@ -511,6 +514,6 @@ describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', 
     rerender(tree('/today?dp=este'))
 
     expect(screen.getByText('MANUAL lánc')).toBeInTheDocument()
-    expect(within(rowOf('MANUAL lánc')).getByRole('button')).toHaveTextContent('Pipa')
+    expect(within(rowOf('MANUAL lánc')).getByRole('button')).toHaveTextContent('✓')
   })
 })
