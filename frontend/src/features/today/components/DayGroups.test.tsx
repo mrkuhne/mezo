@@ -12,6 +12,12 @@ const item = (over: Partial<TodayItem> = {}): TodayItem => ({
   linkUrl: null, ...over,
 })
 
+const manualHabitItem = item({
+  id: 'habit:manual',
+  source: 'habit',
+  action: { kind: 'habit', habit: { mode: 'MANUAL' } as never, label: 'Pipa' } as TodayItem['action'],
+})
+
 const renderGroups = (over: Partial<DayGroupsProps> = {}) =>
   render(
     <MemoryRouter>
@@ -35,7 +41,7 @@ describe('DayGroups', () => {
 
   test('groups keep first-appearance order and carry their count', () => {
     const { container } = renderGroups()
-    const heads = [...container.querySelectorAll('.isl-grouph')].map((h) => h.textContent)
+    const heads = [...container.querySelectorAll('.td-sech')].map((h) => h.textContent)
     expect(heads[0]).toContain('Reggeli rutin · 1')
     expect(heads[1]).toContain('Napi küldetések · 1')
   })
@@ -88,10 +94,20 @@ describe('DayGroups', () => {
     expect(screen.getByRole('link', { name: /Küldetések kezelése/ })).toHaveAttribute('href', '/me/growth')
   })
 
-  test('head and focus slots render, focus under a Fókusz heading', () => {
+  test('head and focus slots render as given', () => {
+    // DayGroups no longer wraps `focus` in its own „Fókusz" heading — the slot's own
+    // content (IntentionBanner) brings its own `TodayList` now (mezo-e26w); that heading
+    // is asserted in IntentionBanner.test.tsx instead.
     renderGroups({ head: <div>jegyzet</div>, focus: <div>vezérelv</div> })
     expect(screen.getByText('jegyzet')).toBeInTheDocument()
-    expect(screen.getByText('Fókusz')).toBeInTheDocument()
     expect(screen.getByText('vezérelv')).toBeInTheDocument()
+  })
+
+  test('minden csoport EGY dobozban ül, és a MANUAL szokás karikát kap', () => {
+    const { container } = render(
+      <DayGroups open={[manualHabitItem]} done={[]} doneLabel="✓ 0 kész" onAct={() => {}} />,
+    )
+    expect(container.querySelectorAll('.td-list')).toHaveLength(1)
+    expect(container.querySelector('.td-tick')).toBeInTheDocument()
   })
 })
