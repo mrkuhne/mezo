@@ -3594,10 +3594,17 @@ ol.md-list { list-style: decimal; }
 .td-link { flex: 0 0 auto; width: 44px; height: 44px; display: inline-flex; align-items: center;
            justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 14px; }
 /* az egész-sor-gomb alak: a találati felület a soron BELÜL él, hogy a `↗` link a
-   testvére lehessen (sosem a gombba ágyazva — érvénytelen HTML + kattintás-ütközés) */
+   testvére lehessen (sosem a gombba ágyazva — érvénytelen HTML + kattintás-ütközés).
+   `align-self: stretch` a gombot a `.td-row` tartalmi dobozának teljes magasságára
+   nyújtja; a negatív `margin-block` + az őt kompenzáló `padding-block` visszanyúlik a
+   sor saját 9px függőleges paddingjébe, így a találati terület lefedi a sor teljes
+   56px-es magasságát (tap target ≥ 44px), a vizuális elrendezés egyetlen pixelt sem
+   mozdul (code review, mezo-e26w Task 6 fix — a gomb korábban a 28px ikon
+   tartalommagasságára zsugorodott). */
 .td-row-hit { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
               background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
-              font-family: inherit; color: inherit; }
+              font-family: inherit; color: inherit; align-self: stretch; margin-block: -9px;
+              padding-block: 9px; }
 .td-row.is-done .td-t1 { color: var(--text-muted); text-decoration: line-through; }
 .td-row.is-done .td-ic { opacity: .45; }
 

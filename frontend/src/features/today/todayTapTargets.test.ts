@@ -67,4 +67,17 @@ describe('Today tap targets are >= 44px (mezo-e26w code review fix)', () => {
     const before = ruleBody(rawCss, '.td-tick::before')
     expect(before).toMatch(/z-index:\s*-1/)
   })
+
+  test('.td-row-hit stretches to the row\'s full 56px height — the chevron rows\' tap target ' +
+    'is the whole row, not the collapsed content height', () => {
+    // `.td-row` centers rather than stretches its children, so without an explicit
+    // `align-self: stretch` the hit-area button collapses to its own content height
+    // (~28px, the leading icon) instead of the row's 56px. The negative `margin-block`
+    // + matching `padding-block` pair reaches back over `.td-row`'s own 9px vertical
+    // padding so the click box covers the full row without moving any visible pixel.
+    const body = ruleBody(rawCss, '.td-row-hit')
+    expect(body).toMatch(/align-self:\s*stretch/)
+    expect(body).toMatch(/margin-block:\s*-9px/)
+    expect(body).toMatch(/padding-block:\s*9px/)
+  })
 })
