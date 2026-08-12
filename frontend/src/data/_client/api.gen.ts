@@ -3900,7 +3900,7 @@ export interface components {
             f: number;
             water: number;
         };
-        /** @description Nutrition-quality facts (mezo-m6uv), frozen per line exactly like the macros. Grams, one decimal. A null field means the SOURCE carried no value — it is NOT zero; a rollup field is null only when every contributing line was null (otherwise it is the sum of the known ones). */
+        /** @description Nutrition-quality facts (mezo-m6uv), frozen per line exactly like the macros. Grams, stored and summed at THREE decimals on the wire (ADR 0025) — one-decimal rounding is a display-only concern on the client, never on the stored/transmitted value. A null field means the SOURCE carried no value — it is NOT zero; a rollup field is null only when every contributing line was null (otherwise it is the sum of the known ones). */
         Nutrients: {
             fiberG?: number | null;
             sugarG?: number | null;
