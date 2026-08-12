@@ -20,7 +20,7 @@ export const INSIGHTS_TABS: InsightsTab[] = [
 
 /** Phase-3+ demo surfaces that were hidden in real mode until the proactive epic shipped them:
  *  Memoir un-ghosted at W2 (mezo-h4wp.4), Predictions at P1 (mezo-h4wp.7), Experiments at P2
- *  (mezo-h4wp.8). The set is now EMPTY — all seven Insights tabs are real in both modes. */
+ *  (mezo-h4wp.8). The set is now EMPTY — all eight Insights tabs are real in both modes. */
 const PHASE3_TAB_IDS = new Set<string>([])
 
 export function visibleInsightsTabs(): InsightsTab[] {

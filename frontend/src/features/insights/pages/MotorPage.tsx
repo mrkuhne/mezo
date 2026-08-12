@@ -1,6 +1,7 @@
 import { usePatternMonitor } from '@/data/hooks'
 import { GateVerdictRow } from '@/features/insights/components/GateVerdictRow'
 import { MetricCoverageRow } from '@/features/insights/components/MetricCoverageRow'
+import { GhostState } from '@/shared/ui/GhostState'
 import type { PatternGateVerdict, PatternMonitorPair } from '@/data/types'
 
 /** „Mi van legközelebb az áttöréshez" — ettől cselekvésre váltható az oldal, nem számfal. */
@@ -21,8 +22,19 @@ function comparePairs(a: PatternMonitorPair, b: PatternMonitorPair): number {
 }
 
 export function MotorPage() {
-  const { monitor, degraded } = usePatternMonitor()
+  const { monitor, degraded, isPending, isError, refetch } = usePatternMonitor()
 
+  // isPending: real-mode-only (mock seeds synchronously, mezo-viqs fix wave, useDualQuery.ts:9-11)
+  // — without this the loading window rendered a blank body (`!monitor` below was also true then).
+  if (isPending) {
+    return <GhostState message="A motor állapotának betöltése…" />
+  }
+  // isError: a genuinely FAILED fetch (500, network) — distinct from `degraded` (404, switched
+  // off) and from the unresolved-yet window above. Both `degraded` and a failed fetch otherwise
+  // read as `monitor === null`, which used to render nothing at all (mezo-viqs review fix).
+  if (isError) {
+    return <GhostState message="Nem sikerült betölteni a motor állapotát." ctaLabel="Újra" onCta={refetch} />
+  }
   if (degraded) {
     return (
       <div className="card" style={{ padding: 16, textAlign: 'center' }}>
@@ -34,6 +46,7 @@ export function MotorPage() {
 
   const pairs = [...monitor.pairs].sort(comparePairs)
   const metrics = [...monitor.metrics].sort((a, b) => a.coveredDays - b.coveredDays)
+  const coverageByKey = new Map(monitor.metrics.map((m) => [m.key, m.coveredDays]))
 
   return (
     <div className="col gap-md">
@@ -59,9 +72,9 @@ export function MotorPage() {
             <span className="eyebrow" style={{ fontFamily: 'var(--ff-mono)', color: 'var(--text-primary)' }}>{monitor.cron}</span>
           </div>
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="eyebrow text-tertiary">Utolsó futás</span>
+            <span className="eyebrow text-tertiary">Utolsó felismerés</span>
             <span className="eyebrow" style={{ color: 'var(--text-primary)' }}>
-              {monitor.lastRunAt ? monitor.lastRunAt.slice(0, 10) : 'még nem futott'}
+              {monitor.lastRunAt ? monitor.lastRunAt.slice(0, 10) : 'még nem talált mintát'}
             </span>
           </div>
         </div>
@@ -69,7 +82,11 @@ export function MotorPage() {
 
       <span className="eyebrow">Párok · {pairs.length}</span>
       {pairs.map((pair) => (
-        <GateVerdictRow key={pair.key} pair={pair} />
+        <GateVerdictRow
+          key={pair.key}
+          pair={pair}
+          bottleneckCoveredDays={pair.bottleneckMetricKey ? (coverageByKey.get(pair.bottleneckMetricKey) ?? null) : null}
+        />
       ))}
 
       <span className="eyebrow mt-md">Metrika-lefedettség</span>

@@ -144,6 +144,7 @@ public class PatternMonitorService {
                     .bottleneckMetricKey(thinnerMetric(pair, cache, from, to).wireKey());
             case DEGENERATE -> builder.verdict(VERDICT_DEGENERATE)
                     .bottleneckMetricKey(constantMetric(pair, outcome.constantSide()).wireKey());
+            default -> throw new IllegalStateException("Unhandled PatternGate.Verdict: " + outcome.verdict());
         }
         return builder.build();
     }

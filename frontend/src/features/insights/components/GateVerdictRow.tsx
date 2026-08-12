@@ -21,15 +21,24 @@ function bottleneckLabel(pair: PatternMonitorPair): string {
   return pair.bottleneckMetricKey === pair.metricBKey ? pair.metricBLabel : pair.metricALabel
 }
 
-/** Egyetlen determinisztikus mondat — sosem állít többet, mint amit a verdikt fed. */
-export function verdictSentence(pair: PatternMonitorPair): string {
+/**
+ * Egyetlen determinisztikus mondat — sosem állít többet, mint amit a verdikt fed.
+ * `bottleneckCoveredDays`: a szűk keresztmetszet metrika lefedettsége EBBEN az ablakban — csak
+ * `no_data`-nál számít. A backend `no_data`-t akkor ad, ha `alignedDays == 0`, ami NEM ugyanaz,
+ * mint "az egyik metrika üres" — a két metrikának lehet bőven adata, csak sosem esik egy napra
+ * (pl. `lag=1` párok sosem illeszkednek). Ezért csak akkor mondjuk ki konkrétan, hogy melyik
+ * metrika üres, ha az tényleg `coveredDays === 0`; egyébként az átfedés hiányát írjuk le.
+ */
+export function verdictSentence(pair: PatternMonitorPair, bottleneckCoveredDays: number | null): string {
   switch (pair.verdict) {
     case 'live':
       return `Elég adat van — a motor számolja ezt a párt.`
     case 'few_days':
       return `Még ${pair.missingDays} illeszkedő nap kell — a szűk keresztmetszet: ${bottleneckLabel(pair)}.`
     case 'no_data':
-      return `Nincs még illeszkedő nap — a(z) ${bottleneckLabel(pair)} üres ebben az ablakban.`
+      return bottleneckCoveredDays === 0
+        ? `Nincs még illeszkedő nap — a(z) ${bottleneckLabel(pair)} üres ebben az ablakban.`
+        : `Nincs még illeszkedő nap — nincs átfedő nap a(z) ${pair.metricALabel} és a(z) ${pair.metricBLabel} között ebben az ablakban.`
     case 'degenerate':
       return `A(z) ${bottleneckLabel(pair)} nem mozdul az ablakban — így nincs mit korrelálni.`
     case 'frozen':
@@ -37,7 +46,7 @@ export function verdictSentence(pair: PatternMonitorPair): string {
   }
 }
 
-export function GateVerdictRow({ pair }: { pair: PatternMonitorPair }) {
+export function GateVerdictRow({ pair, bottleneckCoveredDays }: { pair: PatternMonitorPair; bottleneckCoveredDays: number | null }) {
   const color = VERDICT_COLOR[pair.verdict]
   const lag = pair.lagDays > 0 ? ` · +${pair.lagDays} nap` : ''
 
@@ -66,7 +75,7 @@ export function GateVerdictRow({ pair }: { pair: PatternMonitorPair }) {
       </div>
 
       <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, marginTop: 8 }}>
-        {verdictSentence(pair)}
+        {verdictSentence(pair, bottleneckCoveredDays)}
       </p>
 
       <div className="row gap-sm" style={{ marginTop: 8, flexWrap: 'wrap' }}>

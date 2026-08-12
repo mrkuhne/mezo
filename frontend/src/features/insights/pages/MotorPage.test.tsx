@@ -85,7 +85,7 @@ describe('MotorPage (real mode)', () => {
     expect(await screen.findByText('A minta-motor most nem elérhető.')).toBeInTheDocument()
   })
 
-  test('says the job has never run when lastRunAt is null', async () => {
+  test('says the engine has not found a pattern yet when lastRunAt is null', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
         HttpResponse.json({
@@ -95,6 +95,54 @@ describe('MotorPage (real mode)', () => {
       ),
     )
     renderPage()
-    expect(await screen.findByText('még nem futott')).toBeInTheDocument()
+    expect(await screen.findByText('még nem talált mintát')).toBeInTheDocument()
+  })
+
+  test('renders an honest error state — with a retry — on a non-404 failure instead of a blank page', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, () => new HttpResponse(null, { status: 500 })),
+    )
+    renderPage()
+    expect(await screen.findByText('Nem sikerült betölteni a motor állapotát.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+  })
+
+  test('says there is no overlapping day when a no_data pair\'s bottleneck metric is not itself empty', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
+        HttpResponse.json({
+          windowFrom: '2026-06-13', windowTo: '2026-08-10', lookbackDays: 60, minN: 8,
+          cron: '0 40 2 * * *', lastRunAt: '2026-08-11T00:40:00Z',
+          pairs: [
+            {
+              key: 'late-meal-hour~sleep-quality-2',
+              title: 'Késői étkezés ↔ rákövetkező alvásminőség (teszt)',
+              category: 'trigger',
+              categoryLabel: 'Trigger',
+              lagDays: 1,
+              metricAKey: 'late-meal-hour',
+              metricALabel: 'utolsó étkezés ideje',
+              metricBKey: 'sleep-quality',
+              metricBLabel: 'alvásminőség',
+              verdict: 'no_data',
+              alignedDays: 0,
+              missingDays: null,
+              bottleneckMetricKey: 'late-meal-hour',
+              r: null, n: null, p: null, status: null,
+            },
+          ],
+          metrics: [
+            { key: 'late-meal-hour', label: 'utolsó étkezés ideje', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+            { key: 'sleep-quality', label: 'alvásminőség', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
+          ],
+        }),
+      ),
+    )
+    renderPage()
+    expect(
+      await screen.findByText(
+        'Nincs még illeszkedő nap — nincs átfedő nap a(z) utolsó étkezés ideje és a(z) alvásminőség között ebben az ablakban.',
+      ),
+    ).toBeInTheDocument()
   })
 })

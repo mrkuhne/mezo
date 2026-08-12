@@ -130,24 +130,43 @@ propose CTA — no proposed rows, so no accept/dismiss buttons). Behavior detail
 Not another results tab — a transparency page onto the **gate** that decides which correlations
 even reach the Patterns Inbox (§2.1). Reads `usePatternMonitor()`
 (`data/insights/monitorHooks.ts`, `['pattern-monitor']` dual-read; real mode maps
-`GET /api/companion/pattern/monitor`, 404 ⇒ the same honest degraded card as Patterns; mock
-returns the `patternMonitor` seed in `insights.ts`) and renders three blocks top to bottom: an
-**engine-state header** (the correlation window, `min-n`, the raw cron expression — the FE never
-parses cron — and the last actual run or "még nem futott"); the **pair verdicts**, one
+`GET /api/companion/pattern/monitor`, 404 ⇒ the same honest degraded card as Patterns, any OTHER
+failure ⇒ a distinct honest error card with a retry — never a blank body — and the unresolved-yet
+loading window renders its own honest frame too, all three states gated by the hook's
+`isPending`/`isError`/`refetch`, review fix wave `mezo-viqs`; mock returns the `patternMonitor`
+seed in `insights.ts`) and renders three blocks top to bottom: an **engine-state header** (the
+correlation window, `min-n`, the raw cron expression — the FE never parses cron — and **„Utolsó
+felismerés"**, `lastRunAt` or "még nem talált mintát"); the **pair verdicts**, one
 `GateVerdictRow` (`components/GateVerdictRow.tsx`) per catalog pair with a verdict chip, a
 deterministic Hungarian sentence, and the raw `n`/`r`/`p` chips; and **metric coverage**, one
 `MetricCoverageRow` (`components/MetricCoverageRow.tsx`) per `MetricKey` (all 12) with a mini bar,
 last day with data, and how many catalog pairs reference it. The 5 verdicts in one line each:
 **live** = passed the gate, `r`/`n`/`p` are live; **few_days** = aligned days below `min-n`
-(reports `missingDays` + the thinner-covered bottleneck metric); **no_data** = zero aligned days;
-**degenerate** = enough aligned days but a constant series; **frozen** = the row is user-judged
-`confirmed`/`rejected`, so the nightly job never re-touches it and the row's own frozen `r`/`n`/`p`
-are shown — no live recompute. Ordering (`MotorPage.tsx:7-21`, `comparePairs`): pairs
+(reports `missingDays` + the thinner-covered bottleneck metric); **no_data** = zero aligned days —
+the sentence names the empty metric only when the bottleneck's own `coveredDays === 0`, otherwise
+it says the two metrics never overlap (`alignedDays == 0` does NOT imply either metric itself is
+empty, e.g. a `lag=1` pair whose days just never line up; `GateVerdictRow` takes the bottleneck's
+`coveredDays` as a prop from `MotorPage`, staying presentational); **degenerate** = enough aligned
+days but a constant series; **frozen** = the row is user-judged `confirmed`/`rejected`, so the
+nightly job never re-touches it and the row's own frozen `r`/`n`/`p` are shown — no live recompute.
+Ordering (`MotorPage.tsx:7-21`, `comparePairs`): pairs
 `live → few_days (fewest missing days first) → degenerate → no_data → frozen`; coverage rows sort
 thinnest-covered first. **Every number on this page is a LIVE recomputation over the job's exact
 windows for this request** — the page persists nothing and reads no historical log, so it can
 never disagree with what the nightly job would decide ([`companion.md`](companion.md) §1 V3.1 /
 mezo-viqs).
+
+**„Utolsó felismerés" is `lastRunAt`, and `lastRunAt` is NOT "the job last ran"** — it is
+`max(lastDetectedAt)` over the user's own statistical pattern rows, so it reads "még nem talált
+mintát" for a user whose Inbox is empty even though the nightly job has run and gated everything
+out, and it does not advance for a user whose rows are all user-judged (`upsert` never touches
+`confirmed`/`rejected` rows, `PatternMonitorService.java:94-105` / `PatternDetectionService`).
+**This wording deviates from the frozen design spec**
+(`docs/superpowers/specs/2026-08-11-pattern-monitor-design.md` §5.4, which specifies the label
+"Utolsó futás" / "még nem futott") — the spec is a point-in-time artifact and is intentionally left
+unedited; this section carries the current, corrected truth: relabeling was the fix (no new
+persistence, no job-run table) because the OLD label asserted something the field never measured,
+which the page's transparency mandate cannot tolerate. Review fix wave, `mezo-viqs`.
 
 ---
 
@@ -330,7 +349,7 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **`ChatPage.test` gotcha** (documented in-file): `userEvent.type` deadlocks under `vi.useFakeTimers()`; the test uses `fireEvent.change` + `fireEvent.keyDown` and `vi.advanceTimersByTime(1300)` to exercise the 1200 ms canned-reply timer.
 - **Nav/shell:** `insights.nav.test.tsx` (real: opens the `Minták` chip's dropdown and reaches `Heti`/`Memoár`/`Előrejelzések`/**`Kísérletek`** via `menuitem` clicks → their null-states; mock: `Memoár` navigation renders the demo) — since the compact-header redesign (`mezo-ugqb`) it drives navigation through the shared `SubNavDropdown` popover rather than the retired `InsightsSubNav`'s pills. The dedicated `InsightsSubNav.test.tsx` (which asserted **both modes render all 7 `.np-pill`s since P2 — nothing hidden**) is gone; the dropdown mechanics themselves are covered generically by `shared/ui/SubNavDropdown.test.tsx`, and `insights.nav.test.tsx` still exercises `visibleInsightsTabs()` end-to-end by reaching every tab via the popover in both modes. Plus app-level `src/app/navigation.test.tsx` clicks the `aria-label="Insights"` sparkle entry link and asserts the `aria-label="Insights alnavigáció"` landmark (§2); `TabBar.test.tsx` asserts the opposite — the bottom `TabBar` renders only the four tab labels (`Ma`/`Edzés`/`Fuel`/`Én`) and explicitly has **no** `Insights` tab; and `features/progression/components/appHeroMount.test.tsx` asserts `.apphero` renders on `/insights` too.
 - **No ghost pages remain (since P2):** every page test now has a `(mock mode)` + `(real mode)` describe asserting real data / the honest null-state — no test asserts a `hamarosan` teaser any more. `ExperimentsPage.test.tsx` real-mode: an MSW proposed row renders `◇ Javaslat` + Elfogadom/Elvetem and clicking Elfogadom POSTs the decision; the default empty array shows the still-learning null-state. `experimentsHooks.test.tsx` mirrors the P1 `predictionsHooks.test.tsx` idiom (maps a wire row, `[]` default, mock no-fetch). Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
-- **`MotorPage.test.tsx` (`mezo-viqs`):** `(mock mode)` — the engine-state header (window/lookback/min-n/raw cron), all 5 verdicts' derived sentences render, pair ordering (`live → few_days fewest-missing-first → degenerate → no_data → frozen`), and coverage-row ordering (thinnest-covered first, proving the page's own sort against a deliberately unsorted seed); `(real mode)` — the 404 degraded card and the "még nem futott" (never run) `lastRunAt: null` case via MSW.
+- **`MotorPage.test.tsx` (`mezo-viqs`):** `(mock mode)` — the engine-state header (window/lookback/min-n/raw cron), all 5 verdicts' derived sentences render, pair ordering (`live → few_days fewest-missing-first → degenerate → no_data → frozen`), and coverage-row ordering (thinnest-covered first, proving the page's own sort against a deliberately unsorted seed); `(real mode)` — the 404 degraded card, the "még nem talált mintát" (no pattern found yet) `lastRunAt: null` case, an honest error card with a retry on a non-404 failure (e.g. 500, review fix wave), and the `no_data` "no overlapping day" sentence branch for a bottleneck metric whose own `coveredDays` is non-zero — all via MSW.
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -365,7 +384,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **`InsightsSubNav.tsx` is DELETED (`mezo-ugqb`)** — superseded by the shared `@/shared/ui/SubNavDropdown` mounted via `InsightsSection`
 - `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`; **8th entry `motor` added `mezo-viqs`**) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2, motor never gated; all 8 tabs visible in both modes)
 - `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
-- `pages/MotorPage.tsx` — **mezo-viqs**, the 8th sub-tab: read-only pattern-gate diagnostics (§2.8), three blocks (engine-state header / pair verdicts / metric coverage), honest degraded + "még nem futott" states, shown in both modes
+- `pages/MotorPage.tsx` — **mezo-viqs**, the 8th sub-tab: read-only pattern-gate diagnostics (§2.8), three blocks (engine-state header / pair verdicts / metric coverage), honest degraded (404) / error-with-retry (any other failure) / loading / "még nem talált mintát" states, shown in both modes
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
@@ -387,7 +406,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `monitorApi.ts` + `monitorHooks.ts` — **mezo-viqs** `usePatternMonitor()` (`['pattern-monitor']` dual-mode, real → `GET /api/companion/pattern/monitor`, 404→degraded) — read-only, no writes; the mock seed `patternMonitor` (`insights.ts`) deliberately mixes all 5 verdicts + a spread of metric coverage so every render state is visible in mock/demo mode
 - `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′; its `memoir`/`anniversaryNote` fields no longer consumed since W2 — only `predictions`/`experiments` are live)
 - `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`**, **`usePatternMonitor`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
-- `types.ts:349-418` — all Insights/Knowledge/Chat types
+- `types.ts:599-743` — all Insights/Knowledge/Chat types (`PatternMonitor`/`PatternMonitorPair`/`PatternMetricCoverage` at `types.ts:644-683`)
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 
 **Cross-feature seams:**

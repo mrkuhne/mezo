@@ -527,7 +527,7 @@ components:
         lookbackDays: { type: integer, description: 'mezo.companion.patterns.lookback-days' }
         minN: { type: integer, description: 'mezo.companion.patterns.min-n — a felszínre-engedő kapu.' }
         cron: { type: string, description: 'A nyers cron-kifejezés (a FE nem parse-olja, csak megjeleníti).' }
-        lastRunAt: { type: string, format: date-time, nullable: true, description: 'A user statisztikai sorainak max(lastDetectedAt)-ja; null = a job még sosem írt sort.' }
+        lastRunAt: { type: string, format: date-time, nullable: true, description: 'A user statisztikai sorainak max(lastDetectedAt)-ja — az utolsó FELISMERÉS, nem az utolsó JOB-FUTÁS: a job minden éjjel lefut, de ez a mező csak akkor mozdul, ha talált (LIVE) egy párt, és egy confirmed/rejected sor mellett akkor sem, ha az továbbra is a job ablakában van (upsert nem érinti). null = még sosem talált mintát.' }
         pairs:
           type: array
           items: { $ref: '#/components/schemas/PatternMonitorPair' }

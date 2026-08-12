@@ -384,7 +384,15 @@ recompute, its own frozen `r`/`n`/`p` are reported) — plus per-metric coverage
 the coverage block share one snapshot). Because the nightly job and the monitor call the
 **identical** `PatternGate.evaluate`, the monitor cannot say anything other than what the job
 would decide — that shared code is the whole credibility of the diagnostic; the service writes
-nothing (no new table, no migration). **A known, left-as-is quirk (spec §3.5):** the job reads
+nothing (no new table, no migration). **`lastRunAt` is `max(lastDetectedAt)`, not "last job
+execution"** (review fix wave `mezo-viqs`): the nightly job runs every night regardless,
+but this field only advances when it upserts a `LIVE` row, and a `confirmed`/`rejected` row is
+never auto-touched by that upsert (`detectPair` calls above) — so a user with an empty Inbox or an
+all-user-judged Inbox sees `null`/a stale date here even though the job keeps running on schedule. The FE
+(`insights.md` §2.8) labels the field **„Utolsó felismerés"** for exactly this reason, deliberately
+NOT "Utolsó futás" (last run) as the frozen design spec originally had it — no new persistence was
+added; this is a copy-only fix so the label matches what the value actually measures. **A known,
+left-as-is quirk (spec §3.5):** the job reads
 `lag=1` pairs' B-series up to `to + 1` — i.e. the current, partially-logged day — while the
 A-series stops at yesterday; the monitor prints the window bounds so this is now at least
 visible, but it is **not fixed** in this change.
