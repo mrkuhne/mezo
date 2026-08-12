@@ -1617,6 +1617,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe a short spoken message to text (mezo-at8x.4). Stateless and ephemeral — the audio is never stored, nothing is persisted, and the transcript is only handed back for the client to put in its composer. Server-side transcription (rather than the browser's Web Speech API) is what makes voice input work on iOS/PWA at all. */
+        post: operations["transcribeVoiceNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/people": {
         parameters: {
             query?: never;
@@ -4465,6 +4482,10 @@ export interface components {
             verdict: "ok" | "adjust";
             summary: string;
             suggestions: components["schemas"]["SlotPlanSuggestion"][];
+        };
+        TranscriptionResponse: {
+            /** @description The transcript in the speaker's own language; empty string when the recording carried no speech. */
+            text: string;
         };
         ConversationResponse: {
             /** Format: uuid */
@@ -10400,6 +10421,72 @@ export interface operations {
             };
             /** @description Conversation not found (or owned by someone else) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    transcribeVoiceNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The recorded voice note (wav/webm/ogg/mp4/mpeg, size capped by mezo.companion.transcription.max-audio-bytes)
+                     */
+                    audio: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The transcript — empty text when nothing intelligible was said */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionResponse"];
+                };
+            };
+            /** @description Missing/oversized/unsupported audio */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Companion switched off — the whole surface is absent */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description COMPANION_TRANSCRIBE_FAILED — the model answer was unusable */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

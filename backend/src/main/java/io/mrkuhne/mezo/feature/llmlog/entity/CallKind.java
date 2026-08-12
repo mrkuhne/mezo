@@ -24,6 +24,9 @@ public enum CallKind {
     /** A generation turn that ran one or more tool rounds (tool_rounds is filled). */
     TOOL,
 
+    /** A speech-to-text turn carrying one audio part (the media columns are filled). */
+    TRANSCRIBE,
+
     /** Document-side embedding (indexing write path). */
     EMBED_DOC,
 

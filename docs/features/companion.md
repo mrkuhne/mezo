@@ -495,7 +495,7 @@ raised the tool count 8→15, the per-turn budget 6→15, forward-resolved `[Edz
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
 companion surface since V0.4, dual-mode:
 
-- **Real mode** (default `pnpm dev`, backend on :8090): the page bootstraps the **newest
+- **Real mode** (default `pnpm dev`, backend on :8090): the page bootstraps the **selected
   conversation + its full history** on load (header: `Mezo · társ` / `Gemini · élő`). Sending a
   message renders the user bubble immediately, thinking-dots until the first chunk, then the
   answer **streams in incrementally** (SSE `delta`s into a draft bubble); on the terminal `done`
@@ -503,6 +503,19 @@ companion surface since V0.4, dual-mode:
   conversation. A stream failure shows an honest inline error bubble (`Nem sikerült válaszolni —
   próbáld újra.`) and refetches history (the user message survived server-side). History
   persists across reloads.
+- **Many conversations, not one endless thread (`mezo-at8x.3`)** — the multi-conversation spine
+  has existed server-side since V0.2, but the FE only ever loaded `conversations[0]`. The page now
+  carries its selection in the URL (`?c=<uuid>` · `?c=new` · absent = newest), lists the persisted
+  conversations (server-side auto-title = first user message, truncated) in a picker sheet, and
+  starts new ones. A `?c=new` draft is **lazily created**: `POST /conversation` only fires on the
+  first send, so an abandoned "Új beszélgetés" leaves no empty row behind. UI detail in
+  [`insights.md`](insights.md) §2.5.
+- **Voice input (`mezo-at8x.4`)** — the composer's mic records via `getUserMedia`/`MediaRecorder`,
+  converts to 16 kHz mono WAV client-side, and `POST`s it to `/api/companion/transcribe`; the
+  transcript is **placed in the input, never auto-sent**. Server-side transcription is a deliberate
+  platform call: the browser Web Speech API is absent or unreliable in exactly this app's habitat
+  (iOS Safari + installed PWA), while `MediaRecorder` works everywhere. Nothing is persisted on
+  either side — no audio row, no message row; the clip lives only for the one model call.
 - **Degraded state (IDENT-3)** — companion switch off ⇒ the API 404s ⇒ the page renders a banner
   (`A társ jelenleg nincs bekapcsolva…`), subtitle `a társ most nem elérhető`, disabled composer;
   every other tab is untouched. This is exactly the **deployed k3s state** until a real
@@ -898,6 +911,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 | `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). |
+| `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
 `MessageResponse {id, role, content, createdAt, tools[], refs[], degraded}` (**filled since
@@ -975,6 +989,12 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 - `mezo.companion.advisors.rx-terms` = `[retatrutid, reta, tirzepatid, mounjaro, szemaglutid,
   ozempic, wegovy]` (`@NotEmpty`) — the clinical check's guarded prescription-med terms
   (accent-folded contains-match; only dose-CHANGE verbs trigger).
+- `mezo.companion.transcription.max-audio-bytes` = **5 242 880** (`@Min(1)`) — the voice-note
+  upload cap (`mezo-at8x.4`), kept under the 6 MB container multipart cap so the SERVICE check is
+  the effective, message-bearing limit; ~2.5 minutes of the 16 kHz mono WAV the FE uploads.
+- `mezo.companion.transcription.allowed-mime-types` = `[audio/wav, audio/x-wav, audio/webm,
+  audio/ogg, audio/mp4, audio/mpeg, audio/aac]` (`@NotEmpty`) — matched on the BASE type: the FE
+  normalizes to wav where it can, but Chrome records webm/opus and iOS Safari mp4/aac.
 - `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
   `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
 - `mezo.companion.embedding.model` = `gemini-embedding-001` (`@NotBlank`) — the V2.1 embedding
@@ -1412,6 +1432,12 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   a token, 201 create, the send→persist→list round-trip, 400 on empty content, 404 on an unknown id.
 - **`CompanionApiSwitchOffIT`** — `mezo.feature.companion.enabled=false` ⇒ `/api/companion/*` 404s
   (`RESOURCE_NOT_FOUND`) — the whole surface is gone (bean-boundary gating).
+- **`CompanionTranscribeApiIT`** (`mezo-at8x.4`, 6) — the voice surface through the generated
+  `CompanionVoiceApi` with `mezo.companion.transcription.max-audio-bytes` lowered to 10 000: the
+  `[fake-transcript:…]` sentinel decoded from the AUDIO BYTES comes back as the transcript, a
+  `;codecs=opus` mime parameter is accepted (base-type matching), silence returns empty text with
+  200, and oversized / unsupported-mime / missing audio each give a 400 (`VALIDATION_INVALID_VALUE`
+  on field `audio`).
 
 **V0.4 test additions:**
 
@@ -1782,12 +1808,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 ## 10. Key files
 
 **API contract**
-- `api/feature/companion/companion.yml` — 4 endpoints + 5 schemas (tag `Companion` → `CompanionApi`);
+- `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written) and the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`);
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
 **Backend — controllers / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionController.java` — `implements CompanionApi`, JWT ownership, switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionVoiceController.java` + `service/TranscriptionService.java` — **`mezo-at8x.4`** the stateless voice-note → transcript surface (`implements CompanionVoiceApi`, switch-gated; size/mime validation + the transcription system prompt).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).

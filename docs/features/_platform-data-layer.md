@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-08-07
+updated: 2026-08-11
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -94,6 +94,8 @@ React view (features/**/*.tsx)
 ```
 
 **`apiFetch` contract** (`frontend/src/data/_client/api.ts:22`): prepends `API_BASE` (`VITE_API_URL ?? 'http://localhost:8090'`), sets JSON + Bearer headers, returns `undefined` for `204`, otherwise parses JSON. **Since mezo-78rn a `FormData` body** (the AI-meal-log multipart photo/text upload — `mealApi.aiDraft`) **skips the JSON `Content-Type`** so the browser sets the `multipart/form-data` boundary; JSON callers are unchanged. On `!res.ok` it throws `ApiError(messages: SystemMessage[], status)` where `SystemMessage = { code, message, fieldName?, exceptionTraceId? }` — mirroring the backend's `@RestControllerAdvice` contract (see `docs/references/error_handling.md`).
+
+**Per-conversation query keys (`mezo-at8x.3`).** The chat read is keyed by its SELECTION, not by the domain: `['chat', <conversationId | 'new' | 'newest'>]` (plus `['chat','conversations']` for the picker list). Switching threads therefore cannot cross-contaminate history, and a turn that CREATES its conversation writes the appended pair into both the selection's entry and the new id's entry — so the caller's move from `'new'` to the real id lands on a populated thread instead of an empty one. `useTranscribe()` (voice input, `mezo-at8x.4`) is action-only with **no query key at all** — like `useSleepShot`, nothing it does is server state.
 
 **`apiSse` — the streaming sibling (companion V0.4, same file):** an async generator over `fetch` + `ReadableStream` that yields `{ event, data }` SSE frames (POST-capable and Bearer-capable, which `EventSource` is not; dual `Accept: text/event-stream, application/json` so pre-stream failures throw the same `ApiError` as `apiFetch`). Sole consumer today: `data/insights/chatApi.streamMessage` (the streamed chat turn — [`companion.md`](companion.md) §3). Streaming reads sit **outside** `useDualQuery` by design — the mutation-plus-incremental-append lives in the hook layer (`useChatActions`).
 

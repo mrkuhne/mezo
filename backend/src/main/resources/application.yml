@@ -466,6 +466,21 @@ mezo:
       # how many suggestions the Task 2 adapter asks the model for / returns (HabitAiService's
       # own sanitize step is a defensive bounds check, not a count clamp).
       max-suggestions: 5
+    transcription:
+      # Chat voice input (mezo-at8x.4) — kept under the 6 MB container multipart cap so the
+      # SERVICE check in TranscriptionService is the effective, message-bearing limit.
+      # 5 MB of 16 kHz mono WAV (what the FE uploads) is ~2.5 minutes of speech.
+      max-audio-bytes: 5242880
+      # Base mime types only — the browser's `;codecs=opus` parameter is stripped before matching.
+      # Chrome/Android record webm/opus, iOS Safari mp4/aac; the FE normalizes to wav where it can.
+      allowed-mime-types:
+        - audio/wav
+        - audio/x-wav
+        - audio/webm
+        - audio/ogg
+        - audio/mp4
+        - audio/mpeg
+        - audio/aac
   proactive:
     briefing:
       # How many finished days of narrative memory (daily_summary) the briefing gather reads;
