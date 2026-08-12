@@ -53,7 +53,7 @@ export function IntentionBanner({ variant }: { variant: 'chip' | 'reflect' }) {
   return (
     <>
       <TodayList
-        label="Fókusz"
+        label={data.foci.length > 0 ? `Fókusz · ${data.foci.length} / ${data.focusCap}` : 'Fókusz'}
         action={
           !data.creed ? (
             <button type="button" onClick={() => setCreedOpen(true)}>+ Vezérelv megírása</button>

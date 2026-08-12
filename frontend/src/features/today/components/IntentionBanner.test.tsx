@@ -53,7 +53,8 @@ describe('IntentionBanner', () => {
     test('shows the creed and the day\'s foci with a + Mai fókusz CTA', () => {
       const { container } = renderChip() // seed: creed + 2 foci, cap 3
       expect(container.querySelector('.td-list')).toBeTruthy()
-      expect(screen.getByText('Fókusz')).toBeInTheDocument()
+      // the n / cap count lives in the section header now (no floating pill)
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz · 2 / 3')
       expect(screen.getByText(/szándékkal élek/i)).toBeInTheDocument()
       // the day's stated intentions are OUTPUT, not just input (mezo-j7u4 fix round 2)
       expect(container.querySelectorAll('.td-row')).toHaveLength(2)
@@ -66,8 +67,9 @@ describe('IntentionBanner', () => {
       const { container } = renderChipWithDay({
         date: localDateString(), creed: 'Szándékkal élek.', foci: [], reflection: null, focusCap: 3,
       })
-      // zero foci: nothing to show yet
+      // zero foci: nothing to show yet, and the header carries no count
       expect(container.querySelectorAll('.td-row')).toHaveLength(0)
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz')
 
       await userEvent.click(screen.getByRole('button', { name: /Fókusz hozzáadása/ }))
       await userEvent.type(await screen.findByRole('textbox'), 'Ma végig jelen leszek')
@@ -75,6 +77,7 @@ describe('IntentionBanner', () => {
 
       expect(await screen.findByText('Ma végig jelen leszek')).toBeInTheDocument()
       expect(container.querySelectorAll('.td-row')).toHaveLength(1)
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz · 1 / 3')
     })
 
     test('foci render even without a creed (RoutineCard\'s sheet can produce those)', () => {
@@ -113,10 +116,11 @@ describe('IntentionBanner', () => {
         ] },
         isPending: false,
       })
-      renderChip()
+      const { container } = renderChip()
       expect(screen.queryByRole('button', { name: /Fókusz hozzáadása/ })).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Vezérelv szerkesztése' })).toBeInTheDocument()
-      // ...but the foci at the cap are still displayed
+      // ...but the foci at the cap are still displayed, and counted
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz · 2 / 2')
       expect(screen.getByText('a')).toBeInTheDocument()
       expect(screen.getByText('b')).toBeInTheDocument()
     })
