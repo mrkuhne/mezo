@@ -142,6 +142,23 @@ describe('IntentionBanner', () => {
       expect(screen.getByRole('button', { name: 'Nem' })).toBeInTheDocument()
     })
 
+    // The ONE box-language regression this test guards: the reflect block used to be a bare
+    // `.reflect` card with no section header (mezo-e26w Task 15 runtime finding). It must now
+    // sit inside a TodayList like every other Today section — same `.td-sech` header on the
+    // 16px rail, same `.td-list` box — while its internals (question/options) stay untouched.
+    test('sits inside a TodayList box with a "Reflexió" section header', () => {
+      const { container } = renderReflect()
+      const head = container.querySelector('.td-sech')
+      expect(head?.textContent).toBe('Reflexió')
+      const list = container.querySelector('.td-list')
+      expect(list).toBeTruthy()
+      expect(head?.nextElementSibling).toBe(list)
+      // the untouched internals still live inside that box
+      expect(list?.querySelector('.reflect')).toBeTruthy()
+      expect(list?.querySelector('.reflect-q')?.textContent).toBe('Szándékkal élted a napot?')
+      expect(list?.querySelectorAll('.reflect-opt')).toHaveLength(3)
+    })
+
     test('once reflected it collapses to the ✓ done line', () => {
       hooks.useIntentionDay.mockReturnValue({
         data: { ...EMPTY, creed: 'x', reflection: 'partial', foci: [{ id: 'a', focusDate: EMPTY.date, text: 'a' }] },
@@ -152,19 +169,23 @@ describe('IntentionBanner', () => {
       expect(screen.queryByRole('button', { name: 'Igen' })).not.toBeInTheDocument()
     })
 
-    test('ghosts without foci', () => {
+    test('ghosts without foci — no header, no box, nothing at all', () => {
       hooks.useIntentionDay.mockReturnValue({ data: { ...EMPTY, creed: 'x' }, isPending: false })
       const { container } = renderReflect()
       expect(container).toBeEmptyDOMElement()
+      expect(container.querySelector('.td-sech')).toBeNull()
+      expect(container.querySelector('.td-list')).toBeNull()
     })
 
-    test('ghosts without a creed', () => {
+    test('ghosts without a creed — no header, no box, nothing at all', () => {
       hooks.useIntentionDay.mockReturnValue({
         data: { ...EMPTY, foci: [{ id: 'a', focusDate: EMPTY.date, text: 'a' }] },
         isPending: false,
       })
       const { container } = renderReflect()
       expect(container).toBeEmptyDOMElement()
+      expect(container.querySelector('.td-sech')).toBeNull()
+      expect(container.querySelector('.td-list')).toBeNull()
     })
   })
 })

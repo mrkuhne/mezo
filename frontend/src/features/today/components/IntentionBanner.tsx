@@ -33,20 +33,22 @@ export function IntentionBanner({ variant }: { variant: 'chip' | 'reflect' }) {
     // Nothing to reflect on without a creed and at least one focus.
     if (!data.creed || data.foci.length === 0) return null
     return (
-      <div className="reflect">
-        {data.reflection ? (
-          <div className="reflect-done">✓ {REFLECT_LABEL[data.reflection]} — a mai szándékodra reflektáltál.</div>
-        ) : (
-          <>
-            <div className="reflect-q">Szándékkal élted a napot?</div>
-            <div className="reflect-opts">
-              {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
-                <button key={v} className="reflect-opt" onClick={() => reflect(v)}>{REFLECT_LABEL[v]}</button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      <TodayList label="Reflexió">
+        <div className="reflect">
+          {data.reflection ? (
+            <div className="reflect-done">✓ {REFLECT_LABEL[data.reflection]} — a mai szándékodra reflektáltál.</div>
+          ) : (
+            <>
+              <div className="reflect-q">Szándékkal élted a napot?</div>
+              <div className="reflect-opts">
+                {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
+                  <button key={v} className="reflect-opt" onClick={() => reflect(v)}>{REFLECT_LABEL[v]}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </TodayList>
     )
   }
 

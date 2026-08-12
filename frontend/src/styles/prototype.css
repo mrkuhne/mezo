@@ -2174,9 +2174,12 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   border-radius: var(--r-full); padding: 7px 11px; font-family: var(--ff-body); font-style: normal; cursor: pointer;
   background: color-mix(in srgb, var(--surface-card) 70%, transparent); white-space: nowrap; }
 
-/* evening reflect — the intention question as its own card */
-.reflect { margin: 0 24px 16px; padding: 14px; border-radius: var(--r-lg);
-  background: var(--surface-card); border: 1px solid var(--divider); }
+/* evening reflect — content padding only (mezo-e26w): the box chrome (border, background,
+   radius, the 16px rail) now comes from the `.td-list` it sits inside (IntentionBanner wraps
+   it in a `TodayList label="Reflexió"`), same precedent as `.td-creed` below. `.reflect` used
+   to BE its own card before the ONE-box-language pass; it never renders anywhere else now, so
+   there is no second consumer relying on the old standalone chrome. */
+.reflect { padding: 14px; }
 .reflect-q { font: 600 14px/1.4 var(--ff-body); color: var(--text-primary); margin-bottom: 10px; }
 .reflect-opts { display: flex; gap: 8px; }
 .reflect-opt {
