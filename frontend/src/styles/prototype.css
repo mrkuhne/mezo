@@ -3257,10 +3257,10 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    No card: the content sits on the canvas. Boxes only inside — the fact
    strip, the ItemRows, the chips. The .isl-* micro-components are reused
    as-is (they are Fuel's language too), only the frame is new. */
-/* A Today lapnyelve a 16px-es sínt ELEMENKÉNT hordozza (`--td-gut`), nem a panelen —
-   így a listadobozok, a hero és a CTA mind pontosan egy vonalban ülnek. A `.dayview`
-   megmarad, mert ő viszi a tabváltás `isl-phasein` fade-jét és az `is-night` állapotot
-   (lásd `todayReducedMotion.test.ts`). */
+/* A Today lapnyelve a 16px-es sínt ELEMENKÉNT hordozza (a globális `--sp-4` DS-token),
+   nem a panelen — így a listadobozok, a hero és a CTA mind pontosan egy vonalban ülnek.
+   A `.dayview` megmarad, mert ő viszi a tabváltás `isl-phasein` fade-jét és az `is-night`
+   állapotot (lásd `todayReducedMotion.test.ts`). */
 .dayview { padding: 2px 0 6px; }
 :where(.dayview) { animation: isl-phasein .32s ease both; }
 /* night: the view itself goes theme-invariant dark (the .isl-night heritage) */
@@ -3421,16 +3421,23 @@ ol.md-list { list-style: decimal; }
 /* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
-   16px-es sín (`--td-gut`). Árnyék helyett .5px hajszálvonal. A sorelválasztó
-   a vezető ikon szélességétől (52px) indul, nem a doboz élétől.
+   16px-es sín — a globális `--sp-4` DS-token közvetlenül, elemenként. Árnyék
+   helyett .5px hajszálvonal. A sorelválasztó a vezető ikon szélességétől
+   (52px) indul, nem a doboz élétől.
    Kizárólag meglévő DS-tokenekből épül — nincs új szín, nincs új token.
+   (Korábban egy lokálisan skálázott `--td-gut` property vitte ugyanezt a
+   16px-et, `.dayview, .daytabs, .todaychip`-re scope-olva — de a `.todaychip`
+   szelektor sosem létezett, így a deklaráció minden, e két alfán KÍVÜLI
+   gyökéren [`.td-chip`, a skeletonok] érvénytelenné vált computed-value
+   időben, és a property csendben nullára esett. A property most már nem
+   létezik: minden korábbi felhasználás közvetlenül `--sp-4`-et olvas — lásd
+   `todayCssTokens.test.ts`.)
    ============================================================ */
-.dayview, .daytabs, .todaychip { --td-gut: 16px; }
 
 /* ── szegmentált napszak-váltó — egy vályú + csúszó bélyeg ──
    min-height 44px a tap-target-minimumhoz (code review, mezo-e26w Finding 2) — a vályú emiatt
    50px-re nő (3px padding + 44px gomb + 3px padding), ez szándékos. */
-.td-segwrap { padding: 6px var(--td-gut) 14px; }
+.td-segwrap { padding: 6px var(--sp-4) 14px; }
 .td-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
           background: var(--surface-recess); border-radius: var(--r-full); padding: 3px; }
 .td-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
@@ -3447,8 +3454,8 @@ ol.md-list { list-style: decimal; }
           box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--accent-base) 24%, transparent); }
 
 /* ── MezoChip ── */
-.td-chip { display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--td-gut));
-           margin: 0 var(--td-gut) 18px; padding: 11px 14px; min-height: 44px;
+.td-chip { display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--sp-4));
+           margin: 0 var(--sp-4) 18px; padding: 11px 14px; min-height: 44px;
            border-radius: var(--r-lg); background: var(--surface-card);
            border: .5px solid var(--divider); cursor: pointer; text-align: left;
            box-shadow: 0 1px 2px rgba(43, 33, 24, .05); font-family: var(--ff-body); }
@@ -3469,7 +3476,7 @@ ol.md-list { list-style: decimal; }
 .td-chev { flex: 0 0 auto; color: var(--text-disabled); font-size: 16px; font-weight: 600; }
 
 /* ── napszak-hero ── */
-.td-hero { padding: 2px var(--td-gut) 0; }
+.td-hero { padding: 2px var(--sp-4) 0; }
 .td-hero-l { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
 .td-hero-v { font-family: var(--ff-display); font-size: 36px; font-weight: 250; line-height: 1.05;
              letter-spacing: -.035em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
@@ -3478,7 +3485,7 @@ ol.md-list { list-style: decimal; }
              margin-top: 5px; letter-spacing: -.005em; }
 
 /* ── statisztika-csoport: EGY doboz, függőleges hajszálvonallal ── */
-.td-stats { display: grid; margin: 14px var(--td-gut) 0; background: var(--surface-card);
+.td-stats { display: grid; margin: 14px var(--sp-4) 0; background: var(--surface-card);
             border: .5px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
 .td-stat { padding: 12px 14px; }
 .td-stat + .td-stat { border-left: .5px solid var(--divider); }
@@ -3494,27 +3501,27 @@ ol.md-list { list-style: decimal; }
 
 /* ── elsődleges CTA + ghost ── */
 .td-cta { display: flex; align-items: center; justify-content: center; gap: 8px;
-          width: calc(100% - 2 * var(--td-gut)); margin: 16px var(--td-gut) 0; min-height: 50px;
+          width: calc(100% - 2 * var(--sp-4)); margin: 16px var(--sp-4) 0; min-height: 50px;
           border: 0; border-radius: var(--r-lg); background: var(--gradient-cta);
           color: var(--text-inverse); font-family: var(--ff-body); font-size: 16px; font-weight: 600;
           letter-spacing: -.01em; box-shadow: var(--shadow-cta); cursor: pointer; }
 .td-cta.is-lav { background: linear-gradient(135deg, #A99BD3, #8B7CC0);
                  box-shadow: 0 8px 20px rgba(139, 124, 192, .32); }
-.td-ghost { display: block; width: calc(100% - 2 * var(--td-gut)); margin: 8px var(--td-gut) 0;
+.td-ghost { display: block; width: calc(100% - 2 * var(--sp-4)); margin: 8px var(--sp-4) 0;
             min-height: 44px; border-radius: var(--r-lg); border: .5px solid var(--divider);
             background: var(--surface-card); font-family: var(--ff-body); font-size: 14.5px;
             font-weight: 600; color: var(--text-secondary); cursor: pointer; }
 
 /* ── szekció + inset grouped list ── */
 .td-sec { margin-top: 26px; }
-.td-sech { display: flex; align-items: baseline; padding: 0 var(--td-gut) 7px; }
+.td-sech { display: flex; align-items: baseline; padding: 0 var(--sp-4) 7px; }
 .td-sech b { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .075em;
              text-transform: uppercase; color: var(--text-muted); }
 .td-sech a, .td-sech button { margin-left: auto; font-family: var(--ff-body); font-size: 12.5px;
                               font-weight: 600; color: var(--primary-hover); text-decoration: none;
                               letter-spacing: -.005em; border: 0; background: none; cursor: pointer;
                               padding: 6px 0 6px 8px; }
-.td-list { margin: 0 var(--td-gut); background: var(--surface-card); border: .5px solid var(--divider);
+.td-list { margin: 0 var(--sp-4); background: var(--surface-card); border: .5px solid var(--divider);
            border-radius: var(--r-lg); overflow: hidden; }
 .td-row { display: flex; align-items: center; gap: 11px; padding: 9px 13px; min-height: 56px;
           position: relative; background: transparent; width: 100%; text-align: left;
@@ -3573,19 +3580,19 @@ ol.md-list { list-style: decimal; }
 .td-row.is-done .td-ic { opacity: .45; }
 
 /* ── lábjegyzet a csoport alatt — doboz nélkül ── */
-.td-foot { padding: 7px var(--td-gut) 0; font-family: var(--ff-body); font-size: 12px;
+.td-foot { padding: 7px var(--sp-4) 0; font-family: var(--ff-body); font-size: 12px;
            line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
 .td-foot.is-warn { color: var(--warning-hover); }
 
 /* ── kész-hajtás ── */
-.td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--td-gut));
-           margin: 12px var(--td-gut) 0; padding: 11px 14px; min-height: 44px; border-radius: var(--r-lg);
+.td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--sp-4));
+           margin: 12px var(--sp-4) 0; padding: 11px 14px; min-height: 44px; border-radius: var(--r-lg);
            background: transparent; border: .5px dashed var(--divider); cursor: pointer;
            font-family: var(--ff-body); font-size: 13px; font-weight: 600;
            color: var(--success-hover); letter-spacing: -.005em; }
 .td-done span { margin-left: auto; color: var(--text-disabled); }
 .td-dayxp { text-align: center; font-family: var(--ff-body); font-size: 12px; font-weight: 700;
-            color: var(--success-hover); padding: 10px var(--td-gut) 0; }
+            color: var(--success-hover); padding: 10px var(--sp-4) 0; }
 
 /* ── fókusz (creed) — ugyanaz a listadoboz, halk levendula fejjel ── */
 .td-creed { padding: 12px 14px; background: color-mix(in srgb, var(--dv-lav) 9%, var(--surface-card)); }
@@ -3623,7 +3630,7 @@ ol.md-list { list-style: decimal; }
                text-transform: uppercase; color: var(--text-disabled); margin-top: 9px; }
 
 /* a betöltő váz elrendezése — inline style helyett, hogy a lap CSS-e egy helyen éljen */
-.td-skel { padding: 0 var(--td-gut); }
+.td-skel { padding: 0 var(--sp-4); }
 .td-skel-chip  { padding-bottom: 18px; }
 .td-skel-hero  { padding-top: 2px; }
 .td-skel-stats { padding-top: 14px; }
