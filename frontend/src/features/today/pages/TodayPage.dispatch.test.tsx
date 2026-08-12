@@ -341,6 +341,9 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
     // no clickable control survives on a HABIT row — the DERIVED rows' pills stay as inert
     // copy (`.td-act.is-inert`), but the MANUAL row's tick WITHDRAWS entirely (TodayRow's own
     // rule: it withdraws, it does not dim), so no button and no leftover ✓ ghost either.
+    // The row itself is NOT gone, though — its title stays readable while the write is in
+    // flight, it just loses the tappable control (the positive half of "withdraw, don't dim").
+    expect(within(rowOf('MANUAL lánc')).getByText('MANUAL lánc')).toBeInTheDocument()
     expect(within(rowOf('MANUAL lánc')).queryByRole('button')).toBeNull()
     expect(rowOf('MANUAL lánc').querySelector('.td-tick')).toBeNull()
     expect(container.querySelector('.td-act.is-inert')).toBeTruthy()

@@ -134,8 +134,12 @@ describe('TodayPage — daypart selection', () => {
 })
 
 describe('TodayPage — composition', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
+  // `mezo.msgseen.<date>` (`shared/lib/seenMessages`) persists in the SAME in-memory
+  // `localStorage` across every test in this file (unlike `sessionStorage`, which the global
+  // setup clears in its own `afterEach`) — without this, an earlier test opening the
+  // MezoMessagesSheet marks the thread seen and a later "still unread" assertion starts false.
+  beforeEach(() => { vi.stubEnv('VITE_USE_MOCK', 'true'); localStorage.clear() })
+  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); localStorage.clear() })
 
   test('the fixed chrome + the daypart switcher render', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
@@ -276,15 +280,37 @@ describe('TodayPage — composition', () => {
   test('a chip megnyitja a szálat, és abban ott a teljes briefing', async () => {
     renderToday()
     await userEvent.click(await screen.findByRole('button', { name: /Mezo üzenetei/ }))
-    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toBeInTheDocument()
     expect(screen.getByText('Mezo üzenetei')).toBeInTheDocument()
+    // the full briefing is in the thread — the very paragraph the chip's own preview
+    // withholds (the previous test asserts it is absent from the page outside the sheet).
+    expect(within(dialog).getByText(/Ma Pull Day, és a Chest Supported Row/)).toBeInTheDocument()
   })
 
   test('megnyitás után a chip már nem olvasatlan', async () => {
     const { container } = renderToday()
-    await userEvent.click(await screen.findByRole('button', { name: /Mezo üzenetei/ }))
+    await screen.findByRole('button', { name: /Mezo üzenetei/ })
+    // it starts unread — otherwise "no longer unread" after the click proves nothing.
+    expect(container.querySelector('.td-av.is-unread')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Mezo üzenetei/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Kész' }))
     await waitFor(() => expect(container.querySelector('.td-av.is-unread')).toBeNull())
+  })
+
+  test('a chip ugyanazt mutatja napszaktól függetlenül', () => {
+    vi.useFakeTimers().setSystemTime(at('13:42'))
+    const { container } = renderToday()
+    const chip = () => screen.getByRole('button', { name: /Mezo üzenetei/ })
+    const preview = chip().textContent
+    // …and it does not change with the selected tab — the thread is daypart-independent
+    // by design, the exact complaint the old full-bleed band's repetition drew.
+    for (const [pattern, face] of [[/Reggel/, 'reggel'], [/Nap/, 'nap'], [/Este/, 'este']] as const) {
+      fireEvent.click(tab(pattern))
+      expect(shownFace(container)).toBe(face)
+      expect(chip()).toBeInTheDocument()
+      expect(chip().textContent).toBe(preview)
+    }
   })
 
   test('the evening daypart owns the Napzárás act — it is never also a row', () => {
