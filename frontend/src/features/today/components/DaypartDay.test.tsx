@@ -58,9 +58,10 @@ describe('DaypartDay', () => {
     expect(onCustom).toHaveBeenCalled()
   })
 
-  test('the niggle warning renders as the one safety chip', () => {
-    renderDay({ heroWarn: 'Bal váll — figyelj a tempóra' })
+  test('the niggle warning renders as a plain footnote below the CTA', () => {
+    const { container } = renderDay({ heroWarn: 'Bal váll — figyelj a tempóra' })
     expect(screen.getByText(/Bal váll/)).toBeInTheDocument()
+    expect(container.querySelector('.td-foot.is-warn')).toBeInTheDocument()
   })
 
   test('rows are visible with no unfolding', () => {

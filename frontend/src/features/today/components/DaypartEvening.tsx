@@ -23,7 +23,7 @@ import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard
 import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
-import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
+import { TodayStats } from '@/features/today/components/TodayStats'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact } from '@/features/today/logic/islandFacts'
 import { bedCountdown } from '@/features/today/logic/islandFacts'
@@ -116,26 +116,24 @@ export function DaypartEvening({
     <DaypartPanel tone="este" key={ph}>
       <ChainCelebrations chains={celebrations} />
       <DaypartHero value={hero.value} unit={hero.unit} sub={sub} />
-      <IslandFactsStrip facts={phaseFacts} />
-      <div className="dv-act">
-        {ritualState === 'open' && (
-          <button type="button" className="isl-cta is-lav np-press" onClick={() => navigate('/ritual')}>
-            Zárjuk le a napot
-          </button>
-        )}
-        {ritualState === 'waiting' && (
-          <button type="button" className="isl-more" onClick={() => navigate('/ritual')}>
-            Napzárás {opensAt}-kor nyílik
-          </button>
-        )}
-        {wdCheckable && (
-          <button type="button" className="isl-more" onClick={doWindDown}>
-            Leállás megvolt ✓
-          </button>
-        )}
-      </div>
-      {ph === 'winddown' && wdDone && <div className="dv-state">Leállás megvolt ✓</div>}
-      {ritualState === 'done' && <div className="dv-state">Napzárás kész ✓</div>}
+      <TodayStats facts={phaseFacts} />
+      {ritualState === 'open' && (
+        <button type="button" className="td-cta is-lav np-press" onClick={() => navigate('/ritual')}>
+          Zárjuk le a napot
+        </button>
+      )}
+      {ritualState === 'waiting' && (
+        <button type="button" className="td-ghost np-press" onClick={() => navigate('/ritual')}>
+          Napzárás {opensAt}-kor nyílik
+        </button>
+      )}
+      {wdCheckable && (
+        <button type="button" className="td-ghost np-press" onClick={doWindDown}>
+          Leállás megvolt ✓
+        </button>
+      )}
+      {ph === 'winddown' && wdDone && <div className="td-foot">Leállás megvolt ✓</div>}
+      {ritualState === 'done' && <div className="td-foot">Napzárás kész ✓</div>}
       <DayGroups
         open={visibleOpen}
         done={done}

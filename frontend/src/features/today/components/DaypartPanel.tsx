@@ -2,10 +2,11 @@
 // Mezo · DaypartPanel — the frame a daypart's content sits in (mezo-puci).
 // The point of this component is what it does NOT draw: there is no
 // card, no border, no blob, no shadow. The content sits straight on
-// the canvas, exactly like the mezo message band above it — boxes
-// exist only INSIDE (fact strip, ItemRows, chips). The `key={tone}`
-// on the root is what makes a tab switch cross-fade rather than
-// mutate in place (the isl-phasein motion, reused).
+// the canvas, exactly like the mezo message band above it — the
+// content speaks ONE box language (`TodayList`); this component only
+// carries the tab-switch cross-fade and the night state. The
+// `key={tone}` on the root is what makes a tab switch cross-fade
+// rather than mutate in place (the isl-phasein motion, reused).
 // `DaypartHero` is the daypart's one big number, left-aligned.
 // ============================================================
 import type { ReactNode } from 'react'
@@ -31,12 +32,12 @@ export function DaypartHero({ value, unit, sub }: {
   sub?: string | null
 }) {
   return (
-    <div className="dv-hero">
-      <span className="dv-hero-v">
-        {value}
-        {unit && <span className="dv-hero-u"> {unit}</span>}
-      </span>
-      {sub && <span className="dv-hero-sub">{sub}</span>}
+    <div className="td-hero">
+      <div className="td-hero-l">
+        <span className="td-hero-v">{value}</span>
+        {unit && <span className="td-hero-u">{unit}</span>}
+      </div>
+      {sub && <span className="td-hero-s">{sub}</span>}
     </div>
   )
 }

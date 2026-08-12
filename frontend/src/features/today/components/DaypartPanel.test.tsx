@@ -28,7 +28,7 @@ describe('DaypartHero', () => {
 
   test('a missing unit or sub simply does not render', () => {
     const { container } = render(<DaypartHero value="Pihenő" />)
-    expect(container.querySelector('.dv-hero-u')).toBeNull()
-    expect(container.querySelector('.dv-hero-sub')).toBeNull()
+    expect(container.querySelector('.td-hero-u')).toBeNull()
+    expect(container.querySelector('.td-hero-s')).toBeNull()
   })
 })
