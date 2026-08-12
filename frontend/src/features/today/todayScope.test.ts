@@ -14,13 +14,22 @@ import { describe, expect, test } from 'vitest'
  */
 const DIR = join(process.cwd(), 'src/features/today/components')
 const EXEMPT = new Set(['AnchorIsland.tsx'])
+// Valódi `import ... from '@/shared/ui/ItemRow'` utasításra illesztünk, NEM bármilyen puszta
+// előfordulásra — egy magyarázó kommentben idézett útvonal nem hivatkozás, és nem szabad, hogy
+// emiatt bukjon a teszt. Ne egyszerűsítsd vissza substring-keresésre.
+const IMPORTS_ITEM_ROW = /from\s+['"]@\/shared\/ui\/ItemRow['"]/
 
 describe('a Today lapnyelve nem nyúl vissza a shared ItemRow-hoz', () => {
   test('egyetlen Today-komponens sem importálja az ItemRow-t', () => {
     const offenders = readdirSync(DIR)
       .filter((f) => f.endsWith('.tsx') && !f.endsWith('.test.tsx') && !EXEMPT.has(f))
-      .filter((f) => readFileSync(join(DIR, f), 'utf8').includes("shared/ui/ItemRow"))
+      .filter((f) => IMPORTS_ITEM_ROW.test(readFileSync(join(DIR, f), 'utf8')))
     expect(offenders).toEqual([])
+  })
+
+  test('a minta ténylegesen elkapja a valódi importot — az AnchorIsland kivétele tudatos döntés, nem a minta vakfoltja', () => {
+    const anchorSource = readFileSync(join(DIR, 'AnchorIsland.tsx'), 'utf8')
+    expect(IMPORTS_ITEM_ROW.test(anchorSource)).toBe(true)
   })
 
   test('a nyugdíjazott felületek tényleg eltűntek', () => {

@@ -3,7 +3,7 @@
 // logika VÁLTOZATLAN a mezo-puci óta: első-megjelenés sorrend, darabszám a
 // fejlécben, a küldetés-fejléc egyetlen /me/growth útvonala, head/focus slotok.
 // Ami változott: minden csoport EGY `TodayList` dobozban ül, és a sorok a
-// Today saját `TodayRow`-ja — NEM a `shared/ui`-beli `ItemRow` (spec §7: azt a Fuel
+// Today saját `TodayRow`-ja — NEM a `shared/ui/ItemRow` (spec §7: azt a Fuel
 // és a rutin-szerkesztő is rendereli, és ebben a változásban nem mozdulnak).
 // Az EGYETLEN összecsukott elem a lapon továbbra is a kész-hajtás.
 // ============================================================
