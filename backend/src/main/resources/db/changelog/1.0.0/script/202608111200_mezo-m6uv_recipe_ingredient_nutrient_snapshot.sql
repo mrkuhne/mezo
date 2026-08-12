@@ -24,4 +24,6 @@ UPDATE recipe_ingredient ri
            round(p.saturated_fat_g * (ri.snapshot_per / coalesce(nullif(p.serving_amount, 0), 1)), 3)
   FROM pantry_item p
  WHERE p.id = ri.pantry_item_id
-   AND p.is_deleted = false;
+   AND p.is_deleted = false
+   AND p.serving_amount IS NOT NULL
+   AND p.serving_amount > 0;

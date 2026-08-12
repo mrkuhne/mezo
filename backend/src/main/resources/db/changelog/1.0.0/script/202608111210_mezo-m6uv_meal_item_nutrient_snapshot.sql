@@ -26,7 +26,9 @@ UPDATE meal_item mi
   FROM pantry_item p
  WHERE mi.source = 'pantry'
    AND p.id = mi.pantry_item_id
-   AND p.is_deleted = false;
+   AND p.is_deleted = false
+   AND p.serving_amount IS NOT NULL
+   AND p.serving_amount > 0;
 
 -- recipe arm: Σ over the recipe's frozen lines ÷ servings (SUM ignores NULLs, so a fact-less line
 -- simply does not contribute and an all-null recipe yields NULL — the same rule the Java rollup uses)
