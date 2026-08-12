@@ -1,4 +1,4 @@
-# 0025 — Freeze the four nutrition-quality facts per line, superseding live-pantry scoring reads
+# 0026 — Freeze the four nutrition-quality facts per line, superseding live-pantry scoring reads
 
 - **Status:** Accepted
 - **Date:** 2026-08-12
