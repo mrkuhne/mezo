@@ -1,6 +1,6 @@
 # ADR 0025 — Today's sky of islands becomes a napszak-tab switcher + a full-bleed mezo-sáv + a dobozolatlan nézet
 
-- **Status:** accepted (2026-08-10)
+- **Status:** Superseded by ADR 0026 (2026-08-11)
 - **Driving bd:** `mezo-puci`
 - **Spec:** [`docs/superpowers/specs/2026-08-10-today-daypart-tabs-design.md`](../superpowers/specs/2026-08-10-today-daypart-tabs-design.md) (+ the validated mockup [`assets/2026-08-10-today-daypart-tabs-mockup.html`](../superpowers/specs/assets/2026-08-10-today-daypart-tabs-mockup.html))
 - **Supersedes:** the *render layer* of [ADR 0022](0022-today-three-islands.md) (the sky of three islands — capsule↔big morph, L0/L1 layering, the anchor-melt sky). ADR 0014's day model, card language, act-anywhere and dedup decisions stay in force unchanged, as does [ADR 0010](0010-gamified-growth-xp-feedback-not-payment.md) (nothing self-completes) — this is the render layer's **third** iteration over the same unchanged foundation (`dayFace.ts`, `todayItems.ts`, `islandFacts.ts`, `questAction`/`habitAction`, `windDown.ts`).
