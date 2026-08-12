@@ -15,11 +15,9 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { useHabitActions, useHabitDay, useRitualDay, useTodayScenario } from '@/data/hooks'
-import type { CompanionNote } from '@/data/types'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
-import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
@@ -48,7 +46,6 @@ export interface DaypartEveningProps {
   dayXp: number
   /** [dayBalance, sleepOutlook] — the dim phase swaps the first cell for the REM evidence. */
   facts: IslandFact[]
-  note: CompanionNote | null
   celebrations: ChainCelebrationInput[]
   growth?: GrowthTodaySummary | null
   habitPending?: boolean
@@ -57,7 +54,7 @@ export interface DaypartEveningProps {
 
 export function DaypartEvening({
   open, done, dayXp, facts,
-  note, celebrations, growth, habitPending, onAct,
+  celebrations, growth, habitPending, onAct,
 }: DaypartEveningProps) {
   const date = localDateString()
   const { phase, now, goal } = useWindDownPhase()
@@ -139,7 +136,6 @@ export function DaypartEvening({
         done={done}
         doneLabel={`Ahogy a nap telt · ${done.length} tétel`}
         dayXp={dayXp}
-        head={note ? <CompanionNoteCard note={note} /> : undefined}
         focus={<IntentionBanner variant="reflect" />}
         growth={growth}
         habitPending={habitPending}

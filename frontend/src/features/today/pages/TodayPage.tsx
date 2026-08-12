@@ -364,14 +364,14 @@ export function TodayPage() {
           facts={dayFacts}
           mesoLine={user.weekInMeso ? `${user.weekInMeso}. mezóhét` : null}
           open={open} done={done} doneXp={doneXp}
-          note={companionNote} celebrations={celebrationsFor('DAY')} growth={growth}
+          celebrations={celebrationsFor('DAY')} growth={growth}
           habitPending={habitPending} onAct={act} onCustom={() => setCustomOpen(true)}
         />
       )}
       {selected === 'este' && (
         <DaypartEvening
           open={open} done={done} dayXp={dayXp} facts={eveningFacts}
-          note={companionNote} celebrations={celebrationsFor('EVENING')} growth={growth}
+          celebrations={celebrationsFor('EVENING')} growth={growth}
           habitPending={habitPending} onAct={act}
         />
       )}

@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · TodayRow — a Mai lap sora az iOS listanyelven (mezo-e26w).
-// TUDATOSAN NEM a `shared/ui/ItemRow`: azt a Fuel „Mai" és a rutin-szerkesztő
+// TUDATOSAN NEM a `shared/ui`-beli `ItemRow`: azt a Fuel „Mai" és a rutin-szerkesztő
 // is rendereli, és ebben a változásban egyiket sem mozdítjuk (spec §7).
 // Négy kísérő-alak — `tick` (MANUAL szokás pipálása) · `button` (tintás
 // szöveggomb) · `chevron` (az EGÉSZ sor a gomb) · `none` (olvasható sor).

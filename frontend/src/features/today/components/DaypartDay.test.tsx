@@ -29,7 +29,6 @@ const renderDay = (over: Partial<Parameters<typeof DaypartDay>[0]> = {}) =>
           open={[item()]}
           done={[]}
           doneXp={0}
-          note={null}
           celebrations={[]}
           onAct={() => {}}
           onCustom={() => {}}
@@ -68,10 +67,5 @@ describe('DaypartDay', () => {
     renderDay()
     expect(screen.getByText('Ebéd')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^még \d+ ›$/ })).toBeNull()
-  })
-
-  test('the companion note renders above the groups when present', () => {
-    renderDay({ note: { window: 'Ebéd', kind: 'nudge', text: 'Igyál egy pohár vizet.' } })
-    expect(screen.getByText(/Igyál egy pohár vizet/)).toBeInTheDocument()
   })
 })

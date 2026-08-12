@@ -47,7 +47,6 @@ const renderEvening = (over: Partial<Parameters<typeof DaypartEvening>[0]> = {},
             done={[]}
             dayXp={120}
             facts={[{ label: 'Alvás-kilátás', value: '7,5', unit: 'óra' }]}
-            note={null}
             celebrations={[]}
             onAct={() => {}}
             {...over}
