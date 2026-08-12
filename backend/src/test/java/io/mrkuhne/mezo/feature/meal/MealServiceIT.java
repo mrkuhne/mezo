@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.meal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.meal.entity.MealProvenanceJson;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -36,6 +38,7 @@ class MealServiceIT extends AbstractIntegrationTest {
     @Autowired private MealRepository repository;
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private RecipePopulator recipePopulator;
+    @Autowired private PantryItemRepository pantryItemRepository;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private io.mrkuhne.mezo.feature.meal.repository.MealItemRepository mealItemRepository;
 
@@ -143,6 +146,35 @@ class MealServiceIT extends AbstractIntegrationTest {
         assertThat(meal.getScore().getValue().doubleValue()).isBetween(0.0, 1.0);
         assertThat(meal.getScore().getBreakdown()).isNotNull();
         assertThat(meal.getScore().getBreakdown().getDimensions()).hasSize(8);
+    }
+
+    /**
+     * The grams of salt the scorer actually saw, read out of the WHO dimension's "Só" row
+     * ({@code "{salt} g / {allotment} g keret"}) — the same rows MealApiIT digs the context out of.
+     */
+    private static double saltGramsOf(MealBreakdown breakdown) {
+        String value = breakdown.getDimensions().stream()
+            .filter(d -> "who".equals(d.getId())).findFirst().orElseThrow()
+            .getContext().stream()
+            .filter(row -> "Só".equals(row.getLabel())).findFirst().orElseThrow()
+            .getValue();
+        return Double.parseDouble(value.substring(0, value.indexOf(" g")));
+    }
+
+    @Test
+    void testCreate_shouldScoreFromFrozenFacts_whenThePantryRowDriftedAfterTheRecipeWasSaved() {
+        PantryItemEntity source = pantryPopulator.createFoodWithNutrients(owner, "Túró");
+        RecipeEntity r = recipePopulator.createRecipe(owner, source.getId());
+
+        // the pantry row drifts AFTER the recipe froze its snapshot: 0.4 g -> 40 g salt per 100 g
+        source.setSaltG(new BigDecimal("40"));
+        pantryItemRepository.saveAndFlush(source);
+
+        MealResponse meal = service.create(owner, req("lunch", recipeItem(r.getId(), "1")));
+
+        // Frozen: only line[0] carries salt — 0.4 g/100 g × 250 g = 1.0 g whole, ÷ 2 servings = 0.5 g
+        // per adag. A live read of the DRIFTED row would score 40 × 2.5 + 40 × 0.2 = 108 g whole -> 54 g.
+        assertThat(saltGramsOf(meal.getScore().getBreakdown())).isEqualTo(0.5);
     }
 
     @Test

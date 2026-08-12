@@ -118,6 +118,7 @@ components:
         lineOrder: { type: integer }
         name: { type: string }
         contribution: { $ref: '#/components/schemas/RecipeContribution' }
+        nutrients: { $ref: '#/components/schemas/Nutrients' }
     RecipeRequest:
       type: object
       required: [name, category, ingredients]
@@ -152,6 +153,7 @@ components:
         createdDate: { type: string }
         novaDominant: { type: integer, description: 'NOVA class 1..4 (converged with meal_item.nova — mezo-2dy)' }
         macros: { $ref: '#/components/schemas/RecipeMacros' }
+        nutrients: { $ref: '#/components/schemas/Nutrients' }
         mezoFit: { $ref: '#/components/schemas/RecipeMezoFit' }
         timesLogged: { type: integer }
         avgScore: { type: number }

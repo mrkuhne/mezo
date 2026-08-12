@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { http } from 'msw'
@@ -261,6 +261,31 @@ test('the PONTSZÁM header stays rubric-free for a standard recipe (mezo-uavr)',
   renderDetail(r.id, qc)
   expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
   expect(screen.queryByText(/mérce szerint/)).toBeNull()
+})
+
+test('a tápérték-sor követi a /adag ↔ egész váltót', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.id === 'rec-1')
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  // a hero tápérték-sora kirajzolódik a makrók alatt. 'Telített' is unique on the page, but
+  // 'Rost' also names a PONTSZÁM dimension micronutrient (MicroPanel) on rec-1's seed
+  // breakdown, so the second check is scoped to the NutrientCells row itself (the shared
+  // "row" wrapper around the four cells) rather than a page-wide getByText.
+  const telitett = screen.getByText('Telített')
+  expect(telitett).toBeInTheDocument()
+  const nutrientRow = telitett.closest('.row')
+  expect(nutrientRow).not.toBeNull()
+  expect(within(nutrientRow as HTMLElement).getByText('Rost')).toBeInTheDocument()
+})
+
+test('a hozzávalók fülön a tápérték nélküli sor gondolatjelet mutat', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.id === 'rec-2') // ing-spenot: szándékosan tápérték nélküli seed-sor
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  await userEvent.click(screen.getByRole('tab', { name: /Hozzávalók/ }))
+  expect(screen.getAllByText('—').length).toBeGreaterThan(0)
 })
 
 test('renders the sablon-olvasat card with fitsFor chips when the seed carries a summary', async () => {

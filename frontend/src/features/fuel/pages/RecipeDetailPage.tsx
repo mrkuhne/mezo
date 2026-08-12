@@ -14,13 +14,15 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { Recipe, RecipeInput, PantryCategoryMeta } from '@/data/types'
+import type { Recipe, RecipeInput, PantryCategoryMeta, Nutrients } from '@/data/types'
 import { useRecipes, useRecipeActions, useRecipeBreakdown, usePantry, useRecipeLogs } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { NutrientCells } from '@/features/fuel/components/NutrientCells'
+import { NO_NUTRIENTS, scaleNutrients } from '@/data/fuel/recipeMacros'
 import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
@@ -54,6 +56,9 @@ export function recipeToInput(r: Recipe): RecipeInput {
 function round(n: number) { return Math.round(n) }
 function byBasis(v: number, basis: ServingBasis, servings: number) {
   return basis === 'whole' ? round(v) : round(v / Math.max(1, servings))
+}
+function nutrientsByBasis(n: Nutrients, basis: ServingBasis, servings: number): Nutrients {
+  return basis === 'whole' ? n : scaleNutrients(n, 1 / Math.max(1, servings))
 }
 
 function MacroHeroCell({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
@@ -190,6 +195,9 @@ export function RecipeDetailPage() {
         <MacroHeroCell value={byBasis(macros.c, basis, recipe.servings)} label="Szénh." />
         <MacroHeroCell value={byBasis(macros.f, basis, recipe.servings)} label="Zsír" />
       </div>
+      <div style={{ marginTop: 8 }}>
+        <NutrientCells nutrients={nutrientsByBasis(recipe.nutrients ?? NO_NUTRIENTS, basis, recipe.servings)} size="md" />
+      </div>
 
       {/* Main tabs (mezo-n3xa) — Részletek (default) / Hozzávalók */}
       <div className="row" role="tablist" aria-label="Recept nézetek" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 14, padding: 3, gap: 3, margin: '14px 0 16px' }}>
@@ -301,6 +309,9 @@ export function RecipeDetailPage() {
                 </div>
                 <div style={{ marginTop: 9 }}>
                   <MacroCells macros={line.contribution ?? { kcal: 0, p: 0, c: 0, f: 0 }} />
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <NutrientCells nutrients={line.nutrients ?? NO_NUTRIENTS} empty="dashes" />
                 </div>
               </div>
             )

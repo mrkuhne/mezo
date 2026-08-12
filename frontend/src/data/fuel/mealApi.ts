@@ -1,5 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
+import { toNutrients } from '@/data/fuel/recipeMacros'
 import type {
   MealInput, FuelMeal, MealItemLine, MacroSet, MealSlot, MealItemSource,
   MealAiDraft, MealAiDraftLine,
@@ -154,6 +155,10 @@ export function fromResponse(r: MealResponse): FuelMeal {
     p: r.macros.p,
     c: r.macros.c,
     f: r.macros.f,
+    nutrients: toNutrients(r.nutrients),
+    // Rost a napi hero-gyűrűhöz (keretHero.ts): eddig csak a mock seed hordozta, real módban
+    // konstans 0 volt — most a fagyott tápérték-rollupból jön (mezo-m6uv, a mezo-c9t5 maradéka).
+    fiberG: r.nutrients?.fiberG ?? null,
     mealItems: r.items.map(
       (l: MealItemResponse): MealItemLine => ({
         source: l.source as MealItemLine['source'],
@@ -162,6 +167,7 @@ export function fromResponse(r: MealResponse): FuelMeal {
         unit: l.unit,
         name: l.name,
         contribution: l.contribution,
+        nutrients: toNutrients(l.nutrients),
         nova: l.nova ?? undefined,
       }),
     ),

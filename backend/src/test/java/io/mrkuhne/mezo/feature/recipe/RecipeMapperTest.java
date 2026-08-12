@@ -37,6 +37,40 @@ class RecipeMapperTest {
         return l;
     }
 
+    /** Two lines: line0 carries all four nutrient facts (200 g of a per-100g source), line1 carries none. */
+    private RecipeEntity recipeWithTwoLines() {
+        RecipeEntity e = new RecipeEntity();
+        e.setName("Túrós tál");
+        e.setCategory("breakfast");
+        e.setServings(2);
+        e.setStarred(false);
+        RecipeIngredientEntity l0 = line("Csirkemell", new BigDecimal("200"), new BigDecimal("100"),
+            "110", "23", "0", "1.5", 0);
+        l0.setSnapshotFiberG(new BigDecimal("3.2"));
+        l0.setSnapshotSugarG(new BigDecimal("4.1"));
+        l0.setSnapshotSaltG(new BigDecimal("0.4"));
+        l0.setSnapshotSaturatedFatG(new BigDecimal("2.8"));
+        RecipeIngredientEntity l1 = line("Zabpehely", new BigDecimal("50"), new BigDecimal("100"),
+            "100", "10", "20", "5", 1);
+        e.getLines().add(l0);
+        e.getLines().add(l1);
+        return e;
+    }
+
+    /** Two lines, neither carrying any of the four nutrient facts. */
+    private RecipeEntity recipeWithoutAnyFacts() {
+        RecipeEntity e = new RecipeEntity();
+        e.setName("Túrós tál");
+        e.setCategory("breakfast");
+        e.setServings(2);
+        e.setStarred(false);
+        e.getLines().add(line("Csirkemell", new BigDecimal("200"), new BigDecimal("100"),
+            "110", "23", "0", "1.5", 0));
+        e.getLines().add(line("Zabpehely", new BigDecimal("50"), new BigDecimal("100"),
+            "100", "10", "20", "5", 1));
+        return e;
+    }
+
     private RecipeEntity recipe() {
         RecipeEntity e = new RecipeEntity();
         e.setName("Túrós tál");
@@ -147,5 +181,30 @@ class RecipeMapperTest {
         e.setServings(1);
 
         assertThat(mapper.toResponse(e).getRole()).isEqualTo("post_workout");
+    }
+
+    @Test
+    void testToResponse_shouldScaleNutrientsPerLineAndRollThemUpNullSafely() {
+        RecipeEntity recipe = recipeWithTwoLines(); // helper: line0 has facts, line1 has none
+        RecipeResponse response = mapper.toResponse(recipe);
+
+        // line0: 200 g of a per-100 g source → factor 2 → 3.2 * 2 = 6.4, one decimal
+        assertThat(response.getIngredients().get(0).getNutrients().getFiberG()).isEqualByComparingTo("6.4");
+        assertThat(response.getIngredients().get(0).getNutrients().getSaltG()).isEqualByComparingTo("0.8");
+        // line1: no facts → every field null (NOT zero)
+        assertThat(response.getIngredients().get(1).getNutrients().getFiberG()).isNull();
+        // rollup: partial Σ — the known line only
+        assertThat(response.getNutrients().getFiberG()).isEqualByComparingTo("6.4");
+        assertThat(response.getNutrients().getSaturatedFatG()).isEqualByComparingTo("5.6");
+    }
+
+    @Test
+    void testToResponse_shouldReturnNullRollup_whenNoLineCarriesFacts() {
+        RecipeResponse response = mapper.toResponse(recipeWithoutAnyFacts());
+
+        assertThat(response.getNutrients().getFiberG()).isNull();
+        assertThat(response.getNutrients().getSugarG()).isNull();
+        assertThat(response.getNutrients().getSaltG()).isNull();
+        assertThat(response.getNutrients().getSaturatedFatG()).isNull();
     }
 }

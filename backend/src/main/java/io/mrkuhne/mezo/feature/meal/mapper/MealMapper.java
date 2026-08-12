@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.MealIngredientOverrideResponse;
 import io.mrkuhne.mezo.api.dto.MealItemResponse;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.MealScore;
+import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.feature.nutrition.mapper.BreakdownDtoMapper;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
@@ -40,6 +41,7 @@ public interface MealMapper {
             .mealDate(e.getMealDate())
             .title(e.getTitle())
             .macros(rollup(items))
+            .nutrients(rollupNutrients(items))
             .score(toScore(e))                // real since mezo-yta; NULL rows stay pending on FE
             .items(items)
             .build();
@@ -56,9 +58,40 @@ public interface MealMapper {
             .name(i.getSnapshotName())
             .nova(i.getSnapshotNova() == null ? null : i.getSnapshotNova().intValue())
             .contribution(contribution(i))
+            .nutrients(nutrients(i))
             .ingredientOverrides(i.getRecipeOverrides() == null ? null
                 : i.getRecipeOverrides().stream().map(MealMapper::toOverrideResponse).toList())
             .build();
+    }
+
+    /** Per-item nutrition-quality facts: factor = amount / snapshotPer (cf. RecipeMapper's
+     *  {@code nutrientsWithAmount}); null in -> null out (mezo-m6uv). */
+    default Nutrients nutrients(MealItemEntity i) {
+        BigDecimal per = i.getSnapshotPer() == null || i.getSnapshotPer().signum() == 0
+            ? BigDecimal.ONE : i.getSnapshotPer();
+        BigDecimal factor = i.getAmount().divide(per, 6, RoundingMode.HALF_UP);
+        return Nutrients.builder()
+            .fiberG(scaledGram(i.getSnapshotFiberG(), factor))
+            .sugarG(scaledGram(i.getSnapshotSugarG(), factor))
+            .saltG(scaledGram(i.getSnapshotSaltG(), factor))
+            .saturatedFatG(scaledGram(i.getSnapshotSaturatedFatG(), factor))
+            .build();
+    }
+
+    /** Meal nutrients = null-preserving Σ of item nutrients (cf. {@link #rollup}). */
+    default Nutrients rollupNutrients(List<MealItemResponse> items) {
+        BigDecimal fiber = null;
+        BigDecimal sugar = null;
+        BigDecimal salt = null;
+        BigDecimal satFat = null;
+        for (MealItemResponse i : items) {
+            Nutrients x = i.getNutrients();
+            fiber = addNullable(fiber, x.getFiberG());
+            sugar = addNullable(sugar, x.getSugarG());
+            salt = addNullable(salt, x.getSaltG());
+            satFat = addNullable(satFat, x.getSaturatedFatG());
+        }
+        return Nutrients.builder().fiberG(fiber).sugarG(sugar).saltG(salt).saturatedFatG(satFat).build();
     }
 
     /** Per-item contribution: factor = amount / snapshotPer (per null/0 -> ONE); round HALF_UP. */
@@ -108,6 +141,24 @@ public interface MealMapper {
     private static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
         BigDecimal v = base == null ? BigDecimal.ZERO : base;
         return v.multiply(factor).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    /** Grams at THREE decimals, HALF_UP — the nutrient sibling of {@link #scaled} (cf. RecipeMapper's
+     *  {@code scaledGram}, same rule). Grams are stored and summed at three decimals precisely
+     *  because they are rounded-then-summed per line; the ONE-decimal rounding is a DISPLAY concern
+     *  the frontend formatter owns, so the wire carries the precise value. A null base stays null —
+     *  "no data" is not "0 g" (mezo-m6uv). */
+    private static BigDecimal scaledGram(BigDecimal base, BigDecimal factor) {
+        return base == null ? null : base.multiply(factor).setScale(3, RoundingMode.HALF_UP);
+    }
+
+    /** Null-preserving Σ: the accumulator stays null until a line actually carries a value, so a
+     *  rollup is null only when EVERY line was null (cf. RecipeMapper's {@code addNullable}). */
+    private static BigDecimal addNullable(BigDecimal acc, BigDecimal v) {
+        if (v == null) {
+            return acc;
+        }
+        return acc == null ? v : acc.add(v);
     }
 
     /** Persisted override envelope → contract response (1:1, already self-describing). */

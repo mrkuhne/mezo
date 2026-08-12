@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.recipe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.RecipeBreakdownResponse;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
@@ -40,6 +42,9 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
     @Autowired
     private RecipeRepository recipeRepository;
+
+    @Autowired
+    private PantryItemRepository pantryItemRepository;
 
     /** Creates a per-100g food via the API (owned by the authenticated owner) and returns its id. */
     private UUID createFood(HttpHeaders auth, String name, String kcal) {
@@ -100,9 +105,56 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
             HttpStatus.CREATED, RecipeResponse.class).getId();
     }
 
+    /** A per-100g food that also carries the four nutrition-quality facts (mezo-m6uv fixture). */
+    private UUID createFoodWithFacts(HttpHeaders auth, String name) {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName(name);
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal("110"));
+        r.setProteinG(new BigDecimal("13"));
+        r.setCarbsG(new BigDecimal("4"));
+        r.setFatG(new BigDecimal("4.5"));
+        r.setFiberG(new BigDecimal("3.2"));
+        r.setSugarG(new BigDecimal("4.1"));
+        r.setSaltG(new BigDecimal("0.4"));
+        r.setSaturatedFatG(new BigDecimal("2.8"));
+        return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
+    }
+
     private RecipeBreakdownResponse getBreakdown(HttpHeaders auth, UUID id) {
         return getForBody("/api/recipe/" + id + "/breakdown", auth, HttpStatus.OK,
             RecipeBreakdownResponse.class);
+    }
+
+    /** The grams of fiber the fit actually scored, read out of the micro dimension's "Rost" row
+     *  ({@code "{fiber} g"}). */
+    private static double fiberGramsOf(MealBreakdown breakdown) {
+        String value = breakdown.getDimensions().stream()
+            .filter(d -> "micro".equals(d.getId())).findFirst().orElseThrow()
+            .getMicros().stream()
+            .filter(row -> "Rost".equals(row.getName())).findFirst().orElseThrow()
+            .getValue();
+        return Double.parseDouble(value.substring(0, value.indexOf(" g")));
+    }
+
+    @Test
+    void testGetBreakdown_shouldUseFrozenFacts_whenThePantryRowDriftedAfterSave() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Túró");
+        UUID recipe = createRecipe(auth, "Túrós tál", food);
+
+        // the pantry row drifts AFTER the line froze its snapshot: 3.2 g -> 90 g fiber per 100 g
+        var row = pantryItemRepository.findById(food).orElseThrow();
+        row.setFiberG(new BigDecimal("90"));
+        pantryItemRepository.saveAndFlush(row);
+
+        RecipeBreakdownResponse body = getBreakdown(auth, recipe);
+
+        // Frozen: 3.2 g/100 g × 250 g ÷ 2 servings = 4.0 g per adag. A live read of the DRIFTED row
+        // would have scored 90 × 2.5 ÷ 2 = 112.5 g.
+        assertThat(fiberGramsOf(body.getBreakdown())).isEqualTo(4.0);
     }
 
     @Test

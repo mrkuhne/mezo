@@ -57,6 +57,26 @@ describe('LogMealSheet', () => {
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
   })
 
+  // mezo-m6uv review finding 4: the per-line MacroCells rail (perLabel="<amount> <unit>") shifted
+  // its four columns right; the NutrientCells row directly beneath it had no rail and so did not
+  // line up. Both strips must now share the same left edge — i.e. the same perLabel text twice.
+  it('aligns the per-line NutrientCells rail with the MacroCells rail above it', () => {
+    const { qc, wrapper } = setup()
+    const pantry = renderHook(() => usePantry(), { wrapper })
+    // ing-csirkemell (fixture index 0) carries non-null nutrient facts, so NutrientCells renders
+    // instead of being hidden by its all-null-hide default.
+    const ing = pantry.result.current.ingredients[0]
+
+    render(
+      <QueryClientProvider client={qc}>
+        <LogMealSheet prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+    const perLabel = `${ing.per} ${ing.unit}`
+    // One rail from MacroCells, one from NutrientCells — same text, same left edge.
+    expect(screen.getAllByText(perLabel)).toHaveLength(2)
+  })
+
   it('changing the slot segmented control updates the logged meal slot', async () => {
     const { qc, wrapper } = setup()
     const pantry = renderHook(() => usePantry(), { wrapper })

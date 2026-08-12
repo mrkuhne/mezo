@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.recipe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
@@ -44,6 +45,20 @@ class RecipeMapperOverrideRollupTest {
         r.setServings(2);
         r.getLines().add(line(0, "250"));
         r.getLines().add(line(1, "20"));
+        return r;
+    }
+
+    /** Two lines: line0 (200 g of a per-100g source) carries all four nutrient facts, line1 carries none. */
+    private RecipeEntity recipeWithTwoLines() {
+        RecipeEntity r = new RecipeEntity();
+        r.setServings(2);
+        RecipeIngredientEntity l0 = line(0, "200");
+        l0.setSnapshotFiberG(new BigDecimal("3.2"));
+        l0.setSnapshotSugarG(new BigDecimal("4.1"));
+        l0.setSnapshotSaltG(new BigDecimal("0.4"));
+        l0.setSnapshotSaturatedFatG(new BigDecimal("2.8"));
+        r.getLines().add(l0);
+        r.getLines().add(line(1, "50"));
         return r;
     }
 
@@ -94,5 +109,27 @@ class RecipeMapperOverrideRollupTest {
 
         assertThat(m.getKcal()).isEqualByComparingTo("8");
         assertThat(m.getP()).isEqualByComparingTo("2");
+    }
+
+    @Test
+    void testRollupNutrientsWithOverrides_shouldEqualStoredRollup_whenOverridesEmpty() {
+        RecipeEntity recipe = recipeWithTwoLines();
+
+        Nutrients empty = mapper.rollupNutrientsWithOverrides(recipe, Map.of());
+        Nutrients stored = mapper.toResponse(recipe).getNutrients();
+
+        assertThat(empty.getFiberG()).isEqualByComparingTo(stored.getFiberG());
+        assertThat(empty.getSugarG()).isEqualByComparingTo(stored.getSugarG());
+        assertThat(empty.getSaltG()).isEqualByComparingTo(stored.getSaltG());
+        assertThat(empty.getSaturatedFatG()).isEqualByComparingTo(stored.getSaturatedFatG());
+    }
+
+    @Test
+    void testRollupNutrientsWithOverrides_shouldRescaleOnlyTheOverriddenLine() {
+        RecipeEntity recipe = recipeWithTwoLines(); // line0: 200 g with facts
+
+        Nutrients halved = mapper.rollupNutrientsWithOverrides(recipe, Map.of(0, new BigDecimal("100")));
+
+        assertThat(halved.getFiberG()).isEqualByComparingTo("3.2"); // factor 1 instead of 2
     }
 }

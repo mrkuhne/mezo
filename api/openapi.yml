@@ -9541,6 +9541,8 @@ components:
           type: string
         contribution:
           $ref: '#/components/schemas/RecipeContribution'
+        nutrients:
+          $ref: '#/components/schemas/Nutrients'
     RecipeRequest:
       type: object
       required:
@@ -9642,6 +9644,8 @@ components:
           description: NOVA class 1..4 (converged with meal_item.nova — mezo-2dy)
         macros:
           $ref: '#/components/schemas/RecipeMacros'
+        nutrients:
+          $ref: '#/components/schemas/Nutrients'
         mezoFit:
           $ref: '#/components/schemas/RecipeMezoFit'
         timesLogged:
@@ -9698,6 +9702,29 @@ components:
           type: number
         water:
           type: number
+    Nutrients:
+      type: object
+      description: >-
+        Nutrition-quality facts (mezo-m6uv), frozen per line exactly like the
+        macros. Grams, stored and summed at THREE decimals on the wire (ADR
+        0025) — one-decimal rounding is a display-only concern on the client,
+        never on the stored/transmitted value. A null field means the SOURCE
+        carried no value — it is NOT zero; a rollup field is null only when
+        every contributing line was null (otherwise it is the sum of the known
+        ones).
+      properties:
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
     MealScore:
       type: object
       properties:
@@ -10092,6 +10119,8 @@ components:
           nullable: true
         contribution:
           $ref: '#/components/schemas/Macros'
+        nutrients:
+          $ref: '#/components/schemas/Nutrients'
         ingredientOverrides:
           type: array
           nullable: true
@@ -10149,6 +10178,8 @@ components:
           nullable: true
         macros:
           $ref: '#/components/schemas/Macros'
+        nutrients:
+          $ref: '#/components/schemas/Nutrients'
         score:
           $ref: '#/components/schemas/MealScore'
         items:

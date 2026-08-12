@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.meal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.MealIngredientOverrideRequest;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealRequest;
@@ -90,6 +91,62 @@ class MealOverridesScoringIT extends ApiIntegrationTest {
         r.setTitle("Ebéd");
         r.setItems(List.of(i));
         return postForBody("/api/meal", r, auth, HttpStatus.CREATED, MealResponse.class);
+    }
+
+    /** The grams of salt the scorer actually saw, out of the WHO dimension's
+     *  {@code "{salt} g / {allotment} g keret"} row. */
+    private static double saltGramsOf(MealBreakdown breakdown) {
+        String value = breakdown.getDimensions().stream()
+            .filter(d -> "who".equals(d.getId())).findFirst().orElseThrow()
+            .getContext().stream()
+            .filter(row -> "Só".equals(row.getLabel())).findFirst().orElseThrow()
+            .getValue();
+        return Double.parseDouble(value.substring(0, value.indexOf(" g")));
+    }
+
+    /**
+     * The zeroing test above can pass on a coarse "any salt at all → none" implementation. A
+     * PARTIAL override is the subtle case: the frozen snapshot must be recomputed from the
+     * overridden amount, not merely dropped. Since mezo-m6uv the score reads that frozen snapshot,
+     * so this pins the whole freeze→score chain on a non-empty, non-zero override map.
+     */
+    @Test
+    void testScore_shouldHalveTheFrozenSalt_whenTheSaltLineIsHalvedByAnOverride() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID turo = createMacroFood(auth);
+        UUID salt = createSalt(auth);
+
+        RecipeRequest rr = new RecipeRequest();
+        rr.setName("Sós túró");
+        rr.setCategory("lunch");
+        rr.setServings(2);
+        rr.setStarred(false);
+        rr.setTags(List.of());
+        rr.setIngredients(List.of(ingredient(turo, "250"), ingredient(salt, "20")));
+        RecipeResponse recipe = postForBody("/api/recipe", rr, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        MealIngredientOverrideRequest halfSalt = new MealIngredientOverrideRequest();
+        halfSalt.setLineOrder(1);
+        halfSalt.setPantryItemId(salt);
+        halfSalt.setAmount(new BigDecimal("10")); // 20 g -> 10 g
+
+        MealResponse asWritten = log(auth, recipe.getId(), null);
+        MealResponse halved = log(auth, recipe.getId(), List.of(halfSalt));
+
+        // As written: only the Só line carries facts — 40 g/100 g × 20 g = 8.0 g whole,
+        // ÷ 2 servings = 4.0 g on the logged 1 adag.
+        assertThat(saltGramsOf(asWritten.getScore().getBreakdown())).isEqualTo(4.0);
+        // Halved: 40 g/100 g × 10 g = 4.0 g whole, ÷ 2 = 2.0 g — exactly half, not 0 and not 4.
+        assertThat(saltGramsOf(halved.getScore().getBreakdown())).isEqualTo(2.0);
+        // …and the macro-neutral line leaves the kcal (hence the WHO salt allotment) untouched,
+        // so the 4 -> 2 move is the override's doing and nothing else's.
+        assertThat(halved.getMacros().getKcal()).isEqualByComparingTo(asWritten.getMacros().getKcal());
+        // The SCORE deliberately does not move here: the allotment is 5 g × 138/3100 = 0.22 g, and
+        // the WHO limit subscore floors at 0 beyond 2× the allotment — both 4 g and 2 g are far past
+        // it. The gram value, not the score, is what a partial override is observable in (the sibling
+        // test below zeroes the line, which lifts the subscore off the floor and does move the score).
+        assertThat(halved.getScore().getValue())
+            .isEqualByComparingTo(asWritten.getScore().getValue());
     }
 
     @Test

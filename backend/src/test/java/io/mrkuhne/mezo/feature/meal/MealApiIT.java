@@ -55,9 +55,14 @@ class MealApiIT extends ApiIntegrationTest {
 
     /** Creates a 2-serving recipe via POST /api/recipe from one 200 g pantry line and returns it. */
     private RecipeResponse createRecipe(HttpHeaders auth, UUID foodId) {
+        return createRecipe(auth, foodId, "200");
+    }
+
+    /** Same 2-serving recipe, caller-chosen line amount — for the gram-precision fixture. */
+    private RecipeResponse createRecipe(HttpHeaders auth, UUID foodId, String grams) {
         RecipeIngredientRequest line = new RecipeIngredientRequest();
         line.setPantryItemId(foodId);
-        line.setAmount(new BigDecimal("200"));
+        line.setAmount(new BigDecimal(grams));
         line.setUnit("g");
         RecipeRequest r = new RecipeRequest();
         r.setName("Túrós tál");
@@ -87,6 +92,44 @@ class MealApiIT extends ApiIntegrationTest {
         i.setAmount(new BigDecimal(amount));
         i.setUnit("g");
         return i;
+    }
+
+    /** Creates a per-100g food carrying nutrition-quality facts (fiber 4 / sugar 22 / salt 0.4 /
+     *  saturatedFat 0.6 — the same fixture the NOVA/context tests above use) and returns its id. */
+    private UUID createFoodWithFacts(HttpHeaders auth, String name) {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName(name);
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal("250"));
+        r.setProteinG(new BigDecimal("6"));
+        r.setCarbsG(new BigDecimal("48"));
+        r.setFatG(new BigDecimal("3"));
+        r.setNova(4);
+        r.setFiberG(new BigDecimal("4"));
+        r.setSugarG(new BigDecimal("22"));
+        r.setSaltG(new BigDecimal("0.4"));
+        r.setSaturatedFatG(new BigDecimal("0.6"));
+        return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
+    }
+
+    /** Logs a single pantry-arm item of {@code amount} grams of a facts-carrying food (mezo-m6uv). */
+    private MealResponse logPantryMeal(BigDecimal amount) {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Mézes banán toast");
+        return postForBody("/api/meal", mealReq(pantryItem(food, amount.toPlainString())),
+            auth, HttpStatus.CREATED, MealResponse.class);
+    }
+
+    /** Logs a single recipe-arm item of {@code servings} adag of a 2-serving, 200 g-of-facts-food
+     *  recipe (mezo-m6uv). */
+    private MealResponse logRecipeMeal(BigDecimal servings) {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Zabkása alap");
+        RecipeResponse recipe = createRecipe(auth, food);
+        return postForBody("/api/meal", mealReq(recipeItem(recipe.getId(), servings.toPlainString())),
+            auth, HttpStatus.CREATED, MealResponse.class);
     }
 
     /** An estimate-arm meal item: source=estimate, verbatim name + per-basis macro snapshot, no FK. */
@@ -290,6 +333,44 @@ class MealApiIT extends ApiIntegrationTest {
         // context rows present (timing 13:20 is outside the breakfast window -> penalized, not absent)
         assertThat(b.getDimensions().get(7).getContext()).hasSize(3);
         assertThat(b.getTools()).extracting(t -> t.getType()).contains("read", "compute");
+    }
+
+    @Test
+    void testCreateMeal_shouldFreezeNutrients_onBothArms() {
+        // pantry arm: 150 g of a per-100 g source carrying facts → factor 1.5
+        MealResponse pantryMeal = logPantryMeal(new BigDecimal("150"));
+        assertThat(pantryMeal.getItems().get(0).getNutrients().getFiberG()).isEqualByComparingTo("6.0");
+        assertThat(pantryMeal.getNutrients().getFiberG()).isEqualByComparingTo("6.0");
+
+        // recipe arm: 1 adag of a 2-serving recipe → the per-serving half of the whole rollup
+        MealResponse recipeMeal = logRecipeMeal(new BigDecimal("1"));
+        assertThat(recipeMeal.getItems().get(0).getNutrients().getSaltG()).isNotNull();
+        assertThat(recipeMeal.getItems().get(0).getNutrients().getSaltG())
+            .isEqualByComparingTo(recipeMeal.getNutrients().getSaltG());
+    }
+
+    /**
+     * The gram precision guard (mezo-m6uv, review fix 1). Grams are rounded PER LINE and then the
+     * whole-recipe sum is divided by servings, so a one-decimal scale quantizes twice: this line is
+     * truly 0.4 g/100 g × 20 g = 0.08 g whole → ÷ 2 servings = <b>0.040 g/adag</b>, which the old
+     * rule inflated to 0.1 g (0.08→0.1, then 0.1÷2=0.05→0.1) — 2.5×, on salt, the number this
+     * feature exists to show. Deliberately a fixture that is NOT exact at one decimal: every other
+     * nutrient assertion in the suite lands on a round value and would survive a revert to
+     * {@code setScale(1)}. This one fails on a revert of ANY of the three hops —
+     * {@code RecipeMapper.scaledGram} (→0.050), {@code MealService.perServingGram} (→0.0) or
+     * {@code MealMapper.scaledGram} (→0.0).
+     */
+    @Test
+    void testCreateMeal_shouldKeepThreeDecimalGrams_whenTheWholeRollupIsDividedByServings() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Sós keksz"); // salt 0.4 g / 100 g
+        RecipeResponse recipe = createRecipe(auth, food, "20"); // 20 g line, 2 servings
+
+        MealResponse meal = postForBody("/api/meal", mealReq(recipeItem(recipe.getId(), "1")),
+            auth, HttpStatus.CREATED, MealResponse.class);
+
+        assertThat(meal.getItems().get(0).getNutrients().getSaltG())
+            .isEqualByComparingTo(new BigDecimal("0.040"));
     }
 
     @Test

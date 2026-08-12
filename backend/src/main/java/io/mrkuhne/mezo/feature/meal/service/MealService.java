@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
@@ -162,8 +163,10 @@ public class MealService {
     /**
      * Deterministic score at write (mezo-yta, ADR 0006): builds one {@link ScoredLine} per item —
      * contribution via the SAME amount/snapshotPer formula as the mapper, nutrition-quality facts
-     * resolved from the LIVE sources (the envelope freezes them: it is the micro snapshot) — and
-     * sets {@code score} + {@code breakdown} atomically.
+     * from the item's OWN FROZEN snapshot (mezo-m6uv), scaled by that same factor — and sets
+     * {@code score} + {@code breakdown} atomically. There is now exactly ONE route to those four
+     * numbers: the write-time freeze. NOVA is likewise frozen; only {@code category} (plant
+     * diversity) is still read live off the pantry row.
      */
     private void applyScore(UUID userId, MealEntity meal, OffsetDateTime loggedAt) {
         List<ScoredLine> lines = meal.getItems().stream()
@@ -185,26 +188,32 @@ public class MealService {
         BigDecimal per = item.getSnapshotPer() == null || item.getSnapshotPer().signum() == 0
             ? BigDecimal.ONE : item.getSnapshotPer();
         BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
-        Facts facts = "pantry".equals(item.getSource())
-            ? pantryFacts(userId, item.getPantryItemId(), factor)
-            // the frozen envelope IS the record of what went in — score what was eaten (mezo-ormb)
-            : recipeFacts(userId, item.getRecipeId(), item.getAmount(),
-                overrideMap(item.getRecipeOverrides()));
+        // Frozen facts (mezo-m6uv): the item's OWN snapshot, scaled by the same factor as the
+        // macros. A pantry row that drifted after the log can no longer rewrite this meal's score.
+        boolean hasFacts = item.getSnapshotFiberG() != null || item.getSnapshotSugarG() != null
+            || item.getSnapshotSaltG() != null || item.getSnapshotSaturatedFatG() != null;
+        // `category` is a plant-diversity input, not a nutrition fact — it stays a live pantry read
+        // (freezing it belongs with the NOVA sibling, mezo-4tzf). A recipe line is a composite:
+        // honest null, exactly as before.
+        String category = "pantry".equals(item.getSource())
+            ? pantryCategory(userId, item.getPantryItemId()) : null;
         String amountLabel = item.getAmount().stripTrailingZeros().toPlainString() + item.getUnit();
         return new ScoredLine(
             item.getSnapshotName(), amountLabel,
             scaled(item.getSnapshotKcal(), factor), scaled(item.getSnapshotProteinG(), factor),
             scaled(item.getSnapshotCarbsG(), factor), scaled(item.getSnapshotFatG(), factor),
             item.getSnapshotNova(),
-            facts.fiber(), facts.sugar(), facts.salt(), facts.satFat(), facts.present(),
-            facts.category(), gramAmount(item.getAmount(), item.getUnit()));
+            scaleFact(item.getSnapshotFiberG(), factor), scaleFact(item.getSnapshotSugarG(), factor),
+            scaleFact(item.getSnapshotSaltG(), factor),
+            scaleFact(item.getSnapshotSaturatedFatG(), factor),
+            hasFacts, category, gramAmount(item.getAmount(), item.getUnit()));
     }
 
-    /** Nutrition-quality facts of one line, already scaled to the logged amount. */
-    private record Facts(BigDecimal fiber, BigDecimal sugar, BigDecimal salt, BigDecimal satFat,
-                         boolean present, String category) {
-
-        static final Facts NONE = new Facts(null, null, null, null, false, null);
+    /** The live pantry category of a pantry-arm line (plant-diversity input); null when the row is gone. */
+    private String pantryCategory(UUID userId, UUID pantryItemId) {
+        return pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryItemId, userId)
+            .map(PantryItemEntity::getCategory)
+            .orElse(null);
     }
 
     /** Line amount in grams for mass units (ml≈g); null for discrete units (db etc.). */
@@ -219,81 +228,8 @@ public class MealService {
         };
     }
 
-    /** Pantry arm: the live item's per-basis facts × the line factor (missing/deleted → none). */
-    private Facts pantryFacts(UUID userId, UUID pantryItemId, BigDecimal factor) {
-        return pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryItemId, userId)
-            .map(p -> {
-                if (p.getFiberG() == null && p.getSugarG() == null && p.getSaltG() == null
-                    && p.getSaturatedFatG() == null) {
-                    return Facts.NONE;
-                }
-                return new Facts(scaleFact(p.getFiberG(), factor), scaleFact(p.getSugarG(), factor),
-                    scaleFact(p.getSaltG(), factor), scaleFact(p.getSaturatedFatG(), factor), true,
-                    p.getCategory());
-            })
-            .orElse(Facts.NONE);
-    }
-
-    /**
-     * Recipe arm: Σ over the recipe's ingredient lines against their LIVE pantry rows
-     * (fact × effectiveAmount/liveServing), ÷ recipe servings × logged adag, where a line's
-     * effective amount is its override if the meal item's frozen envelope carries one, else the
-     * recipe's own amount. Ingredients whose pantry row is gone or fact-less simply don't
-     * contribute — coverage stays honest.
-     */
-    private Facts recipeFacts(UUID userId, UUID recipeId, BigDecimal servingsLogged,
-                              Map<Integer, BigDecimal> overrides) {
-        RecipeEntity recipe = recipeRepository
-            .findByIdAndCreatedByAndDeletedFalse(recipeId, userId).orElse(null);
-        if (recipe == null || recipe.getLines().isEmpty()) {
-            return Facts.NONE;
-        }
-        // ids come from the OWNED recipe's lines; @SQLRestriction filters soft-deleted rows
-        Map<UUID, PantryItemEntity> byId = pantryItemRepository
-            .findAllById(recipe.getLines().stream()
-                .map(RecipeIngredientEntity::getPantryItemId).toList())
-            .stream().collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
-        BigDecimal fiber = BigDecimal.ZERO;
-        BigDecimal sugar = BigDecimal.ZERO;
-        BigDecimal salt = BigDecimal.ZERO;
-        BigDecimal satFat = BigDecimal.ZERO;
-        boolean any = false;
-        for (RecipeIngredientEntity line : recipe.getLines()) {
-            PantryItemEntity p = byId.get(line.getPantryItemId());
-            if (p == null || (p.getFiberG() == null && p.getSugarG() == null && p.getSaltG() == null
-                && p.getSaturatedFatG() == null)) {
-                continue;
-            }
-            any = true;
-            BigDecimal livePer = orDefault(p.getServingAmount(), BigDecimal.ONE);
-            // effective amount = the override for this line, else the recipe's own amount; a
-            // zeroed line yields factor 0 and contributes nothing, while `any` stays true —
-            // we DID resolve the pantry row, so coverage is honestly reported
-            BigDecimal effective = overrides.getOrDefault(line.getLineOrder(), line.getAmount());
-            BigDecimal factor = effective.divide(
-                livePer.signum() == 0 ? BigDecimal.ONE : livePer, 6, RoundingMode.HALF_UP);
-            fiber = addFact(fiber, p.getFiberG(), factor);
-            sugar = addFact(sugar, p.getSugarG(), factor);
-            salt = addFact(salt, p.getSaltG(), factor);
-            satFat = addFact(satFat, p.getSaturatedFatG(), factor);
-        }
-        if (!any) {
-            return Facts.NONE;
-        }
-        BigDecimal servings = BigDecimal.valueOf(
-            recipe.getServings() == null || recipe.getServings() < 1 ? 1 : recipe.getServings());
-        BigDecimal mult = servingsLogged.divide(servings, 6, RoundingMode.HALF_UP);
-        // a recipe line inside a meal is a composite — no single pantry category (honest null)
-        return new Facts(fiber.multiply(mult), sugar.multiply(mult), salt.multiply(mult),
-            satFat.multiply(mult), true, null);
-    }
-
     private static BigDecimal scaleFact(BigDecimal v, BigDecimal factor) {
         return v == null ? null : v.multiply(factor);
-    }
-
-    private static BigDecimal addFact(BigDecimal acc, BigDecimal v, BigDecimal factor) {
-        return v == null ? acc : acc.add(v.multiply(factor));
     }
 
     /** Full-replace the item collection from the request, in array order. */
@@ -341,6 +277,13 @@ public class MealService {
             item.setSnapshotProteinG(perServing(whole.getP(), servings));
             item.setSnapshotCarbsG(perServing(whole.getC(), servings));
             item.setSnapshotFatG(perServing(whole.getF(), servings));
+            // The nutrient facts follow the SAME frozen-from-the-overridden-set rule as the macros
+            // (mezo-m6uv): an empty override map reproduces the stored rollup exactly.
+            Nutrients wholeNutrients = recipeMapper.rollupNutrientsWithOverrides(recipe, overrides);
+            item.setSnapshotFiberG(perServingGram(wholeNutrients.getFiberG(), servings));
+            item.setSnapshotSugarG(perServingGram(wholeNutrients.getSugarG(), servings));
+            item.setSnapshotSaltG(perServingGram(wholeNutrients.getSaltG(), servings));
+            item.setSnapshotSaturatedFatG(perServingGram(wholeNutrients.getSaturatedFatG(), servings));
             // Only a line dropped to 0 changes WHICH ingredients went in, so only then can the
             // dominant NOVA move. A non-zero amount change leaves the ingredient set — and with it
             // the recipe's frozen novaDominant — intact; recomputing there would swap a frozen value
@@ -359,6 +302,10 @@ public class MealService {
             item.setSnapshotProteinG(orDefault(p.getProteinG(), BigDecimal.ZERO));
             item.setSnapshotCarbsG(orDefault(p.getCarbsG(), BigDecimal.ZERO));
             item.setSnapshotFatG(orDefault(p.getFatG(), BigDecimal.ZERO));
+            item.setSnapshotFiberG(p.getFiberG());
+            item.setSnapshotSugarG(p.getSugarG());
+            item.setSnapshotSaltG(p.getSaltG());
+            item.setSnapshotSaturatedFatG(p.getSaturatedFatG());
             item.setSnapshotNova(p.getNova());
         } else if ("estimate".equals(req.getSource())) {
             // AI/manual estimate arm: NO recipe/pantry FK — the request carries its own verbatim
@@ -446,15 +393,6 @@ public class MealService {
             .toList();
     }
 
-    /** Persisted envelope → the same {@code lineOrder → amount} map, for the scoring read path. */
-    static Map<Integer, BigDecimal> overrideMap(List<MealItemRecipeOverrideJson> envelope) {
-        if (envelope == null || envelope.isEmpty()) {
-            return Map.of();
-        }
-        return envelope.stream().collect(Collectors.toMap(
-            MealItemRecipeOverrideJson::lineOrder, MealItemRecipeOverrideJson::amount));
-    }
-
     /**
      * Dominant NOVA over the lines that ACTUALLY went in (effective amount &gt; 0), read from the live
      * pantry rows. The recipe's stored {@code novaDominant} would still claim a zeroed-out
@@ -517,6 +455,20 @@ public class MealService {
     static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
         BigDecimal v = whole == null ? BigDecimal.ZERO : whole;
         return v.divide(servings, 6, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Per-serving grams at THREE decimals — the nutrient sibling of {@link #perServing}. Three, not
+     * one: the whole-recipe rollup this divides is already a per-line rounded sum
+     * ({@code RecipeMapper.scaledGram}), so a second 1-decimal quantum here would compound the first
+     * (a 20 g line of a 0.4 g/100 g source in a 2-serving recipe is truly 0.04 g/adag, which double
+     * 1-decimal rounding inflates to 0.1 g — 2.5×, and it is salt, the number this feature exists to
+     * show). Grams are stored and summed at three decimals; rounding to one decimal is a DISPLAY
+     * concern the frontend formatter owns. Matches the migrations' {@code round(…, 3)} backfill.
+     * Null stays null so a fact-less recipe does not turn into a fake 0 g (mezo-m6uv).
+     */
+    private static BigDecimal perServingGram(BigDecimal whole, BigDecimal servings) {
+        return whole == null ? null : whole.divide(servings, 3, RoundingMode.HALF_UP);
     }
 
     private static BigDecimal orDefault(BigDecimal value, BigDecimal fallback) {

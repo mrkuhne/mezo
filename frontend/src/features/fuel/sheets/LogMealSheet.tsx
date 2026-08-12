@@ -18,9 +18,14 @@ import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { NutrientCells } from '@/features/fuel/components/NutrientCells'
 import { MealPickerSheet, type MealPickedItem } from '@/features/fuel/sheets/MealPickerSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
-import { computeRecipeMacrosWithOverrides, rescaleFrozen } from '@/data/fuel/recipeMacros'
+import {
+  computeRecipeMacrosWithOverrides, rescaleFrozen,
+  computeRecipeNutrients, computeRecipeNutrientsWithOverrides,
+  lineNutrients, scaleNutrients, sumNutrients, NO_NUTRIENTS, factsOf,
+} from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
 
 export type LogMealPrefill =
@@ -100,6 +105,10 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
       const whole = r && l.overrides && Object.keys(l.overrides).length
         ? computeRecipeMacrosWithOverrides(r.ingredients, ingredients, l.overrides)
         : (r?.macros ?? zero)
+      // A tápérték ugyanazt az utat járja, mint a makró: override-olt rollup ÷ adagszám × adag.
+      const wholeNutrients = r && l.overrides && Object.keys(l.overrides).length
+        ? computeRecipeNutrientsWithOverrides(r.ingredients, ingredients, l.overrides)
+        : (r?.nutrients ?? (r ? computeRecipeNutrients(r.ingredients) : NO_NUTRIENTS))
       return {
         name: r?.name ?? 'Recept', tag: 'recept' as const, step: 1, min: 1,
         contribution: {
@@ -108,6 +117,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
           c: round(whole.c / s * factor),
           f: round(whole.f / s * factor),
         },
+        nutrients: scaleNutrients(wholeNutrients, factor / s),
       }
     }
     const ing = resolveIng(l.refId)
@@ -116,11 +126,13 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
     return {
       name: ing?.name ?? 'Tétel', tag: 'kamra' as const, step: 10, min: 1,
       contribution: { kcal: round((ing?.macros.kcal ?? 0) * factor), p: round((ing?.macros.p ?? 0) * factor), c: round((ing?.macros.c ?? 0) * factor), f: round((ing?.macros.f ?? 0) * factor) },
+      nutrients: lineNutrients(l.amount, per, factsOf(ing)),
     }
   }
 
   const resolved = lines.map(l => ({ l, meta: lineMeta(l) }))
   const total = resolved.reduce((a, { meta }) => ({ kcal: a.kcal + meta.contribution.kcal, p: a.p + meta.contribution.p, c: a.c + meta.contribution.c, f: a.f + meta.contribution.f }), { ...zero })
+  const totalNutrients = sumNutrients(resolved.map(({ meta }) => meta.nutrients))
 
   // Smart default name from the line display-names (recipe → recipe name, pantry → item names),
   // overridden the moment the user types (mezo-u68c).
@@ -268,6 +280,9 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                   <div style={{ marginTop: 9 }}>
                     <MacroCells macros={meta.contribution} perLabel={`${l.amount} ${l.unit}`} />
                   </div>
+                  <div style={{ marginTop: 6 }}>
+                    <NutrientCells nutrients={meta.nutrients} perLabel={`${l.amount} ${l.unit}`} />
+                  </div>
                   {l.source === 'recipe' && (() => {
                     const r = resolveRecipe(l.refId)
                     if (!r || r.ingredients.length === 0) return null
@@ -347,6 +362,9 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                 <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>
               </div>
               <MacroCells macros={total} size="md" />
+              <div style={{ marginTop: 6 }}>
+                <NutrientCells nutrients={totalNutrients} size="md" />
+              </div>
               <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
                 <div className="row" style={{ justifyContent: 'space-between', fontVariantNumeric: 'tabular-nums', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
                   <span>Mai nap eddig <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--coral)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>

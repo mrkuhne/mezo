@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
+import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -63,5 +64,28 @@ class RecipeRepositoryIT extends AbstractIntegrationTest {
 
         assertThat(repository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(owner)).isEmpty();
         assertThat(repository.findByIdAndCreatedByAndDeletedFalse(r.getId(), owner)).isEmpty();
+    }
+
+    @Test
+    void testFindById_shouldKeepFrozenNutrientSnapshots_whenLineWasPopulatedWithFacts() {
+        UUID owner = databasePopulator.populateUser("owner@test.local");
+        UUID pantryItemId = pantryItemPopulator.createFood(owner, "Túró", LocalDate.now().plusDays(7)).getId();
+        UUID recipeId = recipePopulator.createRecipe(owner, pantryItemId).getId();
+        // Drop the populator's managed instances so the finder loads the aggregate fresh from the DB,
+        // where @OrderBy("lineOrder") actually applies (an already-initialized collection keeps insert order).
+        entityManager.clear();
+
+        RecipeEntity reloaded = repository.findByIdAndCreatedByAndDeletedFalse(recipeId, owner).orElseThrow();
+
+        RecipeIngredientEntity withFacts = reloaded.getLines().get(0); // @OrderBy("lineOrder") -> 0 first
+        RecipeIngredientEntity withoutFacts = reloaded.getLines().get(1);
+        assertThat(withFacts.getSnapshotFiberG()).isEqualByComparingTo("3.2");
+        assertThat(withFacts.getSnapshotSugarG()).isEqualByComparingTo("4.1");
+        assertThat(withFacts.getSnapshotSaltG()).isEqualByComparingTo("0.4");
+        assertThat(withFacts.getSnapshotSaturatedFatG()).isEqualByComparingTo("2.8");
+        assertThat(withoutFacts.getSnapshotFiberG()).isNull();
+        assertThat(withoutFacts.getSnapshotSugarG()).isNull();
+        assertThat(withoutFacts.getSnapshotSaltG()).isNull();
+        assertThat(withoutFacts.getSnapshotSaturatedFatG()).isNull();
     }
 }

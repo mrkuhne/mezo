@@ -36,3 +36,14 @@ test('the name renders off the media band in var(--ink), not the retired dark-me
   const title = screen.getByText(recipe.name)
   expect(title.style.color).toBe('var(--ink)')
 })
+
+test('a makró-strip egy adagra vetít és feliratozza a bázist', () => {
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
+  const baseRecipe = result.current.recipes[0]
+  const recipe = { ...baseRecipe, servings: 2, macros: { kcal: 800, p: 60, c: 80, f: 20 } }
+  render(<RecipeCard recipe={recipe} onOpen={() => {}} />, { wrapper: QueryWrapper })
+
+  expect(screen.getByText('400')).toBeInTheDocument() // 800 / 2 adag
+  expect(screen.getByText('30')).toBeInTheDocument() // 60 / 2
+  expect(screen.getByText('/adag')).toBeInTheDocument()
+})

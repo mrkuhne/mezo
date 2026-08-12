@@ -79,6 +79,14 @@ public class RecipePopulator {
         ing.setSnapshotProteinG(new BigDecimal("13.0"));
         ing.setSnapshotCarbsG(new BigDecimal("4.0"));
         ing.setSnapshotFatG(new BigDecimal("4.5"));
+        // lineOrder 0 carries facts, lineOrder 1 deliberately carries none — the null-arm fixture
+        // every nutrient rollup test leans on (mezo-m6uv).
+        if (order == 0) {
+            ing.setSnapshotFiberG(new BigDecimal("3.2"));
+            ing.setSnapshotSugarG(new BigDecimal("4.1"));
+            ing.setSnapshotSaltG(new BigDecimal("0.4"));
+            ing.setSnapshotSaturatedFatG(new BigDecimal("2.8"));
+        }
         return ing;
     }
 }

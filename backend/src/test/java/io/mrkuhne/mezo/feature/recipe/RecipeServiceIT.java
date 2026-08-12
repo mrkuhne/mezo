@@ -7,11 +7,15 @@ import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
+import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -25,9 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 class RecipeServiceIT extends AbstractIntegrationTest {
 
     @Autowired private RecipeService service;
+    @Autowired private RecipeRepository repository;
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private io.mrkuhne.mezo.feature.recipe.repository.RecipeIngredientRepository recipeIngredientRepository;
+
+    /** JPA-managed shared EntityManager — the one allowed exception to constructor injection. */
+    @PersistenceContext private EntityManager entityManager;
 
     private UUID owner;
     private UUID other;
@@ -184,6 +192,26 @@ class RecipeServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> service.delete(other, mine.getId()))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testCreate_shouldFreezeNutrientFacts_whenSourceCarriesThem() {
+        PantryItemEntity withFacts = pantryPopulator.createFoodWithNutrients(owner, "Túró");
+        PantryItemEntity factLess = food("Csirke");
+
+        RecipeResponse created = service.create(owner,
+            req("Fagyasztás-teszt", line(withFacts.getId(), "200", "g"), line(factLess.getId(), "150", "g")));
+        // Flush the pending INSERTs, then drop the managed instances so the reload actually hits the
+        // DB, where @OrderBy("lineOrder") applies (an already-initialized collection would just keep
+        // insert order, and an unflushed clear() would silently discard the unsaved recipe).
+        entityManager.flush();
+        entityManager.clear();
+
+        RecipeEntity saved = repository.findByIdAndCreatedByAndDeletedFalse(created.getId(), owner).orElseThrow();
+        assertThat(saved.getLines().get(0).getSnapshotFiberG()).isEqualByComparingTo("3.2"); // per-basis, NOT scaled
+        assertThat(saved.getLines().get(0).getSnapshotSaltG()).isEqualByComparingTo("0.4");
+        assertThat(saved.getLines().get(1).getSnapshotFiberG()).isNull();
+        assertThat(saved.getLines().get(1).getSnapshotSaltG()).isNull();
     }
 
     @Test

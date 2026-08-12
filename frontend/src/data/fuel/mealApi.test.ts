@@ -109,6 +109,41 @@ describe('fromResponse', () => {
   })
 })
 
+describe('fromResponse — nutrients mapping (mezo-m6uv)', () => {
+  it('carries the whole-meal nutrients rollup and lifts fiberG onto the meal for the Rost ring', () => {
+    const withNutrients = {
+      ...mealResponse,
+      nutrients: { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 },
+    }
+
+    const meal = fromResponse(withNutrients)
+
+    expect(meal.nutrients).toEqual({ fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 })
+    expect(meal.fiberG).toBe(6.4)
+  })
+
+  it('carries a per-line nutrients fact onto the mapped MealItemLine', () => {
+    const withItemNutrients = {
+      ...mealResponse,
+      items: [
+        { ...mealResponse.items[0], nutrients: { fiberG: 3.2, sugarG: 1.1, saltG: 0.4, saturatedFatG: 2.8 } },
+        mealResponse.items[1],
+      ],
+    }
+
+    const meal = fromResponse(withItemNutrients)
+
+    expect(meal.mealItems[0].nutrients).toEqual({ fiberG: 3.2, sugarG: 1.1, saltG: 0.4, saturatedFatG: 2.8 })
+  })
+
+  it('yields all-null nutrients and a null (not zero) fiberG when the wire omits nutrients entirely', () => {
+    const meal = fromResponse(mealResponse)
+
+    expect(meal.nutrients).toEqual({ fiberG: null, sugarG: null, saltG: null, saturatedFatG: null })
+    expect(meal.fiberG).toBeNull()
+  })
+})
+
 describe('fromBreakdown — 8-dimension envelope rows dimensions (mezo-7797)', () => {
   it('maps a WHO rows dimension to a RowsDimension with the injected var(--sky) color; drops a degraded new-id dimension', () => {
     const envelope = {
