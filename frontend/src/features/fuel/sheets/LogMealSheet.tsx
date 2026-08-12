@@ -24,7 +24,7 @@ import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 import {
   computeRecipeMacrosWithOverrides, rescaleFrozen,
   computeRecipeNutrients, computeRecipeNutrientsWithOverrides,
-  lineNutrients, scaleNutrients, sumNutrients, NO_NUTRIENTS,
+  lineNutrients, scaleNutrients, sumNutrients, NO_NUTRIENTS, factsOf,
 } from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
 
@@ -126,10 +126,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
     return {
       name: ing?.name ?? 'Tétel', tag: 'kamra' as const, step: 10, min: 1,
       contribution: { kcal: round((ing?.macros.kcal ?? 0) * factor), p: round((ing?.macros.p ?? 0) * factor), c: round((ing?.macros.c ?? 0) * factor), f: round((ing?.macros.f ?? 0) * factor) },
-      nutrients: lineNutrients(l.amount, per, {
-        fiberG: ing?.fiberG ?? null, sugarG: ing?.sugarG ?? null,
-        saltG: ing?.saltG ?? null, saturatedFatG: ing?.saturatedFatG ?? null,
-      }),
+      nutrients: lineNutrients(l.amount, per, factsOf(ing)),
     }
   }
 
@@ -284,7 +281,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                     <MacroCells macros={meta.contribution} perLabel={`${l.amount} ${l.unit}`} />
                   </div>
                   <div style={{ marginTop: 6 }}>
-                    <NutrientCells nutrients={meta.nutrients} />
+                    <NutrientCells nutrients={meta.nutrients} perLabel={`${l.amount} ${l.unit}`} />
                   </div>
                   {l.source === 'recipe' && (() => {
                     const r = resolveRecipe(l.refId)

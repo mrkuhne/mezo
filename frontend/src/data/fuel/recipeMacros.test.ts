@@ -129,8 +129,36 @@ describe('computeRecipeMacrosWithOverrides', () => {
 
 import {
   NO_NUTRIENTS, lineNutrients, sumNutrients, computeRecipeNutrients,
-  computeRecipeNutrientsWithOverrides, rescaleFrozenNutrients,
+  computeRecipeNutrientsWithOverrides, rescaleFrozenNutrients, factsOf,
 } from '@/data/fuel/recipeMacros'
+
+// The single normalizer behind enrichLine, computeRecipeNutrientsWithOverrides,
+// LogMealSheet's pantry-arm line, and ImportItemSheet's preview (mezo-m6uv review finding 3).
+describe('factsOf', () => {
+  it('reads the four fields off any structurally-matching source', () => {
+    const src = { fiberG: 3.2, sugarG: 4.1, saltG: 0.4, saturatedFatG: 2.8 }
+    expect(factsOf(src)).toEqual({ fiberG: 3.2, sugarG: 4.1, saltG: 0.4, saturatedFatG: 2.8 })
+  })
+
+  it('keeps a missing field null — never coerced to 0', () => {
+    const src = { fiberG: undefined, sugarG: null, saltG: 0.4, saturatedFatG: undefined }
+    expect(factsOf(src)).toEqual({ fiberG: null, sugarG: null, saltG: 0.4, saturatedFatG: null })
+  })
+
+  it('returns NO_NUTRIENTS for an absent source, never a fabricated value', () => {
+    expect(factsOf(undefined)).toEqual(NO_NUTRIENTS)
+    expect(factsOf(null)).toEqual(NO_NUTRIENTS)
+  })
+
+  it('accepts an Ingredient and a PantryLookupItem-shaped source alike (structural typing)', () => {
+    // Ingredient-shaped (extra unrelated fields present)
+    const ingredientLike = { id: 'x', fiberG: 1, sugarG: null, saltG: null, saturatedFatG: 0.5 }
+    expect(factsOf(ingredientLike)).toEqual({ fiberG: 1, sugarG: null, saltG: null, saturatedFatG: 0.5 })
+    // PantryLookupItem-shaped (different unrelated fields, same four)
+    const pantryLookupLike = { name: 'x', per: 100, unit: 'g', fiberG: null, sugarG: 2, saltG: 0.1, saturatedFatG: null }
+    expect(factsOf(pantryLookupLike)).toEqual({ fiberG: null, sugarG: 2, saltG: 0.1, saturatedFatG: null })
+  })
+})
 
 test('lineNutrients scales per-basis facts and keeps three decimals', () => {
   const src = { fiberG: 3.25, sugarG: 4.1, saltG: 0.4, saturatedFatG: 2.8 }

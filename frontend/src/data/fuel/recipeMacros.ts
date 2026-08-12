@@ -32,10 +32,7 @@ export function enrichLine(line: RecipeIngredientLine, ing: Ingredient | undefin
     ...line,
     name: ing.name,
     contribution: lineContribution(line.amount, ing.per, ing.macros),
-    nutrients: lineNutrients(line.amount, ing.per, {
-      fiberG: ing.fiberG ?? null, sugarG: ing.sugarG ?? null,
-      saltG: ing.saltG ?? null, saturatedFatG: ing.saturatedFatG ?? null,
-    }),
+    nutrients: lineNutrients(line.amount, ing.per, factsOf(ing)),
   }
 }
 
@@ -127,6 +124,35 @@ export function toNutrients(n: components['schemas']['Nutrients'] | undefined): 
 
 export const NO_NUTRIENTS: Nutrients = { fiberG: null, sugarG: null, saltG: null, saturatedFatG: null }
 
+/**
+ * Structural shape shared by every "optional facts" source that carries the four
+ * nutrition-quality fields but is otherwise a different domain type (`Ingredient`,
+ * `PantryLookupItem`, `PantryScrapeDraft`, …) — typed narrowly here so `factsOf` accepts any
+ * of them without coupling to one concrete type.
+ */
+export interface NutrientFactSource {
+  fiberG?: number | null
+  sugarG?: number | null
+  saltG?: number | null
+  saturatedFatG?: number | null
+}
+
+/**
+ * One optional-facts source → `Nutrients`, the ONE place this literal is built (mezo-m6uv review:
+ * `enrichLine`/`computeRecipeNutrientsWithOverrides` here, LogMealSheet's pantry-arm line, and
+ * ImportItemSheet's preview all built the identical `?? null` literal independently). `?? null`
+ * on every field — a missing fact never becomes a fabricated 0, and a missing SOURCE (`undefined`)
+ * never becomes a fabricated value either.
+ */
+export function factsOf(src: NutrientFactSource | undefined | null): Nutrients {
+  return {
+    fiberG: src?.fiberG ?? null,
+    sugarG: src?.sugarG ?? null,
+    saltG: src?.saltG ?? null,
+    saturatedFatG: src?.saturatedFatG ?? null,
+  }
+}
+
 const NUTRIENT_KEYS = ['fiberG', 'sugarG', 'saltG', 'saturatedFatG'] as const
 
 /**
@@ -182,14 +208,6 @@ export function computeRecipeNutrients(lines: RecipeIngredientLine[]): Nutrients
   return sumNutrients(lines.map(l => l.nutrients ?? NO_NUTRIENTS))
 }
 
-/** An ingredient's own facts as a `Nutrients` record (missing fields stay `null`, never 0). */
-function ingredientNutrients(ing: Ingredient): Nutrients {
-  return {
-    fiberG: ing.fiberG ?? null, sugarG: ing.sugarG ?? null,
-    saltG: ing.saltG ?? null, saturatedFatG: ing.saturatedFatG ?? null,
-  }
-}
-
 /**
  * Whole-recipe nutrients with per-line amount substitutions — the nutrient twin of
  * `computeRecipeMacrosWithOverrides`, branching identically: an UNTOUCHED line keeps the
@@ -206,7 +224,7 @@ export function computeRecipeNutrientsWithOverrides(
     const ing = ingredients.find(x => x.id === line.refId)
     const amount = overrides[i]
     return amount === undefined
-      ? (line.nutrients ?? (ing ? lineNutrients(line.amount, ing.per, ingredientNutrients(ing)) : NO_NUTRIENTS))
-      : (ing ? lineNutrients(amount, ing.per, ingredientNutrients(ing)) : rescaleFrozenNutrients(line.nutrients, amount, line.amount))
+      ? (line.nutrients ?? (ing ? lineNutrients(line.amount, ing.per, factsOf(ing)) : NO_NUTRIENTS))
+      : (ing ? lineNutrients(amount, ing.per, factsOf(ing)) : rescaleFrozenNutrients(line.nutrients, amount, line.amount))
   }))
 }
