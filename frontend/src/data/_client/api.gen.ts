@@ -1583,6 +1583,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/pattern/monitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Élő kapu-diagnosztika (mezo-viqs) — a katalógus minden párjára ugyanaz a kiértékelés fut, amit az éjszakai job végezne, de ÍRÁS NÉLKÜL: verdikt + illesztett napok + a hiányzó metrika, plusz a 12 metrika lefedettsége a korrelációs ablakban. */
+        get: operations["patternMonitor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -4616,6 +4633,74 @@ export interface components {
         } | null;
         PatternDecisionRequest: {
             decision: string;
+        };
+        PatternMonitorResponse: {
+            /**
+             * Format: date
+             * @description A korrelációs ablak első napja.
+             */
+            windowFrom: string;
+            /**
+             * Format: date
+             * @description Az ablak utolsó napja (tegnap — a job is befejezett napokkal dolgozik).
+             */
+            windowTo: string;
+            /** @description mezo.companion.patterns.lookback-days */
+            lookbackDays: number;
+            /** @description mezo.companion.patterns.min-n — a felszínre-engedő kapu. */
+            minN: number;
+            /** @description A nyers cron-kifejezés (a FE nem parse-olja, csak megjeleníti). */
+            cron: string;
+            /**
+             * Format: date-time
+             * @description A user statisztikai sorainak max(lastDetectedAt)-ja — az utolsó FELISMERÉS, nem az utolsó JOB-FUTÁS: a job minden éjjel lefut, de ez a mező csak akkor mozdul, ha talált (LIVE) egy párt, és egy confirmed/rejected sor mellett akkor sem, ha az továbbra is a job ablakában van (upsert nem érinti). null = még sosem talált mintát.
+             */
+            lastRunAt?: string | null;
+            pairs: components["schemas"]["PatternMonitorPair"][];
+            metrics: components["schemas"]["PatternMetricCoverage"][];
+        };
+        PatternMonitorPair: {
+            /** @description A pár stabil identitása (pair_key). */
+            key: string;
+            title: string;
+            category: string;
+            categoryLabel: string;
+            /** @description metric-b ennyi nappal metric-a napja UTÁN olvasódik. */
+            lagDays: number;
+            metricAKey: string;
+            metricALabel: string;
+            metricBKey: string;
+            metricBLabel: string;
+            verdict: string;
+            /** @description Az illesztett napok száma (frozen sornál a befagyasztott n). */
+            alignedDays: number;
+            /** @description minN - alignedDays — csak few_days. */
+            missingDays?: number | null;
+            /** @description A szűk keresztmetszet metrikája — few_days / no_data / degenerate. */
+            bottleneckMetricKey?: string | null;
+            /**
+             * Format: double
+             * @description live: élő számítás · frozen: a befagyasztott sor értéke.
+             */
+            r?: number | null;
+            n?: number | null;
+            /** Format: double */
+            p?: number | null;
+            /** @description Csak frozen sorokon — a user ítélete. */
+            status?: string | null;
+        };
+        PatternMetricCoverage: {
+            /** @description kebab-case metrika-kulcs, egyezően a pairs katalógussal. */
+            key: string;
+            /** @description Magyar metrika-címke. */
+            label: string;
+            /** @description Hány napon van érték az ablakban. */
+            coveredDays: number;
+            windowDays: number;
+            /** Format: date */
+            lastDayWithData?: string | null;
+            /** @description Hány katalógus-pár hivatkozik erre a metrikára. */
+            pairCount: number;
         };
         LogMentionRequest: {
             tone: string;
@@ -10254,6 +10339,35 @@ export interface operations {
             };
             /** @description Pattern not found (or owned by someone else) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    patternMonitor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A motor pillanatnyi állapota */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternMonitorResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

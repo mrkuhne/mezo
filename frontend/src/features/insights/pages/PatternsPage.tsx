@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { usePatterns, usePatternActions } from '@/data/hooks'
 import { MIN_PATTERN_CONFIDENCE } from '@/data/insights/insights'
@@ -15,6 +16,9 @@ export function PatternsPage() {
         <p className="text-tertiary" style={{ fontSize: 12 }}>
           A minta-motor most nem elérhető — a felismert minták itt jelennek majd meg.
         </p>
+        <Link to="/insights/motor" style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
+          Miért nincs még minta? →
+        </Link>
       </div>
     )
   }
@@ -35,6 +39,9 @@ export function PatternsPage() {
           <p className="text-tertiary" style={{ fontSize: 12 }}>
             Még nincs felismert minta — az éjszakai elemzés magától tölti, ahogy gyűlnek a napok.
           </p>
+          <Link to="/insights/motor" style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
+            Miért nincs még minta? →
+          </Link>
         </div>
       )}
 

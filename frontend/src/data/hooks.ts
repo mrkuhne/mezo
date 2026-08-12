@@ -15,6 +15,7 @@ export { useExperiments, useExperimentActions } from '@/data/insights/experiment
 export { useWeekly } from '@/data/insights/weeklyHooks'
 export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHooks'
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
+export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { useChat, useChatActions, useConversations, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
 export { useFuelTimeline } from '@/data/fuel/timelineHooks'
 export { useFuelWeek } from '@/data/fuel/fuelWeekHooks'

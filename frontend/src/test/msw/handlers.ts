@@ -1023,6 +1023,18 @@ export const handlers = [
       lastDetectedAt: '2026-07-03T02:40:00Z',
     })
   }),
+  http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
+    HttpResponse.json({
+      windowFrom: '2026-06-13',
+      windowTo: '2026-08-10',
+      lookbackDays: 60,
+      minN: 8,
+      cron: '0 40 2 * * *',
+      lastRunAt: null,
+      pairs: [],
+      metrics: [],
+    }),
+  ),
   http.patch(`${API_BASE}/api/companion/fact/:id`, async ({ params, request }) => {
     const body = (await request.json()) as { includeInPrompt?: boolean; factText?: string; category?: string }
     const fact = knowledgeSeed.find((f) => f.id === params.id)
