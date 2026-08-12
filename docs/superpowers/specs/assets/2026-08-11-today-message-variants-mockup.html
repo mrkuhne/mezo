@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mezo · Mai — iOS-nyelvű újratervezés + a mezo-üzenet 3 változata (mockup)</title>
+<link rel="stylesheet" href="../../../../frontend/src/styles/fonts.css" />
+<link rel="stylesheet" href="../../../../frontend/src/styles/prototype.css" />
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   MOCKUP-ONLY — a fal, hogy a négy változat egymás mellett látszódjon.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* prototype.css zárolja a lapot (`html, body { overflow: hidden }` + `height: 100%`) és
+   elrejt minden görgetősávot — a mockup-fal ezt fel kell oldja, különben nem lehet görgetni. */
+html { overflow: auto !important; height: auto !important; scrollbar-width: auto !important; }
+body { overflow: visible !important; height: auto !important; min-height: 100%; width: max-content;
+       min-width: 100%; scrollbar-width: auto !important; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: block !important; width: 12px; height: 12px; }
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+  background: rgba(43,33,24,.28); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+
+.app-root { position: static; inset: auto; display: block; padding: 40px 32px 80px; width: max-content; }
+.wall { display: flex; gap: 40px; align-items: flex-start; }
+.col { flex: 0 0 auto; width: 440px; }
+.col-cap { font-family: var(--ff-body); font-size: 19px; font-weight: 700; color: var(--text-primary);
+           margin: 0 0 4px; letter-spacing: -.01em; }
+.col-sub { font-family: var(--ff-body); font-size: 13.5px; line-height: 1.5; color: var(--text-secondary);
+           margin: 0 0 18px; min-height: 62px; }
+.col-sub b { color: var(--text-primary); font-weight: 600; }
+/* a teljes lap egy képen: a telefon nő, nincs belső görgetés */
+.phone.tall { height: auto; }
+.phone.tall .phone-screen { height: auto; min-height: 956px; }
+/* `flex: 1` = `flex-basis: 0` — a görgő nem adna magasságot az auto-magas kerethez,
+   így a tartalom a 956px-es minimum alatt kilógna és a .phone-screen levágná. */
+.phone.tall .screen-content { flex: 0 0 auto; overflow: visible; }
+.phone.tall .tab-bar { position: sticky; bottom: 24px; }
+.wall-h { font-family: var(--ff-body); margin: 0 0 6px; font-size: 26px; font-weight: 700;
+          letter-spacing: -.02em; color: var(--text-primary); }
+.wall-p { font-family: var(--ff-body); margin: 0 0 34px; font-size: 15px; color: var(--text-secondary);
+          max-width: 860px; line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   JAVASLAT — a Mai lap iOS-nyelve.  `.td-*` = Today.
+   Egyetlen doboznyelv: „inset grouped list" (iOS Beállítások / Emlékeztetők).
+   Minden egyetlen 16px-es sínre igazodik. Árnyék helyett hajszálvonal.
+   ═══════════════════════════════════════════════════════════════════════ */
+.td { --td-gut: 16px; }
+
+/* ── 1. Szegmentált kapcsoló — egy vályú, egy csúszó bélyeg (iOS UISegmentedControl) ── */
+.td-segwrap { padding: 6px var(--td-gut) 14px; }
+.td-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+          background: var(--surface-recess); border-radius: var(--r-full); padding: 3px; }
+.td-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+                 min-height: 34px; border: 0; background: transparent; border-radius: var(--r-full);
+                 font-family: var(--ff-body); font-size: 13.5px; font-weight: 600; letter-spacing: -.01em;
+                 color: var(--text-secondary); cursor: pointer;
+                 transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast); }
+.td-seg button em { font-style: normal; font-size: 13px; opacity: .9; }
+.td-seg button[aria-pressed="true"] { background: var(--surface-card); color: var(--text-primary);
+                                      box-shadow: 0 1px 3px rgba(43,33,24,.10), 0 0 0 .5px rgba(43,33,24,.04); }
+.td-now { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-base);
+          box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--accent-base) 24%, transparent); }
+
+/* ── 2. A LEVÉL-BUBORÉK — a mezo hangja (iOS Messages nyelvén) ── */
+.td-msg { display: flex; gap: 9px; align-items: flex-end; padding: 0 var(--td-gut) 18px; }
+.td-av { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; margin-bottom: 2px;
+         background: var(--gradient-cta); color: #fff; display: grid; place-items: center;
+         font-size: 14px; box-shadow: 0 2px 6px rgba(255,91,54,.30); }
+.td-bub { flex: 1; min-width: 0; background: var(--surface-card); border: .5px solid var(--divider);
+          border-radius: 20px; border-bottom-left-radius: 6px; padding: 11px 14px 12px;
+          box-shadow: 0 1px 2px rgba(43,33,24,.05); }
+.td-bub-h { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.td-bub-n { font-family: var(--ff-body); font-size: 12.5px; font-weight: 700; color: var(--primary-deep);
+            letter-spacing: -.005em; }
+.td-bub-t { font-family: var(--ff-body); font-size: 11.5px; color: var(--text-muted);
+            font-variant-numeric: tabular-nums; }
+.td-bub-c { margin-left: auto; min-width: 18px; height: 18px; padding: 0 6px; border-radius: var(--r-full);
+            background: var(--primary-base); color: #fff; font-family: var(--ff-body); font-size: 11px;
+            font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.td-bub-x { font-family: var(--ff-body); font-size: 14.5px; line-height: 1.47; color: var(--text-primary);
+            margin: 0; letter-spacing: -.005em; }
+.td-bub-x.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.td-bub-f { display: flex; align-items: center; gap: 4px; margin-top: 9px; padding-top: 9px;
+            border-top: .5px solid var(--divider); font-family: var(--ff-body); font-size: 12.5px;
+            font-weight: 600; color: var(--primary-hover); background: none; border-left: 0;
+            border-right: 0; border-bottom: 0; width: 100%; cursor: pointer; }
+.td-bub-f span { margin-left: auto; color: var(--text-muted); font-weight: 700; }
+.td-bub-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.td-ref { font-family: var(--ff-mono, ui-monospace, monospace); font-size: 10px; padding: 3px 7px;
+          border-radius: var(--r-sm); background: var(--surface-recess); color: var(--text-secondary); }
+/* a szálban a régebbi buborékok halkabbak */
+.td-msg + .td-msg { padding-top: 0; margin-top: -8px; }
+.td-msg.past .td-bub { background: color-mix(in srgb, var(--surface-recess) 60%, var(--surface-card)); }
+.td-msg.past .td-av { background: var(--surface-recess); color: var(--text-muted); box-shadow: none; }
+
+/* ── 2b. B változat: a keskeny chip-sor a lapon ── */
+.td-chip { display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--td-gut));
+           margin: 0 var(--td-gut) 18px; padding: 11px 14px; border-radius: var(--r-lg);
+           background: var(--surface-card); border: .5px solid var(--divider); cursor: pointer;
+           box-shadow: 0 1px 2px rgba(43,33,24,.05); font-family: var(--ff-body); text-align: left; }
+.td-chip .td-av { width: 26px; height: 26px; font-size: 12px; margin: 0; }
+.td-chip-t { flex: 1; min-width: 0; }
+.td-chip-t b { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary);
+               letter-spacing: -.01em; }
+.td-chip-t i { display: block; font-style: normal; font-size: 12px; color: var(--text-muted);
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.td-chip-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-full);
+             background: var(--primary-base); color: #fff; font-size: 11.5px; font-weight: 700;
+             display: inline-flex; align-items: center; justify-content: center; }
+.td-chev { color: var(--text-disabled); font-size: 16px; font-weight: 600; }
+
+/* ── 3. Napszak-hero — nagy szám a vásznon, iOS large-title pozícióban ── */
+.td-hero { padding: 2px var(--td-gut) 0; }
+.td-hero > div { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.td-hero-v { font-family: var(--ff-display); font-size: 36px; font-weight: 250; line-height: 1.05;
+             letter-spacing: -.035em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.td-hero-u { font-size: 15px; font-weight: 400; color: var(--text-secondary); letter-spacing: -.01em; }
+.td-hero-s { display: block; font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted);
+             margin-top: 5px; letter-spacing: -.005em; }
+
+/* ── 4. Statisztika-csoport — EGY doboz, függőleges hajszálvonallal ── */
+.td-stats { display: grid; margin: 14px var(--td-gut) 0; background: var(--surface-card);
+            border: .5px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
+.td-stat { padding: 12px 14px; }
+.td-stat + .td-stat { border-left: .5px solid var(--divider); }
+.td-stat-v { font-family: var(--ff-display); font-size: 21px; font-weight: 400; letter-spacing: -.02em;
+             color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.td-stat-v small { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+.td-stat-l { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+             text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
+.td-stat-d { font-family: var(--ff-body); font-size: 11.5px; margin-top: 4px; color: var(--text-secondary); }
+.td-stat-d.is-good { color: var(--success-hover); }
+.td-stat-d.is-warn { color: var(--warning-hover); }
+
+/* ── 5. Elsődleges CTA — teli, teljes szélességű (iOS „Folytatás") ── */
+.td-cta { display: flex; align-items: center; justify-content: center; gap: 8px;
+          width: calc(100% - 2 * var(--td-gut)); margin: 16px var(--td-gut) 0; min-height: 50px;
+          border: 0; border-radius: var(--r-lg); background: var(--gradient-cta); color: #fff;
+          font-family: var(--ff-body); font-size: 16px; font-weight: 600; letter-spacing: -.01em;
+          box-shadow: var(--shadow-cta); cursor: pointer; }
+.td-cta.is-lav { background: linear-gradient(135deg, #A99BD3, #8B7CC0); box-shadow: 0 8px 20px rgba(139,124,192,.32); }
+
+/* ── 6. Szekció + inset grouped list — EZ a lap egyetlen doboznyelve ── */
+.td-sec { margin-top: 26px; }
+.td-sech { display: flex; align-items: baseline; padding: 0 var(--td-gut) 7px; }
+.td-sech b { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .075em;
+             text-transform: uppercase; color: var(--text-muted); }
+.td-sech a { margin-left: auto; font-family: var(--ff-body); font-size: 12.5px; font-weight: 600;
+             color: var(--primary-hover); text-decoration: none; letter-spacing: -.005em; }
+.td-list { margin: 0 var(--td-gut); background: var(--surface-card); border: .5px solid var(--divider);
+           border-radius: var(--r-lg); overflow: hidden; }
+.td-row { display: flex; align-items: center; gap: 11px; padding: 9px 13px; min-height: 56px;
+          position: relative; background: transparent; }
+.td-row + .td-row::before { content: ''; position: absolute; top: 0; left: 52px; right: 0;
+                            border-top: .5px solid var(--divider); }
+.td-ic { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+         font-size: 15px; background: var(--surface-recess); }
+.td-ic.t-habit { background: color-mix(in srgb, var(--dv-lav) 18%, transparent); }
+.td-ic.t-quest { background: color-mix(in srgb, var(--accent-base) 20%, transparent); }
+.td-ic.t-fuel  { background: color-mix(in srgb, var(--dv-sage) 22%, transparent); }
+.td-ic.t-check { background: color-mix(in srgb, var(--dv-rose) 20%, transparent); }
+.td-ic.t-train { background: color-mix(in srgb, var(--primary-base) 16%, transparent); }
+.td-tx { flex: 1; min-width: 0; }
+.td-t1 { display: block; font-family: var(--ff-body); font-size: 15.5px; font-weight: 500;
+         letter-spacing: -.015em; color: var(--text-primary); line-height: 1.25; }
+.td-t2 { display: block; font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted);
+         margin-top: 2px; letter-spacing: -.005em; line-height: 1.3; }
+/* kísérő elem — iOS: sima tintás szöveggomb, NEM szürke pirula */
+.td-act { flex: 0 0 auto; border: 0; background: none; padding: 8px 2px 8px 10px; cursor: pointer;
+          font-family: var(--ff-body); font-size: 14.5px; font-weight: 600; letter-spacing: -.01em;
+          color: var(--primary-hover); white-space: nowrap; }
+/* pipálható szokás — üres karika (iOS Emlékeztetők) */
+.td-tick { flex: 0 0 auto; width: 26px; height: 26px; margin: 9px 0 9px 10px; border-radius: 50%;
+           border: 1.6px solid var(--text-disabled); background: none; cursor: pointer; }
+.td-tick.is-done { border-color: var(--success-base); background: var(--success-base); color: #fff;
+                   display: grid; place-items: center; font-size: 14px; }
+.td-row.is-done .td-t1 { color: var(--text-muted); text-decoration: line-through; }
+.td-row.is-done .td-ic { opacity: .45; }
+
+/* ── 7. Lábjegyzet a csoport alatt — figyelmeztetés doboz nélkül (iOS footer) ── */
+.td-foot { padding: 7px var(--td-gut) 0; font-family: var(--ff-body); font-size: 12px; line-height: 1.45;
+           color: var(--text-muted); letter-spacing: -.005em; }
+.td-foot.is-warn { color: var(--warning-hover); }
+
+/* ── 8. Kész-hajtás — halk sor, nem gomb-pirula ── */
+.td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--td-gut));
+           margin: 12px var(--td-gut) 0; padding: 11px 14px; border-radius: var(--r-lg);
+           background: transparent; border: .5px dashed var(--divider); cursor: pointer;
+           font-family: var(--ff-body); font-size: 13px; font-weight: 600; color: var(--success-hover);
+           letter-spacing: -.005em; }
+.td-done span { margin-left: auto; color: var(--text-disabled); }
+
+/* ── 9. Fókusz (creed) — ugyanaz a listadoboz, csak levendula fejléccel ── */
+.td-creed { padding: 12px 14px; background: color-mix(in srgb, var(--dv-lav) 9%, var(--surface-card)); }
+.td-creed q { display: block; font-family: var(--ff-display); font-size: 14.5px; font-style: italic;
+              font-weight: 300; color: var(--secondary-base); line-height: 1.45; quotes: '„' '"'; }
+
+/* ── 10. B változat sheet-je ── */
+.td-scrim { position: absolute; inset: 0; background: rgba(26,20,14,.34); z-index: 55;
+            backdrop-filter: blur(1.5px); border-radius: 44px; }
+.td-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 56; background: var(--surface-page);
+            border-radius: 22px 22px 44px 44px; padding: 10px 0 34px;
+            box-shadow: 0 -12px 40px rgba(26,20,14,.22); max-height: 74%; }
+.td-grab { width: 38px; height: 5px; border-radius: 3px; background: var(--divider); margin: 0 auto 6px; }
+.td-sheet-h { display: flex; align-items: center; padding: 4px 16px 12px; border-bottom: .5px solid var(--divider); }
+.td-sheet-h b { font-family: var(--ff-body); font-size: 16.5px; font-weight: 700; letter-spacing: -.02em;
+                color: var(--text-primary); }
+.td-sheet-h u { margin-left: auto; font-family: var(--ff-body); font-size: 15px; font-weight: 600;
+                color: var(--primary-hover); text-decoration: none; }
+.td-thread { padding: 14px 0 0; }
+.td-daysep { text-align: center; font-family: var(--ff-body); font-size: 11px; font-weight: 700;
+             letter-spacing: .07em; text-transform: uppercase; color: var(--text-disabled); margin: 2px 0 12px; }
+</style>
+</head>
+<body>
+<div class="app-root">
+  <h1 class="wall-h">Mai — iOS-nyelvű újratervezés · a mezo-üzenet három változata</h1>
+  <p class="wall-p">Mind a négy telefon <b>ugyanazt az új lapnyelvet</b> mutatja: egyetlen doboznyelv (inset grouped list),
+    egyetlen 16px-es bal sín, hajszálvonalak árnyékok helyett, szürke pirulák helyett iOS-tintás szöveggombok,
+    ismétlődő napszak-emoji helyett tételenkénti ikon. Ami különbözik: <b>hol és hogyan él a mezo hangja</b>.</p>
+
+  <div class="wall">
+
+  <!-- ══════════════════════════════ A ══════════════════════════════ -->
+  <div class="col">
+    <p class="col-cap">A · Kompakt buborék — összecsukva</p>
+    <p class="col-sub">A tabok alatt egy <b>levél-buborék</b> avatarral és farokkal. A vezető bekezdés 3 sorban,
+      alatta „3 üzenet ▾". A lap ~150px-t ad az üzenetnek 600 helyett; a nap tartalma azonnal látszik.</p>
+    <div class="phone tall">
+      <div class="phone-screen td" data-day="reggel">
+        <div class="sky" aria-hidden="true"></div>
+        <div class="dynamic-island"></div>
+        <div class="status-bar"><span>7:12</span><span class="status-icons">
+          <svg viewBox="0 0 24 24"><path d="M2 17h3v4H2zm5-3h3v7H7zm5-4h3v11h-3zm5-5h3v16h-3z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 8h13v8H4zm14 2h2v4h-2z"/></svg>
+        </span></div>
+        <div class="screen-content">
+
+          <div class="apphero">
+            <div class="avwrap">
+              <a class="avlink np-press" aria-label="Profil">
+                <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--line)" stroke-width="3"/>
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--coral)" stroke-width="3"
+                          stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="48"
+                          transform="rotate(-90 24 24)"/>
+                </svg>
+                <span class="avatar" aria-hidden="true">D</span>
+              </a>
+              <a class="lvbadge np-press" aria-label="Szint 12">12</a>
+            </div>
+            <div class="idcol">
+              <a class="t1">Daniel</a>
+              <button type="button" class="t2 np-press">A Fegyelmezett</button>
+            </div>
+            <div class="counters">
+              <button type="button" class="cnt fire np-press">🔥 6</button>
+              <a class="cnt quest np-press">⚡ 1/3</a>
+              <button type="button" class="cnt coin np-press">🪙 240</button>
+            </div>
+            <div class="util"><a class="icon-btn" aria-label="Insights">✨</a></div>
+          </div>
+
+          <div class="td-segwrap">
+            <div class="td-seg" role="group" aria-label="Napszak">
+              <button type="button" aria-pressed="true"><em>🌅</em> Reggel <span class="td-now" aria-label="most"></span></button>
+              <button type="button" aria-pressed="false"><em>☀️</em> Nap</button>
+              <button type="button" aria-pressed="false"><em>🌙</em> Este</button>
+            </div>
+          </div>
+
+          <!-- ▸ A VÁLTOZAT: kompakt levél-buborék -->
+          <div class="td-msg">
+            <div class="td-av" aria-hidden="true">✦</div>
+            <div class="td-bub">
+              <div class="td-bub-h">
+                <span class="td-bub-n">Mezo</span>
+                <span class="td-bub-t">06:30</span>
+                <span class="td-bub-c">3</span>
+              </div>
+              <p class="td-bub-x clamp">Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat
+                Pulldown 105 kg × 9 ment RIR 1-re, a Reta beadás óta vagyunk 72h-nál, étvágy ma még magas lesz.</p>
+              <button type="button" class="td-bub-f">3 üzenet a mai napról <span>▾</span></button>
+            </div>
+          </div>
+
+          <div class="td-hero">
+            <div><span class="td-hero-v">7,5</span><span class="td-hero-u"> óra alvás</span></div>
+            <span class="td-hero-s">Céllal egy szinten · heti adósság −0,8 óra</span>
+          </div>
+
+          <div class="td-stats" style="grid-template-columns:repeat(2,1fr)">
+            <div class="td-stat">
+              <div class="td-stat-v">78,6<small>kg</small></div>
+              <div class="td-stat-l">Súly</div>
+              <div class="td-stat-d is-good">−0,6 a héten · cél 73,0</div>
+            </div>
+            <div class="td-stat">
+              <div class="td-stat-v">64<small>ms</small></div>
+              <div class="td-stat-l">HRV</div>
+              <div class="td-stat-d">az átlagod körül</div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Reggeli rutin</b><a>1/5 ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">💪</span>
+                <span class="td-tx"><span class="td-t1">50 fekvőtámasz</span><span class="td-t2">napfény után</span></span>
+                <button type="button" class="td-tick" aria-label="Pipa"></button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">🎬</span>
+                <span class="td-tx"><span class="td-t1">Reggeli videó</span><span class="td-t2">napfény után</span></span>
+                <button type="button" class="td-tick" aria-label="Pipa"></button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">☕</span>
+                <span class="td-tx"><span class="td-t1">Gombakávé</span><span class="td-t2">súlymérés után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">🤸</span>
+                <span class="td-tx"><span class="td-t1">Reggeli edzés</span><span class="td-t2">kávé után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-fuel" aria-hidden="true">🍳</span>
+                <span class="td-tx"><span class="td-t1">Fehérjés reggeli</span><span class="td-t2">edzés után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Napi küldetések</b><a>1/3 · +48 XP ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-quest" aria-hidden="true">📖</span>
+                <span class="td-tx"><span class="td-t1">Olvass ma legalább 10 percet</span>
+                  <span class="td-t2">Tevékenységnapló-bejegyzés ma</span></span>
+                <button type="button" class="td-act">Naplózz</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Fókusz</b><a>+ Mai fókusz</a></div>
+            <div class="td-list">
+              <div class="td-creed"><q>Minden döntésem a célom felé visz — szándékkal élek, nem sodródom.</q></div>
+              <div class="td-row">
+                <span class="td-ic" aria-hidden="true">✦</span>
+                <span class="td-tx"><span class="td-t1">Jelen lenni minden beszélgetésben</span>
+                  <span class="td-t2">nem fél füllel</span></span>
+              </div>
+              <div class="td-row">
+                <span class="td-ic" aria-hidden="true">✦</span>
+                <span class="td-tx"><span class="td-t1">Az edzésen a formára figyelek</span>
+                  <span class="td-t2">nem a súlyra</span></span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="td-done">✓ 5 kész ma · +40 XP <span>▾</span></button>
+
+        </div>
+        <nav class="tab-bar">
+          <a class="tab-item active"><span class="tab-dot"></span><span class="tab-ico">📅</span><span>Ma</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🏋️</span><span>Edzés</span></a>
+          <button type="button" class="tab-fab" aria-label="Gyors logolás">＋</button>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🍽️</span><span>Fuel</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">👤</span><span>Én</span></a>
+        </nav>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ A · kinyitva ══════════════════════════════ -->
+  <div class="col">
+    <p class="col-cap">A · Kompakt buborék — kinyitva</p>
+    <p class="col-sub">Koppintásra <b>helyben</b> nyílik szállá: minden mai mezo-üzenet buborékban, időbélyeggel,
+      a legfrissebb alul. A régebbiek halkabbak. Becsukható, nem hagyod el a lapot.</p>
+    <div class="phone tall">
+      <div class="phone-screen td" data-day="reggel">
+        <div class="sky" aria-hidden="true"></div>
+        <div class="dynamic-island"></div>
+        <div class="status-bar"><span>7:12</span><span class="status-icons">
+          <svg viewBox="0 0 24 24"><path d="M2 17h3v4H2zm5-3h3v7H7zm5-4h3v11h-3zm5-5h3v16h-3z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 8h13v8H4zm14 2h2v4h-2z"/></svg>
+        </span></div>
+        <div class="screen-content">
+
+          <div class="apphero">
+            <div class="avwrap">
+              <a class="avlink np-press" aria-label="Profil">
+                <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--line)" stroke-width="3"/>
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--coral)" stroke-width="3"
+                          stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="48"
+                          transform="rotate(-90 24 24)"/>
+                </svg>
+                <span class="avatar" aria-hidden="true">D</span>
+              </a>
+              <a class="lvbadge np-press" aria-label="Szint 12">12</a>
+            </div>
+            <div class="idcol">
+              <a class="t1">Daniel</a>
+              <button type="button" class="t2 np-press">A Fegyelmezett</button>
+            </div>
+            <div class="counters">
+              <button type="button" class="cnt fire np-press">🔥 6</button>
+              <a class="cnt quest np-press">⚡ 1/3</a>
+              <button type="button" class="cnt coin np-press">🪙 240</button>
+            </div>
+            <div class="util"><a class="icon-btn" aria-label="Insights">✨</a></div>
+          </div>
+
+          <div class="td-segwrap">
+            <div class="td-seg" role="group" aria-label="Napszak">
+              <button type="button" aria-pressed="true"><em>🌅</em> Reggel <span class="td-now" aria-label="most"></span></button>
+              <button type="button" aria-pressed="false"><em>☀️</em> Nap</button>
+              <button type="button" aria-pressed="false"><em>🌙</em> Este</button>
+            </div>
+          </div>
+
+          <!-- ▸ A VÁLTOZAT kinyitva: a mai szál -->
+          <div class="td-msg past">
+            <div class="td-av" aria-hidden="true">✦</div>
+            <div class="td-bub">
+              <div class="td-bub-h"><span class="td-bub-n">Mezo</span><span class="td-bub-t">tegnap 21:40</span></div>
+              <p class="td-bub-x">Szép nap volt — a Push Day minden sorozata meglett, és a fehérje is bejött 6 g-ra.
+                Aludj egy jót, holnap Pull Day.</p>
+            </div>
+          </div>
+          <div class="td-msg">
+            <div class="td-av" aria-hidden="true">✦</div>
+            <div class="td-bub">
+              <div class="td-bub-h"><span class="td-bub-n">Mezo</span><span class="td-bub-t">06:30</span></div>
+              <p class="td-bub-x">Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown
+                105 kg × 9 ment RIR 1-re, a Reta beadás óta vagyunk 72h-nál, étvágy ma még magas lesz.</p>
+              <div class="td-bub-refs">
+                <span class="td-ref">[edzés] Push Day · tegnap</span>
+                <span class="td-ref">[PR] Chest Row 105,8</span>
+                <span class="td-ref">[gyógyszer] Reta · hétfő</span>
+              </div>
+            </div>
+          </div>
+          <div class="td-msg">
+            <div class="td-av" aria-hidden="true">✦</div>
+            <div class="td-bub">
+              <div class="td-bub-h"><span class="td-bub-n">Mezo</span><span class="td-bub-t">06:31</span></div>
+              <p class="td-bub-x">Ma Pull Day, és a Chest Supported Row 105,8 kg PR-t március óta húzzuk magunk után.
+                Ma megdönthetjük 5 kg-mal — múlt héten 102,5 × 9 @ RIR 2 volt.</p>
+              <button type="button" class="td-bub-f">Szál becsukása <span>▴</span></button>
+            </div>
+          </div>
+
+          <div class="td-hero">
+            <div><span class="td-hero-v">7,5</span><span class="td-hero-u"> óra alvás</span></div>
+            <span class="td-hero-s">Céllal egy szinten · heti adósság −0,8 óra</span>
+          </div>
+
+          <div class="td-stats" style="grid-template-columns:repeat(2,1fr)">
+            <div class="td-stat">
+              <div class="td-stat-v">78,6<small>kg</small></div>
+              <div class="td-stat-l">Súly</div>
+              <div class="td-stat-d is-good">−0,6 a héten · cél 73,0</div>
+            </div>
+            <div class="td-stat">
+              <div class="td-stat-v">64<small>ms</small></div>
+              <div class="td-stat-l">HRV</div>
+              <div class="td-stat-d">az átlagod körül</div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Reggeli rutin</b><a>1/5 ›</a></div>
+            <div class="td-list">
+              <div class="td-row is-done">
+                <span class="td-ic t-habit" aria-hidden="true">💪</span>
+                <span class="td-tx"><span class="td-t1">50 fekvőtámasz</span><span class="td-t2">06:48 · +8 XP</span></span>
+                <button type="button" class="td-tick is-done" aria-label="Kész">✓</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">🎬</span>
+                <span class="td-tx"><span class="td-t1">Reggeli videó</span><span class="td-t2">napfény után</span></span>
+                <button type="button" class="td-tick" aria-label="Pipa"></button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">☕</span>
+                <span class="td-tx"><span class="td-t1">Gombakávé</span><span class="td-t2">súlymérés után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">🤸</span>
+                <span class="td-tx"><span class="td-t1">Reggeli edzés</span><span class="td-t2">kávé után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-fuel" aria-hidden="true">🍳</span>
+                <span class="td-tx"><span class="td-t1">Fehérjés reggeli</span><span class="td-t2">edzés után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+            </div>
+            <div class="td-foot">A lánc sorrendben nyílik — a következő lépés mindig a legfelső nyitott sor.</div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Napi küldetések</b><a>1/3 · +48 XP ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-quest" aria-hidden="true">📖</span>
+                <span class="td-tx"><span class="td-t1">Olvass ma legalább 10 percet</span>
+                  <span class="td-t2">Tevékenységnapló-bejegyzés ma</span></span>
+                <button type="button" class="td-act">Naplózz</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="td-done">✓ 5 kész ma · +40 XP <span>▾</span></button>
+
+        </div>
+        <nav class="tab-bar">
+          <a class="tab-item active"><span class="tab-dot"></span><span class="tab-ico">📅</span><span>Ma</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🏋️</span><span>Edzés</span></a>
+          <button type="button" class="tab-fab" aria-label="Gyors logolás">＋</button>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🍽️</span><span>Fuel</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">👤</span><span>Én</span></a>
+        </nav>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ B ══════════════════════════════ -->
+  <div class="col">
+    <p class="col-cap">B · Buborék-chip → üzenet-sheet</p>
+    <p class="col-sub">A lapon egy <b>44px-es chip</b> áll (avatar + utolsó üzenet egy sorban + darabszám).
+      Koppintásra alulról feljön a <b>teljes szál</b> sheetben. A Mai lap gyakorlatilag nem veszít helyet.</p>
+    <div class="phone tall">
+      <div class="phone-screen td" data-day="delutan">
+        <div class="sky" aria-hidden="true"></div>
+        <div class="dynamic-island"></div>
+        <div class="status-bar"><span>13:42</span><span class="status-icons">
+          <svg viewBox="0 0 24 24"><path d="M2 17h3v4H2zm5-3h3v7H7zm5-4h3v11h-3zm5-5h3v16h-3z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 8h13v8H4zm14 2h2v4h-2z"/></svg>
+        </span></div>
+        <div class="screen-content">
+
+          <div class="apphero">
+            <div class="avwrap">
+              <a class="avlink np-press" aria-label="Profil">
+                <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--line)" stroke-width="3"/>
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--coral)" stroke-width="3"
+                          stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="48"
+                          transform="rotate(-90 24 24)"/>
+                </svg>
+                <span class="avatar" aria-hidden="true">D</span>
+              </a>
+              <a class="lvbadge np-press" aria-label="Szint 12">12</a>
+            </div>
+            <div class="idcol">
+              <a class="t1">Daniel</a>
+              <button type="button" class="t2 np-press">A Fegyelmezett</button>
+            </div>
+            <div class="counters">
+              <button type="button" class="cnt fire np-press">🔥 6</button>
+              <a class="cnt quest np-press">⚡ 1/3</a>
+              <button type="button" class="cnt coin np-press">🪙 240</button>
+            </div>
+            <div class="util"><a class="icon-btn" aria-label="Insights">✨</a></div>
+          </div>
+
+          <div class="td-segwrap">
+            <div class="td-seg" role="group" aria-label="Napszak">
+              <button type="button" aria-pressed="false"><em>🌅</em> Reggel</button>
+              <button type="button" aria-pressed="true"><em>☀️</em> Nap <span class="td-now" aria-label="most"></span></button>
+              <button type="button" aria-pressed="false"><em>🌙</em> Este</button>
+            </div>
+          </div>
+
+          <!-- ▸ B VÁLTOZAT: keskeny chip -->
+          <button type="button" class="td-chip">
+            <span class="td-av" aria-hidden="true">✦</span>
+            <span class="td-chip-t">
+              <b>Mezo</b>
+              <i>Ma Pull Day — a Chest Row PR-t megdönthetjük 5 kg-mal.</i>
+            </span>
+            <span class="td-chip-n">3</span>
+            <span class="td-chev" aria-hidden="true">›</span>
+          </button>
+
+          <div class="td-hero">
+            <div><span class="td-hero-v">17:00</span><span class="td-hero-u"> Pull Day</span></div>
+            <span class="td-hero-s">~53 perc · 6 gyakorlat · 3. mezóhét</span>
+          </div>
+
+          <div class="td-stats" style="grid-template-columns:repeat(2,1fr)">
+            <div class="td-stat">
+              <div class="td-stat-v">100<small>g</small></div>
+              <div class="td-stat-l">Fehérje ma</div>
+              <div class="td-stat-d is-warn">85 g van hátra · cél 185</div>
+            </div>
+            <div class="td-stat">
+              <div class="td-stat-v">2951<small>kcal</small></div>
+              <div class="td-stat-l">Energia-cél</div>
+              <div class="td-stat-d">egyenleg −286</div>
+            </div>
+          </div>
+
+          <button type="button" class="td-cta">Indítsuk</button>
+          <div class="td-foot is-warn">⚠ Március 18 óta enyhe niggle — a Cable Pull-Around előrébb került,
+            a Lat Pulldown pronated griffel megy.</div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Napi küldetések</b><a>1/3 · +48 XP ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-quest" aria-hidden="true">📖</span>
+                <span class="td-tx"><span class="td-t1">Olvass ma legalább 10 percet</span>
+                  <span class="td-t2">Tevékenységnapló-bejegyzés ma</span></span>
+                <button type="button" class="td-act">Naplózz</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Check-in</b></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-check" aria-hidden="true">💗</span>
+                <span class="td-tx"><span class="td-t1">Hogy vagy?</span><span class="td-t2">14:00 · 4 kérdés</span></span>
+                <button type="button" class="td-act">Koppints</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Fuel</b><a>Napló ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-fuel" aria-hidden="true">🥣</span>
+                <span class="td-tx"><span class="td-t1">Túró · áfonya · méz quick</span>
+                  <span class="td-t2">MOST · Uzsonna</span></span>
+                <button type="button" class="td-act">Logold</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="td-done">✓ 4 kész ma · +32 XP <span>▾</span></button>
+
+        </div>
+
+        <!-- ▸ B VÁLTOZAT: a sheet -->
+        <div class="td-scrim" aria-hidden="true"></div>
+        <div class="td-sheet">
+          <div class="td-grab" aria-hidden="true"></div>
+          <div class="td-sheet-h"><b>Mezo üzenetei</b><u>Kész</u></div>
+          <div class="td-thread">
+            <div class="td-daysep">Ma</div>
+            <div class="td-msg">
+              <div class="td-av" aria-hidden="true">✦</div>
+              <div class="td-bub">
+                <div class="td-bub-h"><span class="td-bub-n">Reggeli briefing</span><span class="td-bub-t">06:30</span></div>
+                <p class="td-bub-x">Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown
+                  105 kg × 9 ment RIR 1-re, a Reta beadás óta vagyunk 72h-nál.</p>
+                <div class="td-bub-refs">
+                  <span class="td-ref">[edzés] Push Day · tegnap</span>
+                  <span class="td-ref">[PR] Chest Row 105,8</span>
+                </div>
+              </div>
+            </div>
+            <div class="td-msg">
+              <div class="td-av" aria-hidden="true">✦</div>
+              <div class="td-bub">
+                <div class="td-bub-h"><span class="td-bub-n">Napközi jegyzet</span><span class="td-bub-t">12:30</span></div>
+                <p class="td-bub-x">Fehérjéből 100 g van meg délig. Az edzés előtti étkezésnél tegyél rá,
+                  különben este kell behozni 85 g-ot.</p>
+              </div>
+            </div>
+            <div class="td-msg">
+              <div class="td-av" aria-hidden="true">✦</div>
+              <div class="td-bub">
+                <div class="td-bub-h"><span class="td-bub-n">Edzés-emlék</span><span class="td-bub-t">13:40</span></div>
+                <p class="td-bub-x">17:00-kor Pull Day. A Chest Supported Row PR-t ma megdönthetjük 5 kg-mal.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav class="tab-bar">
+          <a class="tab-item active"><span class="tab-dot"></span><span class="tab-ico">📅</span><span>Ma</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🏋️</span><span>Edzés</span></a>
+          <button type="button" class="tab-fab" aria-label="Gyors logolás">＋</button>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🍽️</span><span>Fuel</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">👤</span><span>Én</span></a>
+        </nav>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ C ══════════════════════════════ -->
+  <div class="col">
+    <p class="col-cap">C · Buborék + napszak-szűrés</p>
+    <p class="col-sub">Mint A, de a buborék <b>a kiválasztott napszak</b> üzenetét mutatja — itt az Este tabon a
+      napzárást, nem a reggeli briefinget. Egy „Teljes szál ›" nyitja a nap összes üzenetét sheetben.</p>
+    <div class="phone tall">
+      <div class="phone-screen td" data-day="este">
+        <div class="sky" aria-hidden="true"></div>
+        <div class="dynamic-island"></div>
+        <div class="status-bar"><span>21:22</span><span class="status-icons">
+          <svg viewBox="0 0 24 24"><path d="M2 17h3v4H2zm5-3h3v7H7zm5-4h3v11h-3zm5-5h3v16h-3z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 8h13v8H4zm14 2h2v4h-2z"/></svg>
+        </span></div>
+        <div class="screen-content">
+
+          <div class="apphero">
+            <div class="avwrap">
+              <a class="avlink np-press" aria-label="Profil">
+                <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--line)" stroke-width="3"/>
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="var(--coral)" stroke-width="3"
+                          stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="48"
+                          transform="rotate(-90 24 24)"/>
+                </svg>
+                <span class="avatar" aria-hidden="true">D</span>
+              </a>
+              <a class="lvbadge np-press" aria-label="Szint 12">12</a>
+            </div>
+            <div class="idcol">
+              <a class="t1">Daniel</a>
+              <button type="button" class="t2 np-press">A Fegyelmezett</button>
+            </div>
+            <div class="counters">
+              <button type="button" class="cnt fire np-press">🔥 6</button>
+              <a class="cnt quest np-press">⚡ 1/3</a>
+              <button type="button" class="cnt coin np-press">🪙 240</button>
+            </div>
+            <div class="util"><a class="icon-btn" aria-label="Insights">✨</a></div>
+          </div>
+
+          <div class="td-segwrap">
+            <div class="td-seg" role="group" aria-label="Napszak">
+              <button type="button" aria-pressed="false"><em>🌅</em> Reggel</button>
+              <button type="button" aria-pressed="false"><em>☀️</em> Nap</button>
+              <button type="button" aria-pressed="true"><em>🌙</em> Este <span class="td-now" aria-label="most"></span></button>
+            </div>
+          </div>
+
+          <!-- ▸ C VÁLTOZAT: a napszak SAJÁT üzenete -->
+          <div class="td-msg">
+            <div class="td-av" aria-hidden="true">✦</div>
+            <div class="td-bub">
+              <div class="td-bub-h">
+                <span class="td-bub-n">Mezo · napzárás</span><span class="td-bub-t">21:15</span>
+              </div>
+              <p class="td-bub-x clamp">A Pull Day meglett, és a Chest Row 107,5 × 8 új PR — március óta először.
+                A fehérje 172 g-nál állt meg, ez a cél 93%-a. Vacsora után 21:30-ig zárd le az evést.</p>
+              <button type="button" class="td-bub-f">Teljes szál · 3 üzenet ma <span>›</span></button>
+            </div>
+          </div>
+
+          <div class="td-hero">
+            <div><span class="td-hero-v">1:08</span><span class="td-hero-u"> a villanyoltásig</span></div>
+            <span class="td-hero-s">Napzárás 21:15-től · villanyoltás 22:30</span>
+          </div>
+
+          <div class="td-stats" style="grid-template-columns:repeat(2,1fr)">
+            <div class="td-stat">
+              <div class="td-stat-v">+73<small>XP</small></div>
+              <div class="td-stat-l">Nap mérlege</div>
+              <div class="td-stat-d is-good">8/9 tétel ma</div>
+            </div>
+            <div class="td-stat">
+              <div class="td-stat-v">7,5<small>óra</small></div>
+              <div class="td-stat-l">Alvás-kilátás</div>
+              <div class="td-stat-d">ha 23:15-kor lefekszel</div>
+            </div>
+          </div>
+
+          <button type="button" class="td-cta is-lav">Napzárás</button>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Esti rutin</b><a>0/4 ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">☕</span>
+                <span class="td-tx"><span class="td-t1">Koffein-cutoff</span><span class="td-t2">a lánc kezdete</span></span>
+                <button type="button" class="td-tick" aria-label="Pipa"></button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">🍽️</span>
+                <span class="td-tx"><span class="td-t1">Konyha zárva</span><span class="td-t2">vacsora után</span></span>
+                <button type="button" class="td-tick" aria-label="Pipa"></button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">✍️</span>
+                <span class="td-tx"><span class="td-t1">Szándékkal éltem?</span><span class="td-t2">konyhazárás után</span></span>
+                <button type="button" class="td-act">Logolás</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-habit" aria-hidden="true">📵</span>
+                <span class="td-tx"><span class="td-t1">Wind-down, képernyő le</span><span class="td-t2">napzárás után</span></span>
+                <button type="button" class="td-tick" aria-label="Pipa"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Fuel</b><a>Napló ›</a></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic t-fuel" aria-hidden="true">🐟</span>
+                <span class="td-tx"><span class="td-t1">Lazac + barna rizs + brokkoli</span>
+                  <span class="td-t2">Vacsora</span></span>
+                <button type="button" class="td-act">Logold</button>
+              </div>
+              <div class="td-row">
+                <span class="td-ic t-fuel" aria-hidden="true">💊</span>
+                <span class="td-tx"><span class="td-t1">Este stack</span><span class="td-t2">Mg · D3 · Omega-3</span></span>
+                <button type="button" class="td-act">Logold</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="td-sec">
+            <div class="td-sech"><b>Reflexió</b></div>
+            <div class="td-list">
+              <div class="td-row">
+                <span class="td-ic" aria-hidden="true">✦</span>
+                <span class="td-tx"><span class="td-t1">Szándékkal élted a napot?</span>
+                  <span class="td-t2">Igen · Részben · Nem</span></span>
+                <span class="td-chev" aria-hidden="true">›</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="td-done">✓ 8 kész ma · +73 XP <span>▾</span></button>
+
+        </div>
+        <nav class="tab-bar">
+          <a class="tab-item active"><span class="tab-dot"></span><span class="tab-ico">📅</span><span>Ma</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🏋️</span><span>Edzés</span></a>
+          <button type="button" class="tab-fab" aria-label="Gyors logolás">＋</button>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">🍽️</span><span>Fuel</span></a>
+          <a class="tab-item"><span class="tab-dot"></span><span class="tab-ico">👤</span><span>Én</span></a>
+        </nav>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+</body>
+</html>

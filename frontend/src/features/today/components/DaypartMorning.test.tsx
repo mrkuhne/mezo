@@ -64,6 +64,6 @@ describe('DaypartMorning', () => {
 
   test('empty facts ghost the strip', () => {
     const { container } = renderMorning({ facts: [] })
-    expect(container.querySelector('.isl-facts')).toBeNull()
+    expect(container.querySelector('.td-stats')).toBeNull()
   })
 })

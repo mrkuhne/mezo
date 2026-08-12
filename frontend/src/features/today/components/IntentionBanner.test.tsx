@@ -50,15 +50,16 @@ describe('IntentionBanner', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   describe('variant="chip"', () => {
-    test('shows the creed, the day\'s foci and the n / cap count with a + Mai fókusz CTA', () => {
+    test('shows the creed and the day\'s foci with a + Mai fókusz CTA', () => {
       const { container } = renderChip() // seed: creed + 2 foci, cap 3
-      expect(container.querySelector('.creedchip')).toBeTruthy()
+      expect(container.querySelector('.td-list')).toBeTruthy()
+      // the n / cap count lives in the section header now (no floating pill)
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz · 2 / 3')
       expect(screen.getByText(/szándékkal élek/i)).toBeInTheDocument()
       // the day's stated intentions are OUTPUT, not just input (mezo-j7u4 fix round 2)
-      expect(container.querySelectorAll('.creedchip-fx')).toHaveLength(2)
+      expect(container.querySelectorAll('.td-row')).toHaveLength(2)
       expect(screen.getByText(/Jelen lenni minden beszélgetésben/)).toBeInTheDocument()
       expect(screen.getByText(/a formára figyelek/)).toBeInTheDocument()
-      expect(screen.getByText('2 / 3')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Fókusz hozzáadása/ })).toBeInTheDocument()
     })
 
@@ -66,17 +67,17 @@ describe('IntentionBanner', () => {
       const { container } = renderChipWithDay({
         date: localDateString(), creed: 'Szándékkal élek.', foci: [], reflection: null, focusCap: 3,
       })
-      // zero foci: nothing to show yet, and no count pill
-      expect(container.querySelectorAll('.creedchip-fx')).toHaveLength(0)
-      expect(screen.queryByText('0 / 3')).toBeNull()
+      // zero foci: nothing to show yet, and the header carries no count
+      expect(container.querySelectorAll('.td-row')).toHaveLength(0)
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz')
 
       await userEvent.click(screen.getByRole('button', { name: /Fókusz hozzáadása/ }))
       await userEvent.type(await screen.findByRole('textbox'), 'Ma végig jelen leszek')
       await userEvent.click(screen.getByRole('button', { name: 'Hozzáadom' }))
 
       expect(await screen.findByText('Ma végig jelen leszek')).toBeInTheDocument()
-      expect(container.querySelectorAll('.creedchip-fx')).toHaveLength(1)
-      expect(screen.getByText('1 / 3')).toBeInTheDocument()
+      expect(container.querySelectorAll('.td-row')).toHaveLength(1)
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz · 1 / 3')
     })
 
     test('foci render even without a creed (RoutineCard\'s sheet can produce those)', () => {
@@ -85,7 +86,7 @@ describe('IntentionBanner', () => {
         foci: [{ id: 'a', focusDate: localDateString(), text: 'Creed nélküli fókusz' }],
       })
       expect(screen.getByText('Creed nélküli fókusz')).toBeInTheDocument()
-      expect(container.querySelectorAll('.creedchip-fx')).toHaveLength(1)
+      expect(container.querySelectorAll('.td-row')).toHaveLength(1)
     })
 
     test('opens the focus sheet from the + Mai fókusz button', async () => {
@@ -115,11 +116,11 @@ describe('IntentionBanner', () => {
         ] },
         isPending: false,
       })
-      renderChip()
+      const { container } = renderChip()
       expect(screen.queryByRole('button', { name: /Fókusz hozzáadása/ })).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Vezérelv szerkesztése' })).toBeInTheDocument()
       // ...but the foci at the cap are still displayed, and counted
-      expect(screen.getByText('2 / 2')).toBeInTheDocument()
+      expect(container.querySelector('.td-sech b')?.textContent).toBe('Fókusz · 2 / 2')
       expect(screen.getByText('a')).toBeInTheDocument()
       expect(screen.getByText('b')).toBeInTheDocument()
     })
@@ -127,7 +128,7 @@ describe('IntentionBanner', () => {
     test('ghosts while pending with no creed and no foci (real mode before data)', () => {
       hooks.useIntentionDay.mockReturnValue({ data: EMPTY, isPending: true })
       const { container } = renderChip()
-      expect(container.querySelector('.creedchip')).toBeNull()
+      expect(container.querySelector('.td-list')).toBeNull()
       expect(container).toBeEmptyDOMElement()
     })
   })
@@ -141,6 +142,23 @@ describe('IntentionBanner', () => {
       expect(screen.getByRole('button', { name: 'Nem' })).toBeInTheDocument()
     })
 
+    // The ONE box-language regression this test guards: the reflect block used to be a bare
+    // `.reflect` card with no section header (mezo-e26w Task 15 runtime finding). It must now
+    // sit inside a TodayList like every other Today section — same `.td-sech` header on the
+    // 16px rail, same `.td-list` box — while its internals (question/options) stay untouched.
+    test('sits inside a TodayList box with a "Reflexió" section header', () => {
+      const { container } = renderReflect()
+      const head = container.querySelector('.td-sech')
+      expect(head?.textContent).toBe('Reflexió')
+      const list = container.querySelector('.td-list')
+      expect(list).toBeTruthy()
+      expect(head?.nextElementSibling).toBe(list)
+      // the untouched internals still live inside that box
+      expect(list?.querySelector('.reflect')).toBeTruthy()
+      expect(list?.querySelector('.reflect-q')?.textContent).toBe('Szándékkal élted a napot?')
+      expect(list?.querySelectorAll('.reflect-opt')).toHaveLength(3)
+    })
+
     test('once reflected it collapses to the ✓ done line', () => {
       hooks.useIntentionDay.mockReturnValue({
         data: { ...EMPTY, creed: 'x', reflection: 'partial', foci: [{ id: 'a', focusDate: EMPTY.date, text: 'a' }] },
@@ -151,19 +169,23 @@ describe('IntentionBanner', () => {
       expect(screen.queryByRole('button', { name: 'Igen' })).not.toBeInTheDocument()
     })
 
-    test('ghosts without foci', () => {
+    test('ghosts without foci — no header, no box, nothing at all', () => {
       hooks.useIntentionDay.mockReturnValue({ data: { ...EMPTY, creed: 'x' }, isPending: false })
       const { container } = renderReflect()
       expect(container).toBeEmptyDOMElement()
+      expect(container.querySelector('.td-sech')).toBeNull()
+      expect(container.querySelector('.td-list')).toBeNull()
     })
 
-    test('ghosts without a creed', () => {
+    test('ghosts without a creed — no header, no box, nothing at all', () => {
       hooks.useIntentionDay.mockReturnValue({
         data: { ...EMPTY, foci: [{ id: 'a', focusDate: EMPTY.date, text: 'a' }] },
         isPending: false,
       })
       const { container } = renderReflect()
       expect(container).toBeEmptyDOMElement()
+      expect(container.querySelector('.td-sech')).toBeNull()
+      expect(container.querySelector('.td-list')).toBeNull()
     })
   })
 })

@@ -10,6 +10,8 @@
 import { useState } from 'react'
 import { useIntentionDay, useIntentionActions } from '@/data/hooks'
 import type { Reflection } from '@/data/types'
+import { TodayList } from '@/features/today/components/TodayList'
+import { TodayRow } from '@/features/today/components/TodayRow'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { CreedSheet } from '@/features/today/sheets/CreedSheet'
 import { localDateString } from '@/shared/lib/dates'
@@ -31,70 +33,56 @@ export function IntentionBanner({ variant }: { variant: 'chip' | 'reflect' }) {
     // Nothing to reflect on without a creed and at least one focus.
     if (!data.creed || data.foci.length === 0) return null
     return (
-      <div className="reflect">
-        {data.reflection ? (
-          <div className="reflect-done">✓ {REFLECT_LABEL[data.reflection]} — a mai szándékodra reflektáltál.</div>
-        ) : (
-          <>
-            <div className="reflect-q">Szándékkal élted a napot?</div>
-            <div className="reflect-opts">
-              {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
-                <button key={v} className="reflect-opt" onClick={() => reflect(v)}>{REFLECT_LABEL[v]}</button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      <TodayList label="Reflexió">
+        <div className="reflect">
+          {data.reflection ? (
+            <div className="reflect-done">✓ {REFLECT_LABEL[data.reflection]} — a mai szándékodra reflektáltál.</div>
+          ) : (
+            <>
+              <div className="reflect-q">Szándékkal élted a napot?</div>
+              <div className="reflect-opts">
+                {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
+                  <button key={v} className="reflect-opt" onClick={() => reflect(v)}>{REFLECT_LABEL[v]}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </TodayList>
     )
   }
 
   return (
     <>
-      <div className="creedchip">
-        <div className="creedchip-hd">
-          <span className="creedchip-st" aria-hidden="true">✦</span>
+      <TodayList
+        label={data.foci.length > 0 ? `Fókusz · ${data.foci.length} / ${data.focusCap}` : 'Fókusz'}
+        action={
+          !data.creed ? (
+            <button type="button" onClick={() => setCreedOpen(true)}>+ Vezérelv megírása</button>
+          ) : data.foci.length < data.focusCap ? (
+            <button type="button" aria-label="Fókusz hozzáadása" onClick={() => setFocusOpen(true)}>
+              + Mai fókusz
+            </button>
+          ) : undefined /* a napi sapkán — nincs halott kontroll (az ItemRow doktrína) */
+        }
+      >
+        <div className="td-creed">
           {data.creed ? (
-            // The creed itself is the edit affordance — CreedSheet has no other entry point,
-            // so the retired `szerkeszt` button's job (and its label) moved onto the text.
-            <button type="button" className="creedchip-tx" aria-label="Vezérelv szerkesztése"
+            // A vezérelv maga a szerkesztő affordancia — a CreedSheet-nek nincs más belépője.
+            <button type="button" className="td-creed-q" aria-label="Vezérelv szerkesztése"
               onClick={() => setCreedOpen(true)}>
               „{data.creed}"
             </button>
           ) : (
-            // empty-state subtitle voice: Fraunces italic (DS text-meta-sm) — no override
-            <span className="creedchip-tx">
+            <span className="td-creed-q">
               Fogalmazd meg az irányt, ami a döntéseidet vezeti — egy mondat, amire minden nap ránézel.
             </span>
           )}
-          {data.foci.length > 0 && (
-            <span className="creedchip-cnt">{data.foci.length} / {data.focusCap}</span>
-          )}
-          {!data.creed ? (
-            <button type="button" className="creedchip-go" onClick={() => setCreedOpen(true)}>
-              + Vezérelv megírása
-            </button>
-          ) : data.foci.length < data.focusCap ? (
-            <button type="button" className="creedchip-go" aria-label="Fókusz hozzáadása"
-              onClick={() => setFocusOpen(true)}>
-              + Mai fókusz
-            </button>
-          ) : null /* at the daily cap — no dead control (the ItemRow doctrine) */}
         </div>
-
-        {/* The day's stated intentions — WITHOUT this the add-a-focus path is write-only
-            (mezo-j7u4 fix round 2). Rendered whenever foci exist, even creed-less ones
-            (RoutineCard's IntentionSheet can produce those), so no focus is ever invisible. */}
-        {data.foci.length > 0 && (
-          <div className="creedchip-foci">
-            {data.foci.map((f) => (
-              <div key={f.id} className="creedchip-fx">
-                <span className="creedchip-fx-mark" aria-hidden="true">◆</span>
-                <span>{f.text}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        {data.foci.map((f) => (
+          <TodayRow key={f.id} tone="plain" icon="✦" title={f.text} accessory="none" />
+        ))}
+      </TodayList>
 
       {focusOpen && <IntentionSheet creed={data.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {creedOpen && <CreedSheet initial={data.creed ?? ''} onSave={setCreed} onClose={() => setCreedOpen(false)} />}

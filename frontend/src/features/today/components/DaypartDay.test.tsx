@@ -29,7 +29,6 @@ const renderDay = (over: Partial<Parameters<typeof DaypartDay>[0]> = {}) =>
           open={[item()]}
           done={[]}
           doneXp={0}
-          note={null}
           celebrations={[]}
           onAct={() => {}}
           onCustom={() => {}}
@@ -58,19 +57,15 @@ describe('DaypartDay', () => {
     expect(onCustom).toHaveBeenCalled()
   })
 
-  test('the niggle warning renders as the one safety chip', () => {
-    renderDay({ heroWarn: 'Bal váll — figyelj a tempóra' })
+  test('the niggle warning renders as a plain footnote below the CTA', () => {
+    const { container } = renderDay({ heroWarn: 'Bal váll — figyelj a tempóra' })
     expect(screen.getByText(/Bal váll/)).toBeInTheDocument()
+    expect(container.querySelector('.td-foot.is-warn')).toBeInTheDocument()
   })
 
   test('rows are visible with no unfolding', () => {
     renderDay()
     expect(screen.getByText('Ebéd')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^még \d+ ›$/ })).toBeNull()
-  })
-
-  test('the companion note renders above the groups when present', () => {
-    renderDay({ note: { window: 'Ebéd', kind: 'nudge', text: 'Igyál egy pohár vizet.' } })
-    expect(screen.getByText(/Igyál egy pohár vizet/)).toBeInTheDocument()
   })
 })

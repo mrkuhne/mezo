@@ -2174,9 +2174,12 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   border-radius: var(--r-full); padding: 7px 11px; font-family: var(--ff-body); font-style: normal; cursor: pointer;
   background: color-mix(in srgb, var(--surface-card) 70%, transparent); white-space: nowrap; }
 
-/* evening reflect — the intention question as its own card */
-.reflect { margin: 0 24px 16px; padding: 14px; border-radius: var(--r-lg);
-  background: var(--surface-card); border: 1px solid var(--divider); }
+/* evening reflect — content padding only (mezo-e26w): the box chrome (border, background,
+   radius, the 16px rail) now comes from the `.td-list` it sits inside (IntentionBanner wraps
+   it in a `TodayList label="Reflexió"`), same precedent as `.td-creed` below. `.reflect` used
+   to BE its own card before the ONE-box-language pass; it never renders anywhere else now, so
+   there is no second consumer relying on the old standalone chrome. */
+.reflect { padding: 14px; }
 .reflect-q { font: 600 14px/1.4 var(--ff-body); color: var(--text-primary); margin-bottom: 10px; }
 .reflect-opts { display: flex; gap: 8px; }
 .reflect-opt {
@@ -2399,14 +2402,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   :where(.isl-l1) .itemrow { animation: none; }
   .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
 }
-
-/* ═══ Mai · napszak-tabok (mezo-puci) ═══
-   The house .segtabs control in the Today gutter; the gold dot marks the
-   chronologically-current daypart independently of the pressed segment. */
-.daytabs { padding: 4px 20px 12px; }
-.daytabs .segtab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-.daytab-now { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-base);
-              box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-base) 22%, transparent); }
 
 /* ═════════ Fuel WindowIsland — .isl-mealchip family (mezo-jgh9, window-river Task 4) ═════════
    The window-island's plan-meal chip: name + kcal/P meta + an illik-score badge when the
@@ -3261,44 +3256,29 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   .segtab:active { transform: none; }
 }
 
-/* ═══ Mai · a mezo-üzenet sávja (mezo-puci) ═══
-   The CoachBubble stripped of its card framing: edge-to-edge, no left rule,
-   no radius, no avatar gap. Only a hairline separates it from the day view. */
-.coach-bubble.cb-band { margin: 0; padding: 16px 20px 18px; border-left: 0; border-radius: 0;
-                        border-bottom: 1px solid color-mix(in srgb, var(--primary-base) 16%, transparent);
-                        gap: 0; }
-.cb-band .cb-head { margin-bottom: 8px; }
-.cb-band .brief-lead { margin: 0; }
-.cb-band .brief-refs { margin-top: 14px; }
-
 /* ═══ Mai · napszak-nézet (mezo-puci) ═══
    No card: the content sits on the canvas. Boxes only inside — the fact
    strip, the ItemRows, the chips. The .isl-* micro-components are reused
    as-is (they are Fuel's language too), only the frame is new. */
-.dayview { padding: 2px 20px 6px; }
+/* A Today lapnyelve a 16px-es sínt ELEMENKÉNT hordozza (a globális `--sp-4` DS-token),
+   nem a panelen — így a listadobozok, a hero és a CTA mind pontosan egy vonalban ülnek.
+   A `.dayview` megmarad, mert ő viszi a tabváltás `isl-phasein` fade-jét és az `is-night`
+   állapotot (lásd `todayReducedMotion.test.ts`). */
+.dayview { padding: 2px 0 6px; }
+/* Anchor melt (`/today?day=rough`, `AnchorIsland.tsx`) — its `.isl-openhead`/`.isl-hero-v`/
+   `.isl-hero-sub` used to inherit their inset from `.dayview`'s old padding above; scoped to
+   `.anch-melt` (the melt's own wrapper) rather than the bare selectors, because Fuel's "Mai"
+   window flow (`WindowIsland.tsx`) renders the SAME `.isl-*` classes through `shared/ui/Island`'s
+   `.isl-bigview` shell, which already carries its own padding — must not double up there
+   (pre-merge review Finding 1). The row cards (`.isl-anchor-rows` → `ItemRow`) and the exit
+   button (`.isl-act`, centered) already carry their own inset and need no rule here. */
+.anch-melt .isl-openhead, .anch-melt .isl-hero-v, .anch-melt .isl-hero-sub { padding: 0 var(--sp-4); }
 :where(.dayview) { animation: isl-phasein .32s ease both; }
-.dv-hero { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-.dv-hero-v { font-size: 30px; font-weight: 200; letter-spacing: -.03em; line-height: 1.1;
-             color: var(--ink); font-variant-numeric: tabular-nums; }
-.dv-hero-u { font-size: 14px; font-weight: 300; color: var(--faint); letter-spacing: 0; }
-.dv-hero-sub { width: 100%; font-size: 11.5px; color: var(--sub); font-weight: 500; margin-top: 4px; }
-.dayview .isl-facts { margin-top: 14px; }
-.dayview .isl-warnchip { margin: 12px 0 0; }
-.dv-act { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-.dayview .isl-cta { padding: 10px 18px; font-size: 13px; }
-.dayview .isl-grouph { margin: 18px 2px 8px; }
-.dayview .itemrow { margin-bottom: 6px; }
-.dayview .creedchip { margin: 0 0 6px; }
-.dv-done { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 12px;
-           padding: 10px 14px; border-radius: var(--r-full); border: 1px solid var(--line);
-           background: transparent; font-family: inherit; font-size: 12px; font-weight: 700;
-           color: var(--success-hover); cursor: pointer; }
-.dv-done-arr { margin-left: auto; color: var(--faint); font-weight: 600; }
 /* night: the view itself goes theme-invariant dark (the .isl-night heritage) */
 .dayview.is-night { background: linear-gradient(165deg, #28223c, #1d1930); border-radius: var(--r-xl);
                     padding: 18px 20px 14px; margin: 0 6px; }
-.dayview.is-night .dv-hero-v { color: #F5EFE6; }
-.dayview.is-night .dv-hero-u, .dayview.is-night .dv-hero-sub { color: #9c92b8; }
+.dayview.is-night .td-hero-v { color: #F5EFE6; }
+.dayview.is-night .td-hero-u, .dayview.is-night .td-hero-s { color: #9c92b8; }
 .dv-nightrow { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px;
                background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
                border-radius: var(--r-xl); color: #E8E2F5; font-size: 13px; font-weight: 600;
@@ -3307,7 +3287,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 @media (prefers-reduced-motion: reduce) {
   .dayview { animation: none; }
 }
-.dv-state { margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--success-hover); }
 /* ===== WorkoutSummary redesign (mezo-w943) — hero+halo, region pills,
    mérleg strip, medal cards, challenge rows, set-chip map. Feature-scoped
    vocabulary (same precedent as .setdots/.excard); tokens only. ===== */
@@ -3449,3 +3428,227 @@ ol.md-list { list-style: decimal; }
 /* Recording mic (mezo-at8x.4) — a slow breath while the composer is listening. */
 .chat-mic-live { animation: pulse-soft 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }
+
+/* ============================================================
+   Today · iOS list language (mezo-e26w)
+   Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
+   16px-es sín — a globális `--sp-4` DS-token közvetlenül, elemenként. Árnyék
+   helyett .5px hajszálvonal. A sorelválasztó a vezető ikon szélességétől
+   (52px) indul, nem a doboz élétől.
+   Kizárólag meglévő DS-tokenekből épül — nincs új szín, nincs új token.
+   (Korábban egy lokálisan skálázott `--td-gut` property vitte ugyanezt a
+   16px-et, `.dayview, .daytabs, .todaychip`-re scope-olva — de a `.todaychip`
+   szelektor sosem létezett, így a deklaráció minden, e két alfán KÍVÜLI
+   gyökéren [`.td-chip`, a skeletonok] érvénytelenné vált computed-value
+   időben, és a property csendben nullára esett. A property most már nem
+   létezik: minden korábbi felhasználás közvetlenül `--sp-4`-et olvas — lásd
+   `todayCssTokens.test.ts`.)
+   ============================================================ */
+
+/* ── szegmentált napszak-váltó — egy vályú + csúszó bélyeg ──
+   min-height 44px a tap-target-minimumhoz (code review, mezo-e26w Finding 2) — a vályú emiatt
+   50px-re nő (3px padding + 44px gomb + 3px padding), ez szándékos. */
+.td-segwrap { padding: 6px var(--sp-4) 14px; }
+.td-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+          background: var(--surface-recess); border-radius: var(--r-full); padding: 3px; }
+.td-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+                 min-height: 44px; border: 0; background: transparent; border-radius: var(--r-full);
+                 font-family: var(--ff-body); font-size: 13.5px; font-weight: 600; letter-spacing: -.01em;
+                 color: var(--text-secondary); cursor: pointer;
+                 transition: background var(--duration-fast) var(--ease-out),
+                             color var(--duration-fast) var(--ease-out); }
+.td-seg button em { font-style: normal; font-size: 13px; opacity: .9; }
+.td-seg button[aria-pressed='true'] { background: var(--surface-card); color: var(--text-primary);
+                                      box-shadow: 0 1px 3px rgba(43, 33, 24, .10),
+                                                  0 0 0 .5px rgba(43, 33, 24, .04); }
+.td-now { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-base);
+          box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--accent-base) 24%, transparent); }
+
+/* ── MezoChip ── */
+.td-chip { display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--sp-4));
+           margin: 0 var(--sp-4) 18px; padding: 11px 14px; min-height: 44px;
+           border-radius: var(--r-lg); background: var(--surface-card);
+           border: .5px solid var(--divider); cursor: pointer; text-align: left;
+           box-shadow: 0 1px 2px rgba(43, 33, 24, .05); font-family: var(--ff-body); }
+.td-av { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; position: relative;
+         background: var(--gradient-cta); color: var(--text-inverse); display: grid;
+         place-items: center; font-size: 12px; box-shadow: 0 2px 6px rgba(255, 91, 54, .30); }
+.td-av.is-unread::after { content: ''; position: absolute; top: -1px; right: -1px;
+                          width: 9px; height: 9px; border-radius: 50%; background: var(--primary-base);
+                          box-shadow: 0 0 0 2px var(--surface-card); }
+.td-chip-t { flex: 1; min-width: 0; }
+.td-chip-t b { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary);
+               letter-spacing: -.01em; }
+.td-chip-t i { display: block; font-style: normal; font-size: 12px; color: var(--text-muted);
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.td-chip-n { flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-full);
+             background: var(--primary-base); color: var(--text-inverse); font-size: 11.5px;
+             font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.td-chev { flex: 0 0 auto; color: var(--text-disabled); font-size: 16px; font-weight: 600; }
+
+/* ── napszak-hero ── */
+.td-hero { padding: 2px var(--sp-4) 0; }
+.td-hero-l { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.td-hero-v { font-family: var(--ff-display); font-size: 36px; font-weight: 250; line-height: 1.05;
+             letter-spacing: -.035em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.td-hero-u { font-size: 15px; font-weight: 400; color: var(--text-secondary); letter-spacing: -.01em; }
+.td-hero-s { display: block; font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted);
+             margin-top: 5px; letter-spacing: -.005em; }
+
+/* ── statisztika-csoport: EGY doboz, függőleges hajszálvonallal ── */
+.td-stats { display: grid; margin: 14px var(--sp-4) 0; background: var(--surface-card);
+            border: .5px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
+.td-stat { padding: 12px 14px; }
+.td-stat + .td-stat { border-left: .5px solid var(--divider); }
+.td-stat-v { font-family: var(--ff-display); font-size: 21px; font-weight: 400; letter-spacing: -.02em;
+             color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.td-stat-v small { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+.td-stat-l { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+             text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
+.td-stat-d { font-family: var(--ff-body); font-size: 11.5px; margin-top: 4px; color: var(--text-secondary); }
+.td-stat-d.is-good { color: var(--success-hover); }
+.td-stat-d.is-warn { color: var(--warning-hover); }
+.td-stat-d.is-muted { color: var(--text-muted); }
+
+/* ── elsődleges CTA + ghost ── */
+.td-cta { display: flex; align-items: center; justify-content: center; gap: 8px;
+          width: calc(100% - 2 * var(--sp-4)); margin: 16px var(--sp-4) 0; min-height: 50px;
+          border: 0; border-radius: var(--r-lg); background: var(--gradient-cta);
+          color: var(--text-inverse); font-family: var(--ff-body); font-size: 16px; font-weight: 600;
+          letter-spacing: -.01em; box-shadow: var(--shadow-cta); cursor: pointer; }
+.td-cta.is-lav { background: linear-gradient(135deg, #A99BD3, #8B7CC0);
+                 box-shadow: 0 8px 20px rgba(139, 124, 192, .32); }
+.td-ghost { display: block; width: calc(100% - 2 * var(--sp-4)); margin: 8px var(--sp-4) 0;
+            min-height: 44px; border-radius: var(--r-lg); border: .5px solid var(--divider);
+            background: var(--surface-card); font-family: var(--ff-body); font-size: 14.5px;
+            font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+
+/* ── szekció + inset grouped list ── */
+.td-sec { margin-top: 26px; }
+.td-sech { display: flex; align-items: baseline; padding: 0 var(--sp-4) 7px; }
+.td-sech b { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .075em;
+             text-transform: uppercase; color: var(--text-muted); }
+.td-sech a, .td-sech button { margin-left: auto; font-family: var(--ff-body); font-size: 12.5px;
+                              font-weight: 600; color: var(--primary-hover); text-decoration: none;
+                              letter-spacing: -.005em; border: 0; background: none; cursor: pointer;
+                              padding: 6px 0 6px 8px; }
+.td-list { margin: 0 var(--sp-4); background: var(--surface-card); border: .5px solid var(--divider);
+           border-radius: var(--r-lg); overflow: hidden; }
+.td-row { display: flex; align-items: center; gap: 11px; padding: 9px 13px; min-height: 56px;
+          position: relative; background: transparent; width: 100%; text-align: left;
+          font-family: var(--ff-body); }
+/* iOS-elválasztó: a vezető ikon szélességétől indul, nem a doboz élétől */
+.td-row + .td-row::before { content: ''; position: absolute; top: 0; left: 52px; right: 0;
+                            border-top: .5px solid var(--divider); }
+.td-ic { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: grid;
+         place-items: center; font-size: 15px; background: var(--surface-recess); }
+.td-ic.t-habit { background: color-mix(in srgb, var(--dv-lav) 18%, transparent); }
+.td-ic.t-quest { background: color-mix(in srgb, var(--accent-base) 20%, transparent); }
+.td-ic.t-fuel  { background: color-mix(in srgb, var(--dv-sage) 22%, transparent); }
+.td-ic.t-check { background: color-mix(in srgb, var(--dv-rose) 20%, transparent); }
+.td-ic.t-train { background: color-mix(in srgb, var(--primary-base) 16%, transparent); }
+.td-tx { flex: 1; min-width: 0; }
+.td-t1 { display: block; font-size: 15.5px; font-weight: 500; letter-spacing: -.015em;
+         color: var(--text-primary); line-height: 1.25; }
+.td-t2 { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px;
+         letter-spacing: -.005em; line-height: 1.3; }
+.td-tm { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--text-muted);
+         font-variant-numeric: tabular-nums; }
+/* kísérő #1 — tintás szöveggomb (NEM szürke pirula). `min-height: 44px` + a saját
+   `display: flex; align-items: center` a tap-target-minimum (pre-merge review Finding 3) — a
+   sor legtöbbet koppintott kísérője volt az egyetlen `.td-*` kontroll, ami kimaradt a
+   `.td-tick`/`.td-seg button` 44px-őrből (`todayTapTargets.test.ts`). A `.td-row` saját
+   56px-es `min-height`-je + `align-items: center`-je miatt a sor magassága nem nő; a belső
+   flex-centrírozás csak a föliratot tartja középen a magasabb dobozban, a padding változatlan. */
+.td-act { flex: 0 0 auto; border: 0; background: none; padding: 12px 2px 12px 10px; cursor: pointer;
+          font-family: var(--ff-body); font-size: 14.5px; font-weight: 600; letter-spacing: -.01em;
+          color: var(--primary-hover); white-space: nowrap; min-height: 44px; display: flex;
+          align-items: center; }
+.td-act.is-inert { color: var(--text-disabled); cursor: default; }
+/* kísérő #2 — pipáló karika: a GOMB 44×44 (tap-target-minimum), a látható 26px kör csak a
+   rajz — a `::before`-ban, a gombon belül középre igazítva, hogy a nagyobb találati felület
+   ne nagyítsa fel magát a kört (code review, mezo-e26w Finding 1). Az `isolation: isolate` +
+   a kör negatív z-indexe a rétegsorrendet a gombon BELÜLRE zárja: a pipa-glyph (a gomb
+   szövegtartalma) így mindig a kör fölött fest, anélkül hogy a kör kiszökne a `.td-list`
+   kártya háttere mögé. */
+.td-tick { flex: 0 0 auto; position: relative; isolation: isolate; width: 44px; height: 44px;
+           border: 0; background: none; cursor: pointer;
+           display: grid; place-items: center; font-size: 14px; color: transparent; }
+.td-tick::before { content: ''; position: absolute; inset: 0; margin: auto; z-index: -1;
+                    width: 26px; height: 26px; border-radius: 50%;
+                    border: 1.6px solid var(--text-disabled); }
+.td-tick.is-done { color: var(--text-inverse); }
+.td-tick.is-done::before { border-color: var(--success-base); background: var(--success-base); }
+.td-link { flex: 0 0 auto; width: 44px; height: 44px; display: inline-flex; align-items: center;
+           justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 14px; }
+/* az egész-sor-gomb alak: a találati felület a soron BELÜL él, hogy a `↗` link a
+   testvére lehessen (sosem a gombba ágyazva — érvénytelen HTML + kattintás-ütközés).
+   `align-self: stretch` a gombot a `.td-row` tartalmi dobozának teljes magasságára
+   nyújtja; a negatív `margin-block` + az őt kompenzáló `padding-block` visszanyúlik a
+   sor saját 9px függőleges paddingjébe, így a találati terület lefedi a sor teljes
+   56px-es magasságát (tap target ≥ 44px), a vizuális elrendezés egyetlen pixelt sem
+   mozdul (code review, mezo-e26w Task 6 fix — a gomb korábban a 28px ikon
+   tartalommagasságára zsugorodott). */
+.td-row-hit { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
+              background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+              font-family: inherit; color: inherit; align-self: stretch; margin-block: -9px;
+              padding-block: 9px; }
+.td-row.is-done .td-t1 { color: var(--text-muted); text-decoration: line-through; }
+.td-row.is-done .td-ic { opacity: .45; }
+
+/* ── lábjegyzet a csoport alatt — doboz nélkül ── */
+.td-foot { padding: 7px var(--sp-4) 0; font-family: var(--ff-body); font-size: 12px;
+           line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
+.td-foot.is-warn { color: var(--warning-hover); }
+
+/* ── kész-hajtás ── */
+.td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--sp-4));
+           margin: 12px var(--sp-4) 0; padding: 11px 14px; min-height: 44px; border-radius: var(--r-lg);
+           background: transparent; border: .5px dashed var(--divider); cursor: pointer;
+           font-family: var(--ff-body); font-size: 13px; font-weight: 600;
+           color: var(--success-hover); letter-spacing: -.005em; }
+.td-done span { margin-left: auto; color: var(--text-disabled); }
+.td-dayxp { text-align: center; font-family: var(--ff-body); font-size: 12px; font-weight: 700;
+            color: var(--success-hover); padding: 10px var(--sp-4) 0; }
+
+/* ── fókusz (creed) — ugyanaz a listadoboz, halk levendula fejjel ── */
+.td-creed { padding: 12px 14px; background: color-mix(in srgb, var(--dv-lav) 9%, var(--surface-card)); }
+.td-creed-q { display: block; width: 100%; text-align: left; border: 0; background: none;
+              cursor: pointer; font-family: var(--ff-display); font-size: 14.5px; font-style: italic;
+              font-weight: 300; color: var(--secondary-base); line-height: 1.45; }
+
+/* ── MezoMessagesSheet ── */
+.td-sheet-h { display: flex; align-items: center; padding: 4px 16px 12px;
+              border-bottom: .5px solid var(--divider); }
+.td-sheet-h h2 { font-family: var(--ff-body); font-size: 16.5px; font-weight: 700;
+                 letter-spacing: -.02em; color: var(--text-primary); }
+.td-sheet-h button { margin-left: auto; font-family: var(--ff-body); font-size: 15px; font-weight: 600;
+                     color: var(--primary-hover); border: 0; background: none; cursor: pointer;
+                     padding: 10px 0 10px 12px; }
+.td-thread { padding: 14px 0 0; overflow-y: auto; max-height: 62vh; }
+.td-daysep { text-align: center; font-family: var(--ff-body); font-size: 11px; font-weight: 700;
+             letter-spacing: .07em; text-transform: uppercase; color: var(--text-disabled);
+             margin: 2px 0 12px; }
+.td-msg { display: flex; gap: 9px; align-items: flex-end; padding: 0 16px 14px; }
+.td-msg .td-av { margin-bottom: 2px; }
+.td-bub { flex: 1; min-width: 0; background: var(--surface-card); border: .5px solid var(--divider);
+          border-radius: 20px; border-bottom-left-radius: 6px; padding: 11px 14px 12px;
+          box-shadow: 0 1px 2px rgba(43, 33, 24, .05); }
+.td-bub-h { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+.td-bub-n { font-family: var(--ff-body); font-size: 12.5px; font-weight: 700;
+            color: var(--primary-deep); letter-spacing: -.005em; }
+.td-bub-t { font-family: var(--ff-body); font-size: 11.5px; color: var(--text-muted);
+            font-variant-numeric: tabular-nums; }
+.td-bub-x { font-family: var(--ff-body); font-size: 14.5px; line-height: 1.47;
+            color: var(--text-primary); margin: 0; letter-spacing: -.005em; }
+.td-bub-x + .td-bub-x { margin-top: 9px; }
+.td-bub-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.td-bub-meta { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+               text-transform: uppercase; color: var(--text-disabled); margin-top: 9px; }
+
+/* a betöltő váz elrendezése — inline style helyett, hogy a lap CSS-e egy helyen éljen */
+.td-skel { padding: 0 var(--sp-4); }
+.td-skel-chip  { padding-bottom: 18px; }
+.td-skel-hero  { padding-top: 2px; }
+.td-skel-stats { padding-top: 14px; }
+.td-skel-list  { padding-top: 26px; }

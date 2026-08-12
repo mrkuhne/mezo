@@ -1,30 +1,34 @@
 // ============================================================
-// Mezo · DayGroups — a daypart view's item list (mezo-puci), the
-// IslandList successor. Two things left with the islands: the internal
-// scroller (the page is the scroller now) and the `összecsuk` handle
-// (nothing is folded away). What survives verbatim: grouping in
-// first-appearance order, the group heading's count, the quest
-// heading's single Today → /me/growth route, the head/focus slots,
-// and the ItemRow language.
-// The ONE collapsed thing on the whole screen is the done fold — the
-// day's finished items, behind a quiet line.
+// Mezo · DayGroups — egy napszak-nézet tétel-listája (mezo-e26w). A csoportosító
+// logika VÁLTOZATLAN a mezo-puci óta: első-megjelenés sorrend, darabszám a
+// fejlécben, a küldetés-fejléc egyetlen /me/growth útvonala, head/focus slotok.
+// Ami változott: minden csoport EGY `TodayList` dobozban ül, és a sorok a
+// Today saját `TodayRow`-ja — NEM a `shared/ui/ItemRow` (spec §7: azt a Fuel
+// és a rutin-szerkesztő is rendereli, és ebben a változásban nem mozdulnak).
+// Az EGYETLEN összecsukott elem a lapon továbbra is a kész-hajtás.
 // ============================================================
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ItemRow } from '@/shared/ui/ItemRow'
+import { TodayList } from '@/features/today/components/TodayList'
+import { TodayRow, type RowTone } from '@/features/today/components/TodayRow'
+import { rowAccessory } from '@/features/today/logic/rowAccessory'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
-import type { TodayItem } from '@/features/today/logic/todayItems'
+import type { ItemSource, TodayItem } from '@/features/today/logic/todayItems'
+
+const SOURCE_TONE: Record<ItemSource, RowTone> = {
+  habit: 'habit', quest: 'quest', fuel: 'fuel', checkin: 'check', session: 'train', ritual: 'habit',
+}
 
 export interface DayGroupsProps {
   open: TodayItem[]
   done: TodayItem[]
-  /** The whole label on the collapsed fold, e.g. „✓ 3 kész ma · +40 XP". */
+  /** A becsukott hajtás teljes felirata, pl. „✓ 3 kész ma · +40 XP". */
   doneLabel: string
-  /** Evening retrospective total — closes the expanded done block. */
+  /** Esti visszatekintés összege — a kinyitott kész-blokkot zárja. */
   dayXp?: number | null
-  /** The day/evening companion note, above the groups. */
+  /** A nap/este companion-jegyzete, a csoportok fölött. */
   head?: ReactNode
-  /** IntentionBanner slot — rendered under a „Fókusz" group heading. */
+  /** IntentionBanner slot — saját „Fókusz" fejléc alatt. */
   focus?: ReactNode
   growth?: GrowthTodaySummary | null
   habitPending?: boolean
@@ -36,7 +40,7 @@ export function DayGroups({
 }: DayGroupsProps) {
   const [doneOpen, setDoneOpen] = useState(false)
 
-  // Group in first-appearance order — a Map preserves insertion order.
+  // Első-megjelenés sorrend — a Map megőrzi a beszúrási sorrendet.
   const groups = new Map<string, TodayItem[]>()
   for (const it of open) {
     const bucket = groups.get(it.group)
@@ -44,63 +48,61 @@ export function DayGroups({
     else groups.set(it.group, [it])
   }
 
-  const rowsOf = (rows: TodayItem[], isDone = false) =>
-    rows.map((it) => (
-      <ItemRow
-        key={it.id}
-        tone={it.tone}
-        emoji={it.emoji}
-        title={it.title}
-        subtitle={it.subtitle}
-        time={it.time}
-        actionLabel={isDone ? undefined : it.action?.label}
-        onAction={!isDone && it.action ? () => onAct(it) : undefined}
-        linkUrl={it.linkUrl}
-        disabled={habitPending && it.action?.kind === 'habit'}
-        done={isDone}
-      />
-    ))
+  const rowOf = (it: TodayItem, isDone = false) => (
+    <TodayRow
+      key={it.id}
+      tone={SOURCE_TONE[it.source]}
+      icon={it.emoji}
+      title={it.title}
+      subtitle={it.subtitle}
+      time={it.time}
+      accessory={isDone ? 'none' : rowAccessory(it)}
+      actionLabel={isDone ? undefined : it.action?.label}
+      onAction={!isDone && it.action ? () => onAct(it) : undefined}
+      linkUrl={it.linkUrl}
+      disabled={habitPending && it.action?.kind === 'habit'}
+      done={isDone}
+    />
+  )
 
   return (
     <div className="dv-groups">
       {head}
       {[...groups].map(([group, rows]) => (
-        <div key={group}>
-          <div className="isl-grouph">
-            <span>{group} · {rows.length}</span>
-            {group === 'Napi küldetések' && growth && growth.total > 0 && (
-              <Link to="/me/growth" className="isl-grouph-go" aria-label="Küldetések kezelése a Növekedésben">
+        <TodayList
+          key={group}
+          label={group}
+          count={rows.length}
+          action={
+            group === 'Napi küldetések' && growth && growth.total > 0 ? (
+              <Link to="/me/growth" aria-label="Küldetések kezelése a Növekedésben">
                 {growth.done}/{growth.total} · +{growth.xp} XP ›
               </Link>
-            )}
-          </div>
-          {rowsOf(rows)}
-        </div>
+            ) : undefined
+          }
+        >
+          {rows.map((it) => rowOf(it))}
+        </TodayList>
       ))}
-      {focus && (
-        <div>
-          <div className="isl-grouph"><span>Fókusz</span></div>
-          {focus}
-        </div>
-      )}
+      {focus}
       {done.length > 0 && (
-        <div>
+        <>
           <button
             type="button"
-            className="dv-done"
+            className="td-done np-press"
             aria-expanded={doneOpen}
             onClick={() => setDoneOpen((v) => !v)}
           >
             {doneLabel}
-            <span className="dv-done-arr" aria-hidden="true">{doneOpen ? '▴' : '▾'}</span>
+            <span aria-hidden="true">{doneOpen ? '▴' : '▾'}</span>
           </button>
           {doneOpen && (
             <>
-              {rowsOf(done, true)}
-              {dayXp != null && <div className="isl-dayxp">Ma összesen +{dayXp} XP</div>}
+              <TodayList>{done.map((it) => rowOf(it, true))}</TodayList>
+              {dayXp != null && <div className="td-dayxp">Ma összesen +{dayXp} XP</div>}
             </>
           )}
-        </div>
+        </>
       )}
     </div>
   )

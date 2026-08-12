@@ -11,7 +11,7 @@ import { ChainCelebrations } from '@/features/today/components/ChainCelebrations
 import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
-import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
+import { TodayStats } from '@/features/today/components/TodayStats'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact, IslandHero } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
@@ -35,7 +35,7 @@ export function DaypartMorning({
     <DaypartPanel tone="reggel">
       <ChainCelebrations chains={celebrations} />
       <DaypartHero value={hero.value} unit={hero.unit} sub={hero.sub} />
-      <IslandFactsStrip facts={facts} />
+      <TodayStats facts={facts} />
       <DayGroups
         open={open}
         done={done}

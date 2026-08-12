@@ -1,36 +1,35 @@
 // ============================================================
-// Mezo · DaypartTabs — the Mai screen's daypart switcher (mezo-puci).
-// The house `.segtabs` control (the Sport/Futás precedent), NOT a new
-// switcher language. Two independent signals, never blurred: the
-// PRESSED segment is what you are looking at (`selected`, derived from
-// `?dp=`), the gold dot is where the clock actually is (`current`) —
-// the DayFaceStrip dual-signal, inherited through the islands era.
-// Presentational: it owns no state and reads no hook.
+// Mezo · DaypartTabs — a Mai lap napszak-váltója (mezo-e26w). A három külön
+// keretes pirula (`.segtabs`) helyére EGY vályú + egy csúszó bélyeg lép, az
+// iOS szegmentált kontroll nyelvén. Két független jel, sosem összemosva:
+// a NYOMOTT szegmens az, amit nézel (`selected`, a `?dp=`-ből derivált), az
+// arany pötty pedig az, hol jár az óra (`current`) — a DayFaceStrip dual-signal
+// öröksége. Prezentációs: nem birtokol state-et és nem olvas hookot.
 // ============================================================
 import { DAY_FACES, FACE_EMOJI, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
 
 export interface DaypartTabsProps {
-  /** What the screen is showing — from `?dp=`, falling back to the clock. */
+  /** Amit a képernyő mutat — a `?dp=`-ből, az órára visszaesve. */
   selected: DayFace
-  /** Where the clock is — marked independently of the selection. */
+  /** Hol jár az óra — a kiválasztástól FÜGGETLENÜL jelölve. */
   current: DayFace
   onSelect: (face: DayFace) => void
 }
 
 export function DaypartTabs({ selected, current, onSelect }: DaypartTabsProps) {
   return (
-    <div className="daytabs">
-      <div className="segtabs" role="group" aria-label="Napszak">
+    <div className="daytabs td-segwrap">
+      <div className="td-seg" role="group" aria-label="Napszak">
         {DAY_FACES.map((face) => (
           <button
             key={face}
             type="button"
-            className="segtab np-press"
+            className="np-press"
             aria-pressed={face === selected}
             onClick={() => onSelect(face)}
           >
-            <span aria-hidden="true">{FACE_EMOJI[face]}</span> {FACE_LABEL[face]}
-            {face === current && <span className="daytab-now" role="img" aria-label="most" />}
+            <em aria-hidden="true">{FACE_EMOJI[face]}</em> {FACE_LABEL[face]}
+            {face === current && <span className="td-now" role="img" aria-label="most" />}
           </button>
         ))}
       </div>

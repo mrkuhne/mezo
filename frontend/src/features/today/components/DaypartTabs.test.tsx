@@ -34,4 +34,11 @@ describe('DaypartTabs', () => {
     render(<DaypartTabs selected="nap" current="nap" onSelect={() => {}} />)
     expect(screen.getByRole('group', { name: 'Napszak' })).toBeInTheDocument()
   })
+
+  test('a vályú EGY doboz, a kiválasztott szegmens a csúszó bélyeg', () => {
+    const { container } = render(<DaypartTabs selected="nap" current="nap" onSelect={() => {}} />)
+    expect(container.querySelectorAll('.td-seg')).toHaveLength(1)
+    expect(container.querySelectorAll('.td-seg > button')).toHaveLength(3)
+    expect(container.querySelector('.segtabs')).toBeNull() // a régi hármas-pirula kontroll nyugdíjban
+  })
 })

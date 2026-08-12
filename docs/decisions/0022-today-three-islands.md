@@ -1,6 +1,6 @@
 # ADR 0022 — Today is a sky of three islands: hero + facts on L0, everything else one layer deeper
 
-- **Status:** accepted (2026-08-07)
+- **Status:** Superseded by ADR 0025 (2026-08-10)
 - **Driving bd:** `mezo-euze`
 - **Spec:** [`docs/superpowers/specs/2026-08-07-today-three-islands-design.md`](../superpowers/specs/2026-08-07-today-three-islands-design.md) (+ the interactive mockups under `specs/assets/`)
 - **Supersedes:** the *render layer* of [ADR 0014](0014-today-daypart-faces.md) (daypart faces behind a pill strip). ADR 0014's **day model survives unchanged** — the three sleep-anchored windows (`dayFace.ts`), the six-source normalizer (`todayItems.ts`), act-anywhere, the one-clock rule and the dedup tables are all still the foundation; what changed is how a daypart *renders*.

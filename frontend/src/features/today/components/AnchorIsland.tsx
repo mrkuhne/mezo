@@ -25,7 +25,12 @@ export function AnchorIsland() {
   const [ticked, setTicked] = useState<Set<number>>(new Set())
 
   return (
-    <>
+    // `.anch-melt` — this is the melt's OWN horizontal-inset scope (pre-merge review Finding 1):
+    // the retired `.isl-bigview` shell used to give these bare `.isl-*` elements their 16px rail
+    // via `.dayview`'s old padding; now that the rail lives on each `.td-*` element instead, this
+    // wrapper carries it directly so the fix cannot leak onto Fuel's "Mai" window flow, which
+    // renders the SAME `.isl-*` classes through `shared/ui/Island`'s `.isl-bigview` shell.
+    <div className="anch-melt">
       <div className="isl-openhead">🫧 Horgony mód · csendben</div>
       <CoachBubble eyebrow="Mezo" className="anch-coach">
         Nehéz nap — ma elég a minimum. Itt vagyok.
@@ -53,6 +58,6 @@ export function AnchorIsland() {
           Kilépés a horgony módból
         </button>
       </div>
-    </>
+    </div>
   )
 }

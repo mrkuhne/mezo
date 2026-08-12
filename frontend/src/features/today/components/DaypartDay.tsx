@@ -6,15 +6,13 @@
 // (it moved from the retired IslandDay, unchanged) — TodayPage's
 // `heroCardOf` builds it, so the row and the hero stay one object.
 // ============================================================
-import type { CompanionNote } from '@/data/types'
 import type { ItemTone } from '@/shared/ui/ItemCard'
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
-import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
-import { IslandFactsStrip } from '@/features/today/components/IslandFactsStrip'
+import { TodayStats } from '@/features/today/components/TodayStats'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
@@ -41,7 +39,6 @@ export interface DaypartDayProps {
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
-  note: CompanionNote | null
   celebrations: ChainCelebrationInput[]
   growth?: GrowthTodaySummary | null
   habitPending?: boolean
@@ -50,7 +47,7 @@ export interface DaypartDayProps {
 }
 
 export function DaypartDay({
-  hero, heroWarn, facts, mesoLine, open, done, doneXp, note, celebrations,
+  hero, heroWarn, facts, mesoLine, open, done, doneXp, celebrations,
   growth, habitPending, onAct, onCustom,
 }: DaypartDayProps) {
   const durationFact = hero?.facts.find((f) => typeof f === 'string' && /perc|′/.test(f))
@@ -64,24 +61,21 @@ export function DaypartDay({
         unit={heroUnit}
         sub={hero ? mesoLine : 'Ma nincs tervezett edzés'}
       />
-      <IslandFactsStrip facts={facts} />
-      {heroWarn && <div className="isl-warnchip">⚠️ {heroWarn}</div>}
-      <div className="dv-act">
-        {hero ? (
-          <button type="button" className="isl-cta np-press" onClick={() => hero.onLog?.()}>
-            {hero.ctaLabel ?? 'Indítsuk'}
-          </button>
-        ) : (
-          <button type="button" className="isl-cta np-press" onClick={onCustom}>
-            Saját edzés
-          </button>
-        )}
-      </div>
+      <TodayStats facts={facts} />
+      {hero ? (
+        <button type="button" className="td-cta np-press" onClick={() => hero.onLog?.()}>
+          {hero.ctaLabel ?? 'Indítsuk'}
+        </button>
+      ) : (
+        <button type="button" className="td-cta np-press" onClick={onCustom}>
+          Saját edzés
+        </button>
+      )}
+      {heroWarn && <div className="td-foot is-warn">⚠ {heroWarn}</div>}
       <DayGroups
         open={open}
         done={done}
         doneLabel={`✓ ${done.length} kész ma · +${doneXp} XP`}
-        head={note ? <CompanionNoteCard note={note} /> : undefined}
         focus={<IntentionBanner variant="chip" />}
         growth={growth}
         habitPending={habitPending}
