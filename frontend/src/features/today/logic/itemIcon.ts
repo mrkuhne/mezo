@@ -2,7 +2,11 @@
 // Mezo · itemIcon — a habit-sorok ikonja (mezo-e26w). A régi viselkedés minden
 // lánc minden sorára a NAPSZAK emojiját tette, amitől öt egyforma 🌅 állt a
 // reggeli rutinban. A létra három fokú, és mindig ad találatot:
-//   1. `habitKey` → kurált tábla (a beépített szokások)
+//   1. `habitKey` → kurált tábla — a TELJES beépített katalógus (9 MORNING + 6
+//      EVENING, mirrors `@/data/habit/habitMock`'s `mockHabitCatalog` és a
+//      valódi backend seedet, content/habit-catalog.json). Minden seed-kulcs
+//      itt van, mindegyik EGYEDI ikonnal — a 2. fokra csak user-létrehozta vagy
+//      AI-javasolt szokás juthat (a seedben nem szereplő `habitKey`).
 //   2. `skillKey` → a life-skill emojija — a `LifeSkillKey` ZÁRT, 8 értékű enum,
 //      tehát minden jövőbeli, AI-generált szokásra is van értelmes találat
 //   3. napszak-emoji — a régi viselkedés, végső tartalékként
@@ -14,24 +18,26 @@ import type { HabitChainInfo, HabitDaypart } from '@/data/types'
 
 export const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀️', EVENING: '🌙' }
 
-/** 1. fok — a beépített szokások saját ikonja. Kulcs = `HabitItem.key`. */
+/** 1. fok — a TELJES beépített katalógus (9 MORNING + 6 EVENING, mirrors
+ *  `mockHabitCatalog` / a backend `content/habit-catalog.json` seedet). Kulcs =
+ *  `HabitItem.key` = `HabitDefInfo.habitKey`. Minden ikon EGYEDI — nincs
+ *  szándékos átfedés (a `itemIcon.test.ts` regresszió-tesztje ezt őrzi). */
 const HABIT_ICON: Record<string, string> = {
-  pushups: '💪',
+  wake_on_time: '⏰',
+  morning_sunlight: '🌞',
+  morning_pushups: '💪',
   morning_video: '🎬',
-  mushroom_coffee: '☕',
+  morning_weigh_in: '⚖️',
+  morning_coffee: '☕',
   morning_workout: '🤸',
   protein_breakfast: '🍳',
-  weigh_in: '⚖️',
-  sunlight: '🌞',
-  water: '💧',
-  caffeine_cutoff: '☕',
-  kitchen_closed: '🍽️',
-  wind_down: '📵',
+  daily_intention: '🎯',
+  caffeine_cutoff: '🚫',
+  kitchen_close: '🍽️',
+  intention_reflect: '✍️',
   evening_ritual: '🕯️',
-  intention_check: '✍️',
-  reading: '📖',
-  meditation: '🧘',
-  stretch: '🤸',
+  wind_down: '📵',
+  bed_on_time: '🛏️',
 }
 
 /** 2. fok — a nyolc `LifeSkillKey`. Mindegyik KÜLÖNBÖZŐ emojit kap. */

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { mockHabitCatalog } from '@/data/habit/habitMock'
 import { habitIcon } from '@/features/today/logic/itemIcon'
 import type { HabitChainInfo, HabitDefInfo } from '@/data/types'
 
@@ -14,8 +15,9 @@ const chain = (defs: HabitDefInfo[], daypart: HabitChainInfo['daypart'] = 'MORNI
 
 describe('habitIcon — a háromfokú létra', () => {
   test('1. fok: a kurált habitKey-tábla nyer minden más előtt', () => {
-    // A `pushups` a táblában 💪; a skillKey `recovery` lenne, a napszak 🌅 — egyik sem nyerhet.
-    expect(habitIcon('pushups', chain([def('pushups', 'recovery')]))).toBe('💪')
+    // A `morning_pushups` (valódi seed-kulcs) a táblában 💪; a def skillKey `recovery` lenne,
+    // a napszak 🌅 — egyik sem nyerhet.
+    expect(habitIcon('morning_pushups', chain([def('morning_pushups', 'recovery')]))).toBe('💪')
   })
 
   test('2. fok: ismeretlen habitKey a lánc def-jéből vett skillKey emojiját kapja', () => {
@@ -37,5 +39,15 @@ describe('habitIcon — a háromfokú létra', () => {
 
   test('3. fok: hiányzó def sem dob — a napszakra esik vissza', () => {
     expect(habitIcon('nincs_ilyen', chain([], 'MORNING'))).toBe('🌅')
+  })
+
+  test('regresszió: a valódi katalógus (mockHabitCatalog) egyetlen láncában sincs két azonos ikon', () => {
+    // A `HABIT_ICON` tábla driftelhet a katalógustól (pontosan ez történt korábban: 10 a 16
+    // kulcsból kitalált volt, nem valódi `habitKey`) — ez a teszt a VALÓDI seedet importálja,
+    // nem szintetikus kulcsokat, úgyhogy egy jövőbeli drift itt buknia kell.
+    for (const c of mockHabitCatalog.chains) {
+      const icons = c.defs.map((d) => habitIcon(d.habitKey, c))
+      expect(new Set(icons).size).toBe(icons.length)
+    }
   })
 })
