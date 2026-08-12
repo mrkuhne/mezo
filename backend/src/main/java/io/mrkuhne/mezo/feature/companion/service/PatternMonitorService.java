@@ -132,7 +132,12 @@ public class PatternMonitorService {
         PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(), minN);
         builder.alignedDays(outcome.alignedDays());
 
-        switch (outcome.verdict()) {
+        // Switch EXPRESSION, nem statement: az enum feletti kifejezést a fordító teljességre
+        // ellenőrzi, így egy jövőbeli Verdict konstans fordítási hiba lesz — nem pedig egy csendben
+        // `verdict: null`-t kiadó válasz (a séma szerint required). Ezért nincs `default` ág sem:
+        // az elnyelné a teljesség-ellenőrzést, és a ház szabálya (ArchitectureTest
+        // `no_raw_generic_exceptions_outside_techcore`) amúgy is tiltja a nyers RuntimeException-t.
+        PatternMonitorPair.PatternMonitorPairBuilder verdicted = switch (outcome.verdict()) {
             case LIVE -> builder.verdict(VERDICT_LIVE)
                     .r(outcome.result().r())
                     .n(outcome.result().n())
@@ -144,9 +149,8 @@ public class PatternMonitorService {
                     .bottleneckMetricKey(thinnerMetric(pair, cache, from, to).wireKey());
             case DEGENERATE -> builder.verdict(VERDICT_DEGENERATE)
                     .bottleneckMetricKey(constantMetric(pair, outcome.constantSide()).wireKey());
-            default -> throw new IllegalStateException("Unhandled PatternGate.Verdict: " + outcome.verdict());
-        }
-        return builder.build();
+        };
+        return verdicted.build();
     }
 
     /** A pár kevesebb lefedett nappal rendelkező metrikája (döntetlen → A) — a „mit logolj" alanya. */
