@@ -14,8 +14,10 @@ import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
@@ -53,6 +55,7 @@ public class MetricSeriesService {
     private final RunSessionLogRepository runSessionLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final MealRepository mealRepository;
     private final FuelDayService fuelDayService;
     private final MedicationRepository medicationRepository;
@@ -82,6 +85,10 @@ public class MetricSeriesService {
             case WEIGHT_DELTA_KG -> weightDelta(userId, from, to);
             case CHECKIN_STRESS -> checkIn(userId, from, to, CheckInEntity::getStress);
             case CHECKIN_ENERGY -> checkIn(userId, from, to, CheckInEntity::getEnergy);
+            case GYM_WORKLOAD -> gymFeedback(userId, from, to, ExerciseFeedbackEntity::getWorkload, false);
+            case GYM_JOINT_PAIN -> gymFeedback(userId, from, to, ExerciseFeedbackEntity::getJointPain, true);
+            case CHECKIN_BODY -> checkIn(userId, from, to, CheckInEntity::getBody);
+            case CHECKIN_MENTAL -> checkIn(userId, from, to, CheckInEntity::getMental);
         };
     }
 
@@ -235,6 +242,35 @@ public class MetricSeriesService {
                 series.put(day, weight - previous);
             }
         });
+        return series;
+    }
+
+    private interface FeedbackValue {
+        Integer value(ExerciseFeedbackEntity feedback);
+    }
+
+    /** Set-debrief jelek a nap befejezett edzései felett — workload átlag, fájdalom csúcs (max). */
+    private Map<LocalDate, Double> gymFeedback(UUID userId, LocalDate from, LocalDate to,
+                                               FeedbackValue extractor, boolean peak) {
+        Map<LocalDate, List<Double>> perDay = new HashMap<>();
+        for (WorkoutSessionEntity session : workoutSessionRepository.findDoneInstancesBetween(userId, from, to)) {
+            if (session.getDate() == null) {
+                continue;
+            }
+            for (ExerciseFeedbackEntity feedback : exerciseFeedbackRepository
+                    .findByCreatedByAndWorkoutSessionId(userId, session.getId())) {
+                Integer value = extractor.value(feedback);
+                if (value != null) {
+                    perDay.computeIfAbsent(session.getDate(), d -> new ArrayList<>()).add(value.doubleValue());
+                }
+            }
+        }
+        if (!peak) {
+            return average(perDay);
+        }
+        Map<LocalDate, Double> series = new HashMap<>();
+        perDay.forEach((day, values) -> series.put(day,
+                values.stream().mapToDouble(Double::doubleValue).max().orElseThrow()));
         return series;
     }
 

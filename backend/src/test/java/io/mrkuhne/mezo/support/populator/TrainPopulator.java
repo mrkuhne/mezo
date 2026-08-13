@@ -412,13 +412,19 @@ public class TrainPopulator {
     }
 
     public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId) {
+        return createFeedback(createdBy, workoutSessionId, exerciseId, 3, 1, 2);
+    }
+
+    /** Explicit értékű set-debrief — a metrika-extraktor IT-k vezérléséhez (mezo-6ha5). */
+    public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId,
+        int pump, int jointPain, int workload) {
         ExerciseFeedbackEntity f = new ExerciseFeedbackEntity();
         f.setCreatedBy(createdBy);
         f.setWorkoutSessionId(workoutSessionId);
         f.setExerciseId(exerciseId);
-        f.setPump(3);
-        f.setJointPain(1);
-        f.setWorkload(2);
+        f.setPump(pump);
+        f.setJointPain(jointPain);
+        f.setWorkload(workload);
         return exerciseFeedbackRepository.saveAndFlush(f);
     }
 

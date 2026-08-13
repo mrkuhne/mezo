@@ -18,7 +18,11 @@ public enum MetricKey {
     DAILY_WATER_ML("vízbevitel"),
     WEIGHT_DELTA_KG("reggeli súlyváltozás"),
     CHECKIN_STRESS("stressz-szint"),
-    CHECKIN_ENERGY("energia-szint");
+    CHECKIN_ENERGY("energia-szint"),
+    GYM_WORKLOAD("gym-terhelésérzet"),
+    GYM_JOINT_PAIN("ízületi fájdalom"),
+    CHECKIN_BODY("testérzet"),
+    CHECKIN_MENTAL("mentális állapot");
 
     private final String labelHu;
 
