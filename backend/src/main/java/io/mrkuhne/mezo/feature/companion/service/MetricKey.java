@@ -22,7 +22,10 @@ public enum MetricKey {
     GYM_WORKLOAD("gym-terhelésérzet"),
     GYM_JOINT_PAIN("ízületi fájdalom"),
     CHECKIN_BODY("testérzet"),
-    CHECKIN_MENTAL("mentális állapot");
+    CHECKIN_MENTAL("mentális állapot"),
+    BEDTIME_HOUR("lefekvés ideje"),
+    WAKEUP_HOUR("ébredés ideje"),
+    SLEEP_AWAKENINGS("éjszakai ébredések");
 
     private final String labelHu;
 

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +36,7 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private SleepLogPopulator sleepLogPopulator;
 
     /** Egy befejezett workout-instance DAY-en két gyakorlattal + két feedbackkel. */
     private UUID seedFeedbackDay(UUID owner, int workloadA, int painA, int workloadB, int painB) {
@@ -70,6 +73,46 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
                 owner, MetricKey.GYM_JOINT_PAIN, DAY.minusDays(7), DAY);
 
         assertThat(series.get(DAY)).isEqualTo(3.0); // a fájdalom csúcs-érzékeny
+    }
+
+    @Test
+    void testSeries_shouldShiftPastMidnightBedtimePlus24_whenBedtimeAfterMidnight() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, DAY, "23:15", "06:30", new BigDecimal("7.0"), 4, 0, null);
+        sleepLogPopulator.createSleepLog(owner, DAY.minusDays(1), "0:30", "07:00", new BigDecimal("6.5"), 3, 1, null);
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.BEDTIME_HOUR, DAY.minusDays(7), DAY);
+
+        assertThat(series.get(DAY)).isEqualTo(23.25);
+        assertThat(series.get(DAY.minusDays(1))).isEqualTo(24.5); // éjfél utáni óra +24
+    }
+
+    @Test
+    void testSeries_shouldReturnPlainFractionalWakeup_whenWakeupLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, DAY, "22:00", "06:30", new BigDecimal("8.0"), 4, 0, null);
+
+        assertThat(metricSeriesService.series(owner, MetricKey.WAKEUP_HOUR, DAY, DAY).get(DAY))
+                .isEqualTo(6.5); // ébredésnél nincs +24 eltolás
+    }
+
+    @Test
+    void testSeries_shouldTakeMaxAwakenings_whenMultipleRowsOnDay() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, DAY, "22:00", "06:00", new BigDecimal("7.0"), 4, 1, null);
+        sleepLogPopulator.createSleepLog(owner, DAY, "23:00", "06:30", new BigDecimal("6.0"), 3, 3, null);
+
+        assertThat(metricSeriesService.series(owner, MetricKey.SLEEP_AWAKENINGS, DAY, DAY).get(DAY))
+                .isEqualTo(3.0);
+    }
+
+    @Test
+    void testSeries_shouldSkipRow_whenBedtimeMalformed() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, DAY, "későn", "06:30", new BigDecimal("7.0"), 4, 0, null);
+
+        assertThat(metricSeriesService.series(owner, MetricKey.BEDTIME_HOUR, DAY, DAY)).isEmpty();
     }
 
     @Test

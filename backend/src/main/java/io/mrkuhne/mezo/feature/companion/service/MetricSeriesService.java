@@ -89,6 +89,10 @@ public class MetricSeriesService {
             case GYM_JOINT_PAIN -> gymFeedback(userId, from, to, ExerciseFeedbackEntity::getJointPain, true);
             case CHECKIN_BODY -> checkIn(userId, from, to, CheckInEntity::getBody);
             case CHECKIN_MENTAL -> checkIn(userId, from, to, CheckInEntity::getMental);
+            case BEDTIME_HOUR -> sleep(userId, from, to, s -> clockHour(s.getBedtime(), true));
+            case WAKEUP_HOUR -> sleep(userId, from, to, s -> clockHour(s.getWakeup(), false));
+            case SLEEP_AWAKENINGS -> sleep(userId, from, to, s ->
+                    s.getAwakenings() == null ? null : s.getAwakenings().doubleValue());
         };
     }
 
@@ -109,6 +113,25 @@ public class MetricSeriesService {
             }
         }
         return series;
+    }
+
+    /**
+     * "H:mm"/"HH:mm" óra-string → törtóra; lefekvésnél az éjfél utáni óra +24 (01:00 → 25.0,
+     * dél előtti cutoff), hogy a sorozat monoton maradjon a "későn feküdt" tengelyen.
+     * Hibás/hiányzó string → null (nincs adatpont, sosem találunk ki értéket).
+     */
+    private static Double clockHour(String clock, boolean shiftPastMidnight) {
+        if (clock == null || !clock.matches("\\d{1,2}:\\d{2}")) {
+            return null;
+        }
+        String[] parts = clock.split(":");
+        int hour = Integer.parseInt(parts[0]);
+        int minute = Integer.parseInt(parts[1]);
+        if (hour > 23 || minute > 59) {
+            return null;
+        }
+        double fractional = hour + minute / 60.0;
+        return shiftPastMidnight && hour < 12 ? fractional + 24 : fractional;
     }
 
     /** Avg of the day's RPE-like signals (sport rpe 1-10 + run rpeActual 1-10). */
