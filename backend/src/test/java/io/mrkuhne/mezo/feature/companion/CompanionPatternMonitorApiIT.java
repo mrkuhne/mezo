@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -83,7 +84,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
         assertThat(response.getPairs()).hasSize(8);
-        assertThat(response.getMetrics()).hasSize(12);
+        assertThat(response.getMetrics()).hasSize(MetricKey.values().length); // a teljes V3.4 katalógus
         assertThat(response.getPairs()).allSatisfy(p -> assertThat(p.getVerdict()).isEqualTo("no_data"));
     }
 

@@ -393,6 +393,9 @@ mezo:
       # A confirmed pattern reinforces its promoted fact at most once per this many days
       # (the nightly window slides one day - re-counting the same evidence would inflate ranks)
       reinforce-cooldown-days: 7
+      # Derivalt terheles-metrikak (ACWR, monotonia) kozos skalaja: ennyi kg gym-volumen
+      # szamit egy sport-perc-ekvivalensnek a napi terheles osszegzeseben
+      load-gym-kg-per-min: 100
       # The metric-pair catalog: key is the pattern's stable identity (never rename a live key);
       # metric-b is read lag-days AFTER metric-a's day (0 = same day)
       pairs:

@@ -33,7 +33,11 @@ public enum MetricKey {
     RITUAL_CLOSED("esti lezárás"),
     DAILY_XP("napi XP"),
     SOCIAL_MENTIONS("társas említések"),
-    RUN_HR_RECOVERY_S("pulzus-visszaállás");
+    RUN_HR_RECOVERY_S("pulzus-visszaállás"),
+    WEEKEND("hétvége"),
+    ACWR("akut:krónikus terhelés"),
+    TRAINING_MONOTONY("edzés-monotónia"),
+    BEDTIME_VARIABILITY("lefekvés-szórás");
 
     private final String labelHu;
 

@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -82,6 +84,7 @@ public class MetricSeriesService {
     private final ActivityLogRepository activityLogRepository;
     private final DailyQuestRepository dailyQuestRepository;
     private final MentionRepository mentionRepository;
+    private final CompanionProperties properties;
 
     /**
      * The metric's per-day values inside {@code [from, to]} (inclusive). Reads traverse LAZY
@@ -120,6 +123,10 @@ public class MetricSeriesService {
             case DAILY_XP -> dailyXp(userId, from, to);
             case SOCIAL_MENTIONS -> socialMentions(userId, from, to);
             case RUN_HR_RECOVERY_S -> hrRecovery(userId, from, to);
+            case WEEKEND -> weekend(from, to);
+            case ACWR -> acwr(userId, from, to);
+            case TRAINING_MONOTONY -> trainingMonotony(userId, from, to);
+            case BEDTIME_VARIABILITY -> bedtimeVariability(userId, from, to);
         };
     }
 
@@ -384,6 +391,109 @@ public class MetricSeriesService {
             }
         }
         return average(perDay);
+    }
+
+    /** 0/1 hétvége-jel (szo–vas) — tiszta naptári sorozat, kontroll-változó. */
+    private static Map<LocalDate, Double> weekend(LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            DayOfWeek dow = day.getDayOfWeek();
+            series.put(day, dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY ? 1.0 : 0.0);
+        }
+        return series;
+    }
+
+    /**
+     * Napi terhelés közös skálán: sport-perc + gym-volumen perc-ekvivalens (kg / load-gym-kg-per-min).
+     * Naptári tömb — a nem-logolt nap terhelése valódi 0 (a gördülő ablakok ezt igénylik).
+     */
+    private double[] dailyLoad(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> sport = sportLoad(userId, from, to);
+        Map<LocalDate, Double> gym = gymVolume(userId, from, to);
+        double kgPerMin = properties.patterns().loadGymKgPerMin();
+        int days = (int) (to.toEpochDay() - from.toEpochDay()) + 1;
+        double[] load = new double[days];
+        for (int i = 0; i < days; i++) {
+            LocalDate day = from.plusDays(i);
+            load[i] = sport.getOrDefault(day, 0.0) + gym.getOrDefault(day, 0.0) / kgPerMin;
+        }
+        return load;
+    }
+
+    /**
+     * ACWR: 7 napos akut / 28 napos krónikus átlag-terhelés aránya. Az extraktor az ablak ELŐTTI
+     * 28 napot is beolvassa (belső ablak-kiterjesztés — a hívó [from,to]-ja változatlan);
+     * krónikus 0 → nincs adatpont.
+     */
+    private Map<LocalDate, Double> acwr(UUID userId, LocalDate from, LocalDate to) {
+        LocalDate extendedFrom = from.minusDays(27);
+        double[] load = dailyLoad(userId, extendedFrom, to);
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            int idx = (int) (day.toEpochDay() - extendedFrom.toEpochDay());
+            double acute = mean(load, idx - 6, idx);
+            double chronic = mean(load, idx - 27, idx);
+            if (chronic > 0) {
+                series.put(day, acute / chronic);
+            }
+        }
+        return series;
+    }
+
+    /** Foster-monotónia: 7 napos gördülő átlag/szórás; szórás=0 → definiálatlan, nincs adatpont. */
+    private Map<LocalDate, Double> trainingMonotony(UUID userId, LocalDate from, LocalDate to) {
+        LocalDate extendedFrom = from.minusDays(6);
+        double[] load = dailyLoad(userId, extendedFrom, to);
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            int idx = (int) (day.toEpochDay() - extendedFrom.toEpochDay());
+            double mean = mean(load, idx - 6, idx);
+            double sd = stdDev(load, idx - 6, idx, mean);
+            if (sd > 0) {
+                series.put(day, mean / sd);
+            }
+        }
+        return series;
+    }
+
+    /** A bedtime-hour 7 napos gördülő (populációs) szórása — social jetlag jel; min. 3 nap adat. */
+    private Map<LocalDate, Double> bedtimeVariability(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> bedtimes = sleep(userId, from.minusDays(6), to,
+                s -> clockHour(s.getBedtime(), true));
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            List<Double> window = new ArrayList<>();
+            for (int i = 0; i <= 6; i++) {
+                Double value = bedtimes.get(day.minusDays(i));
+                if (value != null) {
+                    window.add(value);
+                }
+            }
+            if (window.size() < 3) {
+                continue;
+            }
+            double mean = window.stream().mapToDouble(Double::doubleValue).average().orElseThrow();
+            double sq = window.stream().mapToDouble(v -> (v - mean) * (v - mean)).sum();
+            series.put(day, Math.sqrt(sq / window.size()));
+        }
+        return series;
+    }
+
+    private static double mean(double[] values, int fromIdx, int toIdx) {
+        double sum = 0;
+        for (int i = fromIdx; i <= toIdx; i++) {
+            sum += values[i];
+        }
+        return sum / (toIdx - fromIdx + 1);
+    }
+
+    /** Populációs szórás a [fromIdx,toIdx] szeleten (a 7 napos Foster-ablak fix hosszú). */
+    private static double stdDev(double[] values, int fromIdx, int toIdx, double mean) {
+        double sq = 0;
+        for (int i = fromIdx; i <= toIdx; i++) {
+            sq += (values[i] - mean) * (values[i] - mean);
+        }
+        return Math.sqrt(sq / (toIdx - fromIdx + 1));
     }
 
     /** Kész szokások száma naponta — habit-soros nap 0-val is adatpont, sor nélküli nap nem. */

@@ -443,6 +443,16 @@ public class TrainPopulator {
         return sportSessionRepository.saveAndFlush(s);
     }
 
+    /** Explicit perc-terhelésű sport-session — a V3.4 derivált terhelés-metrika IT-khez (mezo-6ha5). */
+    public SportSessionEntity createSportSession(UUID createdBy, LocalDate date, int durationMin) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        s.setTime("18:00");
+        s.setDurationMin(durationMin);
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
     /** A sport session of any modality — volleyball|cross|trx — with kind-appropriate effort. */
     public SportSessionEntity createSportSession(UUID createdBy, LocalDate date, String sport,
         Integer setsPlayed, Integer rounds, String rpe) {
