@@ -6,9 +6,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
+import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.IntentionPopulator;
+import io.mrkuhne.mezo.support.populator.MentionPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.UUID;
 
 /**
@@ -40,6 +45,53 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private PersonPopulator personPopulator;
+    @Autowired private MentionPopulator mentionPopulator;
+    @Autowired private IntentionPopulator intentionPopulator;
+
+    @Test
+    void testGenerate_shouldCarryQualityFields_whenNotesMentionAndReflectionExist() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, DAY, "23:00", "06:30",
+                new BigDecimal("7.0"), 4, 1, "Nyugtalan éjszaka, sok forgolódás.");
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        mentionPopulator.createMention(owner, anna.getId(),
+                DAY.atTime(18, 0).atZone(ZoneId.systemDefault()).toInstant(), "positive");
+        intentionPopulator.reflection(owner, DAY, "partial");
+
+        DailySummaryEntity summary = dailySummaryService.generate(owner, DAY);
+
+        assertThat(summary.getNarrative())
+                .contains("Nyugtalan éjszaka")
+                .contains("Említés (positive)")
+                .contains("Teszt említés.")
+                .contains("Napi szándék-reflexió: részben");
+    }
+
+    @Test
+    void testGenerate_shouldCapQualityField_whenNoteLongerThanConfig() {
+        UUID owner = userPopulator.createUser().getId();
+        String longNote = "a".repeat(250);
+        sleepLogPopulator.createSleepLog(owner, DAY, "23:00", "06:30",
+                new BigDecimal("7.0"), 4, 0, longNote);
+
+        DailySummaryEntity summary = dailySummaryService.generate(owner, DAY);
+
+        assertThat(summary.getNarrative()).contains("a".repeat(200));
+        assertThat(summary.getNarrative()).doesNotContain("a".repeat(201));
+    }
+
+    @Test
+    void testGenerate_shouldLeaveNoTrace_whenQualityFieldsEmpty() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, DAY, new BigDecimal("7.5"), 4); // nincs notes
+
+        DailySummaryEntity summary = dailySummaryService.generate(owner, DAY);
+
+        assertThat(summary.getNarrative())
+                .doesNotContain("Említés")
+                .doesNotContain("Napi szándék-reflexió");
+    }
 
     @Test
     void testGenerate_shouldPersistNarrativeWithDayFacts_whenDayHasData() {

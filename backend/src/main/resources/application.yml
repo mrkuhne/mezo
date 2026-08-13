@@ -374,6 +374,9 @@ mezo:
       cron: "0 20 2 * * *"
       # Finished days back the job checks and self-heals (idempotent catch-up doubles as backfill)
       catch-up-days: 7
+      # V3.4 digest-gazdagitas: minosegi mezonkenti karakter-cap (jegyzetek, emlites-kivonat,
+      # reflexio) - a digest ossz-merete tovabbra is konstrukcio szerint korlatos
+      note-max-chars: 200
     hypotheses:
       # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
       cron: "0 0 3 * * SUN"
