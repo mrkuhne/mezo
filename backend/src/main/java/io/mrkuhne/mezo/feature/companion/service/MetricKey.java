@@ -25,7 +25,10 @@ public enum MetricKey {
     CHECKIN_MENTAL("mentális állapot"),
     BEDTIME_HOUR("lefekvés ideje"),
     WAKEUP_HOUR("ébredés ideje"),
-    SLEEP_AWAKENINGS("éjszakai ébredések");
+    SLEEP_AWAKENINGS("éjszakai ébredések"),
+    DAILY_PROTEIN_G("napi fehérje"),
+    MEAL_SCORE("étkezés-pontszám"),
+    RETA_DOSE_MG("Reta-dózis");
 
     private final String labelHu;
 

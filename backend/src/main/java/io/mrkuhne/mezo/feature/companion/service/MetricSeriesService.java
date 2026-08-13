@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
@@ -12,6 +13,7 @@ import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -59,6 +61,7 @@ public class MetricSeriesService {
     private final MealRepository mealRepository;
     private final FuelDayService fuelDayService;
     private final MedicationRepository medicationRepository;
+    private final MedicationDoseRepository medicationDoseRepository;
     private final MedicationCycleService medicationCycleService;
     private final WaterLogRepository waterLogRepository;
     private final WeightLogRepository weightLogRepository;
@@ -79,7 +82,10 @@ public class MetricSeriesService {
             case SPORT_LOAD_MIN -> sportLoad(userId, from, to);
             case GYM_VOLUME_KG -> gymVolume(userId, from, to);
             case LATE_MEAL_HOUR -> lateMealHour(userId, from, to);
-            case DAILY_KCAL -> dailyKcal(userId, from, to);
+            case DAILY_KCAL -> fuelRollup(userId, from, to, MacroSet::getKcal);
+            case DAILY_PROTEIN_G -> fuelRollup(userId, from, to, MacroSet::getP);
+            case MEAL_SCORE -> mealScore(userId, from, to);
+            case RETA_DOSE_MG -> retaDose(userId, from, to);
             case RETA_CYCLE_DAY -> retaCycleDay(userId, from, to);
             case DAILY_WATER_ML -> dailyWater(userId, from, to);
             case WEIGHT_DELTA_KG -> weightDelta(userId, from, to);
@@ -201,8 +207,12 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** Consumed kcal per day — only days that have meals; reuses the FuelDay mapper math. */
-    private Map<LocalDate, Double> dailyKcal(UUID userId, LocalDate from, LocalDate to) {
+    private interface FuelValue {
+        BigDecimal value(MacroSet consumed);
+    }
+
+    /** Napi fuel-rollup — csak étkezéses napok (a DAILY_KCAL eredeti mintája, mezőre paraméterezve). */
+    private Map<LocalDate, Double> fuelRollup(UUID userId, LocalDate from, LocalDate to, FuelValue extractor) {
         Map<LocalDate, Double> series = new HashMap<>();
         List<LocalDate> mealDays = mealRepository.findAllOwned(userId).stream()
                 .map(MealEntity::getMealDate)
@@ -211,10 +221,49 @@ public class MetricSeriesService {
                 .toList();
         for (LocalDate day : mealDays) {
             FuelDayResponse fuelDay = fuelDayService.getDay(userId, day);
-            BigDecimal kcal = fuelDay.getConsumed().getKcal();
-            if (kcal != null && kcal.signum() > 0) {
-                series.put(day, kcal.doubleValue());
+            BigDecimal value = extractor.value(fuelDay.getConsumed());
+            if (value != null && value.signum() > 0) {
+                series.put(day, value.doubleValue());
             }
+        }
+        return series;
+    }
+
+    /** A nap score-olt étkezéseinek átlaga (score nélküli meal nem adatpont). */
+    private Map<LocalDate, Double> mealScore(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, List<Double>> perDay = new HashMap<>();
+        for (MealEntity meal : mealRepository.findAllOwned(userId)) {
+            if (meal.getMealDate().isBefore(from) || meal.getMealDate().isAfter(to)
+                    || meal.getScore() == null) {
+                continue;
+            }
+            perDay.computeIfAbsent(meal.getMealDate(), d -> new ArrayList<>())
+                    .add(meal.getScore().doubleValue());
+        }
+        return average(perDay);
+    }
+
+    /**
+     * Aktuális dózis-szint naponta: az adott napon-vagy-előtte utolsó beadott dózis (a ciklusnap-
+     * deriválás horgony-mintája). Az első beadás előtti napokra nincs adat — honest absence.
+     */
+    private Map<LocalDate, Double> retaDose(UUID userId, LocalDate from, LocalDate to) {
+        MedicationEntity med = medicationRepository
+                .findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
+        if (med == null) {
+            return Map.of();
+        }
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            LocalDate current = day;
+            medicationDoseRepository
+                    .findFirstByCreatedByAndMedicationIdAndDeletedFalseAndAdministeredDateLessThanEqualOrderByAdministeredDateDesc(
+                            userId, med.getId(), day)
+                    .ifPresent(dose -> {
+                        if (dose.getDose() != null) {
+                            series.put(current, dose.getDose().doubleValue());
+                        }
+                    });
         }
         return series;
     }

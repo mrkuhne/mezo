@@ -4,11 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
+import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
+import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -19,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 
@@ -37,6 +44,10 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private PantryItemPopulator pantryItemPopulator;
+    @Autowired private MedicationPopulator medicationPopulator;
+    @Autowired private MedicationDosePopulator medicationDosePopulator;
 
     /** Egy befejezett workout-instance DAY-en két gyakorlattal + két feedbackkel. */
     private UUID seedFeedbackDay(UUID owner, int workloadA, int painA, int workloadB, int painB) {
@@ -113,6 +124,46 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
         sleepLogPopulator.createSleepLog(owner, DAY, "későn", "06:30", new BigDecimal("7.0"), 4, 0, null);
 
         assertThat(metricSeriesService.series(owner, MetricKey.BEDTIME_HOUR, DAY, DAY)).isEmpty();
+    }
+
+    @Test
+    void testSeries_shouldReturnProteinOnMealDaysOnly_whenMealsLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity food = pantryItemPopulator.createFoodWithNutrients(owner, "Csirkemell");
+        mealPopulator.createPantryMeal(owner, food, DAY);
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.DAILY_PROTEIN_G, DAY.minusDays(7), DAY);
+
+        assertThat(series).containsOnlyKeys(DAY);
+        assertThat(series.get(DAY)).isGreaterThan(0);
+    }
+
+    @Test
+    void testSeries_shouldAverageMealScores_whenScoredMealsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity food = pantryItemPopulator.createFoodWithNutrients(owner, "Zabkása");
+        mealPopulator.createScoredMeal(owner, food, DAY, "Reggeli",
+                DAY.atStartOfDay(ZoneOffset.UTC).toInstant());
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.MEAL_SCORE, DAY, DAY);
+
+        assertThat(series.get(DAY)).isEqualTo(0.62); // score nélküli meal nem ad pontot
+    }
+
+    @Test
+    void testSeries_shouldCarryLastDoseForward_whenDoseAdministeredEarlier() {
+        UUID owner = userPopulator.createUser().getId();
+        MedicationEntity med = medicationPopulator.createReta(owner);
+        medicationDosePopulator.createDose(owner, med.getId(), DAY.minusDays(2), new BigDecimal("6"));
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.RETA_DOSE_MG, DAY.minusDays(3), DAY);
+
+        assertThat(series.get(DAY.minusDays(3))).isNull(); // dózis-horgony előtt nincs adat
+        assertThat(series.get(DAY.minusDays(2))).isEqualTo(6.0);
+        assertThat(series.get(DAY)).isEqualTo(6.0); // az aktuális dózis-szint továbbél
     }
 
     @Test
