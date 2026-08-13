@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -29,6 +30,7 @@ import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -88,6 +90,8 @@ public class HypothesisPipelineService {
     private final DailySummaryRepository dailySummaryRepository;
     private final KnowledgeFactService knowledgeFactService;
     private final PatternRepository patternRepository;
+    private final MetricSeriesService metricSeriesService;
+    private final PatternMonitorService patternMonitorService;
     private final CompanionProperties properties;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -151,8 +155,9 @@ public class HypothesisPipelineService {
         return false;
     }
 
-    /** Pure compute: weekly narrative context — null when there is nothing to hypothesize over. */
-    private String gather(UUID userId) {
+    /** Pure compute: weekly narrative context — null when there is nothing to hypothesize over.
+     *  Package-private a gather-kontextus IT-nek (HypothesisGatherContextIT). */
+    String gather(UUID userId) {
         List<DailySummaryEntity> summaries = dailySummaryRepository
                 .findTop7ByCreatedByOrderBySummaryDateDesc(userId);
         if (summaries.isEmpty()) {
@@ -170,7 +175,50 @@ public class HypothesisPipelineService {
                 .collect(Collectors.joining("\n"));
         return "NAPI ÖSSZEFOGLALÓK:\n" + narratives
                 + (facts.isBlank() ? "" : "\n\n" + facts)
-                + (statistical.isBlank() ? "" : "\n\nSTATISZTIKAI MINTÁK:\n" + statistical);
+                + (statistical.isBlank() ? "" : "\n\nSTATISZTIKAI MINTÁK:\n" + statistical)
+                + "\n\nHETI METRIKA-TÁBLA (sor = metrika, oszlop = nap, – = nincs adat):\n"
+                + metricTable(userId)
+                + gateDiagnostics(userId);
+    }
+
+    /** V3.4 B2: az összes metrika utolsó 7 lezárt napja nyers számokként — a páronkénti Pearson
+     *  számára láthatatlan (küszöb / U-alak / interakció) sejtésekhez. */
+    private String metricTable(UUID userId) {
+        LocalDate to = LocalDate.now().minusDays(1);
+        LocalDate from = to.minusDays(6);
+        StringBuilder table = new StringBuilder("metrika");
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            table.append(" | ").append(day.getMonthValue()).append('.').append(day.getDayOfMonth()).append('.');
+        }
+        for (MetricKey metric : MetricKey.values()) {
+            Map<LocalDate, Double> series = metricSeriesService.series(userId, metric, from, to);
+            table.append('\n').append(metric.labelHu());
+            for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+                Double value = series.get(day);
+                table.append(" | ").append(value == null ? "–" : compact(value));
+            }
+        }
+        return table.toString();
+    }
+
+    private static String compact(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP)
+                .stripTrailingZeros().toPlainString();
+    }
+
+    /** V3.4 B3: a nem-élő (és nem user-judged) párok egysoros kapu-összegzése — a hiányzó adatról
+     *  szóló actionable hipotézisek takarmánya. */
+    private String gateDiagnostics(UUID userId) {
+        PatternMonitorResponse monitor = patternMonitorService.monitor(userId);
+        String lines = monitor.getPairs().stream()
+                .filter(p -> !PatternMonitorService.VERDICT_LIVE.equals(p.getVerdict())
+                        && !PatternMonitorService.VERDICT_FROZEN.equals(p.getVerdict()))
+                .map(p -> "- " + p.getTitle() + " (" + p.getKey() + "): " + p.getVerdict()
+                        + ", illesztett napok " + p.getAlignedDays() + "/" + monitor.getMinN()
+                        + (p.getBottleneckMetricKey() == null
+                                ? "" : ", szűk keresztmetszet: " + p.getBottleneckMetricKey()))
+                .collect(Collectors.joining("\n"));
+        return lines.isBlank() ? "" : "\n\nKAPU-DIAGNOSZTIKA (nem-élő párok):\n" + lines;
     }
 
     private List<Hypothesis> propose(UUID userId, String context) {
