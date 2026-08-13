@@ -2,12 +2,15 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
+import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
@@ -16,6 +19,12 @@ import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
+import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
+import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
+import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
+import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -37,8 +46,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * V3.1 series extraction: one per-day scalar series per {@link MetricKey}, composed READ-ONLY
@@ -66,6 +77,11 @@ public class MetricSeriesService {
     private final WaterLogRepository waterLogRepository;
     private final WeightLogRepository weightLogRepository;
     private final CheckInRepository checkInRepository;
+    private final HabitDayRepository habitDayRepository;
+    private final RitualDayRepository ritualDayRepository;
+    private final ActivityLogRepository activityLogRepository;
+    private final DailyQuestRepository dailyQuestRepository;
+    private final MentionRepository mentionRepository;
 
     /**
      * The metric's per-day values inside {@code [from, to]} (inclusive). Reads traverse LAZY
@@ -99,6 +115,11 @@ public class MetricSeriesService {
             case WAKEUP_HOUR -> sleep(userId, from, to, s -> clockHour(s.getWakeup(), false));
             case SLEEP_AWAKENINGS -> sleep(userId, from, to, s ->
                     s.getAwakenings() == null ? null : s.getAwakenings().doubleValue());
+            case HABITS_DONE -> habitsDone(userId, from, to);
+            case RITUAL_CLOSED -> ritualClosed(userId, from, to);
+            case DAILY_XP -> dailyXp(userId, from, to);
+            case SOCIAL_MENTIONS -> socialMentions(userId, from, to);
+            case RUN_HR_RECOVERY_S -> hrRecovery(userId, from, to);
         };
     }
 
@@ -362,6 +383,87 @@ public class MetricSeriesService {
                 perDay.computeIfAbsent(checkIn.getDate(), d -> new ArrayList<>()).add(value.doubleValue());
             }
         }
+        return average(perDay);
+    }
+
+    /** Kész szokások száma naponta — habit-soros nap 0-val is adatpont, sor nélküli nap nem. */
+    private Map<LocalDate, Double> habitsDone(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (HabitDayEntity habit : habitDayRepository.findByCreatedByAndHabitDateBetween(userId, from, to)) {
+            double done = HabitDayEntity.STATUS_DONE.equals(habit.getStatus()) ? 1 : 0;
+            series.merge(habit.getHabitDate(), done, Double::sum);
+        }
+        return series;
+    }
+
+    /**
+     * 0/1 lezárás-sorozat (point-biserial). ritual_day sor csak záráskor születik, ezért a 0-kat
+     * a naptár adja — de csak az első valaha lezárt nap (adopció) UTÁN: előtte a hiány nem
+     * "nem zárta le", hanem "még nem használta a rituálét".
+     */
+    private Map<LocalDate, Double> ritualClosed(UUID userId, LocalDate from, LocalDate to) {
+        LocalDate adopted = ritualDayRepository.findFirstByCreatedByOrderByRitualDateAsc(userId)
+                .map(RitualDayEntity::getRitualDate).orElse(null);
+        if (adopted == null) {
+            return Map.of();
+        }
+        Set<LocalDate> closed = ritualDayRepository
+                .findByCreatedByAndRitualDateBetween(userId, from, to).stream()
+                .map(RitualDayEntity::getRitualDate)
+                .collect(Collectors.toSet());
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from.isBefore(adopted) ? adopted : from; !day.isAfter(to); day = day.plusDays(1)) {
+            series.put(day, closed.contains(day) ? 1.0 : 0.0);
+        }
+        return series;
+    }
+
+    /** Napi össz-XP (activity + habit + completed quest); 0 XP-s nap nem adatpont (DAILY_KCAL-minta). */
+    private Map<LocalDate, Double> dailyXp(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        activityLogRepository.findByCreatedByAndOccurredOnBetween(userId, from, to).forEach(a -> {
+            if (a.getXpAwarded() != null && a.getXpAwarded() > 0) {
+                series.merge(a.getOccurredOn(), a.getXpAwarded().doubleValue(), Double::sum);
+            }
+        });
+        habitDayRepository.findByCreatedByAndHabitDateBetween(userId, from, to).forEach(h -> {
+            if (h.getXpAwarded() != null && h.getXpAwarded() > 0) {
+                series.merge(h.getHabitDate(), h.getXpAwarded().doubleValue(), Double::sum);
+            }
+        });
+        dailyQuestRepository.findByCreatedByAndQuestDateBetweenOrderByQuestDateDesc(userId, from, to)
+                .forEach(q -> {
+                    if (DailyQuestEntity.STATUS_COMPLETED.equals(q.getStatus())
+                            && q.getXp() != null && q.getXp() > 0) {
+                        series.merge(q.getQuestDate(), q.getXp().doubleValue(), Double::sum);
+                    }
+                });
+        return series;
+    }
+
+    /** People-említések napi darabszáma (ts rendszerzónás napja). */
+    private Map<LocalDate, Double> socialMentions(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (MentionEntity mention : mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId)) {
+            LocalDate day = mention.getTs().atZone(ZoneId.systemDefault()).toLocalDate();
+            if (!day.isBefore(from) && !day.isAfter(to)) {
+                series.merge(day, 1.0, Double::sum);
+            }
+        }
+        return series;
+    }
+
+    /** Futás utáni pulzus-visszaállás (mp) napi átlaga — ritka adat, a kapu kezeli. */
+    private Map<LocalDate, Double> hrRecovery(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, List<Double>> perDay = new HashMap<>();
+        runSessionLogRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from)
+                .forEach(r -> {
+                    if (!r.getDate().isAfter(to) && r.getHrRecoverySec() != null) {
+                        perDay.computeIfAbsent(r.getDate(), d -> new ArrayList<>())
+                                .add(r.getHrRecoverySec().doubleValue());
+                    }
+                });
         return average(perDay);
     }
 

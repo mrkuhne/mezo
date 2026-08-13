@@ -28,7 +28,12 @@ public enum MetricKey {
     SLEEP_AWAKENINGS("éjszakai ébredések"),
     DAILY_PROTEIN_G("napi fehérje"),
     MEAL_SCORE("étkezés-pontszám"),
-    RETA_DOSE_MG("Reta-dózis");
+    RETA_DOSE_MG("Reta-dózis"),
+    HABITS_DONE("kész szokások"),
+    RITUAL_CLOSED("esti lezárás"),
+    DAILY_XP("napi XP"),
+    SOCIAL_MENTIONS("társas említések"),
+    RUN_HR_RECOVERY_S("pulzus-visszaállás");
 
     private final String labelHu;
 

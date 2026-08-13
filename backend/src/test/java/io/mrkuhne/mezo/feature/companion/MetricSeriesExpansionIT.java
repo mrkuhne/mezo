@@ -4,17 +4,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import io.mrkuhne.mezo.support.populator.QuestPopulator;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
+import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -24,7 +35,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +61,14 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
+    @Autowired private HabitPopulator habitPopulator;
+    @Autowired private HabitDayRepository habitDayRepository;
+    @Autowired private RitualPopulator ritualPopulator;
+    @Autowired private ActivityPopulator activityPopulator;
+    @Autowired private QuestPopulator questPopulator;
+    @Autowired private PersonPopulator personPopulator;
+    @Autowired private MentionPopulator mentionPopulator;
+    @Autowired private RunningPopulator runningPopulator;
 
     /** Egy befejezett workout-instance DAY-en két gyakorlattal + két feedbackkel. */
     private UUID seedFeedbackDay(UUID owner, int workloadA, int painA, int workloadB, int painB) {
@@ -164,6 +185,77 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
         assertThat(series.get(DAY.minusDays(3))).isNull(); // dózis-horgony előtt nincs adat
         assertThat(series.get(DAY.minusDays(2))).isEqualTo(6.0);
         assertThat(series.get(DAY)).isEqualTo(6.0); // az aktuális dózis-szint továbbél
+    }
+
+    @Test
+    void testSeries_shouldCountDoneHabits_whenDayHasHabitRows() {
+        UUID owner = userPopulator.createUser().getId();
+        habitPopulator.row(owner, DAY, "wake_on_time", "done");
+        habitPopulator.row(owner, DAY, "protein_target", "done");
+        habitPopulator.row(owner, DAY, "bed_on_time", "missed");
+        habitPopulator.row(owner, DAY.minusDays(1), "wake_on_time", "missed");
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.HABITS_DONE, DAY.minusDays(7), DAY);
+
+        assertThat(series.get(DAY)).isEqualTo(2.0);
+        assertThat(series.get(DAY.minusDays(1))).isEqualTo(0.0); // van sor, nincs done → valódi 0
+        assertThat(series).doesNotContainKey(DAY.minusDays(2)); // sor nélküli nap = nincs adat
+    }
+
+    @Test
+    void testSeries_shouldEmitBinaryRitualSeries_fromFirstAdoptionDay() {
+        UUID owner = userPopulator.createUser().getId();
+        ritualPopulator.closedDay(owner, DAY.minusDays(2));
+        ritualPopulator.closedDay(owner, DAY);
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.RITUAL_CLOSED, DAY.minusDays(7), DAY);
+
+        assertThat(series).containsOnlyKeys(DAY.minusDays(2), DAY.minusDays(1), DAY);
+        assertThat(series.get(DAY.minusDays(1))).isEqualTo(0.0); // adopció utáni le-nem-zárt nap = 0
+        assertThat(series.get(DAY)).isEqualTo(1.0);
+    }
+
+    @Test
+    void testSeries_shouldSumXpAcrossSources_whenActivityHabitAndQuestAwardXp() {
+        UUID owner = userPopulator.createUser().getId();
+        activityPopulator.activity(owner, DAY, "Olvasás", "mindset", 15, "AI");
+        HabitDayEntity habit = habitPopulator.row(owner, DAY, "wake_on_time", "done");
+        habit.setXpAwarded(10);
+        habitDayRepository.saveAndFlush(habit);
+        questPopulator.quest(owner, DAY, "FUELBIO", "hydrate", "vitality", "LIFE",
+                "water_ml", new BigDecimal("500"), 20, "completed");
+        questPopulator.quest(owner, DAY, "BODY", "stretch", "vitality", "LIFE",
+                "minutes", new BigDecimal("10"), 20, "offered"); // nem completed → nem számít
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.DAILY_XP, DAY, DAY);
+
+        assertThat(series.get(DAY)).isEqualTo(45.0);
+    }
+
+    @Test
+    void testSeries_shouldCountMentionsPerDay_whenMentionsLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        Instant noon = DAY.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant();
+        mentionPopulator.createMention(owner, anna.getId(), noon, "positive");
+        mentionPopulator.createMention(owner, anna.getId(), noon.plusSeconds(3600), "neutral");
+
+        assertThat(metricSeriesService.series(owner, MetricKey.SOCIAL_MENTIONS, DAY, DAY).get(DAY))
+                .isEqualTo(2.0);
+    }
+
+    @Test
+    void testSeries_shouldAverageHrRecovery_whenRunsLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        RunningBlockEntity block = runningPopulator.createBlock(owner, "Sprint blokk", "active");
+        runningPopulator.createRunLog(owner, block.getId(), 1, "tue-sprint", DAY, 6, 8, 40, null, 30);
+        runningPopulator.createRunLog(owner, block.getId(), 1, "thu-sprint", DAY, 6, 7, 60, null, 30);
+
+        assertThat(metricSeriesService.series(owner, MetricKey.RUN_HR_RECOVERY_S, DAY, DAY).get(DAY))
+                .isEqualTo(50.0);
     }
 
     @Test
