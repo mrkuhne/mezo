@@ -300,7 +300,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
   deterministic, date-scoped Hungarian digest of one FINISHED day's L0 (train/sport/run, fuel-day
   rollup, sleep, weight, Reta cycle-day + dose, check-ins — reusing the owning features' reads;
-  `nincs adat` semantics by omission) → ONE cheap-tier `CompanionLlm` call (prompt behind
+  `nincs adat` semantics by omission; **since V3.4** also the qualitative fields: sleep/run
+  notes, mention tone+excerpt, intention reflection — capped per `summary.note-max-chars`) → ONE cheap-tier `CompanionLlm` call (prompt behind
   `SUMMARY_MARKER`) → past-tense narrative row. Digest = pure code, narrative = pure LLM
   (NFR-M-4). Empty day ⇒ no row; existing day ⇒ returned untouched (no LLM call). Uniqueness is
   a PARTIAL index (`where is_deleted = false`) so soft-deleting a summary lets the next night
@@ -344,14 +345,15 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 
 - **The second nightly cron** — `PatternDetectionJob` (02:40, switch
   `mezo.techcore.cron.pattern-detection-job.enabled`): for every pair in the config catalog
-  (`mezo.companion.patterns.pairs`, 8 pairs v1) it lag-aligns two per-day metric series over the
+  (`mezo.companion.patterns.pairs`, 8 pairs v1 — **29 since V3.4**, `mezo-6ha5`) it lag-aligns two per-day metric series over the
   lookback window, gates on `min-n` (8), runs PURE Pearson math (`PearsonCorrelation` — r, n and
   a real two-sided p via the incomplete-beta t-test, fixture-tested; no LLM anywhere) and
   **upserts one row per `(user, kind, pair_key)`**: stats refresh while `proposed`/`monitoring`,
   a user-judged `confirmed`/`rejected` row is never auto-touched (V3.3 adds reinforcement).
-- **Series extraction** — `MetricSeriesService`: 12 `MetricKey`s (sleep quality/duration,
+- **Series extraction** — `MetricSeriesService`: 12 `MetricKey`s v1 (sleep quality/duration,
   training RPE, sport load, gym volume, late-meal hour, daily kcal, Reta cycle-day, water,
-  morning weight-delta, check-in stress/energy) composed read-only from the owning features'
+  morning weight-delta, check-in stress/energy) — **31 since V3.4** (the full list in the V3.4
+  block below) — composed read-only from the owning features'
   EXISTING reads; deterministic multi-row aggregation, absence is absence (never bridged).
 - **Honest numbers** — `confidence` is NULL on statistical rows (FE renders „tanulom");
   evidence chips carry `r=… · n=… nap · p=… · window`; mechanism is a deterministic HU sentence.
@@ -379,9 +381,9 @@ it re-runs `PatternGate.evaluate` over the EXACT SAME windows the nightly job wo
 model**: `live` (gate passed, live `r`/`n`/`p`) / `few_days` (aligned days below `min-n`, with
 `missingDays` + the thinner-covered bottleneck metric) / `no_data` (zero aligned days) /
 `degenerate` (enough days but a constant series) / `frozen` (a `confirmed`/`rejected` row — no
-recompute, its own frozen `r`/`n`/`p` are reported) — plus per-metric coverage for all 12
-`MetricKey`s (series pulled once per metric into a request-scoped cache, so the pair verdicts and
-the coverage block share one snapshot). Because the nightly job and the monitor call the
+recompute, its own frozen `r`/`n`/`p` are reported) — plus per-metric coverage for ALL
+`MetricKey`s (31 since V3.4; series pulled once per metric into a request-scoped cache, so the pair verdicts and
+the coverage block share one snapshot — windowed via the shared `PatternGate.window` since V3.4). Because the nightly job and the monitor call the
 **identical** `PatternGate.evaluate`, the monitor cannot say anything other than what the job
 would decide — that shared code is the whole credibility of the diagnostic; the service writes
 nothing (no new table, no migration). **`lastRunAt` is `max(lastDetectedAt)`, not "last job
@@ -402,7 +404,8 @@ visible, but it is **not fixed** in this change.
 - **The weekly smart-tier pipeline** — `HypothesisPipelineService` (cron `HypothesisJob`, Sunday
   03:00, switch `mezo.techcore.cron.hypothesis-job.enabled`): gather (last-7 daily-summary
   narratives + confirmed-facts block + the live statistical patterns' r/n/p — grounded
-  statistical support) → **propose** (strict-JSON, `llm.smart-model` — the Pro tier's debut) →
+  statistical support; **since V3.4 also** the weekly raw metric table + the non-live pairs'
+  gate diagnostics, see the V3.4 block) → **propose** (strict-JSON, `llm.smart-model` — the Pro tier's debut) →
   **critique** per hypothesis (4-factor 0..1 + prose reasoning) → **score**
   (`0.35·stat + 0.25·conf + 0.20·l3align + 0.20·act`, arch §4.7 — weights are code) → route:
   keep ≥ `keep-threshold` (0.75) · revise ONCE ≥ `revise-threshold` (0.50) then re-critique ·
@@ -439,6 +442,65 @@ COMPLETE (all 14 slices):**
   is never announced either (review finding).
 - **Evidence link on the Knowledge tab** — additive `KnowledgeFactResponse.patternTitle` (the
   promoting pattern's title, batch reverse-lookup); the FE fact card renders a `minta: …` chip.
+
+**V3.4 (`mezo-6ha5`) shipped the catalog expansion + AI-context enrichment (spec:
+`2026-08-11-pattern-catalog-expansion-design.md`):**
+
+- **19 new `MetricKey`s (12 → 31)**, extractors in `MetricSeriesService`, all composed read-only
+  from existing collector UIs (spec §2 audit — no new collection surface needed):
+  - *Direct:* `gym-workload` (ExerciseFeedback workload 1–3, day avg — **the gym-RPE proxy**) ·
+    `gym-joint-pain` (day **max** — pain is peak-sensitive) · `checkin-body`/`checkin-mental`
+    (day avg) · `bedtime-hour`/`wakeup-hour` (fractional hour from the `"H:mm"` clock strings;
+    **bedtime before-noon hours shift +24**, 01:00 → 25.0, so "later" stays monotone) ·
+    `sleep-awakenings` (max) · `daily-protein-g` (FuelDay rollup, meal-days only — the
+    DAILY_KCAL pattern generalized into `fuelRollup`) · `meal-score` (avg of scored meals) ·
+    `reta-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
+    pattern) · `habits-done` (count of `done` rows; a habit-row day with zero done is a REAL 0)
+    · `ritual-closed` (0/1 from the first-ever closed day onward — pre-adoption days are absent,
+    not 0) · `daily-xp` (activity + habit + completed-quest XP sum; zero-XP days absent) ·
+    `social-mentions` (mentions per ts-day) · `run-hr-recovery-s` (avg).
+  - *Derived (sport-science):* `weekend` (0/1 calendar series — control variable) · `acwr`
+    (7d/28d rolling mean ratio of daily load; the extractor internally reads 28 days BEFORE the
+    caller's window — the caller's `[from,to]` contract is unchanged; chronic 0 ⇒ no point) ·
+    `training-monotony` (Foster: 7d rolling mean/SD, population SD; SD=0 ⇒ no point, never ∞) ·
+    `bedtime-variability` (7d rolling SD of bedtime-hour, min 3 data days — social-jetlag
+    signal). Daily load = sport-min + gym-volume/`load-gym-kg-per-min` (config, 100).
+- **21 new pairs (8 → 29)** in `mezo.companion.patterns.pairs` — the missing gym-RPE pair
+  (`sleep-quality~next-day-gym-workload`), overload/injury signals (`gym-volume~next-day-joint-pain`,
+  `acwr~next-day-joint-pain`), sleep hygiene (`bedtime-hour~sleep-quality`,
+  `ritual-closed~next-sleep-quality`, `late-meal~next-sleep-awakenings`), stress-eating
+  (`checkin-stress~late-meal-hour`, `weekend~late-meal-hour`), mood/energy responses
+  (`habits-done~checkin-mental`, `daily-xp~checkin-mental`, `social-mentions~checkin-mental`,
+  `training-monotony~checkin-energy`, `bedtime-variability~checkin-mental`,
+  `wakeup-hour~checkin-energy`), nutrition→energy (`daily-protein~next-day-checkin-energy`,
+  `meal-score~next-day-checkin-energy`, `reta-dose~daily-kcal`), and recovery
+  (`sport-load~next-sleep-quality`, `sleep-quality~next-day-hr-recovery`,
+  `checkin-body~gym-joint-pain`, `gym-workload~next-day-checkin-body`). The monitor page shows
+  them automatically — zero FE work, contract unchanged.
+- **Run-level series cache in `detect()`** — one `series()` call per metric per run into an
+  `EnumMap` over the union `[from, to+maxLag]` window; per-pair exact windows via the shared
+  `PatternGate.window(...)` static helper (the monitor's request-scoped cache now uses the same
+  helper — one windowing implementation for both).
+- **Digest enrichment (B1)** — the V2.2 digest now carries the qualitative fields: sleep
+  `notes`, run `notes`, check-in `note` (cap moved off the snapshot config), People mention
+  tone + excerpt (newest 5/day), and the evening intention reflection (categorical yes|partial|no
+  rendered as igen/részben/nem). Each field capped at `mezo.companion.summary.note-max-chars`
+  (200). Narrative AND embedding get richer — the text signal the deterministic engine must not
+  touch is exactly what the LLM layer needs.
+- **Hypothesis-gather enrichment (B2+B3)** — `gather()` appends (a) a `HETI METRIKA-TÁBLA`
+  block: all 31 metrics × last 7 finished days as raw numbers (`–` = no data), so the weekly LLM
+  can see thresholds/U-shapes/interactions the pairwise Pearson is blind to; and (b) a
+  `KAPU-DIAGNOSZTIKA` block: one line per non-live, non-frozen pair (title + key + verdict +
+  aligned/min-n + bottleneck metric) from `PatternMonitorService.monitor()` — the AI can now make
+  actionable hypotheses about MISSING data ("ha edzés után workload-ot pontoznál…"). `gather()`
+  became package-private for `HypothesisGatherContextIT`.
+- **Spec deviations (as-built):** `sourceHu` was NOT added to `MetricKey` (the monitor shipped
+  without it and the contract has no such field — no consumer); `reta-dose-mg` derives from the
+  dose log (`MedicationDoseEntity.dose`), not the cycle JSON (which holds only phase labels, no
+  dose ladder); the driving bd issue's "20 metrics / 32 total" text predates the collector-UI
+  audit — the approved count is 19/31 (deep-min dropped: permanently empty without a wearable
+  import; V3.5 if that ever lands); the intention "reflection" is categorical (yes|partial|no),
+  not free text — the digest renders it as a label, not a quote.
 
 **Status per layer:**
 
@@ -1029,9 +1091,13 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 - `mezo.companion.patterns.reinforce-cooldown-days` = **7** (`@Min(1) @Max(60)`) — a confirmed
   pattern reinforces its promoted fact at most once per window (the nightly lookback slides one
   day; re-counting the same evidence would inflate top-N ranks — review finding).
-- `mezo.companion.patterns.pairs` = the 8-pair catalog (`@NotEmpty`, each
+- `mezo.companion.patterns.pairs` = the 29-pair catalog (`@NotEmpty`, each
   `{key, category, label, title, metric-a, metric-b, lag-days}`) — pair keys are pattern identity
   (never rename a live key); metrics come from the `MetricKey` enum.
+- `mezo.companion.patterns.load-gym-kg-per-min` = **100** (`@Min(1) @Max(10000)`) — V3.4: the
+  ACWR/monotony daily-load common scale (this many kg of gym volume ≙ one sport minute).
+- `mezo.companion.summary.note-max-chars` = **200** (`@Min(0) @Max(1000)`) — V3.4: per-field cap
+  on the digest's qualitative fields (notes, mention excerpt).
 - `mezo.companion.hypotheses.cron` = `"0 0 3 * * SUN"` — the V3.2 weekly loop; switch
   `mezo.techcore.cron.hypothesis-job.enabled` (`HYPOTHESIS_JOB_SWITCH`).
 - `mezo.companion.hypotheses.max-per-run` = **3** (`@Min(1) @Max(10)`) — hypotheses judged per run.
@@ -1279,8 +1345,13 @@ precedent). The nightly job iterates `AppUserRepository.findAll()` (companion �
 
 **V3.1 patterns seam (✅ wired — read-only, one-way).** `MetricSeriesService` composes the
 owning features' existing reads date-scoped (sleep/sport/run/workout+sets/meal/FuelDay/medication
-cycle/water/weight/check-in) — zero new cross-feature finders; `PatternsPage` consumes
+cycle/water/weight/check-in) — zero new cross-feature finders v1; `PatternsPage` consumes
 `usePatterns`/`usePatternActions` from `@/data/hooks` ([`insights.md`](insights.md) §2.1).
+**V3.4 widened the read set** (still read-only, one-way): exercise-feedback, habit-day,
+ritual-day, activity-log, daily-quest, mention and medication-dose repositories; the only NEW
+finders are two derived queries on `RitualDayRepository`
+(`findByCreatedByAndRitualDateBetween`, `findFirstByCreatedByOrderByRitualDateAsc`) — no
+migration. The digest additionally reads `MentionRepository` + `DailyIntentionRepository`.
 
 **V3.3 promotion seam (✅ wired — the loop closes).** Pattern-confirm →
 `knowledge_fact(source=pattern)` → the V1.1 top-N injection carries it into every prompt → the
