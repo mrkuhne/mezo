@@ -18,7 +18,26 @@ public enum MetricKey {
     DAILY_WATER_ML("vízbevitel"),
     WEIGHT_DELTA_KG("reggeli súlyváltozás"),
     CHECKIN_STRESS("stressz-szint"),
-    CHECKIN_ENERGY("energia-szint");
+    CHECKIN_ENERGY("energia-szint"),
+    GYM_WORKLOAD("gym-terhelésérzet"),
+    GYM_JOINT_PAIN("ízületi fájdalom"),
+    CHECKIN_BODY("testérzet"),
+    CHECKIN_MENTAL("mentális állapot"),
+    BEDTIME_HOUR("lefekvés ideje"),
+    WAKEUP_HOUR("ébredés ideje"),
+    SLEEP_AWAKENINGS("éjszakai ébredések"),
+    DAILY_PROTEIN_G("napi fehérje"),
+    MEAL_SCORE("étkezés-pontszám"),
+    RETA_DOSE_MG("Reta-dózis"),
+    HABITS_DONE("kész szokások"),
+    RITUAL_CLOSED("esti lezárás"),
+    DAILY_XP("napi XP"),
+    SOCIAL_MENTIONS("társas említések"),
+    RUN_HR_RECOVERY_S("pulzus-visszaállás"),
+    WEEKEND("hétvége"),
+    ACWR("akut:krónikus terhelés"),
+    TRAINING_MONOTONY("edzés-monotónia"),
+    BEDTIME_VARIABILITY("lefekvés-szórás");
 
     private final String labelHu;
 

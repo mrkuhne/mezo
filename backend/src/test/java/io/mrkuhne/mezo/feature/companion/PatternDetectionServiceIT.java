@@ -73,6 +73,27 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testDetect_shouldPersistBedtimePattern_whenLateBedtimeTracksLowQuality() {
+        UUID owner = userPopulator.createUser().getId();
+        // bedtime 22:00→02:30 (törtóra 22..26.5) ↔ minőség 5..1 — erős negatív együttjárás
+        for (int i = 0; i < 10; i++) {
+            LocalDate day = LocalDate.now().minusDays(1L + i);
+            int shift = i % 5;
+            String bedtime = shift < 2 ? (22 + shift) + ":00" : (shift - 2) + ":30";
+            sleepLogPopulator.createSleepLog(owner, day, bedtime, "06:30",
+                    new BigDecimal("7.0"), 5 - shift, 0, null);
+        }
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = patternRepository.findByCreatedByAndKindAndPairKeyAndDeletedFalse(
+                owner, PatternEntity.KIND_STATISTICAL, "bedtime-hour~sleep-quality").orElseThrow();
+        assertThat(row.getStatus()).isEqualTo(PatternEntity.STATUS_PROPOSED);
+        assertThat(row.getR().doubleValue()).isLessThan(0);
+        assertThat(row.getN()).isEqualTo(10);
+    }
+
+    @Test
     void testDetect_shouldRefreshExistingRow_whenRunTwice() {
         UUID owner = userPopulator.createUser().getId();
         seedAntiCorrelatedDays(owner, 10);

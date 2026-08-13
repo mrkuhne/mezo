@@ -5,7 +5,9 @@ import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,5 +32,16 @@ public class TodayQuestAdapter implements TodayQuestSource {
                 .stream().filter(q -> !DailyQuestEntity.STATUS_REROLLED.equals(q.getStatus())).toList();
         long completed = rows.stream().filter(q -> DailyQuestEntity.STATUS_COMPLETED.equals(q.getStatus())).count();
         return new Stats((int) completed, rows.size());
+    }
+
+    @Override
+    public Map<LocalDate, Integer> completedXpByDay(UUID createdBy, LocalDate from, LocalDate to) {
+        Map<LocalDate, Integer> xp = new HashMap<>();
+        repository.findByCreatedByAndQuestDateBetweenOrderByQuestDateDesc(createdBy, from, to).forEach(q -> {
+            if (DailyQuestEntity.STATUS_COMPLETED.equals(q.getStatus()) && q.getXp() != null && q.getXp() > 0) {
+                xp.merge(q.getQuestDate(), q.getXp(), Integer::sum);
+            }
+        });
+        return xp;
     }
 }

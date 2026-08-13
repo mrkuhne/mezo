@@ -19,4 +19,7 @@ public interface TodayQuestSource {
 
     /** Non-rerolled quest rows for the given date: completed count + total count. */
     Stats todayStats(UUID createdBy, LocalDate date);
+
+    /** Teljesített quest-XP napi összegei [from,to]-ban — csak pozitív napok (V3.4 daily-xp metrika). */
+    java.util.Map<LocalDate, Integer> completedXpByDay(UUID createdBy, LocalDate from, LocalDate to);
 }

@@ -30,6 +30,21 @@ public class SleepLogPopulator {
         return sleepLogRepository.saveAndFlush(e);
     }
 
+    /** Teljes alvás-sor a V3.4 extraktor/digest IT-khez — minden mező explicit (mezo-6ha5). */
+    public SleepLogEntity createSleepLog(UUID owner, LocalDate date, String bedtime, String wakeup,
+        BigDecimal durationH, Integer quality, Integer awakenings, String notes) {
+        SleepLogEntity e = new SleepLogEntity();
+        e.setCreatedBy(owner);
+        e.setDate(date);
+        e.setBedtime(bedtime);
+        e.setWakeup(wakeup);
+        e.setDurationH(durationH);
+        e.setQuality(quality);
+        e.setAwakenings(awakenings);
+        e.setNotes(notes);
+        return sleepLogRepository.saveAndFlush(e);
+    }
+
     /** Full sleep log incl. bed/wake clock strings (habit wake-window / bed-on-time tests). */
     public SleepLogEntity createSleepLog(UUID owner, LocalDate date, String bedtime, String wakeup,
         BigDecimal durationH) {

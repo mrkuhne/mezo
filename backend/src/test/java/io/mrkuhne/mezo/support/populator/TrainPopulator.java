@@ -412,13 +412,19 @@ public class TrainPopulator {
     }
 
     public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId) {
+        return createFeedback(createdBy, workoutSessionId, exerciseId, 3, 1, 2);
+    }
+
+    /** Explicit értékű set-debrief — a metrika-extraktor IT-k vezérléséhez (mezo-6ha5). */
+    public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId,
+        int pump, int jointPain, int workload) {
         ExerciseFeedbackEntity f = new ExerciseFeedbackEntity();
         f.setCreatedBy(createdBy);
         f.setWorkoutSessionId(workoutSessionId);
         f.setExerciseId(exerciseId);
-        f.setPump(3);
-        f.setJointPain(1);
-        f.setWorkload(2);
+        f.setPump(pump);
+        f.setJointPain(jointPain);
+        f.setWorkload(workload);
         return exerciseFeedbackRepository.saveAndFlush(f);
     }
 
@@ -434,6 +440,16 @@ public class TrainPopulator {
         s.setRpe(new BigDecimal("6.8"));
         s.setShoulderStrain(6);
         s.setJumpCount(38);
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
+    /** Explicit perc-terhelésű sport-session — a V3.4 derivált terhelés-metrika IT-khez (mezo-6ha5). */
+    public SportSessionEntity createSportSession(UUID createdBy, LocalDate date, int durationMin) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        s.setTime("18:00");
+        s.setDurationMin(durationMin);
         return sportSessionRepository.saveAndFlush(s);
     }
 

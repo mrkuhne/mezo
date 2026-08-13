@@ -143,6 +143,8 @@ public record CompanionProperties(
          *  the nightly window slides by one day, so nightly increments would be the SAME evidence
          *  re-counted (and would crowd the top-N injection). */
         @Min(1) @Max(60) int reinforceCooldownDays,
+        /** V3.4 ACWR/monotónia napi terhelése: ennyi kg gym-volumen ér egy sport-percet (közös skála). */
+        @Min(1) @Max(10000) int loadGymKgPerMin,
         /** The metric-pair catalog — trim/re-lag pairs here; new metrics need a MetricKey entry. */
         @NotEmpty List<@Valid PatternPair> pairs
     ) {}
@@ -168,7 +170,10 @@ public record CompanionProperties(
         /** Cron for the nightly job (server zone), late enough that "yesterday" is truly finished. */
         @NotBlank String cron,
         /** How many finished days back the job checks and self-heals (idempotent catch-up = backfill). */
-        @Min(1) @Max(60) int catchUpDays
+        @Min(1) @Max(60) int catchUpDays,
+        /** V3.4 digest-gazdagítás: minőségi mezőnkénti karakter-cap (check-in/alvás/futás jegyzet,
+         *  említés-kivonat, intention-reflexió). */
+        @Min(0) @Max(1000) int noteMaxChars
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

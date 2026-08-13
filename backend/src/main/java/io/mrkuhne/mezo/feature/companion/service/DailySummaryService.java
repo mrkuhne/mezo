@@ -19,6 +19,8 @@ import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
+import io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -77,6 +80,8 @@ public class DailySummaryService {
     private final MedicationRepository medicationRepository;
     private final MedicationDoseRepository medicationDoseRepository;
     private final MedicationCycleService medicationCycleService;
+    private final MentionRepository mentionRepository;
+    private final DailyIntentionRepository dailyIntentionRepository;
     private final LlmCallContextHolder llmCallContextHolder;
 
     /**
@@ -115,6 +120,8 @@ public class DailySummaryService {
         addWeight(blocks, userId, date);
         addMedication(blocks, userId, date);
         addCheckIns(blocks, userId, date);
+        addMentions(blocks, userId, date);
+        addIntention(blocks, userId, date);
         if (blocks.isEmpty()) {
             return null;
         }
@@ -136,9 +143,13 @@ public class DailySummaryService {
                         + (s.getIntensity() != null ? ", intenzitás " + s.getIntensity() + "/5" : "")));
         runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
                 .stream().filter(r -> date.equals(r.getDate()))
-                .forEach(r -> blocks.add("Futás: "
-                        + (r.getCompletedRounds() != null ? r.getCompletedRounds() + " kör" : "megvolt")
-                        + (r.getRpeActual() != null ? ", RPE " + r.getRpeActual() : "")));
+                .forEach(r -> {
+                    String notes = cap(r.getNotes());
+                    blocks.add("Futás: "
+                            + (r.getCompletedRounds() != null ? r.getCompletedRounds() + " kör" : "megvolt")
+                            + (r.getRpeActual() != null ? ", RPE " + r.getRpeActual() : "")
+                            + (notes.isBlank() ? "" : " — \"" + notes + "\""));
+                });
     }
 
     private void addFuel(List<String> blocks, UUID userId, LocalDate date) {
@@ -157,10 +168,14 @@ public class DailySummaryService {
     private void addSleep(List<String> blocks, UUID userId, LocalDate date) {
         sleepLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
                 .stream().filter(s -> date.equals(s.getDate())).findFirst()
-                .ifPresent(s -> blocks.add("Alvás: " + num(s.getDurationH()) + " óra"
-                        + (s.getQuality() != null ? ", minőség " + s.getQuality() + "/5" : "")
-                        + (s.getAwakenings() != null && s.getAwakenings() > 0
-                                ? ", " + s.getAwakenings() + " ébredés" : "")));
+                .ifPresent(s -> {
+                    String notes = cap(s.getNotes());
+                    blocks.add("Alvás: " + num(s.getDurationH()) + " óra"
+                            + (s.getQuality() != null ? ", minőség " + s.getQuality() + "/5" : "")
+                            + (s.getAwakenings() != null && s.getAwakenings() > 0
+                                    ? ", " + s.getAwakenings() + " ébredés" : "")
+                            + (notes.isBlank() ? "" : " — \"" + notes + "\""));
+                });
     }
 
     private void addWeight(List<String> blocks, UUID userId, LocalDate date) {
@@ -189,17 +204,42 @@ public class DailySummaryService {
     }
 
     private void addCheckIns(List<String> blocks, UUID userId, LocalDate date) {
-        int noteCap = properties.snapshot().checkinNoteMaxChars();
         for (CheckInEntity c : checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, date)) {
-            String note = c.getNote() == null ? "" : c.getNote();
-            if (note.length() > noteCap) {
-                note = note.substring(0, noteCap);
-            }
+            String note = cap(c.getNote());
             blocks.add("Check-in" + (c.getSlotTime() != null ? " (" + c.getSlotTime() + ")" : "") + ":"
                     + (c.getEnergy() != null ? " energia " + c.getEnergy() + "/5" : "")
                     + (c.getStress() != null ? ", stressz " + c.getStress() + "/5" : "")
                     + (note.isBlank() ? "" : " — \"" + note + "\""));
         }
+    }
+
+    /** People-említések tónussal + capelt kivonattal (V3.4 B1) — a nap legfrissebb 5 említése. */
+    private void addMentions(List<String> blocks, UUID userId, LocalDate date) {
+        ZoneId zone = ZoneId.systemDefault();
+        mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId).stream()
+                .filter(m -> date.equals(m.getTs().atZone(zone).toLocalDate()))
+                .limit(5)
+                .forEach(m -> blocks.add("Említés (" + m.getTone() + "): \"" + cap(m.getExcerpt()) + "\""));
+    }
+
+    /** Az esti intention-reflexió (V3.4 B1) — kategorikus válasz (yes|partial|no), magyarul. */
+    private void addIntention(List<String> blocks, UUID userId, LocalDate date) {
+        dailyIntentionRepository.findByCreatedByAndIntentionDateAndDeletedFalse(userId, date)
+                .ifPresent(i -> blocks.add("Napi szándék-reflexió: " + switch (i.getReflection()) {
+                    case "yes" -> "igen";
+                    case "partial" -> "részben";
+                    default -> "nem";
+                }));
+    }
+
+    /** Minőségi mező capelése (V3.4 B1 — summary.note-max-chars); null/üres → üres string. */
+    private String cap(String text) {
+        if (text == null) {
+            return "";
+        }
+        String trimmed = text.strip();
+        int max = properties.summary().noteMaxChars();
+        return trimmed.length() > max ? trimmed.substring(0, max) : trimmed;
     }
 
     /** Trimmed decimal rendering (the ToolText.num idea — that helper is tools-package-private). */

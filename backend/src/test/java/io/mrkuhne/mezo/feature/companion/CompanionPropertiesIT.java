@@ -76,7 +76,8 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().lookbackDays()).isEqualTo(60);
         assertThat(properties.patterns().minN()).isEqualTo(8);
         assertThat(properties.patterns().reinforceCooldownDays()).isEqualTo(7);
-        assertThat(properties.patterns().pairs()).hasSize(8);
+        assertThat(properties.patterns().loadGymKgPerMin()).isEqualTo(100); // V3.4 derivált terhelés-skála
+        assertThat(properties.patterns().pairs()).hasSize(29); // V3.4 katalógus (8 v1 + 21 új)
         assertThat(properties.patterns().pairs().getFirst().key())
                 .isEqualTo("sleep-quality~next-day-training-rpe");
         assertThat(properties.patterns().pairs().getFirst().metricA())

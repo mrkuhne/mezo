@@ -1,40 +1,57 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.companion.TodayActivitySource;
+import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
+import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
+import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * V3.1 series extraction: one per-day scalar series per {@link MetricKey}, composed READ-ONLY
@@ -53,13 +70,23 @@ public class MetricSeriesService {
     private final RunSessionLogRepository runSessionLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final MealRepository mealRepository;
     private final FuelDayService fuelDayService;
     private final MedicationRepository medicationRepository;
+    private final MedicationDoseRepository medicationDoseRepository;
     private final MedicationCycleService medicationCycleService;
     private final WaterLogRepository waterLogRepository;
     private final WeightLogRepository weightLogRepository;
     private final CheckInRepository checkInRepository;
+    private final HabitDayRepository habitDayRepository;
+    private final RitualDayRepository ritualDayRepository;
+    private final MentionRepository mentionRepository;
+    private final CompanionProperties properties;
+    // activity/quest a companiontól függ (LLM-hívók) — a napi-XP olvasás ezért porton át jön
+    // (TodayActivitySource/TodayQuestSource minta), különben szelet-ciklus zárulna.
+    private final ObjectProvider<TodayActivitySource> todayActivitySource;
+    private final ObjectProvider<TodayQuestSource> todayQuestSource;
 
     /**
      * The metric's per-day values inside {@code [from, to]} (inclusive). Reads traverse LAZY
@@ -76,12 +103,32 @@ public class MetricSeriesService {
             case SPORT_LOAD_MIN -> sportLoad(userId, from, to);
             case GYM_VOLUME_KG -> gymVolume(userId, from, to);
             case LATE_MEAL_HOUR -> lateMealHour(userId, from, to);
-            case DAILY_KCAL -> dailyKcal(userId, from, to);
+            case DAILY_KCAL -> fuelRollup(userId, from, to, MacroSet::getKcal);
+            case DAILY_PROTEIN_G -> fuelRollup(userId, from, to, MacroSet::getP);
+            case MEAL_SCORE -> mealScore(userId, from, to);
+            case RETA_DOSE_MG -> retaDose(userId, from, to);
             case RETA_CYCLE_DAY -> retaCycleDay(userId, from, to);
             case DAILY_WATER_ML -> dailyWater(userId, from, to);
             case WEIGHT_DELTA_KG -> weightDelta(userId, from, to);
             case CHECKIN_STRESS -> checkIn(userId, from, to, CheckInEntity::getStress);
             case CHECKIN_ENERGY -> checkIn(userId, from, to, CheckInEntity::getEnergy);
+            case GYM_WORKLOAD -> gymFeedback(userId, from, to, ExerciseFeedbackEntity::getWorkload, false);
+            case GYM_JOINT_PAIN -> gymFeedback(userId, from, to, ExerciseFeedbackEntity::getJointPain, true);
+            case CHECKIN_BODY -> checkIn(userId, from, to, CheckInEntity::getBody);
+            case CHECKIN_MENTAL -> checkIn(userId, from, to, CheckInEntity::getMental);
+            case BEDTIME_HOUR -> sleep(userId, from, to, s -> clockHour(s.getBedtime(), true));
+            case WAKEUP_HOUR -> sleep(userId, from, to, s -> clockHour(s.getWakeup(), false));
+            case SLEEP_AWAKENINGS -> sleep(userId, from, to, s ->
+                    s.getAwakenings() == null ? null : s.getAwakenings().doubleValue());
+            case HABITS_DONE -> habitsDone(userId, from, to);
+            case RITUAL_CLOSED -> ritualClosed(userId, from, to);
+            case DAILY_XP -> dailyXp(userId, from, to);
+            case SOCIAL_MENTIONS -> socialMentions(userId, from, to);
+            case RUN_HR_RECOVERY_S -> hrRecovery(userId, from, to);
+            case WEEKEND -> weekend(from, to);
+            case ACWR -> acwr(userId, from, to);
+            case TRAINING_MONOTONY -> trainingMonotony(userId, from, to);
+            case BEDTIME_VARIABILITY -> bedtimeVariability(userId, from, to);
         };
     }
 
@@ -102,6 +149,25 @@ public class MetricSeriesService {
             }
         }
         return series;
+    }
+
+    /**
+     * "H:mm"/"HH:mm" óra-string → törtóra; lefekvésnél az éjfél utáni óra +24 (01:00 → 25.0,
+     * dél előtti cutoff), hogy a sorozat monoton maradjon a "későn feküdt" tengelyen.
+     * Hibás/hiányzó string → null (nincs adatpont, sosem találunk ki értéket).
+     */
+    private static Double clockHour(String clock, boolean shiftPastMidnight) {
+        if (clock == null || !clock.matches("\\d{1,2}:\\d{2}")) {
+            return null;
+        }
+        String[] parts = clock.split(":");
+        int hour = Integer.parseInt(parts[0]);
+        int minute = Integer.parseInt(parts[1]);
+        if (hour > 23 || minute > 59) {
+            return null;
+        }
+        double fractional = hour + minute / 60.0;
+        return shiftPastMidnight && hour < 12 ? fractional + 24 : fractional;
     }
 
     /** Avg of the day's RPE-like signals (sport rpe 1-10 + run rpeActual 1-10). */
@@ -171,8 +237,12 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** Consumed kcal per day — only days that have meals; reuses the FuelDay mapper math. */
-    private Map<LocalDate, Double> dailyKcal(UUID userId, LocalDate from, LocalDate to) {
+    private interface FuelValue {
+        BigDecimal value(MacroSet consumed);
+    }
+
+    /** Napi fuel-rollup — csak étkezéses napok (a DAILY_KCAL eredeti mintája, mezőre paraméterezve). */
+    private Map<LocalDate, Double> fuelRollup(UUID userId, LocalDate from, LocalDate to, FuelValue extractor) {
         Map<LocalDate, Double> series = new HashMap<>();
         List<LocalDate> mealDays = mealRepository.findAllOwned(userId).stream()
                 .map(MealEntity::getMealDate)
@@ -181,10 +251,49 @@ public class MetricSeriesService {
                 .toList();
         for (LocalDate day : mealDays) {
             FuelDayResponse fuelDay = fuelDayService.getDay(userId, day);
-            BigDecimal kcal = fuelDay.getConsumed().getKcal();
-            if (kcal != null && kcal.signum() > 0) {
-                series.put(day, kcal.doubleValue());
+            BigDecimal value = extractor.value(fuelDay.getConsumed());
+            if (value != null && value.signum() > 0) {
+                series.put(day, value.doubleValue());
             }
+        }
+        return series;
+    }
+
+    /** A nap score-olt étkezéseinek átlaga (score nélküli meal nem adatpont). */
+    private Map<LocalDate, Double> mealScore(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, List<Double>> perDay = new HashMap<>();
+        for (MealEntity meal : mealRepository.findAllOwned(userId)) {
+            if (meal.getMealDate().isBefore(from) || meal.getMealDate().isAfter(to)
+                    || meal.getScore() == null) {
+                continue;
+            }
+            perDay.computeIfAbsent(meal.getMealDate(), d -> new ArrayList<>())
+                    .add(meal.getScore().doubleValue());
+        }
+        return average(perDay);
+    }
+
+    /**
+     * Aktuális dózis-szint naponta: az adott napon-vagy-előtte utolsó beadott dózis (a ciklusnap-
+     * deriválás horgony-mintája). Az első beadás előtti napokra nincs adat — honest absence.
+     */
+    private Map<LocalDate, Double> retaDose(UUID userId, LocalDate from, LocalDate to) {
+        MedicationEntity med = medicationRepository
+                .findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
+        if (med == null) {
+            return Map.of();
+        }
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            LocalDate current = day;
+            medicationDoseRepository
+                    .findFirstByCreatedByAndMedicationIdAndDeletedFalseAndAdministeredDateLessThanEqualOrderByAdministeredDateDesc(
+                            userId, med.getId(), day)
+                    .ifPresent(dose -> {
+                        if (dose.getDose() != null) {
+                            series.put(current, dose.getDose().doubleValue());
+                        }
+                    });
         }
         return series;
     }
@@ -238,6 +347,35 @@ public class MetricSeriesService {
         return series;
     }
 
+    private interface FeedbackValue {
+        Integer value(ExerciseFeedbackEntity feedback);
+    }
+
+    /** Set-debrief jelek a nap befejezett edzései felett — workload átlag, fájdalom csúcs (max). */
+    private Map<LocalDate, Double> gymFeedback(UUID userId, LocalDate from, LocalDate to,
+                                               FeedbackValue extractor, boolean peak) {
+        Map<LocalDate, List<Double>> perDay = new HashMap<>();
+        for (WorkoutSessionEntity session : workoutSessionRepository.findDoneInstancesBetween(userId, from, to)) {
+            if (session.getDate() == null) {
+                continue;
+            }
+            for (ExerciseFeedbackEntity feedback : exerciseFeedbackRepository
+                    .findByCreatedByAndWorkoutSessionId(userId, session.getId())) {
+                Integer value = extractor.value(feedback);
+                if (value != null) {
+                    perDay.computeIfAbsent(session.getDate(), d -> new ArrayList<>()).add(value.doubleValue());
+                }
+            }
+        }
+        if (!peak) {
+            return average(perDay);
+        }
+        Map<LocalDate, Double> series = new HashMap<>();
+        perDay.forEach((day, values) -> series.put(day,
+                values.stream().mapToDouble(Double::doubleValue).max().orElseThrow()));
+        return series;
+    }
+
     private interface CheckInValue {
         Integer value(CheckInEntity checkIn);
     }
@@ -254,6 +392,189 @@ public class MetricSeriesService {
                 perDay.computeIfAbsent(checkIn.getDate(), d -> new ArrayList<>()).add(value.doubleValue());
             }
         }
+        return average(perDay);
+    }
+
+    /** 0/1 hétvége-jel (szo–vas) — tiszta naptári sorozat, kontroll-változó. */
+    private static Map<LocalDate, Double> weekend(LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            DayOfWeek dow = day.getDayOfWeek();
+            series.put(day, dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY ? 1.0 : 0.0);
+        }
+        return series;
+    }
+
+    /**
+     * Napi terhelés közös skálán: sport-perc + gym-volumen perc-ekvivalens (kg / load-gym-kg-per-min).
+     * Naptári tömb — a nem-logolt nap terhelése valódi 0 (a gördülő ablakok ezt igénylik).
+     */
+    private double[] dailyLoad(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> sport = sportLoad(userId, from, to);
+        Map<LocalDate, Double> gym = gymVolume(userId, from, to);
+        double kgPerMin = properties.patterns().loadGymKgPerMin();
+        int days = (int) (to.toEpochDay() - from.toEpochDay()) + 1;
+        double[] load = new double[days];
+        for (int i = 0; i < days; i++) {
+            LocalDate day = from.plusDays(i);
+            load[i] = sport.getOrDefault(day, 0.0) + gym.getOrDefault(day, 0.0) / kgPerMin;
+        }
+        return load;
+    }
+
+    /**
+     * ACWR: 7 napos akut / 28 napos krónikus átlag-terhelés aránya. Az extraktor az ablak ELŐTTI
+     * 28 napot is beolvassa (belső ablak-kiterjesztés — a hívó [from,to]-ja változatlan);
+     * krónikus 0 → nincs adatpont.
+     */
+    private Map<LocalDate, Double> acwr(UUID userId, LocalDate from, LocalDate to) {
+        LocalDate extendedFrom = from.minusDays(27);
+        double[] load = dailyLoad(userId, extendedFrom, to);
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            int idx = (int) (day.toEpochDay() - extendedFrom.toEpochDay());
+            double acute = mean(load, idx - 6, idx);
+            double chronic = mean(load, idx - 27, idx);
+            if (chronic > 0) {
+                series.put(day, acute / chronic);
+            }
+        }
+        return series;
+    }
+
+    /** Foster-monotónia: 7 napos gördülő átlag/szórás; szórás=0 → definiálatlan, nincs adatpont. */
+    private Map<LocalDate, Double> trainingMonotony(UUID userId, LocalDate from, LocalDate to) {
+        LocalDate extendedFrom = from.minusDays(6);
+        double[] load = dailyLoad(userId, extendedFrom, to);
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            int idx = (int) (day.toEpochDay() - extendedFrom.toEpochDay());
+            double mean = mean(load, idx - 6, idx);
+            double sd = stdDev(load, idx - 6, idx, mean);
+            if (sd > 0) {
+                series.put(day, mean / sd);
+            }
+        }
+        return series;
+    }
+
+    /** A bedtime-hour 7 napos gördülő (populációs) szórása — social jetlag jel; min. 3 nap adat. */
+    private Map<LocalDate, Double> bedtimeVariability(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> bedtimes = sleep(userId, from.minusDays(6), to,
+                s -> clockHour(s.getBedtime(), true));
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            List<Double> window = new ArrayList<>();
+            for (int i = 0; i <= 6; i++) {
+                Double value = bedtimes.get(day.minusDays(i));
+                if (value != null) {
+                    window.add(value);
+                }
+            }
+            if (window.size() < 3) {
+                continue;
+            }
+            double mean = window.stream().mapToDouble(Double::doubleValue).average().orElseThrow();
+            double sq = window.stream().mapToDouble(v -> (v - mean) * (v - mean)).sum();
+            series.put(day, Math.sqrt(sq / window.size()));
+        }
+        return series;
+    }
+
+    private static double mean(double[] values, int fromIdx, int toIdx) {
+        double sum = 0;
+        for (int i = fromIdx; i <= toIdx; i++) {
+            sum += values[i];
+        }
+        return sum / (toIdx - fromIdx + 1);
+    }
+
+    /** Populációs szórás a [fromIdx,toIdx] szeleten (a 7 napos Foster-ablak fix hosszú). */
+    private static double stdDev(double[] values, int fromIdx, int toIdx, double mean) {
+        double sq = 0;
+        for (int i = fromIdx; i <= toIdx; i++) {
+            sq += (values[i] - mean) * (values[i] - mean);
+        }
+        return Math.sqrt(sq / (toIdx - fromIdx + 1));
+    }
+
+    /** Kész szokások száma naponta — habit-soros nap 0-val is adatpont, sor nélküli nap nem. */
+    private Map<LocalDate, Double> habitsDone(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (HabitDayEntity habit : habitDayRepository.findByCreatedByAndHabitDateBetween(userId, from, to)) {
+            double done = HabitDayEntity.STATUS_DONE.equals(habit.getStatus()) ? 1 : 0;
+            series.merge(habit.getHabitDate(), done, Double::sum);
+        }
+        return series;
+    }
+
+    /**
+     * 0/1 lezárás-sorozat (point-biserial). ritual_day sor csak záráskor születik, ezért a 0-kat
+     * a naptár adja — de csak az első valaha lezárt nap (adopció) UTÁN: előtte a hiány nem
+     * "nem zárta le", hanem "még nem használta a rituálét".
+     */
+    private Map<LocalDate, Double> ritualClosed(UUID userId, LocalDate from, LocalDate to) {
+        LocalDate adopted = ritualDayRepository.findFirstByCreatedByOrderByRitualDateAsc(userId)
+                .map(RitualDayEntity::getRitualDate).orElse(null);
+        if (adopted == null) {
+            return Map.of();
+        }
+        Set<LocalDate> closed = ritualDayRepository
+                .findByCreatedByAndRitualDateBetween(userId, from, to).stream()
+                .map(RitualDayEntity::getRitualDate)
+                .collect(Collectors.toSet());
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from.isBefore(adopted) ? adopted : from; !day.isAfter(to); day = day.plusDays(1)) {
+            series.put(day, closed.contains(day) ? 1.0 : 0.0);
+        }
+        return series;
+    }
+
+    /** Napi össz-XP (activity + habit + completed quest); 0 XP-s nap nem adatpont (DAILY_KCAL-minta).
+     *  Az activity/quest oldal portokon át jön; hiányzó bean (kapcsoló ki) = nincs az a forrás. */
+    private Map<LocalDate, Double> dailyXp(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        TodayActivitySource activities = todayActivitySource.getIfAvailable();
+        if (activities != null) {
+            activities.awardedXpByDay(userId, from, to).forEach((day, xp) ->
+                    series.merge(day, xp.doubleValue(), Double::sum));
+        }
+        habitDayRepository.findByCreatedByAndHabitDateBetween(userId, from, to).forEach(h -> {
+            if (h.getXpAwarded() != null && h.getXpAwarded() > 0) {
+                series.merge(h.getHabitDate(), h.getXpAwarded().doubleValue(), Double::sum);
+            }
+        });
+        TodayQuestSource quests = todayQuestSource.getIfAvailable();
+        if (quests != null) {
+            quests.completedXpByDay(userId, from, to).forEach((day, xp) ->
+                    series.merge(day, xp.doubleValue(), Double::sum));
+        }
+        return series;
+    }
+
+    /** People-említések napi darabszáma (ts rendszerzónás napja). */
+    private Map<LocalDate, Double> socialMentions(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (MentionEntity mention : mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId)) {
+            LocalDate day = mention.getTs().atZone(ZoneId.systemDefault()).toLocalDate();
+            if (!day.isBefore(from) && !day.isAfter(to)) {
+                series.merge(day, 1.0, Double::sum);
+            }
+        }
+        return series;
+    }
+
+    /** Futás utáni pulzus-visszaállás (mp) napi átlaga — ritka adat, a kapu kezeli. */
+    private Map<LocalDate, Double> hrRecovery(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, List<Double>> perDay = new HashMap<>();
+        runSessionLogRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from)
+                .forEach(r -> {
+                    if (!r.getDate().isAfter(to) && r.getHrRecoverySec() != null) {
+                        perDay.computeIfAbsent(r.getDate(), d -> new ArrayList<>())
+                                .add(r.getHrRecoverySec().doubleValue());
+                    }
+                });
         return average(perDay);
     }
 

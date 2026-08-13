@@ -126,8 +126,8 @@ public class PatternMonitorService {
         }
 
         // Pontosan a job ablakai: A a [from,to]-n, B lagDays-szel eltolva.
-        Map<LocalDate, Double> seriesA = window(cache.get(pair.metricA()), from, to);
-        Map<LocalDate, Double> seriesB = window(cache.get(pair.metricB()),
+        Map<LocalDate, Double> seriesA = PatternGate.window(cache.get(pair.metricA()), from, to);
+        Map<LocalDate, Double> seriesB = PatternGate.window(cache.get(pair.metricB()),
                 from.plusDays(pair.lagDays()), to.plusDays(pair.lagDays()));
         PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(), minN);
         builder.alignedDays(outcome.alignedDays());
@@ -157,8 +157,8 @@ public class PatternMonitorService {
     private MetricKey thinnerMetric(CompanionProperties.PatternPair pair,
                                     Map<MetricKey, Map<LocalDate, Double>> cache,
                                     LocalDate from, LocalDate to) {
-        int a = window(cache.get(pair.metricA()), from, to).size();
-        int b = window(cache.get(pair.metricB()), from, to).size();
+        int a = PatternGate.window(cache.get(pair.metricA()), from, to).size();
+        int b = PatternGate.window(cache.get(pair.metricB()), from, to).size();
         return b < a ? pair.metricB() : pair.metricA();
     }
 
@@ -176,7 +176,7 @@ public class PatternMonitorService {
         }
         List<PatternMetricCoverage> out = new ArrayList<>();
         for (MetricKey metric : MetricKey.values()) {
-            Map<LocalDate, Double> windowed = window(cache.get(metric), from, to);
+            Map<LocalDate, Double> windowed = PatternGate.window(cache.get(metric), from, to);
             out.add(PatternMetricCoverage.builder()
                     .key(metric.wireKey())
                     .label(metric.labelHu())
@@ -189,14 +189,4 @@ public class PatternMonitorService {
         return out;
     }
 
-    /** A cache egyetlen uniós ablakot tart — a kapunak a job PONTOS ablakát kell látnia. */
-    private Map<LocalDate, Double> window(Map<LocalDate, Double> series, LocalDate from, LocalDate to) {
-        Map<LocalDate, Double> out = new LinkedHashMap<>();
-        series.forEach((day, value) -> {
-            if (!day.isBefore(from) && !day.isAfter(to)) {
-                out.put(day, value);
-            }
-        });
-        return out;
-    }
 }
