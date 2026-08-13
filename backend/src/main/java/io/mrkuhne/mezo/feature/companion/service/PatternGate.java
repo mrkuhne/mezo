@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,17 @@ final class PatternGate {
     }
 
     private PatternGate() {
+    }
+
+    /** [from,to] szűkítés — a futás-szintű cache uniós ablakából a pár PONTOS ablaka. */
+    static Map<LocalDate, Double> window(Map<LocalDate, Double> series, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> out = new LinkedHashMap<>();
+        series.forEach((day, value) -> {
+            if (!day.isBefore(from) && !day.isAfter(to)) {
+                out.put(day, value);
+            }
+        });
+        return out;
     }
 
     /**

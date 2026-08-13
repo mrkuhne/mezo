@@ -83,7 +83,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(response.getWindowTo()).isEqualTo(LocalDate.now().minusDays(1));
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
-        assertThat(response.getPairs()).hasSize(8);
+        assertThat(response.getPairs()).hasSize(29); // V3.4 katalógus (8 eredeti + 21 új)
         assertThat(response.getMetrics()).hasSize(MetricKey.values().length); // a teljes V3.4 katalógus
         assertThat(response.getPairs()).allSatisfy(p -> assertThat(p.getVerdict()).isEqualTo("no_data"));
     }
@@ -210,7 +210,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(stress.getCoveredDays()).isEqualTo(6);
         assertThat(stress.getWindowDays()).isEqualTo(60);
         assertThat(stress.getLastDayWithData()).isEqualTo(LocalDate.now().minusDays(1));
-        assertThat(stress.getPairCount()).isEqualTo(1);
+        assertThat(stress.getPairCount()).isEqualTo(2); // V3.4: + checkin-stress~late-meal-hour
         assertThat(metric(response, "daily-kcal").getCoveredDays()).isZero();
         assertThat(metric(response, "daily-kcal").getLastDayWithData()).isNull();
     }

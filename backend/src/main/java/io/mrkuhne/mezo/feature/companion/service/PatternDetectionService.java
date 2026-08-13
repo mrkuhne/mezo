@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,10 +51,15 @@ public class PatternDetectionService {
         CompanionProperties.Patterns config = properties.patterns();
         LocalDate to = LocalDate.now().minusDays(1);
         LocalDate from = to.minusDays(config.lookbackDays() - 1L);
+        int maxLag = config.pairs().stream()
+                .mapToInt(CompanionProperties.PatternPair::lagDays).max().orElse(0);
+        // Futás-szintű sorozat-cache (V3.4, spec §4): metrikánként EGY series()-hívás az uniós
+        // [from, to+maxLag] ablakra — a 29 pár legtöbbje osztozik metrikán.
+        Map<MetricKey, Map<LocalDate, Double>> cache = new EnumMap<>(MetricKey.class);
         int upserted = 0;
         for (CompanionProperties.PatternPair pair : config.pairs()) {
             try {
-                if (detectPair(userId, pair, from, to, config.minN())) {
+                if (detectPair(userId, pair, from, to, config.minN(), cache, maxLag)) {
                     upserted++;
                 }
             } catch (Exception e) {
@@ -64,9 +70,12 @@ public class PatternDetectionService {
     }
 
     private boolean detectPair(UUID userId, CompanionProperties.PatternPair pair,
-                               LocalDate from, LocalDate to, int minN) {
-        Map<LocalDate, Double> seriesA = metricSeriesService.series(userId, pair.metricA(), from, to);
-        Map<LocalDate, Double> seriesB = metricSeriesService.series(userId, pair.metricB(),
+                               LocalDate from, LocalDate to, int minN,
+                               Map<MetricKey, Map<LocalDate, Double>> cache, int maxLag) {
+        Map<LocalDate, Double> seriesA = PatternGate.window(
+                cached(cache, userId, pair.metricA(), from, to, maxLag), from, to);
+        Map<LocalDate, Double> seriesB = PatternGate.window(
+                cached(cache, userId, pair.metricB(), from, to, maxLag),
                 from.plusDays(pair.lagDays()), to.plusDays(pair.lagDays()));
         // A kapu KÖZÖS a monitorral (PatternMonitorService) — a diagnosztika ettől hiteles.
         PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(), minN);
@@ -75,6 +84,12 @@ public class PatternDetectionService {
         }
         upsert(userId, pair, outcome.result(), from, to);
         return true;
+    }
+
+    private Map<LocalDate, Double> cached(Map<MetricKey, Map<LocalDate, Double>> cache, UUID userId,
+                                          MetricKey metric, LocalDate from, LocalDate to, int maxLag) {
+        return cache.computeIfAbsent(metric,
+                m -> metricSeriesService.series(userId, m, from, to.plusDays(maxLag)));
     }
 
     private void upsert(UUID userId, CompanionProperties.PatternPair pair,

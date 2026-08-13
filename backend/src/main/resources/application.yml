@@ -455,6 +455,154 @@ mezo:
           metric-a: daily-water-ml
           metric-b: checkin-energy
           lag-days: 0
+        # --- V3.4 katalógus-bővítés (mezo-6ha5) — 21 új pár ---
+        - key: sleep-quality~next-day-gym-workload
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ másnapi gym-terhelésérzet"
+          metric-a: sleep-quality
+          metric-b: gym-workload
+          lag-days: 1
+        - key: gym-volume~next-day-joint-pain
+          category: response
+          label: Response
+          title: "Gym-volumen ↔ másnapi ízületi fájdalom"
+          metric-a: gym-volume-kg
+          metric-b: gym-joint-pain
+          lag-days: 1
+        - key: checkin-body~gym-joint-pain
+          category: physiology
+          label: Fiziológia
+          title: "Testérzet ↔ aznapi ízületi fájdalom"
+          metric-a: checkin-body
+          metric-b: gym-joint-pain
+          lag-days: 0
+        - key: gym-workload~next-day-checkin-body
+          category: response
+          label: Response
+          title: "Gym-terhelésérzet ↔ másnapi testérzet"
+          metric-a: gym-workload
+          metric-b: checkin-body
+          lag-days: 1
+        - key: bedtime-hour~sleep-quality
+          category: trigger
+          label: Trigger
+          title: "Lefekvés ideje ↔ aznapi alvásminőség"
+          metric-a: bedtime-hour
+          metric-b: sleep-quality
+          lag-days: 0
+        - key: late-meal~next-sleep-awakenings
+          category: trigger
+          label: Trigger
+          title: "Késői étkezés ↔ rákövetkező éjszakai ébredések"
+          metric-a: late-meal-hour
+          metric-b: sleep-awakenings
+          lag-days: 1
+        - key: checkin-stress~late-meal-hour
+          category: trigger
+          label: Trigger
+          title: "Stressz-szint ↔ aznapi késői étkezés"
+          metric-a: checkin-stress
+          metric-b: late-meal-hour
+          lag-days: 0
+        - key: habits-done~checkin-mental
+          category: response
+          label: Response
+          title: "Kész szokások ↔ mentális állapot"
+          metric-a: habits-done
+          metric-b: checkin-mental
+          lag-days: 0
+        - key: ritual-closed~next-sleep-quality
+          category: trigger
+          label: Trigger
+          title: "Esti lezárás ↔ rákövetkező alvásminőség"
+          metric-a: ritual-closed
+          metric-b: sleep-quality
+          lag-days: 1
+        - key: daily-protein~next-day-checkin-energy
+          category: physiology
+          label: Fiziológia
+          title: "Napi fehérje ↔ másnapi energia-szint"
+          metric-a: daily-protein-g
+          metric-b: checkin-energy
+          lag-days: 1
+        - key: daily-xp~checkin-mental
+          category: response
+          label: Response
+          title: "Napi XP ↔ mentális állapot"
+          metric-a: daily-xp
+          metric-b: checkin-mental
+          lag-days: 0
+        - key: meal-score~next-day-checkin-energy
+          category: physiology
+          label: Fiziológia
+          title: "Étkezés-pontszám ↔ másnapi energia-szint"
+          metric-a: meal-score
+          metric-b: checkin-energy
+          lag-days: 1
+        - key: reta-dose~daily-kcal
+          category: physiology
+          label: Fiziológia
+          title: "Reta-dózis ↔ napi kalória"
+          metric-a: reta-dose-mg
+          metric-b: daily-kcal
+          lag-days: 0
+        - key: sport-load~next-sleep-quality
+          category: physiology
+          label: Fiziológia
+          title: "Sportterhelés ↔ rákövetkező alvásminőség"
+          metric-a: sport-load-min
+          metric-b: sleep-quality
+          lag-days: 1
+        - key: wakeup-hour~checkin-energy
+          category: trigger
+          label: Trigger
+          title: "Ébredés ideje ↔ energia-szint"
+          metric-a: wakeup-hour
+          metric-b: checkin-energy
+          lag-days: 0
+        - key: sleep-quality~next-day-hr-recovery
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ másnapi pulzus-visszaállás"
+          metric-a: sleep-quality
+          metric-b: run-hr-recovery-s
+          lag-days: 1
+        - key: social-mentions~checkin-mental
+          category: response
+          label: Response
+          title: "Társas említések ↔ mentális állapot"
+          metric-a: social-mentions
+          metric-b: checkin-mental
+          lag-days: 0
+        - key: acwr~next-day-joint-pain
+          category: response
+          label: Response
+          title: "ACWR ↔ másnapi ízületi fájdalom"
+          metric-a: acwr
+          metric-b: gym-joint-pain
+          lag-days: 1
+        - key: training-monotony~checkin-energy
+          category: physiology
+          label: Fiziológia
+          title: "Edzés-monotónia ↔ energia-szint"
+          metric-a: training-monotony
+          metric-b: checkin-energy
+          lag-days: 0
+        - key: bedtime-variability~checkin-mental
+          category: trigger
+          label: Trigger
+          title: "Lefekvés-szórás ↔ mentális állapot"
+          metric-a: bedtime-variability
+          metric-b: checkin-mental
+          lag-days: 0
+        - key: weekend~late-meal-hour
+          category: trigger
+          label: Trigger
+          title: "Hétvége ↔ késői étkezés"
+          metric-a: weekend
+          metric-b: late-meal-hour
+          lag-days: 0
     advisors:
       # V1.3 post-response advisor chain — deterministic clinical Rx-dose guard + one cheap-tier
       # LLM verdict (never-ask-twice redundancy + grounding-lite); reject -> one corrective
