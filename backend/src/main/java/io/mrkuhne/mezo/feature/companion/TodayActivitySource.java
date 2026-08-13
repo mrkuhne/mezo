@@ -24,4 +24,7 @@ public interface TodayActivitySource {
 
     /** This date's logged activities (newest first) — text + awarded XP only, never the raw entity. */
     List<ActivityLine> activitiesForDay(UUID createdBy, LocalDate date);
+
+    /** Kiosztott activity-XP napi összegei [from,to]-ban — csak pozitív napok (V3.4 daily-xp metrika). */
+    java.util.Map<LocalDate, Integer> awardedXpByDay(UUID createdBy, LocalDate from, LocalDate to);
 }

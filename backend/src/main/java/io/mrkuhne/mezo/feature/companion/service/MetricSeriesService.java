@@ -2,8 +2,9 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.companion.TodayActivitySource;
+import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
@@ -22,8 +23,6 @@ import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
-import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
-import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
 import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
 import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -36,6 +35,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,10 +81,12 @@ public class MetricSeriesService {
     private final CheckInRepository checkInRepository;
     private final HabitDayRepository habitDayRepository;
     private final RitualDayRepository ritualDayRepository;
-    private final ActivityLogRepository activityLogRepository;
-    private final DailyQuestRepository dailyQuestRepository;
     private final MentionRepository mentionRepository;
     private final CompanionProperties properties;
+    // activity/quest a companiontól függ (LLM-hívók) — a napi-XP olvasás ezért porton át jön
+    // (TodayActivitySource/TodayQuestSource minta), különben szelet-ciklus zárulna.
+    private final ObjectProvider<TodayActivitySource> todayActivitySource;
+    private final ObjectProvider<TodayQuestSource> todayQuestSource;
 
     /**
      * The metric's per-day values inside {@code [from, to]} (inclusive). Reads traverse LAZY
@@ -528,26 +530,25 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** Napi össz-XP (activity + habit + completed quest); 0 XP-s nap nem adatpont (DAILY_KCAL-minta). */
+    /** Napi össz-XP (activity + habit + completed quest); 0 XP-s nap nem adatpont (DAILY_KCAL-minta).
+     *  Az activity/quest oldal portokon át jön; hiányzó bean (kapcsoló ki) = nincs az a forrás. */
     private Map<LocalDate, Double> dailyXp(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Double> series = new HashMap<>();
-        activityLogRepository.findByCreatedByAndOccurredOnBetween(userId, from, to).forEach(a -> {
-            if (a.getXpAwarded() != null && a.getXpAwarded() > 0) {
-                series.merge(a.getOccurredOn(), a.getXpAwarded().doubleValue(), Double::sum);
-            }
-        });
+        TodayActivitySource activities = todayActivitySource.getIfAvailable();
+        if (activities != null) {
+            activities.awardedXpByDay(userId, from, to).forEach((day, xp) ->
+                    series.merge(day, xp.doubleValue(), Double::sum));
+        }
         habitDayRepository.findByCreatedByAndHabitDateBetween(userId, from, to).forEach(h -> {
             if (h.getXpAwarded() != null && h.getXpAwarded() > 0) {
                 series.merge(h.getHabitDate(), h.getXpAwarded().doubleValue(), Double::sum);
             }
         });
-        dailyQuestRepository.findByCreatedByAndQuestDateBetweenOrderByQuestDateDesc(userId, from, to)
-                .forEach(q -> {
-                    if (DailyQuestEntity.STATUS_COMPLETED.equals(q.getStatus())
-                            && q.getXp() != null && q.getXp() > 0) {
-                        series.merge(q.getQuestDate(), q.getXp().doubleValue(), Double::sum);
-                    }
-                });
+        TodayQuestSource quests = todayQuestSource.getIfAvailable();
+        if (quests != null) {
+            quests.completedXpByDay(userId, from, to).forEach((day, xp) ->
+                    series.merge(day, xp.doubleValue(), Double::sum));
+        }
         return series;
     }
 
