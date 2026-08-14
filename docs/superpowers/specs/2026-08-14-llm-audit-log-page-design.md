@@ -25,7 +25,7 @@ A tulajdonossal egyeztetve:
 2. **Hely: teljes oldal `/me/ai-usage`**, Me-alnav nélkül (a `me/routines/edit` és `me/sleep/night` idióma). Belépő: a Profil meglévő **`AiUsageCard`-ja koppinthatóvá válik**. A 8 elemű Me tab-sáv nem bővül.
 3. **Időablak: naptári Ma / Ez a hét / Ez a hónap** — ugyanaz a három periódus, mint a kártyáé (`mezo.llm-log.report-zone`), és **ugyanaz a választás szűri a fejlécet ÉS a listát**, hogy a két szám sose mondjon mást.
 4. **Szűrés szerveroldali** — feature, státusz, call kind. A feature-sávra koppintva rászűr (a sáv kiemelve, ✕-szel törölhető). Kliensoldali szűrés nincs: a fejléc-számok a teljes periódust fedik, a lista csak egy ablakot lát belőle, tehát a kettőt csak a szerver tudja egyeztetni.
-5. **Lapozás: cursor** (`before` = az utolsó látott sor `createdAt`-ja, kizárólagos) + `limit`, „További hívások" gombbal. **Nem offset**: a napló tetejére folyamatosan érkeznek új sorok, offsettel a lapozás duplikálna.
+5. **Lapozás: növekvő ablak** — egyetlen `limit` paraméter (default 50, max 500), a „További hívások" gomb 50-esével emeli. **Nem offset** (a napló tetejére folyamatosan érkeznek új sorok, offsettel a lapozás duplikálna) és **nem cursor**: a `useDualQuery` egy lekérdezést kezel, a kódbázisban nincs `useInfiniteQuery`, így a cursor-akkumuláció olyan több-lapos állapotmintát hozna be, aminek nincs párja. A növekvő ablak minden válaszban egy konzisztens olvasat a lista tetejéről, tehát sem nem duplikál, sem nem hagy ki — cserébe újraolvassa az addigi sorokat, ami ≤500 sornál elhanyagolható. A plafonon a lista **kiírja**, hogy elfogyott az ablak („Szűkíts szűrővel a régebbiekhez") — néma csonkolás nincs.
 6. **Részletnézet: külön oldal** `/me/ai-usage/:id`, nem sheet. A payloadok oszloponként 64 000 karakterig mehetnek — egy bottom-sheet ehhez szűk —, és így deep-linkelhető is.
 7. **Három új endpoint**, contract-first, a meglévő `llm-usage` fragmentbe: `breakdown` (fejléc), `calls` (lista), `calls/{id}` (részlet). A `summary` **marad**, változatlanul — a kártya azt eszi.
 8. **A payload sosem utazik a listával.** A lista-sor a metaadatot viszi; a system prompt / user üzenet / válasz csak a részlet-hívásban jön le.
@@ -37,8 +37,8 @@ A tulajdonossal egyeztetve:
   ├─ periódus-state (DAY|WEEK|MONTH) + szűrő-state (feature?, status?, callKind?)   ← useState, URL-be nem megy
   ├─ useLlmUsageBreakdown(period)         → GET /api/llm-usage/breakdown?period=
   │     └─ hero (totals) + feature-sávlista + modell-kockák
-  └─ useLlmCalls(period, filters)         → GET /api/llm-usage/calls?period=&feature=&status=&callKind=&before=&limit=
-        └─ szűrőchipek + hívás-lista + „További hívások" (cursor)
+  └─ useLlmCalls(period, filters, limit)  → GET /api/llm-usage/calls?period=&feature=&status=&callKind=&limit=
+        └─ szűrőchipek + hívás-lista + „További hívások" (limit += 50)
 
 /me/ai-usage/:id  (AiCallDetailPage)
   └─ useLlmCall(id)                       → GET /api/llm-usage/calls/{id}
@@ -70,13 +70,13 @@ Mind a négy query **szándékosan owner-szűrés nélkül** (ADR 0014 következ
 | `aggregateTotals(since)` | `count(*)`, `count` státuszonként, `sum(cost_usd)`, `count(*) where cost_usd is null` | Egy sor. A `summary` `aggregateSince`-e marad külön (a kártya nem kér státusz-bontást). |
 | `aggregateByFeature(since)` | `group by feature` → `(feature, count, sum(cost))`, `order by sum(cost) desc nulls last, count desc` | Az `idx_llm_log_history_feature_created_at` tengelye. |
 | `aggregateByModel(since)` | `group by served_model` → `(servedModel, count, sum(cost))` | `served_model` lehet null (ERROR-sor) — nem szűrjük ki, a FE „ismeretlen"-ként mutatja. |
-| `findCalls(since, feature, status, callKind, before, Pageable)` | JPQL-projekció a lista-DTO-ba, `order by createdAt desc` | A payload-oszlopok NEM szerepelnek a selectben. |
+| `findCalls(since, feature, status, callKind, Pageable)` | JPQL-projekció a `LlmCallRow` recordba, `order by createdAt desc` | A payload-oszlopok NEM szerepelnek a selectben. |
 
 **Dinamikus szűrők:** a ház `derived → JPQL → native` sorrendje szerint JPQL, a `(:param is null or l.x = :param)` idiómával — nincs Criteria API, nincs Specification (a kódbázisban egyik sincs jelenleg).
 
-**Cursor:** `(:before is null or l.createdAt < :before)`. A `created_at` `timestamptz` mikroszekundum-felbontású; azonos időbélyegű két sor gyakorlatilag kizárt, ezért nem kell `(createdAt, id)` páros kurzor. `limit+1` sort kérünk, és ha többet kaptunk, `hasMore = true` (a plusz sort eldobjuk) — így a „További hívások" gomb sosem hazudik.
+**`hasMore` a `limit + 1` trükkel:** a service `limit + 1` sort kér, és ha ennyit kapott, `hasMore = true` (a plusz sort eldobja). Így a „További hívások" gomb sosem hazudik, és nem kell `count(*)` minden lapozásnál.
 
-**`Pageable`:** `PageRequest.of(0, limit + 1, Sort.by(DESC, "createdAt"))` — a `Page`/`count` lekérdezést nem használjuk (a cursor miatt fölösleges lenne egy `count(*)` minden lapozásnál).
+**`Pageable`:** `PageRequest.of(0, limit + 1, Sort.by(DESC, "createdAt"))` — `List`-et adunk vissza, nem `Page`-et (a `Page` egy fölösleges `count(*)`-ot is futtatna).
 
 ## 5. Kontraktus (`api/feature/llm-usage/llm-usage.yml`)
 
@@ -105,7 +105,7 @@ LlmUsageGroup { key: string|null, callCount: int64, costUsd: double|null }
 
 ### `GET /api/llm-usage/calls` — `listLlmCalls`
 
-Query: `period` (kötelező), `feature`, `status` (`SUCCESS|ERROR|CANCELLED`), `callKind`, `before` (date-time), `limit` (int, default 50, 1..200).
+Query: `period` (kötelező), `feature`, `status` (`SUCCESS|ERROR|CANCELLED`), `callKind`, `limit` (int, default 50, 1..500).
 
 ```
 LlmCallListResponse { items: LlmCallListItem[], hasMore: boolean }
@@ -161,7 +161,7 @@ Réteg-szabályok szerint (`docs/references/frontend_conventions.md` — impleme
 **`data/` (a FE↔BE határ):**
 - `data/me/llmUsageApi.ts` — `getBreakdown(period)`, `listCalls(params)`, `getCall(id)` a meglévő `getSummary` mellé.
 - `data/me/llmUsageHooks.ts` — `useLlmUsageBreakdown(period)`, `useLlmCalls(period, filters)`, `useLlmCall(id)`. Mind `useDualQuery`; a mock-mód kap egy hihető seedet (`LLM_BREAKDOWN_MOCK`, `LLM_CALLS_MOCK` — ~12 sor a valós feature-slugokból, benne 1 ERROR és 1 CANCELLED, plusz 1 árazatlan), a real-mód `realEmpty`-je **üres lista / nulla totals null költséggel** — a seed sosem szivárog át.
-- A lapozás a hookban: a `before` cursor `useState`-ben, a betöltött oldalak összefűzve. **Nem** `useInfiniteQuery` — a kódbázisban nincs rá precedens, és egy „További hívások" gombhoz egy `useState<string|null>` + a lapok konkatenálása elég.
+- A lapozás a hívó oldal `useState<number>` `limit`-je, ami a `queryKey` része — egy lekérdezés, nulla akkumuláció (§2.5).
 - `data/hooks.ts` barrel: a három új hook re-exportja.
 
 **`features/me/`:**
@@ -191,7 +191,7 @@ Mindkettő ADR 0014-ből jön, és mindkettő **teszttel őrzött** (§9):
 
 ## 8. Hibakezelés
 
-- **Backend:** ismeretlen `id` ⇒ `SystemRuntimeErrorException` + `SystemMessage.error("LLM_LOG_CALL_NOT_FOUND")` (új kulcs a `message.properties`-ben, magyar szöveg), 404. Érvénytelen `period`/`status`/`callKind` ⇒ `pattern`-sértés ⇒ 400 (§5). `limit` a kontraktusban `minimum: 1, maximum: 200`.
+- **Backend:** ismeretlen `id` ⇒ `SystemRuntimeErrorException` + `SystemMessage.error("LLM_LOG_CALL_NOT_FOUND")` (új kulcs a `message.properties`-ben, magyar szöveg), 404. Érvénytelen `period`/`status`/`callKind` ⇒ `pattern`-sértés ⇒ 400 (§5). `limit` a kontraktusban `minimum: 1, maximum: 500`.
 - **Ismert szélső eset:** egy **szintaktikailag rossz UUID** a `/calls/{id}` útvonalon a fenti hiányzó
   típus-konverziós kezelő miatt 500-at ad, nem 400-at. A felület sosem állít elő ilyen linket (az
   id-k a lista-válaszból jönnek), ezért ez itt nem kerül megkerülésre — a javítás a külön bd-ben
@@ -203,7 +203,7 @@ Mindkettő ADR 0014-ből jön, és mindkettő **teszttel őrzött** (§9):
 
 **Backend** (`integration_test_framework.md`, `ApiIntegrationTest`, AssertJ, `test{Method}_should{Result}_when{Condition}`):
 - `LlmUsageBreakdownIT` — feature/modell-bontás rendezése; `unpricedCount` és a `costUsd = null` üres periódusra; a null `served_model`-es ERROR-sor saját csoportként jelenik meg; **owner nélküli (cron) sor benne van** a bontásban.
-- `LlmCallListIT` — periódus-vágás; mind a három szűrő külön-külön és együtt; a cursor lapozás nem duplikál és nem hagy ki (12 sor, `limit=5`, három lap); `hasMore` az utolsó lapon `false`; **a lista-válasz nem tartalmaz payloadot**.
+- `LlmCallListIT` — periódus-vágás; mind a három szűrő külön-külön és együtt; a növekvő ablak (12 sor: `limit=5` ⇒ 5 elem + `hasMore=true`, `limit=20` ⇒ mind a 12 + `hasMore=false`) és a `createdAt desc` rendezés; **a lista-válasz nem tartalmaz payloadot**.
 - `LlmCallDetailIT` — teljes sor visszaolvasása a `pricingSnapshot`-tal együtt; csonkolt payload `truncated=true` + `payloadBytes`; ismeretlen id ⇒ 404 + `LLM_LOG_CALL_NOT_FOUND`; token nélküli árazott sor ⇒ `costUsd = null`.
 - Adat: a meglévő `LlmLogPopulator` bővítése (feature/status/kind/időpont paraméterezhetőség). Új tábla nincs ⇒ `ResetDatabase` nem változik.
 
@@ -233,5 +233,5 @@ Mindkettő ADR 0014-ből jön, és mindkettő **teszttel őrzött** (§9):
 1. A `LlmUsageGroup.key` nullable (a `served_model` null ERROR-soroknál) — az OpenAPI `nullable: true` és a generált FE-típus is `string | null`, a rendezés `nulls last`.
 2. A JPQL-projekció konstruktor-kifejezése a generált `api.dto` osztályra **nem** mehet (a generált DTO-k Lombok `@Builder`-esek, konstruktor-szignatúrájuk generátor-függő) — a projekció egy repository-szintű `record`-ba megy (`LlmCallRow`), és a service mappeli DTO-ra.
 3. A `report-zone` (`Europe/Budapest`) egyetlen helyen dől el: a service számolja a `from` instantot, a repository már `Instant`-ot kap. A FE nem számol dátumot.
-4. A `limit + 1` trükk a `hasMore`-hoz — a plusz sort a service dobja el, nem a controller.
+4. A `limit + 1` trükk a `hasMore`-hoz — a plusz sort a service dobja el, nem a controller; a FE `limit`-je 50-esével nő 500-ig, a plafonon magyarázó sorral (§2.5).
 5. `AiUsageCard` linkké alakítása nem törheti a meglévő `role="status"` skeleton-ágat.
