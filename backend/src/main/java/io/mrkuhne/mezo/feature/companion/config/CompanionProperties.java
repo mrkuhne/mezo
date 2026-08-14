@@ -159,6 +159,8 @@ public record CompanionProperties(
         @NotBlank String label,
         /** The pattern card title (HU). */
         @NotBlank String title,
+        /** Miért figyeljük — a Motor tab kibontott sorának egysoros mechanizmusa (mezo-18bx). */
+        @NotBlank String mechanism,
         @NotNull io.mrkuhne.mezo.feature.companion.service.MetricKey metricA,
         @NotNull io.mrkuhne.mezo.feature.companion.service.MetricKey metricB,
         /** metricB is read lagDays AFTER metricA's day (0 = same day). */
