@@ -75,7 +75,9 @@ export function useHabitActions(date: string) {
       if (mock) {
         patchMock(habitKey, 'done')
         const xp = mockHabitDay.find((h) => h.key === habitKey)?.xp ?? 0
-        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp })
+        // The call site emits its own DS reward toast for the check (mezo-k5sa), so the
+        // generic „+N XP" line would be a duplicate — the level/streak notices still fire.
+        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp, silentXp: true })
         return undefined
       }
       return habitApi.check(habitKey, date).then((r) => r.levelUps)
