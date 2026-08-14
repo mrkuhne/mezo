@@ -2453,8 +2453,12 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
+import { LLM_CALLS_MOCK } from '@/data/me/llmUsageHooks'
 
 afterEach(() => vi.unstubAllEnvs())
 
@@ -2500,13 +2504,40 @@ describe('AiUsagePage (mock mode)', () => {
     )
   })
 
-  it('grows the window when more calls are requested', () => {
+  it('offers the load-more control only while the server says more rows exist', () => {
+    renderPage()
+    // LLM_CALLS_MOCK.hasMore is true → the control is offered
+    expect(screen.getByRole('button', { name: /További hívások/ })).toBeInTheDocument()
+  })
+})
+
+describe('AiUsagePage (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('raises the requested window when more calls are loaded', async () => {
+    const limits: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () =>
+        HttpResponse.json({
+          from: '2026-08-14',
+          totals: { callCount: 60, successCount: 60, errorCount: 0, cancelledCount: 0, unpricedCount: 0, costUsd: 1, currency: 'USD' },
+          features: [], models: [],
+        }),
+      ),
+      http.get(`${API_BASE}/api/llm-usage/calls`, ({ request }) => {
+        limits.push(new URL(request.url).searchParams.get('limit') ?? '')
+        return HttpResponse.json({
+          items: [LLM_CALLS_MOCK.items[0]],
+          hasMore: true,
+        })
+      }),
+    )
+
     renderPage()
 
-    const more = screen.getByRole('button', { name: /További hívások/ })
-    fireEvent.click(more)
-    // the mock seed does not grow, but the control must stay usable and not crash the page
-    expect(screen.getByText('AI-napló')).toBeInTheDocument()
+    await waitFor(() => expect(limits).toEqual(['50']))
+    fireEvent.click(screen.getByRole('button', { name: /További hívások/ }))
+    await waitFor(() => expect(limits).toContain('100'))
   })
 })
 ```
