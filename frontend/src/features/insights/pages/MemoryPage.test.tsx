@@ -75,6 +75,22 @@ describe('MemoryPage (mock mode)', () => {
     // a koppintás a Napló szegmensre vált, a 08-09-es bejegyzés látszik
     expect(await screen.findByText(/a vasárnap esti mintázat megint kirajzolódott/)).toBeInTheDocument()
   })
+
+  test('audit renders the cost hero and the source-grouped provenance', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('tab', { name: 'Audit' }))
+    // 1 · költség-hero
+    expect(screen.getByText('$0.125')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Napi LLM token-oszlopok' })).toBeInTheDocument()
+    expect(screen.getByText(/54 hívás · bemenet 248\.3k · kimenet 38\.7k/)).toBeInTheDocument()
+    // 2 · forrás-csoportok (a seed elosztása: 12 chat · 1 pattern · 2 manual)
+    expect(screen.getByText('Chatből tanulta')).toBeInTheDocument()
+    expect(screen.getByText('Mintából promótálva')).toBeInTheDocument()
+    expect(screen.getByText('Kézzel rögzítve')).toBeInTheDocument()
+    expect(screen.getByText('×23 megerősítve')).toBeInTheDocument() // f2
+    expect(screen.getByText('⧉ minta: Késői étkezés ↔ rákövetkező alvásminőség')).toBeInTheDocument()
+    expect(screen.getAllByText('még nem erősítette meg újra').length).toBeGreaterThan(0) // null lastReinforcedAt sorok
+  })
 })
 
 describe('MemoryPage (real mode)', () => {
@@ -106,5 +122,14 @@ describe('MemoryPage (real mode)', () => {
     await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'teljesen egyedi nap')
     await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
     expect(await screen.findByText('Nincs elég hasonló nap a memóriában.')).toBeInTheDocument()
+  })
+
+  test('audit shows the honest disabled state when the llm-log switch is off', async () => {
+    renderPage()
+    await screen.findByText('L0 · Nyers adat')
+    await userEvent.click(screen.getByRole('tab', { name: 'Audit' }))
+    expect(
+      await screen.findByText(/Az LLM-hívás audit-napló ki van kapcsolva/),
+    ).toBeInTheDocument()
   })
 })

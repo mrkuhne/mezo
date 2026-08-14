@@ -6,8 +6,9 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { MemoryLayersPanel } from '@/features/insights/components/MemoryLayersPanel'
 import { MemoryJournalPanel } from '@/features/insights/components/MemoryJournalPanel'
 import { MemorySearchPanel } from '@/features/insights/components/MemorySearchPanel'
+import { MemoryAuditPanel } from '@/features/insights/components/MemoryAuditPanel'
 
-type MemoryView = 'overview' | 'journal' | 'search'
+type MemoryView = 'overview' | 'journal' | 'search' | 'audit'
 
 export function MemoryPage() {
   const [view, setView] = useStickyTab<MemoryView>('insights.memoria.view', 'overview')
@@ -40,6 +41,7 @@ export function MemoryPage() {
         <SegButton on={view === 'overview'} onClick={() => setView('overview')}>Áttekintés</SegButton>
         <SegButton on={view === 'journal'} onClick={() => setView('journal')}>Napló</SegButton>
         <SegButton on={view === 'search'} onClick={() => setView('search')}>Kereső</SegButton>
+        <SegButton on={view === 'audit'} onClick={() => setView('audit')}>Audit</SegButton>
       </div>
 
       {view === 'overview' && (
@@ -49,6 +51,7 @@ export function MemoryPage() {
       {view === 'search' && (
         <MemorySearchPanel onPick={(date) => { setFocusDate(date); setView('journal') }} />
       )}
+      {view === 'audit' && <MemoryAuditPanel />}
     </div>
   )
 }

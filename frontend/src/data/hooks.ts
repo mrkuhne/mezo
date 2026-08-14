@@ -17,7 +17,7 @@ export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHook
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { useChat, useChatActions, useConversations, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
-export { useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
+export { useLlmUsage, useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
 export { useFuelTimeline } from '@/data/fuel/timelineHooks'
 export { useFuelWeek } from '@/data/fuel/fuelWeekHooks'
 export { useReplanScenarios } from '@/data/fuel/fuelReadHooks'

@@ -665,6 +665,10 @@ export interface KnowledgeFact {
   reinforced: number
   /** V3.3 evidence link — the promoting pattern's title on source=pattern facts. */
   patternTitle?: string
+  /** A tény eredete — az Audit nézet provenancia-chipje (a wire-ön V1.1 óta ott van). */
+  source: FactSource
+  /** Az utolsó megerősítés időpontja (ISO), null ha még sosem erősítették meg újra. */
+  lastReinforcedAt: string | null
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
 export interface FactCandidate { id: string; text: string; category: FactCategory }

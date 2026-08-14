@@ -1,4 +1,4 @@
-import type { MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
+import type { MemoryLlmUsage, MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
 
 /** A demo áttekintés (mezo-al1i) — a számok a napló-seeddel nagyságrendben konzisztensek. */
 export const memoryOverview: MemoryOverview = {
@@ -102,3 +102,18 @@ export const similarDaysSeed: SimilarDay[] = [
     finalScore: 0.41,
   },
 ]
+
+/** Az Audit demo LLM-forgalma — 7 nap; a totals a perDay pontos összege. */
+export const memoryLlmUsage: MemoryLlmUsage = {
+  enabled: true,
+  perDay: [
+    { date: '2026-08-06', calls: 9, inputTokens: 41200, outputTokens: 6300, costUsd: 0.021 },
+    { date: '2026-08-07', calls: 4, inputTokens: 18400, outputTokens: 2900, costUsd: 0.009 },
+    { date: '2026-08-08', calls: 12, inputTokens: 55600, outputTokens: 8800, costUsd: 0.028 },
+    { date: '2026-08-09', calls: 7, inputTokens: 32800, outputTokens: 5100, costUsd: 0.016 },
+    { date: '2026-08-10', calls: 3, inputTokens: 12100, outputTokens: 1800, costUsd: 0.006 },
+    { date: '2026-08-11', calls: 11, inputTokens: 50900, outputTokens: 8200, costUsd: 0.026 },
+    { date: '2026-08-12', calls: 8, inputTokens: 37300, outputTokens: 5600, costUsd: 0.019 },
+  ],
+  totals: { calls: 54, inputTokens: 248300, outputTokens: 38700, costUsd: 0.125 },
+}

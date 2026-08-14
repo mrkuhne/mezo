@@ -112,6 +112,8 @@ function mockDecide(qc: QueryClient, input: DecideInput) {
       category: candidate.category,
       active: true,
       reinforced: 0,
+      source: 'chat',
+      lastReinforcedAt: null,
     }
     return { ...base, candidates: remaining, facts: [promoted, ...base.facts] }
   })

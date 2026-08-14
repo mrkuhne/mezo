@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { FactSource, MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
+import type { FactSource, MemoryLlmUsage, MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
 
 export type MemoryOverviewResponse = components['schemas']['MemoryOverviewResponse']
 export type MemorySummaryListResponse = components['schemas']['MemorySummaryListResponse']
@@ -49,5 +49,21 @@ export const memoryApi = {
     return wire.items.map((i) => ({
       date: i.date, excerpt: i.excerpt, similarity: i.similarity, finalScore: i.finalScore,
     }))
+  },
+  llmUsage: async (days: number): Promise<MemoryLlmUsage> => {
+    const wire = await apiFetch<components['schemas']['LlmUsageResponse']>(
+      `/api/companion/memory/llm-usage?days=${days}`,
+    )
+    return {
+      enabled: wire.enabled,
+      perDay: wire.perDay.map((d) => ({
+        date: d.date, calls: d.calls, inputTokens: d.inputTokens,
+        outputTokens: d.outputTokens, costUsd: d.costUsd ?? null,
+      })),
+      totals: {
+        calls: wire.totals.calls, inputTokens: wire.totals.inputTokens,
+        outputTokens: wire.totals.outputTokens, costUsd: wire.totals.costUsd ?? null,
+      },
+    }
   },
 }

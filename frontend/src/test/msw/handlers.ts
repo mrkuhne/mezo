@@ -964,12 +964,12 @@ export const handlers = [
         id: f.id,
         factText: f.text,
         category: f.category,
-        source: 'manual',
+        source: f.source,
         reinforcementCount: f.reinforced,
         includeInPrompt: f.active,
-        lastReinforcedAt: null,
+        lastReinforcedAt: f.lastReinforcedAt,
         createdAt: `2026-07-01T06:${String(i).padStart(2, '0')}:00Z`,
-        patternTitle: null,
+        patternTitle: f.patternTitle ?? null,
       })),
     ),
   ),
@@ -1108,4 +1108,10 @@ export const handlers = [
   ),
   http.get(`${API_BASE}/api/companion/memory/summary`, () => HttpResponse.json({ items: [] })),
   http.get(`${API_BASE}/api/companion/memory/similar-days`, () => HttpResponse.json({ items: [] })),
+  http.get(`${API_BASE}/api/companion/memory/llm-usage`, () =>
+    HttpResponse.json({
+      enabled: false, perDay: [],
+      totals: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
+    }),
+  ),
 ]

@@ -2,21 +2,21 @@ import type { KnowledgeFact, FactCandidate, KnowledgeEdge, FactCategory } from '
 
 // Mock seed — categories carry the V1.2 backend taxonomy (train | fuel | health | life).
 export const facts: KnowledgeFact[] = [
-  { id: 'f1', text: 'Pull Day-en a Chest Supported Row a key compound', category: 'train', active: true, reinforced: 12 },
-  { id: 'f2', text: 'Caffeine cutoff: 14:00 hard limit', category: 'fuel', active: true, reinforced: 23 },
-  { id: 'f3', text: 'Reta beadás: hétfő reggel · 7-day kinetic cycle', category: 'health', active: true, reinforced: 11 },
-  { id: 'f4', text: 'Volleyball: kedd + csütörtök + szombat', category: 'train', active: true, reinforced: 18 },
-  { id: 'f5', text: 'Sleep target: 7.5h, evening kitchen close 21:30', category: 'health', active: true, reinforced: 21 },
-  { id: 'f6', text: 'Right shoulder niggle, márc 18 óta intermittent', category: 'health', active: true, reinforced: 9 },
-  { id: 'f7', text: 'Identity goal: peak performance every life domain', category: 'life', active: true, reinforced: 7 },
-  { id: 'f8', text: 'Carb timing > 20:00 → sleep quality drop', category: 'fuel', active: true, reinforced: 8 },
-  { id: 'f9', text: 'kifli.hu primary food source', category: 'fuel', active: false, reinforced: 14 },
-  { id: 'f10', text: 'MyProtein supplement supplier', category: 'fuel', active: true, reinforced: 11 },
-  { id: 'f11', text: 'Niggle-aware exercise substitution preferred', category: 'train', active: true, reinforced: 6 },
-  { id: 'f12', text: 'PR celebration moments are emotionally meaningful', category: 'life', active: true, reinforced: 5 },
-  { id: 'f13', text: 'Pre-workout fueling: 2-3h előtte protein+carb', category: 'fuel', active: true, reinforced: 13 },
-  { id: 'f14', text: "Mentor relational frame ('Mizu Velünk')", category: 'life', active: true, reinforced: 4 },
-  { id: 'f15', text: 'System-elegance > rewards (rendszer-szerelem)', category: 'life', active: true, reinforced: 6 },
+  { id: 'f1', text: 'Pull Day-en a Chest Supported Row a key compound', category: 'train', active: true, reinforced: 12, source: 'chat', lastReinforcedAt: '2026-08-05T19:20:00Z' },
+  { id: 'f2', text: 'Caffeine cutoff: 14:00 hard limit', category: 'fuel', active: true, reinforced: 23, source: 'chat', lastReinforcedAt: '2026-08-11T21:05:00Z' },
+  { id: 'f3', text: 'Reta beadás: hétfő reggel · 7-day kinetic cycle', category: 'health', active: true, reinforced: 11, source: 'chat', lastReinforcedAt: '2026-08-04T08:10:00Z' },
+  { id: 'f4', text: 'Volleyball: kedd + csütörtök + szombat', category: 'train', active: true, reinforced: 18, source: 'chat', lastReinforcedAt: '2026-08-09T18:00:00Z' },
+  { id: 'f5', text: 'Sleep target: 7.5h, evening kitchen close 21:30', category: 'health', active: true, reinforced: 21, source: 'chat', lastReinforcedAt: '2026-08-10T20:40:00Z' },
+  { id: 'f6', text: 'Right shoulder niggle, márc 18 óta intermittent', category: 'health', active: true, reinforced: 9, source: 'chat', lastReinforcedAt: '2026-07-22T09:15:00Z' },
+  { id: 'f7', text: 'Identity goal: peak performance every life domain', category: 'life', active: true, reinforced: 7, source: 'manual', lastReinforcedAt: null },
+  { id: 'f8', text: 'Carb timing > 20:00 → sleep quality drop', category: 'fuel', active: true, reinforced: 8, source: 'pattern', lastReinforcedAt: '2026-08-02T07:30:00Z', patternTitle: 'Késői étkezés ↔ rákövetkező alvásminőség' },
+  { id: 'f9', text: 'kifli.hu primary food source', category: 'fuel', active: false, reinforced: 14, source: 'chat', lastReinforcedAt: '2026-07-18T10:05:00Z' },
+  { id: 'f10', text: 'MyProtein supplement supplier', category: 'fuel', active: true, reinforced: 11, source: 'chat', lastReinforcedAt: '2026-07-25T11:40:00Z' },
+  { id: 'f11', text: 'Niggle-aware exercise substitution preferred', category: 'train', active: true, reinforced: 6, source: 'chat', lastReinforcedAt: '2026-07-29T17:20:00Z' },
+  { id: 'f12', text: 'PR celebration moments are emotionally meaningful', category: 'life', active: true, reinforced: 5, source: 'chat', lastReinforcedAt: null },
+  { id: 'f13', text: 'Pre-workout fueling: 2-3h előtte protein+carb', category: 'fuel', active: true, reinforced: 13, source: 'chat', lastReinforcedAt: '2026-07-30T14:10:00Z' },
+  { id: 'f14', text: "Mentor relational frame ('Mizu Velünk')", category: 'life', active: true, reinforced: 4, source: 'manual', lastReinforcedAt: null },
+  { id: 'f15', text: 'System-elegance > rewards (rendszer-szerelem)', category: 'life', active: true, reinforced: 6, source: 'chat', lastReinforcedAt: null },
 ]
 
 /** V1.2 mock candidates — the pending L2 confirm inbox of the demo. */

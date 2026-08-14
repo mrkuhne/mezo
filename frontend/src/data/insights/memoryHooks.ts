@@ -4,11 +4,12 @@ import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import { memoryApi } from '@/data/insights/memoryApi'
 import {
+  memoryLlmUsage,
   memoryOverview as mockOverview,
   memorySummaries as mockSummaries,
   similarDaysSeed,
 } from '@/data/insights/memory'
-import type { MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
+import type { MemoryLlmUsage, MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
 
 const isSwitchedOff = (err: unknown) => err instanceof ApiError && err.status === 404
 
@@ -99,4 +100,32 @@ export function useSimilarDays(query: string) {
         },
   })
   return { ...(q.data ?? SEARCH_EMPTY), isFetching: q.isFetching }
+}
+
+export interface MemoryLlmUsageBootstrap {
+  usage: MemoryLlmUsage | null
+  degraded: boolean
+  mode: 'mock' | 'live'
+}
+
+const USAGE_MOCK: MemoryLlmUsageBootstrap = { usage: memoryLlmUsage, degraded: false, mode: 'mock' }
+const USAGE_EMPTY: MemoryLlmUsageBootstrap = { usage: null, degraded: false, mode: 'live' }
+
+/** Az Audit LLM-rollupja (mezo-al1i) — enabled:false a válaszBAN jön, nem hibaág. */
+export function useLlmUsage(days = 30) {
+  const { data, isPending } = useDualQuery<MemoryLlmUsageBootstrap>({
+    queryKey: ['memory', 'llm-usage', days],
+    mockData: USAGE_MOCK,
+    realFetch: async () => {
+      try {
+        return { usage: await memoryApi.llmUsage(days), degraded: false, mode: 'live' as const }
+      } catch (e) {
+        if (isSwitchedOff(e)) return { ...USAGE_EMPTY, degraded: true }
+        throw e
+      }
+    },
+    realEmpty: USAGE_EMPTY,
+    realStaleTime: 60_000,
+  })
+  return { ...data, isPending }
 }

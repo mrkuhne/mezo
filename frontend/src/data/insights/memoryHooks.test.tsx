@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
+import { useLlmUsage, useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
 import { API_BASE } from '@/test/msw/handlers'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -113,5 +113,18 @@ describe('useSimilarDays (mock mode)', () => {
     const { result } = renderHook(() => useSimilarDays('fáradt nap'), { wrapper: makeHookWrapper() })
     expect(result.current.results).toHaveLength(3)
     expect(result.current.mode).toBe('mock')
+  })
+})
+
+describe('useLlmUsage (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('maps the disabled default handler honestly', async () => {
+    const { result } = renderHook(() => useLlmUsage(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.usage).not.toBeNull())
+    expect(result.current.usage!.enabled).toBe(false)
+    expect(result.current.usage!.perDay).toHaveLength(0)
+    expect(result.current.usage!.totals.costUsd).toBeNull()
   })
 })
