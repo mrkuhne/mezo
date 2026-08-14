@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { emitToast, onToast, type ToastMessage } from '@/shared/lib/toastBus'
+import { emitToast, isRewardToast, onToast, type ToastKind, type ToastMessage } from '@/shared/lib/toastBus'
 
 // Single global toast host (mounted once in AppLayout) + the useToast() imperative API.
 // Components call useToast().show(...); non-React code (mutation cache) emits via the
@@ -9,7 +9,7 @@ import { emitToast, onToast, type ToastMessage } from '@/shared/lib/toastBus'
 
 const AUTO_HIDE_MS = 3200
 
-const KIND_BG: Record<ToastMessage['kind'], string> = {
+const KIND_BG: Record<ToastKind, string> = {
   error: 'var(--error)',
   success: 'var(--success)',
   info: 'var(--coral)',
@@ -48,7 +48,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      {toast && (
+      {toast && !isRewardToast(toast) && (
         <div
           role="status"
           aria-live="polite"
@@ -60,6 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.text}</span>
         </div>
       )}
+      {/* TODO(mezo-k5sa, Task 3): render the reward variant — ToastProvider is replaced wholesale then. */}
     </ToastContext.Provider>
   )
 }
