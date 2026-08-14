@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  formatCost, formatTokens, formatLatency, formatTime, callKindLabel, statusTone, tokenSegments,
+  formatCost, formatRollupCost, formatTokens, formatLatency, formatTime, callKindLabel, statusTone, tokenSegments,
 } from '@/features/me/logic/llmCallFormat'
 import { LLM_CALL_DETAIL_MOCK, LLM_CALL_DETAIL_EMPTY } from '@/data/me/llmUsageHooks'
 
@@ -24,6 +24,26 @@ describe('formatCost', () => {
     // At or above threshold: 2 decimals (aggregate / period level)
     expect(formatCost(0.1)).toBe('$0.10')
     expect(formatCost(0.74)).toBe('$0.74')
+  })
+})
+
+describe('formatRollupCost', () => {
+  it('dashes an unknown cost instead of showing zero', () => {
+    expect(formatRollupCost(null)).toBe('—')
+    expect(formatRollupCost(undefined)).toBe('—')
+  })
+
+  it('always uses two decimals, even for a sub-dime aggregate (the regression this guards)', () => {
+    expect(formatRollupCost(1.86)).toBe('$1.86')
+    expect(formatRollupCost(0.09)).toBe('$0.09')
+  })
+
+  it('renders a genuinely nonzero but sub-half-cent rollup as "<$0.01", never a misleading $0.00', () => {
+    expect(formatRollupCost(0.004)).toBe('<$0.01')
+  })
+
+  it('renders an exact zero as $0.00 (nothing to hide)', () => {
+    expect(formatRollupCost(0)).toBe('$0.00')
   })
 })
 

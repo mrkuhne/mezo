@@ -3,15 +3,37 @@ import type { LlmCallDetailResponse } from '@/data/me/llmUsageApi'
 // Pure formatters for the AI-napló surfaces (mezo-uakh). Kept out of the components so the two
 // rules that matter — an unknown value renders as an em dash, and the token bar shows the NET
 // prompt — are asserted once, here, instead of per component.
+//
+// Two money formatters, deliberately not one: `formatCost` is for a SINGLE call's cost (the
+// call-detail and call-list surfaces), which routinely lands in the sub-cent range — at 2 decimals
+// those would all read as the same false "$0.00". `formatRollupCost` is for a PERIOD/FEATURE/MODEL
+// AGGREGATE (the header cards) — a rollup being under a dime is ordinary in production (a
+// rarely-used feature), not a mock-data artifact, so an aggregate column must hold a stable 2
+// decimals throughout rather than switching precision row-to-row. Never mix the two within one
+// column.
 
-/** An unknown (null) money value is "—": unpriced is not free (ADR 0014). */
+/**
+ * A single call's cost — "—" for unknown (ADR 0014: unpriced is not free). Below a dime: 4
+ * decimals, because per-call costs live in the sub-cent range and would render as $0.00 with 2.
+ * At or above: 2 decimals. Used by the call-list and call-detail surfaces (Tasks 7/9), NOT by the
+ * header aggregates — see `formatRollupCost`.
+ */
 export function formatCost(costUsd: number | null | undefined): string {
   if (costUsd == null) return '—'
-  // Below a dime (per-call detail costs): 4 decimals, because per-call costs live in the sub-cent
-  // range and would render as $0.00 with 2. At or above (aggregates like period totals, feature
-  // rollups): 2 decimals, because that's how we display money. This preserves the detail while
-  // avoiding false zeros (the whole point of ADR 0014).
   return costUsd < 0.1 ? `$${costUsd.toFixed(4)}` : `$${costUsd.toFixed(2)}`
+}
+
+/**
+ * A period/feature/model aggregate's cost — "—" for unknown, otherwise always 2 decimals (money),
+ * so a column of rollups never mixes precision. The one guard: a genuinely nonzero rollup under
+ * half a cent must not round to "$0.00" — that reads as free, exactly what ADR 0014 exists to
+ * prevent for the per-call case too — so it renders "<$0.01" instead. An exact 0 still renders
+ * "$0.00" (there is nothing to hide).
+ */
+export function formatRollupCost(costUsd: number | null | undefined): string {
+  if (costUsd == null) return '—'
+  if (costUsd !== 0 && costUsd < 0.005) return '<$0.01'
+  return `$${costUsd.toFixed(2)}`
 }
 
 export function formatTokens(n: number | null | undefined): string {

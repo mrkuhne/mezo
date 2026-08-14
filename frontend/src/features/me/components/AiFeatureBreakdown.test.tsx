@@ -40,4 +40,18 @@ describe('AiFeatureBreakdown', () => {
     fireEvent.click(screen.getByRole('button', { name: /Mind/ }))
     expect(screen.getByText('f11')).toBeInTheDocument()
   })
+
+  // Regression guard: a feature rollup under a dime is an ordinary production case (a
+  // rarely-used feature), not just mock-data noise — it must still render at 2 decimals like
+  // every other row in the column, never 4 (which would read $0.0900 next to $0.74).
+  it('renders a sub-dime bucket with the same two-decimal precision as the rest of the column', () => {
+    const groups = [
+      { key: 'companion_chat', callCount: 96, costUsd: 0.74 },
+      { key: 'proactive_heartbeat', callCount: 28, costUsd: 0.09 },
+    ]
+    render(<AiFeatureBreakdown groups={groups} selected={null} onSelect={() => {}} />)
+
+    expect(screen.getByText('$0.09')).toBeInTheDocument()
+    expect(screen.queryByText('$0.0900')).not.toBeInTheDocument()
+  })
 })

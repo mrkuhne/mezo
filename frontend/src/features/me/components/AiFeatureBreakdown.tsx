@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatCost } from '@/features/me/logic/llmCallFormat'
+import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import type { LlmUsageGroup } from '@/data/me/llmUsageApi'
 
 // Feature rollup as a bar list (mezo-uakh). The bar is proportional to COST, not call count —
@@ -30,7 +30,12 @@ export function AiFeatureBreakdown({ groups, selected, onSelect }: {
       <div className="eyebrow" style={{ padding: '0 13px 6px' }}>Feature szerint</div>
 
       {shown.map((g) => {
+        // `key` is the stable identity used for React's key prop, the onSelect payload and the
+        // selected-comparison — 'unknown' internally, unreachable in practice (feature is NOT NULL
+        // at the contract level). `label` is what renders, and must be Hungarian like
+        // AiModelBreakdown's 'ismeretlen' — the two are allowed to diverge on purpose.
         const key = g.key ?? 'unknown'
+        const label = g.key ?? 'ismeretlen'
         const isSelected = selected === key
         return (
           <button
@@ -44,12 +49,12 @@ export function AiFeatureBreakdown({ groups, selected, onSelect }: {
             }}
           >
             <div className="row" style={{ alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, flex: 1 }}>{key}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, flex: 1 }}>{label}</span>
               <span className="text-tertiary" style={{ fontSize: 10.5, fontVariantNumeric: 'tabular-nums' }}>
                 {g.callCount}
               </span>
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--sage-deep)', fontVariantNumeric: 'tabular-nums' }}>
-                {formatCost(g.costUsd)}
+                {formatRollupCost(g.costUsd)}
               </span>
             </div>
             <div style={{ height: 5, borderRadius: 3, background: 'var(--surface-2)', marginTop: 5 }}>

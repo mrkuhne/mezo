@@ -1,4 +1,4 @@
-import { formatCost } from '@/features/me/logic/llmCallFormat'
+import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import type { components } from '@/data/_client/api.gen'
 
 type Totals = components['schemas']['LlmUsageTotals']
@@ -27,7 +27,7 @@ export function AiUsageHero({ totals, periodLabel }: { totals: Totals; periodLab
         </div>
         <div>
           <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>
-            {formatCost(totals.costUsd)}
+            {formatRollupCost(totals.costUsd)}
           </div>
           <div className="text-tertiary" style={{ fontSize: 10.5, fontWeight: 600 }}>becsült költség</div>
         </div>

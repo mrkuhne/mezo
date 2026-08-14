@@ -1,4 +1,4 @@
-import { formatCost } from '@/features/me/logic/llmCallFormat'
+import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import type { LlmUsageGroup } from '@/data/me/llmUsageApi'
 
 // Served-model rollup (mezo-uakh) — a horizontal strip, because there are three models at most.
@@ -18,7 +18,7 @@ export function AiModelBreakdown({ groups }: { groups: LlmUsageGroup[] }) {
           <div key={g.key ?? 'unknown'} style={{ flexShrink: 0, background: 'var(--surface-2)', borderRadius: 12, padding: '7px 11px', minWidth: 96 }}>
             <div style={{ fontSize: 10, fontWeight: 700 }}>{g.key ?? 'ismeretlen'}</div>
             <div style={{ fontSize: 14, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{g.callCount}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--sage-deep)' }}>{formatCost(g.costUsd)}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--sage-deep)' }}>{formatRollupCost(g.costUsd)}</div>
           </div>
         ))}
       </div>
