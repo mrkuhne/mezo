@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -140,6 +141,34 @@ public class GlobalExceptionHandler {
         String traceId = UUID.randomUUID().toString();
         log.warn("Required multipart part missing [traceId={}]: {}", traceId, ex.getRequestPartName());
         SystemMessage m = SystemMessage.field("VALIDATION_INVALID_VALUE", ex.getRequestPartName()).build();
+        m.setExceptionTraceId(traceId);
+        m.setMessage(resolve(m));
+        return ResponseEntity.badRequest().body(List.of(m));
+    }
+
+    /**
+     * A request parameter Spring could not CONVERT to the method's type (mezo-x0nb): a malformed
+     * UUID in a path, a non-numeric integer in a query, an unknown enum constant. Conversion runs
+     * BEFORE the controller method, and before bean validation — so without this handler these land
+     * on the generic {@link #handleUnexpected} catch-all and answer 500, telling the client the
+     * server broke when the request was in fact malformed.
+     *
+     * <p>This is also what makes an ENUM-typed query parameter safe to use in the API contract at
+     * all: until now a bad enum value was a 500, which is why the contract prefers pattern-validated
+     * strings for those (see {@code api/feature/llm-usage/llm-usage.yml}).
+     *
+     * <p>{@code ex.getName()} is the method parameter name — for generated controllers that is the
+     * contract's own parameter name, so the FIELD error maps back onto what the client sent. The
+     * offending VALUE is deliberately not echoed into the response: it is unvalidated client input,
+     * and it is already in the log line beside the trace id.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<List<SystemMessage>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String traceId = UUID.randomUUID().toString();
+        log.warn("Unconvertible request parameter [traceId={}]: {}={} (expected {})",
+            traceId, ex.getName(), ex.getValue(),
+            ex.getRequiredType() == null ? "?" : ex.getRequiredType().getSimpleName());
+        SystemMessage m = SystemMessage.field("VALIDATION_INVALID_VALUE", ex.getName()).build();
         m.setExceptionTraceId(traceId);
         m.setMessage(resolve(m));
         return ResponseEntity.badRequest().body(List.of(m));
