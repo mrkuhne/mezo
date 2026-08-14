@@ -7,8 +7,11 @@ import type { LlmCallDetailResponse } from '@/data/me/llmUsageApi'
 /** An unknown (null) money value is "—": unpriced is not free (ADR 0014). */
 export function formatCost(costUsd: number | null | undefined): string {
   if (costUsd == null) return '—'
-  // Per-call costs live in the sub-cent range; two decimals would render most of them as $0.00.
-  return costUsd < 1.0 ? `$${costUsd.toFixed(4)}` : `$${costUsd.toFixed(2)}`
+  // Below a dime (per-call detail costs): 4 decimals, because per-call costs live in the sub-cent
+  // range and would render as $0.00 with 2. At or above (aggregates like period totals, feature
+  // rollups): 2 decimals, because that's how we display money. This preserves the detail while
+  // avoiding false zeros (the whole point of ADR 0014).
+  return costUsd < 0.1 ? `$${costUsd.toFixed(4)}` : `$${costUsd.toFixed(2)}`
 }
 
 export function formatTokens(n: number | null | undefined): string {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  formatCost, formatTokens, formatLatency, callKindLabel, statusTone, tokenSegments,
+  formatCost, formatTokens, formatLatency, formatTime, callKindLabel, statusTone, tokenSegments,
 } from '@/features/me/logic/llmCallFormat'
 import { LLM_CALL_DETAIL_MOCK, LLM_CALL_DETAIL_EMPTY } from '@/data/me/llmUsageHooks'
 
@@ -15,6 +15,15 @@ describe('formatCost', () => {
     expect(formatCost(0.0583)).toBe('$0.0583')
     expect(formatCost(1.86)).toBe('$1.86')
     expect(formatCost(0)).toBe('$0.0000')
+  })
+
+  it('enforces the dime (0.1) threshold: below uses 4 decimals, at or above uses 2', () => {
+    // Just below threshold: 4 decimals (per-call detail level precision)
+    expect(formatCost(0.09)).toBe('$0.0900')
+    expect(formatCost(0.099)).toBe('$0.0990')
+    // At or above threshold: 2 decimals (aggregate / period level)
+    expect(formatCost(0.1)).toBe('$0.10')
+    expect(formatCost(0.74)).toBe('$0.74')
   })
 })
 
@@ -31,6 +40,19 @@ describe('formatLatency', () => {
     expect(formatLatency(812)).toBe('812 ms')
     expect(formatLatency(7812)).toBe('7.8 s')
     expect(formatLatency(22600)).toBe('22.6 s')
+  })
+})
+
+describe('formatTime', () => {
+  it('parses ISO and formats in Europe/Budapest timezone', () => {
+    // 2026-08-14T08:00:00Z is 08:00 UTC, which is 10:00 in Budapest (UTC+2 in August).
+    // This test catches a missing or incorrect timeZone parameter.
+    expect(formatTime('2026-08-14T08:00:00Z')).toBe('10:00')
+    expect(formatTime('2026-08-14T14:32:45Z')).toBe('16:32')
+  })
+
+  it('returns empty string for empty input', () => {
+    expect(formatTime('')).toBe('')
   })
 })
 
