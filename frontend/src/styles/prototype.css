@@ -828,6 +828,21 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .toast { animation: none; transition: none; }
 }
 
+/* Standalone feature-local confirmation (MedalToast) — keeps the pre-mezo-k5sa
+   `.toast` geometry now that the shared `.toast` is a stack child. */
+.toast-solo {
+  position: absolute;
+  left: auto; right: 14px;
+  top: 70px;
+  width: calc(100% - 28px);
+  max-width: 296px;
+  z-index: var(--z-toast, 70);
+  padding: 14px 16px;
+  color: var(--text-inverse);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+}
+
 /* Brand glyph (M = mesocycle wave) */
 .brand-glyph { fill: var(--coral); }
 
