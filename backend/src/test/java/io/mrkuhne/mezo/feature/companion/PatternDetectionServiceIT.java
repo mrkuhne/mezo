@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -37,6 +39,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
     @Autowired private PatternDetectionService patternDetectionService;
     @Autowired private PatternRepository patternRepository;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
+    @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
@@ -122,6 +125,55 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
                 .isEmpty();
     }
 
+    @Test
+    void testDetect_shouldAppendSnapshotEvent_whenPairGoesLive() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity pattern = patternRepository
+                .findByCreatedByAndKindAndPairKeyAndDeletedFalse(owner, PatternEntity.KIND_STATISTICAL, PAIR_KEY)
+                .orElseThrow();
+        List<PatternEventEntity> events = patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, pattern.getId());
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().getKind()).isEqualTo(PatternEventEntity.KIND_SNAPSHOT);
+        assertThat(events.getFirst().getPayload().r()).isLessThan(-0.9);
+        assertThat(events.getFirst().getPayload().n()).isEqualTo(10);
+        assertThat(events.getFirst().getPayload().p()).isNotNull();
+    }
+
+    @Test
+    void testDetect_shouldAppendSnapshotButFreezeStats_whenRowConfirmed() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        PatternEntity judged = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
+        BigDecimal frozenR = judged.getR();
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity after = patternRepository.findById(judged.getId()).orElseThrow();
+        assertThat(after.getR()).isEqualByComparingTo(frozenR); // stats stay frozen (V3.1 contract)
+        List<PatternEventEntity> events = patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, judged.getId());
+        assertThat(events).extracting(PatternEventEntity::getKind)
+                .contains(PatternEventEntity.KIND_SNAPSHOT); // history accrues past the freeze
+    }
+
+    @Test
+    void testDetect_shouldStaySilent_whenRowRejected() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        PatternEntity judged = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_REJECTED);
+
+        patternDetectionService.detect(owner);
+
+        assertThat(patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, judged.getId()))
+                .isEmpty();
+    }
+
     @Autowired private io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator knowledgeFactPopulator;
 
     private KnowledgeFactEntity promotedFact(UUID owner) {
@@ -145,6 +197,10 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         assertThat(after.getLastReinforcedAt()).isNotNull();
         // the confirmed pattern's stats stay frozen
         assertThat(patternRepository.findById(confirmed.getId()).orElseThrow().getN()).isEqualTo(12);
+        assertThat(patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, confirmed.getId()))
+                .extracting(PatternEventEntity::getKind)
+                .contains(PatternEventEntity.KIND_REINFORCED);
     }
 
     @Test

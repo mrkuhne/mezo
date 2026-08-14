@@ -2,8 +2,11 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,7 @@ public class PatternDetectionService {
     private final MetricSeriesService metricSeriesService;
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
+    private final PatternEventRepository patternEventRepository;
     private final CompanionProperties properties;
 
     /**
@@ -103,6 +107,7 @@ public class PatternDetectionService {
             // fact — the stats themselves stay frozen (the user judged THAT correlation).
             // Monitoring rows do NOT reinforce (decision: silent monitoring stays silent).
             reinforcePromotedFact(pattern, result);
+            recordSnapshot(pattern, result);
             return;
         }
         if (pattern != null && PatternEntity.STATUS_REJECTED.equals(pattern.getStatus())) {
@@ -126,6 +131,18 @@ public class PatternDetectionService {
         pattern.setConfidence(null); // honest small-n — V3.2's critique fills it for hypotheses
         pattern.setLastDetectedAt(Instant.now());
         patternRepository.saveAndFlush(pattern);
+        recordSnapshot(pattern, result);
+    }
+
+    /** S1 (mezo-tk88.1): one history snapshot per LIVE evaluation — the detail chart's raw data. */
+    private void recordSnapshot(PatternEntity pattern, PearsonCorrelation.Result result) {
+        PatternEventEntity event = new PatternEventEntity();
+        event.setCreatedBy(pattern.getCreatedBy());
+        event.setPatternId(pattern.getId());
+        event.setKind(PatternEventEntity.KIND_SNAPSHOT);
+        event.setOccurredAt(Instant.now());
+        event.setPayload(PatternEventPayloadEnvelope.snapshot(result.r(), result.n(), result.p()));
+        patternEventRepository.saveAndFlush(event);
     }
 
     /** Same-direction re-detection bumps the promoted fact's reinforcement (V3.3). */
@@ -145,6 +162,13 @@ public class PatternDetectionService {
             fact.setReinforcementCount(fact.getReinforcementCount() + 1);
             fact.setLastReinforcedAt(Instant.now());
             knowledgeFactRepository.saveAndFlush(fact);
+            PatternEventEntity event = new PatternEventEntity();
+            event.setCreatedBy(pattern.getCreatedBy());
+            event.setPatternId(pattern.getId());
+            event.setKind(PatternEventEntity.KIND_REINFORCED);
+            event.setOccurredAt(Instant.now());
+            event.setPayload(PatternEventPayloadEnvelope.reinforced(fact.getReinforcementCount()));
+            patternEventRepository.saveAndFlush(event);
             log.info("Confirmed pattern {} recurred — fact {} reinforced to {}",
                     pattern.getPairKey(), fact.getId(), fact.getReinforcementCount());
         });
