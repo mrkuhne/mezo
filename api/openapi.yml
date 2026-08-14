@@ -11558,6 +11558,10 @@ components:
         - metricBKey
         - metricBLabel
         - mechanismHu
+        - questionHu
+        - expectedDirection
+        - whenPositiveHu
+        - whenNegativeHu
         - metricADomain
         - metricBDomain
         - verdict
@@ -11587,6 +11591,19 @@ components:
         mechanismHu:
           type: string
           description: Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx).
+        questionHu:
+          type: string
+          description: 'Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g).'
+        expectedDirection:
+          type: string
+          pattern: ^(positive|negative)$
+          description: A mechanizmus által várt korreláció-irány (mezo-fj1g).
+        whenPositiveHu:
+          type: string
+          description: 'Pozitív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).'
+        whenNegativeHu:
+          type: string
+          description: 'Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).'
         metricADomain:
           type: string
           pattern: ^(sleep|train|fuel|mind|body|other)$

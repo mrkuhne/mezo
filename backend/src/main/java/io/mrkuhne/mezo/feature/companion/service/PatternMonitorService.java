@@ -114,6 +114,10 @@ public class PatternMonitorService {
                 .metricBKey(pair.metricB().wireKey())
                 .metricBLabel(pair.metricB().labelHu())
                 .mechanismHu(pair.mechanism())
+                .questionHu(pair.question())
+                .expectedDirection(pair.expectedDirection())
+                .whenPositiveHu(pair.whenPositiveHu())
+                .whenNegativeHu(pair.whenNegativeHu())
                 .metricADomain(pair.metricA().domain().wireKey())
                 .metricBDomain(pair.metricB().domain().wireKey());
 

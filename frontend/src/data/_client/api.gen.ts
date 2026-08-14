@@ -4686,6 +4686,14 @@ export interface components {
             metricBLabel: string;
             /** @description Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
             mechanismHu: string;
+            /** @description Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g). */
+            questionHu: string;
+            /** @description A mechanizmus által várt korreláció-irány (mezo-fj1g). */
+            expectedDirection: string;
+            /** @description Pozitív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g). */
+            whenPositiveHu: string;
+            /** @description Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g). */
+            whenNegativeHu: string;
             /** @description metric-a élet-doménje. */
             metricADomain: string;
             /** @description metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja. */

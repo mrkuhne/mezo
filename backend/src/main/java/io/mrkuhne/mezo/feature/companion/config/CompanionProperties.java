@@ -159,8 +159,16 @@ public record CompanionProperties(
         @NotBlank String label,
         /** The pattern card title (HU). */
         @NotBlank String title,
-        /** Miért figyeljük — a Motor tab kibontott sorának egysoros mechanizmusa (mezo-18bx). */
+        /** Miért figyeljük — a Motor kártya „Amit keresünk" egysorosa (mezo-18bx). */
         @NotBlank String mechanism,
+        /** Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g). */
+        @NotBlank String question,
+        /** A mechanizmus által várt korreláció-irány (mezo-fj1g). */
+        @NotBlank @jakarta.validation.constraints.Pattern(regexp = "positive|negative") String expectedDirection,
+        /** Mit jelent EMBERÜL a pozitív r ennél a párnál — {erősség} behelyettesítővel (mezo-fj1g). */
+        @NotBlank String whenPositiveHu,
+        /** Ugyanez negatív r-re (mezo-fj1g). */
+        @NotBlank String whenNegativeHu,
         @NotNull io.mrkuhne.mezo.feature.companion.service.MetricKey metricA,
         @NotNull io.mrkuhne.mezo.feature.companion.service.MetricKey metricB,
         /** metricB is read lagDays AFTER metricA's day (0 = same day). */
