@@ -1685,6 +1685,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/memory/llm-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** LLM-használat napi bontásban (mezo-al1i) — rollup az llm_log_history felett (ADR 0014): napi hívás/token/költség + összesen, naptári napok a report-zónában. A teljes táblát olvassa (a cron/async sorok created_by-a null — a user-szűrés pont a legdrágább forgalmat rejtené el; single-user app, JWT mögött). enabled=false esetén a sorok üresek — a FE őszinte „audit kikapcsolva" állapotot mutat. */
+        get: operations["getMemoryLlmUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/people": {
         parameters: {
             query?: never;
@@ -4854,6 +4871,46 @@ export interface components {
              * @description similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.
              */
             finalScore: number;
+        };
+        LlmUsageResponse: {
+            /** @description mezo.feature.llm-log.enabled állása — false esetén a napló nem bővül és a sorok üresek. */
+            enabled: boolean;
+            perDay: components["schemas"]["LlmUsageDay"][];
+            totals: components["schemas"]["LlmUsageTotals"];
+        };
+        LlmUsageDay: {
+            /** Format: date */
+            date: string;
+            /**
+             * Format: int64
+             * @description Minden hívás, a hibásak is (az audit hívást számol).
+             */
+            calls: number;
+            /**
+             * Format: int64
+             * @description prompt_tokens összege — a nyers szám, a cached rész is benne.
+             */
+            inputTokens: number;
+            /**
+             * Format: int64
+             * @description candidates + thoughts tokenek összege.
+             */
+            outputTokens: number;
+            /**
+             * Format: double
+             * @description null = nincs beárazott sor (ismeretlen ≠ nulla költség).
+             */
+            costUsd?: number | null;
+        };
+        LlmUsageTotals: {
+            /** Format: int64 */
+            calls: number;
+            /** Format: int64 */
+            inputTokens: number;
+            /** Format: int64 */
+            outputTokens: number;
+            /** Format: double */
+            costUsd?: number | null;
         };
         LogMentionRequest: {
             tone: string;
@@ -10760,6 +10817,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Companion switched off — the whole surface is absent */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMemoryLlmUsage: {
+        parameters: {
+            query?: {
+                /** @description Hány naptári napra visszamenőleg (a mai nappal bezárólag); alapértelmezés 30. */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Napi rollup + összesen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LlmUsageResponse"];
                 };
             };
             /** @description Missing or invalid token */

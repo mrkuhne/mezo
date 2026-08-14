@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.CreateFactRequest;
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
+import io.mrkuhne.mezo.api.dto.LlmUsageResponse;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewResponse;
 import io.mrkuhne.mezo.api.dto.MemorySummaryListResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
@@ -114,6 +115,11 @@ public class CompanionController implements CompanionApi {
     @Override
     public SimilarDaysResponse searchSimilarDays(String q, Integer k) {
         return memoryObservatoryService.similarDays(currentUserId.get(), q, k);
+    }
+
+    @Override
+    public LlmUsageResponse getMemoryLlmUsage(Integer days) {
+        return memoryObservatoryService.llmUsage(days);
     }
 
     @Override

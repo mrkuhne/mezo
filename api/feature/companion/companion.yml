@@ -519,6 +519,38 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/memory/llm-usage:
+    get:
+      tags: [Companion]
+      operationId: getMemoryLlmUsage
+      summary: >-
+        LLM-használat napi bontásban (mezo-al1i) — rollup az llm_log_history felett (ADR 0014):
+        napi hívás/token/költség + összesen, naptári napok a report-zónában. A teljes táblát
+        olvassa (a cron/async sorok created_by-a null — a user-szűrés pont a legdrágább forgalmat
+        rejtené el; single-user app, JWT mögött). enabled=false esetén a sorok üresek — a FE
+        őszinte „audit kikapcsolva" állapotot mutat.
+      parameters:
+        - name: days
+          in: query
+          required: false
+          description: Hány naptári napra visszamenőleg (a mai nappal bezárólag); alapértelmezés 30.
+          schema: { type: integer, minimum: 1, maximum: 90 }
+      responses:
+        '200':
+          description: Napi rollup + összesen
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LlmUsageResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     TranscriptionResponse:
@@ -820,3 +852,29 @@ components:
         excerpt: { type: string, description: 'A napi narratíva recall.render-max-chars-ra (300) vágva.' }
         similarity: { type: number, format: double, description: 'Nyers koszinusz-egyezés (0..1) — a floor erre vonatkozik.' }
         finalScore: { type: number, format: double, description: 'similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.' }
+    LlmUsageResponse:
+      type: object
+      required: [enabled, perDay, totals]
+      properties:
+        enabled: { type: boolean, description: 'mezo.feature.llm-log.enabled állása — false esetén a napló nem bővül és a sorok üresek.' }
+        perDay:
+          type: array
+          items: { $ref: '#/components/schemas/LlmUsageDay' }
+        totals: { $ref: '#/components/schemas/LlmUsageTotals' }
+    LlmUsageDay:
+      type: object
+      required: [date, calls, inputTokens, outputTokens]
+      properties:
+        date: { type: string, format: date }
+        calls: { type: integer, format: int64, description: 'Minden hívás, a hibásak is (az audit hívást számol).' }
+        inputTokens: { type: integer, format: int64, description: 'prompt_tokens összege — a nyers szám, a cached rész is benne.' }
+        outputTokens: { type: integer, format: int64, description: 'candidates + thoughts tokenek összege.' }
+        costUsd: { type: number, format: double, nullable: true, description: 'null = nincs beárazott sor (ismeretlen ≠ nulla költség).' }
+    LlmUsageTotals:
+      type: object
+      required: [calls, inputTokens, outputTokens]
+      properties:
+        calls: { type: integer, format: int64 }
+        inputTokens: { type: integer, format: int64 }
+        outputTokens: { type: integer, format: int64 }
+        costUsd: { type: number, format: double, nullable: true }

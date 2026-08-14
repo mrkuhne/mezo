@@ -1,5 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.api.dto.LlmUsageDay;
+import io.mrkuhne.mezo.api.dto.LlmUsageResponse;
+import io.mrkuhne.mezo.api.dto.LlmUsageTotals;
 import io.mrkuhne.mezo.api.dto.MemoryEmbeddingCounts;
 import io.mrkuhne.mezo.api.dto.MemoryFactSourceCount;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewJobs;
@@ -23,15 +26,19 @@ import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,6 +65,7 @@ public class MemoryObservatoryService {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionProperties properties;
     private final MemoryRecallService memoryRecallService;
+    private final LlmUsageService llmUsageService;
 
     @Transactional(readOnly = true)
     public MemoryOverviewResponse overview(UUID userId) {
@@ -191,5 +199,49 @@ public class MemoryObservatoryService {
     /** A tool render-vágásának párja (MemoryTools) — a stored text hosszú, a kártyára kivonat megy. */
     private static String excerpt(String content, int cap) {
         return content.length() > cap ? content.substring(0, cap) + "…" : content;
+    }
+
+    /**
+     * Az Audit nézet LLM-rollupja (ADR 0014 v1 fölött). Kikapcsolt audit-lognál a query le sem fut:
+     * enabled=false + üres sorok — a FE őszinte „audit kikapcsolva" állapotot mutat (spec §4).
+     */
+    @Transactional(readOnly = true)
+    public LlmUsageResponse llmUsage(Integer days) {
+        if (!llmUsageService.auditEnabled()) {
+            return LlmUsageResponse.builder()
+                    .enabled(false)
+                    .perDay(List.of())
+                    .totals(LlmUsageTotals.builder()
+                            .calls(0L).inputTokens(0L).outputTokens(0L).costUsd(null).build())
+                    .build();
+        }
+        List<LlmUsageDay> perDay = new ArrayList<>();
+        long calls = 0;
+        long inputTokens = 0;
+        long outputTokens = 0;
+        BigDecimal cost = null;
+        for (LlmDailyAggregate row : llmUsageService.perDay(days != null ? days : 30)) {
+            perDay.add(LlmUsageDay.builder()
+                    .date(row.getDay())
+                    .calls(row.getCalls())
+                    .inputTokens(row.getInputTokens())
+                    .outputTokens(row.getOutputTokens())
+                    .costUsd(row.getCostUsd() == null ? null : row.getCostUsd().doubleValue())
+                    .build());
+            calls += row.getCalls();
+            inputTokens += row.getInputTokens();
+            outputTokens += row.getOutputTokens();
+            if (row.getCostUsd() != null) {
+                cost = (cost == null ? BigDecimal.ZERO : cost).add(row.getCostUsd());
+            }
+        }
+        return LlmUsageResponse.builder()
+                .enabled(true)
+                .perDay(perDay)
+                .totals(LlmUsageTotals.builder()
+                        .calls(calls).inputTokens(inputTokens).outputTokens(outputTokens)
+                        .costUsd(cost == null ? null : cost.doubleValue())
+                        .build())
+                .build();
     }
 }

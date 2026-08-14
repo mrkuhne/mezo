@@ -4,14 +4,18 @@ import io.mrkuhne.mezo.api.dto.LlmUsagePeriod;
 import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmPricingProperties;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUsageAggregate;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +37,7 @@ public class LlmUsageService {
     private final LlmLogRepository llmLogRepository;
     private final LlmLogProperties llmLogProperties;
     private final LlmPricingProperties llmPricingProperties;
+    private final ObjectProvider<EventPublishingLlmCallRecorder> auditRecorder;
 
     /**
      * Read-only transaction so the three period aggregates share ONE snapshot: without it a call
@@ -62,5 +67,18 @@ public class LlmUsageService {
     /** null stays null — no priced row in the period means "cost unknown", never a confident 0. */
     private Double toDouble(BigDecimal costUsd) {
         return costUsd == null ? null : costUsd.doubleValue();
+    }
+
+    /** Az audit-kapcsoló állása — a recorder bean jelenléte MAGA a kapcsoló (nincs @Value). */
+    public boolean auditEnabled() {
+        return auditRecorder.getIfAvailable() != null;
+    }
+
+    /** Az utolsó {@code days} naptári nap (a maival bezárólag) napi rollupja, date-asc. */
+    @Transactional(readOnly = true)
+    public List<LlmDailyAggregate> perDay(int days) {
+        ZoneId zone = llmLogProperties.reportZone();
+        Instant since = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant();
+        return llmLogRepository.aggregatePerDaySince(since, zone.getId());
     }
 }
