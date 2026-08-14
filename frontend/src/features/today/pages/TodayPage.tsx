@@ -35,7 +35,7 @@ import {
   useTodayScenario, useWaterActions, useWeight, resolveBriefing,
 } from '@/data/hooks'
 import { AppHero } from '@/features/progression/components/AppHero'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { buildHabitRewardToast, buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { AnchorIsland } from '@/features/today/components/AnchorIsland'
 import { DaypartDay, type DayHero } from '@/features/today/components/DaypartDay'
 import { DaypartEvening } from '@/features/today/components/DaypartEvening'
@@ -70,6 +70,7 @@ import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/fe
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
 import { lastSeenMessage, markMessagesSeen } from '@/shared/lib/seenMessages'
+import { emitToast } from '@/shared/lib/toastBus'
 import { Icon } from '@/shared/ui/Icon'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
 
@@ -131,7 +132,6 @@ export function TodayPage() {
   const { addFocus, reflect } = useIntentionActions(date)
   const stats = useQuickStats()
   const companionNote = useCompanionNote()
-  const { showLevelUp } = useLevelUp()
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
@@ -144,21 +144,30 @@ export function TodayPage() {
   const [msgsOpen, setMsgsOpen] = useState(false)
   const [seenId, setSeenId] = useState<string | null>(() => lastSeenMessage(date))
 
-  // Consume-once level-ups: quest and habit completions are evaluated SERVER-side on a day
+  // Consume-once reward toasts: quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
   // resolution. Without the consume the payload replays on every remount within gcTime.
+  // Since mezo-k5sa these celebrate in a DS toast, not the full-screen LevelUpScreen — that
+  // overlay stays the Train flows' (gym/sport/run) alone.
   useEffect(() => {
     if (questLevelUps.length > 0) {
-      showLevelUp(questLevelUps[0])
+      const lu = questLevelUps[0]
+      emitToast(buildQuestRewardToast({ title: lu.workoutLabel ?? 'Küldetés teljesítve', levelUp: lu }))
       consumeQuestLevelUps()
     }
-  }, [questLevelUps, showLevelUp, consumeQuestLevelUps])
+  }, [questLevelUps, consumeQuestLevelUps])
   useEffect(() => {
     if (habitLevelUps.length > 0) {
-      showLevelUp(habitLevelUps[0])
+      const lu = habitLevelUps[0]
+      emitToast(buildHabitRewardToast({
+        title: lu.workoutLabel ?? 'Szokás kész',
+        chainDone: 0, chainTotal: 0,   // a server-evaluated row carries no chain context here
+        xp: 0,
+        levelUp: lu,
+      }))
       consumeHabitLevelUps()
     }
-  }, [habitLevelUps, showLevelUp, consumeHabitLevelUps])
+  }, [habitLevelUps, consumeHabitLevelUps])
 
   const sportToday = volleyballSessions.find((s) => s.today)
   // The day's sessions, authored EXACTLY ONCE (mezo-mvb4.1): the row and the hero are the same
@@ -262,6 +271,15 @@ export function TodayPage() {
   const dayXp = items.filter((i) => i.status === 'done').reduce((s, i) => s + (i.xp ?? 0), 0)
     + (activities ?? []).reduce((s, e) => s + e.xpAwarded, 0)
 
+  // Per-chain progress + celebrations, keyed by the catalog's own `chainKey` (mezo-n5e9.4).
+  // Defined ABOVE `act()` (which reads it in the manual-check branch) to avoid a
+  // use-before-define lint/TS complaint — `act` only runs on user events, so the runtime
+  // ordering was always safe, but the declaration order now matches the read order too.
+  const chainProgress = (chainKey: string) => {
+    const steps = habits.filter((h) => h.chain === chainKey)
+    return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
+  }
+
   // A row's action is dispatched through the SAME mappings the old cards used —
   // ADR 0010: nothing here ever self-completes a quest or a DERIVED habit.
   const act = (item: TodayItem) => {
@@ -285,9 +303,21 @@ export function TodayPage() {
     }
     const ha = habitAction(a.habit)
     switch (ha.kind) {
-      case 'check':
-        check(a.habit.key).then((lu) => lu?.[0] && showLevelUp(lu[0]))
+      case 'check': {
+        // The eyebrow counts this row as done already (`chainDone + 1` inside the builder) —
+        // the same number the list prints once the day read lands.
+        const { done, total } = chainProgress(a.habit.chain)
+        check(a.habit.key).then((lu) =>
+          emitToast(buildHabitRewardToast({
+            title: a.habit.title,
+            chainDone: done,
+            chainTotal: total,
+            xp: a.habit.xp,
+            levelUp: lu?.[0],
+          })),
+        )
         return
+      }
       case 'nav': return navigate(ha.to)
       case 'meal-sheet': return setMealOpen({ slot: 'breakfast' })
       case 'sleep-sheet': return setSleepOpen(true)
@@ -297,11 +327,6 @@ export function TodayPage() {
     }
   }
 
-  // Per-chain progress + celebrations, keyed by the catalog's own `chainKey` (mezo-n5e9.4).
-  const chainProgress = (chainKey: string) => {
-    const steps = habits.filter((h) => h.chain === chainKey)
-    return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
-  }
   const activeChains = [...habitCatalog.chains].filter((c) => c.isActive).sort((a, b) => a.position - b.position)
   const chainCelebrationText = (c: HabitChainInfo): string => {
     if (c.chainKey === 'MORNING') return '🌅 Tökéletes reggel'
