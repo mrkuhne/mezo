@@ -1092,13 +1092,18 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   pattern reinforces its promoted fact at most once per window (the nightly lookback slides one
   day; re-counting the same evidence would inflate top-N ranks — review finding).
 - `mezo.companion.patterns.pairs` = the 29-pair catalog (`@NotEmpty`, each
-  `{key, category, label, title, mechanism, metric-a, metric-b, lag-days}` — `mechanism` is the
-  `@NotBlank` „miért figyeljük" one-liner surfaced by the Motor tab, `mezo-18bx`) — pair keys are
-  pattern identity (never rename a live key); metrics come from the `MetricKey` enum, which since
-  `mezo-18bx` also carries `sourceHu` (which surface collects it / derived-from note) and a
-  `MetricDomain` (`SLEEP/TRAIN/FUEL/MIND/BODY/OTHER`) for the Motor tab's grouping; the monitor
-  DTOs pass all three through, and `PatternResponse` gained `pairKey` (the Motor↔Patterns
-  cross-link anchor — MapStruct maps it from the entity).
+  `{key, category, label, title, mechanism, question, expected-direction, when-positive-hu,
+  when-negative-hu, metric-a, metric-b, lag-days}`) — `mechanism` is the „miért figyeljük"
+  one-liner (`mezo-18bx`); **`mezo-fj1g` added the human-language card fields:** `question`
+  (the card's question-title), `expected-direction` (`positive|negative` — the hypothesized
+  correlation sign; the FE renders „Meglepő:" when the found sign disagrees) and the two authored
+  direction readings `when-positive-hu`/`when-negative-hu` (what a positive/negative r MEANS for
+  this pair, in Hungarian, with an `{erősség}` slot the FE fills from |r|). All `@NotBlank` —
+  the config validator refuses a pair without them. Pair keys are pattern identity (never rename
+  a live key); metrics come from the `MetricKey` enum, which since `mezo-18bx` also carries
+  `sourceHu` and a `MetricDomain` (`SLEEP/TRAIN/FUEL/MIND/BODY/OTHER`); the monitor DTOs pass
+  everything through (`questionHu`/`expectedDirection`/`whenPositiveHu`/`whenNegativeHu` since
+  `mezo-fj1g`), and `PatternResponse` gained `pairKey` (the Motor↔Patterns cross-link anchor).
 - `mezo.companion.patterns.load-gym-kg-per-min` = **100** (`@Min(1) @Max(10000)`) — V3.4: the
   ACWR/monotony daily-load common scale (this many kg of gym volume ≙ one sport minute).
 - `mezo.companion.summary.note-max-chars` = **200** (`@Min(0) @Max(1000)`) — V3.4: per-field cap

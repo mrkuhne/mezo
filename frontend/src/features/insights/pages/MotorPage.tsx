@@ -91,7 +91,7 @@ export function MotorPage() {
             <MetricCoverageRing
               key={metric.key}
               metric={metric}
-              referencingTitles={referencing.map((p) => p.title)}
+              referencingTitles={referencing.map((p) => p.questionHu)}
               waiting={referencing.length > 0 && referencing.every((p) => p.verdict !== 'live')}
             />
           )

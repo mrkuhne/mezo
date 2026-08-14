@@ -159,21 +159,34 @@ seed in `insights.ts`).
    small tinted chip on the row. Sections default open only when they hold a live pair; within
    a section the `comparePairs` order is unchanged
    (`live → few_days fewest-missing-first → degenerate → no_data → frozen`).
-4. **`PairRow`** (the `GateVerdictRow` successor) — verdict pill (live = filled success,
-   few_days = `MÉG N NAP`), an |r|-strength mini bar on live rows, and the deterministic
-   Hungarian sentence. **few_days is action-first (mezo-18bx):** the sentence is the 🎯 nudge
-   („Még N nap adat ebből: <bottleneck> — és ez a pár életre kel!"); no_data keeps the
-   overlap-vs-empty distinction (names the empty metric only when the bottleneck's own
-   `coveredDays === 0`); degenerate/frozen sentences unchanged. **Tap expands** an accent-tinted
-   card: 💡 `mechanismHu` (why we watch — the catalog's config `mechanism`), 📥 source pills
-   (metric label + `sourceHu` for both sides, resolved by `MotorPage` from the coverage block),
-   and on live/frozen rows a coral CTA **„Minta megnyitása →"** to
-   `/insights/patterns?pair=<pairKey>` (§2.1 highlights + scrolls; the `PatternCard` carries the
-   reverse „Motor-diagnosztika →" link).
-5. **`MetricCoverageRing`** (the `MetricCoverageRow` successor) — per-metric conic-gradient
-   progress ring (covered/window days, day count inside), label, and „N/60 nap · M pár vár rá"
-   when NONE of the metric's referencing pairs is live (plain „M párban" otherwise); tap expands
-   to the metric's `sourceHu` + the referencing pair titles. Sort unchanged: thinnest first.
+4. **`PairRow`** (the `GateVerdictRow` successor; **human-language v4 since `mezo-fj1g`**) —
+   the card speaks the USER's language, not the engine's storage model. Header: category pill +
+   cross-domain chip + verdict pill (live = filled success, few_days = `MÉG N NAP`). **Title =
+   the pair's authored `questionHu`** („Jobban alszol, ha este lezárod a napot?"), with a muted
+   `pairLine` under it (`{A} ↔ {lag>0 ? 'másnapi ' : ''}{B}`). Two always-visible blocks:
+   **🔍 Amit keresünk** (= `mechanismHu`) and **📈 Amit eddig látunk** — the finding is a
+   deterministic composition (`logic/findings.ts`): the authored `whenPositiveHu`/`whenNegativeHu`
+   reading picked by `sign(r)`, its `{erősség}` slot filled from |r| (kicsit &lt;0.3 · érezhetően
+   &lt;0.6 · határozottan) and bolded, prefixed „Igen:" when the found direction matches the
+   catalog's `expectedDirection` and „Meglepő:" otherwise; below it a confidence chip + honest
+   Hungarian p-translation (`confidenceMeta`: ≤0.05 „megbízható jel — ez már aligha véletlen" ·
+   ≤0.15 „ígéretes jel" · else „még bizonytalan — kb. minden N. ilyen minta véletlenül is
+   összejönne", always with „{n} közös nap"). **few_days renders the „🎯 Még nincs válasz" block**
+   with the nudge sentence; no_data keeps the overlap-vs-empty distinction (names the empty
+   metric only when the bottleneck's own `coveredDays === 0`); frozen shows the finding + the
+   user-judged note. **Tap expands** an accent-tinted card: 📥 source pills (metric label +
+   `sourceHu`, resolved by `MotorPage` from the coverage block), the **raw `r/n/p` „Statisztika"
+   line (moved here off the card face)**, and on live/frozen rows a coral CTA
+   **„Minta megnyitása →"** to `/insights/patterns?pair=<pairKey>` (§2.1 highlights + scrolls;
+   the `PatternCard` carries the reverse „Motor-diagnosztika →" link). No all-caps rows remain on
+   the card face.
+5. **`MetricCoverageRing`** (the `MetricCoverageRow` successor; retagged `mezo-fj1g`) —
+   per-metric conic-gradient progress ring (day count inside), the **metric name as the headline**
+   (13.5px, normal case), a muted sub-line „{n}/{window} nap · utoljára: {ma | tegnap | Máj 20}"
+   (`lastSeenLabel`), and a colored status chip on the right: amber „N pár vár rá" when NONE of
+   the metric's referencing pairs is live, green „N párban él" otherwise — nothing truncates.
+   Tap expands to the metric's `sourceHu` + the referencing pairs' questions. Sort unchanged:
+   thinnest first.
 
 **Every number on this page is a LIVE recomputation over the job's exact
 windows for this request** — the page persists nothing and reads no historical log, so it can
@@ -416,6 +429,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
 - `components/MotorHero.tsx · VerdictFilterChips.tsx · DomainSection.tsx · PairRow.tsx · MetricCoverageRing.tsx` — **mezo-18bx**, the Motor page's presentational units (the `mezo-viqs` `GateVerdictRow`/`MetricCoverageRow` successors — those two are deleted): hero card, filter chips, collapsible domain sections, expandable pair rows (`verdictSentence` + 🎯 nudge live in `PairRow.tsx`), coverage rings — pure props, no `@/data/*` import, per `frontend_conventions.md`
 - `logic/domains.ts` — **mezo-18bx**, `DOMAIN_META`/`DOMAIN_ORDER` (token-based domain colors) + `comparePairs` (moved out of `MotorPage`) + `groupPairsByDomain` (primary domain = metric-B)
+- `logic/findings.ts` — **mezo-fj1g**, the human-finding composition: `strengthWord` (|r| bands), `findingSentence` (authored direction reading + „Igen/Meglepő" prefix + `{erősség}` substitution), `confidenceMeta` (honest Hungarian p-translation), `pairLine` — pure, unit-tested in `findings.test.ts`
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows; the answer body renders via `@/shared/lib/markdown`
 - `sheets/ConversationPickerSheet.tsx` — **`mezo-at8x.3`** the conversation list + "Új beszélgetés" row (presentational; ChatPage owns the `?c=` selection)
 - `logic/useStickToBottom.ts` — **`mezo-at8x.2`** rAF bottom-anchoring + the stick-while-at-bottom rule for the streamed answer
