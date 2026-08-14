@@ -81,6 +81,20 @@ describe('ToastProvider — stack', () => {
     expect(rendered[3]).toHaveAttribute('data-idx', 'hidden')
   })
 
+  it('minden toast a saját status régiója — nem egy közös container ismétli a régit', () => {
+    // Regression for mezo-k5sa: role="status" must sit on each toast item, not on the
+    // .toast-stack container. role="status" implies aria-atomic="true", so a container-level
+    // live region would re-announce every older card on each new toast. Under that (broken)
+    // arrangement there is exactly one `status` element no matter how many toasts stack —
+    // this assertion fails there and passes once each item owns its own status role.
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({ kind: 'success', text: 'első' }))
+    act(() => { vi.advanceTimersByTime(100) })
+    act(() => emitToast({ kind: 'success', text: 'második' }))
+
+    expect(screen.getAllByRole('status')).toHaveLength(2)
+  })
+
   it('a queue 20 elemnél nem nő tovább', () => {
     render(<ToastProvider>content</ToastProvider>)
     for (let i = 0; i < 25; i += 1) {

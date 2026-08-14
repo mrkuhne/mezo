@@ -17,7 +17,7 @@ import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 // Purpose-built confirmations (FuelStackPage protocol card, MedalToast) stay feature-local
 // by design; this host is for generic error/success/info feedback plus reward toasts.
 
-const AUTO_HIDE_MS: Record<string, number> = {
+const AUTO_HIDE_MS: Record<ToastMessage['kind'], number> = {
   reward: 4000,
   error: 6000,   // more time to read a failure
   success: 4000,
@@ -62,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         const id = nextId.current
         nextId.current += 1
         setEntries((prev) => [{ id, toast, leaving: false }, ...prev].slice(0, QUEUE_CAP))
-        later(() => dismiss(id), AUTO_HIDE_MS[toast.kind] ?? 4000)
+        later(() => dismiss(id), AUTO_HIDE_MS[toast.kind])
       }),
     [dismiss, later],
   )
@@ -78,10 +78,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ show }}>
       {children}
       {entries.length > 0 && (
-        <div className="toast-stack" role="status" aria-live="polite">
+        <div className="toast-stack">
           {entries.map((e, idx) => (
             <div
               key={e.id}
+              role="status"
               data-testid="toast-item"
               data-kind={e.toast.kind}
               data-idx={idx < MAX_VISIBLE ? String(idx) : 'hidden'}

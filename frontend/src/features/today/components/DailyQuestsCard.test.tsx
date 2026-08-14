@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
 import { DailyQuestsCard } from '@/features/today/components/DailyQuestsCard'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import { makeHookWrapper } from '@/test/queryWrapper'
 
 const quests = vi.hoisted(() => ({
@@ -97,7 +98,14 @@ describe('DailyQuestsCard', () => {
     quests.useDailyQuests.mockReturnValue({
       quests: [offered, completed], levelUps: [payload], rerollsLeft: 1, mode: 'live',
     })
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
     renderCard()
+    off()
     expect(consumeLevelUps).toHaveBeenCalledTimes(1)
+    // GrowthPage mounts DailyQuestsCard without a TodayPage above it (mezo-k5sa) — this is
+    // the only test reaching this call site, so it must pin the reward toast, not just the
+    // cache-consume side effect.
+    expect(seen.filter((t) => t.kind === 'reward')).toHaveLength(1)
   })
 })

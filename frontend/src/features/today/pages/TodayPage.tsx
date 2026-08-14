@@ -307,15 +307,19 @@ export function TodayPage() {
         // The eyebrow counts this row as done already (`chainDone + 1` inside the builder) —
         // the same number the list prints once the day read lands.
         const { done, total } = chainProgress(a.habit.chain)
-        check(a.habit.key).then((lu) =>
-          emitToast(buildHabitRewardToast({
-            title: a.habit.title,
-            chainDone: done,
-            chainTotal: total,
-            xp: a.habit.xp,
-            levelUp: lu?.[0],
-          })),
-        )
+        check(a.habit.key)
+          .then((lu) =>
+            emitToast(buildHabitRewardToast({
+              title: a.habit.title,
+              chainDone: done,
+              chainTotal: total,
+              xp: a.habit.xp,
+              levelUp: lu?.[0],
+            })),
+          )
+          // The mutation cache already owns the user-facing error toast for a failed write;
+          // swallowing here only prevents an unhandled promise rejection.
+          .catch(() => {})
         return
       }
       case 'nav': return navigate(ha.to)

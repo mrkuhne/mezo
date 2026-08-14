@@ -108,15 +108,19 @@ export function DaypartEvening({
   const doWindDown = () => {
     // The banner owns a single habit, not a chain position — the eyebrow drops the counter
     // (chainTotal 0) rather than printing a number this surface cannot know.
-    check('wind_down').then((lu) =>
-      emitToast(buildHabitRewardToast({
-        title: windDownHabit?.title ?? 'Wind-down',
-        chainDone: 0,
-        chainTotal: 0,
-        xp: windDownHabit?.xp ?? 0,
-        levelUp: lu?.[0],
-      })),
-    )
+    check('wind_down')
+      .then((lu) =>
+        emitToast(buildHabitRewardToast({
+          title: windDownHabit?.title ?? 'Wind-down',
+          chainDone: 0,
+          chainTotal: 0,
+          xp: windDownHabit?.xp ?? 0,
+          levelUp: lu?.[0],
+        })),
+      )
+      // The mutation cache already owns the user-facing error toast for a failed write;
+      // swallowing here only prevents an unhandled promise rejection.
+      .catch(() => {})
   }
 
   return (
