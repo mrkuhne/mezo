@@ -399,6 +399,16 @@ left-as-is quirk (spec §3.5):** the job reads
 A-series stops at yesterday; the monitor prints the window bounds so this is now at least
 visible, but it is **not fixed** in this change.
 
+**`pattern_event` (S1, `mezo-tk88.1`, post-epic) is the pattern's append-only history** —
+never updated or deleted, three writer sites: `PatternDetectionService.recordSnapshot`
+(`PatternDetectionService.java:138-146`, one `snapshot` row per LIVE nightly evaluation, even on
+frozen `confirmed` rows) and `.reinforcePromotedFact` (`PatternDetectionService.java:165-171`,
+one `reinforced` row per cooled-down recurrence); `PatternService.decide`
+(`PatternService.java:66-79`, helper at `PatternService.java:92-101`) appends a
+`confirmed`/`monitoring`/`rejected` row on **every** decision, plus — on the FIRST confirm only —
+a `promoted` row (payload = the new `factId`) written **after** the decision row. No reader yet —
+a future strength chart/journal will derive from this table.
+
 **V3.2 (`mezo-fnnq.13`) shipped the AI hypothesis loop — propose → critique → revise:**
 
 - **The weekly smart-tier pipeline** — `HypothesisPipelineService` (cron `HypothesisJob`, Sunday
