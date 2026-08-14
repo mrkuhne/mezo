@@ -79,4 +79,8 @@ public class ExperimentEntity extends OwnedEntity {
     @NotNull
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
+
+    /** S2 (mezo-tk88.2): the grounding pattern (loose ref, ON DELETE SET NULL) — the detail page's impact list. */
+    @Column(name = "source_pattern_id", columnDefinition = "uuid")
+    private UUID sourcePatternId;
 }
