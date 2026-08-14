@@ -50,7 +50,14 @@ export const LLM_BREAKDOWN_EMPTY: LlmUsageBreakdownResponse = {
   models: [],
 }
 
-/** Believable demo rollup for mock mode — the real feature slugs, one unpriced bucket. */
+/**
+ * Believable demo rollup for mock mode — the real feature slugs, one unpriced bucket.
+ *
+ * Every audited call has exactly ONE feature and ONE served model (or none, for an
+ * ERROR row that never reached a model), and this response is exhaustive (no
+ * truncation field) — so BOTH `features[]` and `models[]` must sum to exactly
+ * `totals.callCount` / `totals.costUsd`. Keep that property when editing this seed.
+ */
 export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
   from: '2026-08-10',
   totals: { callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7, unpricedCount: 38, costUsd: 1.86, currency: 'USD' },
@@ -62,6 +69,7 @@ export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
     { key: 'meal_coach', callCount: 29, costUsd: 0.12 },
     { key: 'embed_memory', callCount: 148, costUsd: 0.09 },
     { key: 'proactive_heartbeat', callCount: 28, costUsd: 0.07 },
+    { key: 'companion_fact_extract', callCount: 43, costUsd: 0.06 },
     { key: 'quest_flavor', callCount: 6, costUsd: null },
   ],
   models: [
