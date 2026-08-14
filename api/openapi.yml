@@ -4215,6 +4215,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/overview:
+    get:
+      tags:
+        - Companion
+      operationId: getMemoryOverview
+      summary: >-
+        Memória-obszervatórium áttekintés (mezo-al1i) — a 4 memória-réteg (L0
+        nyers napok → L1 napló + vektorok → L2 ítélet-inbox → L3 tartós tudás)
+        élő számai + a cron-ütemezés. Read-only aggregátum, semmit nem ír.
+      responses:
+        '200':
+          description: A memória-rétegek pillanatképe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryOverviewResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/summary:
+    get:
+      tags:
+        - Companion
+      operationId: listMemorySummaries
+      summary: >-
+        Az L1 epizodikus napló (mezo-al1i) — napi összefoglaló-narratívák
+        date-desc, opcionális [from,to] tartomány-szűréssel; embedded = van-e
+        élő daily_summary vektora a napnak.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: A tartomány első napja (inkluzív); elhagyva nincs alsó határ.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          description: A tartomány utolsó napja (inkluzív); elhagyva nincs felső határ.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: A napló bejegyzései (date-desc)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemorySummaryListResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/people:
     get:
       tags:
@@ -11633,6 +11704,174 @@ components:
         pairCount:
           type: integer
           description: Hány katalógus-pár hivatkozik erre a metrikára.
+    MemoryOverviewResponse:
+      type: object
+      required:
+        - l0
+        - l1
+        - l2
+        - l3
+        - jobs
+      properties:
+        l0:
+          $ref: '#/components/schemas/MemoryOverviewL0'
+        l1:
+          $ref: '#/components/schemas/MemoryOverviewL1'
+        l2:
+          $ref: '#/components/schemas/MemoryOverviewL2'
+        l3:
+          $ref: '#/components/schemas/MemoryOverviewL3'
+        jobs:
+          $ref: '#/components/schemas/MemoryOverviewJobs'
+    MemoryOverviewL0:
+      type: object
+      required:
+        - daysWithAnyData
+        - windowDays
+      properties:
+        daysWithAnyData:
+          type: integer
+          description: >-
+            Hány napon van BÁRMELY metrikán adat a minta-ablakban (a MetricKey-k
+            uniója).
+        windowDays:
+          type: integer
+          description: mezo.companion.patterns.lookback-days (60).
+    MemoryOverviewL1:
+      type: object
+      required:
+        - summaryCount
+        - embeddings
+      properties:
+        summaryCount:
+          type: integer
+        firstDate:
+          type: string
+          format: date
+          nullable: true
+        lastDate:
+          type: string
+          format: date
+          nullable: true
+        embeddings:
+          $ref: '#/components/schemas/MemoryEmbeddingCounts'
+    MemoryEmbeddingCounts:
+      type: object
+      required:
+        - dailySummary
+        - chatTurn
+      properties:
+        dailySummary:
+          type: integer
+        chatTurn:
+          type: integer
+    MemoryOverviewL2:
+      type: object
+      required:
+        - patterns
+        - pendingFactCandidates
+      properties:
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryPatternCount'
+        pendingFactCandidates:
+          type: integer
+          description: Eldöntetlen learned_fact jelöltek (L2 tény-inbox).
+    MemoryPatternCount:
+      type: object
+      required:
+        - kind
+        - status
+        - count
+      properties:
+        kind:
+          type: string
+          pattern: ^(statistical|ai_hypothesis)$
+        status:
+          type: string
+          pattern: ^(proposed|monitoring|confirmed|rejected)$
+        count:
+          type: integer
+    MemoryOverviewL3:
+      type: object
+      required:
+        - facts
+        - totalReinforcements
+        - factsInPrompt
+      properties:
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryFactSourceCount'
+        totalReinforcements:
+          type: integer
+          description: A reinforcement_count-ok összege.
+        factsInPrompt:
+          type: integer
+          description: include_in_prompt = true tények (a top-N injekció jelöltjei).
+    MemoryFactSourceCount:
+      type: object
+      required:
+        - source
+        - count
+      properties:
+        source:
+          type: string
+          pattern: ^(chat|pattern|manual)$
+        count:
+          type: integer
+    MemoryOverviewJobs:
+      type: object
+      required:
+        - summaryCron
+        - patternCron
+        - hypothesisCron
+      properties:
+        summaryCron:
+          type: string
+          description: 'mezo.companion.summary.cron — nyers cron, a FE csak megjeleníti.'
+        patternCron:
+          type: string
+        hypothesisCron:
+          type: string
+        lastSummaryDate:
+          type: string
+          format: date
+          nullable: true
+          description: max(summary_date) — az utolsó megírt napló-nap.
+        lastDetectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            max(lastDetectedAt) a user statisztikai során — az utolsó
+            FELISMERÉS, nem az utolsó futás (a pattern/monitor lastRunAt
+            szemantikája).
+    MemorySummaryListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemorySummaryItem'
+    MemorySummaryItem:
+      type: object
+      required:
+        - date
+        - narrative
+        - embedded
+      properties:
+        date:
+          type: string
+          format: date
+        narrative:
+          type: string
+        embedded:
+          type: boolean
+          description: Van-e élő daily_summary vektor ehhez az összefoglalóhoz.
     LogMentionRequest:
       type: object
       required:

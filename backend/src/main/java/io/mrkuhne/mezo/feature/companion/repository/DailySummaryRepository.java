@@ -21,4 +21,15 @@ public interface DailySummaryRepository extends JpaRepository<DailySummaryEntity
     /** The proactive briefing's past-narrative window (B1.1) — newest first. */
     List<DailySummaryEntity> findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
             UUID createdBy, LocalDate from);
+
+    /** Memória-obszervatórium (mezo-al1i) — az L1 réteg-kártya számai. */
+    long countByCreatedBy(UUID createdBy);
+
+    Optional<DailySummaryEntity> findTop1ByCreatedByOrderBySummaryDateAsc(UUID createdBy);
+
+    Optional<DailySummaryEntity> findTop1ByCreatedByOrderBySummaryDateDesc(UUID createdBy);
+
+    /** A napló-nézet tartomány-szűrt listája (mezo-al1i) — date-desc. */
+    List<DailySummaryEntity> findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

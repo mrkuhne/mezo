@@ -1634,6 +1634,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/memory/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Memória-obszervatórium áttekintés (mezo-al1i) — a 4 memória-réteg (L0 nyers napok → L1 napló + vektorok → L2 ítélet-inbox → L3 tartós tudás) élő számai + a cron-ütemezés. Read-only aggregátum, semmit nem ír. */
+        get: operations["getMemoryOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/memory/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Az L1 epizodikus napló (mezo-al1i) — napi összefoglaló-narratívák date-desc, opcionális [from,to] tartomány-szűréssel; embedded = van-e élő daily_summary vektora a napnak. */
+        get: operations["listMemorySummaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/people": {
         parameters: {
             query?: never;
@@ -4712,6 +4746,78 @@ export interface components {
             lastDayWithData?: string | null;
             /** @description Hány katalógus-pár hivatkozik erre a metrikára. */
             pairCount: number;
+        };
+        MemoryOverviewResponse: {
+            l0: components["schemas"]["MemoryOverviewL0"];
+            l1: components["schemas"]["MemoryOverviewL1"];
+            l2: components["schemas"]["MemoryOverviewL2"];
+            l3: components["schemas"]["MemoryOverviewL3"];
+            jobs: components["schemas"]["MemoryOverviewJobs"];
+        };
+        MemoryOverviewL0: {
+            /** @description Hány napon van BÁRMELY metrikán adat a minta-ablakban (a MetricKey-k uniója). */
+            daysWithAnyData: number;
+            /** @description mezo.companion.patterns.lookback-days (60). */
+            windowDays: number;
+        };
+        MemoryOverviewL1: {
+            summaryCount: number;
+            /** Format: date */
+            firstDate?: string | null;
+            /** Format: date */
+            lastDate?: string | null;
+            embeddings: components["schemas"]["MemoryEmbeddingCounts"];
+        };
+        MemoryEmbeddingCounts: {
+            dailySummary: number;
+            chatTurn: number;
+        };
+        MemoryOverviewL2: {
+            patterns: components["schemas"]["MemoryPatternCount"][];
+            /** @description Eldöntetlen learned_fact jelöltek (L2 tény-inbox). */
+            pendingFactCandidates: number;
+        };
+        MemoryPatternCount: {
+            kind: string;
+            status: string;
+            count: number;
+        };
+        MemoryOverviewL3: {
+            facts: components["schemas"]["MemoryFactSourceCount"][];
+            /** @description A reinforcement_count-ok összege. */
+            totalReinforcements: number;
+            /** @description include_in_prompt = true tények (a top-N injekció jelöltjei). */
+            factsInPrompt: number;
+        };
+        MemoryFactSourceCount: {
+            source: string;
+            count: number;
+        };
+        MemoryOverviewJobs: {
+            /** @description mezo.companion.summary.cron — nyers cron, a FE csak megjeleníti. */
+            summaryCron: string;
+            patternCron: string;
+            hypothesisCron: string;
+            /**
+             * Format: date
+             * @description max(summary_date) — az utolsó megírt napló-nap.
+             */
+            lastSummaryDate?: string | null;
+            /**
+             * Format: date-time
+             * @description max(lastDetectedAt) a user statisztikai során — az utolsó FELISMERÉS, nem az utolsó futás (a pattern/monitor lastRunAt szemantikája).
+             */
+            lastDetectedAt?: string | null;
+        };
+        MemorySummaryListResponse: {
+            items: components["schemas"]["MemorySummaryItem"][];
+        };
+        MemorySummaryItem: {
+            /** Format: date */
+            date: string;
+            narrative: string;
+            /** @description Van-e élő daily_summary vektor ehhez az összefoglalóhoz. */
+            embedded: boolean;
         };
         LogMentionRequest: {
             tone: string;
@@ -10498,6 +10604,87 @@ export interface operations {
             };
             /** @description COMPANION_TRANSCRIBE_FAILED — the model answer was unusable */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMemoryOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A memória-rétegek pillanatképe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryOverviewResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Companion switched off — the whole surface is absent */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listMemorySummaries: {
+        parameters: {
+            query?: {
+                /** @description A tartomány első napja (inkluzív); elhagyva nincs alsó határ. */
+                from?: string;
+                /** @description A tartomány utolsó napja (inkluzív); elhagyva nincs felső határ. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A napló bejegyzései (date-desc) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemorySummaryListResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Companion switched off — the whole surface is absent */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
