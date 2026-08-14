@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.llmlog.service;
 
+import io.mrkuhne.mezo.api.dto.LlmCallListItem;
+import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageGroup;
 import io.mrkuhne.mezo.api.dto.LlmUsagePeriod;
@@ -7,19 +9,26 @@ import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageTotals;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmPricingProperties;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmCallRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmStatusRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUsageAggregate;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class LlmUsageService {
+
+    /** The list window's default and hard ceiling — mirrored by the contract's min/max/default. */
+    private static final int DEFAULT_LIMIT = 50;
+    private static final int MAX_LIMIT = 500;
 
     private final LlmLogRepository llmLogRepository;
     private final LlmLogProperties llmLogProperties;
@@ -73,6 +86,73 @@ public class LlmUsageService {
             .features(groups(llmLogRepository.aggregateByFeatureSince(since)))
             .models(groups(llmLogRepository.aggregateByModelSince(since)))
             .build();
+    }
+
+    /**
+     * The browsable audit list (mezo-uakh). {@code limit} is a GROWING WINDOW, not a page offset:
+     * the client raises it to see more, so every response is one consistent read from the top of
+     * the log and rows can neither duplicate nor be skipped as new calls arrive.
+     */
+    @Transactional(readOnly = true)
+    public LlmCallListResponse listCalls(String rawPeriod, String feature, String rawStatus,
+                                         String rawCallKind, Integer rawLimit) {
+        ZoneId zone = llmLogProperties.reportZone();
+        Instant since = UsagePeriod.parse(rawPeriod).startDate(zone).atStartOfDay(zone).toInstant();
+        int limit = Math.clamp(rawLimit == null ? DEFAULT_LIMIT : rawLimit, 1, MAX_LIMIT);
+
+        List<LlmCallRow> rows = llmLogRepository.findCalls(
+            since,
+            blankToNull(feature),
+            parseEnum(rawStatus, CallStatus::valueOf, "status"),
+            parseEnum(rawCallKind, CallKind::valueOf, "callKind"),
+            PageRequest.of(0, limit + 1));
+
+        boolean hasMore = rows.size() > limit;
+        return LlmCallListResponse.builder()
+            .items(rows.stream().limit(limit).map(this::toListItem).toList())
+            .hasMore(hasMore)
+            .build();
+    }
+
+    private LlmCallListItem toListItem(LlmCallRow row) {
+        return LlmCallListItem.builder()
+            .id(row.id())
+            .createdAt(row.createdAt().atOffset(ZoneOffset.UTC))
+            .feature(row.feature())
+            .operation(row.operation())
+            .callKind(LlmCallListItem.CallKindEnum.fromValue(row.callKind().name()))
+            .status(LlmCallListItem.StatusEnum.fromValue(row.status().name()))
+            .requestedModel(row.requestedModel())
+            .servedModel(row.servedModel())
+            .latencyMs(row.latencyMs())
+            .streamed(row.streamed())
+            .toolRounds(row.toolRounds())
+            .totalTokens(row.totalTokens())
+            .imageCount(row.imageCount())
+            .embedInputCount(row.embedInputCount())
+            .embedDimensions(row.embedDimensions())
+            .costUsd(toDouble(row.costUsd()))
+            .errorClass(row.errorClass())
+            .errorCode(row.errorCode())
+            .build();
+    }
+
+    /** An unknown filter value is a client error (400), not a 500 — see UsagePeriod's javadoc. */
+    private static <E> E parseEnum(String raw, Function<String, E> factory, String field) {
+        String value = blankToNull(raw);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return factory.apply(value);
+        } catch (IllegalArgumentException ex) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", field).build());
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /** Rolls up everything logged since the start of {@code from} — {@code atStartOfDay} is DST-safe. */

@@ -37,6 +37,45 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/llm-usage/calls:
+    get:
+      tags: [LlmUsage]
+      operationId: listLlmCalls
+      summary: Audited LLM calls of a period, newest first, without the payload (LlmUsage)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema: { type: string, pattern: '^(DAY|WEEK|MONTH)$' }
+        - name: feature
+          in: query
+          required: false
+          description: exact feature slug, e.g. companion_chat
+          schema: { type: string, maxLength: 100 }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, pattern: '^(SUCCESS|ERROR|CANCELLED)$' }
+        - name: callKind
+          in: query
+          required: false
+          schema: { type: string, pattern: '^(CHAT|CHAT_STREAM|VISION|SMART|TOOL|TRANSCRIBE|EMBED_DOC|EMBED_QUERY)$' }
+        - name: limit
+          in: query
+          required: false
+          description: growing window — the client raises it to load more (never an offset)
+          schema: { type: integer, format: int32, minimum: 1, maximum: 500, default: 50 }
+      responses:
+        '200':
+          description: The newest `limit` calls matching the filters
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LlmCallListResponse' }
+        '400':
+          description: Unknown period, status or call kind
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     LlmUsageSummaryResponse:
@@ -85,3 +124,37 @@ components:
         key: { type: string, nullable: true, description: "feature slug or served model id; null = unknown" }
         callCount: { type: integer, format: int64 }
         costUsd: { type: number, format: double, nullable: true }
+    LlmCallListResponse:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/LlmCallListItem' }
+        hasMore: { type: boolean, description: "true when the period holds more rows than the window shows" }
+    LlmCallListItem:
+      type: object
+      required: [id, createdAt, feature, callKind, status, requestedModel, latencyMs, streamed]
+      properties:
+        id: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        feature: { type: string }
+        operation: { type: string, nullable: true }
+        callKind:
+          type: string
+          enum: [CHAT, CHAT_STREAM, VISION, SMART, TOOL, TRANSCRIBE, EMBED_DOC, EMBED_QUERY]
+        status:
+          type: string
+          enum: [SUCCESS, ERROR, CANCELLED]
+        requestedModel: { type: string }
+        servedModel: { type: string, nullable: true }
+        latencyMs: { type: integer, format: int32 }
+        streamed: { type: boolean }
+        toolRounds: { type: integer, format: int32, nullable: true }
+        totalTokens: { type: integer, format: int32, nullable: true }
+        imageCount: { type: integer, format: int32, nullable: true }
+        embedInputCount: { type: integer, format: int32, nullable: true }
+        embedDimensions: { type: integer, format: int32, nullable: true }
+        costUsd: { type: number, format: double, nullable: true }
+        errorClass: { type: string, nullable: true }
+        errorCode: { type: string, nullable: true }

@@ -1,9 +1,12 @@
 package io.mrkuhne.mezo.feature.llmlog.repository;
 
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -67,4 +70,30 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         group by l.servedModel
         """)
     List<LlmGroupRow> aggregateByModelSince(@Param("since") Instant since);
+
+    /**
+     * The browsable list (mezo-uakh): newest first, metadata only, every filter optional via the
+     * {@code (:param is null or …)} idiom. No owner filter — same reason as the aggregates.
+     *
+     * <p>The caller asks for {@code limit + 1} rows: getting that many is how the service knows
+     * more exist, without paying for a second {@code count(*)} on every load-more.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmCallRow(
+            l.id, l.createdAt, l.feature, l.operation, l.callKind, l.status,
+            l.requestedModel, l.servedModel, l.latencyMs, l.streamed, l.toolRounds,
+            l.totalTokens, l.imageCount, l.embedInputCount, l.embedDimensions,
+            l.costUsd, l.errorClass, l.errorCode)
+        from LlmLogEntity l
+        where l.createdAt >= :since
+          and (:feature is null or l.feature = :feature)
+          and (:status is null or l.status = :status)
+          and (:callKind is null or l.callKind = :callKind)
+        order by l.createdAt desc
+        """)
+    List<LlmCallRow> findCalls(@Param("since") Instant since,
+                               @Param("feature") String feature,
+                               @Param("status") CallStatus status,
+                               @Param("callKind") CallKind callKind,
+                               Pageable pageable);
 }
