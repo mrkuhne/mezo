@@ -78,4 +78,49 @@ public class LlmLogPopulator {
             Timestamp.from(createdAt), entity.getId());
         return entity;
     }
+
+    /**
+     * Full-shape row for the list/filter tests (mezo-uakh): status, kind, feature and timestamp are
+     * all caller-chosen, and the payload columns are filled so a test can assert that the LIST
+     * response does not carry them. No pricing snapshot — see the overload below for a costed row.
+     */
+    public LlmLogEntity logCall(Instant createdAt, UUID createdBy, CallKind kind, CallStatus status,
+            String feature, String operation, String servedModel, BigDecimal costUsd) {
+        return logCall(createdAt, createdBy, kind, status, feature, operation, servedModel, null, costUsd);
+    }
+
+    /**
+     * Same full-shape row, plus an explicit frozen {@link PricingSnapshot} (mezo-uakh) — for detail-
+     * endpoint tests that must verify the snapshot round-trips field-by-field. A row with a cost but
+     * no snapshot does not occur in production ({@code LlmLogWriter} always sets both together), so
+     * a test asserting the priced path should use this overload, not the snapshot-less one above.
+     */
+    public LlmLogEntity logCall(Instant createdAt, UUID createdBy, CallKind kind, CallStatus status,
+            String feature, String operation, String servedModel, PricingSnapshot pricingSnapshot,
+            BigDecimal costUsd) {
+        LlmLogEntity entity = new LlmLogEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setCallKind(kind);
+        entity.setStatus(status);
+        entity.setFeature(feature);
+        entity.setOperation(operation);
+        entity.setRequestedModel(servedModel == null ? "gemini-2.5-flash" : servedModel);
+        entity.setServedModel(servedModel);
+        entity.setLatencyMs(120);
+        entity.setPromptTokens(100);
+        entity.setCandidatesTokens(20);
+        entity.setTotalTokens(120);
+        entity.setSystemPrompt("SYS");
+        entity.setUserMessage("USR");
+        entity.setResponseText("RSP");
+        entity.setPayloadBytes(9);
+        entity.setPricingSnapshot(pricingSnapshot);
+        entity.setCostUsd(costUsd);
+        LlmLogEntity saved = llmLogRepository.saveAndFlush(entity);
+        if (createdAt != null) {
+            jdbcTemplate.update("update llm_log_history set created_at = ? where id = ?",
+                Timestamp.from(createdAt), saved.getId());
+        }
+        return saved;
+    }
 }

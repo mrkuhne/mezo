@@ -1,8 +1,12 @@
 package io.mrkuhne.mezo.feature.llmlog.controller;
 
 import io.mrkuhne.mezo.api.controller.LlmUsageApi;
+import io.mrkuhne.mezo.api.dto.LlmCallDetailResponse;
+import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
+import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,5 +28,21 @@ public class LlmUsageController implements LlmUsageApi {
     @Override
     public LlmUsageSummaryResponse getLlmUsageSummary() {
         return service.summary();
+    }
+
+    @Override
+    public LlmUsageBreakdownResponse getLlmUsageBreakdown(String period) {
+        return service.breakdown(period);
+    }
+
+    @Override
+    public LlmCallListResponse listLlmCalls(String period, String feature, String status,
+                                            String callKind, Integer limit) {
+        return service.listCalls(period, feature, status, callKind, limit);
+    }
+
+    @Override
+    public LlmCallDetailResponse getLlmCall(UUID id) {
+        return service.call(id);
     }
 }

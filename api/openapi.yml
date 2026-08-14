@@ -5842,6 +5842,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LlmUsageSummaryResponse'
+  /api/llm-usage/breakdown:
+    get:
+      tags:
+        - LlmUsage
+      operationId: getLlmUsageBreakdown
+      summary: >-
+        LLM call + cost breakdown by feature and served model for one calendar
+        period (LlmUsage)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: >-
+            Calendar period in mezo.llm-log.report-zone (DAY = today, WEEK =
+            from Monday, MONTH = from the 1st)
+          schema:
+            type: string
+            pattern: ^(DAY|WEEK|MONTH)$
+      responses:
+        '200':
+          description: 'Totals plus the feature and model rollups, cost-descending'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LlmUsageBreakdownResponse'
+        '400':
+          description: Unknown period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/llm-usage/calls:
+    get:
+      tags:
+        - LlmUsage
+      operationId: listLlmCalls
+      summary: >-
+        Audited LLM calls of a period, newest first, without the payload
+        (LlmUsage)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^(DAY|WEEK|MONTH)$
+        - name: feature
+          in: query
+          required: false
+          description: 'exact feature slug, e.g. companion_chat'
+          schema:
+            type: string
+            maxLength: 100
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^(SUCCESS|ERROR|CANCELLED)$
+        - name: callKind
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: >-
+              ^(CHAT|CHAT_STREAM|VISION|SMART|TOOL|TRANSCRIBE|EMBED_DOC|EMBED_QUERY)$
+        - name: limit
+          in: query
+          required: false
+          description: growing window — the client raises it to load more (never an offset)
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 500
+            default: 50
+      responses:
+        '200':
+          description: The newest `limit` calls matching the filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LlmCallListResponse'
+        '400':
+          description: 'Unknown period, status or call kind'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/llm-usage/calls/{id}':
+    get:
+      tags:
+        - LlmUsage
+      operationId: getLlmCall
+      summary: >-
+        One audited LLM call with its verbatim payload and frozen price snapshot
+        (LlmUsage)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The full audit row
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LlmCallDetailResponse'
+        '404':
+          description: No such call
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -13232,3 +13349,353 @@ components:
         currency:
           type: string
           example: USD
+    LlmUsageBreakdownResponse:
+      type: object
+      required:
+        - from
+        - totals
+        - features
+        - models
+      properties:
+        from:
+          type: string
+          format: date
+          description: first day of the period in the report zone
+        totals:
+          $ref: '#/components/schemas/LlmUsageTotals'
+        features:
+          type: array
+          description: 'one entry per feature slug, cost-descending (unpriced last)'
+          items:
+            $ref: '#/components/schemas/LlmUsageGroup'
+        models:
+          type: array
+          description: >-
+            one entry per SERVED model; key is null for calls that never reached
+            one
+          items:
+            $ref: '#/components/schemas/LlmUsageGroup'
+    LlmUsageTotals:
+      type: object
+      required:
+        - callCount
+        - successCount
+        - errorCount
+        - cancelledCount
+        - unpricedCount
+        - currency
+      properties:
+        callCount:
+          type: integer
+          format: int64
+          description: 'every audited call in the period, all statuses'
+        successCount:
+          type: integer
+          format: int64
+        errorCount:
+          type: integer
+          format: int64
+        cancelledCount:
+          type: integer
+          format: int64
+        unpricedCount:
+          type: integer
+          format: int64
+          description: rows with a null cost_usd — why the sum is an estimate
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: summed cost of the PRICED rows; null when none is priced
+        currency:
+          type: string
+          example: USD
+    LlmUsageGroup:
+      type: object
+      required:
+        - callCount
+      properties:
+        key:
+          type: string
+          nullable: true
+          description: feature slug or served model id; null = unknown
+        callCount:
+          type: integer
+          format: int64
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+    LlmCallListResponse:
+      type: object
+      required:
+        - items
+        - hasMore
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LlmCallListItem'
+        hasMore:
+          type: boolean
+          description: true when the period holds more rows than the window shows
+    LlmCallListItem:
+      type: object
+      required:
+        - id
+        - createdAt
+        - feature
+        - callKind
+        - status
+        - requestedModel
+        - latencyMs
+        - streamed
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        feature:
+          type: string
+        operation:
+          type: string
+          nullable: true
+        callKind:
+          type: string
+          enum:
+            - CHAT
+            - CHAT_STREAM
+            - VISION
+            - SMART
+            - TOOL
+            - TRANSCRIBE
+            - EMBED_DOC
+            - EMBED_QUERY
+        status:
+          type: string
+          enum:
+            - SUCCESS
+            - ERROR
+            - CANCELLED
+        requestedModel:
+          type: string
+        servedModel:
+          type: string
+          nullable: true
+        latencyMs:
+          type: integer
+          format: int32
+        streamed:
+          type: boolean
+        toolRounds:
+          type: integer
+          format: int32
+          nullable: true
+        totalTokens:
+          type: integer
+          format: int32
+          nullable: true
+        imageCount:
+          type: integer
+          format: int32
+          nullable: true
+        embedInputCount:
+          type: integer
+          format: int32
+          nullable: true
+        embedDimensions:
+          type: integer
+          format: int32
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+        errorClass:
+          type: string
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+    LlmCallDetailResponse:
+      type: object
+      required:
+        - id
+        - createdAt
+        - feature
+        - callKind
+        - status
+        - requestedModel
+        - latencyMs
+        - streamed
+        - truncated
+        - payloadBytes
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: null for cron/stream calls — no security context on that thread
+        feature:
+          type: string
+        operation:
+          type: string
+          nullable: true
+        entityKind:
+          type: string
+          nullable: true
+        entityId:
+          type: string
+          format: uuid
+          nullable: true
+        callKind:
+          type: string
+          enum:
+            - CHAT
+            - CHAT_STREAM
+            - VISION
+            - SMART
+            - TOOL
+            - TRANSCRIBE
+            - EMBED_DOC
+            - EMBED_QUERY
+        status:
+          type: string
+          enum:
+            - SUCCESS
+            - ERROR
+            - CANCELLED
+        requestedModel:
+          type: string
+        servedModel:
+          type: string
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+        errorClass:
+          type: string
+          nullable: true
+        latencyMs:
+          type: integer
+          format: int32
+        streamed:
+          type: boolean
+        toolRounds:
+          type: integer
+          format: int32
+          nullable: true
+        serviceTier:
+          type: string
+          nullable: true
+        promptTokens:
+          type: integer
+          format: int32
+          nullable: true
+          description: RAW provider count — INCLUDES cachedTokens
+        candidatesTokens:
+          type: integer
+          format: int32
+          nullable: true
+        thoughtsTokens:
+          type: integer
+          format: int32
+          nullable: true
+        cachedTokens:
+          type: integer
+          format: int32
+          nullable: true
+        totalTokens:
+          type: integer
+          format: int32
+          nullable: true
+        embedInputCount:
+          type: integer
+          format: int32
+          nullable: true
+        embedDimensions:
+          type: integer
+          format: int32
+          nullable: true
+        embedBillableChars:
+          type: integer
+          format: int32
+          nullable: true
+        imageCount:
+          type: integer
+          format: int32
+          nullable: true
+        imageBytesTotal:
+          type: integer
+          format: int64
+          nullable: true
+        imageMime:
+          type: string
+          nullable: true
+        systemPrompt:
+          type: string
+          nullable: true
+        userMessage:
+          type: string
+          nullable: true
+        responseText:
+          type: string
+          nullable: true
+        truncated:
+          type: boolean
+          description: a payload column was cut to mezo.llm-log.max-payload-chars
+        payloadBytes:
+          type: integer
+          format: int32
+          description: TRUE pre-truncation payload size in bytes
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+        pricingSnapshot:
+          $ref: '#/components/schemas/LlmPricingSnapshot'
+    LlmPricingSnapshot:
+      type: object
+      nullable: true
+      description: >-
+        Unit prices FROZEN onto the call at write time — the cost was derived
+        from these, not from live config
+      properties:
+        sourceModel:
+          type: string
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        inputPerMillion:
+          type: number
+          format: double
+          nullable: true
+        outputPerMillion:
+          type: number
+          format: double
+          nullable: true
+        thinkingPerMillion:
+          type: number
+          format: double
+          nullable: true
+        cachedPerMillion:
+          type: number
+          format: double
+          nullable: true
+        embedPerMillionChars:
+          type: number
+          format: double
+          nullable: true
+        pricedOn:
+          type: string
+          format: date
+          nullable: true
