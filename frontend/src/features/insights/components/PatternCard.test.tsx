@@ -20,6 +20,7 @@ test('a statistical row renders "tanulom" and evidence chips instead of critique
     <PatternCard
       pattern={{
         id: 's1',
+        pairKey: 'sleep-quality~next-day-training-rpe',
         category: 'physiology',
         categoryLabel: 'Fiziológia',
         title: 'Alvásminőség ↔ másnapi edzés-RPE',

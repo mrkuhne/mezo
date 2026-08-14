@@ -640,6 +640,8 @@ export interface PatternCritique {
 }
 export interface Pattern {
   id: string
+  /** A minta stabil pár-kulcsa — a Motor↔Patterns kereszt-link horgonya (mezo-18bx). */
+  pairKey: string
   category: PatternCategory
   categoryLabel: string
   /** undefined on statistical rows — honest small-n, renders as "tanulom" (V3.1). */
@@ -656,6 +658,9 @@ export interface Pattern {
 
 export type PatternGateVerdict = 'live' | 'few_days' | 'no_data' | 'degenerate' | 'frozen'
 
+/** A metrikák élet-domén besorolása — a Motor tab csoportosítási kulcsa (mezo-18bx). */
+export type MetricDomain = 'sleep' | 'train' | 'fuel' | 'mind' | 'body' | 'other'
+
 export interface PatternMonitorPair {
   key: string
   title: string
@@ -666,6 +671,11 @@ export interface PatternMonitorPair {
   metricALabel: string
   metricBKey: string
   metricBLabel: string
+  /** Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
+  mechanismHu: string
+  metricADomain: MetricDomain
+  /** A kimenet doménje — a Motor tab elsődleges csoportja. */
+  metricBDomain: MetricDomain
   verdict: PatternGateVerdict
   alignedDays: number
   missingDays: number | null
@@ -679,6 +689,9 @@ export interface PatternMonitorPair {
 export interface PatternMetricCoverage {
   key: string
   label: string
+  /** Honnan jön az adat — gyűjtő-felület vagy derivált-magyarázat (mezo-18bx). */
+  sourceHu: string
+  domain: MetricDomain
   coveredDays: number
   windowDays: number
   lastDayWithData: string | null
