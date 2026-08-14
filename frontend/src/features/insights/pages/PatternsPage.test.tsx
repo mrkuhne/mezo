@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -30,6 +30,23 @@ describe('PatternsPage (mock mode)', () => {
     renderPage()
     expect(screen.getByText('Reta beadás + 36h ablakban étvágy lefulladás')).toBeInTheDocument()
     expect(screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc')).toBeInTheDocument()
+  })
+
+  test('highlights the ?pair= match and renders the motor back-link on every card', () => {
+    render(
+      <MemoryRouter initialEntries={['/insights/patterns?pair=late-meal~next-sleep-quality']}>
+        <PatternsPage />
+      </MemoryRouter>,
+      { wrapper: QueryWrapper },
+    )
+    const cards = screen.getAllByTestId('pattern-card')
+    const highlighted = cards.filter((c) => c.getAttribute('data-highlighted') === 'true')
+    expect(highlighted).toHaveLength(1)
+    expect(within(highlighted[0]).getByText('Késő szénhidrát (>20:00 · >60g) → másnap reggeli RPE +1')).toBeInTheDocument()
+    expect(within(highlighted[0]).getByRole('link', { name: /Motor-diagnosztika/ })).toHaveAttribute(
+      'href',
+      '/insights/motor',
+    )
   })
 })
 
