@@ -1,19 +1,31 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { emitToast, isRewardToast, onToast, type ToastKind, type ToastMessage } from '@/shared/lib/toastBus'
+import {
+  createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode,
+} from 'react'
+import { emitToast, isRewardToast, onToast, type ToastMessage } from '@/shared/lib/toastBus'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 
 // Single global toast host (mounted once in AppLayout) + the useToast() imperative API.
-// Components call useToast().show(...); non-React code (mutation cache) emits via the
-// toastBus directly. One toast at a time — a new one replaces the current, auto-hides
-// after AUTO_HIDE_MS. Purpose-built confirmations (FuelStackPage protocol card, MedalToast)
-// stay feature-local by design; this host is for generic error/success/info feedback.
+// Components call useToast().show(...); non-React code (mutation cache, the mock award
+// helpers) emits via the toastBus directly.
+//
+// Since mezo-k5sa this host STACKS (DS §Notification): toasts queue instead of replacing
+// each other — the chain-completion celebration no longer wipes the last check's feedback.
+// Max 3 are visible; older ones scale down and fade (CSS, keyed off data-idx). The queue
+// itself caps at 20, oldest dropped on overflow.
+// Purpose-built confirmations (FuelStackPage protocol card, MedalToast) stay feature-local
+// by design; this host is for generic error/success/info feedback plus reward toasts.
 
-const AUTO_HIDE_MS = 3200
-
-const KIND_BG: Record<ToastKind, string> = {
-  error: 'var(--error)',
-  success: 'var(--success)',
-  info: 'var(--coral)',
+const AUTO_HIDE_MS: Record<string, number> = {
+  reward: 4000,
+  error: 6000,   // more time to read a failure
+  success: 4000,
+  info: 4000,
 }
+const EXIT_MS = 500       // keep the node mounted while the exit transition plays
+const MAX_VISIBLE = 3
+const QUEUE_CAP = 20
+
+type Entry = { id: number; toast: ToastMessage; leaving: boolean }
 
 const ToastContext = createContext<{ show: (t: ToastMessage) => void }>({
   // Provider-less fallback (isolated tests): route through the bus, render nothing.
@@ -25,42 +37,74 @@ export function useToast() {
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toast, setToast] = useState<ToastMessage | null>(null)
-  const [nonce, setNonce] = useState(0)
+  const [entries, setEntries] = useState<Entry[]>([])   // newest first
+  const nextId = useRef(0)
+  const reduced = useReducedMotion()
+
+  // Every pending timer is tracked so unmount can clear them — a toast whose auto-hide
+  // fires after the host is gone would setState on an unmounted tree.
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>())
+  const later = useCallback((fn: () => void, ms: number) => {
+    const t = setTimeout(() => { timers.current.delete(t); fn() }, ms)
+    timers.current.add(t)
+  }, [])
+
+  const dismiss = useCallback((id: number) => {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, leaving: true } : e)))
+    later(() => setEntries((prev) => prev.filter((e) => e.id !== id)), EXIT_MS)
+  }, [later])
 
   useEffect(
     () =>
-      onToast((t) => {
-        setToast(t)
-        setNonce((n) => n + 1) // restart the auto-hide timer on replacement
+      onToast((toast) => {
+        const id = nextId.current
+        nextId.current += 1
+        setEntries((prev) => [{ id, toast, leaving: false }, ...prev].slice(0, QUEUE_CAP))
+        later(() => dismiss(id), AUTO_HIDE_MS[toast.kind] ?? 4000)
       }),
-    [],
+    [dismiss, later],
   )
 
   useEffect(() => {
-    if (!toast) return
-    const id = setTimeout(() => setToast(null), AUTO_HIDE_MS)
-    return () => clearTimeout(id)
-  }, [toast, nonce])
+    const pending = timers.current
+    return () => { pending.forEach(clearTimeout); pending.clear() }
+  }, [])
 
   const show = useCallback((t: ToastMessage) => emitToast(t), [])
 
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      {toast && !isRewardToast(toast) && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="toast rad-20"
-          data-kind={toast.kind}
-          style={{ background: KIND_BG[toast.kind] }}
-        >
-          {/* DS caption floor: 14px for sentence-case feedback text */}
-          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.text}</span>
+      {entries.length > 0 && (
+        <div className="toast-stack" role="status" aria-live="polite">
+          {entries.map((e, idx) => (
+            <div
+              key={e.id}
+              data-testid="toast-item"
+              data-kind={e.toast.kind}
+              data-idx={idx < MAX_VISIBLE ? String(idx) : 'hidden'}
+              className={`toast${e.leaving ? ' is-leaving' : ''}${reduced ? ' is-reduced' : ''}`}
+            >
+              <button
+                type="button"
+                className="t-close"
+                aria-label="Bezárás"
+                onClick={() => dismiss(e.id)}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+              <div className="t-pad">
+                {isRewardToast(e.toast)
+                  ? <span className="t-simple-text">{e.toast.title}</span>
+                  : <span className="t-simple-text">{e.toast.text}</span>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
-      {/* TODO(mezo-k5sa, Task 3): render the reward variant — ToastProvider is replaced wholesale then. */}
     </ToastContext.Provider>
   )
 }
