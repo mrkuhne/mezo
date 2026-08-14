@@ -42,7 +42,10 @@ export function AiCallDetailPage() {
       <div className="card" style={{ padding: '13px 14px' }}>
         <div className="row" style={{ gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: '2px 6px', background: 'var(--surface-2)' }}>
-            {callKindLabel(data.callKind)}{data.toolRounds ? ` ×${data.toolRounds}` : ''}
+            {/* Nullish, not truthy: toolRounds: 0 is a KNOWN value (tools were available, the model
+                invoked none) — distinct from null (no tool round ever tallied). Same distinction the
+                grid's own "Tool-körök" cell below and AiCallRow.tsx already make (mezo-58ig). */}
+            {callKindLabel(data.callKind)}{data.toolRounds != null ? ` ×${data.toolRounds}` : ''}
           </span>
           <span style={{ fontSize: 9, fontWeight: 800 }}>{data.status}</span>
         </div>
@@ -56,18 +59,18 @@ export function AiCallDetailPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--surface-2)', borderRadius: 12, overflow: 'hidden', marginTop: 11 }}>
           <Cell label="Kért modell" value={data.requestedModel} />
           <Cell label="Kiszolgált" value={data.servedModel ?? '—'} />
-          <Cell label="Latency" value={formatLatency(data.latencyMs)} />
+          <Cell label="Válaszidő" value={formatLatency(data.latencyMs)} />
           <Cell label="Tool-körök" value={data.toolRounds != null ? String(data.toolRounds) : '—'} />
           {/* A cron/stream call has no security context on its thread — say so, don't leave it blank. */}
           <Cell label="Hívó" value={data.createdBy ? 'te' : 'háttérfolyamat'} />
-          <Cell label="Service tier" value={data.serviceTier ?? '—'} />
+          <Cell label="Szolgáltatási szint" value={data.serviceTier ?? '—'} />
         </div>
       </div>
 
       <div className="card" style={{ padding: '11px 13px 12px' }}>
         <div className="row" style={{ alignItems: 'baseline' }}>
           <span className="eyebrow" style={{ flex: 1 }}>Tokenek</span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--sage-deep)' }}>{formatCost(data.costUsd)}</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: data.costUsd == null ? 'var(--text-tertiary)' : 'var(--sage-deep)' }}>{formatCost(data.costUsd)}</span>
         </div>
         <AiTokenBar detail={data} />
       </div>
@@ -88,7 +91,7 @@ export function AiCallDetailPage() {
       )}
 
       <div className="card" style={{ padding: '4px 13px 14px' }}>
-        <AiPayloadBlock label="System prompt" text={data.systemPrompt} />
+        <AiPayloadBlock label="Rendszerprompt" text={data.systemPrompt} />
         <AiPayloadBlock label="User üzenet" text={data.userMessage} />
         <AiPayloadBlock label="Válasz" text={data.responseText} />
         {data.truncated && (

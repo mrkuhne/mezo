@@ -54,7 +54,7 @@ describe('AiCallDetailPage (mock mode)', () => {
 
   it('renders the three payload blocks', () => {
     renderDetail()
-    expect(screen.getByText('System prompt')).toBeInTheDocument()
+    expect(screen.getByText('Rendszerprompt')).toBeInTheDocument()
     expect(screen.getByText('User üzenet')).toBeInTheDocument()
     expect(screen.getByText('Válasz')).toBeInTheDocument()
     expect(screen.getByText(/rizses csirkét/)).toBeInTheDocument()
@@ -75,6 +75,20 @@ describe('AiCallDetailPage (real mode edge cases)', () => {
     )
     renderDetail(id)
     await waitFor(() => expect(screen.getByText('háttérfolyamat')).toBeInTheDocument())
+  })
+
+  it('distinguishes a known zero tool-round count from an unknown one in the kind badge', async () => {
+    // toolRounds: 0 is a real, KNOWN value (tools were available, the model invoked none) — not
+    // the same as null (no tool round ever tallied). The grid's "Tool-körök" cell already gets this
+    // right (`!= null`); the kind badge above it must agree, or the page contradicts itself.
+    const id = '77777777-7777-4777-7777-777777777777'
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/calls/${id}`, () =>
+        HttpResponse.json({ ...LLM_CALL_DETAIL_MOCK, id, toolRounds: 0 }),
+      ),
+    )
+    renderDetail(id)
+    await waitFor(() => expect(screen.getByText('TOOL ×0')).toBeInTheDocument())
   })
 
   it('explains a call with no reported token usage instead of an empty or NaN bar', async () => {
