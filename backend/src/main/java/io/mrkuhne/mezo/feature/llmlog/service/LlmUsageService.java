@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.llmlog.service;
 
+import io.mrkuhne.mezo.api.dto.LlmCallDetailResponse;
 import io.mrkuhne.mezo.api.dto.LlmCallListItem;
 import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmPricingProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
+import io.mrkuhne.mezo.feature.llmlog.mapper.LlmLogMapper;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmCallRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
@@ -26,9 +28,11 @@ import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +58,7 @@ public class LlmUsageService {
     private final LlmLogRepository llmLogRepository;
     private final LlmLogProperties llmLogProperties;
     private final LlmPricingProperties llmPricingProperties;
+    private final LlmLogMapper llmLogMapper;
 
     /**
      * Read-only transaction so the three period aggregates share ONE snapshot: without it a call
@@ -112,6 +117,19 @@ public class LlmUsageService {
             .items(rows.stream().limit(limit).map(this::toListItem).toList())
             .hasMore(hasMore)
             .build();
+    }
+
+    /**
+     * One audited call in full (mezo-uakh) — the only read that returns the verbatim payload.
+     * No ownership check: the log has rows with no owner at all (cron/stream), and this is a
+     * single-user app behind JWT (ADR 0014).
+     */
+    @Transactional(readOnly = true)
+    public LlmCallDetailResponse call(UUID id) {
+        return llmLogRepository.findById(id)
+            .map(llmLogMapper::toDetail)
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("LLM_LOG_CALL_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
     }
 
     private LlmCallListItem toListItem(LlmCallRow row) {

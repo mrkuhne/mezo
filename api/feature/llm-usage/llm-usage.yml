@@ -76,6 +76,27 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/llm-usage/calls/{id}:
+    get:
+      tags: [LlmUsage]
+      operationId: getLlmCall
+      summary: One audited LLM call with its verbatim payload and frozen price snapshot (LlmUsage)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The full audit row
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LlmCallDetailResponse' }
+        '404':
+          description: No such call
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     LlmUsageSummaryResponse:
@@ -158,3 +179,59 @@ components:
         costUsd: { type: number, format: double, nullable: true }
         errorClass: { type: string, nullable: true }
         errorCode: { type: string, nullable: true }
+    LlmCallDetailResponse:
+      type: object
+      required: [id, createdAt, feature, callKind, status, requestedModel, latencyMs, streamed, truncated, payloadBytes]
+      properties:
+        id: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string, format: uuid, nullable: true, description: "null for cron/stream calls — no security context on that thread" }
+        feature: { type: string }
+        operation: { type: string, nullable: true }
+        entityKind: { type: string, nullable: true }
+        entityId: { type: string, format: uuid, nullable: true }
+        callKind:
+          type: string
+          enum: [CHAT, CHAT_STREAM, VISION, SMART, TOOL, TRANSCRIBE, EMBED_DOC, EMBED_QUERY]
+        status:
+          type: string
+          enum: [SUCCESS, ERROR, CANCELLED]
+        requestedModel: { type: string }
+        servedModel: { type: string, nullable: true }
+        errorCode: { type: string, nullable: true }
+        errorClass: { type: string, nullable: true }
+        latencyMs: { type: integer, format: int32 }
+        streamed: { type: boolean }
+        toolRounds: { type: integer, format: int32, nullable: true }
+        serviceTier: { type: string, nullable: true }
+        promptTokens: { type: integer, format: int32, nullable: true, description: "RAW provider count — INCLUDES cachedTokens" }
+        candidatesTokens: { type: integer, format: int32, nullable: true }
+        thoughtsTokens: { type: integer, format: int32, nullable: true }
+        cachedTokens: { type: integer, format: int32, nullable: true }
+        totalTokens: { type: integer, format: int32, nullable: true }
+        embedInputCount: { type: integer, format: int32, nullable: true }
+        embedDimensions: { type: integer, format: int32, nullable: true }
+        embedBillableChars: { type: integer, format: int32, nullable: true }
+        imageCount: { type: integer, format: int32, nullable: true }
+        imageBytesTotal: { type: integer, format: int64, nullable: true }
+        imageMime: { type: string, nullable: true }
+        systemPrompt: { type: string, nullable: true }
+        userMessage: { type: string, nullable: true }
+        responseText: { type: string, nullable: true }
+        truncated: { type: boolean, description: "a payload column was cut to mezo.llm-log.max-payload-chars" }
+        payloadBytes: { type: integer, format: int32, description: "TRUE pre-truncation payload size in bytes" }
+        costUsd: { type: number, format: double, nullable: true }
+        pricingSnapshot: { $ref: '#/components/schemas/LlmPricingSnapshot' }
+    LlmPricingSnapshot:
+      type: object
+      nullable: true
+      description: Unit prices FROZEN onto the call at write time — the cost was derived from these, not from live config
+      properties:
+        sourceModel: { type: string, nullable: true }
+        currency: { type: string, nullable: true }
+        inputPerMillion: { type: number, format: double, nullable: true }
+        outputPerMillion: { type: number, format: double, nullable: true }
+        thinkingPerMillion: { type: number, format: double, nullable: true }
+        cachedPerMillion: { type: number, format: double, nullable: true }
+        embedPerMillionChars: { type: number, format: double, nullable: true }
+        pricedOn: { type: string, format: date, nullable: true }
