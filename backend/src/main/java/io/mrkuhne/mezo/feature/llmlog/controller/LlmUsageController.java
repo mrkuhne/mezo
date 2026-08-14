@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.llmlog.controller;
 
 import io.mrkuhne.mezo.api.controller.LlmUsageApi;
+import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,10 @@ public class LlmUsageController implements LlmUsageApi {
     @Override
     public LlmUsageSummaryResponse getLlmUsageSummary() {
         return service.summary();
+    }
+
+    @Override
+    public LlmUsageBreakdownResponse getLlmUsageBreakdown(String period) {
+        return service.breakdown(period);
     }
 }

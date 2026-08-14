@@ -15,6 +15,28 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/LlmUsageSummaryResponse' }
+  /api/llm-usage/breakdown:
+    get:
+      tags: [LlmUsage]
+      operationId: getLlmUsageBreakdown
+      summary: LLM call + cost breakdown by feature and served model for one calendar period (LlmUsage)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: Calendar period in mezo.llm-log.report-zone (DAY = today, WEEK = from Monday, MONTH = from the 1st)
+          schema: { type: string, pattern: '^(DAY|WEEK|MONTH)$' }
+      responses:
+        '200':
+          description: Totals plus the feature and model rollups, cost-descending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LlmUsageBreakdownResponse' }
+        '400':
+          description: Unknown period
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     LlmUsageSummaryResponse:
@@ -31,3 +53,35 @@ components:
         callCount: { type: integer, format: int64, description: "number of LLM calls in the period (all statuses)" }
         costUsd: { type: number, format: double, nullable: true, description: "summed cost_usd of priced rows; null-cost rows (unpriced/no-usage/error) are excluded, so this is an estimate" }
         currency: { type: string, example: USD }
+    LlmUsageBreakdownResponse:
+      type: object
+      required: [from, totals, features, models]
+      properties:
+        from: { type: string, format: date, description: "first day of the period in the report zone" }
+        totals: { $ref: '#/components/schemas/LlmUsageTotals' }
+        features:
+          type: array
+          description: "one entry per feature slug, cost-descending (unpriced last)"
+          items: { $ref: '#/components/schemas/LlmUsageGroup' }
+        models:
+          type: array
+          description: "one entry per SERVED model; key is null for calls that never reached one"
+          items: { $ref: '#/components/schemas/LlmUsageGroup' }
+    LlmUsageTotals:
+      type: object
+      required: [callCount, successCount, errorCount, cancelledCount, unpricedCount, currency]
+      properties:
+        callCount: { type: integer, format: int64, description: "every audited call in the period, all statuses" }
+        successCount: { type: integer, format: int64 }
+        errorCount: { type: integer, format: int64 }
+        cancelledCount: { type: integer, format: int64 }
+        unpricedCount: { type: integer, format: int64, description: "rows with a null cost_usd — why the sum is an estimate" }
+        costUsd: { type: number, format: double, nullable: true, description: "summed cost of the PRICED rows; null when none is priced" }
+        currency: { type: string, example: USD }
+    LlmUsageGroup:
+      type: object
+      required: [callCount]
+      properties:
+        key: { type: string, nullable: true, description: "feature slug or served model id; null = unknown" }
+        callCount: { type: integer, format: int64 }
+        costUsd: { type: number, format: double, nullable: true }
