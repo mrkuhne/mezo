@@ -84,8 +84,9 @@ A státusz-chip szűrő a domén-szekciók TARTALMÁT szűri (üresre szűrt sze
   - `PatternMetricCoverage` += `sourceHu` (string), `domain` (string enum, wire: kisbetűs);
   - `PatternMonitorPair` += `mechanismHu` (string), `metricADomain`, `metricBDomain` (string enum).
   - A `PatternMonitorService` csak áttölti az enum/config értékeket — új számítás nincs.
-- **Patterns kereszt-link:** semmi új adat — a `PatternResponse` már hordozza a `pairKey`-t;
-  a FE query-parammal görget. A fordított link statikus route.
+- **Patterns kereszt-link:** a `PatternResponse` += `pairKey` (string — az entitás mindkét
+  kindnál hordozza; additív, a MapStruct név-egyezésre automatikusan mappeli); a FE
+  query-parammal görget. A fordított link statikus route.
 
 ## 5. Frontend
 
