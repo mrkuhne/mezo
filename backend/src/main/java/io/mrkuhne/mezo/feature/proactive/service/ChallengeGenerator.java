@@ -246,6 +246,7 @@ public class ChallengeGenerator {
         e.setWhy(p.why().strip());
         e.setGlory(p.glory().strip());
         e.setConfidence(resolveConfidence(p.patternIndex(), gather.patterns()));
+        e.setSourcePatternId(resolveSourcePatternId(p.patternIndex(), gather.patterns()));
         e.setRefs(resolveRefs(p.refIndexes(), gather.refCandidates()));
         e.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return e;
@@ -260,6 +261,14 @@ public class ChallengeGenerator {
             return null;
         }
         return patterns.get(index).getConfidence();
+    }
+
+    /** S2 (mezo-tk88.2): same index resolution as resolveConfidence — the grounding made queryable. */
+    private UUID resolveSourcePatternId(Integer index, List<PatternEntity> patterns) {
+        if (index == null || index < 0 || index >= patterns.size()) {
+            return null;
+        }
+        return patterns.get(index).getId();
     }
 
     private ChallengeRefsEnvelope resolveRefs(List<Integer> indexes, List<ChallengeRefsEnvelope.Ref> candidates) {

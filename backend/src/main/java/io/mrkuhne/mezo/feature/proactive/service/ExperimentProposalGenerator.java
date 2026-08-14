@@ -125,6 +125,7 @@ public class ExperimentProposalGenerator {
             e.setMetricKey(p.metricKey());
             e.setExpectedDirection(p.expectedDirection());
             e.setTotalDays(clampDays(p.totalDays()));
+            e.setSourcePatternId(resolveSourcePatternId(p.patternIndex(), gather.candidates()));
             e.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
             saved.add(experimentRepository.saveAndFlush(e));
         }
@@ -157,6 +158,14 @@ public class ExperimentProposalGenerator {
                 .append(PredictionEntity.DIRECTION_DOWN).append(" | ")
                 .append(PredictionEntity.DIRECTION_STABLE);
         return new Gather(payload.toString(), confirmed);
+    }
+
+    /** S2 (mezo-tk88.2): same index resolution as resolveConfidence — the grounding made queryable. */
+    private UUID resolveSourcePatternId(Integer index, List<PatternEntity> candidates) {
+        if (index == null || index < 0 || index >= candidates.size()) {
+            return null;
+        }
+        return candidates.get(index).getId();
     }
 
     /** Clamp the model's window to [min-days, max-days]; null/absent ⇒ min-days. */

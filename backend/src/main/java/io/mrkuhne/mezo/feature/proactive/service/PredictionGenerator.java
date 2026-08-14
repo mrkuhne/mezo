@@ -120,6 +120,7 @@ public class PredictionGenerator {
             e.setTitle(p.title().strip());
             e.setBasis(p.basis().strip());
             e.setConfidence(resolveConfidence(p.patternIndex(), gather.candidates()));
+            e.setSourcePatternId(resolveSourcePatternId(p.patternIndex(), gather.candidates()));
             e.setMetricKey(p.metricKey());
             e.setExpectedDirection(p.expectedDirection());
             e.setValidFrom(weekStart);
@@ -166,6 +167,14 @@ public class PredictionGenerator {
             return null;
         }
         return candidates.get(index).getConfidence();
+    }
+
+    /** S2 (mezo-tk88.2): same index resolution as resolveConfidence — the grounding made queryable. */
+    private UUID resolveSourcePatternId(Integer index, List<PatternEntity> candidates) {
+        if (index == null || index < 0 || index >= candidates.size()) {
+            return null;
+        }
+        return candidates.get(index).getId();
     }
 
     private ParsedPredictions parse(String answer) {

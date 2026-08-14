@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.service.ChallengeGenerator;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
@@ -41,6 +43,9 @@ class ChallengeGeneratorIT extends AbstractIntegrationTest {
 
     @Autowired
     private CheckInPopulator checkInPopulator;
+
+    @Autowired
+    private PatternPopulator patternPopulator;
 
     @Autowired
     private io.mrkuhne.mezo.feature.train.service.TrainService trainService;
@@ -96,6 +101,26 @@ class ChallengeGeneratorIT extends AbstractIntegrationTest {
         assertThat(c.getWhy()).isEqualTo("Húzd meg a PR-t.");
         assertThat(c.getRefs().refs()).hasSize(1);
         assertThat(c.getConfidence()).isNull();   // patternIndex null — never fabricated
+        assertThat(c.getSourcePatternId()).isNull();
+    }
+
+    @Test
+    void testGenerate_shouldGroundSourcePatternId_whenPatternIndexValid() {
+        UUID user = userPopulator.createUser("chg-pattern@test.local").getId();
+        WorkoutSessionEntity session = templateSession(user);
+        seedTemplateWithHistory(user, session);
+        PatternEntity confirmedPattern =
+                patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
+        checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
+                "[fake-challenge:{\"challenges\":[{\"exerciseIndex\":0,\"type\":\"PR\","
+                        + "\"targetWeightKg\":90.0,\"targetReps\":6,\"risk\":\"low\","
+                        + "\"why\":\"Húzd meg a PR-t.\",\"glory\":\"Dicsőség.\","
+                        + "\"refIndexes\":[0],\"patternIndex\":0}]}]");
+
+        List<ChallengeEntity> saved = generator.generate(user, session.getId(), LocalDate.now());
+
+        assertThat(saved).hasSize(1);
+        assertThat(saved.getFirst().getSourcePatternId()).isEqualTo(confirmedPattern.getId());
     }
 
     @Test
