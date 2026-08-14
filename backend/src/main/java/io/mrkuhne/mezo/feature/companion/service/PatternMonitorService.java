@@ -112,7 +112,10 @@ public class PatternMonitorService {
                 .metricAKey(pair.metricA().wireKey())
                 .metricALabel(pair.metricA().labelHu())
                 .metricBKey(pair.metricB().wireKey())
-                .metricBLabel(pair.metricB().labelHu());
+                .metricBLabel(pair.metricB().labelHu())
+                .mechanismHu(pair.mechanism())
+                .metricADomain(pair.metricA().domain().wireKey())
+                .metricBDomain(pair.metricB().domain().wireKey());
 
         if (row != null && FROZEN_STATUSES.contains(row.getStatus())) {
             // A user megítélte EZT a korrelációt — a job nem nyúl hozzá, így mi sem számolunk újra.
@@ -180,6 +183,8 @@ public class PatternMonitorService {
             out.add(PatternMetricCoverage.builder()
                     .key(metric.wireKey())
                     .label(metric.labelHu())
+                    .sourceHu(metric.sourceHu())
+                    .domain(metric.domain().wireKey())
                     .coveredDays(windowed.size())
                     .windowDays(lookbackDays)
                     .lastDayWithData(windowed.keySet().stream().max(Comparator.naturalOrder()).orElse(null))

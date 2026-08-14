@@ -200,6 +200,20 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testPatternMonitor_shouldCarrySourceDomainAndMechanism_whenRequested() {
+        PatternMonitorResponse response = monitor();
+
+        assertThat(response.getPairs()).allSatisfy(p -> {
+            assertThat(p.getMechanismHu()).isNotBlank();
+            assertThat(p.getMetricADomain()).isNotBlank();
+            assertThat(p.getMetricBDomain()).isNotBlank();
+        });
+        assertThat(pair(response, STRESS_SLEEP_PAIR).getMetricBDomain()).isEqualTo("sleep");
+        assertThat(metric(response, "checkin-stress").getSourceHu()).isEqualTo("Check-in sheet");
+        assertThat(metric(response, "checkin-stress").getDomain()).isEqualTo("mind");
+    }
+
+    @Test
     void testPatternMonitor_shouldCountCoveragePerMetric_whenDaysLogged() {
         seedStressAndSleep(ownerId(), 6);
 

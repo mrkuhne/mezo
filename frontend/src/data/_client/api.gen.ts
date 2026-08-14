@@ -4607,6 +4607,8 @@ export interface components {
             id: string;
             /** @description statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM loop (V3.2). */
             kind: string;
+            /** @description A minta stabil pár-kulcsa (statistical: katalógus-kulcs, hypothesis: hyp-hash) — a Motor↔Patterns kereszt-link horgonya (mezo-18bx). */
+            pairKey: string;
             /** @description The FE PatternCategory — assigned by the metric-pair catalog. */
             category: string;
             /** @description Hungarian category chip label. */
@@ -4682,6 +4684,12 @@ export interface components {
             metricALabel: string;
             metricBKey: string;
             metricBLabel: string;
+            /** @description Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
+            mechanismHu: string;
+            /** @description metric-a élet-doménje. */
+            metricADomain: string;
+            /** @description metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja. */
+            metricBDomain: string;
             verdict: string;
             /** @description Az illesztett napok száma (frozen sornál a befagyasztott n). */
             alignedDays: number;
@@ -4705,6 +4713,9 @@ export interface components {
             key: string;
             /** @description Magyar metrika-címke. */
             label: string;
+            /** @description Honnan jön az adat — gyűjtő-felület vagy derivált-magyarázat. */
+            sourceHu: string;
+            domain: string;
             /** @description Hány napon van érték az ablakban. */
             coveredDays: number;
             windowDays: number;
