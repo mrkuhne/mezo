@@ -49,4 +49,19 @@ describe('AiCallRow', () => {
     renderRow(stream)
     expect(screen.getByText('STREAM')).toBeInTheDocument()
   })
+
+  it('distinguishes a known zero tool-round count from an unknown one', () => {
+    // toolRounds: 0 is a real, KNOWN value (tools were available, the model invoked none) — not
+    // the same as null (no tool round was ever tallied). Built inline from a spread so the shared
+    // LLM_CALLS_MOCK seed — which Task 8's page tests count on — stays untouched. The badge's own
+    // text node holds only the " ×N" suffix (the "TOOL" label is isolated in a nested span, see
+    // AiCallRow.tsx), so the suffix is asserted via regex rather than the full badge string.
+    const { unmount } = renderRow({ ...tool, toolRounds: 0 })
+    expect(screen.getByText(/×0/)).toBeInTheDocument()
+    unmount()
+
+    renderRow({ ...tool, toolRounds: null })
+    expect(screen.getByText('TOOL')).toBeInTheDocument()
+    expect(screen.queryByText(/×0/)).not.toBeInTheDocument()
+  })
 })

@@ -35,7 +35,7 @@ function UsageCell({ call }: { call: LlmCallListItem }) {
   }
   if (call.imageCount != null) return <>{call.imageCount} kép</>
   if (call.totalTokens != null) return <><span>{formatTokens(call.totalTokens)}</span> tok</>
-  return <>usage n/a</>
+  return <>nincs használat</>
 }
 
 export function AiCallRow({ call }: { call: LlmCallListItem }) {
@@ -57,7 +57,11 @@ export function AiCallRow({ call }: { call: LlmCallListItem }) {
         </span>
         <span style={{ fontSize: 8.5, fontWeight: 800, borderRadius: 5, padding: '2px 5px', background: 'var(--surface-2)' }}>
           <span>{callKindLabel(call.callKind)}</span>
-          {call.toolRounds ? ` ×${call.toolRounds}` : ''}
+          {/* Nullish, not truthy: a TOOL call with 0 rounds executed is a KNOWN zero (the model saw
+              tools and chose none), distinct from null (no tool round ever tallied) — same
+              null-vs-zero distinction ADR 0014 makes for cost. See GeminiCompanionLlm.usageRecord /
+              mezo-58ig. A truthy check would render both as a bare "TOOL" badge. */}
+          {call.toolRounds != null ? ` ×${call.toolRounds}` : ''}
         </span>
       </div>
 
