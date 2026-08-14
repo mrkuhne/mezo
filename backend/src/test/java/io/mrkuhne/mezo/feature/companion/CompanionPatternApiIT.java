@@ -8,7 +8,9 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
@@ -28,6 +30,7 @@ class CompanionPatternApiIT extends ApiIntegrationTest {
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternRepository patternRepository;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
+    @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -94,6 +97,27 @@ class CompanionPatternApiIT extends ApiIntegrationTest {
                 ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
         assertThat(patternRepository.findById(pattern.getId()).orElseThrow().getPromotedFactId())
                 .isEqualTo(after.getPromotedFactId());
+    }
+
+    @Test
+    void testDecidePattern_shouldAppendDecisionAndPromotedEvents_whenFirstConfirmThenMonitor() {
+        PatternEntity pattern = patternPopulator.statistical(ownerId());
+
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+                new PatternDecisionRequest().decision("confirm"),
+                ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+                new PatternDecisionRequest().decision("monitor"),
+                ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
+
+        List<PatternEventEntity> events = patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(ownerId(), pattern.getId());
+        assertThat(events).extracting(PatternEventEntity::getKind).containsExactly(
+                PatternEventEntity.KIND_CONFIRMED,
+                PatternEventEntity.KIND_PROMOTED,
+                PatternEventEntity.KIND_MONITORING);
+        assertThat(events.get(1).getPayload().factId())
+                .isEqualTo(patternRepository.findById(pattern.getId()).orElseThrow().getPromotedFactId());
     }
 
     @Test
