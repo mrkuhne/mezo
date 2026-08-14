@@ -11,6 +11,7 @@ const PATTERN = '/api/companion/pattern'
 export function toPattern(w: PatternResponse): Pattern {
   return {
     id: w.id,
+    pairKey: w.pairKey,
     // wire strings come from our own backend CHECK constraints
     category: w.category as PatternCategory,
     categoryLabel: w.categoryLabel,

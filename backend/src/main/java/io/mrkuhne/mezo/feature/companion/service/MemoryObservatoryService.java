@@ -1,8 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
-import io.mrkuhne.mezo.api.dto.LlmUsageDay;
-import io.mrkuhne.mezo.api.dto.LlmUsageResponse;
-import io.mrkuhne.mezo.api.dto.LlmUsageTotals;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageDay;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageResponse;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageTotals;
 import io.mrkuhne.mezo.api.dto.MemoryEmbeddingCounts;
 import io.mrkuhne.mezo.api.dto.MemoryFactSourceCount;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewJobs;
@@ -206,22 +206,22 @@ public class MemoryObservatoryService {
      * enabled=false + üres sorok — a FE őszinte „audit kikapcsolva" állapotot mutat (spec §4).
      */
     @Transactional(readOnly = true)
-    public LlmUsageResponse llmUsage(Integer days) {
+    public MemoryLlmUsageResponse llmUsage(Integer days) {
         if (!llmUsageService.auditEnabled()) {
-            return LlmUsageResponse.builder()
+            return MemoryLlmUsageResponse.builder()
                     .enabled(false)
                     .perDay(List.of())
-                    .totals(LlmUsageTotals.builder()
+                    .totals(MemoryLlmUsageTotals.builder()
                             .calls(0L).inputTokens(0L).outputTokens(0L).costUsd(null).build())
                     .build();
         }
-        List<LlmUsageDay> perDay = new ArrayList<>();
+        List<MemoryLlmUsageDay> perDay = new ArrayList<>();
         long calls = 0;
         long inputTokens = 0;
         long outputTokens = 0;
         BigDecimal cost = null;
         for (LlmDailyAggregate row : llmUsageService.perDay(days != null ? days : 30)) {
-            perDay.add(LlmUsageDay.builder()
+            perDay.add(MemoryLlmUsageDay.builder()
                     .date(row.getDay())
                     .calls(row.getCalls())
                     .inputTokens(row.getInputTokens())
@@ -235,10 +235,10 @@ public class MemoryObservatoryService {
                 cost = (cost == null ? BigDecimal.ZERO : cost).add(row.getCostUsd());
             }
         }
-        return LlmUsageResponse.builder()
+        return MemoryLlmUsageResponse.builder()
                 .enabled(true)
                 .perDay(perDay)
-                .totals(LlmUsageTotals.builder()
+                .totals(MemoryLlmUsageTotals.builder()
                         .calls(calls).inputTokens(inputTokens).outputTokens(outputTokens)
                         .costUsd(cost == null ? null : cost.doubleValue())
                         .build())

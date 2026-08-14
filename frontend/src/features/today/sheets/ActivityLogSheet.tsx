@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { useActivityActions } from '@/data/hooks'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { localDateString } from '@/shared/lib/dates'
+import { emitToast } from '@/shared/lib/toastBus'
 import type { ActivityEntry, DailyQuest, LifeSkillKey } from '@/data/types'
 import type { ActivityWriteResult } from '@/data/activity/activityApi'
 
@@ -22,7 +23,6 @@ const skillMeta = (key: LifeSkillKey | null | undefined) =>
 export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProps) {
   const date = localDateString()
   const { logActivity, categorize, pending } = useActivityActions(date)
-  const { showLevelUp } = useLevelUp()
   const [text, setText] = useState('')
   const [result, setResult] = useState<ActivityWriteResult | null>(null)
   const [phase, setPhase] = useState<'compose' | 'pick' | 'done'>(entry ? 'pick' : 'compose')
@@ -30,7 +30,13 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
 
   const surfaceLevelUps = (r: ActivityWriteResult) => {
     const payload = r.levelUps.find((l) => l.levelUps.length > 0) ?? r.levelUps[0]
-    if (payload) showLevelUp(payload)
+    if (payload) {
+      emitToast(buildQuestRewardToast({
+        eyebrow: 'Naplózva',
+        title: payload.workoutLabel ?? 'Tevékenység',
+        levelUp: payload,
+      }))
+    }
   }
 
   const submit = async () => {

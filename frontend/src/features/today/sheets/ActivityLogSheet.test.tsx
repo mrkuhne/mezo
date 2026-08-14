@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { ActivityWriteResult } from '@/data/activity/activityApi'
 import type { ActivityEntry, DailyQuest } from '@/data/types'
+import type { LevelUpResult } from '@/data/train/trainApi'
 
 const acts = vi.hoisted(() => ({ useActivityActions: vi.fn() }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
@@ -86,6 +88,24 @@ describe('ActivityLogSheet', () => {
     fireEvent.change(screen.getByPlaceholderText(/Olvastam 30 percet/), { target: { value: 'Olvastam 30 percet' } })
     fireEvent.click(screen.getByRole('button', { name: 'Naplózom' }))
     expect(await screen.findByText(/Küldetés teljesítve: Olvass ma legalább 10 percet \(\+20 XP\)/)).toBeInTheDocument()
+  })
+
+  test('a successful log with a level-up payload emits a reward toast (eyebrow "Naplózva")', async () => {
+    const levelUp: LevelUpResult = {
+      source: 'ACTIVITY', workoutLabel: 'Olvastam', durationMin: undefined, rpe: undefined, totalXp: 15,
+      gains: [], levelUps: [], perks: [], robustness: { xpGained: 0, streakWeeks: 0 },
+    }
+    logActivity.mockResolvedValue(result({ levelUps: [levelUp] }))
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+    renderSheet()
+    fireEvent.change(screen.getByPlaceholderText(/Olvastam 30 percet/), { target: { value: 'Olvastam 30 percet' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Naplózom' }))
+    await waitFor(() => expect(seen.some((t) => t.kind === 'reward')).toBe(true))
+    off()
+
+    const reward = seen.find((t) => t.kind === 'reward')
+    expect((reward as { eyebrow: string }).eyebrow).toBe('Naplózva')
   })
 
   test('entry prop starts the sheet in the picker phase', () => {

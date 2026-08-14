@@ -78,6 +78,8 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().reinforceCooldownDays()).isEqualTo(7);
         assertThat(properties.patterns().loadGymKgPerMin()).isEqualTo(100); // V3.4 derivált terhelés-skála
         assertThat(properties.patterns().pairs()).hasSize(29); // V3.4 katalógus (8 v1 + 21 új)
+        assertThat(properties.patterns().pairs())
+                .allSatisfy(p -> assertThat(p.mechanism()).isNotBlank()); // mezo-18bx: miért figyeljük
         assertThat(properties.patterns().pairs().getFirst().key())
                 .isEqualTo("sleep-quality~next-day-training-rpe");
         assertThat(properties.patterns().pairs().getFirst().metricA())

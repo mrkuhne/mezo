@@ -564,7 +564,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
-| LLM call audit log (`mezo-2zyu`) | ✅ v1 | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (off by default, ON in k8s). DB-only v1 — query with SQL. [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
+| LLM call audit log (`mezo-2zyu`) | ✅ v1 + read API (`mezo-uakh`) | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (off by default, ON in k8s). **Read side (`mezo-uakh`):** `GET /api/llm-usage/{summary,breakdown,calls,calls/{id}}` (`LlmUsageController`/`LlmUsageService`, ungated + no user filter — endpoint table in [`_platform-api-backend.md`](_platform-api-backend.md) §4c) surfaces the log as the Me **AI-napló** page at `/me/ai-usage` + `/me/ai-usage/:id` ([`me.md`](me.md) §2). [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
 | Memory observatory (`mezo-al1i`) | ✅ v1 | `MemoryObservatoryService` — 4 read-only `GET /api/companion/memory/*` reads (overview/summary/similar-days/llm-usage) over EXISTING data (no new table); `similar-days` reuses `MemoryRecallService` (V2.3) verbatim; `llm-usage` is a new `LlmLogRepository` native daily rollup over `llm_log_history` (ADR 0014). Backs the Insights **Memória** tab ([`insights.md`](insights.md) §2.9). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
@@ -1016,7 +1016,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
-| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). |
+| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). **mezo-18bx (additive):** pairs carry `mechanismHu` (the catalog's config `mechanism`) + `metricADomain`/`metricBDomain`, coverage rows carry `sourceHu` + `domain` — straight pass-through from `MetricKey`/`PatternPair`, no new computation. |
 | `GET /api/companion/memory/overview` | `MemoryOverviewResponse` | 200 · 401 · 404 | `mezo-al1i` — L0–L3 layer counts + the 3 job cron strings, one read-only aggregate (`MemoryObservatoryService.overview`). |
 | `GET /api/companion/memory/summary` | `MemorySummaryListResponse` | 200 · 401 · 404 | `mezo-al1i` — the L1 journal, date-desc, optional `from`/`to`; `embedded` flags a live `memory_embedding` row for that day. |
 | `GET /api/companion/memory/similar-days` | `SimilarDaysResponse` | 200 · 400 · 401 · 404 | `mezo-al1i` — reuses `MemoryRecallService` (V2.3) verbatim; `q` required (1..∞ chars), `k` 1..5 (default 3); below-floor matches never returned (the same honest empty-list rule as the tool). |
@@ -1149,8 +1149,18 @@ LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, c
   pattern reinforces its promoted fact at most once per window (the nightly lookback slides one
   day; re-counting the same evidence would inflate top-N ranks — review finding).
 - `mezo.companion.patterns.pairs` = the 29-pair catalog (`@NotEmpty`, each
-  `{key, category, label, title, metric-a, metric-b, lag-days}`) — pair keys are pattern identity
-  (never rename a live key); metrics come from the `MetricKey` enum.
+  `{key, category, label, title, mechanism, question, expected-direction, when-positive-hu,
+  when-negative-hu, metric-a, metric-b, lag-days}`) — `mechanism` is the „miért figyeljük"
+  one-liner (`mezo-18bx`); **`mezo-fj1g` added the human-language card fields:** `question`
+  (the card's question-title), `expected-direction` (`positive|negative` — the hypothesized
+  correlation sign; the FE renders „Meglepő:" when the found sign disagrees) and the two authored
+  direction readings `when-positive-hu`/`when-negative-hu` (what a positive/negative r MEANS for
+  this pair, in Hungarian, with an `{erősség}` slot the FE fills from |r|). All `@NotBlank` —
+  the config validator refuses a pair without them. Pair keys are pattern identity (never rename
+  a live key); metrics come from the `MetricKey` enum, which since `mezo-18bx` also carries
+  `sourceHu` and a `MetricDomain` (`SLEEP/TRAIN/FUEL/MIND/BODY/OTHER`); the monitor DTOs pass
+  everything through (`questionHu`/`expectedDirection`/`whenPositiveHu`/`whenNegativeHu` since
+  `mezo-fj1g`), and `PatternResponse` gained `pairKey` (the Motor↔Patterns cross-link anchor).
 - `mezo.companion.patterns.load-gym-kg-per-min` = **100** (`@Min(1) @Max(10000)`) — V3.4: the
   ACWR/monotony daily-load common scale (this many kg of gym volume ≙ one sport minute).
 - `mezo.companion.summary.note-max-chars` = **200** (`@Min(0) @Max(1000)`) — V3.4: per-field cap
@@ -1326,10 +1336,11 @@ audit domain stays self-contained and never calls back. `LlmCallRecorder` publis
 `REQUIRES_NEW` transaction, so the audit never blocks (or fails) the user's call. **WHO/WHY comes
 from the call site**, not the adapter: `LlmActorResolver` reads the principal on the calling thread
 (null on cron threads — deliberately, it never throws) and `LlmCallContextHolder.runWith(new
-LlmCallContext(feature, operation, entityKind, entityId), …)` wraps each of the **29 tagged call
-sites across 25 classes** (companion chat/summary/extraction/hypotheses/recall/embedding + meal
-draft & coach, pantry scrape & photo, sleep shot, recipe prose, activity classify, quest flavor, and
-the proactive generators). An untagged site records `feature = 'unknown'`. Switch
+LlmCallContext(feature, operation, entityKind, entityId), …)` wraps each of the **32 tagged call
+sites across 29 classes** (companion chat/summary/extraction/hypotheses/recall/embedding/advisor/
+smoke-test + meal draft & coach, pantry scrape & photo, sleep shot, recipe prose, activity classify,
+quest flavor, habit-suggest, fuel stack-placement & slot-template, voice transcription, and the
+proactive generators). An untagged site records `feature = 'unknown'`. Switch
 `mezo.feature.llm-log.enabled` off ⇒ the injected recorder is the no-op ⇒ nothing happens; the
 adapters never branch on the switch.
 
@@ -1920,9 +1931,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   read side, and filter `status = 'SUCCESS'` in any usage/cost aggregate.
 
 **Deferred (with bd ids):**
-- **LLM audit-log follow-ups (mezo-2zyu v1 = DB only):** still open — a read API / admin view,
-  retention pruning (nothing prunes the table yet), budget alerting, and reconciling the placeholder
-  `mezo.llm-log.pricing` rates with current Gemini pricing. (`mezo-58ig` per-round usage and
+- **LLM audit-log follow-ups (mezo-2zyu; read API + `/me/ai-usage` browsing UI shipped `mezo-uakh`):**
+  still open — retention pruning (nothing prunes the table yet), budget alerting, and reconciling
+  the placeholder `mezo.llm-log.pricing` rates with current Gemini pricing. (`mezo-58ig` per-round usage and
   `mezo-1rz9` CANCELLED streams are FIXED — see the audit-log section above.)
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
   `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review
@@ -1983,12 +1994,16 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/{LlmCallRecord,TokenUsage,EmbedUsage,LlmActorResolver}.java` — what the adapter observed + who called (null on cron threads).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogWriter.java` — `@Async @EventListener` → `REQUIRES_NEW` insert: field mapping, payload capping, net-prompt cost derivation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmPricingService.java` — freezes the day's unit prices onto the row and computes `cost_usd` from THAT snapshot (unknown model ⇒ null).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/context/{LlmCallContext,LlmCallContextHolder}.java` — the thread-scoped caller tag (`runWith`); 29 call sites in 25 classes.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/context/{LlmCallContext,LlmCallContextHolder}.java` — the thread-scoped caller tag (`runWith`); 32 call sites in 29 classes (`grep -rn "new LlmCallContext(" backend/src/main/java | grep -v LlmCallContext.java`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/entity/{LlmLogEntity,CallKind,CallStatus,PricingSnapshot}.java` — the INSERT-only entity (no `OwnedEntity`, no `is_deleted`) + the jsonb price snapshot.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java` — **`mezo-al1i`** `LlmLogRepository` grew `aggregatePerDaySince` (native daily rollup, report-zone calendar days) alongside the existing `aggregateSince`; new `repository/LlmDailyAggregate.java` projection (day/calls/inputTokens/outputTokens/costUsd).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmUsageService.java` — **`mezo-al1i`** grew `perDay(days)` (a sibling of the existing `summary()` day/week/month rollup) + exposed `auditEnabled()` publicly for `MemoryObservatoryService`'s `enabled` short-circuit.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` + `feature/companion/llm/{GeminiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiEmbeddingAdapterRecordingTest}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/controller/LlmUsageController.java` + `service/LlmUsageService.java` — the read side (`mezo-uakh`): `implements LlmUsageApi` (ungated, no `CurrentUserId`); `summary`/`breakdown`/`listCalls`/`call`, all `@Transactional(readOnly = true)` so the period aggregates share one DB snapshot.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/mapper/LlmLogMapper.java` — `LlmLogEntity → LlmCallDetailResponse` (hand-written default methods: the jsonb `PricingSnapshot`, `BigDecimal→Double` null-preserving cost, `Instant→OffsetDateTime`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/repository/{LlmStatusRow,LlmGroupRow,LlmCallRow,LlmUsageAggregate}.java` — the JPQL constructor-expression projections behind `aggregateByStatusSince`/`aggregateByFeatureSince`/`aggregateByModelSince`/`findCalls`/`aggregateSince` (`LlmLogRepository`); `findCalls` fetches `limit + 1` rows so the service can derive `hasMore` without a second `count(*)`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`) + `feature/companion/llm/{GeminiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiEmbeddingAdapterRecordingTest}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths + the breakdown/list/detail endpoint ITs.
 
 **Backend — tools (V0.5, expanded to 15 tools at mezo-xixu)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).

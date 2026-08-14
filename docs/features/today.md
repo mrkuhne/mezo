@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-08-11
+updated: 2026-08-14
 tags: [today, biometrics, frontend, data-layer, ritual]
 key_files:
   - frontend/src/features/today
@@ -55,7 +55,7 @@ Everything in the panel is actionable while its daypart is merely *selected*, no
   | 🌒 leállás (winddown) | `[bed−60, bed)` | the CTA row gains the **`Leállás megvolt ✓`** ghost — the `wind_down` MANUAL habit's check (same `['habitDay', date]` cache as its row; the row is filtered **only while this phase shows the ghost**, so the habit is offered exactly once and stays reachable in dim/none — the `mezo-mvb4.1` rule, relocated again) |
   | 🌑 éjszaka (night) | `[bed, wake−30)` | **the panel itself darkens** (`DaypartPanel`'s `night` prop, theme-invariant dark — the `.isl-night`/`.wdb-night` heritage); countdown reads `elmúlt`; a single `Éjszakai mód megnyitása ›` row → `/me/sleep/night`; no facts, no CTA |
   The ritual-owned rows (`ritual:day` + `habit:evening_ritual`) are always filtered from the evening groups — the hero CTA owns that act (`RitualCard`'s rule, relocated into `DaypartEvening`).
-- **Ticking something** removes it from the open list (into the done block / the evening retrospective); chain completion fires the per-chain toast (`ChainCelebrations` — `🌅 Tökéletes reggel` / `🌙 Tökéletes este` / `✨ {title} kész`); level-ups ride the shared `useLevelUp` overlay (consume-once, unchanged).
+- **Ticking something** removes it from the open list (into the done block / the evening retrospective); chain completion still fires the per-chain success toast (`ChainCelebrations` — `🌅 Tökéletes reggel` / `🌙 Tökéletes este` / `✨ {title} kész`), now queued **on top of** the stacking toast host ([design-system doc §2 item 7](_platform-design-system.md)) instead of replacing whatever's on screen. **Since `mezo-k5sa`:** every completion source on this page — the manual habit tick, the DERIVED-habit and quest consume-once effects (both in `TodayPage.tsx`), the wind-down banner's own check (`DaypartEvening.tsx`), `DailyQuestsCard`, and `ActivityLogSheet` — builds a DS reward toast via `frontend/src/features/progression/logic/rewardToast.ts`'s `buildHabitRewardToast`/`buildQuestRewardToast` and emits it on the `toastBus`; a level-up rides **inline inside that same card** (its `meter`/`levelUp` fields), not a separate overlay. The full-screen `LevelUpScreen`/`useLevelUp` overlay no longer fires from Today — it's now exclusively the four Train pages' (`ActiveWorkoutPage`, `SportPage`, `TrainTodayPage`, `RunningPage`).
 - **Scenario deep-links** (dev/demo affordances, unchanged semantics): `?dp=`, `?day=good|medium|rough` (rough → the anchor melt), `?niggle=on|off` (the day daypart's `.td-foot.is-warn` footnote), `?vulnerable=on|off`, `?retaDay=N`, `?ritual=waiting|open|done`.
 - **Check-in** — the 4 canonical slots bucket onto their daypart's groups by clock time; `CheckInSheet` per slot; real mode reads/writes the server day (unchanged, §4).
 

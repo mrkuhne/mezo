@@ -1,4 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { render as rtlRender, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import type { ReactElement } from 'react'
+
+// A kártya Motor-visszalinkje (mezo-18bx) Router-kontextust igényel.
+const render = (ui: ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
 import userEvent from '@testing-library/user-event'
 import { PatternCard } from '@/features/insights/components/PatternCard'
 import { patterns } from '@/data/insights/insights'
@@ -20,6 +25,7 @@ test('a statistical row renders "tanulom" and evidence chips instead of critique
     <PatternCard
       pattern={{
         id: 's1',
+        pairKey: 'sleep-quality~next-day-training-rpe',
         category: 'physiology',
         categoryLabel: 'Fiziológia',
         title: 'Alvásminőség ↔ másnapi edzés-RPE',
@@ -50,6 +56,10 @@ test('the decision buttons call onDecide and the persisted status renders the ba
   expect(onDecide).toHaveBeenCalledWith('confirm')
 
   // the badge is driven by the PERSISTED status (cache/refetch), not local state
-  rerender(<PatternCard pattern={{ ...p1, status: 'confirmed' }} onDecide={onDecide} />)
+  rerender(
+    <MemoryRouter>
+      <PatternCard pattern={{ ...p1, status: 'confirmed' }} onDecide={onDecide} />
+    </MemoryRouter>,
+  )
   expect(screen.getByText('✓ Megerősítve')).toBeInTheDocument()
 })

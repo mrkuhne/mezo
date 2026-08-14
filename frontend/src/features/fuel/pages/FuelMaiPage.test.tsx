@@ -99,19 +99,27 @@ test('the retired header row and Reta phase strip are gone — no fabricated pag
 // ── Sky composition — done capsule + window islands, no more belt ──────────────────────────────
 
 test('renders the sky: the merged done capsule + the still-open window-islands, one big', () => {
-  const { container } = renderView()
-  expect(container.querySelector('.sky-islands')).toBeInTheDocument()
-  // The mock demo day (fixed now 13:30): breakfast + lunch done (merged into ONE done capsule,
-  // no longer their own islands), Uzsonna promoted to 'now' (earliest unlogged window), Vacsora
-  // still future — 2 window-islands + the done capsule, no `.isl-belt` anywhere (mezo-c9t5: the
-  // belt retired in favor of the top-of-page KeretHero).
-  expect(container.querySelector('.kdone')).toBeInTheDocument()
-  expect(container.querySelector('.isl-belt')).toBeNull()
-  expect(container.querySelectorAll('.sky-islands > .isl[data-tone="fuel"]').length).toBe(2)
-  // Exactly one island is big by default — the NOW window (no ?w=).
-  expect(bigTone(container)).toBe('fuel')
-  expect(container.querySelectorAll('.isl.isl-big')).toHaveLength(1)
-  expect(container.querySelector('.now-clock')).toBeInTheDocument()
+  // A szigetképzés a valós órát is olvassa — fagyasztva 13:30-ra, hogy a teszt ne legyen
+  // napszakfüggő (este/reggel futtatva a Vacsora-ablak állapota átbillent: 3 sziget lett).
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-02T13:30:00'))
+  try {
+    const { container } = renderView()
+    expect(container.querySelector('.sky-islands')).toBeInTheDocument()
+    // The mock demo day (fixed now 13:30): breakfast + lunch done (merged into ONE done capsule,
+    // no longer their own islands), Uzsonna promoted to 'now' (earliest unlogged window), Vacsora
+    // still future — 2 window-islands + the done capsule, no `.isl-belt` anywhere (mezo-c9t5: the
+    // belt retired in favor of the top-of-page KeretHero).
+    expect(container.querySelector('.kdone')).toBeInTheDocument()
+    expect(container.querySelector('.isl-belt')).toBeNull()
+    expect(container.querySelectorAll('.sky-islands > .isl[data-tone="fuel"]').length).toBe(2)
+    // Exactly one island is big by default — the NOW window (no ?w=).
+    expect(bigTone(container)).toBe('fuel')
+    expect(container.querySelectorAll('.isl.isl-big')).toHaveLength(1)
+    expect(container.querySelector('.now-clock')).toBeInTheDocument()
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('an empty day (no meal slots) shows the üres nap island with a ＋ tervezz CTA that navigates to /fuel/plan', async () => {

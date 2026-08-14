@@ -24,11 +24,14 @@ const dayDiff = (fromIso: string, toIso: string): number =>
 
 /** Mock-mode account progression: XP (capped), daily streak (+saver), coins, level-ups.
  *  Called from the mock arms of every logging mutation (spec §4.3). Emits ONE toast per
- *  award — level-up > streak milestone > saver notice > plain XP. Real mode never calls
- *  this; the backend will award server-side (mezo-huzd). */
+ *  award — level-up > streak milestone > saver notice > plain XP. `silentXp` suppresses
+ *  ONLY that last, plain `+N XP` line — for call sites that already emit their own richer
+ *  reward toast (habit check, mezo-k5sa); the level-up / streak / saver notices are about
+ *  DIFFERENT events and always still fire. Real mode never calls this; the backend awards
+ *  server-side (mezo-huzd). */
 export function awardGamificationEvent(
   qc: QueryClient,
-  event: { type: XpEventType; date?: string; xpOverride?: number },
+  event: { type: XpEventType; date?: string; xpOverride?: number; silentXp?: boolean },
 ): AwardResult {
   const today = event.date ?? localDateString()
   const prev = qc.getQueryData<GamificationProfile>(GAMIFICATION_KEY) ?? gamificationProfileMock
@@ -78,7 +81,7 @@ export function awardGamificationEvent(
     emitToast({ kind: 'success', text: `🔥 ${next.streakDays} napos sorozat — +${milestone} 🪙` })
   else if (saverUsed)
     emitToast({ kind: 'info', text: '🧊 Streak-mentő elhasználva — a sorozat megmaradt' })
-  else emitToast({ kind: 'success', text: `+${xp} XP` })
+  else if (!event.silentXp) emitToast({ kind: 'success', text: `+${xp} XP` })
 
   return { xpAwarded: xp, coinsAwarded, leveledUp, newLevel: level }
 }

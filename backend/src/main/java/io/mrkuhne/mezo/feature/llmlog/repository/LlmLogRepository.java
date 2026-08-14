@@ -1,16 +1,19 @@
 package io.mrkuhne.mezo.feature.llmlog.repository;
 
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
  * Write-and-read-back access to the INSERT-only {@code llm_log_history} audit table (mezo-2zyu).
- * Query methods (feature/model rollups, retention pruning) arrive with the later tasks.
+ * Retention pruning arrives with a later task.
  */
 public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
 
@@ -46,4 +49,65 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         order by 1
         """, nativeQuery = true)
     List<LlmDailyAggregate> aggregatePerDaySince(@Param("since") Instant since, @Param("zone") String zone);
+
+    /**
+     * Per-status slice of a period (mezo-uakh) — call count, cost sum and unpriced count in ONE
+     * grouped pass. Deliberately NOT filtered by {@code created_by}: cron- and stream-written rows
+     * carry a null owner, and an ownership filter would hide the highest-volume traffic.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmStatusRow(
+            l.status, count(l), sum(l.costUsd),
+            sum(case when l.costUsd is null then 1L else 0L end))
+        from LlmLogEntity l
+        where l.createdAt >= :since
+        group by l.status
+        """)
+    List<LlmStatusRow> aggregateByStatusSince(@Param("since") Instant since);
+
+    /** Feature rollup for the page header; ordering is done in the service (see its javadoc). */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
+            l.feature, count(l), sum(l.costUsd))
+        from LlmLogEntity l
+        where l.createdAt >= :since
+        group by l.feature
+        """)
+    List<LlmGroupRow> aggregateByFeatureSince(@Param("since") Instant since);
+
+    /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
+            l.servedModel, count(l), sum(l.costUsd))
+        from LlmLogEntity l
+        where l.createdAt >= :since
+        group by l.servedModel
+        """)
+    List<LlmGroupRow> aggregateByModelSince(@Param("since") Instant since);
+
+    /**
+     * The browsable list (mezo-uakh): newest first, metadata only, every filter optional via the
+     * {@code (:param is null or …)} idiom. No owner filter — same reason as the aggregates.
+     *
+     * <p>The caller asks for {@code limit + 1} rows: getting that many is how the service knows
+     * more exist, without paying for a second {@code count(*)} on every load-more.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmCallRow(
+            l.id, l.createdAt, l.feature, l.operation, l.callKind, l.status,
+            l.requestedModel, l.servedModel, l.latencyMs, l.streamed, l.toolRounds,
+            l.totalTokens, l.imageCount, l.embedInputCount, l.embedDimensions,
+            l.costUsd, l.errorClass, l.errorCode)
+        from LlmLogEntity l
+        where l.createdAt >= :since
+          and (:feature is null or l.feature = :feature)
+          and (:status is null or l.status = :status)
+          and (:callKind is null or l.callKind = :callKind)
+        order by l.createdAt desc
+        """)
+    List<LlmCallRow> findCalls(@Param("since") Instant since,
+                               @Param("feature") String feature,
+                               @Param("status") CallStatus status,
+                               @Param("callKind") CallKind callKind,
+                               Pageable pageable);
 }

@@ -2,7 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.api.dto.LlmUsageResponse;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
@@ -25,8 +25,8 @@ class CompanionMemoryLlmUsageDisabledIT extends ApiIntegrationTest {
                 appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId(),
                 CallKind.CHAT, "companion", "gemini-2.5-flash", 100, 40);
 
-        LlmUsageResponse response = getForBody("/api/companion/memory/llm-usage",
-                ownerAuthHeaders(), HttpStatus.OK, LlmUsageResponse.class);
+        MemoryLlmUsageResponse response = getForBody("/api/companion/memory/llm-usage",
+                ownerAuthHeaders(), HttpStatus.OK, MemoryLlmUsageResponse.class);
 
         assertThat(response.getEnabled()).isFalse();
         assertThat(response.getPerDay()).isEmpty();

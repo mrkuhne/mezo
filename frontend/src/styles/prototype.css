@@ -765,17 +765,132 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .sheet, .sheet-backdrop { animation-duration: 0.01ms; }
 }
 
-/* Toast (PR) */
+/* Toast · DS §Notification (mezo-k5sa) — top-right stack, max 3 visible */
+.toast-stack {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: auto; right: 14px;
+  width: calc(100% - 28px);
+  max-width: 296px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* The app's real toast tier: above sheets (200/211) and the level-up overlay (250).
+     The nominal --z-toast (70) belongs to the DS's abstract ladder (sheet 50 / modal 60 /
+     toast 70), which this stylesheet expresses at a different absolute scale — same order,
+     different numbers. DS §z-index: "Toast above Modal … must be visible." */
+  z-index: 300;
+  pointer-events: none;
+}
 .toast {
-  /* DS Notification anchor: top-right, max-width 296 (design-system-mezo.html §Notification) */
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  pointer-events: auto;
+  color: #fff;
+  background: var(--coral);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.42), 0 4px 10px rgba(0,0,0,0.18);
+  transform-origin: top right;
+  animation: toast-in 420ms cubic-bezier(0.32, 0.72, 0.32, 1);
+  transition:
+    transform 420ms cubic-bezier(0.32, 0.72, 0.32, 1),
+    opacity 420ms cubic-bezier(0.32, 0.72, 0.32, 1);
+}
+@keyframes toast-in {
+  from { transform: translateX(36px) translateY(-4px); opacity: 0; }
+  to   { transform: translateX(0) translateY(0); opacity: 1; }
+}
+/* Stack depth — newest (idx 0) full size, older ones recede. */
+.toast[data-idx="1"] { transform: scale(0.96); opacity: 0.78; }
+.toast[data-idx="2"] { transform: scale(0.93); opacity: 0.55; }
+.toast[data-idx="hidden"] { display: none; }
+.toast.is-leaving { transform: translateX(36px); opacity: 0; }
+
+.toast[data-kind="success"] { background: var(--success); }
+.toast[data-kind="error"]   { background: var(--error); }
+.toast[data-kind="info"]    { background: var(--coral); }
+
+.t-close {
+  position: absolute; top: 8px; right: 8px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.10);
+  border: none;
+  display: grid; place-items: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.60);
+}
+.t-pad { padding: 12px 14px; }
+/* DS caption floor: 14px for sentence-case feedback text */
+.t-simple-text { font-size: 14px; font-weight: 600; padding-right: 20px; display: block; }
+
+/* Reward variant — DS §Notification: sage→terracotta gradient card */
+.toast[data-kind="reward"] {
+  background: linear-gradient(135deg, rgba(123,143,107,0.96), rgba(196,131,106,0.88));
+  border: 1px solid rgba(255,255,255,0.22);
+}
+.t-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.22em;
+  text-transform: uppercase; color: rgba(255,255,255,0.80);
+  margin-bottom: 6px; padding-right: 26px;
+}
+.t-title {
+  font-family: 'Fraunces', 'Crimson Pro', serif;
+  font-size: 16px; font-weight: 500; line-height: 1.25; letter-spacing: -0.005em;
+}
+.t-meta { font-style: italic; font-weight: 400; color: rgba(255,255,255,0.72); }
+.t-meter {
+  display: flex; align-items: center; gap: 9px;
+  margin-top: 10px; padding: 7px 11px;
+  border-radius: 12px; background: rgba(0,0,0,0.28);
+}
+.t-mdot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #b8cdaa; box-shadow: 0 0 7px rgba(184,205,170,0.85);
+  flex-shrink: 0;
+}
+.t-mlabel { font-size: 11.5px; font-weight: 700; letter-spacing: 0.01em; }
+.t-mdelta {
+  margin-left: auto;
+  font-size: 15px; font-weight: 800; letter-spacing: -0.01em; line-height: 1;
+  color: #ffd87a; font-variant-numeric: tabular-nums;
+  animation: toast-delta-pop 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes toast-delta-pop {
+  0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); }
+}
+.t-lvup {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 8px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(0,0,0,0.30);
+  border: 1px solid rgba(255,216,122,0.35);
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; color: #ffd87a;
+}
+
+/* Reduced motion: the toast still appears, just without the slide (DS §Notification).
+   Both paths matter — the class covers the useReducedMotion hook's runtime read, the
+   media query covers a user who flips the OS setting while a toast is on screen. */
+.toast.is-reduced { animation: none; transition: none; }
+.toast.is-reduced .t-mdelta { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; transition: none; }
+  .t-mdelta { animation: none; }
+}
+
+/* Standalone feature-local confirmation (MedalToast) — keeps the pre-mezo-k5sa
+   `.toast` geometry now that the shared `.toast` is a stack child. */
+.toast-solo {
   position: absolute;
   left: auto; right: 14px;
   top: 70px;
   width: calc(100% - 28px);
   max-width: 296px;
+  /* The app's real toast tier: above sheets (200/211) and the level-up overlay (250).
+     The nominal --z-toast (70) belongs to the DS's abstract ladder (sheet 50 / modal 60 /
+     toast 70), which this stylesheet expresses at a different absolute scale — same order,
+     different numbers. DS §z-index: "Toast above Modal … must be visible." */
   z-index: 300;
   padding: 14px 16px;
-  background: var(--coral);
   color: var(--text-inverse);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xl);

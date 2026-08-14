@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { usePatterns, usePatternActions } from '@/data/hooks'
 import { MIN_PATTERN_CONFIDENCE } from '@/data/insights/insights'
@@ -7,6 +8,15 @@ import { PatternCard } from '@/features/insights/components/PatternCard'
 export function PatternsPage() {
   const { patterns: all, recentlyConfirmed, degraded, isPending } = usePatterns()
   const { decide } = usePatternActions()
+  // A Motor „Minta megnyitása →" horgonya (mezo-18bx): ?pair= → kiemelés + odagörgetés.
+  const [params] = useSearchParams()
+  const targetPairKey = params.get('pair')
+
+  useEffect(() => {
+    if (!targetPairKey) return
+    // jsdom nem implementálja a scrollIntoView-t — az opcionális hívás a tesztben no-op
+    document.querySelector('[data-highlighted="true"]')?.scrollIntoView?.({ block: 'center' })
+  }, [targetPairKey, all.length])
   // statistical rows carry no confidence (honest small-n) — they passed the n-gate server-side
   const patterns = all.filter((p) => p.confidence == null || p.confidence >= MIN_PATTERN_CONFIDENCE)
 
@@ -31,7 +41,12 @@ export function PatternsPage() {
       </div>
 
       {patterns.map((p) => (
-        <PatternCard key={p.id} pattern={p} onDecide={(decision) => decide(p.id, decision)} />
+        <PatternCard
+          key={p.id}
+          pattern={p}
+          onDecide={(decision) => decide(p.id, decision)}
+          highlighted={targetPairKey != null && p.pairKey === targetPairKey}
+        />
       ))}
 
       {patterns.length === 0 && !isPending && (

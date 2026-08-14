@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -6,6 +6,7 @@ import { mockHabitDay } from '@/data/habit/habitMock'
 import { DaypartEvening } from '@/features/today/components/DaypartEvening'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // `useHabitDay` spy delegates to the real hook unless overridden (the IslandEvening.test.tsx
@@ -145,5 +146,18 @@ describe('DaypartEvening', () => {
     vi.useFakeTimers({ toFake: ['Date'] }).setSystemTime(at('21:30'))
     renderEvening({ done: [item({ id: 'habit:x', status: 'done', title: 'Hűvös szoba' })] })
     expect(screen.getByRole('button', { name: /Ahogy a nap telt · 1 tétel/ })).toBeInTheDocument()
+  })
+
+  test('the wind-down pipa dobja el a reward toastot, nem full-screent', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] }).setSystemTime(at('22:40'))
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+
+    renderEvening({ open: [item(), item({ id: 'habit:wind_down', title: 'Leállás' })] })
+    await userEvent.click(screen.getByRole('button', { name: 'Leállás megvolt ✓' }))
+
+    await waitFor(() => expect(seen.some((t) => t.kind === 'reward')).toBe(true))
+    off()
+    expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).toBeNull()
   })
 })

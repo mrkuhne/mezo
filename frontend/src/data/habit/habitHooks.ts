@@ -75,7 +75,9 @@ export function useHabitActions(date: string) {
       if (mock) {
         patchMock(habitKey, 'done')
         const xp = mockHabitDay.find((h) => h.key === habitKey)?.xp ?? 0
-        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp })
+        // The call site emits its own DS reward toast for the check (mezo-k5sa), so the
+        // generic „+N XP" line would be a duplicate — the level/streak notices still fire.
+        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp, silentXp: true })
         return undefined
       }
       return habitApi.check(habitKey, date).then((r) => r.levelUps)
@@ -88,7 +90,8 @@ export function useHabitActions(date: string) {
           qc.invalidateQueries({ queryKey: ['progressionProfile'] })
         },
   })
-  // NOTE: check() resolves the write's levelUps — the caller feeds them to showLevelUp.
+  // NOTE: check() resolves the write's levelUps — the caller builds a reward toast via
+  // @/features/progression/logic/rewardToast and emits it on the toastBus (mezo-k5sa).
   // Callers today: TodayPage's `act()` dispatcher (every habit row on all three daypart
   // faces) and WindDownBanner (the `wind_down` Pipa). RoutineCard, the original caller,
   // was retired by the daypart-faces re-composition (mezo-j7u4).

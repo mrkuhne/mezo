@@ -406,6 +406,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alvásminőség ↔ másnapi edzés-RPE"
+          mechanism: "A rosszabb alvás másnap nehezebbnek érződő edzést hozhat."
+          question: "Könnyebb az edzés, ha jól aludtál?"
+          expected-direction: negative
+          when-positive-hu: "a jobb alvás után {erősség} nehezebbnek érződött az edzés"
+          when-negative-hu: "a jobb alvás után {erősség} könnyebbnek érződött az edzés"
           metric-a: sleep-quality
           metric-b: training-rpe
           lag-days: 1
@@ -413,6 +418,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alváshossz ↔ másnapi edzés-RPE"
+          mechanism: "A rövidebb alvás másnap magasabb erőkifejtés-érzetet hozhat."
+          question: "Könnyebb az edzés hosszabb alvás után?"
+          expected-direction: negative
+          when-positive-hu: "a hosszabb alvás után {erősség} nehezebbnek érződött az edzés"
+          when-negative-hu: "a hosszabb alvás után {erősség} könnyebbnek érződött az edzés"
           metric-a: sleep-duration-h
           metric-b: training-rpe
           lag-days: 1
@@ -420,6 +430,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Késői étkezés ↔ rákövetkező alvásminőség"
+          mechanism: "A késői étkezés ronthatja a rákövetkező éjszaka minőségét."
+          question: "Rosszabbul alszol, ha későn eszel?"
+          expected-direction: negative
+          when-positive-hu: "a későbbi vacsorák után {erősség} jobban aludtál"
+          when-negative-hu: "a későbbi vacsorák után {erősség} rosszabbul aludtál"
           metric-a: late-meal-hour
           metric-b: sleep-quality
           lag-days: 1
@@ -427,6 +442,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Reta-ciklusnap ↔ napi kalória"
+          mechanism: "A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt."
+          question: "A ciklus vége felé nő az étvágyad?"
+          expected-direction: positive
+          when-positive-hu: "a ciklus későbbi napjain {erősség} többet ettél"
+          when-negative-hu: "a ciklus későbbi napjain {erősség} kevesebbet ettél"
           metric-a: reta-cycle-day
           metric-b: daily-kcal
           lag-days: 0
@@ -434,6 +454,11 @@ mezo:
           category: response
           label: Response
           title: "Sportterhelés ↔ másnapi gym-volumen"
+          mechanism: "A sportterhelés másnapra elvehet a gym-teljesítményből."
+          question: "Elveszi a sport a másnapi gym-erőt?"
+          expected-direction: negative
+          when-positive-hu: "a sportosabb napok után {erősség} nagyobb volument toltál"
+          when-negative-hu: "a sportosabb napok után {erősség} kisebb volument toltál"
           metric-a: sport-load-min
           metric-b: gym-volume-kg
           lag-days: 1
@@ -441,6 +466,11 @@ mezo:
           category: response
           label: Response
           title: "Napi kalória ↔ másnap reggeli súlyváltozás"
+          mechanism: "A napi bevitel a másnap reggeli súlyban csapódhat le."
+          question: "Meglátszik a napi kalória a reggeli súlyon?"
+          expected-direction: positive
+          when-positive-hu: "a nagyobb kalóriájú napok után {erősség} nagyobb volt a reggeli súlyugrás"
+          when-negative-hu: "a nagyobb kalóriájú napok után {erősség} kisebb volt a reggeli súly"
           metric-a: daily-kcal
           metric-b: weight-delta-kg
           lag-days: 1
@@ -448,6 +478,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Stressz-szint ↔ aznapi alvásminőség"
+          mechanism: "A stresszes nap ronthatja az aznapi alvásminőséget."
+          question: "Elrontja az alvásod a stresszes nap?"
+          expected-direction: negative
+          when-positive-hu: "a stresszesebb napokon {erősség} jobban aludtál"
+          when-negative-hu: "a stresszesebb napokon {erősség} rosszabbul aludtál"
           metric-a: checkin-stress
           metric-b: sleep-quality
           lag-days: 0
@@ -455,6 +490,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Vízbevitel ↔ energia-szint"
+          mechanism: "A hidratáltság az energia-szintben érződhet."
+          question: "Több energiád van, ha többet iszol?"
+          expected-direction: positive
+          when-positive-hu: "a jól hidratált napokon {erősség} több energiád volt"
+          when-negative-hu: "a jól hidratált napokon {erősség} kevesebb energiád volt"
           metric-a: daily-water-ml
           metric-b: checkin-energy
           lag-days: 0
@@ -463,6 +503,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alvásminőség ↔ másnapi gym-terhelésérzet"
+          mechanism: "A rosszabb alvás másnap nehezebbnek érződő szetteket hozhat — a gym-RPE proxyja."
+          question: "Nehezebbek a szettek, ha rosszul aludtál?"
+          expected-direction: negative
+          when-positive-hu: "a jobb alvás után {erősség} nehezebbnek érződtek a szettek"
+          when-negative-hu: "a jobb alvás után {erősség} könnyebbnek érződtek a szettek"
           metric-a: sleep-quality
           metric-b: gym-workload
           lag-days: 1
@@ -470,6 +515,11 @@ mezo:
           category: response
           label: Response
           title: "Gym-volumen ↔ másnapi ízületi fájdalom"
+          mechanism: "A nagy volumen másnap ízületi panaszként üthet vissza — túlterhelés-jel."
+          question: "Beszólnak az ízületek a nagy volumen után?"
+          expected-direction: positive
+          when-positive-hu: "a nagy volumenű edzések után {erősség} több volt az ízületi panasz"
+          when-negative-hu: "a nagy volumenű edzések után {erősség} kevesebb volt az ízületi panasz"
           metric-a: gym-volume-kg
           metric-b: gym-joint-pain
           lag-days: 1
@@ -477,6 +527,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Testérzet ↔ aznapi ízületi fájdalom"
+          mechanism: "A rosszabb testérzet és az edzés közbeni ízületi fájdalom együtt járhat."
+          question: "Együtt jár a rossz testérzet és az ízületi fájdalom?"
+          expected-direction: negative
+          when-positive-hu: "a jobb testérzetű napokon {erősség} több volt az ízületi panasz"
+          when-negative-hu: "a jobb testérzetű napokon {erősség} kevesebb volt az ízületi panasz"
           metric-a: checkin-body
           metric-b: gym-joint-pain
           lag-days: 0
@@ -484,6 +539,11 @@ mezo:
           category: response
           label: Response
           title: "Gym-terhelésérzet ↔ másnapi testérzet"
+          mechanism: "A nehéznek érzett edzés a másnapi testérzetben csapódhat le."
+          question: "Megérzi másnap a tested a nehéz edzést?"
+          expected-direction: negative
+          when-positive-hu: "a nehezebb edzések után másnap {erősség} jobb volt a testérzeted"
+          when-negative-hu: "a nehezebb edzések után másnap {erősség} rosszabb volt a testérzeted"
           metric-a: gym-workload
           metric-b: checkin-body
           lag-days: 1
@@ -491,6 +551,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Lefekvés ideje ↔ aznapi alvásminőség"
+          mechanism: "Alvás-higiénia: a késői lefekvés ronthatja az alvás minőségét."
+          question: "Rosszabbul alszol, ha későn fekszel?"
+          expected-direction: negative
+          when-positive-hu: "a későbbi lefekvések után {erősség} jobban aludtál"
+          when-negative-hu: "a későbbi lefekvések után {erősség} rosszabbul aludtál"
           metric-a: bedtime-hour
           metric-b: sleep-quality
           lag-days: 0
@@ -498,6 +563,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Késői étkezés ↔ rákövetkező éjszakai ébredések"
+          mechanism: "A késői étkezés szétdarabolhatja az éjszakát — több ébredés."
+          question: "Többször ébredsz fel, ha későn eszel?"
+          expected-direction: positive
+          when-positive-hu: "a későbbi vacsorák után {erősség} többször ébredtél fel éjjel"
+          when-negative-hu: "a későbbi vacsorák után {erősség} kevesebbszer ébredtél fel éjjel"
           metric-a: late-meal-hour
           metric-b: sleep-awakenings
           lag-days: 1
@@ -505,6 +575,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Stressz-szint ↔ aznapi késői étkezés"
+          mechanism: "Stressz-evés: a feszült nap kitolhatja az utolsó étkezést."
+          question: "Kitolja a stressz az utolsó étkezést?"
+          expected-direction: positive
+          when-positive-hu: "a stresszesebb napokon {erősség} később ettél utoljára"
+          when-negative-hu: "a stresszesebb napokon {erősség} korábban ettél utoljára"
           metric-a: checkin-stress
           metric-b: late-meal-hour
           lag-days: 0
@@ -512,6 +587,11 @@ mezo:
           category: response
           label: Response
           title: "Kész szokások ↔ mentális állapot"
+          mechanism: "A kipipált szokások jobb mentális állapottal járhatnak."
+          question: "Jobb a hangulatod, ha kipipálod a szokásaid?"
+          expected-direction: positive
+          when-positive-hu: "a több kész szokással záruló napokon {erősség} jobb volt a mentális állapotod"
+          when-negative-hu: "a több kész szokással záruló napokon {erősség} rosszabb volt a mentális állapotod"
           metric-a: habits-done
           metric-b: checkin-mental
           lag-days: 0
@@ -519,6 +599,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Esti lezárás ↔ rákövetkező alvásminőség"
+          mechanism: "Az esti lezárás lecsendesítheti az elalvást — jobb alvásminőség."
+          question: "Jobban alszol, ha este lezárod a napot?"
+          expected-direction: positive
+          when-positive-hu: "a lezárt esték után {erősség} jobban aludtál"
+          when-negative-hu: "a lezárt esték után {erősség} rosszabbul aludtál"
           metric-a: ritual-closed
           metric-b: sleep-quality
           lag-days: 1
@@ -526,6 +611,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Napi fehérje ↔ másnapi energia-szint"
+          mechanism: "A fehérjebevitel a másnapi energia-szintben érződhet."
+          question: "Több energiát ad másnapra a fehérje?"
+          expected-direction: positive
+          when-positive-hu: "a fehérjedúsabb napok után {erősség} több energiád volt"
+          when-negative-hu: "a fehérjedúsabb napok után {erősség} kevesebb energiád volt"
           metric-a: daily-protein-g
           metric-b: checkin-energy
           lag-days: 1
@@ -533,6 +623,11 @@ mezo:
           category: response
           label: Response
           title: "Napi XP ↔ mentális állapot"
+          mechanism: "Az aktív, pontszerző nap jobb hangulattal járhat."
+          question: "Jobb a hangulatod az aktív, pontszerző napokon?"
+          expected-direction: positive
+          when-positive-hu: "a több XP-t hozó napokon {erősség} jobb volt a mentális állapotod"
+          when-negative-hu: "a több XP-t hozó napokon {erősség} rosszabb volt a mentális állapotod"
           metric-a: daily-xp
           metric-b: checkin-mental
           lag-days: 0
@@ -540,6 +635,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Étkezés-pontszám ↔ másnapi energia-szint"
+          mechanism: "A jobb minőségű étkezés másnap több energiát adhat."
+          question: "Több energiát ad a jobb minőségű étkezés?"
+          expected-direction: positive
+          when-positive-hu: "a jobb étkezés-pontszámú napok után {erősség} több energiád volt"
+          when-negative-hu: "a jobb étkezés-pontszámú napok után {erősség} kevesebb energiád volt"
           metric-a: meal-score
           metric-b: checkin-energy
           lag-days: 1
@@ -547,6 +647,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Reta-dózis ↔ napi kalória"
+          mechanism: "Az étvágy-elnyomás dózisfüggő lehet — magasabb dózis, kevesebb kalória."
+          question: "Kevesebbet eszel magasabb Reta-dózison?"
+          expected-direction: negative
+          when-positive-hu: "a magasabb dózisú napokon {erősség} többet ettél"
+          when-negative-hu: "a magasabb dózisú napokon {erősség} kevesebbet ettél"
           metric-a: reta-dose-mg
           metric-b: daily-kcal
           lag-days: 0
@@ -554,6 +659,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Sportterhelés ↔ rákövetkező alvásminőség"
+          mechanism: "Az edzésterhelés kihathat a rákövetkező éjszaka minőségére."
+          question: "Jobban alszol az edzős napok után?"
+          expected-direction: positive
+          when-positive-hu: "a sportosabb napok után {erősség} jobban aludtál"
+          when-negative-hu: "a sportosabb napok után {erősség} rosszabbul aludtál"
           metric-a: sport-load-min
           metric-b: sleep-quality
           lag-days: 1
@@ -561,6 +671,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Ébredés ideje ↔ energia-szint"
+          mechanism: "A korábbi vagy későbbi ébredés az aznapi energiában érződhet."
+          question: "Több energiád van, ha korábban kelsz?"
+          expected-direction: negative
+          when-positive-hu: "a későbbi ébredésű napokon {erősség} több energiád volt"
+          when-negative-hu: "a későbbi ébredésű napokon {erősség} kevesebb energiád volt"
           metric-a: wakeup-hour
           metric-b: checkin-energy
           lag-days: 0
@@ -568,6 +683,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alvásminőség ↔ másnapi pulzus-visszaállás"
+          mechanism: "A jó alvás gyorsabb pulzus-visszaállást hozhat — regeneráció-jel."
+          question: "Gyorsabban nyugszik meg a pulzusod, ha jól aludtál?"
+          expected-direction: negative
+          when-positive-hu: "a jobb alvás után {erősség} lassabban nyugodott meg a pulzusod"
+          when-negative-hu: "a jobb alvás után {erősség} gyorsabban nyugodott meg a pulzusod"
           metric-a: sleep-quality
           metric-b: run-hr-recovery-s
           lag-days: 1
@@ -575,6 +695,11 @@ mezo:
           category: response
           label: Response
           title: "Társas említések ↔ mentális állapot"
+          mechanism: "A társas nap jobb hangulattal járhat."
+          question: "Jobb a hangulatod a társas napokon?"
+          expected-direction: positive
+          when-positive-hu: "a társas, több említéses napokon {erősség} jobb volt a mentális állapotod"
+          when-negative-hu: "a társas, több említéses napokon {erősség} rosszabb volt a mentális állapotod"
           metric-a: social-mentions
           metric-b: checkin-mental
           lag-days: 0
@@ -582,6 +707,11 @@ mezo:
           category: response
           label: Response
           title: "ACWR ↔ másnapi ízületi fájdalom"
+          mechanism: "A hirtelen terhelés-ugrás (magas ACWR) a sérülés-kockázat klasszikus jele."
+          question: "Beszólnak az ízületek, ha hirtelen megugrik a terhelés?"
+          expected-direction: positive
+          when-positive-hu: "a terhelés-ugrások után {erősség} több volt az ízületi panasz"
+          when-negative-hu: "a terhelés-ugrások után {erősség} kevesebb volt az ízületi panasz"
           metric-a: acwr
           metric-b: gym-joint-pain
           lag-days: 1
@@ -589,6 +719,11 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Edzés-monotónia ↔ energia-szint"
+          mechanism: "Az egyhangú terhelés (Foster-monotónia) fáradtság-jel lehet."
+          question: "Fáraszt az egyhangú edzésterhelés?"
+          expected-direction: negative
+          when-positive-hu: "az egyhangúbb terhelésű időszakokban {erősség} több energiád volt"
+          when-negative-hu: "az egyhangúbb terhelésű időszakokban {erősség} kevesebb energiád volt"
           metric-a: training-monotony
           metric-b: checkin-energy
           lag-days: 0
@@ -596,6 +731,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Lefekvés-szórás ↔ mentális állapot"
+          mechanism: "Social jetlag: a szórt lefekvés a hangulatban érződhet."
+          question: "Megérzi a hangulatod a szórt lefekvési időket?"
+          expected-direction: negative
+          when-positive-hu: "a szórtabb lefekvésű időszakokban {erősség} jobb volt a mentális állapotod"
+          when-negative-hu: "a szórtabb lefekvésű időszakokban {erősség} rosszabb volt a mentális állapotod"
           metric-a: bedtime-variability
           metric-b: checkin-mental
           lag-days: 0
@@ -603,6 +743,11 @@ mezo:
           category: trigger
           label: Trigger
           title: "Hétvége ↔ késői étkezés"
+          mechanism: "Hétvége-hatás: lazább napokon később csúszhat az utolsó étkezés."
+          question: "Hétvégén később csúszik az utolsó étkezés?"
+          expected-direction: positive
+          when-positive-hu: "hétvégén {erősség} később ettél utoljára"
+          when-negative-hu: "hétvégén {erősség} korábban ettél utoljára"
           metric-a: weekend
           metric-b: late-meal-hour
           lag-days: 0

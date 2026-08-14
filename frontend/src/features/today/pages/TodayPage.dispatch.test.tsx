@@ -203,26 +203,61 @@ describe('TodayPage — no habitAction kind is a dead control', () => {
   })
 })
 
-describe('TodayPage — consume-once level-ups', () => {
-  test('a habit level-up fires the overlay once and is consumed', async () => {
+describe('TodayPage — consume-once reward toasts', () => {
+  const listen = () => {
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+    return { seen, off }
+  }
+
+  test('egy habit level-up EGYSZER dob reward toastot és fogyasztódik', async () => {
     setup({ habitLevelUps: [gymLevelUpMock] })
+    const { seen, off } = listen()
     renderToday()
-    expect(await screen.findByRole('dialog')).toBeInTheDocument()
-    expect(consumeHabitLevelUps).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(consumeHabitLevelUps).toHaveBeenCalledTimes(1))
+    off()
+    expect(seen.filter((t) => t.kind === 'reward')).toHaveLength(1)
+    // és NEM nyílt full-screen overlay
+    expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).toBeNull()
   })
 
-  test('a quest level-up fires the overlay once and is consumed', async () => {
+  test('egy quest level-up EGYSZER dob reward toastot és fogyasztódik', async () => {
     setup({ questLevelUps: [gymLevelUpMock] })
+    const { seen, off } = listen()
     renderToday()
-    expect(await screen.findByRole('dialog')).toBeInTheDocument()
-    expect(consumeQuestLevelUps).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(consumeQuestLevelUps).toHaveBeenCalledTimes(1))
+    off()
+    expect(seen.filter((t) => t.kind === 'reward')).toHaveLength(1)
+    expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).toBeNull()
   })
 
-  test('an empty payload never fires the overlay and never consumes', () => {
+  test('üres payload esetén nincs toast és nincs fogyasztás', () => {
+    const { seen, off } = listen()
     renderToday()
-    expect(screen.queryByRole('dialog')).toBeNull()
+    off()
+    expect(seen.filter((t) => t.kind === 'reward')).toHaveLength(0)
     expect(consumeHabitLevelUps).not.toHaveBeenCalled()
     expect(consumeQuestLevelUps).not.toHaveBeenCalled()
+  })
+})
+
+describe('TodayPage — a kézi pipa reward toastot dob', () => {
+  test('a pipa a habit nevével és a lánc állásával jelez vissza', async () => {
+    renderToday()
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+
+    fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button'))
+    await waitFor(() => expect(check).toHaveBeenCalledWith('caffeine_cutoff'))
+    await waitFor(() => expect(seen.some((t) => t.kind === 'reward')).toBe(true))
+    off()
+
+    const reward = seen.find((t) => t.kind === 'reward')
+    expect(reward).toMatchObject({ kind: 'reward', title: 'MANUAL lánc' })
+    // All 7 KIND_FIXTURES share the EVENING chain and start `pending`, so the chain reads
+    // 0/7 at click time; the builder adds the +1 for the row being checked. An off-by-one
+    // in the CALLER (pre-incrementing chainDone) would render „Szokás · 2 / 7" and fail here.
+    expect((reward as { eyebrow: string }).eyebrow).toBe('Szokás · 1 / 7')
   })
 })
 

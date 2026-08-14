@@ -80,3 +80,37 @@ test('a capped (0 XP) event does not touch the streak', () => {
   expect(profile(qc).dayCounters.counts.WEIGHT).toBe(2)
   expect(profile(qc).streakDays).toBe(7)
 })
+
+test('silentXp nélkül kiírja a sima +XP sort', () => {
+  const qc = qcWith({ lastActiveDate: D }) // same-day: isolate XP from streak logic
+  const toasts: ToastMessage[] = []
+  const off = onToast((t) => toasts.push(t))
+  awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10, date: D })
+  off()
+  expect(toasts.some((t) => 'text' in t && t.text === '+10 XP')).toBe(true)
+})
+
+test('silentXp: true esetén a sima +XP sor elmarad', () => {
+  const qc = qcWith({ lastActiveDate: D })
+  const toasts: ToastMessage[] = []
+  const off = onToast((t) => toasts.push(t))
+  awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10, silentXp: true, date: D })
+  off()
+  expect(toasts.some((t) => 'text' in t && t.text === '+10 XP')).toBe(false)
+})
+
+test('silentXp a szintlépés toastot NEM némítja el', () => {
+  const qc = qcWith({ lastActiveDate: D }) // same-day: isolate from streak-milestone toast too
+  const toasts: ToastMessage[] = []
+  const off = onToast((t) => toasts.push(t))
+  // XP override large enough to guarantee crossing a level from the mock seed (Lv 12, 3140 XP).
+  awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 100_000, silentXp: true, date: D })
+  off()
+  expect(toasts.some((t) => 'text' in t && t.text.includes('Szint'))).toBe(true)
+})
+
+test('a visszatérési érték változatlan silentXp mellett is', () => {
+  const qc = qcWith({ lastActiveDate: D })
+  const res = awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10, silentXp: true, date: D })
+  expect(res.xpAwarded).toBe(10)
+})

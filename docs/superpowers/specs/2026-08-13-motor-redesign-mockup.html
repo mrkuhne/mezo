@@ -1,0 +1,195 @@
+<h2>Motor tab — feldobott UI (mezo-palettával)</h2>
+<p class="subtitle">Elsődleges domén (A) szerint, az app valódi színvilágával: korall + arany brand, meleg krém háttér, domén-színsávok. Kattints alul, ha valamelyik elem-stílus külön tetszik / nem tetszik!</p>
+
+<style>
+  .phone2 { width: 402px; background:#FBF6EF; border:1px solid #E8DFD2; border-radius:30px; padding:16px 12px; font-family:-apple-system,'Segoe UI',sans-serif; color:#2B2118; margin:0 auto; }
+  .phone2 * { box-sizing:border-box; }
+
+  /* hero */
+  .hero { border-radius:20px; padding:14px 16px; color:#fff; background:linear-gradient(135deg,#FF6B4A 0%,#E05535 55%,#A84A26 100%); box-shadow:0 6px 18px rgba(224,85,53,.28); margin-bottom:12px; position:relative; overflow:hidden;}
+  .hero::after { content:'◉'; position:absolute; right:-18px; top:-24px; font-size:110px; opacity:.12; }
+  .hero .eyebrow { font-size:10px; text-transform:uppercase; letter-spacing:.12em; opacity:.85; font-weight:700; }
+  .hero h1 { font-size:20px; margin:2px 0 8px; font-weight:800; }
+  .hero .facts { display:flex; gap:14px; font-size:11px; }
+  .hero .facts b { display:block; font-size:15px; }
+
+  /* status chips */
+  .chips2 { display:flex; gap:7px; overflow-x:auto; padding:2px; margin-bottom:14px; }
+  .chip2 { flex-shrink:0; border-radius:14px; padding:8px 12px; font-size:11px; font-weight:700; display:flex; flex-direction:column; align-items:center; gap:1px; min-width:64px; border:2px solid transparent; }
+  .chip2 b { font-size:17px; line-height:1.1; }
+  .ch-live   { background:#EEF5EC; color:#2D4D2A; border-color:#6B8A5D; box-shadow:0 3px 8px rgba(107,138,93,.25); }
+  .ch-few    { background:#FEF6E2; color:#5E480F; }
+  .ch-nodata { background:#F1EBE2; color:#5F5346; }
+  .ch-degen  { background:#FDF0EC; color:#7A3A28; }
+  .ch-frozen { background:#FDF8EC; color:#8E6E1F; }
+
+  /* domain sections with color rail */
+  .dom2 { background:#FFFFFF; border-radius:18px; margin-bottom:10px; overflow:hidden; box-shadow:0 2px 10px rgba(43,33,24,.06); border-left:5px solid var(--rail); }
+  .d-sleep { --rail:#7B6BC9; --tint:#F1EFFB; }
+  .d-train { --rail:#FF6B4A; --tint:#FFF4EF; }
+  .d-fuel  { --rail:#6B8A5D; --tint:#EEF5EC; }
+  .d-mind  { --rail:#D4A853; --tint:#FDF8EC; }
+  .dom2-h { display:flex; align-items:center; gap:9px; padding:11px 13px; background:var(--tint); }
+  .dom2-h .ico { width:30px; height:30px; border-radius:10px; background:var(--rail); color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 3px 7px rgba(43,33,24,.18);}
+  .dom2-h .name { font-size:14px; font-weight:800; }
+  .dom2-h .meta { font-size:10.5px; color:#8A7A6A; }
+  .dom2-h .caret { margin-left:auto; color:#8A7A6A; font-size:13px;}
+  .livecnt { margin-left:auto; margin-right:8px; background:#6B8A5D; color:#fff; font-size:10px; font-weight:800; border-radius:999px; padding:3px 8px; }
+
+  .prow2 { border-top:1px solid #F3EEE6; padding:10px 13px; }
+  .prow2 .top { display:flex; align-items:center; gap:8px; }
+  .prow2 .t { font-size:12.5px; font-weight:700; flex:1; }
+  .v2 { font-size:9.5px; font-weight:800; border-radius:999px; padding:3px 8px; white-space:nowrap; letter-spacing:.03em;}
+  .v-live { background:#6B8A5D; color:#fff; box-shadow:0 2px 6px rgba(107,138,93,.4);}
+  .v-few { background:#F6DC8A; color:#5E480F; }
+  .v-nodata { background:#E8DFD2; color:#5F5346; }
+  .xdom2 { font-size:9px; font-weight:700; color:#7B6BC9; background:#F1EFFB; border-radius:999px; padding:2px 7px; }
+  .rmini { display:flex; align-items:center; gap:7px; margin-top:5px; font-size:10.5px; color:#5F5346;}
+  .rbar { flex:0 0 90px; height:6px; border-radius:3px; background:#F1EBE2; position:relative; overflow:hidden;}
+  .rbar i { position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg,#6B8A5D,#4A6A3D); border-radius:3px; }
+
+  /* expanded card */
+  .exp2 { margin-top:9px; border-radius:14px; background:linear-gradient(180deg,#FDF8EC, #FFF); border:1px solid #FAECC8; padding:11px 12px; font-size:11.5px; color:#5F5346; }
+  .exp2 .lbl2 { display:flex; align-items:center; gap:5px; font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:#B8902E; font-weight:800; margin:8px 0 3px; }
+  .exp2 .lbl2:first-child { margin-top:0; }
+  .srcpill { display:inline-flex; align-items:center; gap:5px; background:#fff; border:1px solid #E8DFD2; border-radius:999px; padding:4px 9px; font-size:10.5px; margin:2px 4px 2px 0; font-weight:600; color:#2B2118;}
+  .cta { display:flex; justify-content:center; margin-top:10px; }
+  .cta a { background:#FF6B4A; color:#fff; font-size:11.5px; font-weight:800; border-radius:999px; padding:8px 16px; box-shadow:0 4px 10px rgba(255,107,74,.35); }
+
+  /* few-days nudge */
+  .nudge { margin-top:6px; display:flex; gap:7px; align-items:center; background:#FEF6E2; border-radius:10px; padding:7px 9px; font-size:10.5px; color:#5E480F; }
+  .nudge .dot { font-size:13px; }
+
+  /* coverage */
+  .cov2 { display:flex; align-items:center; gap:9px; padding:9px 13px; border-top:1px solid #F3EEE6; font-size:12px; font-weight:600;}
+  .ring { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8.5px; font-weight:800; color:#2D4D2A; background:conic-gradient(#6B8A5D var(--p), #F1EBE2 0); }
+  .ring i { width:22px; height:22px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-style:normal;}
+  .cov2 .dim2 { margin-left:auto; color:#8A7A6A; font-size:10px; font-weight:500; text-align:right;}
+</style>
+
+<div class="mockup">
+  <div class="mockup-header">Motor — élénk változat (görgethető oldal egyben)</div>
+  <div class="mockup-body">
+    <div class="phone2">
+
+      <div class="hero">
+        <div class="eyebrow">Minta-motor</div>
+        <h1>4 élő összefüggés</h1>
+        <div class="facts">
+          <span><b>29</b> figyelt pár</span>
+          <span><b>31</b> mért metrika</span>
+          <span><b>ma 02:41</b> utolsó felismerés</span>
+        </div>
+      </div>
+
+      <div class="chips2">
+        <span class="chip2 ch-live"><b>4</b>Élő</span>
+        <span class="chip2 ch-few"><b>11</b>Kevés nap</span>
+        <span class="chip2 ch-nodata"><b>9</b>Nincs adat</span>
+        <span class="chip2 ch-degen"><b>2</b>Degenerált</span>
+        <span class="chip2 ch-frozen"><b>3</b>Fagyasztva</span>
+      </div>
+
+      <div class="dom2 d-sleep">
+        <div class="dom2-h">
+          <span class="ico">🌙</span>
+          <span><span class="name">Alvás</span><br><span class="meta">7 pár</span></span>
+          <span class="livecnt">2 élő</span><span class="caret">▾</span>
+        </div>
+
+        <div class="prow2">
+          <div class="top">
+            <span class="t">Lefekvés ideje ↔ alvásminőség</span>
+            <span class="v2 v-live">ÉLŐ</span>
+          </div>
+          <div class="rmini"><span class="rbar"><i style="width:62%"></i></span> r=−0.62 · 23 nap · p=0.002</div>
+          <div class="exp2">
+            <div class="lbl2">💡 Miért figyeljük</div>
+            Alvás-higiénia: a késői lefekvés ronthatja az alvás minőségét.
+            <div class="lbl2">📥 Honnan jön az adat</div>
+            <span class="srcpill">🌙 Lefekvés ideje · Alvás-napló</span>
+            <span class="srcpill">🌙 Alvásminőség · Alvás-napló</span>
+            <div class="cta"><a>Minta megnyitása →</a></div>
+          </div>
+        </div>
+
+        <div class="prow2">
+          <div class="top">
+            <span class="t">Esti lezárás ↔ köv. alvásminőség</span>
+            <span class="xdom2">mentális</span>
+            <span class="v2 v-few">MÉG 3 NAP</span>
+          </div>
+          <div class="nudge"><span class="dot">🎯</span> Zárd le az estét még 3 napon, és ez a pár életre kel!</div>
+        </div>
+
+        <div class="prow2">
+          <div class="top">
+            <span class="t">Késői étkezés ↔ éjszakai ébredések</span>
+            <span class="xdom2" style="color:#6B8A5D;background:#EEF5EC;">táplálkozás</span>
+            <span class="v2 v-nodata">NINCS ADAT</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom2 d-train">
+        <div class="dom2-h">
+          <span class="ico">🏋️</span>
+          <span><span class="name">Edzés</span><br><span class="meta">8 pár</span></span>
+          <span class="livecnt">1 élő</span><span class="caret">▸</span>
+        </div>
+      </div>
+
+      <div class="dom2 d-fuel">
+        <div class="dom2-h">
+          <span class="ico">🥗</span>
+          <span><span class="name">Táplálkozás</span><br><span class="meta">5 pár</span></span>
+          <span class="livecnt">1 élő</span><span class="caret">▸</span>
+        </div>
+      </div>
+
+      <div class="dom2 d-mind">
+        <div class="dom2-h">
+          <span class="ico">🧠</span>
+          <span><span class="name">Mentális & társas</span><br><span class="meta">9 pár</span></span>
+          <span class="caret">▸</span>
+        </div>
+      </div>
+
+      <div class="dom2" style="--rail:#8A7A6A; --tint:#F1EBE2;">
+        <div class="dom2-h">
+          <span class="ico">📊</span>
+          <span><span class="name">Metrika-lefedettség</span><br><span class="meta">31 metrika · a legvékonyabb elöl</span></span>
+          <span class="caret">▾</span>
+        </div>
+        <div class="cov2"><span class="ring" style="--p:0%"><i>0</i></span> Pulzus-visszaállás <span class="dim2">0/60 nap<br>2 pár vár rá</span></div>
+        <div class="cov2"><span class="ring" style="--p:8%"><i>5</i></span> Gym-terhelésérzet <span class="dim2">5/60 nap<br>3 pár vár rá</span></div>
+        <div class="cov2"><span class="ring" style="--p:85%"><i>51</i></span> Alvásminőség <span class="dim2">51/60 nap<br>3 pár</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<h3>Melyik elemek találtak be? (többet is jelölhetsz)</h3>
+<div class="options" data-multiselect>
+  <div class="option" data-choice="hero" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Korall hero-fejléc</h3><p>„4 élő összefüggés" gradiens kártya a motor-számokkal</p></div>
+  </div>
+  <div class="option" data-choice="chips" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Nagy számos státusz-chipek</h3><p>Vízszintesen görgethető, szűrőként kattintható kártya-chipek</p></div>
+  </div>
+  <div class="option" data-choice="rails" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Domén-színsávok + ikon-badge</h3><p>Lila alvás / korall edzés / zöld fuel / arany mentális szekciófejek</p></div>
+  </div>
+  <div class="option" data-choice="nudge" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>🎯 „Még 3 nap" nudge</h3><p>A kevés-napos pároknál játékos cselekvés-sor a szűk keresztmetszetre</p></div>
+  </div>
+  <div class="option" data-choice="rings" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content"><h3>Lefedettség-gyűrűk</h3><p>Mini progress-ring a metrikáknál a sima sáv helyett</p></div>
+  </div>
+</div>

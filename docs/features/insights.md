@@ -134,7 +134,7 @@ in live mode. An empty live list renders the honest null-state *"Az első N=1 k�
 mintákból javasolja Mezo."*. **Mock mode** keeps the Phase-1 seed (active + completed cards, the inert
 propose CTA — no proposed rows, so no accept/dismiss buttons). Behavior detail in [proactive.md §2](proactive.md).
 
-### 2.8 Motor (`pages/MotorPage.tsx`) — read-only pattern-gate diagnostics since mezo-viqs
+### 2.8 Motor (`pages/MotorPage.tsx`) — read-only pattern-gate diagnostics (mezo-viqs, redesigned mezo-18bx)
 Not another results tab — a transparency page onto the **gate** that decides which correlations
 even reach the Patterns Inbox (§2.1). Reads `usePatternMonitor()`
 (`data/insights/monitorHooks.ts`, `['pattern-monitor']` dual-read; real mode maps
@@ -142,24 +142,54 @@ even reach the Patterns Inbox (§2.1). Reads `usePatternMonitor()`
 failure ⇒ a distinct honest error card with a retry — never a blank body — and the unresolved-yet
 loading window renders its own honest frame too, all three states gated by the hook's
 `isPending`/`isError`/`refetch`, review fix wave `mezo-viqs`; mock returns the `patternMonitor`
-seed in `insights.ts`) and renders three blocks top to bottom: an **engine-state header** (the
-correlation window, `min-n`, the raw cron expression — the FE never parses cron — and **„Utolsó
-felismerés"**, `lastRunAt` or "még nem talált mintát"); the **pair verdicts**, one
-`GateVerdictRow` (`components/GateVerdictRow.tsx`) per catalog pair with a verdict chip, a
-deterministic Hungarian sentence, and the raw `n`/`r`/`p` chips; and **metric coverage**, one
-`MetricCoverageRow` (`components/MetricCoverageRow.tsx`) per `MetricKey` (all 12) with a mini bar,
-last day with data, and how many catalog pairs reference it. The 5 verdicts in one line each:
-**live** = passed the gate, `r`/`n`/`p` are live; **few_days** = aligned days below `min-n`
-(reports `missingDays` + the thinner-covered bottleneck metric); **no_data** = zero aligned days —
-the sentence names the empty metric only when the bottleneck's own `coveredDays === 0`, otherwise
-it says the two metrics never overlap (`alignedDays == 0` does NOT imply either metric itself is
-empty, e.g. a `lag=1` pair whose days just never line up; `GateVerdictRow` takes the bottleneck's
-`coveredDays` as a prop from `MotorPage`, staying presentational); **degenerate** = enough aligned
-days but a constant series; **frozen** = the row is user-judged `confirmed`/`rejected`, so the
-nightly job never re-touches it and the row's own frozen `r`/`n`/`p` are shown — no live recompute.
-Ordering (`MotorPage.tsx:7-21`, `comparePairs`): pairs
-`live → few_days (fewest missing days first) → degenerate → no_data → frozen`; coverage rows sort
-thinnest-covered first. **Every number on this page is a LIVE recomputation over the job's exact
+seed in `insights.ts`).
+
+**Structure since the `mezo-18bx` redesign** (spec:
+`2026-08-13-motor-redesign-design.md` + committed mockup), top to bottom:
+1. **`MotorHero`** — coral primary-gradient card: „N élő összefüggés" + facts (pair count,
+   metric count, **„utolsó felismerés"** — the `lastRunAt` semantics below are unchanged) + a
+   small line with the window, lookback, `min-n` and the raw cron (the FE never parses cron).
+2. **`VerdictFilterChips`** — big-number chips per verdict acting as **multi-toggle filters**
+   (`aria-pressed`; empty selection = no filter). Filtering narrows section CONTENT — a
+   filtered-empty section keeps its header and shows an honest „0 találat a szűrőre" row.
+3. **Domain sections (`DomainSection`)** — collapsible cards with a colored left rail +
+   icon badge + tinted header (sleep→lav, train→primary, fuel→success, mind→accent,
+   body→secondary, other→muted; meta in `logic/domains.ts` `DOMAIN_META`). **Primary-domain
+   rule:** a pair lives in the section of its **metric-B (outcome) domain**
+   (`groupPairsByDomain`) — every pair appears exactly once; a cross-domain metric-A renders a
+   small tinted chip on the row. Sections default open only when they hold a live pair; within
+   a section the `comparePairs` order is unchanged
+   (`live → few_days fewest-missing-first → degenerate → no_data → frozen`).
+4. **`PairRow`** (the `GateVerdictRow` successor; **human-language v4 since `mezo-fj1g`**) —
+   the card speaks the USER's language, not the engine's storage model. Header: category pill +
+   cross-domain chip + verdict pill (live = filled success, few_days = `MÉG N NAP`). **Title =
+   the pair's authored `questionHu`** („Jobban alszol, ha este lezárod a napot?"), with a muted
+   `pairLine` under it (`{A} ↔ {lag>0 ? 'másnapi ' : ''}{B}`). Two always-visible blocks:
+   **🔍 Amit keresünk** (= `mechanismHu`) and **📈 Amit eddig látunk** — the finding is a
+   deterministic composition (`logic/findings.ts`): the authored `whenPositiveHu`/`whenNegativeHu`
+   reading picked by `sign(r)`, its `{erősség}` slot filled from |r| (kicsit &lt;0.3 · érezhetően
+   &lt;0.6 · határozottan) and bolded, prefixed „Igen:" when the found direction matches the
+   catalog's `expectedDirection` and „Meglepő:" otherwise; below it a confidence chip + honest
+   Hungarian p-translation (`confidenceMeta`: ≤0.05 „megbízható jel — ez már aligha véletlen" ·
+   ≤0.15 „ígéretes jel" · else „még bizonytalan — kb. minden N. ilyen minta véletlenül is
+   összejönne", always with „{n} közös nap"). **few_days renders the „🎯 Még nincs válasz" block**
+   with the nudge sentence; no_data keeps the overlap-vs-empty distinction (names the empty
+   metric only when the bottleneck's own `coveredDays === 0`); frozen shows the finding + the
+   user-judged note. **Tap expands** an accent-tinted card: 📥 source pills (metric label +
+   `sourceHu`, resolved by `MotorPage` from the coverage block), the **raw `r/n/p` „Statisztika"
+   line (moved here off the card face)**, and on live/frozen rows a coral CTA
+   **„Minta megnyitása →"** to `/insights/patterns?pair=<pairKey>` (§2.1 highlights + scrolls;
+   the `PatternCard` carries the reverse „Motor-diagnosztika →" link). No all-caps rows remain on
+   the card face.
+5. **`MetricCoverageRing`** (the `MetricCoverageRow` successor; retagged `mezo-fj1g`) —
+   per-metric conic-gradient progress ring (day count inside), the **metric name as the headline**
+   (13.5px, normal case), a muted sub-line „{n}/{window} nap · utoljára: {ma | tegnap | Máj 20}"
+   (`lastSeenLabel`), and a colored status chip on the right: amber „N pár vár rá" when NONE of
+   the metric's referencing pairs is live, green „N párban él" otherwise — nothing truncates.
+   Tap expands to the metric's `sourceHu` + the referencing pairs' questions. Sort unchanged:
+   thinnest first.
+
+**Every number on this page is a LIVE recomputation over the job's exact
 windows for this request** — the page persists nothing and reads no historical log, so it can
 never disagree with what the nightly job would decide ([`companion.md`](companion.md) §1 V3.1 /
 mezo-viqs).
@@ -432,7 +462,7 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **Chat plumbing (`mezo-at8x`):** `shared/lib/markdown.test.tsx` (11 — inline set, snake_case left alone, no HTML injection, each block kind), `features/insights/logic/useVoiceInput.test.tsx` (3 — record→transcribe→callback, denied mic, unsupported browser; a `FakeMediaRecorder` + stubbed `navigator.mediaDevices` stand in for what jsdom lacks), and the multipart case in `data/insights/chatApi.test.ts` (the request must go out as `multipart/form-data`, not JSON).
 - **Nav/shell:** `insights.nav.test.tsx` (real: opens the `Minták` chip's dropdown and reaches `Heti`/`Memoár`/`Előrejelzések`/**`Kísérletek`** via `menuitem` clicks → their null-states; mock: `Memoár` navigation renders the demo) — since the compact-header redesign (`mezo-ugqb`) it drives navigation through the shared `SubNavDropdown` popover rather than the retired `InsightsSubNav`'s pills. The dedicated `InsightsSubNav.test.tsx` (which asserted **both modes render all 7 `.np-pill`s since P2 — nothing hidden**) is gone; the dropdown mechanics themselves are covered generically by `shared/ui/SubNavDropdown.test.tsx`, and `insights.nav.test.tsx` still exercises `visibleInsightsTabs()` end-to-end by reaching every tab via the popover in both modes. Plus app-level `src/app/navigation.test.tsx` clicks the `aria-label="Insights"` sparkle entry link and asserts the `aria-label="Insights alnavigáció"` landmark (§2); `TabBar.test.tsx` asserts the opposite — the bottom `TabBar` renders only the four tab labels (`Ma`/`Edzés`/`Fuel`/`Én`) and explicitly has **no** `Insights` tab; and `features/progression/components/appHeroMount.test.tsx` asserts `.apphero` renders on `/insights` too.
 - **No ghost pages remain (since P2):** every page test now has a `(mock mode)` + `(real mode)` describe asserting real data / the honest null-state — no test asserts a `hamarosan` teaser any more. `ExperimentsPage.test.tsx` real-mode: an MSW proposed row renders `◇ Javaslat` + Elfogadom/Elvetem and clicking Elfogadom POSTs the decision; the default empty array shows the still-learning null-state. `experimentsHooks.test.tsx` mirrors the P1 `predictionsHooks.test.tsx` idiom (maps a wire row, `[]` default, mock no-fetch). Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
-- **`MotorPage.test.tsx` (`mezo-viqs`):** `(mock mode)` — the engine-state header (window/lookback/min-n/raw cron), all 5 verdicts' derived sentences render, pair ordering (`live → few_days fewest-missing-first → degenerate → no_data → frozen`), and coverage-row ordering (thinnest-covered first, proving the page's own sort against a deliberately unsorted seed); `(real mode)` — the 404 degraded card, the "még nem talált mintát" (no pattern found yet) `lastRunAt: null` case, an honest error card with a retry on a non-404 failure (e.g. 500, review fix wave), and the `no_data` "no overlapping day" sentence branch for a bottleneck metric whose own `coveredDays` is non-zero — all via MSW.
+- **`MotorPage.test.tsx` (`mezo-viqs`, extended `mezo-18bx`):** `(mock mode)` — the hero facts + live count, verdict-chip filter toggling (`aria-pressed`, few_days row disappears/reappears), all 5 verdicts' sentences (few_days = the 🎯 nudge), domain grouping by metric-B + cross-domain chip, row expansion (mechanism + source pills + „Minta megnyitása →" only on live/frozen), coverage rings („N pár vár rá" + expand-to-source) and coverage ordering (thinnest-first against a deliberately unsorted seed); `(real mode)` — the 404 degraded card, the "még nem talált mintát" `lastRunAt: null` case, an honest error card with a retry on a non-404 failure, and the `no_data` "no overlapping day" sentence branch (section opened by click — no live pair means sections start collapsed) — all via MSW. **`domains.test.ts`** covers `groupPairsByDomain` pure. **`PatternsPage.test.tsx`** adds the `?pair=` highlight + „Motor-diagnosztika →" back-link case.
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -467,16 +497,18 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **`InsightsSubNav.tsx` is DELETED (`mezo-ugqb`)** — superseded by the shared `@/shared/ui/SubNavDropdown` mounted via `InsightsSection`
 - `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`; **8th entry `motor` added `mezo-viqs`; 9th entry `memory` added `mezo-al1i`**) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2, motor and memory never gated; all 9 tabs visible in both modes)
 - `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
-- `pages/MotorPage.tsx` — **mezo-viqs**, the 8th sub-tab: read-only pattern-gate diagnostics (§2.8), three blocks (engine-state header / pair verdicts / metric coverage), honest degraded (404) / error-with-retry (any other failure) / loading / "még nem talált mintát" states, shown in both modes; since **`mezo-al1i`** carries a footer link to `/insights/memoria`
+- `pages/MotorPage.tsx` — **mezo-viqs**, redesigned **mezo-18bx**: the 8th sub-tab, read-only pattern-gate diagnostics (§2.8) — hero / verdict-filter chips / domain sections / coverage rings; owns the filter `useState` + the coverage-map lookups; honest degraded (404) / error-with-retry / loading / "még nem talált mintát" states, shown in both modes; since **`mezo-al1i`** carries a footer link to `/insights/memoria`
 - `pages/MemoryPage.tsx` — **`mezo-al1i`**, the 9th sub-tab: read-only memory-pipeline observatory (§2.9), 4 page-local segments (`useStickyTab('insights.memoria.view')`) over `useMemoryOverview`/`useMemorySummaries`, one page-level degraded card (companion 404) + per-panel `GhostState`/degraded lines in Kereső/Audit, shown in both modes
 - `components/Memory{LayerCard,LayersPanel,JournalPanel,SearchPanel,AuditPanel}.tsx` — **`mezo-al1i`**: the L0→L3 wash-tinted layer cards + cron-labelled pulsing `FlowConnector`s (Áttekintés), the memoir-styled journal cards with month separators + embed dot + `focusDate` scroll (Napló), the lazy-submit search form (Kereső), and the two-block cost-hero/provenance panel (Audit) — §2.9 has the full per-panel breakdown
 - `components/SimilarDayCard.tsx` — **`mezo-al1i`** the Kereső result card: similarity ring + bar + the `egyezés × frissesség = végső` three-chip score row (freshness recovered client-side as `finalScore/similarity`); `onPick(date)` jumps the page to Napló focused on that day
 - `components/TokenColumns.tsx` — **`mezo-al1i`** the Audit panel's small stacked SVG bar chart (`--dv-lav` input / `--dv-sage` output tokens per day)
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
-- `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
+- `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject; **mezo-18bx**: `highlighted` prop (the `?pair=` target ring) + the „Motor-diagnosztika →" back-link
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
-- `components/GateVerdictRow.tsx` + `MetricCoverageRow.tsx` — **mezo-viqs**, the Motor page's two presentational rows (verdict chip + deterministic Hungarian sentence + raw chips; coverage bar + last-day + pair count) — pure props, no `@/data/*` import, per `frontend_conventions.md`
+- `components/MotorHero.tsx · VerdictFilterChips.tsx · DomainSection.tsx · PairRow.tsx · MetricCoverageRing.tsx` — **mezo-18bx**, the Motor page's presentational units (the `mezo-viqs` `GateVerdictRow`/`MetricCoverageRow` successors — those two are deleted): hero card, filter chips, collapsible domain sections, expandable pair rows (`verdictSentence` + 🎯 nudge live in `PairRow.tsx`), coverage rings — pure props, no `@/data/*` import, per `frontend_conventions.md`
+- `logic/domains.ts` — **mezo-18bx**, `DOMAIN_META`/`DOMAIN_ORDER` (token-based domain colors) + `comparePairs` (moved out of `MotorPage`) + `groupPairsByDomain` (primary domain = metric-B)
+- `logic/findings.ts` — **mezo-fj1g**, the human-finding composition: `strengthWord` (|r| bands), `findingSentence` (authored direction reading + „Igen/Meglepő" prefix + `{erősség}` substitution), `confidenceMeta` (honest Hungarian p-translation), `pairLine` — pure, unit-tested in `findings.test.ts`
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows; the answer body renders via `@/shared/lib/markdown`
 - `sheets/ConversationPickerSheet.tsx` — **`mezo-at8x.3`** the conversation list + "Új beszélgetés" row (presentational; ChatPage owns the `?c=` selection)
 - `logic/useStickToBottom.ts` — **`mezo-at8x.2`** rAF bottom-anchoring + the stick-while-at-bottom rule for the streamed answer

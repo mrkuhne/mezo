@@ -2,8 +2,8 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.api.dto.LlmUsageDay;
-import io.mrkuhne.mezo.api.dto.LlmUsageResponse;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageDay;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
@@ -38,9 +38,9 @@ class CompanionMemoryLlmUsageApiIT extends ApiIntegrationTest {
         return day.atTime(hour, 0).atZone(llmLogProperties.reportZone()).toInstant();
     }
 
-    private LlmUsageResponse usage(String query) {
+    private MemoryLlmUsageResponse usage(String query) {
         return getForBody("/api/companion/memory/llm-usage" + query, ownerAuthHeaders(),
-                HttpStatus.OK, LlmUsageResponse.class);
+                HttpStatus.OK, MemoryLlmUsageResponse.class);
     }
 
     @Test
@@ -57,17 +57,17 @@ class CompanionMemoryLlmUsageApiIT extends ApiIntegrationTest {
         llmLogPopulator.logAt(at(today.minusDays(40), 9), owner, CallKind.CHAT, "companion",
                 "gemini-2.5-flash", 999, 999, null, new BigDecimal("9.000000"));
 
-        LlmUsageResponse response = usage("?days=30");
+        MemoryLlmUsageResponse response = usage("?days=30");
 
         assertThat(response.getEnabled()).isTrue();
         assertThat(response.getPerDay()).hasSize(2); // a 40 napos sor az ablakon kívül
-        LlmUsageDay yesterday = response.getPerDay().getFirst(); // date-asc
+        MemoryLlmUsageDay yesterday = response.getPerDay().getFirst(); // date-asc
         assertThat(yesterday.getDate()).isEqualTo(today.minusDays(1));
         assertThat(yesterday.getCalls()).isEqualTo(1L);
         assertThat(yesterday.getInputTokens()).isEqualTo(500L);
         assertThat(yesterday.getOutputTokens()).isEqualTo(100L);
         assertThat(yesterday.getCostUsd()).isEqualTo(0.02);
-        LlmUsageDay todayRow = response.getPerDay().get(1);
+        MemoryLlmUsageDay todayRow = response.getPerDay().get(1);
         assertThat(todayRow.getCalls()).isEqualTo(2L);
         assertThat(todayRow.getInputTokens()).isEqualTo(300L);
         assertThat(todayRow.getOutputTokens()).isEqualTo(100L);
@@ -84,7 +84,7 @@ class CompanionMemoryLlmUsageApiIT extends ApiIntegrationTest {
         llmLogPopulator.logAt(at(today, 10), ownerId(), CallKind.EMBED_DOC, "companion",
                 "gemini-embedding-001", 0, 0, null, null);
 
-        LlmUsageResponse response = usage("");
+        MemoryLlmUsageResponse response = usage("");
 
         assertThat(response.getPerDay().getFirst().getCostUsd()).isNull();
         assertThat(response.getTotals().getCostUsd()).isNull();

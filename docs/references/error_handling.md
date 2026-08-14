@@ -75,9 +75,12 @@ The `message` field is NEVER set at the throw site. `GlobalExceptionHandler` res
 
 `GlobalExceptionHandler` also maps framework exceptions onto the same wire contract:
 `MethodArgumentNotValidException` and `ConstraintViolationException` → FIELD messages with
-`VALIDATION_*` codes; `NoResourceFoundException` → 404 `RESOURCE_NOT_FOUND`; any other
-exception → 500 `INTERNAL_ERROR`. New cross-cutting handlers belong there — never map
-exceptions in controllers.
+`VALIDATION_*` codes; `MethodArgumentTypeMismatchException` → 400 FIELD
+`VALIDATION_INVALID_VALUE` naming the parameter (a request value Spring could not CONVERT to the
+method's type — a malformed UUID, a non-numeric integer, an unknown enum constant; conversion runs
+before both the controller method and bean validation, so without this it would read as a server
+fault); `NoResourceFoundException` → 404 `RESOURCE_NOT_FOUND`; any other exception → 500
+`INTERNAL_ERROR`. New cross-cutting handlers belong there — never map exceptions in controllers.
 
 ## Error Code Convention
 

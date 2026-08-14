@@ -540,7 +540,7 @@ paths:
           description: Napi rollup + összesen
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/LlmUsageResponse' }
+              schema: { $ref: '#/components/schemas/MemoryLlmUsageResponse' }
         '401':
           description: Missing or invalid token
           content:
@@ -677,10 +677,11 @@ components:
         code: { type: string, description: "Stream failure code — 'COMPANION_STREAM_FAILED'." }
     PatternResponse:
       type: object
-      required: [id, kind, category, categoryLabel, title, evidence, status, lastDetectedAt]
+      required: [id, kind, pairKey, category, categoryLabel, title, evidence, status, lastDetectedAt]
       properties:
         id: { type: string, format: uuid }
         kind: { type: string, pattern: '^(statistical|ai_hypothesis)$', description: 'statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM loop (V3.2).' }
+        pairKey: { type: string, description: 'A minta stabil pár-kulcsa (statistical: katalógus-kulcs, hypothesis: hyp-hash) — a Motor↔Patterns kereszt-link horgonya (mezo-18bx).' }
         category: { type: string, pattern: '^(physiology|trigger|response)$', description: 'The FE PatternCategory — assigned by the metric-pair catalog.' }
         categoryLabel: { type: string, description: 'Hungarian category chip label.' }
         title: { type: string }
@@ -726,7 +727,7 @@ components:
           items: { $ref: '#/components/schemas/PatternMetricCoverage' }
     PatternMonitorPair:
       type: object
-      required: [key, title, category, categoryLabel, lagDays, metricAKey, metricALabel, metricBKey, metricBLabel, verdict, alignedDays]
+      required: [key, title, category, categoryLabel, lagDays, metricAKey, metricALabel, metricBKey, metricBLabel, mechanismHu, questionHu, expectedDirection, whenPositiveHu, whenNegativeHu, metricADomain, metricBDomain, verdict, alignedDays]
       properties:
         key: { type: string, description: 'A pár stabil identitása (pair_key).' }
         title: { type: string }
@@ -737,6 +738,13 @@ components:
         metricALabel: { type: string }
         metricBKey: { type: string }
         metricBLabel: { type: string }
+        mechanismHu: { type: string, description: 'Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx).' }
+        questionHu: { type: string, description: 'Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g).' }
+        expectedDirection: { type: string, pattern: '^(positive|negative)$', description: 'A mechanizmus által várt korreláció-irány (mezo-fj1g).' }
+        whenPositiveHu: { type: string, description: 'Pozitív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).' }
+        whenNegativeHu: { type: string, description: 'Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).' }
+        metricADomain: { type: string, pattern: '^(sleep|train|fuel|mind|body|other)$', description: 'metric-a élet-doménje.' }
+        metricBDomain: { type: string, pattern: '^(sleep|train|fuel|mind|body|other)$', description: 'metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja.' }
         verdict: { type: string, pattern: '^(live|few_days|no_data|degenerate|frozen)$' }
         alignedDays: { type: integer, description: 'Az illesztett napok száma (frozen sornál a befagyasztott n).' }
         missingDays: { type: integer, nullable: true, description: 'minN - alignedDays — csak few_days.' }
@@ -747,10 +755,12 @@ components:
         status: { type: string, nullable: true, pattern: '^(confirmed|rejected)$', description: 'Csak frozen sorokon — a user ítélete.' }
     PatternMetricCoverage:
       type: object
-      required: [key, label, coveredDays, windowDays, pairCount]
+      required: [key, label, sourceHu, domain, coveredDays, windowDays, pairCount]
       properties:
         key: { type: string, description: 'kebab-case metrika-kulcs, egyezően a pairs katalógussal.' }
         label: { type: string, description: 'Magyar metrika-címke.' }
+        sourceHu: { type: string, description: 'Honnan jön az adat — gyűjtő-felület vagy derivált-magyarázat.' }
+        domain: { type: string, pattern: '^(sleep|train|fuel|mind|body|other)$' }
         coveredDays: { type: integer, description: 'Hány napon van érték az ablakban.' }
         windowDays: { type: integer }
         lastDayWithData: { type: string, format: date, nullable: true }
@@ -852,16 +862,16 @@ components:
         excerpt: { type: string, description: 'A napi narratíva recall.render-max-chars-ra (300) vágva.' }
         similarity: { type: number, format: double, description: 'Nyers koszinusz-egyezés (0..1) — a floor erre vonatkozik.' }
         finalScore: { type: number, format: double, description: 'similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.' }
-    LlmUsageResponse:
+    MemoryLlmUsageResponse:
       type: object
       required: [enabled, perDay, totals]
       properties:
         enabled: { type: boolean, description: 'mezo.feature.llm-log.enabled állása — false esetén a napló nem bővül és a sorok üresek.' }
         perDay:
           type: array
-          items: { $ref: '#/components/schemas/LlmUsageDay' }
-        totals: { $ref: '#/components/schemas/LlmUsageTotals' }
-    LlmUsageDay:
+          items: { $ref: '#/components/schemas/MemoryLlmUsageDay' }
+        totals: { $ref: '#/components/schemas/MemoryLlmUsageTotals' }
+    MemoryLlmUsageDay:
       type: object
       required: [date, calls, inputTokens, outputTokens]
       properties:
@@ -870,7 +880,7 @@ components:
         inputTokens: { type: integer, format: int64, description: 'prompt_tokens összege — a nyers szám, a cached rész is benne.' }
         outputTokens: { type: integer, format: int64, description: 'candidates + thoughts tokenek összege.' }
         costUsd: { type: number, format: double, nullable: true, description: 'null = nincs beárazott sor (ismeretlen ≠ nulla költség).' }
-    LlmUsageTotals:
+    MemoryLlmUsageTotals:
       type: object
       required: [calls, inputTokens, outputTokens]
       properties:

@@ -47,6 +47,7 @@ class CompanionPatternApiIT extends ApiIntegrationTest {
         assertThat(patterns).hasSize(1);
         assertThat(patterns.getFirst().getId()).isEqualTo(own.getId());
         assertThat(patterns.getFirst().getKind()).isEqualTo("statistical");
+        assertThat(patterns.getFirst().getPairKey()).isEqualTo(own.getPairKey()); // mezo-18bx kereszt-link horgony
         assertThat(patterns.getFirst().getConfidence()).isNull();
         assertThat(patterns.getFirst().getEvidence()).isNotEmpty();
     }

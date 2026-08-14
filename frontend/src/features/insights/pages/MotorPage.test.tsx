@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -26,10 +26,39 @@ describe('MotorPage (mock mode)', () => {
     expect(screen.getByText('0 40 2 * * *')).toBeInTheDocument()
   })
 
-  test('renders every verdict with its honest derived sentence', () => {
+  test('renders the hero with the live count and the engine facts', () => {
     renderPage()
-    expect(screen.getAllByText('él')).toHaveLength(2)
-    expect(screen.getByText('Még 2 illeszkedő nap kell — a szűk keresztmetszet: edzés-RPE.')).toBeInTheDocument()
+    expect(screen.getByText('2 élő összefüggés')).toBeInTheDocument()
+    expect(screen.getByText(/8 figyelt pár/)).toBeInTheDocument()
+    expect(screen.getByText(/12 mért metrika/)).toBeInTheDocument()
+  })
+
+  test('filters pairs by verdict chip toggle (multi, off by default)', () => {
+    renderPage()
+    const liveChip = screen.getByRole('button', { name: /Élő/ })
+    expect(liveChip).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(liveChip)
+    expect(liveChip).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText('Könnyebb az edzés hosszabb alvás után?')).not.toBeInTheDocument() // few_days kiszűrve
+    expect(screen.getByText('Elrontja az alvásod a stresszes nap?')).toBeInTheDocument() // élő marad
+
+    fireEvent.click(liveChip) // toggle vissza — minden látszik újra
+    expect(screen.getByText('Könnyebb az edzés hosszabb alvás után?')).toBeInTheDocument()
+  })
+
+  /** A csukott domén-szekciók fejléceire kattintva mindent láthatóvá tesz. */
+  const openAllSections = () => {
+    for (const header of screen.getAllByTestId('domain-header')) {
+      if (header.getAttribute('aria-expanded') === 'false') fireEvent.click(header)
+    }
+  }
+
+  test('renders every verdict with its honest sentence (nudge on few_days)', () => {
+    renderPage()
+    openAllSections()
+    expect(screen.getAllByText('ÉLŐ')).toHaveLength(2)
+    expect(screen.getByText('Még 2 nap adat ebből: edzés-RPE — és ez a pár életre kel!')).toBeInTheDocument()
     expect(
       screen.getByText('Nincs még illeszkedő nap — a(z) sportterhelés üres ebben az ablakban.'),
     ).toBeInTheDocument()
@@ -41,14 +70,75 @@ describe('MotorPage (mock mode)', () => {
     ).toBeInTheDocument()
   })
 
-  test('orders pairs live → few_days (fewest missing first) → degenerate → no_data → frozen', () => {
+  test('groups pairs into domain sections by the metric-B domain, ordered within', () => {
     renderPage()
+    openAllSections()
+    const headers = screen.getAllByTestId('domain-header').map((el) => el.textContent)
+    expect(headers[0]).toContain('Alvás')
+    expect(headers[1]).toContain('Edzés')
     const titles = screen.getAllByTestId('gate-pair-title').map((el) => el.textContent)
-    expect(titles[0]).toBe('Stressz-szint ↔ aznapi alvásminőség') // live, 34 illesztett nap
-    expect(titles[1]).toBe('Alvásminőség ↔ másnapi edzés-RPE') // live, 21 illesztett nap
-    expect(titles[2]).toBe('Késői étkezés ↔ rákövetkező alvásminőség') // 1 hiányzó nap
-    expect(titles[3]).toBe('Alváshossz ↔ másnapi edzés-RPE') // 2 hiányzó nap
-    expect(titles[7]).toBe('Reta-ciklusnap ↔ napi kalória') // frozen a végén
+    // Alvás-szekció (B=sleep): élő elöl, aztán a kevés-napos
+    expect(titles[0]).toBe('Elrontja az alvásod a stresszes nap?')
+    expect(titles[1]).toBe('Rosszabbul alszol, ha későn eszel?')
+    // Edzés-szekció (B=train): live → few_days → no_data
+    expect(titles[2]).toBe('Könnyebb az edzés, ha jól aludtál?')
+    expect(titles[3]).toBe('Könnyebb az edzés hosszabb alvás után?')
+    expect(titles[4]).toBe('Elveszi a sport a másnapi gym-erőt?')
+    expect(titles[7]).toBe('Meglátszik a napi kalória a reggeli súlyon?') // Test-szekció a sor végén
+  })
+
+  test('shows a cross-domain chip when metric-A lives in another domain', () => {
+    renderPage()
+    // Stressz (mind) → alvásminőség (sleep): a sleep-szekció sora kap "Mentális & társas" chipet
+    const row = screen
+      .getByText('Elrontja az alvásod a stresszes nap?')
+      .closest('[data-testid="pair-row"]') as HTMLElement
+    expect(within(row).getByText(/Mentális & társas/)).toBeInTheDocument()
+  })
+
+  test('a live card composes the human finding and expands to sources + raw stats + link', () => {
+    renderPage()
+    const row = screen
+      .getByText('Elrontja az alvásod a stresszes nap?')
+      .closest('[data-testid="pair-row"]') as HTMLElement
+    // a kártyán mindig ott a két blokk: amit keresünk + amit eddig látunk (Igen: egyező irány)
+    expect(within(row).getByText(/Amit keresünk/)).toBeInTheDocument()
+    expect(within(row).getByText('A stresszes nap ronthatja az aznapi alvásminőséget.')).toBeInTheDocument()
+    expect(within(row).getByText(/Igen: a stresszesebb napokon/)).toBeInTheDocument()
+    expect(within(row).getByText('határozottan')).toBeInTheDocument() // |r|=0.61 → határozottan, félkövér
+    expect(within(row).getByText('megbízható jel')).toBeInTheDocument() // p=0.001
+    fireEvent.click(within(row).getByTestId('gate-pair-title'))
+    expect(within(row).getByText(/Check-in sheet/)).toBeInTheDocument()
+    expect(within(row).getByText('r=-0.61 · n=34 · p=0.001')).toBeInTheDocument()
+    expect(within(row).getByRole('link', { name: /Minta megnyitása/ })).toHaveAttribute(
+      'href',
+      '/insights/patterns?pair=checkin-stress~sleep-quality',
+    )
+  })
+
+  test('offers no pattern link on a non-live expanded row', () => {
+    renderPage()
+    openAllSections()
+    const row = screen
+      .getByText('Elveszi a sport a másnapi gym-erőt?')
+      .closest('[data-testid="pair-row"]') as HTMLElement
+    fireEvent.click(within(row).getByTestId('gate-pair-title'))
+    expect(within(row).getByText(/Amit keresünk/)).toBeInTheDocument()
+    expect(within(row).queryByRole('link', { name: /Minta megnyitása/ })).toBeNull()
+  })
+
+  test('coverage rings: waiting label on live-less metrics, expand reveals source + pairs', () => {
+    renderPage()
+    const rows = screen.getAllByTestId('coverage-ring-row')
+    // a legvékonyabb elöl: sportterhelés (0/60), egyetlen párja no_data → "vár rá"
+    expect(within(rows[0]).getByText('sportterhelés')).toBeInTheDocument()
+    expect(within(rows[0]).getByText(/1 pár vár rá/)).toBeInTheDocument()
+    fireEvent.click(rows[0])
+    expect(within(rows[0]).getByText('Sport-napló (perc)')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('Elveszi a sport a másnapi gym-erőt?')).toBeInTheDocument()
+    // az alvásminőségnek van élő párja → sima "3 párban"
+    const sleepRow = rows.find((r) => within(r).queryByText('alvásminőség'))!
+    expect(within(sleepRow).getByText(/3 párban él/)).toBeInTheDocument()
   })
 
   test('orders the coverage list thinnest-first', () => {
@@ -124,6 +214,12 @@ describe('MotorPage (real mode)', () => {
               metricALabel: 'utolsó étkezés ideje',
               metricBKey: 'sleep-quality',
               metricBLabel: 'alvásminőség',
+              mechanismHu: 'A késői étkezés ronthatja a rákövetkező éjszaka minőségét.',
+              questionHu: 'Rosszabbul alszol, ha későn eszel?',
+              expectedDirection: 'negative',
+              whenPositiveHu: 'a későbbi vacsorák után {erősség} jobban aludtál',
+              whenNegativeHu: 'a későbbi vacsorák után {erősség} rosszabbul aludtál',
+              metricADomain: 'fuel', metricBDomain: 'sleep',
               verdict: 'no_data',
               alignedDays: 0,
               missingDays: null,
@@ -132,15 +228,16 @@ describe('MotorPage (real mode)', () => {
             },
           ],
           metrics: [
-            { key: 'late-meal-hour', label: 'utolsó étkezés ideje', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-            { key: 'sleep-quality', label: 'alvásminőség', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
+            { key: 'late-meal-hour', label: 'utolsó étkezés ideje', sourceHu: 'Étkezés-napló (utolsó étkezés)', domain: 'fuel', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+            { key: 'sleep-quality', label: 'alvásminőség', sourceHu: 'Alvás-napló', domain: 'sleep', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
           ],
         }),
       ),
     )
     renderPage()
+    fireEvent.click(await screen.findByTestId('domain-header')) // nincs élő pár → a szekció csukva indul
     expect(
-      await screen.findByText(
+      screen.getByText(
         'Nincs még illeszkedő nap — nincs átfedő nap a(z) utolsó étkezés ideje és a(z) alvásminőség között ebben az ablakban.',
       ),
     ).toBeInTheDocument()

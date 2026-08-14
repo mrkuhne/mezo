@@ -41,7 +41,7 @@ export { useFuelSettings, useFuelSettingsActions } from '@/data/fuel/fuelSetting
 export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from '@/data/me/goalHooks'
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'
-export { useLlmUsageSummary } from '@/data/me/llmUsageHooks'
+export { useLlmUsageSummary, useLlmUsageBreakdown, useLlmCalls, useLlmCall } from '@/data/me/llmUsageHooks'
 export { useProgressionProfile, useAchievements } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'

@@ -1,6 +1,7 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type {
+  MetricDomain,
   PatternCategory,
   PatternGateVerdict,
   PatternMetricCoverage,
@@ -27,6 +28,13 @@ function toPair(w: PairWire): PatternMonitorPair {
     metricALabel: w.metricALabel,
     metricBKey: w.metricBKey,
     metricBLabel: w.metricBLabel,
+    mechanismHu: w.mechanismHu,
+    questionHu: w.questionHu,
+    expectedDirection: w.expectedDirection as PatternMonitorPair['expectedDirection'],
+    whenPositiveHu: w.whenPositiveHu,
+    whenNegativeHu: w.whenNegativeHu,
+    metricADomain: w.metricADomain as MetricDomain,
+    metricBDomain: w.metricBDomain as MetricDomain,
     verdict: w.verdict as PatternGateVerdict,
     alignedDays: w.alignedDays,
     missingDays: w.missingDays ?? null,
@@ -42,6 +50,8 @@ function toMetric(w: MetricWire): PatternMetricCoverage {
   return {
     key: w.key,
     label: w.label,
+    sourceHu: w.sourceHu,
+    domain: w.domain as MetricDomain,
     coveredDays: w.coveredDays,
     windowDays: w.windowDays,
     lastDayWithData: w.lastDayWithData ?? null,

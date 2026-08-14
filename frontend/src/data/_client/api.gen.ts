@@ -2566,6 +2566,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/llm-usage/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** LLM call + cost breakdown by feature and served model for one calendar period (LlmUsage) */
+        get: operations["getLlmUsageBreakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/llm-usage/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audited LLM calls of a period, newest first, without the payload (LlmUsage) */
+        get: operations["listLlmCalls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/llm-usage/calls/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One audited LLM call with its verbatim payload and frozen price snapshot (LlmUsage) */
+        get: operations["getLlmCall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4675,6 +4726,8 @@ export interface components {
             id: string;
             /** @description statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM loop (V3.2). */
             kind: string;
+            /** @description A minta stabil pár-kulcsa (statistical: katalógus-kulcs, hypothesis: hyp-hash) — a Motor↔Patterns kereszt-link horgonya (mezo-18bx). */
+            pairKey: string;
             /** @description The FE PatternCategory — assigned by the metric-pair catalog. */
             category: string;
             /** @description Hungarian category chip label. */
@@ -4750,6 +4803,20 @@ export interface components {
             metricALabel: string;
             metricBKey: string;
             metricBLabel: string;
+            /** @description Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
+            mechanismHu: string;
+            /** @description Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g). */
+            questionHu: string;
+            /** @description A mechanizmus által várt korreláció-irány (mezo-fj1g). */
+            expectedDirection: string;
+            /** @description Pozitív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g). */
+            whenPositiveHu: string;
+            /** @description Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g). */
+            whenNegativeHu: string;
+            /** @description metric-a élet-doménje. */
+            metricADomain: string;
+            /** @description metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja. */
+            metricBDomain: string;
             verdict: string;
             /** @description Az illesztett napok száma (frozen sornál a befagyasztott n). */
             alignedDays: number;
@@ -4773,6 +4840,9 @@ export interface components {
             key: string;
             /** @description Magyar metrika-címke. */
             label: string;
+            /** @description Honnan jön az adat — gyűjtő-felület vagy derivált-magyarázat. */
+            sourceHu: string;
+            domain: string;
             /** @description Hány napon van érték az ablakban. */
             coveredDays: number;
             windowDays: number;
@@ -4872,13 +4942,13 @@ export interface components {
              */
             finalScore: number;
         };
-        LlmUsageResponse: {
+        MemoryLlmUsageResponse: {
             /** @description mezo.feature.llm-log.enabled állása — false esetén a napló nem bővül és a sorok üresek. */
             enabled: boolean;
-            perDay: components["schemas"]["LlmUsageDay"][];
-            totals: components["schemas"]["LlmUsageTotals"];
+            perDay: components["schemas"]["MemoryLlmUsageDay"][];
+            totals: components["schemas"]["MemoryLlmUsageTotals"];
         };
-        LlmUsageDay: {
+        MemoryLlmUsageDay: {
             /** Format: date */
             date: string;
             /**
@@ -4902,7 +4972,7 @@ export interface components {
              */
             costUsd?: number | null;
         };
-        LlmUsageTotals: {
+        MemoryLlmUsageTotals: {
             /** Format: int64 */
             calls: number;
             /** Format: int64 */
@@ -5555,6 +5625,171 @@ export interface components {
             /** @example USD */
             currency: string;
         };
+        LlmUsageBreakdownResponse: {
+            /**
+             * Format: date
+             * @description first day of the period in the report zone
+             */
+            from: string;
+            totals: components["schemas"]["LlmUsageTotals"];
+            /** @description one entry per feature slug, cost-descending (unpriced last) */
+            features: components["schemas"]["LlmUsageGroup"][];
+            /** @description one entry per SERVED model; key is null for calls that never reached one */
+            models: components["schemas"]["LlmUsageGroup"][];
+        };
+        LlmUsageTotals: {
+            /**
+             * Format: int64
+             * @description every audited call in the period, all statuses
+             */
+            callCount: number;
+            /** Format: int64 */
+            successCount: number;
+            /** Format: int64 */
+            errorCount: number;
+            /** Format: int64 */
+            cancelledCount: number;
+            /**
+             * Format: int64
+             * @description rows with a null cost_usd — why the sum is an estimate
+             */
+            unpricedCount: number;
+            /**
+             * Format: double
+             * @description summed cost of the PRICED rows; null when none is priced
+             */
+            costUsd?: number | null;
+            /** @example USD */
+            currency: string;
+        };
+        LlmUsageGroup: {
+            /** @description feature slug or served model id; null = unknown */
+            key?: string | null;
+            /** Format: int64 */
+            callCount: number;
+            /** Format: double */
+            costUsd?: number | null;
+        };
+        LlmCallListResponse: {
+            items: components["schemas"]["LlmCallListItem"][];
+            /** @description true when the period holds more rows than the window shows */
+            hasMore: boolean;
+        };
+        LlmCallListItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            feature: string;
+            operation?: string | null;
+            /** @enum {string} */
+            callKind: "CHAT" | "CHAT_STREAM" | "VISION" | "SMART" | "TOOL" | "TRANSCRIBE" | "EMBED_DOC" | "EMBED_QUERY";
+            /** @enum {string} */
+            status: "SUCCESS" | "ERROR" | "CANCELLED";
+            requestedModel: string;
+            servedModel?: string | null;
+            /** Format: int32 */
+            latencyMs: number;
+            streamed: boolean;
+            /** Format: int32 */
+            toolRounds?: number | null;
+            /** Format: int32 */
+            totalTokens?: number | null;
+            /** Format: int32 */
+            imageCount?: number | null;
+            /** Format: int32 */
+            embedInputCount?: number | null;
+            /** Format: int32 */
+            embedDimensions?: number | null;
+            /** Format: double */
+            costUsd?: number | null;
+            errorClass?: string | null;
+            errorCode?: string | null;
+        };
+        LlmCallDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: uuid
+             * @description null for cron/stream calls — no security context on that thread
+             */
+            createdBy?: string | null;
+            feature: string;
+            operation?: string | null;
+            entityKind?: string | null;
+            /** Format: uuid */
+            entityId?: string | null;
+            /** @enum {string} */
+            callKind: "CHAT" | "CHAT_STREAM" | "VISION" | "SMART" | "TOOL" | "TRANSCRIBE" | "EMBED_DOC" | "EMBED_QUERY";
+            /** @enum {string} */
+            status: "SUCCESS" | "ERROR" | "CANCELLED";
+            requestedModel: string;
+            servedModel?: string | null;
+            errorCode?: string | null;
+            errorClass?: string | null;
+            /** Format: int32 */
+            latencyMs: number;
+            streamed: boolean;
+            /** Format: int32 */
+            toolRounds?: number | null;
+            serviceTier?: string | null;
+            /**
+             * Format: int32
+             * @description RAW provider count — INCLUDES cachedTokens
+             */
+            promptTokens?: number | null;
+            /** Format: int32 */
+            candidatesTokens?: number | null;
+            /** Format: int32 */
+            thoughtsTokens?: number | null;
+            /** Format: int32 */
+            cachedTokens?: number | null;
+            /** Format: int32 */
+            totalTokens?: number | null;
+            /** Format: int32 */
+            embedInputCount?: number | null;
+            /** Format: int32 */
+            embedDimensions?: number | null;
+            /** Format: int32 */
+            embedBillableChars?: number | null;
+            /** Format: int32 */
+            imageCount?: number | null;
+            /** Format: int64 */
+            imageBytesTotal?: number | null;
+            imageMime?: string | null;
+            systemPrompt?: string | null;
+            userMessage?: string | null;
+            responseText?: string | null;
+            /** @description a payload column was cut to mezo.llm-log.max-payload-chars */
+            truncated: boolean;
+            /**
+             * Format: int32
+             * @description TRUE pre-truncation payload size in bytes
+             */
+            payloadBytes: number;
+            /** Format: double */
+            costUsd?: number | null;
+            pricingSnapshot?: components["schemas"]["LlmPricingSnapshot"];
+        };
+        /** @description Unit prices FROZEN onto the call at write time — the cost was derived from these, not from live config */
+        LlmPricingSnapshot: {
+            sourceModel?: string | null;
+            currency?: string | null;
+            /** Format: double */
+            inputPerMillion?: number | null;
+            /** Format: double */
+            outputPerMillion?: number | null;
+            /** Format: double */
+            thinkingPerMillion?: number | null;
+            /** Format: double */
+            cachedPerMillion?: number | null;
+            /** Format: double */
+            embedPerMillionChars?: number | null;
+            /** Format: date */
+            pricedOn?: string | null;
+        } | null;
     };
     responses: never;
     parameters: never;
@@ -10857,7 +11092,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LlmUsageResponse"];
+                    "application/json": components["schemas"]["MemoryLlmUsageResponse"];
                 };
             };
             /** @description Missing or invalid token */
@@ -12831,6 +13066,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LlmUsageSummaryResponse"];
+                };
+            };
+        };
+    };
+    getLlmUsageBreakdown: {
+        parameters: {
+            query: {
+                /** @description Calendar period in mezo.llm-log.report-zone (DAY = today, WEEK = from Monday, MONTH = from the 1st) */
+                period: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Totals plus the feature and model rollups, cost-descending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LlmUsageBreakdownResponse"];
+                };
+            };
+            /** @description Unknown period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listLlmCalls: {
+        parameters: {
+            query: {
+                period: string;
+                /** @description exact feature slug, e.g. companion_chat */
+                feature?: string;
+                status?: string;
+                callKind?: string;
+                /** @description growing window — the client raises it to load more (never an offset) */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The newest `limit` calls matching the filters */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LlmCallListResponse"];
+                };
+            };
+            /** @description Unknown period, status or call kind */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getLlmCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The full audit row */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LlmCallDetailResponse"];
+                };
+            };
+            /** @description No such call */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };

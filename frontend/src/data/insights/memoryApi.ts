@@ -51,7 +51,7 @@ export const memoryApi = {
     }))
   },
   llmUsage: async (days: number): Promise<MemoryLlmUsage> => {
-    const wire = await apiFetch<components['schemas']['LlmUsageResponse']>(
+    const wire = await apiFetch<components['schemas']['MemoryLlmUsageResponse']>(
       `/api/companion/memory/llm-usage?days=${days}`,
     )
     return {
