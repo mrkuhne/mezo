@@ -11,7 +11,8 @@ const GROUPS: Array<{ source: FactSource; label: string; color: string }> = [
   { source: 'manual', label: 'Kézzel rögzítve', color: 'var(--text-secondary)' },
 ]
 
-const fmtCost = (cost: number | null) => (cost == null ? '—' : `$${cost.toFixed(3)}`)
+const fmtCost = (cost: number | null) =>
+  cost == null ? '—' : cost > 0 && cost < 0.001 ? '<$0.001' : `$${cost.toFixed(3)}`
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n))
 
 function FactProvenanceRow({ fact }: { fact: KnowledgeFact }) {

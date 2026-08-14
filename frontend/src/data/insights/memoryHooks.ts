@@ -51,7 +51,7 @@ const SUMMARIES_EMPTY: MemorySummariesBootstrap = { summaries: [], degraded: fal
 
 /** Az L1 napló (mezo-al1i) — teljes lista date-desc; a tartomány-szűrés a szerveren opció marad. */
 export function useMemorySummaries() {
-  const { data, isPending } = useDualQuery<MemorySummariesBootstrap>({
+  const { data, isPending, isError, refetch } = useDualQuery<MemorySummariesBootstrap>({
     queryKey: ['memory', 'summaries'],
     mockData: SUMMARIES_MOCK,
     realFetch: async () => {
@@ -64,7 +64,7 @@ export function useMemorySummaries() {
     },
     realEmpty: SUMMARIES_EMPTY,
   })
-  return { ...data, isPending }
+  return { ...data, isPending, isError, refetch }
 }
 
 export interface SimilarDaySearch {

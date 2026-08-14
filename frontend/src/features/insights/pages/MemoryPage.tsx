@@ -13,7 +13,7 @@ type MemoryView = 'overview' | 'journal' | 'search' | 'audit'
 export function MemoryPage() {
   const [view, setView] = useStickyTab<MemoryView>('insights.memoria.view', 'overview')
   const [focusDate, setFocusDate] = useState<string | null>(null)
-  const { overview, degraded, isPending } = useMemoryOverview()
+  const { overview, degraded, isPending, isError, refetch } = useMemoryOverview()
   const { summaries } = useMemorySummaries()
 
   if (degraded) {
@@ -29,7 +29,20 @@ export function MemoryPage() {
     )
   }
   if (!overview) {
-    return isPending ? <GhostState message="A memória-rétegek betöltése…" /> : null
+    if (isPending) return <GhostState message="A memória-rétegek betöltése…" />
+    if (isError) {
+      return (
+        <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+          <p className="text-tertiary" style={{ fontSize: 12 }}>
+            Nem sikerült betölteni a memória-rétegeket.
+          </p>
+          <button onClick={() => refetch()} style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
+            Újra
+          </button>
+        </div>
+      )
+    }
+    return null
   }
 
   return (

@@ -30,7 +30,7 @@ describe('MemoryPage (mock mode)', () => {
     expect(screen.getByText('L2 · Ítélet-inbox')).toBeInTheDocument()
     expect(screen.getByText('2 függő tényjelölt')).toBeInTheDocument()
     expect(screen.getByText('L3 · Tartós tudás')).toBeInTheDocument()
-    expect(screen.getByText('31× megerősítés')).toBeInTheDocument()
+    expect(screen.getByText('168× megerősítés')).toBeInTheDocument()
     // a konnektorokon a cron-idők látszanak
     expect(screen.getByText('napi összefoglaló · 0 20 2 * * *')).toBeInTheDocument()
     expect(screen.getByText('minta-felismerés · 0 40 2 * * *')).toBeInTheDocument()
@@ -104,6 +104,18 @@ describe('MemoryPage (real mode)', () => {
     )
     renderPage()
     expect(await screen.findByText(/A társ memóriája most nem elérhető/)).toBeInTheDocument()
+  })
+
+  test('renders an honest error card with retry on a non-404 failure', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/memory/overview`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API_BASE}/api/companion/memory/summary`, () => new HttpResponse(null, { status: 500 })),
+    )
+    renderPage()
+    expect(
+      await screen.findByText('Nem sikerült betölteni a memória-rétegeket.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
   })
 
   test('renders the honest empty journal state', async () => {

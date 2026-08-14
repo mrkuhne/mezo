@@ -19,12 +19,12 @@ export const memoryOverview: MemoryOverview = {
   },
   l3: {
     facts: [
-      { source: 'chat', count: 9 },
-      { source: 'pattern', count: 3 },
+      { source: 'chat', count: 12 },
+      { source: 'pattern', count: 1 },
       { source: 'manual', count: 2 },
     ],
-    totalReinforcements: 31,
-    factsInPrompt: 12,
+    totalReinforcements: 168,
+    factsInPrompt: 14,
   },
   jobs: {
     summaryCron: '0 20 2 * * *',
