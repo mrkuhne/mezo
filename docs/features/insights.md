@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-08-11
+updated: 2026-08-14
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -18,7 +18,7 @@ related: [_platform-data-layer, _platform-design-system, today, me, companion]
 
 # Insights — Feature Documentation
 
-> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All seven proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the 8th, post-epic **Motor** tab (§2.8, `mezo-viqs`), never phase-gated, for **all eight Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Reached via the `sparkle`-icon link in the Today `AppHero` (no bottom `TabBar` entry).
+> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All seven proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the 8th, post-epic **Motor** tab (§2.8, `mezo-viqs`) and the 9th, post-epic **Memória** tab (§2.9, `mezo-al1i`, a read-only observatory over the memory pipeline itself), neither ever phase-gated, for **all nine Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Reached via the `sparkle`-icon link in the Today `AppHero` (no bottom `TabBar` entry).
 
 ---
 
@@ -30,8 +30,8 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 
 | Layer | Status | Notes |
 |---|---|---|
-| FE mock | ✅ done | 8 sub-tabs, all views + tests present |
-| FE real-mode | ✅ all 8 tabs (Chat + Patterns + Knowledge + Weekly + Memoir + Predictions + Experiments + **Motor**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes the review client-side from existing fuel/train/biometrics reads (no Insights backend); its „heti tervjavaslat" prose is live since **proactive W1 (`mezo-h4wp.3`)** off `GET /api/proactive/weekly-suggestion`; **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), demo reactions/anniversary/archive mock-only; **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose; **Motor** real (both modes) since **`mezo-viqs`** (post-epic) — `data/insights/monitorHooks.ts` reads `GET /api/companion/pattern/monitor`, §2.8. **No mock-only Insights tab remains** — all 8 are real (§2). |
+| FE mock | ✅ done | 9 sub-tabs, all views + tests present |
+| FE real-mode | ✅ all 9 tabs (Chat + Patterns + Knowledge + Weekly + Memoir + Predictions + Experiments + Motor + **Memória**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes the review client-side from existing fuel/train/biometrics reads (no Insights backend); its „heti tervjavaslat" prose is live since **proactive W1 (`mezo-h4wp.3`)** off `GET /api/proactive/weekly-suggestion`; **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), demo reactions/anniversary/archive mock-only; **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose; **Motor** real (both modes) since **`mezo-viqs`** (post-epic) — `data/insights/monitorHooks.ts` reads `GET /api/companion/pattern/monitor`, §2.8; **Memória** real (both modes) since **`mezo-al1i`** (post-epic) — `data/insights/memoryHooks.ts` reads the 4 `GET /api/companion/memory/*` endpoints off `MemoryObservatoryService`, §2.9. **No mock-only Insights tab remains** — all 9 are real (§2). |
 | Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train (the barrel is app-wide shared — unrelated domains' re-export additions, e.g. the `mezo-53su` `useFuelSettings` export, move this key_file without touching Insights' own data path). There are **two distinct roadmap stages** the doc keeps separate:
@@ -44,7 +44,7 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 ## 2. User-facing behavior
 
-**Route:** `/insights` (entered via the `sparkle`-icon link in the Today `AppHero`, `frontend/src/features/today/pages/TodayPage.tsx:221` — no bottom `TabBar` entry). Shell + 8 sub-tabs wired in `frontend/src/app/router.tsx:105-118` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
+**Route:** `/insights` (entered via the `sparkle`-icon link in the Today `AppHero`, `frontend/src/features/today/pages/TodayPage.tsx:221` — no bottom `TabBar` entry). Shell + 9 sub-tabs wired in `frontend/src/app/router.tsx:105-118` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
 
 | Sub-tab | Route | Pill label (verbatim) | View | Real mode |
 |---|---|---|---|---|
@@ -56,10 +56,11 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 | predictions | `/insights/predictions` | `Előrejelzések` | `PredictionsPage` | **real** (P1) |
 | experiments | `/insights/experiments` | `Kísérletek` | `ExperimentsPage` | **real** (P2) |
 | motor | `/insights/motor` | `Motor` | `MotorPage` | shown (both modes, since mezo-viqs) |
+| memory | `/insights/memoria` | `Memória` | `MemoryPage` | shown (both modes, since mezo-al1i) |
 
 **`InsightsTab.title` was dropped (compact-header redesign, `mezo-ugqb`, 2026-07-18)** — with the per-section `.pghead-np.lav` big header gone (below), the field's only consumer disappeared, so it was removed from the type/array; the pill `label` above is now the only per-tab copy.
 
-**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; the shared `SubNavDropdown` maps that instead of `INSIGHTS_TABS`). **Memoir left `PHASE3_TAB_IDS` at W2 (`mezo-h4wp.4`), Predictions at P1 (`mezo-h4wp.7`), and Experiments at P2 (`mezo-h4wp.8`)** — the set is now **EMPTY**, so `visibleInsightsTabs()` returns all eight tabs (the 8th, **Motor**, was never added to the set either) in both modes. No `PhaseTeaserCard` ghost is reachable any more; every tab renders real data or an honest null-state. (The `PhaseTeaserCard` component was **deleted** in the Napív S8 shell migration once it had no reachable consumer — the un-ghost/ghost-guard recipe lives on only in git history.)
+**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; the shared `SubNavDropdown` maps that instead of `INSIGHTS_TABS`). **Memoir left `PHASE3_TAB_IDS` at W2 (`mezo-h4wp.4`), Predictions at P1 (`mezo-h4wp.7`), and Experiments at P2 (`mezo-h4wp.8`)** — the set is now **EMPTY**, so `visibleInsightsTabs()` returns all nine tabs (the 8th, **Motor**, and the 9th, **Memória**, were never added to the set either) in both modes. No `PhaseTeaserCard` ghost is reachable any more; every tab renders real data or an honest null-state. (The `PhaseTeaserCard` component was **deleted** in the Napív S8 shell migration once it had no reachable consumer — the un-ghost/ghost-guard recipe lives on only in git history.)
 
 **Header (compact-header redesign, `mezo-ugqb`, 2026-07-18):** `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) no longer renders its own `.pghead-np.lav` page-head — it mounts the shared **`AppHero`** (the same identity/progression row Today/Train/Fuel/Me carry) and passes a **`SubNavDropdown`** (`items={visibleInsightsTabs()}`, `accent="var(--lav-deep)"`, `aria-label="Insights alnavigáció"`) as its `utilities` prop, then an `<Outlet/>` (padding unchanged). `InsightsSubNav` and the `.pghead-np.lav`/`.np-pills` markup it used to render are **deleted** — Insights joined the same AppHero family as the other 4 sections (§ [`_platform-design-system.md`](_platform-design-system.md) §3 "AppHero v2" / "`SubNavDropdown`"). **No leaf page has a section `h1` any more** — the chip showing the active tab's label (`"Minták ▾"` etc.) carries the location instead; each leaf view's own content (score cards, chat, journal…) starts directly below the sticky header.
 
@@ -175,6 +176,77 @@ unedited; this section carries the current, corrected truth: relabeling was the 
 persistence, no job-run table) because the OLD label asserted something the field never measured,
 which the page's transparency mandate cannot tolerate. Review fix wave, `mezo-viqs`.
 
+### 2.9 Memória (`pages/MemoryPage.tsx`) — read-only memory-layer observatory since `mezo-al1i`
+The companion's own memory pipeline made legible: not another results tab, but a transparency page
+onto the **L0→L3 memory stack itself** (raw daily metrics → the L1 episodic journal + vectors → the
+L2 judgement inbox → L3 durable knowledge) — the spine [`companion.md`](companion.md) documents by
+version slice, rendered live. Four **local segments** behind `useStickyTab('insights.memoria.view')`
+(`Áttekintés` / `Napló` / `Kereső` / `Audit`, a segmented-control bar identical to the
+Growth/FuelSlots idiom, `MemoryPage.tsx:37-45`) — this is a **page-local** sub-nav, not a router
+route; all four read off two page-level hooks (`useMemoryOverview()`, `useMemorySummaries()`, both
+`@/data/hooks`), so switching segments never refetches. A single **degraded card** (companion off →
+404 on the overview call) replaces the whole page with a link to `/insights/motor`; the loading
+window renders `GhostState` — the same three-state discipline as Motor (§2.8).
+
+- **Áttekintés (`components/MemoryLayersPanel.tsx` + `MemoryLayerCard.tsx`):** four wash-tinted
+  layer cards top to bottom — **L0** (neutral `text-tertiary` wash: `daysWithAnyData/windowDays` —
+  how many days in the pattern-detection lookback window carry data on ANY `MetricKey`; **the
+  synthetic `MetricKey.WEEKEND` series is deliberately excluded from this union** — it is a
+  calendar-derived 0/1 that never misses a day, so folding it in would always saturate the count to
+  the full window), **L1** (`--wash-lav`: `daily_summary` count + `dailySummary`/`chatTurn`
+  embedding counts + the first/last summary date — tappable, opens the Napló segment), **L2**
+  (`--warning` wash: pattern rows by `kind`×`status` + the pending `learned_fact` candidate count,
+  "last" stamp = `jobs.lastDetectedAt` — tappable, routes to `/insights` the Patterns inbox), **L3**
+  (`--success` wash: confirmed-fact counts by `source` + total `reinforcement_count` +
+  `factsInPrompt` — tappable, routes to `/insights/knowledge`). Between cards, a pulsing dashed
+  **`FlowConnector`** in the NEXT layer's own accent colour, labelled with the raw cron string for
+  the job that fills that layer (`summaryCron`/`patternCron`/`hypothesisCron` — the FE never parses
+  cron, same discipline as Motor's engine-state header) — the pulse is CSS (`.memory-flow-line`,
+  `prototype.css`) and is disabled under `prefers-reduced-motion: reduce`. A footer link — "Miért
+  nem lát még mintát a motor? →" — completes the mutual cross-link with `/insights/motor` (§2.8
+  carries the reverse link).
+- **Napló (`components/MemoryJournalPanel.tsx`):** the L1 journal as `memoir-card`-styled cards
+  (reusing the Memoir tab's card anatomy, §2.3), grouped under `eyebrow` month separators (client
+  month-derived from `date`), each card carrying a small corner dot — solid `--success` = a live
+  `daily_summary` embedding exists (`embedded: true`), dim `--text-tertiary` = not yet vectorized —
+  and the full narrative prose. A `focusDate` prop (set by the Kereső segment's `onPick`, §below)
+  scrolls the matching card into view via `scrollIntoView({block:'center'})` in a `useEffect` keyed
+  on `focusDate`, and outlines it. Empty state: an honest ghost line that the first nightly summary
+  hasn't run yet — never demo fiction.
+- **Kereső (`components/MemorySearchPanel.tsx` + `SimilarDayCard.tsx`):** a **lazily-submitted**
+  search — the query fires on form `onSubmit`, never on keystroke (`useSimilarDays(query)`,
+  `data/insights/memoryHooks.ts`, a raw `useQuery` — not `useDualQuery` — gated `enabled: query
+  trim non-empty`; mock branch resolves the deterministic `similarDaysSeed` via `initialData`; real
+  branch calls `memoryApi.similarDays(query, 3)`, 404→`degraded`). Each **`SimilarDayCard`** renders
+  an SVG similarity ring + a mirrored bar + the excerpt + the **`egyezés × frissesség = végső`**
+  three-chip score row: `similarity` (raw cosine, the wire's own field) × a client-derived
+  **`frissesség`** (freshness — recovered as `finalScore / similarity`, i.e. exactly the server's
+  own `exp(-age/τ)` decay factor divided back out, never resent on the wire) = `finalScore` (the
+  wire's rank key); freshness colours `--success` at ≥0.9, else `--warning`. Tapping a card calls
+  `onPick(date)`, which `MemoryPage` wires to set `focusDate` **and** switch the segment to Napló —
+  a cross-segment jump, not a route change.
+- **Audit (`components/MemoryAuditPanel.tsx` + `TokenColumns.tsx`):** two independently-degradable
+  blocks. **(1) Cost** — a cost-hero (`totals.costUsd`, `$0.000` formatted, `—` when null) plus
+  `TokenColumns` (a small stacked SVG bar chart, one bar per day — `--dv-lav` bottom segment =
+  input tokens, `--dv-sage` top = output tokens) off `useLlmUsage()` (`GET
+  /api/companion/memory/llm-usage?days=30`); **`enabled:false` renders its own explicit "audit-log
+  ki van kapcsolva" card** (the response itself says so — not an error state, not the degraded
+  banner) — a THIRD honest state alongside loading/degraded/data, because "audit switch off" and
+  "companion switch off" are different truths the panel must not conflate. **(2) Provenance** —
+  reuses `useKnowledge().facts` (the same hook the Knowledge tab uses) grouped by `source` in
+  **trust-chain order** `chat → pattern → manual`; each `FactProvenanceRow` shows the fact text,
+  `×N megerősítve`, the last-reinforced date or an honest "még nem erősítette meg újra", and (on
+  `source=pattern` facts) the existing V3.3 `minta: {title}` evidence chip. This panel is the FIRST
+  consumer of `KnowledgeFact.source`/`lastReinforcedAt` (below) beyond the wire itself.
+- **Degraded ties:** the page-level degraded card (companion 404 on `useMemoryOverview`) covers
+  Áttekintés/Napló; Kereső and Audit carry their OWN inline degraded lines because their two queries
+  (`useSimilarDays`, `useLlmUsage`) are independently lazy/dual-mode — a mid-session companion outage
+  can surface per-panel rather than page-wide.
+
+`MotorPage` (§2.8) carries the reverse of the Áttekintés footer link — a "Memória-obszervatórium →"
+line under its coverage table — so the two read-only diagnostics pages (the pattern GATE and the
+memory PIPELINE) are mutually reachable.
+
 ---
 
 ## 3. Architecture & data flow
@@ -230,7 +302,8 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 
 **Knowledge** (`types.ts:350-352`):
 - `FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'`
-- `KnowledgeFact { id; text; category: FactCategory; active: boolean; reinforced: number }` — 15 facts (`f1`–`f15`, `knowledge.ts`)
+- `FactSource = 'chat' | 'pattern' | 'manual'` (`types.ts`, `mezo-al1i`) — the backend `knowledge_fact.source` CHECK values, mirrored FE-side for the Audit panel's provenance grouping (§2.9).
+- `KnowledgeFact { id; text; category: FactCategory; active: boolean; reinforced: number; patternTitle?; source: FactSource; lastReinforcedAt: string | null }` — 15 facts (`f1`–`f15`, `knowledge.ts`). **`source`/`lastReinforcedAt` are new FE fields (`mezo-al1i`)** — the wire (`KnowledgeFactResponse`) has carried both since V1.1/V3.3, but `knowledgeApi.ts`'s `toKnowledgeFact` mapper only started reading them now, driven by the Memória Audit panel's need for provenance grouping + a last-reinforced date; the Knowledge tab itself (§2.4) does not render either field.
 - `KnowledgeEdge { from; to; type: 'reinforces' | 'context' | 'causes' }` — 13 edges, a directed graph over fact ids
 - Helpers in `knowledge.ts`: `FACT_CATEGORIES` (ordered `[id,label]`), `factCategoryColor()`
 
@@ -255,7 +328,9 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 
 **Chat** (`types.ts:410-418`): `ChatRole = 'user'|'assistant'`, `ChatRef { kind; id }`, `ChatMessage { role; ts; text; tools?: Tool[]; refs?: ChatRef[] }`. `Tool` is imported from `@/shared/ui/ToolChip` (`{ type: ToolType; name; args? }`, `ToolType = 'read'|'compute'|'write'`). `initialChat` = 3 messages (assistant → user → assistant).
 
-**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4, tool-chips real since V0.5, knowledge facts + candidates since V1.1/V1.2** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn, fact CRUD, candidate inbox + decision; see [`companion.md`](companion.md) §4). The FE `FactCategory` is the backend enum (`train|fuel|health|life`) since V1.2. Patterns still have **no dedicated Insights contract** (served by the companion `pattern` endpoints). **Weekly's** deterministic review (D′) owns no endpoint — it composes over existing contracts, and the only new op it required is Train's **`GET /api/train/workouts?from&to`** → `WorkoutSummaryResponse {id, date, status}[]` (inclusive range, date-asc; **completed instances** (`status='completed'`) = "done", the same semantics as `weekDoneDates` since `mezo-cd8s` — was ≥1-non-skipped-set; `from>to` → 400 `TRAIN_INVALID_DATE_RANGE`) — documented in full in [`train.md`](train.md) §4 + `api/feature/train/train.yml`. **Its two backend-served fields** are `weeklySuggestion` (W1) and `growthWeek` (E3). **`weeklySuggestion`** — the proactive **`GET /api/proactive/weekly-suggestion?date=`** → `WeeklySuggestionResponse {weekStart, prose, generatedAt}` (lazy-generated smart-tier prose; **404** when the prior week has no `daily_summary`, which the FE reads as the honest placeholder), owned by the proactive layer ([`proactive.md` §4](proactive.md); `api/feature/proactive/proactive.yml`). **`growthWeek`** — the Progression **`GET /api/progression/growth-week/{date}`** → `GrowthWeekResponse {weekStart, questCompleted, questClosed, lifeXp, activities, savingsHuf}` (aggregates the ISO week; **honest zeros, never 404**), owned by the Progression/growth domain ([`growth.md` §4](growth.md); `api/feature/progression/progression.yml`) — the FE client is `data/insights/growthWeekApi.ts`. Both are single backend reads composed into the otherwise client-side Weekly. Real turns now carry the read-tool calls (15 scope-enumerated hub-tools since mezo-xixu: `get_training_log`, `get_training_plan`, `get_weight_trend`, `get_fuel_log`, `get_recovery`, `get_protocol`, `get_goal`, `get_medication`, plus `get_exercise_records`/`get_recipes`/`get_pantry`/`get_growth`/`get_daily_practice`/`get_insights`/`find_similar_past_days` — [`companion.md`](companion.md) §4 catalog); only the MOCK seed's fancier names (`predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain demo theater. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
+**Memory** (`types.ts`, `mezo-al1i`) — like Weekly/Memoir, real data comes from ANOTHER feature's backend (here: companion), not an Insights-owned one: `MemoryOverview { l0: {daysWithAnyData; windowDays}; l1: {summaryCount; firstDate; lastDate; embeddings: {dailySummary; chatTurn}}; l2: {patterns: MemoryPatternCount[]; pendingFactCandidates}; l3: {facts: MemoryFactSourceCount[]; totalReinforcements; factsInPrompt}; jobs: {summaryCron; patternCron; hypothesisCron; lastSummaryDate; lastDetectedAt} }`, `MemorySummaryItem { date; narrative; embedded }`, `SimilarDay { date; excerpt; similarity; finalScore }`, `MemoryLlmUsage { enabled; perDay: LlmUsageDay[]; totals }` with `LlmUsageDay { date; calls; inputTokens; outputTokens; costUsd: number|null }`. These four shapes are **companion-owned** (`api/feature/companion/companion.yml`), not an Insights contract — mirrors the Weekly/Memoir precedent of a real-mode field fed by another feature's backend, except here ALL of a tab's data is companion-served. Mock seeds in `data/insights/memory.ts` (`memoryOverview`, `memorySummaries`, `similarDaysSeed`, `memoryLlmUsage`); wire mapping + the 4 REST calls in `data/insights/memoryApi.ts`; full endpoint + backend detail in [`companion.md`](companion.md) (new Memory-observatory block, near the pattern-monitor block).
+
+**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4, tool-chips real since V0.5, knowledge facts + candidates since V1.1/V1.2, the 4 memory-observatory reads since `mezo-al1i`** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn, fact CRUD, candidate inbox + decision, `memory/{overview,summary,similar-days,llm-usage}`; see [`companion.md`](companion.md) §4). The FE `FactCategory` is the backend enum (`train|fuel|health|life`) since V1.2. Patterns still have **no dedicated Insights contract** (served by the companion `pattern` endpoints). **Weekly's** deterministic review (D′) owns no endpoint — it composes over existing contracts, and the only new op it required is Train's **`GET /api/train/workouts?from&to`** → `WorkoutSummaryResponse {id, date, status}[]` (inclusive range, date-asc; **completed instances** (`status='completed'`) = "done", the same semantics as `weekDoneDates` since `mezo-cd8s` — was ≥1-non-skipped-set; `from>to` → 400 `TRAIN_INVALID_DATE_RANGE`) — documented in full in [`train.md`](train.md) §4 + `api/feature/train/train.yml`. **Its two backend-served fields** are `weeklySuggestion` (W1) and `growthWeek` (E3). **`weeklySuggestion`** — the proactive **`GET /api/proactive/weekly-suggestion?date=`** → `WeeklySuggestionResponse {weekStart, prose, generatedAt}` (lazy-generated smart-tier prose; **404** when the prior week has no `daily_summary`, which the FE reads as the honest placeholder), owned by the proactive layer ([`proactive.md` §4](proactive.md); `api/feature/proactive/proactive.yml`). **`growthWeek`** — the Progression **`GET /api/progression/growth-week/{date}`** → `GrowthWeekResponse {weekStart, questCompleted, questClosed, lifeXp, activities, savingsHuf}` (aggregates the ISO week; **honest zeros, never 404**), owned by the Progression/growth domain ([`growth.md` §4](growth.md); `api/feature/progression/progression.yml`) — the FE client is `data/insights/growthWeekApi.ts`. Both are single backend reads composed into the otherwise client-side Weekly. Real turns now carry the read-tool calls (15 scope-enumerated hub-tools since mezo-xixu: `get_training_log`, `get_training_plan`, `get_weight_trend`, `get_fuel_log`, `get_recovery`, `get_protocol`, `get_goal`, `get_medication`, plus `get_exercise_records`/`get_recipes`/`get_pantry`/`get_growth`/`get_daily_practice`/`get_insights`/`find_similar_past_days` — [`companion.md`](companion.md) §4 catalog); only the MOCK seed's fancier names (`predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain demo theater. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
 
 ---
 
@@ -390,9 +465,13 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 **Feature (`frontend/src/features/insights/`):**
 - `InsightsSection.tsx` — shell: mounts the shared `AppHero` with a `SubNavDropdown` (`items={visibleInsightsTabs()}`, `accent="var(--lav-deep)"`) as its `utilities` prop, then the outlet (compact-header redesign, `mezo-ugqb` — the old `.pghead-np.lav` head + `InsightsSubNav` are gone)
 - **`InsightsSubNav.tsx` is DELETED (`mezo-ugqb`)** — superseded by the shared `@/shared/ui/SubNavDropdown` mounted via `InsightsSection`
-- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`; **8th entry `motor` added `mezo-viqs`**) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2, motor never gated; all 8 tabs visible in both modes)
+- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`; **8th entry `motor` added `mezo-viqs`; 9th entry `memory` added `mezo-al1i`**) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2, motor and memory never gated; all 9 tabs visible in both modes)
 - `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
-- `pages/MotorPage.tsx` — **mezo-viqs**, the 8th sub-tab: read-only pattern-gate diagnostics (§2.8), three blocks (engine-state header / pair verdicts / metric coverage), honest degraded (404) / error-with-retry (any other failure) / loading / "még nem talált mintát" states, shown in both modes
+- `pages/MotorPage.tsx` — **mezo-viqs**, the 8th sub-tab: read-only pattern-gate diagnostics (§2.8), three blocks (engine-state header / pair verdicts / metric coverage), honest degraded (404) / error-with-retry (any other failure) / loading / "még nem talált mintát" states, shown in both modes; since **`mezo-al1i`** carries a footer link to `/insights/memoria`
+- `pages/MemoryPage.tsx` — **`mezo-al1i`**, the 9th sub-tab: read-only memory-pipeline observatory (§2.9), 4 page-local segments (`useStickyTab('insights.memoria.view')`) over `useMemoryOverview`/`useMemorySummaries`, one page-level degraded card (companion 404) + per-panel `GhostState`/degraded lines in Kereső/Audit, shown in both modes
+- `components/Memory{LayerCard,LayersPanel,JournalPanel,SearchPanel,AuditPanel}.tsx` — **`mezo-al1i`**: the L0→L3 wash-tinted layer cards + cron-labelled pulsing `FlowConnector`s (Áttekintés), the memoir-styled journal cards with month separators + embed dot + `focusDate` scroll (Napló), the lazy-submit search form (Kereső), and the two-block cost-hero/provenance panel (Audit) — §2.9 has the full per-panel breakdown
+- `components/SimilarDayCard.tsx` — **`mezo-al1i`** the Kereső result card: similarity ring + bar + the `egyezés × frissesség = végső` three-chip score row (freshness recovered client-side as `finalScore/similarity`); `onPick(date)` jumps the page to Napló focused on that day
+- `components/TokenColumns.tsx` — **`mezo-al1i`** the Audit panel's small stacked SVG bar chart (`--dv-lav` input / `--dv-sage` output tokens per day)
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
@@ -415,10 +494,13 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `memoirHooks.ts` — **`useMemoir` (W2)**: dual-mode `['memoir']` read (mock seed no-fetch / real `GET /api/proactive/memoir`, 404→null); returns `{ memoir, anniversaryNote, mode }`
 - `memoirApi.ts` — **W2** `memoirApi.latest()` → proactive `GET /api/proactive/memoir` (wire → FE `Memoir` via `toMemoir`, `Hét N …` week label derived client-side)
 - `monitorApi.ts` + `monitorHooks.ts` — **mezo-viqs** `usePatternMonitor()` (`['pattern-monitor']` dual-mode, real → `GET /api/companion/pattern/monitor`, 404→degraded) — read-only, no writes; the mock seed `patternMonitor` (`insights.ts`) deliberately mixes all 5 verdicts + a spread of metric coverage so every render state is visible in mock/demo mode
+- `memory.ts` — **`mezo-al1i`** mock seeds: `memoryOverview`, `memorySummaries` (6 entries spanning 2 months, so the month separator renders), `similarDaysSeed` (3 deterministic hits), `memoryLlmUsage` (7-day series, `totals` = the exact sum of `perDay`)
+- `memoryApi.ts` — **`mezo-al1i`** the 4 REST calls + wire→FE mappers (`toOverview` normalizes optional wire fields to `null`) over `api.gen.ts`'s `MemoryOverviewResponse`/`MemorySummaryListResponse`/`SimilarDaysResponse`/`LlmUsageResponse`
+- `memoryHooks.ts` — **`mezo-al1i`** `useMemoryOverview`/`useMemorySummaries`/`useLlmUsage` (`useDualQuery`, `['memory', …]` keys, 404→`degraded`) + `useSimilarDays(query)` (a **raw** `useQuery`, not `useDualQuery` — `enabled` gates on a non-empty trimmed query so the lazy-submit search never fires on mount); re-exported from `hooks.ts`
 - `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′; its `memoir`/`anniversaryNote` fields no longer consumed since W2 — only `predictions`/`experiments` are live)
-- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`**, **`usePatternMonitor`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
-- `types.ts:599-743` — all Insights/Knowledge/Chat types (`PatternMonitor`/`PatternMonitorPair`/`PatternMetricCoverage` at `types.ts:644-683`)
-- Tests: `insightsData.test.tsx`, `chatData.test.tsx`
+- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`**, **`usePatternMonitor`**, **`useLlmUsage`/`useMemoryOverview`/`useMemorySummaries`/`useSimilarDays`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
+- `types.ts:599-743` — all Insights/Knowledge/Chat types (`PatternMonitor`/`PatternMonitorPair`/`PatternMetricCoverage` at `types.ts:644-683`; `MemoryOverview`/`MemorySummaryItem`/`SimilarDay`/`MemoryLlmUsage`/`FactSource` added `mezo-al1i`)
+- Tests: `insightsData.test.tsx`, `chatData.test.tsx`, `memoryHooks.test.tsx` (**`mezo-al1i`**, dual-mode + the lazy-search enabled-gate + the `enabled:false` audit branch), `pages/MemoryPage.test.tsx` (**`mezo-al1i`**, all 4 segments + degraded + the Napló focus-scroll)
 
 **Cross-feature seams:**
 - `frontend/src/app/router.tsx:105-118` — route wiring · `frontend/src/features/today/pages/TodayPage.tsx:221` — the `sparkle`-icon entry link (no bottom `TabBar` entry, §2)

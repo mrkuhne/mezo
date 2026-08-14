@@ -2114,7 +2114,7 @@ export function SimilarDayCard({ day, rank, onPick }: { day: SimilarDay; rank: n
       className="card np-press" role="button" tabIndex={0}
       style={{ padding: 14, cursor: 'pointer' }}
       onClick={() => onPick(day.date)}
-      onKeyDown={(e) => { if (e.key === 'Enter') onPick(day.date) }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(day.date) } }}
     >
       <div className="row" style={{ gap: 12, alignItems: 'center' }}>
         <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
