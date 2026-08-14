@@ -1090,4 +1090,21 @@ export const handlers = [
     })
     return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
   }),
+
+  http.get(`${API_BASE}/api/companion/memory/overview`, () =>
+    HttpResponse.json({
+      l0: { daysWithAnyData: 0, windowDays: 60 },
+      l1: { summaryCount: 0, firstDate: null, lastDate: null, embeddings: { dailySummary: 0, chatTurn: 0 } },
+      l2: { patterns: [], pendingFactCandidates: 0 },
+      l3: { facts: [], totalReinforcements: 0, factsInPrompt: 0 },
+      jobs: {
+        summaryCron: '0 20 2 * * *',
+        patternCron: '0 40 2 * * *',
+        hypothesisCron: '0 0 3 * * SUN',
+        lastSummaryDate: null,
+        lastDetectedAt: null,
+      },
+    }),
+  ),
+  http.get(`${API_BASE}/api/companion/memory/summary`, () => HttpResponse.json({ items: [] })),
 ]
