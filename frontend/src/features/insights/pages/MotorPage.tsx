@@ -1,28 +1,25 @@
+import { useState } from 'react'
 import { usePatternMonitor } from '@/data/hooks'
 import { GateVerdictRow } from '@/features/insights/components/GateVerdictRow'
 import { MetricCoverageRow } from '@/features/insights/components/MetricCoverageRow'
+import { MotorHero } from '@/features/insights/components/MotorHero'
+import { VerdictFilterChips } from '@/features/insights/components/VerdictFilterChips'
+import { comparePairs } from '@/features/insights/logic/domains'
 import { GhostState } from '@/shared/ui/GhostState'
-import type { PatternGateVerdict, PatternMonitorPair } from '@/data/types'
-
-/** „Mi van legközelebb az áttöréshez" — ettől cselekvésre váltható az oldal, nem számfal. */
-const VERDICT_ORDER: Record<PatternGateVerdict, number> = {
-  live: 0,
-  few_days: 1,
-  degenerate: 2,
-  no_data: 3,
-  frozen: 4,
-}
-
-function comparePairs(a: PatternMonitorPair, b: PatternMonitorPair): number {
-  const byVerdict = VERDICT_ORDER[a.verdict] - VERDICT_ORDER[b.verdict]
-  if (byVerdict !== 0) return byVerdict
-  // few_days-en belül: kevesebb hiányzó nap előre; máshol a több illesztett nap előre
-  if (a.verdict === 'few_days') return (a.missingDays ?? 0) - (b.missingDays ?? 0)
-  return b.alignedDays - a.alignedDays
-}
+import type { PatternGateVerdict } from '@/data/types'
 
 export function MotorPage() {
   const { monitor, degraded, isPending, isError, refetch } = usePatternMonitor()
+  // Verdikt-szűrő (mezo-18bx): üres set = nincs szűrés; a chipek toggle-ként dolgoznak.
+  const [activeVerdicts, setActiveVerdicts] = useState<Set<PatternGateVerdict>>(new Set())
+
+  const toggleVerdict = (verdict: PatternGateVerdict) =>
+    setActiveVerdicts((prev) => {
+      const next = new Set(prev)
+      if (next.has(verdict)) next.delete(verdict)
+      else next.add(verdict)
+      return next
+    })
 
   // isPending: real-mode-only (mock seeds synchronously, mezo-viqs fix wave, useDualQuery.ts:9-11)
   // — without this the loading window rendered a blank body (`!monitor` below was also true then).
@@ -44,41 +41,20 @@ export function MotorPage() {
   }
   if (!monitor) return null
 
-  const pairs = [...monitor.pairs].sort(comparePairs)
+  const counts = { live: 0, few_days: 0, no_data: 0, degenerate: 0, frozen: 0 } as Record<PatternGateVerdict, number>
+  for (const pair of monitor.pairs) counts[pair.verdict]++
+  const visible = activeVerdicts.size === 0
+    ? monitor.pairs
+    : monitor.pairs.filter((p) => activeVerdicts.has(p.verdict))
+
+  const pairs = [...visible].sort(comparePairs)
   const metrics = [...monitor.metrics].sort((a, b) => a.coveredDays - b.coveredDays)
   const coverageByKey = new Map(monitor.metrics.map((m) => [m.key, m.coveredDays]))
 
   return (
     <div className="col gap-md">
-      <div className="card" style={{ padding: 14, background: 'var(--wash-lav)' }}>
-        <div className="eyebrow" style={{ color: 'var(--lav-deep)' }}>A motor állapota</div>
-        <div className="col gap-xs" style={{ marginTop: 10 }}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="eyebrow text-tertiary">Ablak</span>
-            <span className="eyebrow" style={{ color: 'var(--text-primary)' }}>
-              {monitor.windowFrom} – {monitor.windowTo}
-            </span>
-          </div>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="eyebrow text-tertiary">Hossz</span>
-            <span className="eyebrow" style={{ color: 'var(--text-primary)' }}>{monitor.lookbackDays} nap</span>
-          </div>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="eyebrow text-tertiary">Kapu</span>
-            <span className="eyebrow" style={{ color: 'var(--text-primary)' }}>min. {monitor.minN} illeszkedő nap</span>
-          </div>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="eyebrow text-tertiary">Ütemezés</span>
-            <span className="eyebrow" style={{ fontFamily: 'var(--ff-mono)', color: 'var(--text-primary)' }}>{monitor.cron}</span>
-          </div>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="eyebrow text-tertiary">Utolsó felismerés</span>
-            <span className="eyebrow" style={{ color: 'var(--text-primary)' }}>
-              {monitor.lastRunAt ? monitor.lastRunAt.slice(0, 10) : 'még nem talált mintát'}
-            </span>
-          </div>
-        </div>
-      </div>
+      <MotorHero monitor={monitor} />
+      <VerdictFilterChips counts={counts} active={activeVerdicts} onToggle={toggleVerdict} />
 
       <span className="eyebrow">Párok · {pairs.length}</span>
       {pairs.map((pair) => (

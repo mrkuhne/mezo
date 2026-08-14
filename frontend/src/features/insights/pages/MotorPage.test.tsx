@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -24,6 +24,27 @@ describe('MotorPage (mock mode)', () => {
     expect(screen.getByText('60 nap')).toBeInTheDocument()
     expect(screen.getByText('min. 8 illeszkedő nap')).toBeInTheDocument()
     expect(screen.getByText('0 40 2 * * *')).toBeInTheDocument()
+  })
+
+  test('renders the hero with the live count and the engine facts', () => {
+    renderPage()
+    expect(screen.getByText('2 élő összefüggés')).toBeInTheDocument()
+    expect(screen.getByText(/8 figyelt pár/)).toBeInTheDocument()
+    expect(screen.getByText(/12 mért metrika/)).toBeInTheDocument()
+  })
+
+  test('filters pairs by verdict chip toggle (multi, off by default)', () => {
+    renderPage()
+    const liveChip = screen.getByRole('button', { name: /Élő/ })
+    expect(liveChip).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(liveChip)
+    expect(liveChip).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText('Alváshossz ↔ másnapi edzés-RPE')).not.toBeInTheDocument() // few_days kiszűrve
+    expect(screen.getByText('Stressz-szint ↔ aznapi alvásminőség')).toBeInTheDocument() // élő marad
+
+    fireEvent.click(liveChip) // toggle vissza — minden látszik újra
+    expect(screen.getByText('Alváshossz ↔ másnapi edzés-RPE')).toBeInTheDocument()
   })
 
   test('renders every verdict with its honest derived sentence', () => {
