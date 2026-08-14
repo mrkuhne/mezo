@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-08-11
+updated: 2026-08-14
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -179,7 +179,12 @@ seed in `insights.ts`).
    line (moved here off the card face)**, and on live/frozen rows a coral CTA
    **„Minta megnyitása →"** to `/insights/patterns?pair=<pairKey>` (§2.1 highlights + scrolls;
    the `PatternCard` carries the reverse „Motor-diagnosztika →" link). No all-caps rows remain on
-   the card face.
+   the card face. **Backend-ready, not yet wired (S1 close, `mezo-tk88.3`):** a dedicated
+   `GET /api/companion/pattern/pair/{pairKey}` read now exists (`companion.md` §4) — meta+gate,
+   the persisted row (nullable), the `pattern_event` history, live aligned days, and the
+   predictions/experiments/challenges grounded on the pattern. The lifecycle-dashboard FE slice
+   (`mezo-tk88.4`, `feat/patterns-lifecycle-dashboard`) is what will replace this
+   cross-tab-highlight link with a real detail page/sheet consuming it.
 5. **`MetricCoverageRing`** (the `MetricCoverageRow` successor; retagged `mezo-fj1g`) —
    per-metric conic-gradient progress ring (day count inside), the **metric name as the headline**
    (13.5px, normal case), a muted sub-line „{n}/{window} nap · utoljára: {ma | tegnap | Máj 20}"
