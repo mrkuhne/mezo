@@ -25,6 +25,12 @@ function installStorage(name: 'localStorage' | 'sessionStorage'): void {
 installStorage('localStorage')
 installStorage('sessionStorage')
 
+// jsdom does not implement Element.scrollIntoView — stub it as a no-op so
+// focus-jump effects (e.g. MemoryJournalPanel's focusDate scroll) don't throw.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 // MSW — intercept the backend REST API in tests. 'bypass' keeps every other
 // request (and all mock-mode hooks, which never fetch) untouched, so the
 // existing suite is unaffected.

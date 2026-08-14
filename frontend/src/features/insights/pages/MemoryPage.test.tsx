@@ -60,6 +60,21 @@ describe('MemoryPage (mock mode)', () => {
     await userEvent.keyboard(' ')
     expect(screen.getByText('2026. augusztus')).toBeInTheDocument()
   })
+
+  test('search is lazy, results jump to the journal entry', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('tab', { name: 'Kereső' }))
+    expect(screen.queryByText('egyezés 0.81')).not.toBeInTheDocument() // lusta — még nincs találat
+    await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'rossz alvás')
+    await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+    // a matek-chipsor: egyezés × frissesség = végső (0.78/0.81 ≈ 0.96)
+    expect(await screen.findByText('egyezés 0.81')).toBeInTheDocument()
+    expect(screen.getByText('frissesség 0.96')).toBeInTheDocument()
+    expect(screen.getByText('végső 0.78')).toBeInTheDocument()
+    await userEvent.click(screen.getByText('egyezés 0.81'))
+    // a koppintás a Napló szegmensre vált, a 08-09-es bejegyzés látszik
+    expect(await screen.findByText(/a vasárnap esti mintázat megint kirajzolódott/)).toBeInTheDocument()
+  })
 })
 
 describe('MemoryPage (real mode)', () => {
@@ -82,5 +97,14 @@ describe('MemoryPage (real mode)', () => {
     expect(
       await screen.findByText(/Az első éjszakai összefoglaló még nem készült el/),
     ).toBeInTheDocument()
+  })
+
+  test('search renders the honest empty state on no match', async () => {
+    renderPage()
+    await screen.findByText('L0 · Nyers adat')
+    await userEvent.click(screen.getByRole('tab', { name: 'Kereső' }))
+    await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'teljesen egyedi nap')
+    await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+    expect(await screen.findByText('Nincs elég hasonló nap a memóriában.')).toBeInTheDocument()
   })
 })

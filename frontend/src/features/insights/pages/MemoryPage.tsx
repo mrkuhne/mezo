@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMemoryOverview, useMemorySummaries } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MemoryLayersPanel } from '@/features/insights/components/MemoryLayersPanel'
 import { MemoryJournalPanel } from '@/features/insights/components/MemoryJournalPanel'
+import { MemorySearchPanel } from '@/features/insights/components/MemorySearchPanel'
 
-type MemoryView = 'overview' | 'journal'
+type MemoryView = 'overview' | 'journal' | 'search'
 
 export function MemoryPage() {
   const [view, setView] = useStickyTab<MemoryView>('insights.memoria.view', 'overview')
+  const [focusDate, setFocusDate] = useState<string | null>(null)
   const { overview, degraded, isPending } = useMemoryOverview()
   const { summaries } = useMemorySummaries()
 
@@ -36,12 +39,16 @@ export function MemoryPage() {
       >
         <SegButton on={view === 'overview'} onClick={() => setView('overview')}>Áttekintés</SegButton>
         <SegButton on={view === 'journal'} onClick={() => setView('journal')}>Napló</SegButton>
+        <SegButton on={view === 'search'} onClick={() => setView('search')}>Kereső</SegButton>
       </div>
 
       {view === 'overview' && (
         <MemoryLayersPanel overview={overview} onOpenJournal={() => setView('journal')} />
       )}
-      {view === 'journal' && <MemoryJournalPanel summaries={summaries} />}
+      {view === 'journal' && <MemoryJournalPanel summaries={summaries} focusDate={focusDate} />}
+      {view === 'search' && (
+        <MemorySearchPanel onPick={(date) => { setFocusDate(date); setView('journal') }} />
+      )}
     </div>
   )
 }

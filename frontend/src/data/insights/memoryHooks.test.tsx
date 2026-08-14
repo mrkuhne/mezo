@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { useMemoryOverview, useMemorySummaries } from '@/data/insights/memoryHooks'
+import { useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
 import { API_BASE } from '@/test/msw/handlers'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -66,5 +66,52 @@ describe('memory hooks (mock mode)', () => {
     expect(o.current.overview!.l1.summaryCount).toBe(38)
     expect(s.current.summaries).toHaveLength(6)
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('useSimilarDays (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('does not fire while the query is empty', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const { result } = renderHook(() => useSimilarDays(''), { wrapper: makeHookWrapper() })
+
+    expect(result.current.results).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  test('maps results once a query is submitted', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/memory/similar-days`, () =>
+        HttpResponse.json({
+          items: [{ date: '2026-08-09', excerpt: 'rövid alvás', similarity: 0.81, finalScore: 0.64 }],
+        }),
+      ),
+    )
+    const { result } = renderHook(() => useSimilarDays('rossz alvás'), { wrapper: makeHookWrapper() })
+
+    await waitFor(() => expect(result.current.results).toHaveLength(1))
+    expect(result.current.results![0].finalScore).toBe(0.64)
+  })
+
+  test('flags degraded on 404', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/memory/similar-days`, () => new HttpResponse(null, { status: 404 })),
+    )
+    const { result } = renderHook(() => useSimilarDays('bármi'), { wrapper: makeHookWrapper() })
+
+    await waitFor(() => expect(result.current.degraded).toBe(true))
+  })
+})
+
+describe('useSimilarDays (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('returns the deterministic seed for any submitted query', () => {
+    const { result } = renderHook(() => useSimilarDays('fáradt nap'), { wrapper: makeHookWrapper() })
+    expect(result.current.results).toHaveLength(3)
+    expect(result.current.mode).toBe('mock')
   })
 })

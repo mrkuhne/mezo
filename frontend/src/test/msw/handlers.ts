@@ -1107,4 +1107,5 @@ export const handlers = [
     }),
   ),
   http.get(`${API_BASE}/api/companion/memory/summary`, () => HttpResponse.json({ items: [] })),
+  http.get(`${API_BASE}/api/companion/memory/similar-days`, () => HttpResponse.json({ items: [] })),
 ]

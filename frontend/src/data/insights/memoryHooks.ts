@@ -1,8 +1,14 @@
+import { useQuery } from '@tanstack/react-query'
 import { ApiError } from '@/data/_client/api'
+import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import { memoryApi } from '@/data/insights/memoryApi'
-import { memoryOverview as mockOverview, memorySummaries as mockSummaries } from '@/data/insights/memory'
-import type { MemoryOverview, MemorySummaryItem } from '@/data/types'
+import {
+  memoryOverview as mockOverview,
+  memorySummaries as mockSummaries,
+  similarDaysSeed,
+} from '@/data/insights/memory'
+import type { MemoryOverview, MemorySummaryItem, SimilarDay } from '@/data/types'
 
 const isSwitchedOff = (err: unknown) => err instanceof ApiError && err.status === 404
 
@@ -58,4 +64,39 @@ export function useMemorySummaries() {
     realEmpty: SUMMARIES_EMPTY,
   })
   return { ...data, isPending }
+}
+
+export interface SimilarDaySearch {
+  results: SimilarDay[] | null
+  degraded: boolean
+  mode: 'mock' | 'live'
+}
+
+const SEARCH_EMPTY: SimilarDaySearch = { results: null, degraded: false, mode: 'live' }
+
+/**
+ * Lusta hasonló-nap kereső (mezo-al1i) — üres query-vel nem tüzel (a gomb indítja, nem a gépelés).
+ * Mock módban determinisztikus seedet ad; 404 (companion off) ⇒ degraded.
+ */
+export function useSimilarDays(query: string) {
+  const mock = isMockMode()
+  const enabled = query.trim() !== ''
+  const q = useQuery<SimilarDaySearch>({
+    queryKey: ['memory', 'similar', query],
+    enabled,
+    staleTime: mock ? Infinity : 60_000,
+    initialData: mock && enabled
+      ? { results: similarDaysSeed, degraded: false, mode: 'mock' } : undefined,
+    queryFn: mock
+      ? async () => ({ results: similarDaysSeed, degraded: false, mode: 'mock' as const })
+      : async () => {
+          try {
+            return { results: await memoryApi.similarDays(query, 3), degraded: false, mode: 'live' as const }
+          } catch (e) {
+            if (isSwitchedOff(e)) return { results: null, degraded: true, mode: 'live' as const }
+            throw e
+          }
+        },
+  })
+  return { ...(q.data ?? SEARCH_EMPTY), isFetching: q.isFetching }
 }
