@@ -50,6 +50,7 @@ import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
+import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 
 export const routes: RouteObject[] = [
@@ -138,6 +139,7 @@ export const routes: RouteObject[] = [
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen AI audit log browser (mezo-uakh) — no Me sub-nav chrome.
       { path: 'me/ai-usage', element: <AiUsagePage /> },
+      { path: 'me/ai-usage/:id', element: <AiCallDetailPage /> },
       // Full-screen Napzárás flow (train/session idiom) — no tab-bar chrome (mezo-ilsj).
       { path: 'ritual', element: <RitualPage /> },
       { path: '*', element: <Navigate to="/today" replace /> },

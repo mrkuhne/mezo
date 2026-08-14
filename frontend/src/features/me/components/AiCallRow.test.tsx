@@ -25,7 +25,7 @@ describe('AiCallRow', () => {
     expect(screen.getByText('TOOL')).toBeInTheDocument()
     expect(screen.getByText('11 204')).toBeInTheDocument()
     expect(screen.getByText('7.8 s')).toBeInTheDocument()
-    expect(screen.getByText('$0.0583')).toBeInTheDocument()
+    expect(screen.getByText('$0.0128')).toBeInTheDocument()
   })
 
   it('shows the error reason and no cost on a failed call', () => {

@@ -84,7 +84,8 @@ export const LLM_CALLS_EMPTY: LlmCallListResponse = { items: [], hasMore: false 
 export const LLM_CALLS_MOCK: LlmCallListResponse = {
   items: [
     { id: '11111111-1111-4111-8111-111111111111', createdAt: '2026-08-14T12:32:00Z', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 3100, streamed: true, toolRounds: null, totalTokens: 4812, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.021, errorClass: null, errorCode: null },
-    { id: '22222222-2222-4222-8222-222222222222', createdAt: '2026-08-14T12:31:00Z', feature: 'companion_chat', operation: 'send', callKind: 'TOOL', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 7812, streamed: false, toolRounds: 2, totalTokens: 11204, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.0583, errorClass: null, errorCode: null },
+    // costUsd must match LLM_CALL_DETAIL_MOCK below (same call id) — see the comment there.
+    { id: '22222222-2222-4222-8222-222222222222', createdAt: '2026-08-14T12:31:00Z', feature: 'companion_chat', operation: 'send', callKind: 'TOOL', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 7812, streamed: false, toolRounds: 2, totalTokens: 11204, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.012751, errorClass: null, errorCode: null },
     { id: '33333333-3333-4333-8333-333333333333', createdAt: '2026-08-14T12:28:00Z', feature: 'meal_draft', operation: 'photo', callKind: 'VISION', status: 'ERROR', requestedModel: 'gemini-2.5-flash', servedModel: null, latencyMs: 12000, streamed: false, toolRounds: null, totalTokens: null, imageCount: 1, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: 'ResourceExhaustedException', errorCode: null },
     { id: '44444444-4444-4444-8444-444444444444', createdAt: '2026-08-14T12:19:00Z', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'CANCELLED', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 1400, streamed: true, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: null, errorCode: null },
     { id: '55555555-5555-4555-8555-555555555555', createdAt: '2026-08-14T12:02:00Z', feature: 'embed_memory', operation: 'document', callKind: 'EMBED_DOC', status: 'SUCCESS', requestedModel: 'gemini-embedding-001', servedModel: 'gemini-embedding-001', latencyMs: 400, streamed: false, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: 12, embedDimensions: 768, costUsd: 0.0004, errorClass: null, errorCode: null },
@@ -119,7 +120,14 @@ export const LLM_CALL_DETAIL_MOCK: LlmCallDetailResponse = {
   systemPrompt: 'Te vagy Mezo, Daniel személyes egészség- és teljesítmény-társa.',
   userMessage: 'most ettem egy nagy adag rizses csirkét, írd be kb 600 kcal-nak',
   responseText: 'Beírtam: Rizses csirke — 600 kcal, 48 g fehérje, 62 g szénhidrát, 14 g zsír, ebédre.',
-  truncated: false, payloadBytes: 3584, costUsd: 0.0583,
+  truncated: false, payloadBytes: 3584,
+  // costUsd MUST stay derived from tokens × pricingSnapshot below (LlmLogWriter.applyCost /
+  // LlmPricingService.computeGenerationCost billing formula) — NET prompt (promptTokens minus the
+  // cachedTokens slice it includes) at inputPerMillion, candidates at outputPerMillion, thoughts at
+  // thinkingPerMillion, cached at cachedPerMillion:
+  //   (5826-896)/1e6*0.30 + 1008/1e6*2.50 + 3474/1e6*2.50 + 896/1e6*0.075 = 0.0127512
+  // Keep this property when editing the seed — round to 6 decimals (numeric(12,6) column).
+  costUsd: 0.012751,
   pricingSnapshot: {
     sourceModel: 'gemini-2.5-flash', currency: 'USD',
     inputPerMillion: 0.3, outputPerMillion: 2.5, thinkingPerMillion: 2.5,
