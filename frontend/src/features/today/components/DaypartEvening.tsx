@@ -15,7 +15,7 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { useHabitActions, useHabitDay, useRitualDay, useTodayScenario } from '@/data/hooks'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { DayGroups } from '@/features/today/components/DayGroups'
@@ -29,6 +29,7 @@ import type { TodayItem } from '@/features/today/logic/todayItems'
 import { useWindDownPhase } from '@/features/today/logic/useWindDownPhase'
 import { ritualWindowState } from '@/features/ritual/logic/ritualWindow'
 import { localDateString } from '@/shared/lib/dates'
+import { emitToast } from '@/shared/lib/toastBus'
 
 const OWNED_BY_RITUAL_HERO = new Set(['habit:evening_ritual'])
 const WIND_DOWN_ID = 'habit:wind_down'
@@ -62,7 +63,6 @@ export function DaypartEvening({
   const { ritual } = useTodayScenario()
   const { habits } = useHabitDay(date)
   const { check, pending } = useHabitActions(date)
-  const { showLevelUp } = useLevelUp()
   const navigate = useNavigate()
 
   const ph = phase ?? 'none'
@@ -106,7 +106,17 @@ export function DaypartEvening({
   const wdDone = windDownHabit?.status === 'done'
   const wdCheckable = ph === 'winddown' && !!windDownHabit && !wdDone && !pending
   const doWindDown = () => {
-    check('wind_down').then((lu) => lu?.[0] && showLevelUp(lu[0]))
+    // The banner owns a single habit, not a chain position — the eyebrow drops the counter
+    // (chainTotal 0) rather than printing a number this surface cannot know.
+    check('wind_down').then((lu) =>
+      emitToast(buildHabitRewardToast({
+        title: windDownHabit?.title ?? 'Wind-down',
+        chainDone: 0,
+        chainTotal: 0,
+        xp: windDownHabit?.xp ?? 0,
+        levelUp: lu?.[0],
+      })),
+    )
   }
 
   return (
