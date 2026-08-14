@@ -3,14 +3,17 @@ package io.mrkuhne.mezo.feature.llmlog.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.LlmCallDetailResponse;
+import io.mrkuhne.mezo.api.dto.LlmPricingSnapshot;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
+import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +36,13 @@ class LlmCallDetailIT extends ApiIntegrationTest {
 
     @Test
     void testGetCall_shouldReturnThePayloadAndSnapshot_whenCallExists() {
+        // Distinct value per field: a swapped pair (e.g. thinking <-> cached) must fail this test.
+        PricingSnapshot snapshot = new PricingSnapshot("gemini-2.5-flash", "USD",
+            new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("0.15"),
+            new BigDecimal("0.075"), new BigDecimal("0.02"), LocalDate.of(2026, 8, 1));
         LlmLogEntity row = llmLogPopulator.logCall(Instant.now(), ownerId(), CallKind.TOOL,
-            CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.058"));
+            CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", snapshot,
+            new BigDecimal("0.058"));
 
         LlmCallDetailResponse body = detail(row.getId());
 
@@ -46,6 +54,17 @@ class LlmCallDetailIT extends ApiIntegrationTest {
         assertThat(body.getPayloadBytes()).isEqualTo(9);
         assertThat(body.getTruncated()).isFalse();
         assertThat(body.getCostUsd()).isEqualTo(0.058);
+
+        LlmPricingSnapshot snapshotBody = body.getPricingSnapshot();
+        assertThat(snapshotBody).isNotNull();
+        assertThat(snapshotBody.getSourceModel()).isEqualTo("gemini-2.5-flash");
+        assertThat(snapshotBody.getCurrency()).isEqualTo("USD");
+        assertThat(snapshotBody.getInputPerMillion()).isEqualTo(0.30);
+        assertThat(snapshotBody.getOutputPerMillion()).isEqualTo(2.50);
+        assertThat(snapshotBody.getThinkingPerMillion()).isEqualTo(0.15);
+        assertThat(snapshotBody.getCachedPerMillion()).isEqualTo(0.075);
+        assertThat(snapshotBody.getEmbedPerMillionChars()).isEqualTo(0.02);
+        assertThat(snapshotBody.getPricedOn()).isEqualTo(LocalDate.of(2026, 8, 1));
     }
 
     /** A cron-written row has no owner; the detail must say so honestly rather than 500. */
