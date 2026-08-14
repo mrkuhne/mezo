@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -9,7 +10,11 @@ import { AiUsageCard, formatUsageCost } from '@/features/me/components/AiUsageCa
 afterEach(() => vi.unstubAllEnvs())
 
 function renderCard() {
-  return render(<AiUsageCard />, { wrapper: QueryWrapper })
+  return render(<AiUsageCard />, {
+    wrapper: ({ children }) => (
+      <QueryWrapper><MemoryRouter>{children}</MemoryRouter></QueryWrapper>
+    ),
+  })
 }
 
 /**
@@ -49,6 +54,11 @@ describe('AiUsageCard (mock mode)', () => {
     expect(screen.getByText(/~ becslés/)).toBeInTheDocument()
     // Mock seeds synchronously → no loading frame.
     expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('links to the full AI audit log', () => {
+    renderCard()
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/me/ai-usage')
   })
 })
 

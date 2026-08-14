@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useLlmUsageSummary } from '@/data/hooks'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import type { LlmUsageSummaryResponse } from '@/data/me/llmUsageApi'
@@ -46,9 +47,10 @@ export function AiUsageCard() {
   }
 
   return (
-    <div className="card biocard" style={{ padding: '14px 15px 13px' }}>
+    <Link to="/me/ai-usage" className="card biocard" style={{ display: 'block', padding: '14px 15px 13px', color: 'inherit' }}>
       <div className="bhd">
         <h3>AI-használat</h3>
+        <span className="text-tertiary" style={{ marginLeft: 'auto', fontSize: 15 }}>›</span>
       </div>
 
       <div className="biogrid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
@@ -71,6 +73,6 @@ export function AiUsageCard() {
       <div className="text-tertiary" style={{ fontSize: 11, marginTop: 11 }}>
         ~ becslés — a modellárak tájékoztató jellegűek
       </div>
-    </div>
+    </Link>
   )
 }
