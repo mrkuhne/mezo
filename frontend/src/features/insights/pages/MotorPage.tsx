@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { usePatternMonitor } from '@/data/hooks'
-import { GateVerdictRow } from '@/features/insights/components/GateVerdictRow'
+import { DomainSection } from '@/features/insights/components/DomainSection'
 import { MetricCoverageRow } from '@/features/insights/components/MetricCoverageRow'
 import { MotorHero } from '@/features/insights/components/MotorHero'
+import { PairRow } from '@/features/insights/components/PairRow'
 import { VerdictFilterChips } from '@/features/insights/components/VerdictFilterChips'
-import { comparePairs } from '@/features/insights/logic/domains'
+import { DOMAIN_META, groupPairsByDomain } from '@/features/insights/logic/domains'
 import { GhostState } from '@/shared/ui/GhostState'
 import type { PatternGateVerdict } from '@/data/types'
 
@@ -43,27 +44,42 @@ export function MotorPage() {
 
   const counts = { live: 0, few_days: 0, no_data: 0, degenerate: 0, frozen: 0 } as Record<PatternGateVerdict, number>
   for (const pair of monitor.pairs) counts[pair.verdict]++
-  const visible = activeVerdicts.size === 0
-    ? monitor.pairs
-    : monitor.pairs.filter((p) => activeVerdicts.has(p.verdict))
+  const filterActive = activeVerdicts.size > 0
 
-  const pairs = [...visible].sort(comparePairs)
+  const grouped = groupPairsByDomain(monitor.pairs)
   const metrics = [...monitor.metrics].sort((a, b) => a.coveredDays - b.coveredDays)
-  const coverageByKey = new Map(monitor.metrics.map((m) => [m.key, m.coveredDays]))
+  const coverageByKey = new Map(monitor.metrics.map((m) => [m.key, m]))
 
   return (
     <div className="col gap-md">
       <MotorHero monitor={monitor} />
       <VerdictFilterChips counts={counts} active={activeVerdicts} onToggle={toggleVerdict} />
 
-      <span className="eyebrow">Párok · {pairs.length}</span>
-      {pairs.map((pair) => (
-        <GateVerdictRow
-          key={pair.key}
-          pair={pair}
-          bottleneckCoveredDays={pair.bottleneckMetricKey ? (coverageByKey.get(pair.bottleneckMetricKey) ?? null) : null}
-        />
-      ))}
+      {[...grouped.entries()].map(([domain, domainPairs]) => {
+        const visible = filterActive ? domainPairs.filter((p) => activeVerdicts.has(p.verdict)) : domainPairs
+        return (
+          <DomainSection
+            key={domain}
+            domain={domain}
+            pairCount={domainPairs.length}
+            liveCount={domainPairs.filter((p) => p.verdict === 'live').length}
+            filteredEmpty={visible.length === 0}
+          >
+            {visible.map((pair) => (
+              <PairRow
+                key={pair.key}
+                pair={pair}
+                bottleneckCoveredDays={
+                  pair.bottleneckMetricKey ? (coverageByKey.get(pair.bottleneckMetricKey)?.coveredDays ?? null) : null
+                }
+                sourceA={coverageByKey.get(pair.metricAKey)?.sourceHu ?? ''}
+                sourceB={coverageByKey.get(pair.metricBKey)?.sourceHu ?? ''}
+                railColor={DOMAIN_META[domain].rail}
+              />
+            ))}
+          </DomainSection>
+        )
+      })}
 
       <span className="eyebrow mt-md">Metrika-lefedettség</span>
       <div className="card col gap-md" style={{ padding: 14 }}>
