@@ -63,6 +63,49 @@ class LlmCallListIT extends ApiIntegrationTest {
         assertThat(response.getBody()).doesNotContain("SYS").doesNotContain("USR").doesNotContain("RSP");
     }
 
+    /**
+     * ADR 0014's first invariant, pinned at {@code toListItem}: an unpriced row's cost is UNKNOWN,
+     * so it must arrive as JSON null — never coalesced to 0.0, which the UI would render "$0.00"
+     * and a reader would take for "this call was free". The breakdown ITs guard the aggregates;
+     * this mapping is a different code path and needs its own pin.
+     */
+    @Test
+    void testListCalls_shouldKeepCostNull_whenRowIsUnpriced() {
+        UUID owner = ownerId();
+        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT, CallStatus.SUCCESS,
+            "quest_flavor", "flavor", "unpriced-model", null);
+        llmLogPopulator.logCall(Instant.now().minus(1, ChronoUnit.MINUTES), owner, CallKind.CHAT,
+            CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.002"));
+
+        LlmCallListResponse body = list("period=DAY");
+
+        assertThat(body.getItems()).hasSize(2);
+        assertThat(body.getItems()).filteredOn(i -> "quest_flavor".equals(i.getFeature()))
+            .singleElement()
+            .satisfies(i -> assertThat(i.getCostUsd()).isNull());
+        assertThat(body.getItems()).filteredOn(i -> "companion_chat".equals(i.getFeature()))
+            .singleElement()
+            .satisfies(i -> assertThat(i.getCostUsd()).isEqualTo(0.002));
+    }
+
+    /**
+     * ADR 0014's second invariant on the LIST query specifically: cron and CHAT_STREAM rows carry
+     * {@code created_by = null}, and the list JPQL is its own query string — an ownership filter
+     * sneaking into it would hide exactly the background traffic this page exists to surface.
+     */
+    @Test
+    void testListCalls_shouldIncludeOwnerlessRows_whenLoggedByBackgroundJob() {
+        llmLogPopulator.logCall(Instant.now(), null, CallKind.CHAT, CallStatus.SUCCESS,
+            "proactive_briefing", "generate", "gemini-2.5-flash", new BigDecimal("0.030"));
+        llmLogPopulator.logCall(Instant.now().minus(1, ChronoUnit.MINUTES), ownerId(),
+            CallKind.CHAT, CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", null);
+
+        LlmCallListResponse body = list("period=DAY");
+
+        assertThat(body.getItems()).extracting(LlmCallListItem::getFeature)
+            .containsExactly("proactive_briefing", "companion_chat");
+    }
+
     @Test
     void testListCalls_shouldNarrowToOneFeature_whenFeatureFilterGiven() {
         UUID owner = ownerId();
