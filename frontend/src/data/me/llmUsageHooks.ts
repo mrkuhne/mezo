@@ -57,6 +57,12 @@ export const LLM_BREAKDOWN_EMPTY: LlmUsageBreakdownResponse = {
  * ERROR row that never reached a model), and this response is exhaustive (no
  * truncation field) — so BOTH `features[]` and `models[]` must sum to exactly
  * `totals.callCount` / `totals.costUsd`. Keep that property when editing this seed.
+ *
+ * That is why `models[]` ends in a NULL-keyed bucket of exactly `totals.errorCount` calls: an
+ * ERROR row never reached a model, so `served_model` is null and the backend groups those rows
+ * together (`aggregateByModelSince`, ordered cost desc NULLS LAST). Without it the seed described
+ * a rollup the real endpoint could not produce, and the "ismeretlen" branch of `AiModelBreakdown`
+ * was unreachable in mock mode.
  */
 export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
   from: '2026-08-10',
@@ -73,9 +79,10 @@ export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
     { key: 'quest_flavor', callCount: 6, costUsd: null },
   ],
   models: [
-    { key: 'gemini-2.5-flash', callCount: 241, costUsd: 1.12 },
+    { key: 'gemini-2.5-flash', callCount: 217, costUsd: 1.12 },
     { key: 'gemini-2.5-pro', callCount: 23, costUsd: 0.65 },
     { key: 'gemini-embedding-001', callCount: 148, costUsd: 0.09 },
+    { key: null, callCount: 24, costUsd: null }, // the errorCount rows: no served model, no cost
   ],
 }
 
@@ -92,7 +99,28 @@ export const LLM_CALLS_MOCK: LlmCallListResponse = {
     { id: '66666666-6666-4666-8666-666666666666', createdAt: '2026-08-14T11:47:00Z', feature: 'companion_hypothesis', operation: 'critique', callKind: 'SMART', status: 'SUCCESS', requestedModel: 'gemini-2.5-pro', servedModel: 'gemini-2.5-pro', latencyMs: 22600, streamed: false, toolRounds: null, totalTokens: 18902, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.184, errorClass: null, errorCode: null },
     { id: '77777777-7777-4777-8777-777777777777', createdAt: '2026-08-14T03:45:00Z', feature: 'proactive_briefing', operation: 'generate', callKind: 'CHAT', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 5200, streamed: false, toolRounds: null, totalTokens: 9341, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.031, errorClass: null, errorCode: null },
   ],
-  hasMore: true,
+  // The seed IS everything the mock log holds — `mockCalls` recomputes `hasMore` per window, so
+  // this flag only describes the unfiltered, unbounded read.
+  hasMore: false,
+}
+
+/**
+ * The mock log answered for a given window (mezo-uakh) — the same argument-driven mock shape as
+ * `mockThread(selection)` / `mockGamificationDay(date)`.
+ *
+ * The seed used to be returned verbatim, which made the demo surface LIE: tapping a feature bar
+ * showed the ✕ chip over an unchanged list, the status chips did nothing, and the hardcoded
+ * `hasMore: true` kept offering "További hívások" over the same seven rows until the 500 ceiling.
+ * Filtering and truncating here mirrors what `findCalls` does server-side, so mock mode
+ * demonstrates the real behaviour.
+ */
+function mockCalls(filters: LlmCallFilters, limit: number): LlmCallListResponse {
+  const matched = LLM_CALLS_MOCK.items.filter((call) =>
+    (filters.feature == null || call.feature === filters.feature)
+    && (filters.status == null || call.status === filters.status)
+    && (filters.callKind == null || call.callKind === filters.callKind))
+  // `hasMore` comes from the window truncating, exactly like the backend's `limit + 1` probe.
+  return { items: matched.slice(0, limit), hasMore: matched.length > limit }
 }
 
 export const LLM_CALL_DETAIL_EMPTY: LlmCallDetailResponse = {
@@ -153,7 +181,7 @@ export function useLlmUsageBreakdown(period: LlmUsagePeriodKey) {
 export function useLlmCalls(period: LlmUsagePeriodKey, filters: LlmCallFilters, limit: number) {
   return useDualQuery({
     queryKey: ['llmCalls', period, filters.feature ?? null, filters.status ?? null, filters.callKind ?? null, limit],
-    mockData: LLM_CALLS_MOCK,
+    mockData: mockCalls(filters, limit),
     realFetch: () => llmUsageApi.listCalls(period, filters, limit),
     realEmpty: LLM_CALLS_EMPTY,
     realStaleTime: 30_000,

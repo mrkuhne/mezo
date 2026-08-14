@@ -83,7 +83,14 @@ export function AiUsagePage() {
         </>
       )}
 
-      <AiCallFilters totals={breakdown.data.totals} filters={filters} onChange={changeFilters} />
+      {/* The chips stay usable when only the breakdown failed (the filters run on the LIST
+          endpoint), but their counts come from the rollup — so a failed rollup omits them rather
+          than reading "Siker 0 · Hiba 0" over a list full of real rows. */}
+      <AiCallFilters
+        totals={breakdown.isError ? null : breakdown.data.totals}
+        filters={filters}
+        onChange={changeFilters}
+      />
 
       {calls.isError ? (
         <GhostState message="Nem sikerült betölteni a hívásokat." ctaLabel="Újra" onCta={calls.refetch} />

@@ -45,8 +45,9 @@ describe('AiUsagePage (mock mode)', () => {
     expect(screen.getByRole('button', { name: 'Ez a hónap' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('applies a feature filter when a breakdown bar is tapped', async () => {
+  it('applies a feature filter when a breakdown bar is tapped, and narrows the list with it', async () => {
     renderPage()
+    const rowsBefore = screen.getAllByRole('link').length
 
     fireEvent.click(screen.getByRole('button', { name: /meal_draft/ }))
 
@@ -54,12 +55,19 @@ describe('AiUsagePage (mock mode)', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /meal_draft ✕/ })).toBeInTheDocument(),
     )
+    // …and the list below actually shrinks — mock mode answers the FILTERS, like the server does
+    // (LLM_CALLS_MOCK holds exactly one meal_draft call). A chip over an unchanged list was the
+    // demo surface lying about what the filter does.
+    // the back arrow is a link too, so: 1 nav link + exactly 1 remaining call row
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2))
+    expect(rowsBefore).toBeGreaterThan(2)
   })
 
-  it('offers the load-more control only while the server says more rows exist', () => {
+  it('does not offer the load-more control when the window already covers every row', () => {
     renderPage()
-    // LLM_CALLS_MOCK.hasMore is true → the control is offered
-    expect(screen.getByRole('button', { name: /További hívások/ })).toBeInTheDocument()
+    // The seed is 7 rows and the opening window is 50 — there is nothing more to fetch, so the
+    // control must be absent (it used to be offered forever off a hardcoded hasMore: true).
+    expect(screen.queryByRole('button', { name: /További hívások/ })).toBeNull()
   })
 })
 
@@ -90,5 +98,30 @@ describe('AiUsagePage (real mode)', () => {
     await waitFor(() => expect(limits).toEqual(['50']))
     fireEvent.click(screen.getByRole('button', { name: /További hívások/ }))
     await waitFor(() => expect(limits).toContain('100'))
+  })
+
+  it('omits the chip counts when the breakdown fails but the list succeeds', async () => {
+    // Partial failure: `useDualQuery` hands back the honest-empty rollup on an error, so rendering
+    // the counts would print "Siker 0 · Hiba 0 · Megszakadt 0" above a list of real rows. The
+    // chips stay clickable (they filter server-side, on the list endpoint that DID answer).
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API_BASE}/api/llm-usage/calls`, () =>
+        HttpResponse.json({ items: [LLM_CALLS_MOCK.items[0]], hasMore: false }),
+      ),
+    )
+
+    renderPage()
+
+    // the list rendered its row…
+    await waitFor(() => expect(screen.getByText(/companion_chat/)).toBeInTheDocument())
+    // …the rollup said so instead of showing zeros
+    await waitFor(() =>
+      expect(screen.getByText(/Nem sikerült betölteni az AI-használatot/)).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('button', { name: 'Hiba' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Hiba 0/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Siker 0/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Megszakadt 0/ })).toBeNull()
   })
 })

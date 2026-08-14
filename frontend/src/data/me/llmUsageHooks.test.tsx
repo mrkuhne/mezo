@@ -65,6 +65,23 @@ describe('useLlmUsageBreakdown (mock mode)', () => {
     expect(result.current.data).toEqual(LLM_BREAKDOWN_MOCK)
     expect(result.current.data.totals.callCount).toBe(412)
   })
+
+  it('keeps the seed reconcilable: both rollups sum to the totals, errors in a null-model bucket', () => {
+    // The response is exhaustive, so a rollup the real endpoint could never produce would teach
+    // the reader (and every mock-mode screenshot) something false. An ERROR row has no served
+    // model, so those rows MUST show up as the null-keyed group — the one the UI renders as
+    // "ismeretlen" with a dashed cost.
+    const { totals, features, models } = LLM_BREAKDOWN_MOCK
+    const calls = (groups: typeof models) => groups.reduce((n, g) => n + g.callCount, 0)
+    const cost = (groups: typeof models) => groups.reduce((n, g) => n + (g.costUsd ?? 0), 0)
+
+    expect(calls(features)).toBe(totals.callCount)
+    expect(calls(models)).toBe(totals.callCount)
+    expect(cost(features)).toBeCloseTo(totals.costUsd ?? 0, 6)
+    expect(cost(models)).toBeCloseTo(totals.costUsd ?? 0, 6)
+    expect(models.find((m) => m.key == null))
+      .toEqual({ key: null, callCount: totals.errorCount, costUsd: null })
+  })
 })
 
 describe('useLlmUsageBreakdown (real mode)', () => {
@@ -98,6 +115,40 @@ describe('useLlmCalls (mock mode)', () => {
     const { result } = renderHook(() => useLlmCalls('DAY', {}, 50), { wrapper: makeHookWrapper() })
     expect(result.current.data).toEqual(LLM_CALLS_MOCK)
     expect(result.current.data.items).toHaveLength(7)
+    // the opening window covers the whole seed — nothing more to offer
+    expect(result.current.data.hasMore).toBe(false)
+  })
+
+  it('answers the filters like the server does, instead of returning the seed verbatim', () => {
+    const wrapper = makeHookWrapper()
+
+    const byFeature = renderHook(() => useLlmCalls('DAY', { feature: 'meal_draft' }, 50), { wrapper })
+    expect(byFeature.result.current.data.items.map((i) => i.feature)).toEqual(['meal_draft'])
+
+    const byStatus = renderHook(() => useLlmCalls('DAY', { status: 'CANCELLED' }, 50), { wrapper })
+    expect(byStatus.result.current.data.items.map((i) => i.status)).toEqual(['CANCELLED'])
+
+    const byKind = renderHook(() => useLlmCalls('DAY', { callKind: 'EMBED_DOC' }, 50), { wrapper })
+    expect(byKind.result.current.data.items.map((i) => i.callKind)).toEqual(['EMBED_DOC'])
+
+    // the axes combine, and a narrowing with no match is an honest empty list
+    const combined = renderHook(
+      () => useLlmCalls('DAY', { feature: 'meal_draft', status: 'SUCCESS' }, 50),
+      { wrapper },
+    )
+    expect(combined.result.current.data.items).toEqual([])
+  })
+
+  it('truncates to the window and flags the truncation, exactly like the growing window does', () => {
+    const wrapper = makeHookWrapper()
+
+    const narrow = renderHook(() => useLlmCalls('DAY', {}, 3), { wrapper })
+    expect(narrow.result.current.data.items).toHaveLength(3)
+    expect(narrow.result.current.data.hasMore).toBe(true)
+
+    const exact = renderHook(() => useLlmCalls('DAY', {}, 7), { wrapper })
+    expect(exact.result.current.data.items).toHaveLength(7)
+    expect(exact.result.current.data.hasMore).toBe(false)
   })
 })
 
