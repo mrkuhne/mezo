@@ -775,7 +775,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   display: flex;
   flex-direction: column;
   gap: 8px;
-  z-index: var(--z-toast, 70);
+  /* The app's real toast tier: above sheets (200/211) and the level-up overlay (250).
+     The nominal --z-toast (70) belongs to the DS's abstract ladder (sheet 50 / modal 60 /
+     toast 70), which this stylesheet expresses at a different absolute scale — same order,
+     different numbers. DS §z-index: "Toast above Modal … must be visible." */
+  z-index: 300;
   pointer-events: none;
 }
 .toast {
@@ -836,7 +840,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   top: 70px;
   width: calc(100% - 28px);
   max-width: 296px;
-  z-index: var(--z-toast, 70);
+  /* The app's real toast tier: above sheets (200/211) and the level-up overlay (250).
+     The nominal --z-toast (70) belongs to the DS's abstract ladder (sheet 50 / modal 60 /
+     toast 70), which this stylesheet expresses at a different absolute scale — same order,
+     different numbers. DS §z-index: "Toast above Modal … must be visible." */
+  z-index: 300;
   padding: 14px 16px;
   color: var(--text-inverse);
   border-radius: var(--r-lg);

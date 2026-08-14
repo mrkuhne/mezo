@@ -1,7 +1,14 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emitToast } from '@/shared/lib/toastBus'
 import { ToastProvider, useToast } from '@/shared/ui/ToastProvider'
+
+// ESM test file (no __dirname) — resolve relative to this file's own URL,
+// matching the convention used elsewhere in the repo (e.g. dualMode.guard.test.ts).
+const TEST_DIR = dirname(fileURLToPath(import.meta.url))
 
 function ShowButton() {
   const toast = useToast()
@@ -95,5 +102,17 @@ describe('ToastProvider — stack', () => {
     const rendered = items()
     expect(rendered).toHaveLength(1)
     expect(rendered[0]).toHaveTextContent('marad')
+  })
+})
+
+describe('ToastProvider — z-index tier', () => {
+  it('a toast tier a sheetek és a level-up overlay FÖLÖTT van (DS: „Toast above Modal")', () => {
+    const css = readFileSync(resolve(TEST_DIR, '../../styles/prototype.css'), 'utf8')
+    const tierOf = (selector: string) => {
+      const block = css.split(selector)[1]?.split('}')[0] ?? ''
+      return Number(block.match(/z-index:\s*(\d+)/)?.[1] ?? NaN)
+    }
+    expect(tierOf('.toast-stack {')).toBeGreaterThan(250)   // above the level-up overlay
+    expect(tierOf('.toast-solo {')).toBeGreaterThan(250)
   })
 })
