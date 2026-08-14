@@ -51,6 +51,7 @@ public interface CompanionMapper {
         return PatternResponse.builder()
                 .id(entity.getId())
                 .kind(entity.getKind())
+                .pairKey(entity.getPairKey())
                 .category(entity.getCategory())
                 .categoryLabel(entity.getCategoryLabel())
                 .title(entity.getTitle())

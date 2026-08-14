@@ -51,7 +51,7 @@ describe('insights nav (real mode default)', () => {
     // Motor — az átláthatósági al-oldal (mezo-viqs)
     await userEvent.click(screen.getByRole('button', { name: 'Kísérletek' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Motor' }))
-    expect(await screen.findByText('A motor állapota')).toBeInTheDocument()
+    expect(await screen.findByText('Minta-motor')).toBeInTheDocument() // a mezo-18bx hero eyebrow-ja
   })
 })
 

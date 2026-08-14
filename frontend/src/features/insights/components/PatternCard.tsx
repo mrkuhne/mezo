@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights/insights'
 import type { Pattern, PatternCritique, PatternRowStatus, PatternStatus } from '@/data/types'
@@ -18,14 +19,33 @@ function critiqueColor(v: number): string {
   return v > 0.8 ? 'var(--success)' : v > 0.7 ? 'var(--lav-deep)' : 'var(--warning)'
 }
 
-export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?: (d: PatternStatus) => void }) {
+export function PatternCard({
+  pattern,
+  onDecide,
+  highlighted = false,
+}: {
+  pattern: Pattern
+  onDecide?: (d: PatternStatus) => void
+  /** A Motor „Minta megnyitása →" célpontja (mezo-18bx) — rövid kiemelés a ?pair= találaton. */
+  highlighted?: boolean
+}) {
   const [expanded, setExpanded] = useState(false)
   const catColor = patternCategoryColor(pattern.category)
   const status = pattern.status ?? 'proposed'
   const badge = statusLabel(status)
 
   return (
-    <div className="card" style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
+    <div
+      data-testid="pattern-card"
+      data-highlighted={highlighted}
+      className="card"
+      style={{
+        padding: 16,
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: highlighted ? '0 0 0 2px var(--primary-base)' : undefined,
+      }}
+    >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: catColor }} />
 
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -116,6 +136,12 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
         >
           Reject
         </button>
+      </div>
+
+      <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
+        <Link to="/insights/motor" className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+          Motor-diagnosztika →
+        </Link>
       </div>
     </div>
   )

@@ -406,6 +406,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alvásminőség ↔ másnapi edzés-RPE"
+          mechanism: "A rosszabb alvás másnap nehezebbnek érződő edzést hozhat."
           metric-a: sleep-quality
           metric-b: training-rpe
           lag-days: 1
@@ -413,6 +414,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alváshossz ↔ másnapi edzés-RPE"
+          mechanism: "A rövidebb alvás másnap magasabb erőkifejtés-érzetet hozhat."
           metric-a: sleep-duration-h
           metric-b: training-rpe
           lag-days: 1
@@ -420,6 +422,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Késői étkezés ↔ rákövetkező alvásminőség"
+          mechanism: "A késői étkezés ronthatja a rákövetkező éjszaka minőségét."
           metric-a: late-meal-hour
           metric-b: sleep-quality
           lag-days: 1
@@ -427,6 +430,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Reta-ciklusnap ↔ napi kalória"
+          mechanism: "A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt."
           metric-a: reta-cycle-day
           metric-b: daily-kcal
           lag-days: 0
@@ -434,6 +438,7 @@ mezo:
           category: response
           label: Response
           title: "Sportterhelés ↔ másnapi gym-volumen"
+          mechanism: "A sportterhelés másnapra elvehet a gym-teljesítményből."
           metric-a: sport-load-min
           metric-b: gym-volume-kg
           lag-days: 1
@@ -441,6 +446,7 @@ mezo:
           category: response
           label: Response
           title: "Napi kalória ↔ másnap reggeli súlyváltozás"
+          mechanism: "A napi bevitel a másnap reggeli súlyban csapódhat le."
           metric-a: daily-kcal
           metric-b: weight-delta-kg
           lag-days: 1
@@ -448,6 +454,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Stressz-szint ↔ aznapi alvásminőség"
+          mechanism: "A stresszes nap ronthatja az aznapi alvásminőséget."
           metric-a: checkin-stress
           metric-b: sleep-quality
           lag-days: 0
@@ -455,6 +462,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Vízbevitel ↔ energia-szint"
+          mechanism: "A hidratáltság az energia-szintben érződhet."
           metric-a: daily-water-ml
           metric-b: checkin-energy
           lag-days: 0
@@ -463,6 +471,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alvásminőség ↔ másnapi gym-terhelésérzet"
+          mechanism: "A rosszabb alvás másnap nehezebbnek érződő szetteket hozhat — a gym-RPE proxyja."
           metric-a: sleep-quality
           metric-b: gym-workload
           lag-days: 1
@@ -470,6 +479,7 @@ mezo:
           category: response
           label: Response
           title: "Gym-volumen ↔ másnapi ízületi fájdalom"
+          mechanism: "A nagy volumen másnap ízületi panaszként üthet vissza — túlterhelés-jel."
           metric-a: gym-volume-kg
           metric-b: gym-joint-pain
           lag-days: 1
@@ -477,6 +487,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Testérzet ↔ aznapi ízületi fájdalom"
+          mechanism: "A rosszabb testérzet és az edzés közbeni ízületi fájdalom együtt járhat."
           metric-a: checkin-body
           metric-b: gym-joint-pain
           lag-days: 0
@@ -484,6 +495,7 @@ mezo:
           category: response
           label: Response
           title: "Gym-terhelésérzet ↔ másnapi testérzet"
+          mechanism: "A nehéznek érzett edzés a másnapi testérzetben csapódhat le."
           metric-a: gym-workload
           metric-b: checkin-body
           lag-days: 1
@@ -491,6 +503,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Lefekvés ideje ↔ aznapi alvásminőség"
+          mechanism: "Alvás-higiénia: a késői lefekvés ronthatja az alvás minőségét."
           metric-a: bedtime-hour
           metric-b: sleep-quality
           lag-days: 0
@@ -498,6 +511,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Késői étkezés ↔ rákövetkező éjszakai ébredések"
+          mechanism: "A késői étkezés szétdarabolhatja az éjszakát — több ébredés."
           metric-a: late-meal-hour
           metric-b: sleep-awakenings
           lag-days: 1
@@ -505,6 +519,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Stressz-szint ↔ aznapi késői étkezés"
+          mechanism: "Stressz-evés: a feszült nap kitolhatja az utolsó étkezést."
           metric-a: checkin-stress
           metric-b: late-meal-hour
           lag-days: 0
@@ -512,6 +527,7 @@ mezo:
           category: response
           label: Response
           title: "Kész szokások ↔ mentális állapot"
+          mechanism: "A kipipált szokások jobb mentális állapottal járhatnak."
           metric-a: habits-done
           metric-b: checkin-mental
           lag-days: 0
@@ -519,6 +535,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Esti lezárás ↔ rákövetkező alvásminőség"
+          mechanism: "Az esti lezárás lecsendesítheti az elalvást — jobb alvásminőség."
           metric-a: ritual-closed
           metric-b: sleep-quality
           lag-days: 1
@@ -526,6 +543,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Napi fehérje ↔ másnapi energia-szint"
+          mechanism: "A fehérjebevitel a másnapi energia-szintben érződhet."
           metric-a: daily-protein-g
           metric-b: checkin-energy
           lag-days: 1
@@ -533,6 +551,7 @@ mezo:
           category: response
           label: Response
           title: "Napi XP ↔ mentális állapot"
+          mechanism: "Az aktív, pontszerző nap jobb hangulattal járhat."
           metric-a: daily-xp
           metric-b: checkin-mental
           lag-days: 0
@@ -540,6 +559,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Étkezés-pontszám ↔ másnapi energia-szint"
+          mechanism: "A jobb minőségű étkezés másnap több energiát adhat."
           metric-a: meal-score
           metric-b: checkin-energy
           lag-days: 1
@@ -547,6 +567,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Reta-dózis ↔ napi kalória"
+          mechanism: "Az étvágy-elnyomás dózisfüggő lehet — magasabb dózis, kevesebb kalória."
           metric-a: reta-dose-mg
           metric-b: daily-kcal
           lag-days: 0
@@ -554,6 +575,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Sportterhelés ↔ rákövetkező alvásminőség"
+          mechanism: "Az edzésterhelés kihathat a rákövetkező éjszaka minőségére."
           metric-a: sport-load-min
           metric-b: sleep-quality
           lag-days: 1
@@ -561,6 +583,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Ébredés ideje ↔ energia-szint"
+          mechanism: "A korábbi vagy későbbi ébredés az aznapi energiában érződhet."
           metric-a: wakeup-hour
           metric-b: checkin-energy
           lag-days: 0
@@ -568,6 +591,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Alvásminőség ↔ másnapi pulzus-visszaállás"
+          mechanism: "A jó alvás gyorsabb pulzus-visszaállást hozhat — regeneráció-jel."
           metric-a: sleep-quality
           metric-b: run-hr-recovery-s
           lag-days: 1
@@ -575,6 +599,7 @@ mezo:
           category: response
           label: Response
           title: "Társas említések ↔ mentális állapot"
+          mechanism: "A társas nap jobb hangulattal járhat."
           metric-a: social-mentions
           metric-b: checkin-mental
           lag-days: 0
@@ -582,6 +607,7 @@ mezo:
           category: response
           label: Response
           title: "ACWR ↔ másnapi ízületi fájdalom"
+          mechanism: "A hirtelen terhelés-ugrás (magas ACWR) a sérülés-kockázat klasszikus jele."
           metric-a: acwr
           metric-b: gym-joint-pain
           lag-days: 1
@@ -589,6 +615,7 @@ mezo:
           category: physiology
           label: Fiziológia
           title: "Edzés-monotónia ↔ energia-szint"
+          mechanism: "Az egyhangú terhelés (Foster-monotónia) fáradtság-jel lehet."
           metric-a: training-monotony
           metric-b: checkin-energy
           lag-days: 0
@@ -596,6 +623,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Lefekvés-szórás ↔ mentális állapot"
+          mechanism: "Social jetlag: a szórt lefekvés a hangulatban érződhet."
           metric-a: bedtime-variability
           metric-b: checkin-mental
           lag-days: 0
@@ -603,6 +631,7 @@ mezo:
           category: trigger
           label: Trigger
           title: "Hétvége ↔ késői étkezés"
+          mechanism: "Hétvége-hatás: lazább napokon később csúszhat az utolsó étkezés."
           metric-a: weekend
           metric-b: late-meal-hour
           lag-days: 0

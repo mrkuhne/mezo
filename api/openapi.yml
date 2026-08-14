@@ -11406,6 +11406,7 @@ components:
       required:
         - id
         - kind
+        - pairKey
         - category
         - categoryLabel
         - title
@@ -11422,6 +11423,11 @@ components:
           description: >-
             statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM
             loop (V3.2).
+        pairKey:
+          type: string
+          description: >-
+            A minta stabil pár-kulcsa (statistical: katalógus-kulcs, hypothesis:
+            hyp-hash) — a Motor↔Patterns kereszt-link horgonya (mezo-18bx).
         category:
           type: string
           pattern: ^(physiology|trigger|response)$
@@ -11551,6 +11557,9 @@ components:
         - metricALabel
         - metricBKey
         - metricBLabel
+        - mechanismHu
+        - metricADomain
+        - metricBDomain
         - verdict
         - alignedDays
       properties:
@@ -11575,6 +11584,17 @@ components:
           type: string
         metricBLabel:
           type: string
+        mechanismHu:
+          type: string
+          description: Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx).
+        metricADomain:
+          type: string
+          pattern: ^(sleep|train|fuel|mind|body|other)$
+          description: metric-a élet-doménje.
+        metricBDomain:
+          type: string
+          pattern: ^(sleep|train|fuel|mind|body|other)$
+          description: metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja.
         verdict:
           type: string
           pattern: ^(live|few_days|no_data|degenerate|frozen)$
@@ -11611,6 +11631,8 @@ components:
       required:
         - key
         - label
+        - sourceHu
+        - domain
         - coveredDays
         - windowDays
         - pairCount
@@ -11621,6 +11643,12 @@ components:
         label:
           type: string
           description: Magyar metrika-címke.
+        sourceHu:
+          type: string
+          description: Honnan jön az adat — gyűjtő-felület vagy derivált-magyarázat.
+        domain:
+          type: string
+          pattern: ^(sleep|train|fuel|mind|body|other)$
         coveredDays:
           type: integer
           description: Hány napon van érték az ablakban.
