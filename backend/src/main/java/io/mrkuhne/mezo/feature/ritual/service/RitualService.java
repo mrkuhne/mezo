@@ -52,17 +52,22 @@ public class RitualService {
         return toResponse(userId, date, row);
     }
 
+    /**
+     * Idempotent insert of today's close (mezo-5jly). The database absorbs a concurrent caller's
+     * duplicate via {@code ON CONFLICT DO NOTHING}, so no constraint violation is ever raised and
+     * the transaction stays usable — the re-read below is therefore safe in the SAME transaction.
+     *
+     * <p>This replaces a catch-the-violation-and-re-read guard that could not work on Postgres:
+     * the violation aborts the transaction (25P02) and the recovery read fails too, handing the
+     * race loser a 500 instead of the winner's row. See {@code TxRaceGuardReproIT} for the
+     * mechanism and {@code RitualServiceRaceIT} for the user-visible behaviour.
+     */
     private RitualDayEntity insertOrReread(UUID userId, LocalDate date) {
-        try {
-            RitualDayEntity e = new RitualDayEntity();
-            e.setCreatedBy(userId);
-            e.setRitualDate(date);
-            e.setClosedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the pre/post-persist responses match
-            return ritualDayRepository.saveAndFlush(e);
-        } catch (DataIntegrityViolationException ex) {
-            // lost the race against a concurrent close() call — the row exists now
-            return ritualDayRepository.findByCreatedByAndRitualDate(userId, date).orElseThrow();
-        }
+        // timestamptz stores micros — truncate so the pre/post-persist responses match
+        ritualDayRepository.insertIfAbsent(
+            userId, date, Instant.now().truncatedTo(ChronoUnit.MICROS), Instant.now());
+        // Whether we inserted or a concurrent caller did, the winner's row is what the caller gets.
+        return ritualDayRepository.findByCreatedByAndRitualDate(userId, date).orElseThrow();
     }
 
     private RitualDayResponse toResponse(UUID userId, LocalDate date, RitualDayEntity row) {
