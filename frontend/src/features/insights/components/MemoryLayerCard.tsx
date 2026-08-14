@@ -21,7 +21,7 @@ export function MemoryLayerCard({ eyebrow, title, big, stats, accent, wash, last
       onClick={onOpen}
       role={onOpen ? 'button' : undefined}
       tabIndex={onOpen ? 0 : undefined}
-      onKeyDown={onOpen ? (e) => { if (e.key === 'Enter') onOpen() } : undefined}
+      onKeyDown={onOpen ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } } : undefined}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: accent }} />
       <div className="row" style={{ justifyContent: 'space-between' }}>

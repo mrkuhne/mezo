@@ -52,6 +52,14 @@ describe('MemoryPage (mock mode)', () => {
     await userEvent.click(screen.getByText('L1 · Epizodikus napló'))
     expect(screen.getByText('2026. augusztus')).toBeInTheDocument()
   })
+
+  test('the L1 card opens the journal segment via keyboard (Space)', async () => {
+    renderPage()
+    const card = screen.getByText('L1 · Epizodikus napló').closest('[role="button"]') as HTMLElement
+    card.focus()
+    await userEvent.keyboard(' ')
+    expect(screen.getByText('2026. augusztus')).toBeInTheDocument()
+  })
 })
 
 describe('MemoryPage (real mode)', () => {
