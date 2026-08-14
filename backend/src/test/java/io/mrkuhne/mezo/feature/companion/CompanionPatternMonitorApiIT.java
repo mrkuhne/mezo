@@ -207,6 +207,11 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
             assertThat(p.getMechanismHu()).isNotBlank();
             assertThat(p.getMetricADomain()).isNotBlank();
             assertThat(p.getMetricBDomain()).isNotBlank();
+            // mezo-fj1g: emberi nyelvű kártya-szövegek — mind a 29 páron kötelezőek
+            assertThat(p.getQuestionHu()).isNotBlank();
+            assertThat(p.getExpectedDirection()).isIn("positive", "negative");
+            assertThat(p.getWhenPositiveHu()).contains("{erősség}");
+            assertThat(p.getWhenNegativeHu()).contains("{erősség}");
         });
         assertThat(pair(response, STRESS_SLEEP_PAIR).getMetricBDomain()).isEqualTo("sleep");
         assertThat(metric(response, "checkin-stress").getSourceHu()).isEqualTo("Check-in sheet");

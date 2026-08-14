@@ -673,6 +673,13 @@ export interface PatternMonitorPair {
   metricBLabel: string
   /** Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
   mechanismHu: string
+  /** Kérdés-cím a Motor kártyán (mezo-fj1g). */
+  questionHu: string
+  /** A mechanizmus által várt korreláció-irány (mezo-fj1g). */
+  expectedDirection: 'positive' | 'negative'
+  /** Pozitív/negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g). */
+  whenPositiveHu: string
+  whenNegativeHu: string
   metricADomain: MetricDomain
   /** A kimenet doménje — a Motor tab elsődleges csoportja. */
   metricBDomain: MetricDomain

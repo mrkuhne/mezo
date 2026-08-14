@@ -1,5 +1,15 @@
 import { useState } from 'react'
+import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
 import type { PatternMetricCoverage } from '@/data/types'
+
+/** „utoljára: ma / tegnap / Máj 20" — a lefedettség-sor emberi dátuma (mezo-fj1g). */
+export function lastSeenLabel(iso: string | null): string | null {
+  if (!iso) return null
+  const today = localDateString()
+  if (iso === today) return 'ma'
+  if (iso === addDays(today, -1)) return 'tegnap'
+  return huMonthDay(iso)
+}
 
 /**
  * Metrika-lefedettség sor progress-gyűrűvel (mezo-18bx, a MetricCoverageRow utódja).
@@ -57,12 +67,28 @@ export function MetricCoverageRing({
             {metric.coveredDays}
           </span>
         </span>
-        <span data-testid="coverage-label" className="eyebrow" style={{ color: 'var(--text-primary)' }}>
-          {metric.label}
+        <span className="col" style={{ gap: 1, flex: 1, minWidth: 0 }}>
+          <span data-testid="coverage-label" style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-primary)' }}>
+            {metric.label}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {metric.coveredDays}/{metric.windowDays} nap
+            {lastSeenLabel(metric.lastDayWithData) ? ` · utoljára: ${lastSeenLabel(metric.lastDayWithData)}` : ''}
+          </span>
         </span>
-        <span className="eyebrow text-tertiary" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          {metric.coveredDays}/{metric.windowDays} nap ·{' '}
-          {waiting ? `${metric.pairCount} pár vár rá` : `${metric.pairCount} párban`}
+        <span
+          className="chip"
+          style={{
+            fontSize: 9.5,
+            fontWeight: 800,
+            padding: '4px 9px',
+            border: 'none',
+            flexShrink: 0,
+            color: waiting ? 'var(--warning-deep)' : 'var(--success-deep)',
+            background: waiting ? 'var(--warning-bg)' : 'var(--success-bg)',
+          }}
+        >
+          {waiting ? `${metric.pairCount} pár vár rá` : `${metric.pairCount} párban él`}
         </span>
       </div>
 

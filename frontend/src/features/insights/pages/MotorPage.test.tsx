@@ -40,11 +40,11 @@ describe('MotorPage (mock mode)', () => {
 
     fireEvent.click(liveChip)
     expect(liveChip).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.queryByText('Alváshossz ↔ másnapi edzés-RPE')).not.toBeInTheDocument() // few_days kiszűrve
-    expect(screen.getByText('Stressz-szint ↔ aznapi alvásminőség')).toBeInTheDocument() // élő marad
+    expect(screen.queryByText('Könnyebb az edzés hosszabb alvás után?')).not.toBeInTheDocument() // few_days kiszűrve
+    expect(screen.getByText('Elrontja az alvásod a stresszes nap?')).toBeInTheDocument() // élő marad
 
     fireEvent.click(liveChip) // toggle vissza — minden látszik újra
-    expect(screen.getByText('Alváshossz ↔ másnapi edzés-RPE')).toBeInTheDocument()
+    expect(screen.getByText('Könnyebb az edzés hosszabb alvás után?')).toBeInTheDocument()
   })
 
   /** A csukott domén-szekciók fejléceire kattintva mindent láthatóvá tesz. */
@@ -58,7 +58,7 @@ describe('MotorPage (mock mode)', () => {
     renderPage()
     openAllSections()
     expect(screen.getAllByText('ÉLŐ')).toHaveLength(2)
-    expect(screen.getByText('🎯 Még 2 nap adat ebből: edzés-RPE — és ez a pár életre kel!')).toBeInTheDocument()
+    expect(screen.getByText('Még 2 nap adat ebből: edzés-RPE — és ez a pár életre kel!')).toBeInTheDocument()
     expect(
       screen.getByText('Nincs még illeszkedő nap — a(z) sportterhelés üres ebben az ablakban.'),
     ).toBeInTheDocument()
@@ -78,33 +78,38 @@ describe('MotorPage (mock mode)', () => {
     expect(headers[1]).toContain('Edzés')
     const titles = screen.getAllByTestId('gate-pair-title').map((el) => el.textContent)
     // Alvás-szekció (B=sleep): élő elöl, aztán a kevés-napos
-    expect(titles[0]).toBe('Stressz-szint ↔ aznapi alvásminőség')
-    expect(titles[1]).toBe('Késői étkezés ↔ rákövetkező alvásminőség')
+    expect(titles[0]).toBe('Elrontja az alvásod a stresszes nap?')
+    expect(titles[1]).toBe('Rosszabbul alszol, ha későn eszel?')
     // Edzés-szekció (B=train): live → few_days → no_data
-    expect(titles[2]).toBe('Alvásminőség ↔ másnapi edzés-RPE')
-    expect(titles[3]).toBe('Alváshossz ↔ másnapi edzés-RPE')
-    expect(titles[4]).toBe('Sportterhelés ↔ másnapi gym-volumen')
-    expect(titles[7]).toBe('Napi kalória ↔ másnap reggeli súlyváltozás') // Test-szekció a sor végén
+    expect(titles[2]).toBe('Könnyebb az edzés, ha jól aludtál?')
+    expect(titles[3]).toBe('Könnyebb az edzés hosszabb alvás után?')
+    expect(titles[4]).toBe('Elveszi a sport a másnapi gym-erőt?')
+    expect(titles[7]).toBe('Meglátszik a napi kalória a reggeli súlyon?') // Test-szekció a sor végén
   })
 
   test('shows a cross-domain chip when metric-A lives in another domain', () => {
     renderPage()
     // Stressz (mind) → alvásminőség (sleep): a sleep-szekció sora kap "Mentális & társas" chipet
     const row = screen
-      .getByText('Stressz-szint ↔ aznapi alvásminőség')
+      .getByText('Elrontja az alvásod a stresszes nap?')
       .closest('[data-testid="pair-row"]') as HTMLElement
-    expect(within(row).getByText('Mentális & társas')).toBeInTheDocument()
+    expect(within(row).getByText(/Mentális & társas/)).toBeInTheDocument()
   })
 
-  test('expands a live row to mechanism + source pills + pattern link', () => {
+  test('a live card composes the human finding and expands to sources + raw stats + link', () => {
     renderPage()
     const row = screen
-      .getByText('Stressz-szint ↔ aznapi alvásminőség')
+      .getByText('Elrontja az alvásod a stresszes nap?')
       .closest('[data-testid="pair-row"]') as HTMLElement
-    fireEvent.click(within(row).getByTestId('gate-pair-title'))
-    expect(within(row).getByText(/Miért figyeljük/)).toBeInTheDocument()
+    // a kártyán mindig ott a két blokk: amit keresünk + amit eddig látunk (Igen: egyező irány)
+    expect(within(row).getByText(/Amit keresünk/)).toBeInTheDocument()
     expect(within(row).getByText('A stresszes nap ronthatja az aznapi alvásminőséget.')).toBeInTheDocument()
+    expect(within(row).getByText(/Igen: a stresszesebb napokon/)).toBeInTheDocument()
+    expect(within(row).getByText('határozottan')).toBeInTheDocument() // |r|=0.61 → határozottan, félkövér
+    expect(within(row).getByText('megbízható jel')).toBeInTheDocument() // p=0.001
+    fireEvent.click(within(row).getByTestId('gate-pair-title'))
     expect(within(row).getByText(/Check-in sheet/)).toBeInTheDocument()
+    expect(within(row).getByText('r=-0.61 · n=34 · p=0.001')).toBeInTheDocument()
     expect(within(row).getByRole('link', { name: /Minta megnyitása/ })).toHaveAttribute(
       'href',
       '/insights/patterns?pair=checkin-stress~sleep-quality',
@@ -115,10 +120,10 @@ describe('MotorPage (mock mode)', () => {
     renderPage()
     openAllSections()
     const row = screen
-      .getByText('Sportterhelés ↔ másnapi gym-volumen')
+      .getByText('Elveszi a sport a másnapi gym-erőt?')
       .closest('[data-testid="pair-row"]') as HTMLElement
     fireEvent.click(within(row).getByTestId('gate-pair-title'))
-    expect(within(row).getByText(/Miért figyeljük/)).toBeInTheDocument()
+    expect(within(row).getByText(/Amit keresünk/)).toBeInTheDocument()
     expect(within(row).queryByRole('link', { name: /Minta megnyitása/ })).toBeNull()
   })
 
@@ -130,10 +135,10 @@ describe('MotorPage (mock mode)', () => {
     expect(within(rows[0]).getByText(/1 pár vár rá/)).toBeInTheDocument()
     fireEvent.click(rows[0])
     expect(within(rows[0]).getByText('Sport-napló (perc)')).toBeInTheDocument()
-    expect(within(rows[0]).getByText('Sportterhelés ↔ másnapi gym-volumen')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('Elveszi a sport a másnapi gym-erőt?')).toBeInTheDocument()
     // az alvásminőségnek van élő párja → sima "3 párban"
     const sleepRow = rows.find((r) => within(r).queryByText('alvásminőség'))!
-    expect(within(sleepRow).getByText(/3 párban/)).toBeInTheDocument()
+    expect(within(sleepRow).getByText(/3 párban él/)).toBeInTheDocument()
   })
 
   test('orders the coverage list thinnest-first', () => {
@@ -210,6 +215,10 @@ describe('MotorPage (real mode)', () => {
               metricBKey: 'sleep-quality',
               metricBLabel: 'alvásminőség',
               mechanismHu: 'A késői étkezés ronthatja a rákövetkező éjszaka minőségét.',
+              questionHu: 'Rosszabbul alszol, ha későn eszel?',
+              expectedDirection: 'negative',
+              whenPositiveHu: 'a későbbi vacsorák után {erősség} jobban aludtál',
+              whenNegativeHu: 'a későbbi vacsorák után {erősség} rosszabbul aludtál',
               metricADomain: 'fuel', metricBDomain: 'sleep',
               verdict: 'no_data',
               alignedDays: 0,
