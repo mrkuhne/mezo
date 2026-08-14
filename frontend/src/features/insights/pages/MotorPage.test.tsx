@@ -122,6 +122,20 @@ describe('MotorPage (mock mode)', () => {
     expect(within(row).queryByRole('link', { name: /Minta megnyitása/ })).toBeNull()
   })
 
+  test('coverage rings: waiting label on live-less metrics, expand reveals source + pairs', () => {
+    renderPage()
+    const rows = screen.getAllByTestId('coverage-ring-row')
+    // a legvékonyabb elöl: sportterhelés (0/60), egyetlen párja no_data → "vár rá"
+    expect(within(rows[0]).getByText('sportterhelés')).toBeInTheDocument()
+    expect(within(rows[0]).getByText(/1 pár vár rá/)).toBeInTheDocument()
+    fireEvent.click(rows[0])
+    expect(within(rows[0]).getByText('Sport-napló (perc)')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('Sportterhelés ↔ másnapi gym-volumen')).toBeInTheDocument()
+    // az alvásminőségnek van élő párja → sima "3 párban"
+    const sleepRow = rows.find((r) => within(r).queryByText('alvásminőség'))!
+    expect(within(sleepRow).getByText(/3 párban/)).toBeInTheDocument()
+  })
+
   test('orders the coverage list thinnest-first', () => {
     // The seed's metrics array is deliberately unsorted (insights.ts) — this asserts the full
     // 12-label sequence so the test proves MotorPage's own sort, not an already-sorted fixture.

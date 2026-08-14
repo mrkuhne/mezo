@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { usePatternMonitor } from '@/data/hooks'
 import { DomainSection } from '@/features/insights/components/DomainSection'
-import { MetricCoverageRow } from '@/features/insights/components/MetricCoverageRow'
+import { MetricCoverageRing } from '@/features/insights/components/MetricCoverageRing'
 import { MotorHero } from '@/features/insights/components/MotorHero'
 import { PairRow } from '@/features/insights/components/PairRow'
 import { VerdictFilterChips } from '@/features/insights/components/VerdictFilterChips'
@@ -83,9 +83,19 @@ export function MotorPage() {
 
       <span className="eyebrow mt-md">Metrika-lefedettség</span>
       <div className="card col gap-md" style={{ padding: 14 }}>
-        {metrics.map((metric) => (
-          <MetricCoverageRow key={metric.key} metric={metric} />
-        ))}
+        {metrics.map((metric) => {
+          const referencing = monitor.pairs.filter(
+            (p) => p.metricAKey === metric.key || p.metricBKey === metric.key,
+          )
+          return (
+            <MetricCoverageRing
+              key={metric.key}
+              metric={metric}
+              referencingTitles={referencing.map((p) => p.title)}
+              waiting={referencing.length > 0 && referencing.every((p) => p.verdict !== 'live')}
+            />
+          )
+        })}
       </div>
     </div>
   )
