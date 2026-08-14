@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mezo · Habit-pipa → reward toast · mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4EFE7; --surface-card: #FDFBF7; --divider: rgba(43,33,24,0.08);
+    --text-primary: #2B2118; --text-secondary: #6B5D4F; --text-muted: #97867A;
+    --coral: #FF6B4A; --sage: #7B8F6B; --gold: #ffd87a;
+    --r-lg: 14px; --r-xl: 18px;
+    --shadow-toast: 0 14px 32px rgba(0,0,0,0.42), 0 4px 10px rgba(0,0,0,0.18);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Geist', system-ui, sans-serif; background: #2B2118; color: var(--text-primary);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 28px 16px 60px;
+  }
+  h1 { color: #F4EFE7; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .hint { color: #97867A; font-size: 12.5px; max-width: 400px; text-align: center; line-height: 1.5; }
+  .hint b { color: #d9cfc2; }
+
+  /* ─── Phone frame ─── */
+  .phone {
+    width: 392px; max-width: 96vw; height: 740px; background: var(--bg); border-radius: 40px;
+    border: 10px solid #1a140e; overflow: hidden; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+  }
+  .screen { position: absolute; inset: 0; overflow-y: auto; padding: 54px 18px 90px; }
+  .statusbar { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 12.5px; font-weight: 600; color: var(--text-primary); z-index: 5; }
+
+  /* ─── Today page hint content ─── */
+  .day-h { font-size: 22px; font-weight: 200; letter-spacing: -0.02em; margin-bottom: 2px; }
+  .day-sub { font-family: 'Fraunces', 'Crimson Pro', serif; font-style: italic; font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; }
+  .chain-card { background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-xl); padding: 14px 16px; box-shadow: 0 4px 14px rgba(43,33,24,0.06); }
+  .chain-h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .chain-title { font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+  .chain-prog { font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; color: var(--sage); font-variant-numeric: tabular-nums; }
+  .hrow { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-top: 1px solid var(--divider); }
+  .hrow:first-of-type { border-top: none; }
+  .hcheck {
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(123,143,107,0.45); background: transparent;
+    cursor: pointer; flex-shrink: 0; display: grid; place-items: center; color: #fff; font-size: 15px;
+    transition: background 180ms, border-color 180ms, transform 120ms;
+  }
+  .hcheck:active { transform: scale(0.88); }
+  .hrow.done .hcheck { background: var(--sage); border-color: var(--sage); }
+  .hname { font-size: 15px; font-weight: 500; flex: 1; }
+  .hxp { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .hrow.done .hname { color: var(--text-muted); text-decoration: line-through; text-decoration-color: rgba(43,33,24,0.25); }
+
+  .demo-card { margin-top: 14px; background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-xl); padding: 14px 16px; }
+  .demo-h { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .demo-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dbtn { border: 1px solid var(--divider); background: var(--bg); color: var(--text-primary); font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+  .dbtn:hover { border-color: rgba(43,33,24,0.25); }
+  .note { margin-top: 12px; font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+
+  /* ═══ Toast stack — DS §Notification: top-right, 14px, max-width 296, max 3 visible ═══ */
+  .toast-stack {
+    position: absolute; top: 54px; right: 14px; width: calc(100% - 28px); max-width: 296px;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 70;
+  }
+  .toast {
+    position: relative; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-toast);
+    pointer-events: auto; color: #fff;
+    background: linear-gradient(135deg, rgba(123,143,107,0.96), rgba(196,131,106,0.88));
+    border: 1px solid rgba(255,255,255,0.22);
+    transform-origin: top right;
+    transition: transform 420ms cubic-bezier(0.32,0.72,0.32,1), opacity 420ms cubic-bezier(0.32,0.72,0.32,1);
+  }
+  .toast.enter { animation: slideIn 420ms cubic-bezier(0.32,0.72,0.32,1); }
+  @keyframes slideIn { from { transform: translateX(36px) translateY(-4px); opacity: 0; } to { transform: translateX(0) translateY(0); opacity: 1; } }
+  .toast.exit { transform: translateX(36px); opacity: 0; }
+  /* stack depth */
+  .toast[data-idx="1"] { transform: scale(0.96); opacity: 0.78; }
+  .toast[data-idx="2"] { transform: scale(0.93); opacity: 0.55; }
+  .toast[data-idx="hidden"] { display: none; }
+
+  .toast.destructive { background: linear-gradient(135deg, rgba(196,131,106,0.94), rgba(176,116,88,0.92)); border-color: rgba(245,179,165,0.45); }
+  .toast.simple-success { background: var(--sage); }
+  .toast.simple-error { background: #B3564B; }
+
+  .t-close {
+    position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,0,0,0.10); border: none; display: grid; place-items: center; cursor: pointer; color: rgba(255,255,255,0.60);
+  }
+  .t-pad { padding: 12px 14px; }
+  .t-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-right: 26px; margin-bottom: 6px; }
+  .t-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.80); }
+  .t-title { font-family: 'Fraunces', 'Crimson Pro', serif; font-size: 16px; font-weight: 500; line-height: 1.25; letter-spacing: -0.005em; }
+  .t-meta { font-style: italic; font-weight: 400; color: rgba(255,255,255,0.72); }
+  .t-desc { font-family: 'Fraunces', 'Crimson Pro', serif; font-style: italic; font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.4; margin-top: 4px; }
+  .t-meter { display: flex; align-items: center; gap: 9px; margin-top: 10px; padding: 7px 11px; border-radius: 12px; background: rgba(0,0,0,0.28); }
+  .t-mdot { width: 8px; height: 8px; border-radius: 50%; background: #b8cdaa; box-shadow: 0 0 7px rgba(184,205,170,0.85); flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 4px rgba(184,205,170,0.5);} 50% { box-shadow: 0 0 9px rgba(184,205,170,0.95);} }
+  .t-mlabel { font-size: 11.5px; font-weight: 700; letter-spacing: 0.01em; }
+  .t-mdelta { margin-left: auto; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; animation: deltaPop 500ms cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes deltaPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  /* LEVEL UP badge — LevelUpScreen lu-lvbadge kicsinyítve */
+  .t-lvup {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 10px; border-radius: 999px;
+    background: rgba(0,0,0,0.30); font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; color: var(--gold);
+    border: 1px solid rgba(255,216,122,0.35);
+  }
+  .t-lvup .star { animation: deltaPop 600ms cubic-bezier(0.34,1.56,0.64,1); }
+  .t-simple-text { font-size: 14px; font-weight: 600; padding-right: 20px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast, .toast.enter, .t-mdelta, .t-mdot, .t-lvup .star { animation: none !important; transition: none !important; }
+  }
+
+  /* ═══ Statikus galéria — mindig látható, időzítő nélkül ═══ */
+  .gallery { width: 100%; max-width: 1080px; display: flex; flex-direction: column; gap: 26px; }
+  .g-sec-h { color: #F4EFE7; font-size: 14px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding-bottom: 8px; border-bottom: 1px solid rgba(244,239,231,0.14); }
+  .g-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .g-item { display: flex; flex-direction: column; gap: 9px; }
+  .g-cap { color: #d9cfc2; font-size: 12px; font-weight: 600; }
+  .g-cap span { color: #97867A; font-weight: 400; }
+  /* static toast: no timers, no stack transform */
+  .g-item .toast { width: 296px; animation: none; }
+  .g-item .toast.st-1 { transform: scale(0.96); opacity: 0.78; }
+  .g-item .toast.st-2 { transform: scale(0.93); opacity: 0.55; }
+  .g-stack { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; width: 296px; }
+
+  /* Előtte/utána — small phones side by side */
+  .ba { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+  .mini { width: 300px; height: 520px; background: var(--bg); border-radius: 30px; border: 8px solid #1a140e; overflow: hidden; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .mini .m-screen { position: absolute; inset: 0; padding: 42px 14px 14px; }
+  .mini .m-status { position: absolute; top: 0; left: 0; right: 0; height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-size: 11px; font-weight: 600; z-index: 3; }
+  .m-day { font-size: 19px; font-weight: 200; letter-spacing: -0.02em; }
+  .m-sub { font-family: 'Fraunces', serif; font-style: italic; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 13px; }
+  .m-card { background: var(--surface-card); border: 1px solid var(--divider); border-radius: 16px; padding: 12px 13px; }
+  .m-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--divider); font-size: 13.5px; }
+  .m-row:first-of-type { border-top: none; }
+  .m-dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(123,143,107,0.45); flex-shrink: 0; display: grid; place-items: center; color: #fff; font-size: 13px; }
+  .m-dot.on { background: var(--sage); border-color: var(--sage); }
+  /* the OLD full-screen overlay repro */
+  .lu-over { position: absolute; inset: 0; background: linear-gradient(180deg, #2B2118 0%, #3a2c20 100%); z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 22px 18px; color: #F4EFE7; text-align: center; }
+  .lu-over::before { content: ''; position: absolute; top: -60px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(255,216,122,0.22), transparent 70%); }
+  .lu-chip { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(244,239,231,0.6); border: 1px solid rgba(244,239,231,0.2); border-radius: 999px; padding: 4px 12px; }
+  .lu-head { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
+  .lu-xp { font-size: 52px; font-weight: 200; letter-spacing: -0.04em; color: var(--gold); line-height: 1; }
+  .lu-xpl { font-size: 10px; font-weight: 700; letter-spacing: 0.22em; color: rgba(244,239,231,0.5); }
+  .lu-rowb { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; padding: 10px 13px; width: 100%; text-align: left; }
+  .lu-ring { width: 42px; height: 42px; border-radius: 50%; border: 3px solid var(--gold); display: grid; place-items: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+  .lu-cta { margin-top: 6px; width: 100%; padding: 13px; border-radius: 14px; background: var(--coral); color: #fff; font-weight: 700; font-size: 14px; border: none; }
+  .badge-bad, .badge-good { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 5px 11px; border-radius: 999px; }
+  .badge-bad { background: rgba(179,86,75,0.18); color: #E89A8C; border: 1px solid rgba(179,86,75,0.4); }
+  .badge-good { background: rgba(123,143,107,0.18); color: #A9C094; border: 1px solid rgba(123,143,107,0.45); }
+</style>
+</head>
+<body>
+  <h1>Habit-pipa → reward toast · interaktív mockup</h1>
+  <div class="hint">Így fog kinézni. Fent a <b>statikus galéria</b> (minden állapot egyszerre), lent az <b>interaktív telefon</b>, ahol te pipálhatsz.</div>
+
+  <div class="gallery">
+
+    <!-- ═══ 1 · Előtte / utána ═══ -->
+    <div>
+      <div class="g-sec-h">1 · Előtte → utána · egy habit-pipa</div>
+      <div class="ba" style="margin-top: 16px;">
+
+        <div class="g-item">
+          <div class="g-cap"><span class="badge-bad">✕ MA</span> &nbsp;Teljes képernyős LevelUpScreen <span>· elfedi a napot, CTA-t kér</span></div>
+          <div class="mini">
+            <div class="m-status"><span>9:41</span><span>●●●</span></div>
+            <div class="m-screen">
+              <div class="m-day">Csütörtök</div>
+              <div class="m-sub">Egy pipa: egy csendes ünneplés.</div>
+              <div class="m-card">
+                <div class="m-row"><span class="m-dot on">✓</span> Reggeli súlymérés</div>
+                <div class="m-row"><span class="m-dot"></span> Napi szándék</div>
+                <div class="m-row"><span class="m-dot"></span> Fehérjés reggeli</div>
+              </div>
+            </div>
+            <div class="lu-over">
+              <div class="lu-chip">✅ Szokás</div>
+              <div class="lu-head">Szintet léptél!</div>
+              <div>
+                <div class="lu-xp">+15</div>
+                <div class="lu-xpl">XP · ÖSSZESEN</div>
+              </div>
+              <div class="lu-rowb">
+                <div class="lu-ring">4</div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 600;">🧠 Mentális</div>
+                  <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: var(--gold); margin-top: 3px;">LEVEL UP · Lv3 → 4</div>
+                </div>
+              </div>
+              <button class="lu-cta">Tovább ›</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="g-item">
+          <div class="g-cap"><span class="badge-good">✓ ÚJ</span> &nbsp;Reward toast <span>· a nap látszik, magától eltűnik 4s alatt</span></div>
+          <div class="mini">
+            <div class="m-status"><span>9:41</span><span>●●●</span></div>
+            <div class="m-screen">
+              <div class="m-day">Csütörtök</div>
+              <div class="m-sub">Egy pipa: egy csendes ünneplés.</div>
+              <div class="m-card">
+                <div class="m-row"><span class="m-dot on">✓</span> Reggeli súlymérés</div>
+                <div class="m-row"><span class="m-dot on">✓</span> Napi szándék</div>
+                <div class="m-row"><span class="m-dot"></span> Fehérjés reggeli</div>
+              </div>
+            </div>
+            <div style="position: absolute; top: 40px; right: 11px; width: 250px; z-index: 9;">
+              <div class="toast" style="width: 250px;">
+                <button class="t-close" aria-label="Bezárás"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+                <div class="t-pad">
+                  <div class="t-head"><span class="t-eyebrow">Szokás · 2 / 3</span></div>
+                  <div class="t-title">Napi szándék</div>
+                  <div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">Mentális</span><span class="t-mdelta">+15</span></div>
+                  <span class="t-lvup"><span class="star">★</span> LEVEL UP · Lv3 → 4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ 2 · Variánsok ═══ -->
+    <div>
+      <div class="g-sec-h">2 · A négy toast-variáns · 1:1 méret (296px)</div>
+      <div class="g-grid" style="margin-top: 16px;">
+
+        <div class="g-item">
+          <div class="g-cap">Reward · sima pipa <span>· 4s</span></div>
+          <div class="toast">
+            <button class="t-close"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <div class="t-pad">
+              <div class="t-head"><span class="t-eyebrow">Szokás · 1 / 3</span></div>
+              <div class="t-title">Reggeli súlymérés</div>
+              <div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">Fizikai</span><span class="t-mdelta">+10</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g-item">
+          <div class="g-cap">Reward · szintlépéssel <span>· + LEVEL UP badge</span></div>
+          <div class="toast">
+            <button class="t-close"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <div class="t-pad">
+              <div class="t-head"><span class="t-eyebrow">Szokás · 2 / 3</span></div>
+              <div class="t-title">Napi szándék</div>
+              <div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">Mentális</span><span class="t-mdelta">+15</span></div>
+              <span class="t-lvup"><span class="star">★</span> LEVEL UP · Mentális · Lv3 → 4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="g-item">
+          <div class="g-cap">Reward · küldetés <span>· meta a cím mellett</span></div>
+          <div class="toast">
+            <button class="t-close"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <div class="t-pad">
+              <div class="t-head"><span class="t-eyebrow">Küldetés</span></div>
+              <div class="t-title">Vízivás <span class="t-meta">· 2000 ml</span></div>
+              <div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">Fizikai</span><span class="t-mdelta">+20</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g-item">
+          <div class="g-cap">Destruktív · hiba <span>· 6s, nincs meter</span></div>
+          <div class="toast destructive">
+            <button class="t-close"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <div class="t-pad">
+              <div class="t-head"><span class="t-eyebrow">Hiba</span></div>
+              <div class="t-title">Nem sikerült menteni</div>
+              <div class="t-desc">Ellenőrizd a kapcsolatot, és próbáld újra.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g-item">
+          <div class="g-cap">Sima success <span>· a MAI toast, változatlan API</span></div>
+          <div class="toast simple-success">
+            <button class="t-close"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <div class="t-pad"><div class="t-simple-text">🌅 Tökéletes reggel</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ 3 · Stack ═══ -->
+    <div>
+      <div class="g-sec-h">3 · Stackelés · max 3 látható</div>
+      <div class="g-grid" style="margin-top: 16px; align-items: flex-start;">
+        <div class="g-item">
+          <div class="g-cap">Lánc-zárás: 3 toast egyszerre <span>· idx 0 → 1 → 2 · scale 1 / 0.96 / 0.93 · opacity 1 / .78 / .55</span></div>
+          <div class="g-stack">
+            <div class="toast simple-success">
+              <button class="t-close"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+              <div class="t-pad"><div class="t-simple-text">🌅 Tökéletes reggel</div></div>
+            </div>
+            <div class="toast st-1">
+              <div class="t-pad">
+                <div class="t-head"><span class="t-eyebrow">Szokás · 3 / 3</span></div>
+                <div class="t-title">Fehérjés reggeli</div>
+                <div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">Fizikai</span><span class="t-mdelta">+10</span></div>
+              </div>
+            </div>
+            <div class="toast st-2">
+              <div class="t-pad">
+                <div class="t-head"><span class="t-eyebrow">Szokás · 2 / 3</span></div>
+                <div class="t-title">Napi szándék</div>
+                <div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">Mentális</span><span class="t-mdelta">+15</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g-item" style="max-width: 380px;">
+          <div class="g-cap">Anatómia</div>
+          <div style="background: rgba(244,239,231,0.05); border: 1px solid rgba(244,239,231,0.12); border-radius: 14px; padding: 14px 16px; color: #c9bdb0; font-size: 12px; line-height: 1.85;">
+            <b style="color:#F4EFE7;">Eyebrow</b> — 11 / 700 / 0.22em uppercase · a lánc állása <i>„Szokás · 2 / 3"</i><br>
+            <b style="color:#F4EFE7;">Cím</b> — Fraunces 16 / 500 · a habit neve, meta italic<br>
+            <b style="color:#F4EFE7;">Meter</b> — sötét pill, sage pulzáló pont, skill + arany <b style="color:var(--gold);">+XP</b><br>
+            <b style="color:#F4EFE7;">LEVEL UP</b> — csak ha <span style="font-family:'Geist Mono',monospace;">levelAfter &gt; levelBefore</span><br>
+            <b style="color:#F4EFE7;">✕</b> — azonnali zárás · <b style="color:#F4EFE7;">Anchor</b> — top-right, safe-area + 14px<br>
+            <b style="color:#F4EFE7;">Nem ütközik</b> a BottomNavval (az a képernyő alján van).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="g-sec-h">4 · Interaktív · próbáld ki</div>
+  </div>
+
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="screen">
+      <div class="day-h">Csütörtök</div>
+      <div class="day-sub">Egy pipa: egy csendes ünneplés.</div>
+
+      <div class="chain-card">
+        <div class="chain-h">
+          <span class="chain-title">🌅 Reggeli rutin</span>
+          <span class="chain-prog" id="prog">0 / 3</span>
+        </div>
+        <div class="hrow" data-name="Reggeli súlymérés" data-xp="10" data-skill="Fizikai">
+          <button class="hcheck" aria-label="Pipálás"></button>
+          <span class="hname">Reggeli súlymérés</span><span class="hxp">+10 XP</span>
+        </div>
+        <div class="hrow" data-name="Napi szándék" data-xp="15" data-skill="Mentális" data-levelup="Mentális|3|4">
+          <button class="hcheck" aria-label="Pipálás"></button>
+          <span class="hname">Napi szándék</span><span class="hxp">+15 XP · Lv↑</span>
+        </div>
+        <div class="hrow" data-name="Fehérjés reggeli" data-xp="10" data-skill="Fizikai">
+          <button class="hcheck" aria-label="Pipálás"></button>
+          <span class="hname">Fehérjés reggeli</span><span class="hxp">+10 XP</span>
+        </div>
+      </div>
+
+      <div class="demo-card">
+        <div class="demo-h">További variánsok</div>
+        <div class="demo-btns">
+          <button class="dbtn" id="d-quest">Küldetés kész</button>
+          <button class="dbtn" id="d-error">Destruktív hiba</button>
+          <button class="dbtn" id="d-simple">Sima success (mai)</button>
+          <button class="dbtn" id="d-reset">↺ Reset</button>
+          <button class="dbtn" id="d-freeze" title="Auto-dismiss ki/be — review-hoz">⏸ Freeze</button>
+        </div>
+        <div class="note">
+          Viselkedés a DS szerint: top-right anchor · max 3 látható, az idősebb <i>scale(0.96) → (0.93)</i> + fade · slide-in jobbról 420ms · auto-dismiss <b>4s</b> (reward) / <b>6s</b> (destruktív) · ✕ azonnal zár · reduced-motion: animáció nélkül.
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="stack" role="status" aria-live="polite"></div>
+  </div>
+
+<script>
+(function () {
+  const stack = document.getElementById('stack');
+  const MAXV = 3, EXIT_MS = 450;
+  let frozen = false;
+  const REWARD_MS = () => frozen ? 600000 : 4000, DESTR_MS = () => frozen ? 600000 : 6000;
+  const toasts = []; // newest first
+
+  function relayout() {
+    toasts.forEach((t, i) => {
+      if (t.el.classList.contains('exit')) return;
+      t.el.dataset.idx = i < MAXV ? String(i) : 'hidden';
+    });
+  }
+  function dismiss(t) {
+    if (t.dead) return; t.dead = true; clearTimeout(t.timer);
+    t.el.classList.add('exit');
+    setTimeout(() => { t.el.remove(); const i = toasts.indexOf(t); if (i >= 0) toasts.splice(i, 1); relayout(); }, EXIT_MS);
+  }
+  function push(el, ms) {
+    el.classList.add('enter');
+    const t = { el, dead: false };
+    t.timer = setTimeout(() => dismiss(t), ms);
+    el.querySelector('.t-close')?.addEventListener('click', () => dismiss(t));
+    toasts.unshift(t);
+    stack.prepend(el);
+    if (toasts.length > 20) dismiss(toasts[toasts.length - 1]);
+    relayout();
+  }
+  const closeBtn = '<button class="t-close" aria-label="Bezárás"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+
+  function rewardToast({ eyebrow, title, meta, meterLabel, delta, levelUp }) {
+    const el = document.createElement('div'); el.className = 'toast';
+    el.innerHTML = closeBtn + '<div class="t-pad">'
+      + '<div class="t-head"><span class="t-eyebrow">' + eyebrow + '</span></div>'
+      + '<div class="t-title">' + title + (meta ? ' <span class="t-meta">· ' + meta + '</span>' : '') + '</div>'
+      + (meterLabel ? '<div class="t-meter"><span class="t-mdot"></span><span class="t-mlabel">' + meterLabel + '</span><span class="t-mdelta">+' + delta + '</span></div>' : '')
+      + (levelUp ? '<span class="t-lvup"><span class="star">★</span> LEVEL UP · ' + levelUp.label + ' · Lv' + levelUp.from + ' → ' + levelUp.to + '</span>' : '')
+      + '</div>';
+    push(el, REWARD_MS());
+  }
+  function destructiveToast({ title, desc }) {
+    const el = document.createElement('div'); el.className = 'toast destructive';
+    el.innerHTML = closeBtn + '<div class="t-pad">'
+      + '<div class="t-head"><span class="t-eyebrow">Hiba</span></div>'
+      + '<div class="t-title">' + title + '</div>'
+      + (desc ? '<div class="t-desc">' + desc + '</div>' : '') + '</div>';
+    push(el, DESTR_MS());
+  }
+  function simpleToast(text, kind) {
+    const el = document.createElement('div'); el.className = 'toast simple-' + (kind || 'success');
+    el.innerHTML = closeBtn + '<div class="t-pad"><div class="t-simple-text">' + text + '</div></div>';
+    push(el, REWARD_MS());
+  }
+
+  // ─── Habit rows ───
+  const rows = Array.from(document.querySelectorAll('.hrow'));
+  const prog = document.getElementById('prog');
+  function doneCount() { return rows.filter(r => r.classList.contains('done')).length; }
+  rows.forEach(row => {
+    row.querySelector('.hcheck').addEventListener('click', () => {
+      if (row.classList.contains('done')) return;
+      row.classList.add('done');
+      row.querySelector('.hcheck').textContent = '✓';
+      const done = doneCount(); prog.textContent = done + ' / ' + rows.length;
+      const lv = row.dataset.levelup ? row.dataset.levelup.split('|') : null;
+      rewardToast({
+        eyebrow: 'Szokás · ' + done + ' / ' + rows.length,
+        title: row.dataset.name,
+        meterLabel: row.dataset.skill, delta: row.dataset.xp,
+        levelUp: lv ? { label: lv[0], from: lv[1], to: lv[2] } : null,
+      });
+      if (done === rows.length) setTimeout(() => simpleToast('🌅 Tökéletes reggel', 'success'), 900);
+    });
+  });
+
+  // ─── Demo buttons ───
+  document.getElementById('d-quest').addEventListener('click', () =>
+    rewardToast({ eyebrow: 'Küldetés', title: 'Vízivás', meta: '2000 ml', meterLabel: 'Fizikai', delta: 20 }));
+  document.getElementById('d-error').addEventListener('click', () =>
+    destructiveToast({ title: 'Nem sikerült menteni', desc: 'Ellenőrizd a kapcsolatot, és próbáld újra.' }));
+  document.getElementById('d-simple').addEventListener('click', () =>
+    simpleToast('Mentve · 7 óra alvás', 'success'));
+  document.getElementById('d-freeze').addEventListener('click', (e) => {
+    frozen = !frozen;
+    e.target.textContent = frozen ? '▶ Unfreeze' : '⏸ Freeze';
+  });
+  document.getElementById('d-reset').addEventListener('click', () => {
+    rows.forEach(r => { r.classList.remove('done'); r.querySelector('.hcheck').textContent = ''; });
+    prog.textContent = '0 / 3';
+    toasts.slice().forEach(dismiss);
+  });
+})();
+</script>
+</body>
+</html>

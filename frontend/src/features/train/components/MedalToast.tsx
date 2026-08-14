@@ -28,7 +28,7 @@ export function MedalToast({ medal, extraCount = 0 }: { medal: Medal; extraCount
 
   return (
     <div
-      className="toast rad-20"
+      className="toast-solo rad-20"
       role="status"
       style={{
         background: 'linear-gradient(135deg, var(--amber), var(--amber-deep))',
