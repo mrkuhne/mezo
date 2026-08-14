@@ -116,3 +116,45 @@ describe('ToastProvider — z-index tier', () => {
     expect(tierOf('.toast-solo {')).toBeGreaterThan(250)
   })
 })
+
+describe('ToastProvider — reward variáns', () => {
+  it('kirendereli az eyebrow-t, a címet, a metert és a level-up badge-et', () => {
+    render(<ToastProvider>content</ToastProvider>)
+    act(() =>
+      emitToast({
+        kind: 'reward',
+        eyebrow: 'Szokás · 2 / 3',
+        title: 'Napi szándék',
+        meter: { label: 'Mentális', delta: 15 },
+        levelUp: { label: 'Mentális', from: 3, to: 4 },
+      }),
+    )
+
+    const item = items()[0]
+    expect(item).toHaveAttribute('data-kind', 'reward')
+    expect(item).toHaveTextContent('Szokás · 2 / 3')
+    expect(item).toHaveTextContent('Napi szándék')
+    expect(item).toHaveTextContent('Mentális')
+    expect(item).toHaveTextContent('+15')
+    expect(item).toHaveTextContent('LEVEL UP · Mentális · Lv3 → 4')
+  })
+
+  it('meter és level-up nélkül is teljes értékű: eyebrow + cím + meta', () => {
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({ kind: 'reward', eyebrow: 'Küldetés', title: 'Vízivás', meta: '2000 ml' }))
+
+    const item = items()[0]
+    expect(item).toHaveTextContent('Küldetés')
+    expect(item).toHaveTextContent('Vízivás')
+    expect(item).toHaveTextContent('2000 ml')
+    expect(item.textContent).not.toContain('undefined')
+    expect(item.textContent).not.toContain('LEVEL UP')
+  })
+
+  it('a reward 4s után tűnik el', () => {
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({ kind: 'reward', eyebrow: 'Szokás', title: 'Pipa' }))
+    act(() => { vi.advanceTimersByTime(4000 + 500) })
+    expect(items()).toHaveLength(0)
+  })
+})

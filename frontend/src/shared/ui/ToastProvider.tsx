@@ -1,7 +1,9 @@
 import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode,
 } from 'react'
-import { emitToast, isRewardToast, onToast, type ToastMessage } from '@/shared/lib/toastBus'
+import {
+  emitToast, isRewardToast, onToast, type RewardToast, type ToastMessage,
+} from '@/shared/lib/toastBus'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 
 // Single global toast host (mounted once in AppLayout) + the useToast() imperative API.
@@ -96,15 +98,43 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
-              <div className="t-pad">
-                {isRewardToast(e.toast)
-                  ? <span className="t-simple-text">{e.toast.title}</span>
-                  : <span className="t-simple-text">{e.toast.text}</span>}
-              </div>
+              {isRewardToast(e.toast) ? <RewardBody toast={e.toast} /> : (
+                <div className="t-pad">
+                  <span className="t-simple-text">{e.toast.text}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
     </ToastContext.Provider>
+  )
+}
+
+/** The DS §Notification reward card: eyebrow · Fraunces title (+ italic meta) · meter row
+ *  (+N in gold) · an optional LEVEL UP badge. Every part below the title is optional — a
+ *  payload with no meter renders as eyebrow + title, never as an empty pill or `+undefined`. */
+function RewardBody({ toast }: { toast: RewardToast }) {
+  return (
+    <div className="t-pad">
+      <div className="t-eyebrow">{toast.eyebrow}</div>
+      <div className="t-title">
+        {toast.title}
+        {toast.meta && <span className="t-meta"> · {toast.meta}</span>}
+      </div>
+      {toast.meter && (
+        <div className="t-meter">
+          <span className="t-mdot" aria-hidden="true" />
+          <span className="t-mlabel">{toast.meter.label}</span>
+          <span className="t-mdelta">+{toast.meter.delta}</span>
+        </div>
+      )}
+      {toast.levelUp && (
+        <span className="t-lvup">
+          <span aria-hidden="true">★</span>
+          {` LEVEL UP · ${toast.levelUp.label} · Lv${toast.levelUp.from} → ${toast.levelUp.to}`}
+        </span>
+      )}
+    </div>
   )
 }
