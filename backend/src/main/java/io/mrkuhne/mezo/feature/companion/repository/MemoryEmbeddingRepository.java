@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbeddingEntity, UUID> {
@@ -45,6 +46,13 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
 
     /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
     List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
+
+    /** Memória-obszervatórium (mezo-al1i) — vektor-darabszám rétegenként. */
+    long countByCreatedByAndKind(UUID createdBy, String kind);
+
+    /** A napló-nézet batch embed-jelzője — a kind élő ref-id-i (a @SQLRestriction JPQL-re is áll). */
+    @Query("select m.refId from MemoryEmbeddingEntity m where m.createdBy = :createdBy and m.kind = :kind")
+    Set<UUID> findRefIdsByCreatedByAndKind(@Param("createdBy") UUID createdBy, @Param("kind") String kind);
 
     /** Renders a float[] as the pgvector text literal ({@code [0.1,0.2,...]}) native queries bind. */
     static String toVectorLiteral(float[] vector) {

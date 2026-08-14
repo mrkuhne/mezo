@@ -52,6 +52,11 @@ describe('insights nav (real mode default)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Kísérletek' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Motor' }))
     expect(await screen.findByText('Minta-motor')).toBeInTheDocument() // a mezo-18bx hero eyebrow-ja
+
+    // Memória — a memória-obszervatórium tab (mezo-al1i)
+    await userEvent.click(screen.getByRole('button', { name: 'Motor' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Memória' }))
+    expect(await screen.findByText('L0 · Nyers adat')).toBeInTheDocument()
   })
 })
 

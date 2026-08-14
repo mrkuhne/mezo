@@ -4215,6 +4215,173 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/overview:
+    get:
+      tags:
+        - Companion
+      operationId: getMemoryOverview
+      summary: >-
+        Memória-obszervatórium áttekintés (mezo-al1i) — a 4 memória-réteg (L0
+        nyers napok → L1 napló + vektorok → L2 ítélet-inbox → L3 tartós tudás)
+        élő számai + a cron-ütemezés. Read-only aggregátum, semmit nem ír.
+      responses:
+        '200':
+          description: A memória-rétegek pillanatképe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryOverviewResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/summary:
+    get:
+      tags:
+        - Companion
+      operationId: listMemorySummaries
+      summary: >-
+        Az L1 epizodikus napló (mezo-al1i) — napi összefoglaló-narratívák
+        date-desc, opcionális [from,to] tartomány-szűréssel; embedded = van-e
+        élő daily_summary vektora a napnak.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: A tartomány első napja (inkluzív); elhagyva nincs alsó határ.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          description: A tartomány utolsó napja (inkluzív); elhagyva nincs felső határ.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: A napló bejegyzései (date-desc)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemorySummaryListResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/similar-days:
+    get:
+      tags:
+        - Companion
+      operationId: searchSimilarDays
+      summary: >-
+        pgvector hasonló-nap kereső (mezo-al1i) — a V2.3 MemoryRecallService
+        változatlan újrahasznosítása: embed query → ANN a daily_summary
+        vektorokon → recency re-rank (similarity × exp(-age/τ)). A
+        min-similarity küszöb alatti találat itt sem jön vissza (őszinte üres
+        lista); a tool és a felület garantáltan ugyanazt a memóriát látja.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: A keresett élmény/téma/állapot szabad szövege.
+          schema:
+            type: string
+            minLength: 1
+        - name: k
+          in: query
+          required: false
+          description: >-
+            Max találat; alapértelmezés 3, a szerver a recall.max-k (5) fölé nem
+            enged.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+      responses:
+        '200':
+          description: Hasonló napok (finalScore-desc)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimilarDaysResponse'
+        '400':
+          description: 'Validation error (üres q, k a határokon kívül)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/llm-usage:
+    get:
+      tags:
+        - Companion
+      operationId: getMemoryLlmUsage
+      summary: >-
+        LLM-használat napi bontásban (mezo-al1i) — rollup az llm_log_history
+        felett (ADR 0014): napi hívás/token/költség + összesen, naptári napok a
+        report-zónában. A teljes táblát olvassa (a cron/async sorok created_by-a
+        null — a user-szűrés pont a legdrágább forgalmat rejtené el; single-user
+        app, JWT mögött). enabled=false esetén a sorok üresek — a FE őszinte
+        „audit kikapcsolva" állapotot mutat.
+      parameters:
+        - name: days
+          in: query
+          required: false
+          description: >-
+            Hány naptári napra visszamenőleg (a mai nappal bezárólag);
+            alapértelmezés 30.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+      responses:
+        '200':
+          description: Napi rollup + összesen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryLlmUsageResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/people:
     get:
       tags:
@@ -11795,6 +11962,271 @@ components:
         pairCount:
           type: integer
           description: Hány katalógus-pár hivatkozik erre a metrikára.
+    MemoryOverviewResponse:
+      type: object
+      required:
+        - l0
+        - l1
+        - l2
+        - l3
+        - jobs
+      properties:
+        l0:
+          $ref: '#/components/schemas/MemoryOverviewL0'
+        l1:
+          $ref: '#/components/schemas/MemoryOverviewL1'
+        l2:
+          $ref: '#/components/schemas/MemoryOverviewL2'
+        l3:
+          $ref: '#/components/schemas/MemoryOverviewL3'
+        jobs:
+          $ref: '#/components/schemas/MemoryOverviewJobs'
+    MemoryOverviewL0:
+      type: object
+      required:
+        - daysWithAnyData
+        - windowDays
+      properties:
+        daysWithAnyData:
+          type: integer
+          description: >-
+            Hány napon van BÁRMELY metrikán adat a minta-ablakban (a MetricKey-k
+            uniója).
+        windowDays:
+          type: integer
+          description: mezo.companion.patterns.lookback-days (60).
+    MemoryOverviewL1:
+      type: object
+      required:
+        - summaryCount
+        - embeddings
+      properties:
+        summaryCount:
+          type: integer
+        firstDate:
+          type: string
+          format: date
+          nullable: true
+        lastDate:
+          type: string
+          format: date
+          nullable: true
+        embeddings:
+          $ref: '#/components/schemas/MemoryEmbeddingCounts'
+    MemoryEmbeddingCounts:
+      type: object
+      required:
+        - dailySummary
+        - chatTurn
+      properties:
+        dailySummary:
+          type: integer
+        chatTurn:
+          type: integer
+    MemoryOverviewL2:
+      type: object
+      required:
+        - patterns
+        - pendingFactCandidates
+      properties:
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryPatternCount'
+        pendingFactCandidates:
+          type: integer
+          description: Eldöntetlen learned_fact jelöltek (L2 tény-inbox).
+    MemoryPatternCount:
+      type: object
+      required:
+        - kind
+        - status
+        - count
+      properties:
+        kind:
+          type: string
+          pattern: ^(statistical|ai_hypothesis)$
+        status:
+          type: string
+          pattern: ^(proposed|monitoring|confirmed|rejected)$
+        count:
+          type: integer
+    MemoryOverviewL3:
+      type: object
+      required:
+        - facts
+        - totalReinforcements
+        - factsInPrompt
+      properties:
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryFactSourceCount'
+        totalReinforcements:
+          type: integer
+          description: A reinforcement_count-ok összege.
+        factsInPrompt:
+          type: integer
+          description: include_in_prompt = true tények (a top-N injekció jelöltjei).
+    MemoryFactSourceCount:
+      type: object
+      required:
+        - source
+        - count
+      properties:
+        source:
+          type: string
+          pattern: ^(chat|pattern|manual)$
+        count:
+          type: integer
+    MemoryOverviewJobs:
+      type: object
+      required:
+        - summaryCron
+        - patternCron
+        - hypothesisCron
+      properties:
+        summaryCron:
+          type: string
+          description: 'mezo.companion.summary.cron — nyers cron, a FE csak megjeleníti.'
+        patternCron:
+          type: string
+        hypothesisCron:
+          type: string
+        lastSummaryDate:
+          type: string
+          format: date
+          nullable: true
+          description: max(summary_date) — az utolsó megírt napló-nap.
+        lastDetectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            max(lastDetectedAt) a user statisztikai során — az utolsó
+            FELISMERÉS, nem az utolsó futás (a pattern/monitor lastRunAt
+            szemantikája).
+    MemorySummaryListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemorySummaryItem'
+    MemorySummaryItem:
+      type: object
+      required:
+        - date
+        - narrative
+        - embedded
+      properties:
+        date:
+          type: string
+          format: date
+        narrative:
+          type: string
+        embedded:
+          type: boolean
+          description: Van-e élő daily_summary vektor ehhez az összefoglalóhoz.
+    SimilarDaysResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimilarDayItem'
+    SimilarDayItem:
+      type: object
+      required:
+        - date
+        - excerpt
+        - similarity
+        - finalScore
+      properties:
+        date:
+          type: string
+          format: date
+        excerpt:
+          type: string
+          description: A napi narratíva recall.render-max-chars-ra (300) vágva.
+        similarity:
+          type: number
+          format: double
+          description: Nyers koszinusz-egyezés (0..1) — a floor erre vonatkozik.
+        finalScore:
+          type: number
+          format: double
+          description: similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.
+    MemoryLlmUsageResponse:
+      type: object
+      required:
+        - enabled
+        - perDay
+        - totals
+      properties:
+        enabled:
+          type: boolean
+          description: >-
+            mezo.feature.llm-log.enabled állása — false esetén a napló nem bővül
+            és a sorok üresek.
+        perDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryLlmUsageDay'
+        totals:
+          $ref: '#/components/schemas/MemoryLlmUsageTotals'
+    MemoryLlmUsageDay:
+      type: object
+      required:
+        - date
+        - calls
+        - inputTokens
+        - outputTokens
+      properties:
+        date:
+          type: string
+          format: date
+        calls:
+          type: integer
+          format: int64
+          description: 'Minden hívás, a hibásak is (az audit hívást számol).'
+        inputTokens:
+          type: integer
+          format: int64
+          description: 'prompt_tokens összege — a nyers szám, a cached rész is benne.'
+        outputTokens:
+          type: integer
+          format: int64
+          description: candidates + thoughts tokenek összege.
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: null = nincs beárazott sor (ismeretlen ≠ nulla költség).
+    MemoryLlmUsageTotals:
+      type: object
+      required:
+        - calls
+        - inputTokens
+        - outputTokens
+      properties:
+        calls:
+          type: integer
+          format: int64
+        inputTokens:
+          type: integer
+          format: int64
+        outputTokens:
+          type: integer
+          format: int64
+        costUsd:
+          type: number
+          format: double
+          nullable: true
     LogMentionRequest:
       type: object
       required:

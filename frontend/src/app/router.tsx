@@ -37,6 +37,7 @@ import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { MotorPage } from '@/features/insights/pages/MotorPage'
+import { MemoryPage } from '@/features/insights/pages/MemoryPage'
 import { MeSection } from '@/features/me/pages/MeSection'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
@@ -116,6 +117,7 @@ export const routes: RouteObject[] = [
           { path: 'predictions', element: <PredictionsPage /> },
           { path: 'experiments', element: <ExperimentsPage /> },
           { path: 'motor', element: <MotorPage /> },
+          { path: 'memoria', element: <MemoryPage /> },
         ],
       },
       {

@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { FactCandidate, FactCategory, FactDecision, KnowledgeFact } from '@/data/types'
+import type { FactCandidate, FactCategory, FactDecision, FactSource, KnowledgeFact } from '@/data/types'
 
 export type KnowledgeFactResponse = components['schemas']['KnowledgeFactResponse']
 export type FactCandidateResponse = components['schemas']['FactCandidateResponse']
@@ -19,6 +19,8 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
     active: f.includeInPrompt,
     reinforced: f.reinforcementCount,
     patternTitle: f.patternTitle ?? undefined,
+    source: f.source as FactSource,
+    lastReinforcedAt: f.lastReinforcedAt ?? null,
   }
 }
 

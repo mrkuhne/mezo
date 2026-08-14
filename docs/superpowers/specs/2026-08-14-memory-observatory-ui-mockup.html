@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memória-obszervatórium — UI mockup (approved, 2026-08-14)</title>
+<style>
+  body { background: #efe9dc; margin: 0; padding: 28px 18px; font-family: -apple-system, "Segoe UI", sans-serif; color: #2b2720; }
+  h1 { font-family: Georgia, serif; font-size: 22px; text-align: center; margin: 0 0 4px; }
+  .note { text-align: center; font-size: 12px; color: #6e654f; margin-bottom: 26px; }
+  .row { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; align-items: flex-start; }
+  .phone { width: 340px; background: #f6f1e8; border-radius: 26px; padding: 16px 14px 20px;
+           border: 1px solid #e3dccd; box-shadow: 0 8px 28px rgba(60,50,30,.10); }
+  .phone * { box-sizing: border-box; }
+  .cap { text-align: center; font-size: 11px; font-weight: 700; color: #6e654f; margin: 10px 0 0; }
+  .disp { font-family: Georgia, serif; }
+  .eyeb { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+  .chip { display: inline-block; font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+          border: 1px solid rgba(0,0,0,.12); background: rgba(255,255,255,.7); color: #4d4638; }
+  .meta { font-size: 9.5px; color: #6e654f; }
+  .seg { display: flex; background: rgba(255,255,255,.55); border-radius: 11px; padding: 3px; margin-bottom: 13px; }
+  .seg span { flex: 1; text-align: center; font-size: 8.5px; font-weight: 800; letter-spacing: 1px;
+              text-transform: uppercase; padding: 6px 0; border-radius: 8px; color: #a09884; }
+  .seg .on { color: #5b4bd6; background: #efecfb; }
+  @keyframes dashmove { to { stroke-dashoffset: -16; } }
+  .flow { animation: dashmove 1.6s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+  .bigcard { border-radius: 15px; padding: 12px 12px 12px 16px; border: 1px solid rgba(0,0,0,.07);
+             position: relative; overflow: hidden; }
+  .bigcard .acc { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .conn { display: flex; align-items: center; gap: 8px; padding: 3px 0 3px 26px; }
+  .mcard { background: linear-gradient(180deg, #ffffff, #faf7f0); border: 1px solid #e7e0d2; border-radius: 13px;
+           padding: 13px; position: relative; overflow: hidden; margin-bottom: 10px;
+           box-shadow: 0 1px 2px rgba(60,50,30,.05); }
+  .mcard .glow { position: absolute; width: 100px; height: 100px; right: -32px; top: -32px; border-radius: 50%;
+                 background: radial-gradient(circle, rgba(111,95,240,.14), transparent 70%); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .bar { height: 6px; border-radius: 999px; background: #eee7d9; overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 999px; }
+  .sechead { display: flex; align-items: center; gap: 8px; margin: 16px 0 9px; }
+  .sechead .line { flex: 1; height: 1px; background: #ddd5c2; }
+</style>
+</head>
+<body>
+
+<h1>Memória-obszervatórium — /insights/memoria</h1>
+<p class="note">Jóváhagyott UI (2026-08-14) · réteg-érés színskála: L0 homok → L1 lav → L2 amber → L3 sage ·
+spec: 2026-08-14-memory-observatory-ui-design.md</p>
+
+<div class="row">
+
+<!-- ═══════════ 1 · ÁTTEKINTÉS ═══════════ -->
+<div>
+<div class="phone">
+  <div class="seg"><span class="on">Áttekintés</span><span>Napló</span><span>Kereső</span><span>Audit</span></div>
+
+  <div class="bigcard" style="background:#f1ece1;">
+    <div class="acc" style="background:#b0a58f;"></div>
+    <div class="eyeb" style="color:#8f8570;">L0 · Nyers adat</div>
+    <div class="disp" style="font-size:27px; font-weight:600;">47<span style="font-size:13px; color:#8f8570;">/60 nap</span></div>
+    <span class="chip">60 napos ablak</span>
+  </div>
+  <div class="conn">
+    <svg width="2" height="26"><line x1="1" y1="0" x2="1" y2="26" stroke="#6f5ff0" stroke-width="2" stroke-dasharray="4,4" class="flow"/></svg>
+    <span class="chip" style="font-family:monospace;">02:20 · napi összefoglaló</span>
+  </div>
+
+  <div class="bigcard" style="background:#efecfb;">
+    <div class="acc" style="background:#6f5ff0;"></div>
+    <div style="display:flex; justify-content:space-between;">
+      <div class="eyeb" style="color:#5b4bd6;">L1 · Epizodikus napló</div>
+      <span class="eyeb" style="color:#a09884;">utoljára: 08.12</span>
+    </div>
+    <div class="disp" style="font-size:27px; font-weight:600;">38 <span style="font-size:13px; color:#5b4bd6;">nap</span></div>
+    <span class="chip" style="color:#5b4bd6; border-color:#d5cdf3;">38 nap-vektor</span>
+    <span class="chip" style="color:#5b4bd6; border-color:#d5cdf3;">112 chat-vektor</span>
+    <span class="chip" style="color:#5b4bd6; border-color:#d5cdf3;">júl 1. – aug 12.</span>
+  </div>
+  <div class="conn">
+    <svg width="2" height="26"><line x1="1" y1="0" x2="1" y2="26" stroke="#d98324" stroke-width="2" stroke-dasharray="4,4" class="flow"/></svg>
+    <span class="chip" style="font-family:monospace;">02:40 · minta-felismerés</span>
+  </div>
+
+  <div class="bigcard" style="background:#fbf1e3;">
+    <div class="acc" style="background:#d98324;"></div>
+    <div style="display:flex; justify-content:space-between;">
+      <div class="eyeb" style="color:#c1731d;">L2 · Ítélet-inbox</div>
+      <span class="eyeb" style="color:#a09884;">utoljára: 08.13</span>
+    </div>
+    <div class="disp" style="font-size:27px; font-weight:600;">6 <span style="font-size:13px; color:#c1731d;">minta</span></div>
+    <span class="chip" style="color:#c1731d; border-color:#f0dcc2;">3 statisztikai · megerősített</span>
+    <span class="chip" style="color:#c1731d; border-color:#f0dcc2;">2 statisztikai · javasolt</span>
+    <span class="chip" style="color:#c1731d; border-color:#f0dcc2;">2 függő tényjelölt</span>
+  </div>
+  <div class="conn">
+    <svg width="2" height="26"><line x1="1" y1="0" x2="1" y2="26" stroke="#4d9b6a" stroke-width="2" stroke-dasharray="4,4" class="flow"/></svg>
+    <span class="chip" style="font-family:monospace;">vas 03:00 · hipotézis + promóció</span>
+  </div>
+
+  <div class="bigcard" style="background:#e9f4ec;">
+    <div class="acc" style="background:#4d9b6a;"></div>
+    <div class="eyeb" style="color:#3d8a5c;">L3 · Tartós tudás</div>
+    <div class="disp" style="font-size:27px; font-weight:600;">14 <span style="font-size:13px; color:#3d8a5c;">tény</span></div>
+    <span class="chip" style="color:#3d8a5c; border-color:#c5e0cf;">9 chat · 3 minta · 2 kézi</span>
+    <span class="chip" style="color:#3d8a5c; border-color:#c5e0cf;">31× megerősítés</span>
+    <span class="chip" style="color:#3d8a5c; border-color:#c5e0cf;">12 a promptban</span>
+  </div>
+
+  <div style="margin-top:12px;"><span class="eyeb" style="color:#5b4bd6;">Miért nem lát még mintát a motor? →</span></div>
+</div>
+<p class="cap">1 · Áttekintés — érés-oszlop</p>
+</div>
+
+<!-- ═══════════ 2 · NAPLÓ ═══════════ -->
+<div>
+<div class="phone">
+  <div class="seg"><span>Áttekintés</span><span class="on">Napló</span><span>Kereső</span><span>Audit</span></div>
+
+  <div class="eyeb" style="color:#a09884; margin: 2px 0 9px;">2026. augusztus</div>
+  <div class="mcard">
+    <div class="glow"></div>
+    <span class="dot" style="position:absolute; top:12px; right:12px; background:#4d9b6a;" title="vektorizálva"></span>
+    <div class="eyeb" style="color:#5b4bd6;">augusztus 12., szerda</div>
+    <div class="disp" style="font-size:11.5px; line-height:1.65; margin-top:7px;">
+      Erős pull-nap volt: a Chest Supported Row 3×8-ra ment 62,5 kg-mal, a válla nem szólt bele.
+      Este 21:40-kor zárta a konyhát, a fehérje 168 g-on állt meg. Az alvás 7,4 óra lett, minőség 4/5.
+    </div>
+  </div>
+  <div class="mcard">
+    <div class="glow"></div>
+    <span class="dot" style="position:absolute; top:12px; right:12px; background:#4d9b6a;" title="vektorizálva"></span>
+    <div class="eyeb" style="color:#5b4bd6;">augusztus 11., kedd</div>
+    <div class="disp" style="font-size:11.5px; line-height:1.65; margin-top:7px;">
+      Röplabda-este kedden — 95 perc pályán, utána késői vacsora 21:55-kor. A reggeli check-in
+      energiája 3/5 volt, a stressz alacsony. Vízbevitel 2,8 l.
+    </div>
+  </div>
+  <div class="mcard" style="border-color:#c8bff5; box-shadow: 0 0 0 1px #c8bff5;">
+    <div class="glow"></div>
+    <span class="dot" style="position:absolute; top:12px; right:12px; background:#cfc7b4;" title="még nincs vektor"></span>
+    <div class="eyeb" style="color:#5b4bd6;">augusztus 9., vasárnap · a keresésből</div>
+    <div class="disp" style="font-size:11.5px; line-height:1.65; margin-top:7px;">
+      Pihenőnap volt, de a napzárás elmaradt. Rövidebb alvás (6,1 óra, 2/5) követte — a vasárnap
+      esti mintázat megint kirajzolódott. Reta ciklusnap 6.
+    </div>
+  </div>
+
+  <div class="eyeb" style="color:#a09884; margin: 12px 0 9px;">2026. július</div>
+  <div class="mcard" style="margin-bottom:0;">
+    <div class="glow"></div>
+    <span class="dot" style="position:absolute; top:12px; right:12px; background:#4d9b6a;" title="vektorizálva"></span>
+    <div class="eyeb" style="color:#5b4bd6;">július 30., csütörtök</div>
+    <div class="disp" style="font-size:11.5px; line-height:1.65; margin-top:7px;">
+      Push-nap 8 900 kg összvolumennel, a bench 5 kg-os PR-kísérlete 1 ismétlésen elakadt.
+      A kreatin + kollagén stack ment, a kcal 2 450-en zárt.
+    </div>
+  </div>
+</div>
+<p class="cap">2 · Napló — memoir-oszlop (a lav keretes kártya: a Keresőből fókuszált nap)</p>
+</div>
+
+<!-- ═══════════ 3 · KERESŐ ═══════════ -->
+<div>
+<div class="phone">
+  <div class="seg"><span>Áttekintés</span><span>Napló</span><span class="on">Kereső</span><span>Audit</span></div>
+
+  <div style="display:flex; gap:7px; margin-bottom:13px;">
+    <div style="flex:1; background:rgba(255,255,255,.7); border:1px solid #e3dccd; border-radius:11px; padding:10px 12px; font-size:10.5px; color:#4d4638;">rossz alvás edzés után</div>
+    <div style="background:#6f5ff0; color:#fff; border-radius:11px; padding:10px 14px; font-size:10.5px; font-weight:700;">Keresés</div>
+  </div>
+  <div class="eyeb" style="color:#a09884; margin-bottom:9px;">2 hasonló nap a memóriából</div>
+
+  <div class="mcard">
+    <div class="glow"></div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#eee7d9" stroke-width="5"/>
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#6f5ff0" stroke-width="5"
+          stroke-dasharray="106.9 132" stroke-linecap="round" transform="rotate(-90 26 26)"/>
+        <text x="26" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#6f5ff0" font-family="Georgia, serif">81%</text>
+        <text x="26" y="35" text-anchor="middle" font-size="6" font-weight="700" fill="#a09884">EGYEZÉS</text>
+      </svg>
+      <div style="flex:1;">
+        <div class="eyeb" style="color:#5b4bd6;">2026. augusztus 9. · vasárnap</div>
+        <div class="eyeb" style="color:#a09884; margin-top:3px;">5 napja</div>
+        <div class="bar" style="margin-top:8px;"><div style="width:81%; background:linear-gradient(90deg,#6f5ff0,#9c8ff5);"></div></div>
+      </div>
+    </div>
+    <div class="disp" style="font-size:11px; line-height:1.6; margin-top:10px;">
+      Pihenőnap volt, de a napzárás elmaradt. Rövidebb alvás (6,1 óra, 2/5) követte — a vasárnap
+      esti mintázat megint kirajzolódott…
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; align-items:center;">
+      <span class="chip" style="color:#5b4bd6; border-color:#d5cdf3;">egyezés 0.81</span>
+      <span class="meta">×</span>
+      <span class="chip" style="color:#3d8a5c; border-color:#c5e0cf;">frissesség 0.96</span>
+      <span class="meta">=</span>
+      <span class="chip" style="background:#e9f4ec; color:#3d8a5c; border-color:#c5e0cf; font-weight:800;">végső 0.78</span>
+      <span style="flex:1;"></span>
+      <span class="eyeb" style="color:#5b4bd6;">Napló →</span>
+    </div>
+  </div>
+
+  <div class="mcard" style="margin-bottom:0;">
+    <div class="glow"></div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#eee7d9" stroke-width="5"/>
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#9c8ff5" stroke-width="5"
+          stroke-dasharray="84.4 132" stroke-linecap="round" transform="rotate(-90 26 26)"/>
+        <text x="26" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#9c8ff5" font-family="Georgia, serif">64%</text>
+        <text x="26" y="35" text-anchor="middle" font-size="6" font-weight="700" fill="#a09884">EGYEZÉS</text>
+      </svg>
+      <div style="flex:1;">
+        <div class="eyeb" style="color:#5b4bd6;">2026. július 28. · kedd</div>
+        <div class="eyeb" style="color:#c1731d; margin-top:3px;">17 napja</div>
+        <div class="bar" style="margin-top:8px;"><div style="width:64%; background:linear-gradient(90deg,#9c8ff5,#c3baf9);"></div></div>
+      </div>
+    </div>
+    <div class="disp" style="font-size:11px; line-height:1.6; margin-top:10px;">
+      Nehéz munkanap után 40 perces easy futás — a HR-recovery 52 s volt, jobb a szokásosnál.
+      Az esti reflexió „részben" lett…
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; align-items:center;">
+      <span class="chip" style="color:#5b4bd6; border-color:#d5cdf3;">egyezés 0.64</span>
+      <span class="meta">×</span>
+      <span class="chip" style="color:#c1731d; border-color:#f0dcc2;">frissesség 0.84</span>
+      <span class="meta">=</span>
+      <span class="chip" style="background:#fbf1e3; color:#c1731d; border-color:#f0dcc2; font-weight:800;">végső 0.54</span>
+      <span style="flex:1;"></span>
+      <span class="eyeb" style="color:#5b4bd6;">Napló →</span>
+    </div>
+  </div>
+</div>
+<p class="cap">3 · Kereső — gyűrű + sáv + matek-chipsor</p>
+</div>
+
+<!-- ═══════════ 4 · AUDIT ═══════════ -->
+<div>
+<div class="phone">
+  <div class="seg"><span>Áttekintés</span><span>Napló</span><span>Kereső</span><span class="on">Audit</span></div>
+
+  <div style="background:#efecfb; border:1px solid #d5cdf3; border-radius:15px; padding:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+      <div class="eyeb" style="color:#5b4bd6;">LLM-használat · 30 nap</div>
+      <div class="disp" style="font-size:24px; font-weight:600; color:#5b4bd6;">$0.125</div>
+    </div>
+    <svg width="100%" height="58" viewBox="0 0 300 58" style="margin-top:8px;">
+      <g><rect x="10" y="15" width="28" height="18" rx="2.5" fill="#6fbf92"/><rect x="10" y="33" width="28" height="18" rx="2.5" fill="#7a6cf0"/></g>
+      <g><rect x="52" y="33" width="28" height="7" rx="2.5" fill="#6fbf92"/><rect x="52" y="40" width="28" height="11" rx="2.5" fill="#7a6cf0"/></g>
+      <g><rect x="94" y="6" width="28" height="20" rx="2.5" fill="#6fbf92"/><rect x="94" y="26" width="28" height="25" rx="2.5" fill="#7a6cf0"/></g>
+      <g><rect x="136" y="22" width="28" height="12" rx="2.5" fill="#6fbf92"/><rect x="136" y="34" width="28" height="17" rx="2.5" fill="#7a6cf0"/></g>
+      <g><rect x="178" y="41" width="28" height="4" rx="2.5" fill="#6fbf92"/><rect x="178" y="45" width="28" height="6" rx="2.5" fill="#7a6cf0"/></g>
+      <g><rect x="220" y="9" width="28" height="19" rx="2.5" fill="#6fbf92"/><rect x="220" y="28" width="28" height="23" rx="2.5" fill="#7a6cf0"/></g>
+      <g><rect x="262" y="19" width="28" height="13" rx="2.5" fill="#6fbf92"/><rect x="262" y="32" width="28" height="19" rx="2.5" fill="#7a6cf0"/></g>
+    </svg>
+    <div style="display:flex; gap:12px; margin-top:8px; align-items:center;">
+      <span class="meta" style="font-weight:700;"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#7a6cf0;margin-right:5px;"></span>bemenet 248.3k</span>
+      <span class="meta" style="font-weight:700;"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#6fbf92;margin-right:5px;"></span>kimenet 38.7k</span>
+      <span style="flex:1;"></span>
+      <span class="meta" style="font-weight:700;">54 hívás</span>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <span class="eyeb" style="color:#5b4bd6;">Chatből tanulta</span>
+    <span class="chip" style="color:#5b4bd6; border-color:#d5cdf3;">9 tény</span>
+    <div class="line"></div>
+  </div>
+  <div class="mcard" style="padding: 11px 12px 11px 16px;">
+    <div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#d97355;"></div>
+    <div style="font-size:12px; line-height:1.5; font-weight:500;">Caffeine cutoff: 14:00 hard limit</div>
+    <div style="display:flex; gap:7px; margin-top:7px; align-items:center;">
+      <span class="chip">×23 megerősítve</span>
+      <span class="meta">utoljára: aug 11.</span>
+    </div>
+  </div>
+  <div class="mcard" style="padding: 11px 12px 11px 16px;">
+    <div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#5a8fd9;"></div>
+    <div style="font-size:12px; line-height:1.5; font-weight:500;">Pull Day-en a Chest Supported Row a key compound</div>
+    <div style="display:flex; gap:7px; margin-top:7px; align-items:center;">
+      <span class="chip">×12 megerősítve</span>
+      <span class="meta">utoljára: aug 5.</span>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <span class="eyeb" style="color:#3d8a5c;">Mintából promótálva</span>
+    <span class="chip" style="color:#3d8a5c; border-color:#c5e0cf;">3 tény</span>
+    <div class="line"></div>
+  </div>
+  <div class="mcard" style="padding: 11px 12px 11px 16px; background:#f4faf6;">
+    <div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#3d8a5c;"></div>
+    <div style="font-size:12px; line-height:1.5; font-weight:500;">Carb timing &gt; 20:00 → sleep quality drop</div>
+    <div style="display:flex; gap:7px; margin-top:7px; align-items:center;">
+      <span class="chip">×8 megerősítve</span>
+      <span class="meta">utoljára: aug 2.</span>
+    </div>
+    <span class="chip" style="color:#3d8a5c; border-color:#c5e0cf; margin-top:7px;">⧉ minta: Késői étkezés ↔ alvásminőség</span>
+  </div>
+
+  <div class="sechead">
+    <span class="eyeb" style="color:#7a7157;">Kézzel rögzítve</span>
+    <span class="chip">2 tény</span>
+    <div class="line"></div>
+  </div>
+  <div class="mcard" style="padding: 11px 12px 11px 16px; margin-bottom:0;">
+    <div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:#8a7ff0;"></div>
+    <div style="font-size:12px; line-height:1.5; font-weight:500;">Identity goal: peak performance every life domain</div>
+    <div style="display:flex; gap:7px; margin-top:7px; align-items:center;">
+      <span class="chip">×7 megerősítve</span>
+      <span class="meta">még nem erősítette meg újra</span>
+    </div>
+  </div>
+</div>
+<p class="cap">4 · Audit — költség-hero + forrás-csoportok</p>
+</div>
+
+</div>
+</body>
+</html>

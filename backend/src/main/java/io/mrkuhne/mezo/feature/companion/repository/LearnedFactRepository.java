@@ -14,4 +14,7 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
             UUID createdBy);
 
     Optional<LearnedFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** Memória-obszervatórium (mezo-al1i) — az L2 kártya függő-jelölt száma. */
+    long countByCreatedByAndUserDecisionIsNullAndDeletedFalse(UUID createdBy);
 }

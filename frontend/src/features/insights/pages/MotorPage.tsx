@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { usePatternMonitor } from '@/data/hooks'
 import { DomainSection } from '@/features/insights/components/DomainSection'
 import { MetricCoverageRing } from '@/features/insights/components/MetricCoverageRing'
@@ -97,6 +98,10 @@ export function MotorPage() {
           )
         })}
       </div>
+
+      <Link to="/insights/memoria" style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
+        Memória-obszervatórium →
+      </Link>
     </div>
   )
 }

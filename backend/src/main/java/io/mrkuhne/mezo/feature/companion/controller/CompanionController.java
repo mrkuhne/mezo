@@ -6,16 +6,21 @@ import io.mrkuhne.mezo.api.dto.CreateFactRequest;
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
+import io.mrkuhne.mezo.api.dto.MemoryLlmUsageResponse;
+import io.mrkuhne.mezo.api.dto.MemoryOverviewResponse;
+import io.mrkuhne.mezo.api.dto.MemorySummaryListResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.companion.service.MemoryObservatoryService;
 import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -24,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,6 +44,7 @@ public class CompanionController implements CompanionApi {
     private final FactCandidateService factCandidateService;
     private final PatternService patternService;
     private final PatternMonitorService patternMonitorService;
+    private final MemoryObservatoryService memoryObservatoryService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -93,6 +100,26 @@ public class CompanionController implements CompanionApi {
     @Override
     public PatternMonitorResponse patternMonitor() {
         return patternMonitorService.monitor(currentUserId.get());
+    }
+
+    @Override
+    public MemoryOverviewResponse getMemoryOverview() {
+        return memoryObservatoryService.overview(currentUserId.get());
+    }
+
+    @Override
+    public MemorySummaryListResponse listMemorySummaries(LocalDate from, LocalDate to) {
+        return memoryObservatoryService.summaries(currentUserId.get(), from, to);
+    }
+
+    @Override
+    public SimilarDaysResponse searchSimilarDays(String q, Integer k) {
+        return memoryObservatoryService.similarDays(currentUserId.get(), q, k);
+    }
+
+    @Override
+    public MemoryLlmUsageResponse getMemoryLlmUsage(Integer days) {
+        return memoryObservatoryService.llmUsage(days);
     }
 
     @Override
