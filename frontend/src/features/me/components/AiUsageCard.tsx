@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useLlmUsageSummary } from '@/data/hooks'
+import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import type { LlmUsageSummaryResponse } from '@/data/me/llmUsageApi'
 
@@ -9,20 +10,16 @@ import type { LlmUsageSummaryResponse } from '@/data/me/llmUsageApi'
 // three columns wide). Read-only: `useLlmUsageSummary()` is dual-mode, so mock mode
 // seeds synchronously (no loading frame) and real mode ghosts through `Skeleton`s
 // while the query is unresolved — never the seed.
+//
+// Cost formatting is the SHARED `formatRollupCost` (mezo-uakh) — these three tiles are period
+// rollups off the very table the AI-napló hero sums, and the card links straight into it, so a
+// quiet day at $0.0004 must not read "$0.00" here and "<$0.01" one tap later.
 
 const PERIODS = [
   { key: 'day', label: 'Ma' },
   { key: 'week', label: 'Ez a hét' },
   { key: 'month', label: 'Ez a hónap' },
 ] as const satisfies readonly { key: keyof LlmUsageSummaryResponse; label: string }[]
-
-/**
- * `$X.XX`, or an em dash when the period has no priced call — a null cost means
- * "unknown", not zero (unpriced / no-usage / errored rows are excluded server-side).
- */
-export function formatUsageCost(costUsd: number | null | undefined): string {
-  return costUsd == null ? '—' : `$${costUsd.toFixed(2)}`
-}
 
 export function AiUsageCard() {
   const { data, isPending } = useLlmUsageSummary()
@@ -63,7 +60,7 @@ export function AiUsageCard() {
                 {period.callCount} <small>hívás</small>
               </div>
               <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--sage-deep)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
-                {formatUsageCost(period.costUsd)}
+                {formatRollupCost(period.costUsd)}
               </div>
             </div>
           )

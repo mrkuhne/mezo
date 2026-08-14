@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { AiUsageCard, formatUsageCost } from '@/features/me/components/AiUsageCard'
+import { AiUsageCard } from '@/features/me/components/AiUsageCard'
 
 afterEach(() => vi.unstubAllEnvs())
 
@@ -27,15 +27,6 @@ function tile(label: string): HTMLElement {
   expect(cell).not.toBeNull()
   return cell as HTMLElement
 }
-
-describe('formatUsageCost', () => {
-  it('formats a cost with two decimals and dashes an unknown (null) cost', () => {
-    expect(formatUsageCost(0.04)).toBe('$0.04')
-    expect(formatUsageCost(1.2)).toBe('$1.20')
-    expect(formatUsageCost(null)).toBe('—')
-    expect(formatUsageCost(undefined)).toBe('—')
-  })
-})
 
 describe('AiUsageCard (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -81,6 +72,25 @@ describe('AiUsageCard (real mode)', () => {
     expect(tile('Ma')).toHaveTextContent('—')
     expect(tile('Ez a hét')).toHaveTextContent('$0.12')
     expect(tile('Ez a hónap')).toHaveTextContent('$0.50') // 0.5 → two decimals
+  })
+
+  it('renders a nonzero sub-half-cent period as "<$0.01", never a misleading $0.00', async () => {
+    // The card and the AI-napló hero it links to sum the SAME table, so they must not disagree:
+    // a quiet day at $0.0004 rendering "$0.00" here reads as free, then "<$0.01" one tap later
+    // (mezo-uakh — the card now shares the page's `formatRollupCost`).
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/summary`, () =>
+        HttpResponse.json({
+          day: { callCount: 3, costUsd: 0.0004, currency: 'USD' },
+          week: { callCount: 31, costUsd: 0.12, currency: 'USD' },
+          month: { callCount: 118, costUsd: 0.5, currency: 'USD' },
+        }),
+      ),
+    )
+    renderCard()
+    await waitFor(() => expect(tile('Ma')).toHaveTextContent('3 hívás'))
+    expect(tile('Ma')).toHaveTextContent('<$0.01')
+    expect(screen.queryByText('$0.00')).toBeNull()
   })
 
   it('ghosts (role="status" skeleton, no seeded numbers) while the query is unresolved', async () => {
