@@ -560,10 +560,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const nextId = useRef(0)
   const reduced = useReducedMotion()
 
+  // Every pending timer is tracked so unmount can clear them — a toast whose auto-hide
+  // fires after the host is gone would setState on an unmounted tree.
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>())
+  const later = useCallback((fn: () => void, ms: number) => {
+    const t = setTimeout(() => { timers.current.delete(t); fn() }, ms)
+    timers.current.add(t)
+  }, [])
+
   const dismiss = useCallback((id: number) => {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, leaving: true } : e)))
-    setTimeout(() => setEntries((prev) => prev.filter((e) => e.id !== id)), EXIT_MS)
-  }, [])
+    later(() => setEntries((prev) => prev.filter((e) => e.id !== id)), EXIT_MS)
+  }, [later])
 
   useEffect(
     () =>
@@ -571,10 +579,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         const id = nextId.current
         nextId.current += 1
         setEntries((prev) => [{ id, toast, leaving: false }, ...prev].slice(0, QUEUE_CAP))
-        setTimeout(() => dismiss(id), AUTO_HIDE_MS[toast.kind] ?? 4000)
+        later(() => dismiss(id), AUTO_HIDE_MS[toast.kind] ?? 4000)
       }),
-    [dismiss],
+    [dismiss, later],
   )
+
+  useEffect(() => {
+    const pending = timers.current
+    return () => { pending.forEach(clearTimeout); pending.clear() }
+  }, [])
 
   const show = useCallback((t: ToastMessage) => emitToast(t), [])
 
@@ -815,8 +828,8 @@ function RewardBody({ toast }: { toast: RewardToast }) {
       )}
       {toast.levelUp && (
         <span className="t-lvup">
-          <span aria-hidden="true">★</span> LEVEL UP · {toast.levelUp.label} ·
-          {' '}Lv{toast.levelUp.from} → {toast.levelUp.to}
+          <span aria-hidden="true">★</span>
+          {` LEVEL UP · ${toast.levelUp.label} · Lv${toast.levelUp.from} → ${toast.levelUp.to}`}
         </span>
       )}
     </div>
@@ -887,7 +900,7 @@ Egészítsd ki a reduced-motion szabályt, hogy a delta-pop is álljon:
 Futtasd: `cd frontend && pnpm test -- --run src/shared/ui/ToastProvider.test.tsx`
 Várt: PASS, 12 teszt.
 
-**Ha a `LEVEL UP · Mentális · Lv3 → 4` asszert bukik** whitespace miatt: a `toHaveTextContent` normalizálja a szóközöket, de a JSX sortörései extra szóközt hozhatnak. Ez esetben tedd a badge szövegét egyetlen template literalba: `{`LEVEL UP · ${toast.levelUp.label} · Lv${toast.levelUp.from} → ${toast.levelUp.to}`}` a ★ span után.
+**Ha a `LEVEL UP · Mentális · Lv3 → 4` asszert bukik** whitespace miatt: a `toHaveTextContent` normalizálja a szóközöket, de a ★ span és a template literal közé a JSX sortörése szóközt szúrhat. A fenti kód ezt kezeli (a literal saját vezető szóközzel kezdődik); ha mégis bukik, ellenőrizd, hogy a badge szövege EGYETLEN template literal, nem több JSX-kifejezés összefűzése.
 
 - [ ] **Step 6: Commit**
 
