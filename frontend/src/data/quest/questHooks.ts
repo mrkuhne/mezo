@@ -20,8 +20,9 @@ export interface DailyQuestsView {
 
 /**
  * The day's quests. Real mode: GET lazily generates (today) and evaluates derived completion —
- * levelUps carries payloads produced by THAT read only (safe to feed showLevelUp; re-reads
- * return []). While unresolved returns the empty day, never the seed (no-static-fallback rule).
+ * levelUps carries payloads produced by THAT read only (safe to feed into a reward toast via
+ * @/features/progression/logic/rewardToast, emitted on the toastBus; re-reads return []).
+ * While unresolved returns the empty day, never the seed (no-static-fallback rule).
  */
 export function useDailyQuests(date: string): DailyQuestsView {
   const mock = isMockMode()
@@ -76,8 +77,8 @@ export function useQuestActions(date: string) {
     pending: rerollM.isPending,
     /**
      * Consume-once for the level-up payloads: clears levelUps from the cached day after the
-     * overlay fired. Without this a Today → Train → Today remount within gcTime replays the
-     * cached payload (the only showLevelUp caller driven by a cached-query effect, not a
+     * reward toast fired. Without this a Today → Train → Today remount within gcTime replays
+     * the cached payload (the only reward-toast trigger driven by a cached-query effect, not a
      * mutation onSuccess).
      */
     consumeLevelUps: () =>

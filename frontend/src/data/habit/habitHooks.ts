@@ -90,7 +90,8 @@ export function useHabitActions(date: string) {
           qc.invalidateQueries({ queryKey: ['progressionProfile'] })
         },
   })
-  // NOTE: check() resolves the write's levelUps — the caller feeds them to showLevelUp.
+  // NOTE: check() resolves the write's levelUps — the caller builds a reward toast via
+  // @/features/progression/logic/rewardToast and emits it on the toastBus (mezo-k5sa).
   // Callers today: TodayPage's `act()` dispatcher (every habit row on all three daypart
   // faces) and WindDownBanner (the `wind_down` Pipa). RoutineCard, the original caller,
   // was retired by the daypart-faces re-composition (mezo-j7u4).
