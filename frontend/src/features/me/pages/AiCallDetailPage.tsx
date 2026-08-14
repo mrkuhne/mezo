@@ -1,12 +1,21 @@
 import { Link, useParams } from 'react-router-dom'
 import { useLlmCall } from '@/data/hooks'
+import { AiCallUsage } from '@/features/me/components/AiCallUsage'
 import { AiPayloadBlock } from '@/features/me/components/AiPayloadBlock'
-import { AiTokenBar } from '@/features/me/components/AiTokenBar'
-import { callKindLabel, formatCost, formatLatency } from '@/features/me/logic/llmCallFormat'
+import { AiPriceSnapshot } from '@/features/me/components/AiPriceSnapshot'
+import {
+  callKindLabel, formatDateTime, formatLatency, statusLabel, statusTone,
+} from '@/features/me/logic/llmCallFormat'
 import { GhostState } from '@/shared/ui/GhostState'
 
 // One audited call in full (mezo-uakh) — the debug view. A separate page rather than a sheet:
 // each payload column can hold 64 000 characters, and a call is worth deep-linking to.
+
+const TONE_COLOR: Record<'ok' | 'error' | 'cancelled', string> = {
+  ok: 'var(--sage-deep)',
+  error: 'var(--error-deep)',
+  cancelled: 'var(--warning-deep)',
+}
 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
@@ -31,6 +40,7 @@ export function AiCallDetailPage() {
   }
 
   const snapshot = data.pricingSnapshot
+  const tone = statusTone(data.status)
 
   return (
     <div className="col gap-md" style={{ padding: '14px 12px 24px' }}>
@@ -47,13 +57,15 @@ export function AiCallDetailPage() {
                 grid's own "Tool-körök" cell below and AiCallRow.tsx already make (mezo-58ig). */}
             {callKindLabel(data.callKind)}{data.toolRounds != null ? ` ×${data.toolRounds}` : ''}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 800 }}>{data.status}</span>
+          <span style={{ fontSize: 9, fontWeight: 800, color: TONE_COLOR[tone] }}>{statusLabel(data.status)}</span>
         </div>
         <h2 style={{ fontSize: 16, fontWeight: 800, margin: '7px 0 2px' }}>
           {data.feature}{data.operation ? ` · ${data.operation}` : ''}
         </h2>
         <div className="text-tertiary" style={{ fontSize: 11 }}>
-          {data.createdAt}{data.entityKind ? ` · ${data.entityKind}` : ''}
+          {/* The raw ISO instant is wire data, not UI text — the same Europe/Budapest zone the
+              list row's clock uses, but with the date, since a detail page is deep-linkable. */}
+          {formatDateTime(data.createdAt)}{data.entityKind ? ` · ${data.entityKind}` : ''}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--surface-2)', borderRadius: 12, overflow: 'hidden', marginTop: 11 }}>
@@ -65,30 +77,24 @@ export function AiCallDetailPage() {
           <Cell label="Hívó" value={data.createdBy ? 'te' : 'háttérfolyamat'} />
           <Cell label="Szolgáltatási szint" value={data.serviceTier ?? '—'} />
         </div>
+
+        {/* WHY it failed — the same strip the list row that led here shows. An ERROR row has no
+            tokens and no payload, so without this the whole page said "HIBA" and nothing else. */}
+        {tone === 'error' && (
+          <div style={{ marginTop: 8, borderRadius: 8, padding: '6px 9px', fontSize: 10.5, fontWeight: 600, background: 'var(--surface-2)' }}>
+            HIBA · {data.errorClass ?? 'ismeretlen'}{data.errorCode ? ` · ${data.errorCode}` : ''}
+          </div>
+        )}
+        {tone === 'cancelled' && (
+          <div style={{ marginTop: 8, borderRadius: 8, padding: '6px 9px', fontSize: 10.5, fontWeight: 600, background: 'var(--surface-2)' }}>
+            MEGSZAKADT · a kliens lecsatlakozott — a részleges válasz megvan
+          </div>
+        )}
       </div>
 
-      <div className="card" style={{ padding: '11px 13px 12px' }}>
-        <div className="row" style={{ alignItems: 'baseline' }}>
-          <span className="eyebrow" style={{ flex: 1 }}>Tokenek</span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: data.costUsd == null ? 'var(--text-tertiary)' : 'var(--sage-deep)' }}>{formatCost(data.costUsd)}</span>
-        </div>
-        <AiTokenBar detail={data} />
-      </div>
+      <AiCallUsage detail={data} />
 
-      {snapshot && (
-        <div className="card" style={{ padding: '9px 11px', fontSize: 10.5 }}>
-          {/* pricedOn nested in its own span, like AiCallRow's badge values (see its top comment) — the
-              call's own createdAt (rendered elsewhere) starts with the same date, so an isolated text
-              node is what lets a test target this exact value rather than colliding with that one. */}
-          <b>Befagyasztott ártábla</b> · {snapshot.sourceModel} · <span>{snapshot.pricedOn}</span>
-          <div className="text-tertiary" style={{ marginTop: 3 }}>
-            input ${snapshot.inputPerMillion} · output ${snapshot.outputPerMillion} · thinking ${snapshot.thinkingPerMillion} · cached ${snapshot.cachedPerMillion} / 1M
-          </div>
-          <div className="text-tertiary" style={{ marginTop: 3 }}>
-            A számlázás nettó prompttal megy — a cache-elt szelet a promptban benne van.
-          </div>
-        </div>
-      )}
+      {snapshot && <AiPriceSnapshot snapshot={snapshot} />}
 
       <div className="card" style={{ padding: '4px 13px 14px' }}>
         <AiPayloadBlock label="Rendszerprompt" text={data.systemPrompt} />

@@ -52,6 +52,28 @@ export function formatTime(iso: string): string {
   })
 }
 
+/**
+ * The full timestamp for the DETAIL (debug) view — date AND clock, in the same `Europe/Budapest`
+ * report zone `formatTime` uses. The list rows only need the clock (they all sit inside one
+ * selected period), but a call detail is deep-linkable, so it has to say WHICH day it was.
+ * Whitespace is normalised because ICU emits a narrow no-break space in some builds.
+ */
+export function formatDateTime(iso: string): string {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('hu-HU', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Budapest',
+  }).replace(/\s/g, ' ')
+}
+
+/** Byte size for the media block — "—" for unknown, so 0 bytes stays distinguishable from null. */
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} kB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 const KIND_LABELS: Record<string, string> = {
   CHAT: 'CHAT',
   CHAT_STREAM: 'STREAM',
@@ -71,6 +93,17 @@ export function statusTone(status: string): 'ok' | 'error' | 'cancelled' {
   if (status === 'ERROR') return 'error'
   if (status === 'CANCELLED') return 'cancelled'
   return 'ok'
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  SUCCESS: 'SIKER',
+  ERROR: 'HIBA',
+  CANCELLED: 'MEGSZAKADT',
+}
+
+/** The status pill's Hungarian wording (the mockup's `SIKER` pill) — the raw enum is not UI text. */
+export function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status
 }
 
 export interface TokenSegment {

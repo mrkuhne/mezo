@@ -29,6 +29,14 @@ describe('AiCallDetailPage (mock mode)', () => {
     expect(screen.getByText(/companion_chat/)).toBeInTheDocument()
     expect(screen.getAllByText('gemini-2.5-flash').length).toBeGreaterThan(0)
     expect(screen.getByText('7.8 s')).toBeInTheDocument()
+    expect(screen.getByText('SIKER')).toBeInTheDocument()
+  })
+
+  it('renders the timestamp as a Hungarian date-time, not the raw ISO instant', () => {
+    renderDetail()
+    // createdAt is '2026-08-14T12:31:07Z' → 14:31 in the Europe/Budapest report zone.
+    expect(screen.getByText(/2026\. aug\. 14\. 14:31/)).toBeInTheDocument()
+    expect(screen.queryByText(/12:31:07Z/)).toBeNull()
   })
 
   it('renders the four token segments with the NET prompt', () => {
@@ -89,6 +97,88 @@ describe('AiCallDetailPage (real mode edge cases)', () => {
     )
     renderDetail(id)
     await waitFor(() => expect(screen.getByText('TOOL ×0')).toBeInTheDocument())
+  })
+
+  it('says WHY a call failed — the error class and code, not a bare "HIBA"', async () => {
+    // An ERROR row has no tokens, no payload and no cost, so without the error strip the page
+    // showed the status word and nothing else — while the list row that led here already read
+    // "HIBA · ResourceExhaustedException".
+    const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/calls/${id}`, () =>
+        HttpResponse.json({
+          ...LLM_CALL_DETAIL_MOCK, id, status: 'ERROR', servedModel: null,
+          errorClass: 'ResourceExhaustedException', errorCode: '429',
+          promptTokens: null, candidatesTokens: null, thoughtsTokens: null, cachedTokens: null,
+          totalTokens: null, costUsd: null, pricingSnapshot: null,
+          systemPrompt: null, userMessage: null, responseText: null,
+        }),
+      ),
+    )
+    renderDetail(id)
+    await waitFor(() =>
+      expect(screen.getByText(/HIBA · ResourceExhaustedException · 429/)).toBeInTheDocument(),
+    )
+    // an unpriced failure shows no money at all — never a $0.00 that would read as "free"
+    expect(screen.queryByText(/\$/)).toBeNull()
+  })
+
+  it('shows the embedding counters and the embed rate for an embedding call', async () => {
+    // gemini-embedding-001 is priced with embed-per-million-chars ONLY, so the four generation
+    // rates are null: printing them unconditionally emitted four bare "$" signs and never showed
+    // the one rate the cost came from, while the token bar claimed "no usage reported" on top of
+    // three populated counters. embed_memory is the highest-volume kind — a third of the log.
+    const id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/calls/${id}`, () =>
+        HttpResponse.json({
+          ...LLM_CALL_DETAIL_MOCK, id, feature: 'embed_memory', operation: 'document',
+          callKind: 'EMBED_DOC', toolRounds: null,
+          promptTokens: null, candidatesTokens: null, thoughtsTokens: null, cachedTokens: null,
+          totalTokens: null,
+          embedInputCount: 12, embedDimensions: 768, embedBillableChars: 4820,
+          systemPrompt: null, userMessage: null, responseText: null,
+          costUsd: 0.0004,
+          pricingSnapshot: {
+            sourceModel: 'gemini-embedding-001', currency: 'USD',
+            inputPerMillion: null, outputPerMillion: null, thinkingPerMillion: null,
+            cachedPerMillion: null, embedPerMillionChars: 0.15, pricedOn: '2026-08-14',
+          },
+        }),
+      ),
+    )
+    renderDetail(id)
+
+    await waitFor(() => expect(screen.getByText('Beágyazás')).toBeInTheDocument())
+    expect(screen.getByText('12 db')).toBeInTheDocument()
+    expect(screen.getByText('768')).toBeInTheDocument()
+    expect(screen.getByText('4820')).toBeInTheDocument()
+    expect(screen.getByText(/embed \$0\.15 \/ 1M karakter/)).toBeInTheDocument()
+    expect(screen.getByText('$0.0004')).toBeInTheDocument()
+    // none of the generation apparatus: no bare "$", no token bar, no net-prompt footnote
+    expect(screen.queryByText(/input \$/)).toBeNull()
+    expect(screen.queryByText(/nem jelentett token-használatot/)).toBeNull()
+    expect(screen.queryByText(/A számlázás nettó prompttal/)).toBeNull()
+  })
+
+  it('shows the media metadata a vision or transcribe call carries', async () => {
+    const id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/calls/${id}`, () =>
+        HttpResponse.json({
+          ...LLM_CALL_DETAIL_MOCK, id, feature: 'meal_draft', operation: 'photo',
+          callKind: 'VISION', toolRounds: null,
+          imageCount: 1, imageBytesTotal: 862_208, imageMime: 'image/jpeg',
+        }),
+      ),
+    )
+    renderDetail(id)
+
+    await waitFor(() => expect(screen.getByText('1 db')).toBeInTheDocument())
+    expect(screen.getByText('842.0 kB')).toBeInTheDocument()
+    expect(screen.getByText('image/jpeg')).toBeInTheDocument()
+    // a vision call still reports tokens — the media block is additional, not a replacement
+    expect(screen.getByText(/gondolkodás/)).toBeInTheDocument()
   })
 
   it('explains a call with no reported token usage instead of an empty or NaN bar', async () => {

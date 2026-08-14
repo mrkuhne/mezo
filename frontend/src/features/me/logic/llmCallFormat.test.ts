@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  formatCost, formatRollupCost, formatTokens, formatLatency, formatTime, callKindLabel, statusTone, tokenSegments,
+  formatCost, formatRollupCost, formatTokens, formatLatency, formatTime, formatDateTime, formatBytes,
+  callKindLabel, statusTone, statusLabel, tokenSegments,
 } from '@/features/me/logic/llmCallFormat'
 import { LLM_CALL_DETAIL_MOCK, LLM_CALL_DETAIL_EMPTY } from '@/data/me/llmUsageHooks'
 
@@ -76,7 +77,32 @@ describe('formatTime', () => {
   })
 })
 
-describe('callKindLabel / statusTone', () => {
+describe('formatDateTime', () => {
+  it('renders the full Hungarian date AND clock in the Europe/Budapest report zone', () => {
+    // Same zone as formatTime (12:31 UTC is 14:31 in Budapest in August) — but the detail page is
+    // deep-linkable, so it must also say WHICH day, instead of the raw ISO instant it used to print.
+    expect(formatDateTime('2026-08-14T12:31:07Z')).toBe('2026. aug. 14. 14:31')
+    // A UTC instant that falls on the NEXT day in Budapest — the zone has to move the date too.
+    expect(formatDateTime('2026-01-05T23:05:00Z')).toBe('2026. jan. 6. 00:05')
+  })
+
+  it('returns empty string for empty input', () => {
+    expect(formatDateTime('')).toBe('')
+  })
+})
+
+describe('formatBytes', () => {
+  it('scales to kB/MB and dashes an unknown size (0 bytes is not unknown)', () => {
+    expect(formatBytes(null)).toBe('—')
+    expect(formatBytes(undefined)).toBe('—')
+    expect(formatBytes(0)).toBe('0 B')
+    expect(formatBytes(842)).toBe('842 B')
+    expect(formatBytes(862_208)).toBe('842.0 kB')
+    expect(formatBytes(3_670_016)).toBe('3.5 MB')
+  })
+})
+
+describe('callKindLabel / statusTone / statusLabel', () => {
   it('labels every call kind and maps every status to a tone', () => {
     expect(callKindLabel('CHAT_STREAM')).toBe('STREAM')
     expect(callKindLabel('EMBED_DOC')).toBe('EMBED')
@@ -84,6 +110,12 @@ describe('callKindLabel / statusTone', () => {
     expect(statusTone('SUCCESS')).toBe('ok')
     expect(statusTone('ERROR')).toBe('error')
     expect(statusTone('CANCELLED')).toBe('cancelled')
+  })
+
+  it('gives every status a Hungarian pill label (the raw enum is not UI text)', () => {
+    expect(statusLabel('SUCCESS')).toBe('SIKER')
+    expect(statusLabel('ERROR')).toBe('HIBA')
+    expect(statusLabel('CANCELLED')).toBe('MEGSZAKADT')
   })
 })
 
