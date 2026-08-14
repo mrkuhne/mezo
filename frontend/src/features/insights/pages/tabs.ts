@@ -16,6 +16,7 @@ export const INSIGHTS_TABS: InsightsTab[] = [
   { id: 'predictions', to: '/insights/predictions', label: 'Előrejelzések' },
   { id: 'experiments', to: '/insights/experiments', label: 'Kísérletek' },
   { id: 'motor', to: '/insights/motor', label: 'Motor' },
+  { id: 'memory', to: '/insights/memoria', label: 'Memória' },
 ]
 
 /** Phase-3+ demo surfaces that were hidden in real mode until the proactive epic shipped them:

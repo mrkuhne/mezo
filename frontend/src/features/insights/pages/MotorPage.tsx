@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { usePatternMonitor } from '@/data/hooks'
 import { GateVerdictRow } from '@/features/insights/components/GateVerdictRow'
 import { MetricCoverageRow } from '@/features/insights/components/MetricCoverageRow'
@@ -95,6 +96,10 @@ export function MotorPage() {
           <MetricCoverageRow key={metric.key} metric={metric} />
         ))}
       </div>
+
+      <Link to="/insights/memoria" style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
+        Memória-obszervatórium →
+      </Link>
     </div>
   )
 }
