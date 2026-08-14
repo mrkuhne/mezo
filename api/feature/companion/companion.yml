@@ -478,6 +478,47 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/memory/similar-days:
+    get:
+      tags: [Companion]
+      operationId: searchSimilarDays
+      summary: >-
+        pgvector hasonló-nap kereső (mezo-al1i) — a V2.3 MemoryRecallService változatlan
+        újrahasznosítása: embed query → ANN a daily_summary vektorokon → recency re-rank
+        (similarity × exp(-age/τ)). A min-similarity küszöb alatti találat itt sem jön vissza
+        (őszinte üres lista); a tool és a felület garantáltan ugyanazt a memóriát látja.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: A keresett élmény/téma/állapot szabad szövege.
+          schema: { type: string, minLength: 1 }
+        - name: k
+          in: query
+          required: false
+          description: Max találat; alapértelmezés 3, a szerver a recall.max-k (5) fölé nem enged.
+          schema: { type: integer, minimum: 1, maximum: 5 }
+      responses:
+        '200':
+          description: Hasonló napok (finalScore-desc)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimilarDaysResponse' }
+        '400':
+          description: Validation error (üres q, k a határokon kívül)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Companion switched off — the whole surface is absent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     TranscriptionResponse:
@@ -764,3 +805,18 @@ components:
         date: { type: string, format: date }
         narrative: { type: string }
         embedded: { type: boolean, description: 'Van-e élő daily_summary vektor ehhez az összefoglalóhoz.' }
+    SimilarDaysResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SimilarDayItem' }
+    SimilarDayItem:
+      type: object
+      required: [date, excerpt, similarity, finalScore]
+      properties:
+        date: { type: string, format: date }
+        excerpt: { type: string, description: 'A napi narratíva recall.render-max-chars-ra (300) vágva.' }
+        similarity: { type: number, format: double, description: 'Nyers koszinusz-egyezés (0..1) — a floor erre vonatkozik.' }
+        finalScore: { type: number, format: double, description: 'similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.' }

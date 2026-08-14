@@ -1668,6 +1668,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/memory/similar-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** pgvector hasonló-nap kereső (mezo-al1i) — a V2.3 MemoryRecallService változatlan újrahasznosítása: embed query → ANN a daily_summary vektorokon → recency re-rank (similarity × exp(-age/τ)). A min-similarity küszöb alatti találat itt sem jön vissza (őszinte üres lista); a tool és a felület garantáltan ugyanazt a memóriát látja. */
+        get: operations["searchSimilarDays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/people": {
         parameters: {
             query?: never;
@@ -4818,6 +4835,25 @@ export interface components {
             narrative: string;
             /** @description Van-e élő daily_summary vektor ehhez az összefoglalóhoz. */
             embedded: boolean;
+        };
+        SimilarDaysResponse: {
+            items: components["schemas"]["SimilarDayItem"][];
+        };
+        SimilarDayItem: {
+            /** Format: date */
+            date: string;
+            /** @description A napi narratíva recall.render-max-chars-ra (300) vágva. */
+            excerpt: string;
+            /**
+             * Format: double
+             * @description Nyers koszinusz-egyezés (0..1) — a floor erre vonatkozik.
+             */
+            similarity: number;
+            /**
+             * Format: double
+             * @description similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.
+             */
+            finalScore: number;
         };
         LogMentionRequest: {
             tone: string;
@@ -10672,6 +10708,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemorySummaryListResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Companion switched off — the whole surface is absent */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    searchSimilarDays: {
+        parameters: {
+            query: {
+                /** @description A keresett élmény/téma/állapot szabad szövege. */
+                q: string;
+                /** @description Max találat; alapértelmezés 3, a szerver a recall.max-k (5) fölé nem enged. */
+                k?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Hasonló napok (finalScore-desc) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimilarDaysResponse"];
+                };
+            };
+            /** @description Validation error (üres q, k a határokon kívül) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing or invalid token */

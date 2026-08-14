@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
@@ -108,6 +109,11 @@ public class CompanionController implements CompanionApi {
     @Override
     public MemorySummaryListResponse listMemorySummaries(LocalDate from, LocalDate to) {
         return memoryObservatoryService.summaries(currentUserId.get(), from, to);
+    }
+
+    @Override
+    public SimilarDaysResponse searchSimilarDays(String q, Integer k) {
+        return memoryObservatoryService.similarDays(currentUserId.get(), q, k);
     }
 
     @Override

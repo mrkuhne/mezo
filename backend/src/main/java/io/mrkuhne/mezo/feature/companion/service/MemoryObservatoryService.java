@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.api.dto.MemoryOverviewResponse;
 import io.mrkuhne.mezo.api.dto.MemoryPatternCount;
 import io.mrkuhne.mezo.api.dto.MemorySummaryItem;
 import io.mrkuhne.mezo.api.dto.MemorySummaryListResponse;
+import io.mrkuhne.mezo.api.dto.SimilarDayItem;
+import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -55,6 +57,7 @@ public class MemoryObservatoryService {
     private final LearnedFactRepository learnedFactRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionProperties properties;
+    private final MemoryRecallService memoryRecallService;
 
     @Transactional(readOnly = true)
     public MemoryOverviewResponse overview(UUID userId) {
@@ -164,5 +167,29 @@ public class MemoryObservatoryService {
                         .build())
                 .toList();
         return MemorySummaryListResponse.builder().items(items).build();
+    }
+
+    /**
+     * A V2.3 recall változatlan újrahasznosítása — a kereső ugyanazt a memóriát látja, mint a
+     * {@code find_similar_past_days} tool. Szándékosan NEM @Transactional: az embed hálózati
+     * hívása alatt nem tartunk DB-kapcsolatot (a {@link MemoryRecallService} saját indoklása).
+     */
+    public SimilarDaysResponse similarDays(UUID userId, String query, Integer k) {
+        int limit = k != null ? k : 3;
+        int renderCap = properties.recall().renderMaxChars();
+        List<SimilarDayItem> items = memoryRecallService.recallSimilarDays(userId, query, limit).stream()
+                .map(memory -> SimilarDayItem.builder()
+                        .date(memory.occurredOn())
+                        .excerpt(excerpt(memory.content(), renderCap))
+                        .similarity(memory.similarity())
+                        .finalScore(memory.score())
+                        .build())
+                .toList();
+        return SimilarDaysResponse.builder().items(items).build();
+    }
+
+    /** A tool render-vágásának párja (MemoryTools) — a stored text hosszú, a kártyára kivonat megy. */
+    private static String excerpt(String content, int cap) {
+        return content.length() > cap ? content.substring(0, cap) + "…" : content;
     }
 }
