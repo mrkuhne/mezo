@@ -254,7 +254,10 @@ describe('TodayPage — a kézi pipa reward toastot dob', () => {
 
     const reward = seen.find((t) => t.kind === 'reward')
     expect(reward).toMatchObject({ kind: 'reward', title: 'MANUAL lánc' })
-    expect((reward as { eyebrow: string }).eyebrow).toMatch(/^Szokás/)
+    // All 7 KIND_FIXTURES share the EVENING chain and start `pending`, so the chain reads
+    // 0/7 at click time; the builder adds the +1 for the row being checked. An off-by-one
+    // in the CALLER (pre-incrementing chainDone) would render „Szokás · 2 / 7" and fail here.
+    expect((reward as { eyebrow: string }).eyebrow).toBe('Szokás · 1 / 7')
   })
 })
 
