@@ -56,6 +56,15 @@ export function PatternsPage() {
 
   const isPending = patternsPending || monitorPending
 
+  // Real-mode-only cold-load window (mock mode's isPending is always false, mezo-viqs fix wave
+  // precedent, MotorPage.tsx örököse): patterns=[]/monitor=null/degraded=false all read as
+  // "genuinely empty" below WITHOUT this guard — a fabricated „0 kérdést … 0 vár a döntésedre"
+  // hero would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class).
+  // Gate on EITHER query pending — the hero needs both to render its real numbers honestly.
+  if (isPending) {
+    return <GhostState message="A minták betöltése…" />
+  }
+
   // Genuinely failed fetch (500, network) — külön a 404-degraded ÉS a betöltés-alatti ablaktól
   // (mindkettő `monitor === null`-ként olvasna, review fix wave mezo-viqs precedens).
   if (monitorIsError) {
@@ -74,7 +83,7 @@ export function PatternsPage() {
     )
   }
 
-  if (patterns.length === 0 && (monitor?.pairs.length ?? 0) === 0 && !isPending) {
+  if (patterns.length === 0 && (monitor?.pairs.length ?? 0) === 0) {
     return (
       <div className="card" style={{ padding: 16, textAlign: 'center' }}>
         <p className="text-tertiary" style={{ fontSize: 12 }}>

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -151,6 +151,25 @@ describe('PatternsPage (real mode)', () => {
       },
     ],
   }
+
+  test('renders the honest loading state while the queries are unresolved, never a fabricated zero dashboard', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern`, async () => {
+        await delay('infinite')
+        return HttpResponse.json([patternWire])
+      }),
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, async () => {
+        await delay('infinite')
+        return HttpResponse.json(monitorWire)
+      }),
+    )
+    renderPage()
+
+    expect(await screen.findByText('A minták betöltése…')).toBeInTheDocument()
+    // the fabricated "0 kérdést … 0 vár a döntésedre" hero must NOT render during the cold load.
+    expect(screen.queryByText('A motor állapota')).not.toBeInTheDocument()
+    expect(screen.queryByText(/kérdést/)).not.toBeInTheDocument()
+  })
 
   test('composes the hero + decision inbox + Adat-egészség from both endpoints', async () => {
     server.use(

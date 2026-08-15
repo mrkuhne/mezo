@@ -126,13 +126,20 @@ produced a row for it yet.
    each ring's `waiting` flag true when NONE of its referencing pairs is `live`. Ported verbatim off
    the retired `MotorPage`'s wiring (§2.8 below).
 
-**Honest states:** a genuinely failed monitor fetch (500/network, `usePatternMonitor().isError`) —
-distinct from a 404 — renders a `GhostState` retry card, never a blank page (the same
-loading/degraded/error/„actually empty" four-way split Motor pioneered, `mezo-viqs`). **404 on
-BOTH endpoints** renders the honest degraded card (`A minta-motor most nem elérhető…`) — no Motor
-link any more (the page IS the diagnostics now). A genuinely empty state (`patterns.length===0 &&
-monitor.pairs.length===0`, not pending) keeps the pre-existing „Még nincs felismert minta…" copy,
-link removed for the same reason.
+**Honest states (checked in this order, the same loading/error/degraded/„actually empty" four-way
+split Motor pioneered, `mezo-viqs`):** while EITHER `usePatterns()` or `usePatternMonitor()` is
+still unresolved (real mode's cold-load window — mock mode's `isPending` is always `false`,
+`useDualQuery` seeds synchronously) the page renders `<GhostState message="A minták betöltése…" />`
+and nothing else — **without this gate, `patterns=[]`/`monitor=null`/`degraded=false` during the
+unresolved window reads as "genuinely empty" and would flash a fabricated „0 kérdést … 0 vár a
+döntésedre" hero + all-zero tiles at a live user, the mezo-yew/mezo-0xl bug class** (regression
+test: `PatternsPage.test.tsx`'s delayed-response case). Next, a genuinely failed monitor fetch
+(500/network, `usePatternMonitor().isError`) — distinct from a 404 — renders a `GhostState` retry
+card, never a blank page. **404 on BOTH endpoints** renders the honest degraded card (`A
+minta-motor most nem elérhető…`) — no Motor link any more (the page IS the diagnostics now). Only
+once none of the above apply does a genuinely empty state (`patterns.length===0 &&
+monitor.pairs.length===0`) render the pre-existing „Még nincs felismert minta…" copy, link removed
+for the same reason.
 
 ### 2.2 Weekly (`pages/WeeklyPage.tsx`) — **REAL dual-mode since D′ (`mezo-t16y.1`)**
 A big `score` `/100` with a `delta` label, a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card, and (E3 `mezo-6ng8`) a **"Growth — heti" `GrowthWeekCard`** last. Reads `useWeekly()` (`data/insights/weeklyHooks.ts`, exported via the `hooks.ts` barrel) → `{ weekly:{title,score,delta,items}, deltaLabel, weeklySuggestion, growthWeek, mode }`.
