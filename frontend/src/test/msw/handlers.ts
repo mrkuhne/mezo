@@ -964,12 +964,12 @@ export const handlers = [
         id: f.id,
         factText: f.text,
         category: f.category,
-        source: 'manual',
+        source: f.source,
         reinforcementCount: f.reinforced,
         includeInPrompt: f.active,
-        lastReinforcedAt: null,
+        lastReinforcedAt: f.lastReinforcedAt,
         createdAt: `2026-07-01T06:${String(i).padStart(2, '0')}:00Z`,
-        patternTitle: null,
+        patternTitle: f.patternTitle ?? null,
       })),
     ),
   ),
@@ -1090,4 +1090,28 @@ export const handlers = [
     })
     return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
   }),
+
+  http.get(`${API_BASE}/api/companion/memory/overview`, () =>
+    HttpResponse.json({
+      l0: { daysWithAnyData: 0, windowDays: 60 },
+      l1: { summaryCount: 0, firstDate: null, lastDate: null, embeddings: { dailySummary: 0, chatTurn: 0 } },
+      l2: { patterns: [], pendingFactCandidates: 0 },
+      l3: { facts: [], totalReinforcements: 0, factsInPrompt: 0 },
+      jobs: {
+        summaryCron: '0 20 2 * * *',
+        patternCron: '0 40 2 * * *',
+        hypothesisCron: '0 0 3 * * SUN',
+        lastSummaryDate: null,
+        lastDetectedAt: null,
+      },
+    }),
+  ),
+  http.get(`${API_BASE}/api/companion/memory/summary`, () => HttpResponse.json({ items: [] })),
+  http.get(`${API_BASE}/api/companion/memory/similar-days`, () => HttpResponse.json({ items: [] })),
+  http.get(`${API_BASE}/api/companion/memory/llm-usage`, () =>
+    HttpResponse.json({
+      enabled: false, perDay: [],
+      totals: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
+    }),
+  ),
 ]

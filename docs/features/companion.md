@@ -512,6 +512,49 @@ COMPLETE (all 14 slices):**
   import; V3.5 if that ever lands); the intention "reflection" is categorical (yes|partial|no),
   not free text — the digest renders it as a label, not a quote.
 
+**Memória-obszervatórium (`mezo-al1i`, post-epic) — a 4 memória-réteg read-only pillanatképe.**
+`MemoryObservatoryService` (`service/MemoryObservatoryService.java`, companion-switch conditional)
+backs 4 new read-only endpoints under `GET /api/companion/memory/*`, consumed by the Insights
+**Memória** tab ([`insights.md`](insights.md) §2.9, the 9th sub-tab). **No new table, no
+migration** — the service composes existing data:
+- **`overview`** — L0 (`daysWithAnyData`/`windowDays`: how many days in the pattern-detection
+  lookback window carry data on ANY `MetricKey`, built with the `PatternMonitorService` series-
+  cache idiom — one `MetricSeriesService.series()` call per metric via the shared `PatternGate.window`
+  helper; **`MetricKey.WEEKEND` is deliberately excluded from the union** — it is a synthetic
+  calendar 0/1 that never misses a day, so folding it in would always saturate the count to the
+  full window) / L1 (`daily_summary` count + first/last date + embedding counts by kind) / L2
+  (pattern `kind`×`status` rollup, computed in plain Java — a user's live pattern set is small
+  enough that a `GROUP BY` query would be overkill — plus the pending `learned_fact` candidate
+  count) / L3 (confirmed-fact counts by `source`, the sum of `reinforcement_count`, the
+  `include_in_prompt` count) / `jobs` (the three raw cron strings — summary/pattern/hypothesis, the
+  FE never parses them — plus `lastSummaryDate` and `lastDetectedAt`).
+- **`summary`** — the L1 journal: `daily_summary` rows date-desc over an optional `[from,to]`
+  (missing bounds fall back to a wide default so there is only ever one query shape), each flagged
+  `embedded` (a live `memory_embedding` row of kind `daily_summary` exists for that day).
+- **`similar-days`** — the **V2.3 `MemoryRecallService` reused UNCHANGED**: the identical
+  embed→ANN→recency-rerank pipeline the `find_similar_past_days` tool uses, so the chat tool and
+  this UI surface can never disagree about a memory. Deliberately **NOT `@Transactional`** — the
+  embed call is a network call, and no DB connection is held across it, the same reasoning
+  `MemoryRecallService` itself documents. The excerpt is the stored narrative capped at
+  `recall.render-max-chars` (300), the same cap the tool's own render uses.
+- **`llm-usage`** — a new native daily rollup, `LlmLogRepository.aggregatePerDaySince` (+ the
+  `LlmDailyAggregate` interface projection) over `llm_log_history` ([ADR
+  0014](../decisions/0014-llm-call-audit-log.md)), wrapped by `LlmUsageService.perDay` — a sibling
+  of the service's existing `summary()` day/week/month rollup, same calendar-day-in-report-zone
+  semantics. Reads the **whole table**, not a user-scoped slice — cron/async-written rows have a
+  null `created_by`, and an ownership filter would hide exactly the volume that costs the most (the
+  same reasoning `LlmUsageService.summary()` already documents; the app is single-user and the
+  endpoint sits behind JWT, so "all rows" IS "my rows"). **`enabled=false`** (the
+  `mezo.feature.llm-log.enabled` switch off, detected via `auditEnabled()` — the recorder bean's
+  presence IS the switch, no `@Value`) short-circuits **before the query runs** and returns
+  `enabled:false` + an empty `perDay` + zeroed `totals` — the FE renders an honest "audit-log ki
+  van kapcsolva" card, not an error.
+
+`lastDetectedAt` in the `overview` `jobs` block is `max(lastDetectedAt)` over the user's own
+statistical pattern rows — **the exact same "last DETECTION, not last RUN" semantics as
+`PatternMonitorService`'s `lastRunAt`** ([`insights.md`](insights.md) §2.8) — it can read
+null/stale even though the nightly detection job keeps running on schedule.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -532,6 +575,7 @@ COMPLETE (all 14 slices):**
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
 | LLM call audit log (`mezo-2zyu`) | ✅ v1 + read API (`mezo-uakh`) | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (off by default, ON in k8s). **Read side (`mezo-uakh`):** `GET /api/llm-usage/{summary,breakdown,calls,calls/{id}}` (`LlmUsageController`/`LlmUsageService`, ungated + no user filter — endpoint table in [`_platform-api-backend.md`](_platform-api-backend.md) §4c) surfaces the log as the Me **AI-napló** page at `/me/ai-usage` + `/me/ai-usage/:id` ([`me.md`](me.md) §2). [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
+| Memory observatory (`mezo-al1i`) | ✅ v1 | `MemoryObservatoryService` — 4 read-only `GET /api/companion/memory/*` reads (overview/summary/similar-days/llm-usage) over EXISTING data (no new table); `similar-days` reuses `MemoryRecallService` (V2.3) verbatim; `llm-usage` is a new `LlmLogRepository` native daily rollup over `llm_log_history` (ADR 0014). Backs the Insights **Memória** tab ([`insights.md`](insights.md) §2.9). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
@@ -984,6 +1028,10 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 | `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). **mezo-18bx (additive):** pairs carry `mechanismHu` (the catalog's config `mechanism`) + `metricADomain`/`metricBDomain`, coverage rows carry `sourceHu` + `domain` — straight pass-through from `MetricKey`/`PatternPair`, no new computation. |
 | `GET /api/companion/pattern/pair/{pairKey}` | `PatternPairDetailResponse` | 200 · 401 · 404 | **S1 close (`mezo-tk88.3`):** the pattern detail page's one-stop read — `PatternPairDetailService.detail` reuses `PatternMonitorService.toPair` (package-widened) so the gate verdict can never disagree with the Motor dashboard. `pattern` is `null` until the pair goes live (no synthetic row); `events[]` is the `pattern_event` history (first reader, oldest-first); `days[]` are the CURRENT window's aligned points, computed live (never stored — frozen `confirmed`/`rejected` rows still show today's data); `impact` is the "what came of this" block (promoted fact + grounded predictions/experiments/challenges). Unknown `pairKey` (not in the `mezo.companion.patterns.pairs` catalog) → 404 `COMPANION_PATTERN_PAIR_NOT_FOUND`. |
+| `GET /api/companion/memory/overview` | `MemoryOverviewResponse` | 200 · 401 · 404 | `mezo-al1i` — L0–L3 layer counts + the 3 job cron strings, one read-only aggregate (`MemoryObservatoryService.overview`). |
+| `GET /api/companion/memory/summary` | `MemorySummaryListResponse` | 200 · 401 · 404 | `mezo-al1i` — the L1 journal, date-desc, optional `from`/`to`; `embedded` flags a live `memory_embedding` row for that day. |
+| `GET /api/companion/memory/similar-days` | `SimilarDaysResponse` | 200 · 400 · 401 · 404 | `mezo-al1i` — reuses `MemoryRecallService` (V2.3) verbatim; `q` required (1..∞ chars), `k` 1..5 (default 3); below-floor matches never returned (the same honest empty-list rule as the tool). |
+| `GET /api/companion/memory/llm-usage` | `LlmUsageResponse` | 200 · 401 · 404 | `mezo-al1i` — daily rollup over `llm_log_history` (`days` 1..90, default 30); `enabled:false` + empty `perDay` + zeroed `totals` when the `mezo.feature.llm-log.enabled` switch is off — the query never runs. |
 | `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
@@ -1006,7 +1054,16 @@ deferred `predictions`/`experiments` scopes)),
 SSE per-event `data:` payloads; every data line is JSON; `StreamToolCall.name` carries the SAME
 pre-baked `"name(args)"` label as `MessageTool.name`, `type` always `read` in V0.5),
 `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
-includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
+includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1). **`mezo-al1i`** adds
+`MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +
+`MemoryPatternCount {kind, status, count}` + `MemoryFactSourceCount {source, count}` +
+`MemoryEmbeddingCounts {dailySummary, chatTurn}`), `MemorySummaryListResponse {items:
+MemorySummaryItem[]}` (`{date, narrative, embedded}`), `SimilarDaysResponse {items:
+SimilarDayItem[]}` (`{date, excerpt, similarity, finalScore}` — `finalScore` is the wire name for
+`MemoryRecallService`'s `similarity × exp(-age/τ)` score), and `LlmUsageResponse {enabled, perDay:
+LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, costUsd?}` —
+`costUsd` null means no priced row that day, never a fabricated 0). All four schemas are defined in
+`api/feature/companion/companion.yml`, alongside the existing `Companion` tag schemas.
 
 **`PatternPairDetailResponse` (S1 close, `mezo-tk88.3`):** `{pair: PatternMonitorPair,
 pattern: PatternResponse | null, events: PatternEventResponse[], days: AlignedDayResponse[],
@@ -1937,7 +1994,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 ## 10. Key files
 
 **API contract**
-- `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written) and the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`);
+- `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written), the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`) and, since **`mezo-al1i`**, the `memory/{overview,summary,similar-days,llm-usage}` reads on the same `Companion` tag;
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
 **Backend — controllers / services / mapper**
@@ -1957,6 +2014,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3; + `toPatternEventResponse` since S1 close `mezo-tk88.3`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternPairDetailService.java` — **S1 close (`mezo-tk88.3`)** the pattern detail page's read; reuses `PatternMonitorService.toPair` (package-widened) + delegates the impact block to `PatternImpactSource`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternImpactSource.java` — the companion-owned inversion port `PatternPairDetailService` depends on; implemented in `feature.proactive.service.PatternImpactService` (see [`proactive.md`](proactive.md) §10) — keeps the companion↔proactive dependency graph cycle-free in the NEW direction, mirroring `TodayQuestSource`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MemoryObservatoryService.java` — **`mezo-al1i`** the memory-observatory read-only aggregate: `overview`/`summaries`/`similarDays`/`llmUsage`, companion-switch conditional.
 
 **Backend — advisor chain (V1.3)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/CompanionAdvisorChain.java` — the §4.5 retry/degrade orchestrator (`complete` sync / `review` streamed).
@@ -1982,7 +2040,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmPricingService.java` — freezes the day's unit prices onto the row and computes `cost_usd` from THAT snapshot (unknown model ⇒ null).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/context/{LlmCallContext,LlmCallContextHolder}.java` — the thread-scoped caller tag (`runWith`); 32 call sites in 29 classes (`grep -rn "new LlmCallContext(" backend/src/main/java | grep -v LlmCallContext.java`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/entity/{LlmLogEntity,CallKind,CallStatus,PricingSnapshot}.java` — the INSERT-only entity (no `OwnedEntity`, no `is_deleted`) + the jsonb price snapshot.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java` — **`mezo-al1i`** `LlmLogRepository` grew `aggregatePerDaySince` (native daily rollup, report-zone calendar days) alongside the existing `aggregateSince`; new `repository/LlmDailyAggregate.java` projection (day/calls/inputTokens/outputTokens/costUsd).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmUsageService.java` — **`mezo-al1i`** grew `perDay(days)` (a sibling of the existing `summary()` day/week/month rollup) + exposed `auditEnabled()` publicly for `MemoryObservatoryService`'s `enabled` short-circuit.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/controller/LlmUsageController.java` + `service/LlmUsageService.java` — the read side (`mezo-uakh`): `implements LlmUsageApi` (ungated, no `CurrentUserId`); `summary`/`breakdown`/`listCalls`/`call`, all `@Transactional(readOnly = true)` so the period aggregates share one DB snapshot.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
@@ -2001,7 +2060,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the journal's `embedded` flag lookup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `COMPANION_SWITCH` + extraction/advisors sub-switches.
 - `backend/src/main/resources/application.yml` — `mezo.feature.companion.enabled` + `mezo.companion.llm.*`/`chat.*` + `spring.ai.google.genai.api-key`.
@@ -2021,6 +2082,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionMemoryOverviewApiIT,CompanionMemorySummaryApiIT,CompanionMemorySimilarDaysApiIT,CompanionMemoryLlmUsageApiIT,CompanionMemoryLlmUsageDisabledIT,CompanionMemorySwitchOffIT}.java` — the `mezo-al1i` memory-observatory batch: populated + empty overview, range-filtered summaries, the deterministic fake-embedding similar-days path, the LLM-usage rollup + its `enabled:false` disabled-audit branch, and the switch-off 404 across all 4 endpoints; `CompanionApiSwitchOffIT` extended to assert the memory/overview route (one of the four), with `CompanionMemorySwitchOffIT` proving bean absence covers all four.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator,KnowledgeFactPopulator,LearnedFactPopulator}.java` + `support/ResetDatabase.java` (companion tables in the TRUNCATE list).
 - `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception) + the V0.5 `companion_tools_are_internal_sphere_only` rule.
 
@@ -2035,7 +2097,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `frontend/src/data/insights/knowledge.ts` — the mock seeds (`facts`, `candidateSeed`, `edges`) + the 4-category labels/colors.
 - `frontend/src/features/insights/pages/ChatPage.tsx` — the real dual-mode chat surface ([`insights.md`](insights.md) §2.5).
 - `frontend/src/features/insights/pages/KnowledgeListPage.tsx` — the real dual-mode L2 confirm surface ([`insights.md`](insights.md) §2.4).
-- `frontend/src/test/msw/handlers.ts` — companion fixtures (chat + facts/candidates) + the SSE stream handler.
+- `frontend/src/features/insights/pages/MemoryPage.tsx` + `data/insights/memory{,Api,Hooks}.ts` — **`mezo-al1i`** the Memória tab (9th sub-tab, read-only over the 4 endpoints above); full breakdown in [`insights.md`](insights.md) §2.9, not duplicated here.
+- `frontend/src/test/msw/handlers.ts` — companion fixtures (chat + facts/candidates + the `mezo-al1i` memory/{overview,summary,similar-days,llm-usage} defaults) + the SSE stream handler.
 - `k8s/backend/deployment.yaml` — `MEZO_FEATURE_COMPANION_ENABLED=false` until the Gemini secret lands.
 
 **Docs (link, don't duplicate)**

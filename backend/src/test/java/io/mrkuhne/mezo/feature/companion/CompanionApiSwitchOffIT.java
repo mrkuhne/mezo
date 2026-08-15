@@ -44,4 +44,13 @@ class CompanionApiSwitchOffIT extends ApiIntegrationTest {
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
+
+    @Test
+    void testGetMemoryOverview_shouldReturn404_whenCompanionSwitchedOff() {
+        // mezo-al1i memória-obszervatórium — ugyanaz a bean-határ kapuzza
+        String body = getForBody(
+                "/api/companion/memory/overview", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
 }

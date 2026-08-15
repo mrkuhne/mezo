@@ -612,6 +612,51 @@ export interface ReplanScenario {
 // --- Tudás (knowledge) ---
 // V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
+/** A knowledge_fact source oszlopa a dróton — chat-kivonat / minta-promóció / kézi felvétel. */
+export type FactSource = 'chat' | 'pattern' | 'manual'
+
+export interface MemoryPatternCount { kind: string; status: string; count: number }
+export interface MemoryFactSourceCount { source: FactSource; count: number }
+
+/** A memória-obszervatórium áttekintés (mezo-al1i) — L0→L3 réteg-számok + cron-ütemezés. */
+export interface MemoryOverview {
+  l0: { daysWithAnyData: number; windowDays: number }
+  l1: {
+    summaryCount: number
+    firstDate: string | null
+    lastDate: string | null
+    embeddings: { dailySummary: number; chatTurn: number }
+  }
+  l2: { patterns: MemoryPatternCount[]; pendingFactCandidates: number }
+  l3: { facts: MemoryFactSourceCount[]; totalReinforcements: number; factsInPrompt: number }
+  jobs: {
+    summaryCron: string
+    patternCron: string
+    hypothesisCron: string
+    lastSummaryDate: string | null
+    lastDetectedAt: string | null
+  }
+}
+
+export interface MemorySummaryItem { date: string; narrative: string; embedded: boolean }
+
+/** Egy hasonló-nap találat — MINDKÉT pontszám kimegy (similarity × exp(-age/τ) mechanika). */
+export interface SimilarDay { date: string; excerpt: string; similarity: number; finalScore: number }
+
+export interface LlmUsageDay {
+  date: string
+  calls: number
+  inputTokens: number
+  outputTokens: number
+  costUsd: number | null
+}
+
+export interface MemoryLlmUsage {
+  enabled: boolean
+  perDay: LlmUsageDay[]
+  totals: { calls: number; inputTokens: number; outputTokens: number; costUsd: number | null }
+}
+
 export interface KnowledgeFact {
   id: string
   text: string
@@ -620,6 +665,10 @@ export interface KnowledgeFact {
   reinforced: number
   /** V3.3 evidence link — the promoting pattern's title on source=pattern facts. */
   patternTitle?: string
+  /** A tény eredete — az Audit nézet provenancia-chipje (a wire-ön V1.1 óta ott van). */
+  source: FactSource
+  /** Az utolsó megerősítés időpontja (ISO), null ha még sosem erősítették meg újra. */
+  lastReinforcedAt: string | null
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
 export interface FactCandidate { id: string; text: string; category: FactCategory }
