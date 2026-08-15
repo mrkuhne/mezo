@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.BriefingPopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
@@ -74,6 +75,7 @@ import org.springframework.context.annotation.Import;
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
     DailySummaryPopulator.class, PatternPopulator.class, BriefingPopulator.class,
+    CompanionMessagePopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, HeartbeatNotePopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,

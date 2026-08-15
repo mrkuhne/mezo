@@ -615,3 +615,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608141120_mezo-tk88.2_challenge_source_pattern.sql
+  - changeSet:
+      id: "1.0.0:202608151200_mezo-gst9_create_companion_message"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151200_mezo-gst9_create_companion_message.sql
