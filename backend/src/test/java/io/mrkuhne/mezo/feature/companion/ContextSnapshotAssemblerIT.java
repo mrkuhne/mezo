@@ -139,6 +139,29 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRender_shouldShowLatestMeasurementBesideTrend_whenWeighInsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        weightLogPopulator.createWeightLog(owner, today.minusDays(3), new BigDecimal("97.5"));
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("96.4"));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: 96.4 kg (" + today + ")");
+        assertThat(snapshot).contains("súlytrend:");
+    }
+
+    @Test
+    void testRender_shouldShowNoDataMeasurement_whenNoWeighIns() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: nincs adat");
+    }
+
+    @Test
     void testRender_shouldPickCurrentWeekSegmentAndPlanner_whenActiveGoalWithPrescription() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();

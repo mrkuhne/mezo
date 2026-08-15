@@ -750,9 +750,11 @@ defaults (7 days / 4 weeks).
 
 **The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
 (`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with eight lines in
-render() order — `[Profil]` (biometric profile + `WeightTrendService` trend; an empty weigh-in
-series renders `nincs adat`, and rates are omitted while `dataSufficiency = NONE` — a zero trend
-would be a fabricated number), `[Cél]` (active goal, derived current week
+render() order — `[Profil]` (biometric profile + the latest actual weigh-in beside the
+`WeightTrendService` EWMA trend — `WeightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc`
+renders `mérés: {weight} kg ({date})`, or `mérés: nincs adat` with no weigh-in row; an empty
+EWMA series renders `súlytrend: nincs adat`, and rates are omitted while `dataSufficiency = NONE`
+— a zero trend would be a fabricated number), `[Cél]` (active goal, derived current week
 `DAYS(startDate→today)/7+1`, the prescription segment whose `fromWeek..toWeek` contains it, the
 goal's `mealsPerDay`, and the day's `ébredés`/`lefekvés` anchor resolved via `SleepAnchorPort`
 from the sleep goal — never the retired goal wake/bed columns; the resolver always returns an
@@ -1362,8 +1364,8 @@ compile error.
 
 ### 5.5 Companion ← other features (✅ V0.3 wired — read-only)
 **`ContextSnapshotAssembler` is live**: companion now injects reads from **twelve** other
-features — `biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `SleepLogRepository`,
-`CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
+features — `biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `WeightLogRepository`,
+`SleepLogRepository`, `CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
 (`MesocycleRepository`, `GymScheduleService`, `SportService`, `WorkoutSessionRepository.findDoneInstanceDates`,
 `SportSessionRepository`/`RunSessionLogRepository` since-date finders), `gamification`
 (`GamificationService.getProfile`), `progression` (`ProgressionService.getProfile`,
@@ -1558,9 +1560,10 @@ companion voice (`"Te vagy a mezo"`, `"retatrutid"`), the windowed history block
 (`"Daniel: …"`/`"Mezo: …"`), and that the current message rides as the `user=[…]` param, not the
 history.
 
-**`ContextSnapshotAssemblerIT` (V0.3, 17 tests)** — the snapshot is fully assertable without any
+**`ContextSnapshotAssemblerIT` (V0.3, 21 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
-targets still render), profile+trend, current-week segment + planner selection, train digest +
+targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
+`nincs adat` with no weigh-in row), current-week segment + planner selection, train digest +
 schedules, digest-window exclusion, **tomorrow's dated gym+sport+run resolution (mezo-xixu — the
 regression guard for the observed hallucination bug: tomorrow's meso-template gym day + exercises,
 the matching sport-schedule slot, the active running block's prescribed session for that weekday,

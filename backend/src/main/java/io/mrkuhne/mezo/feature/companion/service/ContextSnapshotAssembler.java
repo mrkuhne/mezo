@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRep
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -91,6 +92,7 @@ public class ContextSnapshotAssembler {
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
+    private final WeightLogRepository weightLogRepository;
     private final GoalRepository goalRepository;
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleService gymScheduleService;
@@ -144,6 +146,11 @@ public class ContextSnapshotAssembler {
             }
             b.append(", ").append("M".equals(profile.getSex()) ? "férfi" : "nő");
         }
+        b.append("; mérés: ");
+        weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
+                .ifPresentOrElse(
+                        w -> b.append(num(w.getWeightKg())).append(" kg (").append(w.getDate()).append(')'),
+                        () -> b.append(NO_DATA));
         b.append("; súlytrend: ");
         // empty series = no weigh-ins at all — the service's zeros would read as fabricated numbers
         if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
