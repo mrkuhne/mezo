@@ -97,7 +97,7 @@ mindent), csak `setPhase(...)`-t. A navigáló csempék és a chat-gomb a jelenl
 - **`ActivityLogSheet`** önellátó (saját hookjai vannak, csak `onClose` kell) — közvetlenül renderelhető.
 - **`SleepLogSheet`** `onSave: (input: SleepLogInput) => void`-ot vár, amit a hívó a `useSleep()`-ből ad.
   Hogy a `useSleep()` lekérdezés ne fusson le minden `+` koppintásra, egy 8 soros wrapper viszi:
-  `features/quickinput/components/QuickSleepSheet.tsx` — meghívja a `useSleep()`-et és továbbadja a
+  `features/quickinput/sheets/QuickSleepSheet.tsx` — meghívja a `useSleep()`-et és továbbadja a
   `logSleep`-et. Így mindhárom quick-sheet egységesen „csak `onClose`" felületű, és a hook csak akkor
   mount-olódik, amikor tényleg kell.
 - **`CheckInSheet`** `slot` + `slotIdx` + `onSave`-et vár. Ehhez az adat **már a menü fázisban** kell
@@ -147,9 +147,11 @@ renderelődik. Az `ActivityLogSheet` a `LevelUpProvider` alatt vár renderelést
 - **Két sheet egymáson.** A fázis-váltásnál a menü unmount-ol, mielőtt a cél-sheet mount-ol — a `return`
   ágak kizárják az átfedést. A menü nem játssza le a kifutó animációját (nincs `close()` hívás), a
   cél-sheet a szokásos felcsúszással érkezik; ez a „csere" érzet szándékos.
-- **`useCheckins()` a menüben.** Ha a query még tölt, `checkins` üres → a Check-in csempe a „mind kész"
-  ágra esne. Ezért a hint/akció döntése a betöltés alatt a **navigáló** fallback marad (ez a jelenlegi,
-  változatlan viselkedés), és csak betöltött adatnál nyit sheetet.
+- **`useCheckins()` a menüben.** A hook sosem ad üres tömböt: mock módban a 4 elemű `initialCheckins`
+  szinkron, valós módban `buildDaySlots(rows ?? [])` a betöltés alatt is előállítja a 4 kanonikus slotot
+  (fali óra szerinti `now`/`pending`/`skipped` állapottal). A betöltés alatti legrosszabb eset tehát nem
+  hibás ág, hanem egy **frissítendő állapot** — ugyanaz, amit a Today ma is mutat ugyanezzel a hookkal.
+  Ezért nincs külön loading-kezelés.
 
 ## 7. Dokumentáció
 
