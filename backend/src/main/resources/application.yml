@@ -85,7 +85,9 @@ mezo:
     bootstrap-uncertainty-kcal: 300
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
-    # Binds onto NutritionTargetsProperties; replaces the hardcoded mock 2500/3100 floor.
+    # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —
+    # the active goal's prescribed recept segment wins when one covers the date; c/f/water
+    # are never prescribed, so those always come from here.
     kcal: 3100
     p: 220
     c: 380
