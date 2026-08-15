@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
 import { confidenceMeta, findingSentence, pairLine } from '@/features/insights/logic/findings'
+import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { PatternGateVerdict, PatternMonitorPair } from '@/data/types'
 
 const VERDICT_COLOR: Record<PatternGateVerdict, { color: string; bg: string }> = {
@@ -30,33 +31,6 @@ function verdictPillText(pair: PatternMonitorPair): string {
       return 'NEM MOZDUL'
     case 'frozen':
       return 'FAGYASZTVA'
-  }
-}
-
-/** A szűk keresztmetszet kulcsához tartozó magyar címke a pár saját két metrikájából. */
-function bottleneckLabel(pair: PatternMonitorPair): string {
-  return pair.bottleneckMetricKey === pair.metricBKey ? pair.metricBLabel : pair.metricALabel
-}
-
-/**
- * A nem-élő verdiktek őszinte mondata — sosem állít többet, mint amit a verdikt fed. A few_days
- * cselekvésre fordítva (🎯 nudge); a no_data megkülönböztetése változatlan: `bottleneckCoveredDays
- * === 0` esetén nevezzük csak meg az üres metrikát (aligned==0 ≠ „az egyik metrika üres").
- */
-export function verdictSentence(pair: PatternMonitorPair, bottleneckCoveredDays: number | null): string {
-  switch (pair.verdict) {
-    case 'live':
-      return `Elég adat van — a motor számolja ezt a párt.`
-    case 'few_days':
-      return `Még ${pair.missingDays} nap adat ebből: ${bottleneckLabel(pair)} — és ez a pár életre kel!`
-    case 'no_data':
-      return bottleneckCoveredDays === 0
-        ? `Nincs még illeszkedő nap — a(z) ${bottleneckLabel(pair)} üres ebben az ablakban.`
-        : `Nincs még illeszkedő nap — nincs átfedő nap a(z) ${pair.metricALabel} és a(z) ${pair.metricBLabel} között ebben az ablakban.`
-    case 'degenerate':
-      return `A(z) ${bottleneckLabel(pair)} nem mozdul az ablakban — így nincs mit korrelálni.`
-    case 'frozen':
-      return `Te ítélted meg (${pair.status === 'confirmed' ? 'megerősítve' : 'elvetve'}) — az éjszakai job nem számolja újra.`
   }
 }
 

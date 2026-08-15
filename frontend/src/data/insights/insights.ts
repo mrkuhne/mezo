@@ -11,6 +11,11 @@ import type {
 
 export const MIN_PATTERN_CONFIDENCE = 0.65
 
+/** A döntés-inbox erősség-küszöbe (spec 2026-08-14): |r| >= minAbsR ÉS p <= maxP — az
+ *  "ígéretes jel" határa (confidenceMeta). Alatta a lelet "nincs összefüggés" — eredmény,
+ *  nem döntés-kérés. */
+export const STRONG_SIGNAL = { minAbsR: 0.3, maxP: 0.15 }
+
 export function patternCategoryColor(cat: PatternCategory): string {
   return `var(--cat-${cat})`
 }
