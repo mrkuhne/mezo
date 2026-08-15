@@ -17,4 +17,7 @@ public interface PredictionRepository extends JpaRepository<PredictionEntity, UU
     /** The validation run's read: pending rows whose window has closed. */
     List<PredictionEntity> findByCreatedByAndStatusAndValidToBefore(
             UUID createdBy, String status, LocalDate validTo);
+
+    /** S2 (mezo-tk88.2): the pattern-detail page's impact list — predictions grounded on one pattern. */
+    List<PredictionEntity> findByCreatedByAndSourcePatternIdAndDeletedFalse(UUID createdBy, UUID sourcePatternId);
 }

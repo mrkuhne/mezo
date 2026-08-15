@@ -18,4 +18,7 @@ public interface ChallengeRepository extends JpaRepository<ChallengeEntity, UUID
 
     /** The outcome run's read: challenges in a given status for a user. */
     List<ChallengeEntity> findByCreatedByAndStatus(UUID createdBy, String status);
+
+    /** S2 (mezo-tk88.2): the pattern-detail page's impact list — challenges grounded on one pattern. */
+    List<ChallengeEntity> findByCreatedByAndSourcePatternIdAndDeletedFalse(UUID createdBy, UUID sourcePatternId);
 }

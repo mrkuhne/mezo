@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-07-29
+updated: 2026-08-14
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -264,7 +264,10 @@ an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
   validation (invalid `metricKey`/`expectedDirection` ⇒ row dropped as unvalidatable), capped at
   `max-per-week`. **Emptiness gate = zero CONFIRMED patterns** ⇒ empty list (never a fabricated
   forecast); existing week ⇒ empty (idempotent, no LLM call). The model only SELECTS (pattern by
-  index, metric + direction from the offered lists).
+  index, metric + direction from the offered lists). **S2 (`mezo-tk88.2`)** — `resolveSourcePatternId`
+  (same index resolution as `resolveConfidence`) stores the grounding pattern's id on
+  `sourcePatternId` (bounds-checked, else null); `PredictionRepository.
+  findByCreatedByAndSourcePatternIdAndDeletedFalse` is the pattern-detail page's impact-list read.
 - **`PredictionValidationService`** — pure-code, LLM-free: for each `pending` row whose window has
   closed (`valid_to < today`), compares the window's metric average/count against the **preceding 7
   days** and flips to `validated`/`missed` with a code-formatted HU `actual`. The v1 metric catalog
@@ -306,7 +309,11 @@ an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
   `completeSmart`** → strict-JSON `{experiments:[{title, hypothesis, patternIndex, metricKey,
   expectedDirection, totalDays}]}` → per row catalog/enum validation (invalid ⇒ dropped) +
   `clampDays` to `[min-days, max-days]`. **Bounded by the OPEN cap** (`max-open` proposed+active) —
-  a no-op when the cap is met (§9 decision y); zero CONFIRMED patterns ⇒ no proposals.
+  a no-op when the cap is met (§9 decision y); zero CONFIRMED patterns ⇒ no proposals. **S2
+  (`mezo-tk88.2`)** — the same `resolveSourcePatternId` idiom stores the grounding pattern's id on
+  `sourcePatternId` (this generator carries no `confidence` field, so this is the only
+  pattern-derived field it persists); `ExperimentRepository.
+  findByCreatedByAndSourcePatternIdAndDeletedFalse` is the pattern-detail page's impact-list read.
 - **`ExperimentOutcomeService`** — deterministic, LLM-free: for each `active` experiment whose window
   closed (`start_date + total_days <= today`), the shared **`MetricWindowEvaluator`** compares the
   experiment window `[start, start+total-1]` vs the equally-long baseline before start → `completed`
@@ -364,7 +371,10 @@ evaluator**. Design of record:
   target-field validation (PR needs weight+reps, Depth needs `targetRir`, Volume needs `targetSets`;
   missing ⇒ DROP — unevaluatable), pattern-copied-or-null confidence, model-selected `refs` by index,
   capped at `max-per-workout` (default 3). Structured targets required (decision, §9); no fabricated
-  confidence/refs. **Generation guard (`mezo-cd8s`)** — the lazy prep-read never generates once the
+  confidence/refs. **S2 (`mezo-tk88.2`)** — `resolveSourcePatternId` (same index resolution as
+  `resolveConfidence`) stores the grounding pattern's id on `sourcePatternId` beside `confidence`;
+  `ChallengeRepository.findByCreatedByAndSourcePatternIdAndDeletedFalse` is the pattern-detail
+  page's impact-list read. **Generation guard (`mezo-cd8s`)** — the lazy prep-read never generates once the
   day's instance is **`completed`** (`ProactiveChallengeService.instanceCompleted` via
   `findFirstByCreatedByAndTemplateSessionIdAndDateOrderByCreatedAtDesc`): a finished workout is over,
   so no new proposal appears post-hoc.
@@ -1739,15 +1749,15 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentJob.java` — **P2** two `@Scheduled` crons (Mon-06:45 `runPropose` + daily-06:20 `runOutcome`, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentOutcomeService.java` — **P2** deterministic outcome eval (active window-closed → completed via `MetricWindowEvaluator`; null = inconclusive).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveChallengeService.java` — **HBWI** the challenge read + WRITE path (`getChallenges` = list · lazy generate (`date==today`) · lazy resolve accepted; `decide` with the 404/409 guards; dismissed excluded).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume/overload hit/miss (`overload` = the null-weight-tolerant PR mirror); no logged sets ⇒ inconclusive (`outcome_good null`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeJob.java` — **HBWI** single `@Scheduled` outcome-backstop cron (daily 06:25 `runOutcome` → `evaluateDue`, per-user isolation, three-switch-gated `CHALLENGE_JOB_SWITCH`); NO propose cron.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatGenerator.java` — **H1** pure-code `gather` (snapshot + facts + latest summary + `MAI BRIEFING` dedupe block + `ABLAK:` instruction) + one **cheap-tier** `CompanionLlm.complete` + flat prose; `HEARTBEAT_MARKER` + `PROMPT`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` persists the grounding pattern id on `sourcePatternId` (the only pattern-derived field this generator stores).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (…+ `toPredictionResponse` + `toExperimentResponse` + **`toChallengeResponse`** (`exerciseName`→`exercise`, `refs.refs()`→`List<ChallengeRef>`, derived `typeLabel`/`target` via `@Mapping(expression=…)`); Instant → UTC OffsetDateTime, BigDecimal → Double default methods).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ChallengeDisplay.java` — **HBWI** the static `typeLabel`/`target` derivation helpers, deliberately OUTSIDE the `@Mapper` interface (§9 gotcha hh — a String→String default method there would be auto-selected as an implicit converter for every String property).
 
@@ -1756,16 +1766,16 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/WeeklySuggestionEntity.java` — **W1** the owned entity (flat `weekStart`/`prose`/`generatedAt`, no jsonb).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{MemoirEntity,MemoirAnchorsEnvelope}.java` — **W2** the owned entity (`weekStart`/`title`/`body`/`generatedAt` + `anchors` typed jsonb) + the `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}` record.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/HeartbeatNoteEntity.java` — **H1** the owned entity (flat `noteDate`/`windowKey`/`kind`/`content`/`generatedAt`) + the window/kind constants.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/PredictionEntity.java` — **P1** the owned entity (flat `weekStart`/`title`/`basis`/`confidence?`/`metricKey`/`expectedDirection`/`validFrom`/`validTo`/`status`/`actual?`/`generatedAt`) + the status/direction/metric constants (metric+direction SHARED).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/ExperimentEntity.java` — **P2** the owned entity (flat `title`/`hypothesis`/`status`(@Pattern)/`metricKey`/`expectedDirection`(@Pattern)/`startDate?`/`totalDays`/`outcome?`/`outcomeGood?`/`generatedAt`) + the lifecycle constants.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{ChallengeEntity,ChallengeRefsEnvelope}.java` — **HBWI** the owned entity (`templateSessionId`/`workoutDate`/`exerciseId`/`exerciseName`/`type`/`status`/`risk`/`title`/`why`/`glory`/structured targets/`confidence?`/`outcome?`/`outcomeGood?`/`generatedAt` + `refs` typed jsonb) + the `ChallengeRefsEnvelope{List<Ref(kind,label)>}` record; carries the `TYPE_*`/`STATUS_*`/`RISK_*` constants.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/PredictionEntity.java` — **P1** the owned entity (flat `weekStart`/`title`/`basis`/`confidence?`/`metricKey`/`expectedDirection`/`validFrom`/`validTo`/`status`/`actual?`/`generatedAt`/**`sourcePatternId?`** (S2, `mezo-tk88.2`, loose ref, `ON DELETE SET NULL`)) + the status/direction/metric constants (metric+direction SHARED).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/ExperimentEntity.java` — **P2** the owned entity (flat `title`/`hypothesis`/`status`(@Pattern)/`metricKey`/`expectedDirection`(@Pattern)/`startDate?`/`totalDays`/`outcome?`/`outcomeGood?`/`generatedAt`/**`sourcePatternId?`** (S2, `mezo-tk88.2`)) + the lifecycle constants.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{ChallengeEntity,ChallengeRefsEnvelope}.java` — **HBWI** the owned entity (`templateSessionId`/`workoutDate`/`exerciseId`/`exerciseName`/`type`/`status`/`risk`/`title`/`why`/`glory`/structured targets/`confidence?`/`outcome?`/`outcomeGood?`/`generatedAt`/**`sourcePatternId?`** (S2, `mezo-tk88.2`) + `refs` typed jsonb) + the `ChallengeRefsEnvelope{List<Ref(kind,label)>}` record; carries the `TYPE_*`/`STATUS_*`/`RISK_*` constants.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/BriefingRepository.java` — `findByCreatedByAndBriefingDate` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/MemoirRepository.java` — **W2** `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/HeartbeatNoteRepository.java` — **H1** `findByCreatedByAndNoteDateAndWindowKey` + `findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/PredictionRepository.java` — **P1** `existsByCreatedByAndWeekStart` + `findByCreatedByOrderByValidFromDescGeneratedAtDesc` + `findByCreatedByAndStatusAndValidToBefore` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ExperimentRepository.java` — **P2** `findByIdAndCreatedByAndDeletedFalse` + `findByCreatedByAndStatusInOrderByGeneratedAtDesc` + `findByCreatedByAndStatusOrderByGeneratedAtDesc` + `countByCreatedByAndStatusIn` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ChallengeRepository.java` — **HBWI** `findByCreatedByAndTemplateSessionIdAndWorkoutDate…` (the session/day list) + `findByIdAndCreatedBy…` (decide) + the accepted-due finder for `evaluateDue` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/PredictionRepository.java` — **P1** `existsByCreatedByAndWeekStart` + `findByCreatedByOrderByValidFromDescGeneratedAtDesc` + `findByCreatedByAndStatusAndValidToBefore` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2` — the pattern-detail impact list, a later slice consumes it) (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ExperimentRepository.java` — **P2** `findByIdAndCreatedByAndDeletedFalse` + `findByCreatedByAndStatusInOrderByGeneratedAtDesc` + `findByCreatedByAndStatusOrderByGeneratedAtDesc` + `countByCreatedByAndStatusIn` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`) (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ChallengeRepository.java` — **HBWI** `findByCreatedByAndTemplateSessionIdAndWorkoutDate…` (the session/day list) + `findByIdAndCreatedBy…` (decide) + the accepted-due finder for `evaluateDue` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`) (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/weight/repository/WeightLogRepository.java` — **P1** added `findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc` (the validation window read; sleep already had the sibling).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.*, weekly.cron, memoir.cron, heartbeat.*, prediction.*, experiment.{propose-cron,outcome-cron,max-open,min-days,max-days}, challenge.{outcome-cron,max-per-workout}}` (@Validated, nested records).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).

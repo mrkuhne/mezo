@@ -71,7 +71,8 @@ class PredictionGeneratorIT extends AbstractIntegrationTest {
     @Test
     void testGenerate_shouldPersistScriptedRows_whenSentinelPlanted() {
         UUID user = userPopulator.createUser("pg-gen@test.local").getId();
-        patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
+        PatternEntity confirmedPattern =
+                patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
         checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
                 "[fake-prediction:{\"predictions\":[{\"title\":\"Súly csökken\",\"basis\":\"Reta.\","
                         + "\"patternIndex\":0,\"metricKey\":\"weight_trend\","
@@ -83,9 +84,24 @@ class PredictionGeneratorIT extends AbstractIntegrationTest {
         assertThat(p.getMetricKey()).isEqualTo(PredictionEntity.METRIC_WEIGHT_TREND);
         assertThat(p.getExpectedDirection()).isEqualTo(PredictionEntity.DIRECTION_DOWN);
         assertThat(p.getConfidence()).isNull();   // COPIED from the statistical pattern (null)
+        assertThat(p.getSourcePatternId()).isEqualTo(confirmedPattern.getId());
         assertThat(p.getValidFrom()).isEqualTo(WEEK_START);
         assertThat(p.getValidTo()).isEqualTo(WEEK_START.plusDays(6));
         assertThat(p.getStatus()).isEqualTo(PredictionEntity.STATUS_PENDING);
+    }
+
+    @Test
+    void testGenerate_shouldLeaveSourcePatternIdNull_whenPatternIndexOutOfRange() {
+        UUID user = userPopulator.createUser("pg-oob@test.local").getId();
+        patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
+        checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
+                "[fake-prediction:{\"predictions\":[{\"title\":\"Alvás javul\",\"basis\":\"Reta.\","
+                        + "\"patternIndex\":9,\"metricKey\":\"sleep_avg\","
+                        + "\"expectedDirection\":\"up\"}]}]");
+        List<PredictionEntity> saved = generator.generate(user, WEEK_START);
+        assertThat(saved).hasSize(1);
+        // patternIndex out of range → NO grounding link, row still saved (mirror of resolveConfidence null)
+        assertThat(saved.getFirst().getSourcePatternId()).isNull();
     }
 
     @Test

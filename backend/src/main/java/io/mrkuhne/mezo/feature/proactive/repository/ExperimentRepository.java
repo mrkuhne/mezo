@@ -21,4 +21,7 @@ public interface ExperimentRepository extends JpaRepository<ExperimentEntity, UU
 
     /** The propose cap: how many open (proposed + active) experiments the user already has. */
     long countByCreatedByAndStatusIn(UUID createdBy, Collection<String> statuses);
+
+    /** S2 (mezo-tk88.2): the pattern-detail page's impact list — experiments grounded on one pattern. */
+    List<ExperimentEntity> findByCreatedByAndSourcePatternIdAndDeletedFalse(UUID createdBy, UUID sourcePatternId);
 }

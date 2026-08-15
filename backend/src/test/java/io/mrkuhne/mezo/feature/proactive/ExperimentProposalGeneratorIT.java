@@ -66,7 +66,8 @@ class ExperimentProposalGeneratorIT extends AbstractIntegrationTest {
     @Test
     void testPropose_shouldPersistScriptedProposal_whenSentinelPlanted() {
         UUID user = userPopulator.createUser("epg-gen@test.local").getId();
-        patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
+        PatternEntity confirmedPattern =
+                patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
         checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
                 "[fake-experiment:{\"experiments\":[{\"title\":\"Esti mag\",\"hypothesis\":\"Korábbi mag.\","
                         + "\"patternIndex\":0,\"metricKey\":\"sleep_avg\","
@@ -79,6 +80,21 @@ class ExperimentProposalGeneratorIT extends AbstractIntegrationTest {
         assertThat(e.getMetricKey()).isEqualTo(PredictionEntity.METRIC_SLEEP_AVG);
         assertThat(e.getTotalDays()).isEqualTo(28);   // clamped from 90 to max-days
         assertThat(e.getStartDate()).isNull();
+        assertThat(e.getSourcePatternId()).isEqualTo(confirmedPattern.getId());
+    }
+
+    @Test
+    void testPropose_shouldLeaveSourcePatternIdNull_whenPatternIndexOutOfRange() {
+        UUID user = userPopulator.createUser("epg-oob@test.local").getId();
+        patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
+        checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
+                "[fake-experiment:{\"experiments\":[{\"title\":\"Esti mag\",\"hypothesis\":\"Korábbi mag.\","
+                        + "\"patternIndex\":9,\"metricKey\":\"sleep_avg\","
+                        + "\"expectedDirection\":\"up\",\"totalDays\":14}]}]");
+        List<ExperimentEntity> saved = generator.propose(user);
+        assertThat(saved).hasSize(1);
+        // patternIndex out of range → NO grounding link, row still saved (mirror of resolveConfidence null)
+        assertThat(saved.getFirst().getSourcePatternId()).isNull();
     }
 
     @Test

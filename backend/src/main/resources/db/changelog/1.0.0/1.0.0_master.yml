@@ -594,3 +594,24 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608141000_mezo-tk88.1_create_pattern_event.sql
+  - changeSet:
+      id: "1.0.0:202608141100_mezo-tk88.2_prediction_source_pattern"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608141100_mezo-tk88.2_prediction_source_pattern.sql
+  - changeSet:
+      id: "1.0.0:202608141110_mezo-tk88.2_experiment_source_pattern"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608141110_mezo-tk88.2_experiment_source_pattern.sql
+  - changeSet:
+      id: "1.0.0:202608141120_mezo-tk88.2_challenge_source_pattern"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608141120_mezo-tk88.2_challenge_source_pattern.sql
