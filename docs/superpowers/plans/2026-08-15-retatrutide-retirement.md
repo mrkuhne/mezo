@@ -720,9 +720,21 @@ Az érintett tesztek és a várt új assertek:
   const medCycleDay = Number.isFinite(rawDay) ? Math.min(7, Math.max(1, rawDay)) : cycle.cycleDay
 ```
 
-Az `isMockMode` import törölhető ebből a hookból, **ha** a fájl máshol nem használja (`rg -n 'isMockMode' frontend/src/data/today/todayHooks.ts`). A `today.ts` `medCycleDay: 3` mezője és a `TodayMeta.medCycleDay` típusmező marad (a `useToday()` real ága tölti), de a `useToday` real-ági kommentje frissül: `medCycleDay: today.medCycleDay, // unused — the scenario derives it from useMedication`.
+Az `isMockMode` import törölhető ebből a hookból, **ha** a fájl máshol nem használja (`rg -n 'isMockMode' frontend/src/data/today/todayHooks.ts`).
 
-A `hooks.test.tsx` „defaults" tesztje ennek megfelelően:
+- [ ] **Step 9b: A holttá vált `TodayMeta.medCycleDay` mező törlése**
+
+A `TodayMeta.medCycleDay`-t **kizárólag** a `useTodayScenario` fallbackje olvasta (`todayHooks.ts:40`); a Step 9 után a mező sehol nem kerül felhasználásra, csak beállításra — halott adat. Töröld mind a három helyről:
+
+- `frontend/src/data/types.ts` — a `TodayMeta` interfészből ki a `medCycleDay: number;` (a `TodayScenario.medCycleDay` **marad**, azt a feature-ök olvassák)
+- `frontend/src/data/today/today.ts:14` — a `medCycleDay: 3,` sor
+- `frontend/src/data/today/todayHooks.ts:107` — a `medCycleDay: today.medCycleDay,` sor a `useToday()` real ágából
+
+Ellenőrzés: `rg -n 'medCycleDay' frontend/src` — csak a `TodayScenario` típus, a `useTodayScenario` és annak fogyasztói (`FuelPlanPage`) maradhatnak.
+
+- [ ] **Step 9c: A `hooks.test.tsx` tesztjeinek igazítása**
+
+A „defaults" teszt várt értéke:
 
 ```tsx
 test('useTodayScenario defaults: medium, medCycleDay 0 (nincs gyógyszer), niggle on, vulnerable off, not anchor, no ritual override', () => {
@@ -730,6 +742,10 @@ test('useTodayScenario defaults: medium, medCycleDay 0 (nincs gyógyszer), niggl
   expect(result.current).toEqual({ dayState: 'medium', medCycleDay: 0, niggle: true, vulnerable: false, anchorMode: false, ritual: null })
 })
 ```
+
+A `hooks.test.tsx:80` tesztjét (`'useTodayScenario (mock mode): retaDay defaults to today.retaDay, unchanged'`) **töröld** — a mező, amit bizonyított, megszűnt.
+
+A real-módú `useTodayScenario` teszt kommentje is elavul (`'before the ["medication"] query resolves the cycle is the ghost (retaDay 0), so the scenario falls back to the mock default (3)'`) — az új viselkedés: a feloldás előtt a ghost 0, és a scenario **is** 0-t ad, mert nincs fallback.
 
 - [ ] **Step 10: Frontend kapu**
 
