@@ -21,7 +21,7 @@ describe('FuelPlanPage (mock mode)', () => {
   it('renders the demo title, weekly stats, reta strip and rhythm grid', () => {
     renderView()
     expect(screen.getByText('Máj 18 – 24')).toBeInTheDocument()
-    expect(screen.getByText(/Reta cycle · 7 nap/)).toBeInTheDocument()
+    expect(screen.getByText(/Gyógyszer-ciklus · 7 nap/)).toBeInTheDocument()
     expect(screen.getByText('D3')).toBeInTheDocument()
     expect(screen.getByText('Heti supplement-térkép')).toBeInTheDocument()
     expect(screen.getByText('92%')).toBeInTheDocument()
@@ -52,7 +52,7 @@ describe('FuelPlanPage (real mode)', () => {
     // pattern-engine + supplement-map sections are hidden while empty
     expect(screen.queryByText('Visszatérő minták · Mezo')).not.toBeInTheDocument()
     expect(screen.queryByText('Heti supplement-térkép')).not.toBeInTheDocument()
-    // the Reta card IS present: the medication fixture provides a real cycle (D3)
-    expect(await screen.findByText(/Reta cycle · 7 nap/)).toBeInTheDocument()
+    // the medication cycle card IS present: the medication fixture provides a real cycle (D3)
+    expect(await screen.findByText(/Gyógyszer-ciklus · 7 nap/)).toBeInTheDocument()
   })
 })

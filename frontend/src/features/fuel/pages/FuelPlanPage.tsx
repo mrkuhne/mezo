@@ -88,12 +88,12 @@ export function FuelPlanPage() {
         </div>
       </div>
 
-      {/* Reta week strip — hidden until a medication cycle exists (real-mode honest ghost) */}
+      {/* Medication cycle strip — hidden until a medication cycle exists (real-mode honest ghost) */}
       {medCycleWeek.length > 0 && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 14 }}>
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-              <Eyebrow>Reta cycle · 7 nap</Eyebrow>
+              <Eyebrow>Gyógyszer-ciklus · 7 nap</Eyebrow>
               <span className="label-mono" style={{ fontSize: 9 }}>
                 D{medCycleDay} · ma
               </span>

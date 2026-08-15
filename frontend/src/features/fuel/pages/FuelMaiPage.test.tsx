@@ -89,7 +89,7 @@ test('KeretHero renders at the top of the page, above .sky-islands, fed by the c
   expect(container.querySelector('.khero-of')?.textContent).toContain('eddig 1 300')
 })
 
-test('the retired header row and Reta phase strip are gone — no fabricated page chrome', () => {
+test('the retired header row and medication cycle strip are gone — no fabricated page chrome', () => {
   const { container } = renderView()
   expect(screen.queryByRole('heading', { name: 'A mai nap' })).toBeNull()
   expect(container.querySelector('.pghead-np')).toBeNull()
