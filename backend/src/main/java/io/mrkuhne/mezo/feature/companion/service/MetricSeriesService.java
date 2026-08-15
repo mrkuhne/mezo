@@ -106,8 +106,8 @@ public class MetricSeriesService {
             case DAILY_KCAL -> fuelRollup(userId, from, to, MacroSet::getKcal);
             case DAILY_PROTEIN_G -> fuelRollup(userId, from, to, MacroSet::getP);
             case MEAL_SCORE -> mealScore(userId, from, to);
-            case RETA_DOSE_MG -> retaDose(userId, from, to);
-            case RETA_CYCLE_DAY -> retaCycleDay(userId, from, to);
+            case MEDICATION_DOSE_MG -> retaDose(userId, from, to);
+            case MEDICATION_CYCLE_DAY -> retaCycleDay(userId, from, to);
             case DAILY_WATER_ML -> dailyWater(userId, from, to);
             case WEIGHT_DELTA_KG -> weightDelta(userId, from, to);
             case CHECKIN_STRESS -> checkIn(userId, from, to, CheckInEntity::getStress);
@@ -298,7 +298,7 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** The derived Reta cycle day per date (honest-zero days skipped — no dose anchor yet). */
+    /** The derived medication cycle day per date (honest-zero days skipped — no dose anchor yet). */
     private Map<LocalDate, Double> retaCycleDay(UUID userId, LocalDate from, LocalDate to) {
         MedicationEntity med = medicationRepository
                 .findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
