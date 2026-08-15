@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private PredictionPopulator predictionPopulator;
     @Autowired private PredictionRepository predictionRepository;
+    @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -106,5 +108,40 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
         assertThat(detail.getImpact().getPredictions().getFirst().getTitle()).isEqualTo(prediction.getTitle());
         assertThat(detail.getImpact().getPredictions().getFirst().getStatus())
                 .isEqualTo(PredictionEntity.STATUS_PENDING);
+    }
+
+    /**
+     * Review finding (task-7 fix round 1): no test previously seeded a SECOND user's data on the
+     * SAME pair key to confirm the detail read stays owner-scoped — the sibling
+     * {@code CompanionPatternApiIT.testListPatterns_shouldReturnOnlyOwnRows_whenForeignPatternsExist}
+     * convention, applied here. A foreign row on the identical {@code pairKey} is legal (the
+     * partial unique index is {@code (created_by, kind, pair_key)}), so this is the realistic
+     * cross-user collision shape.
+     */
+    @Test
+    void testPatternPairDetail_shouldReturnOnlyOwnRowEventsAndImpact_whenForeignRowSharesPairKey() {
+        UUID owner = ownerId();
+        UUID foreign = userPopulator.createUser().getId();
+
+        PatternEntity foreignRow = patternPopulator.statistical(foreign, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
+        patternEventPopulator.snapshot(foreign, foreignRow.getId(), 0.99, 99, 0.01, Instant.now());
+        PredictionEntity foreignPrediction = predictionPopulator.prediction(foreign, LocalDate.now().minusDays(7),
+                PredictionEntity.METRIC_SLEEP_AVG, PredictionEntity.DIRECTION_STABLE,
+                PredictionEntity.STATUS_PENDING);
+        foreignPrediction.setSourcePatternId(foreignRow.getId());
+        predictionRepository.saveAndFlush(foreignPrediction);
+
+        PatternEntity ownRow = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_PROPOSED);
+        patternEventPopulator.snapshot(owner, ownRow.getId(), -0.55, 10, 0.06, Instant.now());
+
+        PatternPairDetailResponse detail = getForBody("/api/companion/pattern/pair/" + PAIR_KEY,
+                ownerAuthHeaders(), HttpStatus.OK, PatternPairDetailResponse.class);
+
+        assertThat(detail.getPattern()).isNotNull();
+        assertThat(detail.getPattern().getId()).isEqualTo(ownRow.getId()); // never the foreign row
+        assertThat(detail.getEvents()).hasSize(1); // only the owner's own event
+        assertThat(detail.getEvents().getFirst().getR()).isEqualTo(-0.55); // not the foreign 0.99
+        assertThat(detail.getEvents().getFirst().getN()).isEqualTo(10); // not the foreign 99
+        assertThat(detail.getImpact().getPredictions()).isEmpty(); // the foreign grounding must not leak
     }
 }

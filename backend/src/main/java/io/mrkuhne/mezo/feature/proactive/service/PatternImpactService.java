@@ -50,8 +50,7 @@ public class PatternImpactService implements PatternImpactSource {
             return builder.build();
         }
         if (row.getPromotedFactId() != null) {
-            knowledgeFactRepository.findById(row.getPromotedFactId())
-                    .filter(f -> !f.isDeleted())
+            knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(row.getPromotedFactId(), userId)
                     .ifPresent(f -> builder.fact(PatternImpactFact.builder()
                             .id(f.getId())
                             .text(f.getFactText())
