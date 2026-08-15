@@ -114,6 +114,17 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern BRIEFING_SENTINEL =
             Pattern.compile("\\[fake-briefing:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of CompanionMessageGenerator.MORNING_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
+     *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String MORNING_MARKER_MIRROR = "REGGELI-ELIGAZITAS-FELADAT";
+
+    /** Scripted morning message (companion-feed): {@code [fake-feed-morning:{…}]} planted via a
+     *  check-in note (the snapshot renders check-in notes, so this is the established sentinel-
+     *  planting channel). */
+    public static final Pattern MORNING_SENTINEL =
+            Pattern.compile("\\[fake-feed-morning:(\\{.*?\\})]", Pattern.DOTALL);
+
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
     public static final String WEEKLY_MARKER_MIRROR = "HETI-TERVJAVASLAT";
@@ -238,6 +249,12 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = valid minimal JSON so the un-scripted happy path still persists a row
             return m.find() ? m.group(1)
                     : "{\"eyebrow\":\"Fake briefing\",\"body\":[\"FAKE-BRIEFING-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(MORNING_MARKER_MIRROR)) {
+            Matcher m = MORNING_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake reggeli\",\"body\":[\"FAKE-REGGELI-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);

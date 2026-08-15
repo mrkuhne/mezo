@@ -456,4 +456,22 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(assembler.render(owner, today)).isEqualTo(assembler.render(owner, today));
     }
+
+    @Test
+    void testRenderWithoutBiometrics_shouldOmitWeightAndSleep_whenDataExists() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        biometricProfilePopulator.create(owner);
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("85.0"));
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.2"), 4);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, "fáradtan ébredtem");
+
+        String snapshot = assembler.renderWithoutBiometrics(owner, today);
+
+        assertThat(snapshot)
+            .doesNotContain("súlytrend")
+            .doesNotContain("mérés:")
+            .doesNotContain("alvás (");
+        assertThat(snapshot).contains("[Cél]").contains("[Edzés]").contains("check-in");
+    }
 }
