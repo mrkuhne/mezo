@@ -307,9 +307,9 @@ public class MetricSeriesService {
         }
         Map<LocalDate, Double> series = new HashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-            int retaDay = medicationCycleService.derive(userId, med, day).retaDay();
-            if (retaDay > 0) {
-                series.put(day, (double) retaDay);
+            int cycleDay = medicationCycleService.derive(userId, med, day).cycleDay();
+            if (cycleDay > 0) {
+                series.put(day, (double) cycleDay);
             }
         }
         return series;

@@ -72,7 +72,7 @@ public class MedicationTools {
         }
         LocalDate today = LocalDate.now();
         MedicationCycle cycle = medicationCycleService.derive(userId, med, today);
-        if (cycle.retaDay() == 0) {
+        if (cycle.cycleDay() == 0) {
             // honest zero — active med but no recorded dose to anchor the cycle
             return "Retatrutid ciklus: " + med.getName() + " — nincs rögzített dózis";
         }
@@ -80,7 +80,7 @@ public class MedicationTools {
                 .findTop10ByCreatedByAndMedicationIdAndDeletedFalseOrderByAdministeredAtDesc(userId, med.getId());
         MedicationDoseEntity last = doses.getFirst();
         StringBuilder b = new StringBuilder("Retatrutid ciklus: ").append(med.getName())
-                .append(" — ").append(cycle.retaDay()).append(". nap (").append(cycle.phaseLabel()).append(')')
+                .append(" — ").append(cycle.cycleDay()).append(". nap (").append(cycle.phaseLabel()).append(')')
                 .append("; utolsó dózis: ").append(last.getAdministeredDate())
                 .append(" (").append(ToolText.num(last.getDose())).append(' ').append(med.getDoseUnit()).append(')');
         if (med.getCycle() != null) {
@@ -117,8 +117,8 @@ public class MedicationTools {
         StringBuilder b = new StringBuilder("Gyógyszer: ").append(m.getName())
                 .append(" (").append(m.getActiveIngredient()).append(") — ").append(m.getCadence())
                 .append(", ").append(ToolText.num(m.getDefaultDose())).append(' ').append(m.getDoseUnit());
-        if (cycle != null && cycle.getRetaDay() != null && cycle.getRetaDay() > 0) {
-            b.append("; ciklus: ").append(cycle.getRetaDay()).append(". nap (").append(cycle.getPhaseLabel())
+        if (cycle != null && cycle.getCycleDay() != null && cycle.getCycleDay() > 0) {
+            b.append("; ciklus: ").append(cycle.getCycleDay()).append(". nap (").append(cycle.getPhaseLabel())
                     .append(')');
         }
         List<MedicationDoseResponse> doses = day.getRecentDoses();

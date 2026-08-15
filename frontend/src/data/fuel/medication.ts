@@ -3,7 +3,7 @@ import type { MedicationDay } from '@/data/types'
 /**
  * Mock-mode medication day (Gyógyszer slice) — used as TanStack Query `initialData` in mock mode.
  * The owner's single active medication: Retatrutide on a 7-day kinetic cycle (D1 peak → D7 trough).
- * The derived cycle sits on retaDay 3 (stable phase), with the three most recent weekly doses.
+ * The derived cycle sits on cycleDay 3 (stable phase), with the three most recent weekly doses.
  */
 export const medicationSeed: MedicationDay = {
   medication: {
@@ -25,7 +25,7 @@ export const medicationSeed: MedicationDay = {
     },
   },
   cycle: {
-    retaDay: 3,
+    cycleDay: 3,
     phaseKey: 'stable',
     phaseLabel: 'Stabil · plató',
     lastDoseAt: '2026-06-22T07:00:00',

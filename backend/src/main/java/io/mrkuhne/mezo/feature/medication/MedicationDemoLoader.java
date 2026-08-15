@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Seeds the owner's Fuel "Gyógyszer" slice on startup with the Retatrutide medication (7-day cycle:
  * peak 1-2 / stable 3-5 / trough 6-7, default dose 6 mg) plus ONE logged dose on the most recent
- * Monday on-or-before today, so the running app shows a real {@code retaDay} 1-7 (mirrors
+ * Monday on-or-before today, so the running app shows a real {@code cycleDay} 1-7 (mirrors
  * {@link io.mrkuhne.mezo.feature.pantry.PantryCatalogLoader}). {@code @Profile("demodata")} — the
  * profile prod runs — so the seed lands in prod for the single owner. Idempotent: only seeds when the
  * owner has no active medication, so a restart never duplicates and a user who has since curated their
@@ -79,7 +79,7 @@ public class MedicationDemoLoader implements CommandLineRunner {
 
     /**
      * One 6 mg intake on the most recent Monday on-or-before today (08:00 UTC), so the derived
-     * retaDay — days-since-last-dose + 1 — lands in 1-7 for the demo.
+     * cycleDay — days-since-last-dose + 1 — lands in 1-7 for the demo.
      */
     private MedicationDoseEntity recentMondayDose(UUID ownerId, UUID medicationId) {
         LocalDate monday = LocalDate.now(ZoneOffset.UTC)

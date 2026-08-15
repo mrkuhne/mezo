@@ -24,17 +24,17 @@ afterEach(() => vi.unstubAllEnvs())
 describe('useMedication (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('returns the seed medication + cycle (retaDay 3) + doses', () => {
+  it('returns the seed medication + cycle (cycleDay 3) + doses', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
     expect(Object.keys(result.current).sort()).toEqual(['cycle', 'doses', 'medication'])
     expect(result.current.medication.name).toBe('Retatrutide')
-    expect(result.current.cycle.retaDay).toBe(3)
+    expect(result.current.cycle.cycleDay).toBe(3)
     expect(result.current.cycle.phaseKey).toBe('stable')
     expect(result.current.doses.length).toBe(3)
   })
 
-  it('logDose appends a dose AND recomputes the cycle to retaDay 1 (dose today)', async () => {
+  it('logDose appends a dose AND recomputes the cycle to cycleDay 1 (dose today)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
       () => ({ read: useMedication(), actions: useMedicationActions() }),
@@ -43,8 +43,8 @@ describe('useMedication (mock mode)', () => {
     const before = result.current.read.doses.length
     act(() => result.current.actions.logDose(doseToday))
     await waitFor(() => expect(result.current.read.doses.length).toBe(before + 1))
-    // a dose today → days-since-newest = 0 → retaDay 1 (the FE mirror of the backend derive)
-    expect(result.current.read.cycle.retaDay).toBe(1)
+    // a dose today → days-since-newest = 0 → cycleDay 1 (the FE mirror of the backend derive)
+    expect(result.current.read.cycle.cycleDay).toBe(1)
     expect(result.current.read.cycle.phaseKey).toBe('peak')
     const cur = result.current.read.cycle.week.find(c => c.current)!
     expect(cur.day).toBe(1)
@@ -71,7 +71,7 @@ describe('useMedication (real mode)', () => {
     server.use(http.get(`${API_BASE}/api/medication`, () => new Promise(() => {}))) // never resolves
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
-    expect(result.current.cycle.retaDay).toBe(0)
+    expect(result.current.cycle.cycleDay).toBe(0)
     expect(result.current.doses).toEqual([])
     expect(result.current.medication.name).toBe('')
   })
@@ -80,7 +80,7 @@ describe('useMedication (real mode)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.medication.name).toBe('Retatrutide'))
-    expect(result.current.cycle.retaDay).toBe(3)
+    expect(result.current.cycle.cycleDay).toBe(3)
     expect(result.current.cycle.phaseKey).toBe('stable')
     expect(result.current.doses.length).toBe(3)
   })

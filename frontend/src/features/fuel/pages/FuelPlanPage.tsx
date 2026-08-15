@@ -23,7 +23,7 @@ import { WeeklySupplementGrid } from '@/features/fuel/components/WeeklySupplemen
 
 export function FuelPlanPage() {
   const { title, retaWeek, gymSchedule, weeklySupplements, patterns, weeklyStats, volleyball, weeklyNote } = useFuelWeek()
-  const { retaDay } = useTodayScenario()
+  const { medCycleDay } = useTodayScenario()
 
   // Weekly aggregates
   const activeGymDays = gymSchedule.filter(d => d.active).length
@@ -95,10 +95,10 @@ export function FuelPlanPage() {
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
               <Eyebrow>Reta cycle · 7 nap</Eyebrow>
               <span className="label-mono" style={{ fontSize: 9 }}>
-                D{retaDay} · ma
+                D{medCycleDay} · ma
               </span>
             </div>
-            <RetaWeekStrip currentDay={retaDay} />
+            <RetaWeekStrip currentDay={medCycleDay} />
             <p
               className="text-secondary mt-md"
               style={{

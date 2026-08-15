@@ -90,7 +90,7 @@ const recipeBreakdownFixture = {
 }
 
 // Medication day fixture (mezo-d94) mirroring MedicationDayResponse + the medicationSeed:
-// the owner's single active Retatrutide on a 7-day cycle, derived cycle on retaDay 3 (stable),
+// the owner's single active Retatrutide on a 7-day cycle, derived cycle on cycleDay 3 (stable),
 // three most-recent weekly doses.
 const medicationDayFixture = {
   medication: {
@@ -106,7 +106,7 @@ const medicationDayFixture = {
     },
   },
   cycle: {
-    retaDay: 3, phaseKey: 'stable', phaseLabel: 'Stabil · plató', lastDoseAt: '2026-06-22T07:00:00',
+    cycleDay: 3, phaseKey: 'stable', phaseLabel: 'Stabil · plató', lastDoseAt: '2026-06-22T07:00:00',
     week: [
       { day: 1, phaseKey: 'peak', label: 'Peak', current: false },
       { day: 2, phaseKey: 'peak', label: 'Peak', current: false },

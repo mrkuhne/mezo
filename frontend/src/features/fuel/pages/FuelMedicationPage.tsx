@@ -9,7 +9,7 @@
 // You log only the actual injections; the cycle day + phase are DERIVED from the
 // newest dose by the backend / the mock hook (useMedication, Task 11). Tapping
 // "＋ Beadás" flips `logOpen` and opens the LogDoseSheet (Task 13), which captures a
-// dose via useMedicationActions().logDose (a today-dated dose re-anchors retaDay to 1).
+// dose via useMedicationActions().logDose (a today-dated dose re-anchors cycleDay to 1).
 // ============================================================
 import { useState } from 'react'
 import { useMedication } from '@/data/hooks'
@@ -99,7 +99,7 @@ export function FuelMedicationPage() {
             data-testid="medication-phase-note"
             style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 12, textAlign: 'center' }}
           >
-            {cycle.retaDay}. nap · <b style={{ color: 'var(--sage-deep)' }}>{phaseName} fázis</b>
+            {cycle.cycleDay}. nap · <b style={{ color: 'var(--sage-deep)' }}>{phaseName} fázis</b>
             {ago && <> · {ago}</>}
           </div>
         </div>

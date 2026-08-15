@@ -32,20 +32,20 @@ export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
   const day = params.get('day')
   const dayState: DayState = day === 'good' || day === 'rough' ? day : 'medium'
-  // The retaDay base is the real medication cycle in real mode (the single FE source every
-  // Reta surface reads), the mock default in mock mode. cycle.retaDay is 0 when there is no
-  // medication / no dose (the ghost, or the cold-load window) → fall back to today.retaDay so
-  // nothing ever shows a 0 day. The ?retaDay= URL override stays TOP priority in BOTH modes.
+  // The medCycleDay base is the real medication cycle in real mode (the single FE source every
+  // medication surface reads), the mock default in mock mode. cycle.cycleDay is 0 when there is no
+  // medication / no dose (the ghost, or the cold-load window) → fall back to today.medCycleDay so
+  // nothing ever shows a 0 day. The ?medCycleDay= URL override stays TOP priority in BOTH modes.
   const { cycle } = useMedication()
-  const base = isMockMode() ? today.retaDay : cycle.retaDay || today.retaDay
-  const retaRaw = parseInt(params.get('retaDay') ?? '', 10)
-  const retaDay = Number.isFinite(retaRaw) ? Math.min(7, Math.max(1, retaRaw)) : base
+  const base = isMockMode() ? today.medCycleDay : cycle.cycleDay || today.medCycleDay
+  const rawDay = parseInt(params.get('medCycleDay') ?? '', 10)
+  const medCycleDay = Number.isFinite(rawDay) ? Math.min(7, Math.max(1, rawDay)) : base
   const niggle = params.get('niggle') !== 'off'
   const vulnerable = params.get('vulnerable') === 'on'
   const ritualRaw = params.get('ritual')
   const ritual: TodayScenario['ritual'] =
     ritualRaw === 'waiting' || ritualRaw === 'open' || ritualRaw === 'done' ? ritualRaw : null
-  return { dayState, retaDay, niggle, vulnerable, anchorMode: dayState === 'rough', ritual }
+  return { dayState, medCycleDay, niggle, vulnerable, anchorMode: dayState === 'rough', ritual }
 }
 
 export function resolveBriefing(dayState: DayState): Briefing {
@@ -104,7 +104,7 @@ export function useToday(): TodayData {
       dateLabel: huMonthDay(localDateString(now)),
       workoutType: train.workout?.title ?? '',
       workoutTime: gymToday?.time ?? '',
-      retaDay: today.retaDay, // unused in real mode — the scenario derives retaDay from useMedication
+      medCycleDay: today.medCycleDay, // unused in real mode — the scenario derives it from useMedication
       mesoPhase: meso?.phaseCurve?.[meso.currentWeek - 1] ?? '',
     },
     // Only the meso-derived fields go real here; the identity statics (name/handle/...) are

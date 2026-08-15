@@ -54,7 +54,7 @@ public interface MedicationMapper {
         List<MedicationCycleCell> week = c.week() == null ? List.of()
             : c.week().stream().map(this::toCell).toList();
         return MedicationCycleResponse.builder()
-            .retaDay(c.retaDay())
+            .cycleDay(c.cycleDay())
             .phaseKey(c.phaseKey())
             .phaseLabel(c.phaseLabel())
             .lastDoseAt(toOffset(c.lastDoseAt()))

@@ -29,7 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * Anchor resolution across the 11 categories (bd mezo-h4wp.6.2), focused on the traps that would
  * silently misfire a notification: the gym/sport weekday's 0-based-vs-ISO conversion, prose
- * anchors existing only when their content row exists, medication's honest {@code retaDay == 0},
+ * anchors existing only when their content row exists, medication's honest {@code cycleDay == 0},
  * the FE-written schedule's {@code weekday = null} "every day" semantics, the prose-generation
  * grace (trap #6 — an anchor on its own generator's minute never fires), and the guarantee that
  * ONE malformed {@code notification_schedule} row cannot silence every category for that user.
@@ -125,10 +125,10 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testResolve_shouldYieldNoMedicationAnchor_whenRetaDayIsZeroBecauseNoDoseWasEverLogged() {
+    void testResolve_shouldYieldNoMedicationAnchor_whenCycleDayIsZeroBecauseNoDoseWasEverLogged() {
         UUID owner = ownerId();
         medicationPopulator.createReta(owner);
-        // No dose logged — MedicationCycleService.derive(...) reports the honest retaDay == 0.
+        // No dose logged — MedicationCycleService.derive(...) reports the honest cycleDay == 0.
 
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
 
@@ -137,7 +137,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testResolve_shouldYieldAMedicationAnchor_whenADoseWasLoggedSoRetaDayIsPositive() {
+    void testResolve_shouldYieldAMedicationAnchor_whenADoseWasLoggedSoCycleDayIsPositive() {
         UUID owner = ownerId();
         MedicationEntity med = medicationPopulator.createReta(owner);
         medicationDosePopulator.createDose(owner, med.getId(), WEDNESDAY, new BigDecimal("6"));

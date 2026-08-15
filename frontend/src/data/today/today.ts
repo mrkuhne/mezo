@@ -11,7 +11,7 @@ export const today: TodayMeta = {
   dateLabel: 'Máj 22',
   workoutType: 'Pull Day',
   workoutTime: '17:00',
-  retaDay: 3,
+  medCycleDay: 3,
   mesoPhase: 'MAV',
 }
 

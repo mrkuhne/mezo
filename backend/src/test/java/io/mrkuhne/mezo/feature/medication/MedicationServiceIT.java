@@ -37,7 +37,7 @@ class MedicationServiceIT extends AbstractIntegrationTest {
         assertThat(saved.getId()).isNotNull();
         var day = service.getDay(owner);
         assertThat(day.getRecentDoses()).extracting("id").contains(saved.getId());
-        assertThat(day.getCycle().getRetaDay()).isEqualTo(1); // dose today → day 1
+        assertThat(day.getCycle().getCycleDay()).isEqualTo(1); // dose today → day 1
     }
 
     @Test

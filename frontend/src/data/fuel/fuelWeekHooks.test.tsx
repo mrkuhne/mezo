@@ -89,7 +89,7 @@ describe('useFuelWeek (real mode)', () => {
     expect(result.current.weeklyStats.proteinHitDays).toBe(1)
     expect(result.current.weeklyStats.supplementsAdherence).toBeNull()
 
-    // Reta strip derives from the medication cycle fixture (retaDay 3, stable)
+    // Reta strip derives from the medication cycle fixture (cycleDay 3, stable)
     await waitFor(() => expect(result.current.retaWeek).toHaveLength(7))
     expect(result.current.retaWeek[2]).toEqual({ d: 3, label: 'Stable', color: 'var(--reta-d3)' })
 

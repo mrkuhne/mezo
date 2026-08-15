@@ -225,7 +225,7 @@ export interface MedicationDose { id: string; administeredAt: string; dose: numb
 /** The derived weekly cycle (which day of the cycle we're on + the phase grid). */
 export interface MedicationCycleCell { day: number; phaseKey: string; label: string; current: boolean }
 export interface MedicationCycle {
-  retaDay: number; phaseKey: string; phaseLabel: string
+  cycleDay: number; phaseKey: string; phaseLabel: string
   lastDoseAt?: string | null
   week: MedicationCycleCell[]
 }
@@ -251,7 +251,7 @@ export interface MedicationInput {
 /** Editor input for logging an injection. */
 export interface MedicationDoseInput { administeredAt?: string | null; dose: number; note?: string | null }
 
-export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; retaDay: number; mesoPhase: string }
+export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; medCycleDay: number; mesoPhase: string }
 /** The workout teaser's prediction line — demo copy in mock mode; real predictions are a later epic (null hides the row). */
 export interface WorkoutPrediction { confidence: number; label: string }
 /** One cell of the Today quick-stats row ("Most"). */
@@ -267,7 +267,7 @@ export interface UserMeta {
   streakDays: number
 }
 export interface TodayScenario {
-  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  dayState: DayState; medCycleDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
   /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
   ritual: 'waiting' | 'open' | 'done' | null
 }

@@ -23,14 +23,14 @@ const TODAY_KEY = ['today'] as const
 const FUELDAY_KEY = ['fuelDay'] as const
 
 // Real-mode unresolved fallback — a no-medication ghost, NEVER the seed (the "no static
-// fallback in real mode" invariant). retaDay 0 + empty week + empty doses, mirroring the
+// fallback in real mode" invariant). cycleDay 0 + empty week + empty doses, mirroring the
 // backend's honest-zero MedicationCycle when there is no dose to anchor "now".
 const EMPTY_MEDICATION: Medication = {
   id: '', name: '', activeIngredient: '', route: '', cadence: '',
   defaultDose: 0, doseUnit: '', active: false,
   cycle: { cycleLengthDays: 0, phases: [] },
 }
-const EMPTY_CYCLE: MedicationCycle = { retaDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] }
+const EMPTY_CYCLE: MedicationCycle = { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] }
 const MEDICATION_EMPTY: MedicationDay = { medication: EMPTY_MEDICATION, cycle: EMPTY_CYCLE, recentDoses: [] }
 
 /**
@@ -51,7 +51,7 @@ export function useMedication(): { medication: Medication; cycle: MedicationCycl
 
 /** log/remove a dose + update the medication definition. Mock mutates the ['medication'] cache via
  *  setQueryData (logDose recomputes the cycle); real calls medicationApi then invalidates
- *  ['medication'] + ['today'] + ['fuelDay'] (the cycle/retaDay broadcast feeds Today + Fuel). */
+ *  ['medication'] + ['today'] + ['fuelDay'] (the cycle/cycleDay broadcast feeds Today + Fuel). */
 export function useMedicationActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
@@ -97,8 +97,8 @@ function medId(qc: ReturnType<typeof useQueryClient>): string {
 }
 
 // --- mock-mode cache mutators. logDose/removeDose recompute the cycle the same way the backend
-// MedicationCycleService.derive does: retaDay = days-since-newest-dose + 1, clamped to
-// cycleLengthDays (a dose today → retaDay 1); the phase + week grid project that day onto the
+// MedicationCycleService.derive does: cycleDay = days-since-newest-dose + 1, clamped to
+// cycleLengthDays (a dose today → cycleDay 1); the phase + week grid project that day onto the
 // medication's cycle config. ---
 
 /** The phase whose fromDay..toDay (inclusive) contains `day`; the last phase if none (clamped past). */
@@ -124,13 +124,13 @@ function daysBetween(fromIso: string, toIso: string): number {
 /** Re-derive the cycle from the newest dose (FE mirror of MedicationCycleService.derive). */
 function deriveCycle(med: Medication, doses: MedicationDose[]): MedicationCycle {
   const cfg = med.cycle
-  if (doses.length === 0) return { retaDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: buildWeek(cfg, 0) }
+  if (doses.length === 0) return { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: buildWeek(cfg, 0) }
   const newest = doses.reduce((a, b) => (a.administeredAt >= b.administeredAt ? a : b))
   const since = daysBetween(newest.administeredAt, localDateString())
   const day = Math.min(since + 1, cfg.cycleLengthDays)
   const phase = phaseOf(cfg, day)
   return {
-    retaDay: day,
+    cycleDay: day,
     phaseKey: phase?.key ?? '',
     phaseLabel: phase?.label ?? '',
     lastDoseAt: newest.administeredAt,

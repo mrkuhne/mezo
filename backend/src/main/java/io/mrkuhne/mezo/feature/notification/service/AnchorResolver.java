@@ -70,7 +70,7 @@ import org.springframework.transaction.annotation.Transactional;
  * returns empty (it falls back to config when no {@code sleep_goal} row exists) — the retired
  * {@code goal.wake_time}/{@code goal.bed_time} columns are never read.
  *
- * <p><b>{@code medication}'s {@code retaDay == 0}</b> is {@link MedicationCycleService}'s honest
+ * <p><b>{@code medication}'s {@code cycleDay == 0}</b> is {@link MedicationCycleService}'s honest
  * "no dose logged yet" state and is treated as "no anchor today", never as cycle day zero.
  *
  * <p>Prose anchors ({@code briefing}, {@code midday}, {@code weekly}, {@code memoir}) exist only
@@ -208,13 +208,13 @@ public class AnchorResolver {
         }
         MedicationEntity med = medication.get();
         MedicationCycle cycle = medicationCycleService.derive(owner, med, date);
-        if (cycle.retaDay() == 0) {
-            // Trap #5: retaDay == 0 is the honest "no dose logged yet" state — not a dose day.
+        if (cycle.cycleDay() == 0) {
+            // Trap #5: cycleDay == 0 is the honest "no dose logged yet" state — not a dose day.
             return Optional.empty();
         }
         String time = notificationProperties.medicationTime();
         String title = med.getName() + " emlékeztető";
-        String body = "A ciklus " + cycle.retaDay() + ". napja"
+        String body = "A ciklus " + cycle.cycleDay() + ". napja"
                 + (cycle.phaseLabel() == null ? "" : " — " + cycle.phaseLabel()) + "."
                 + doseSuffix(med);
         return Optional.of(new AnchoredEvent(NotificationCategory.MEDICATION, minuteOfDay(time), time,

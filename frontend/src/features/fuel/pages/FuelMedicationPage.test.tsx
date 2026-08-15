@@ -6,7 +6,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 
 // FuelMedicationPage reads useMedication (a dual-mode TanStack query, Task 11).
 // Render under a router + QueryClientProvider; the assertions below are mode-agnostic
-// (the seed and the real-mode handler fixture both resolve Retatrutide · retaDay 3 · 3 doses),
+// (the seed and the real-mode handler fixture both resolve Retatrutide · cycleDay 3 · 3 doses),
 // so the same suite runs green in BOTH modes (mock pin in the outer beforeEach is overridden
 // in the real-mode describe).
 const renderView = () =>
@@ -34,7 +34,7 @@ describe('FuelMedicationPage (mock mode)', () => {
     expect(screen.getAllByText('6 mg').length).toBeGreaterThan(0)
   })
 
-  it('shows the cycle bar with the current day (retaDay 3) outlined in the Stabil phase', () => {
+  it('shows the cycle bar with the current day (cycleDay 3) outlined in the Stabil phase', () => {
     renderView()
     const bar = screen.getByRole('list', { name: /ciklus/i })
     // 7 cells, one per cycle day

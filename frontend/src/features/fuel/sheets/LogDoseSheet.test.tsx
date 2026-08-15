@@ -68,7 +68,7 @@ describe('LogDoseSheet (mock mode)', () => {
     expect(newest.dose).toBe(8)
     // A fresh dose dated today re-anchors "now" → the cycle recomputes to day 1.
     expect(newest.administeredAt.slice(0, 10)).toBe(localDateString())
-    expect(med.result.current.cycle.retaDay).toBe(1)
+    expect(med.result.current.cycle.cycleDay).toBe(1)
     expect(onClose).toHaveBeenCalled()
   })
 
