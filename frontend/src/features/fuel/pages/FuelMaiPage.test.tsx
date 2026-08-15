@@ -93,7 +93,7 @@ test('the retired header row and Reta phase strip are gone — no fabricated pag
   const { container } = renderView()
   expect(screen.queryByRole('heading', { name: 'A mai nap' })).toBeNull()
   expect(container.querySelector('.pghead-np')).toBeNull()
-  expect(container.querySelector('.retamicro')).toBeNull()
+  expect(container.querySelector('.medcycle-micro')).toBeNull()
 })
 
 // ── Sky composition — done capsule + window islands, no more belt ──────────────────────────────

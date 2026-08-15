@@ -1,5 +1,5 @@
 import type {
-  RetaDayCell,
+  MedCycleDayCell,
   GymScheduleDay,
   WeeklySupplementRow,
   RecurringPattern,
@@ -15,15 +15,15 @@ export const weekTitle = 'Máj 18 – 24'
 export const weeklyNote =
   'Most kell egy **középmagas-protein héttel** menni — Reta D3-D5 a peak étvágy-süllyedés.'
 
-// fuel-plan.jsx RetaWeekStrip phases (227–235)
-export const retaWeek: RetaDayCell[] = [
-  { d: 1, label: 'Peak', color: 'var(--reta-d1)' },
-  { d: 2, label: 'Peak', color: 'var(--reta-d2)' },
-  { d: 3, label: 'Stable', color: 'var(--reta-d3)' },
-  { d: 4, label: 'Stable', color: 'var(--reta-d4)' },
-  { d: 5, label: 'Stable', color: 'var(--reta-d5)' },
-  { d: 6, label: 'Trough', color: 'var(--reta-d6)' },
-  { d: 7, label: 'Trough', color: 'var(--reta-d7)' },
+// fuel-plan.jsx heti gyógyszer-ciklus csík fázisai (227–235)
+export const medCycleWeek: MedCycleDayCell[] = [
+  { d: 1, label: 'Peak', color: 'var(--medcycle-d1)' },
+  { d: 2, label: 'Peak', color: 'var(--medcycle-d2)' },
+  { d: 3, label: 'Stable', color: 'var(--medcycle-d3)' },
+  { d: 4, label: 'Stable', color: 'var(--medcycle-d4)' },
+  { d: 5, label: 'Stable', color: 'var(--medcycle-d5)' },
+  { d: 6, label: 'Trough', color: 'var(--medcycle-d6)' },
+  { d: 7, label: 'Trough', color: 'var(--medcycle-d7)' },
 ]
 
 // fuel-plan.jsx WeeklySupplementGrid DAYS (404) — duplicate 'Sz' = Szerda + Szombat

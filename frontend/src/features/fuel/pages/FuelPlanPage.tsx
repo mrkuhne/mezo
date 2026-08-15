@@ -16,13 +16,13 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { StatCell } from '@/shared/ui/StatCell'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { RetaWeekStrip } from '@/features/fuel/components/RetaWeekStrip'
+import { MedicationWeekStrip } from '@/features/fuel/components/MedicationWeekStrip'
 import { WeekRhythmGrid } from '@/features/fuel/components/WeekRhythmGrid'
 import { PatternRow } from '@/features/fuel/components/PatternRow'
 import { WeeklySupplementGrid } from '@/features/fuel/components/WeeklySupplementGrid'
 
 export function FuelPlanPage() {
-  const { title, retaWeek, gymSchedule, weeklySupplements, patterns, weeklyStats, volleyball, weeklyNote } = useFuelWeek()
+  const { title, medCycleWeek, gymSchedule, weeklySupplements, patterns, weeklyStats, volleyball, weeklyNote } = useFuelWeek()
   const { medCycleDay } = useTodayScenario()
 
   // Weekly aggregates
@@ -89,7 +89,7 @@ export function FuelPlanPage() {
       </div>
 
       {/* Reta week strip — hidden until a medication cycle exists (real-mode honest ghost) */}
-      {retaWeek.length > 0 && (
+      {medCycleWeek.length > 0 && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 14 }}>
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
@@ -98,7 +98,7 @@ export function FuelPlanPage() {
                 D{medCycleDay} · ma
               </span>
             </div>
-            <RetaWeekStrip currentDay={medCycleDay} />
+            <MedicationWeekStrip currentDay={medCycleDay} />
             <p
               className="text-secondary mt-md"
               style={{

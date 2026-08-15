@@ -9,10 +9,10 @@ import { makeHookWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useFuelWeek returns 7 reta days, gym schedule, supplement matrix, patterns', () => {
+test('useFuelWeek returns 7 medication cycle days, gym schedule, supplement matrix, patterns', () => {
   const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
-  expect(result.current.retaWeek).toHaveLength(7)
-  expect(result.current.retaWeek[2].label).toBe('Stable')
+  expect(result.current.medCycleWeek).toHaveLength(7)
+  expect(result.current.medCycleWeek[2].label).toBe('Stable')
   expect(result.current.gymSchedule).toHaveLength(7)
   expect(result.current.weeklySupplements.length).toBeGreaterThan(0)
   expect(result.current.patterns.length).toBe(4)

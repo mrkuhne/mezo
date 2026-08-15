@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { RetaWeekStrip } from '@/features/fuel/components/RetaWeekStrip'
+import { MedicationWeekStrip } from '@/features/fuel/components/MedicationWeekStrip'
 import { QueryWrapper } from '@/test/queryWrapper'
 
-// The strip reads useFuelWeek().retaWeek — a composed dual-mode hook since Fuel P4 (needs a
+// The strip reads useFuelWeek().medCycleWeek — a composed dual-mode hook since Fuel P4 (needs a
 // QueryClient); mock mode pins the 7-cell Phase-1 seed these assertions describe.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -11,7 +11,7 @@ afterEach(() => vi.unstubAllEnvs())
 const renderStrip = (currentDay: number) =>
   render(
     <QueryWrapper>
-      <RetaWeekStrip currentDay={currentDay} />
+      <MedicationWeekStrip currentDay={currentDay} />
     </QueryWrapper>,
   )
 

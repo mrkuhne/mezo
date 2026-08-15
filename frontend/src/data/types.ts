@@ -573,8 +573,8 @@ export interface MentionLogInput {
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---
-export type RetaPhase = 'Peak' | 'Stable' | 'Trough'
-export interface RetaDayCell { d: number; label: RetaPhase; color: string }
+export type MedCyclePhase = 'Peak' | 'Stable' | 'Trough'
+export interface MedCycleDayCell { d: number; label: MedCyclePhase; color: string }
 // NOTE: prototype data.js gymSchedule.weeklyTimes uses null for inactive (Szo/Vas)
 // days and `today` is present on only one row → fields adapted to the real data.
 export interface GymScheduleDay {

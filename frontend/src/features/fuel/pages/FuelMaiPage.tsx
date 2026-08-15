@@ -64,7 +64,7 @@ function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
 //
 // Still-retired from the earlier window-river recomposition (mezo-jgh9 Task 5, unchanged by this
 // pass): the `.pghead-np` header row + the Reta D{n} link (Reta leaks in as a FACT via the
-// now-island's subtitle — `retaPeak`), `retamicro`, `NowWindowCard`, `MissedStrip`,
+// now-island's subtitle — `retaPeak`), `medcycle-micro`, `NowWindowCard`, `MissedStrip`,
 // `DayZoneCard`/`ZoneSlotRow`, the protocol-meta/Replan row.
 //
 // Scrolling (mezo-gllr): spec §2's "L0 nem görgethető" was written when the sky WAS the page
