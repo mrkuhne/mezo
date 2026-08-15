@@ -10,8 +10,10 @@ import org.springframework.validation.annotation.Validated;
  * MacroHero (targets vs consumed). See docs/references/configuration_conventions.md. First
  * config-driven domain value feeding a UI hero; replaces the hardcoded mock {@code 2500}/{@code 3100}.
  *
- * <p>Natural next step (out of scope): read targets from the active {@code goal.prescription} jsonb
- * so they become Reta-phase-aware. For v1 these are constants.
+ * <p>Since mezo-najo these are the FALLBACK: {@code FuelDayService} prefers the active goal's
+ * prescribed recept (kcal + protein from the date's goal-week segment) and only falls back here
+ * when no active/evaluated goal covers the date. Carbs/fat/water are never prescribed, so those
+ * three always come from this config.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.nutrition")
