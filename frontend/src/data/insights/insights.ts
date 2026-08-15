@@ -34,6 +34,10 @@ export const patterns: Pattern[] = [
     critique: { statistical: 0.85, confounders: 0.72, l3align: 0.91, actionability: 0.88 },
     thinking:
       'Megfigyelés: D2-D3 napokon a meal-count 3-ról 2-re csökken, és ez nem a tudatos döntés következménye, hanem az éhségérzet eltűnése. Hipotézis: a pacing-alert push T-2h-val az edzés előtt fix kell maradjon ezeken a napokon — különben az under-fueling kockázat magas.',
+    // mezo-tk88.4: the dashboard's "✓ Megerősítve" lifecycle bucket needs ≥1 already-judged mock
+    // row to render in the demo — this is the strongest-evidence seed, so it reads as the one
+    // that's already been through the L2 decision.
+    status: 'confirmed',
   },
   {
     id: 'p2',
@@ -286,8 +290,8 @@ export const patternMonitor: PatternMonitor = {
     },
   ],
   // Deliberately NOT ascending by coveredDays (a wire response carries no ordering guarantee) —
-  // this is what makes MotorPage.test.tsx's "orders the coverage list thinnest-first" assertion
-  // actually prove MotorPage's own sort, rather than passing on an already-sorted fixture.
+  // this is what makes the PatternsPage.test.tsx Adat-egészség "orders thinnest-first" assertion
+  // actually prove the page's own sort, rather than passing on an already-sorted fixture.
   metrics: [
     { key: 'sleep-quality', label: 'alvásminőség', sourceHu: 'Alvás-napló', domain: 'sleep', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
     { key: 'training-rpe', label: 'edzés-RPE', sourceHu: 'Sport- és futás-napló (RPE)', domain: 'train', coveredDays: 12, windowDays: 60, lastDayWithData: '2026-08-09', pairCount: 2 },

@@ -36,7 +36,6 @@ import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
-import { MotorPage } from '@/features/insights/pages/MotorPage'
 import { MemoryPage } from '@/features/insights/pages/MemoryPage'
 import { MeSection } from '@/features/me/pages/MeSection'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
@@ -116,7 +115,10 @@ export const routes: RouteObject[] = [
           { path: 'chat', element: <ChatPage /> },
           { path: 'predictions', element: <PredictionsPage /> },
           { path: 'experiments', element: <ExperimentsPage /> },
-          { path: 'motor', element: <MotorPage /> },
+          // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
+          // the S5 pattern-detail page; the route survives as an honest redirect so any old
+          // bookmark/link (`?pair=` cross-links included) still lands somewhere sensible.
+          { path: 'motor', element: <Navigate to="/insights" replace /> },
           { path: 'memoria', element: <MemoryPage /> },
         ],
       },
