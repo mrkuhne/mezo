@@ -111,6 +111,20 @@ public class CompanionMessageGenerator {
             new CompanionMessageEnvelope.Ref("Goal", "cél"),
             new CompanionMessageEnvelope.Ref("FuelDay", "mai üzemanyag"));
 
+    /** Prompt prefix the fake LLM dispatches on — the EXISTING {@code HeartbeatGenerator}
+     *  marker/sentinel ({@code [fake-heartbeat:…]} in {@code FakeCompanionLlm}), reused verbatim
+     *  so no new fake-LLM wiring is needed for the window kinds (midday/evening). */
+    public static final String WINDOW_MARKER = "NAPKOZBENI-JEGYZET-FELADAT";
+
+    private static final String WINDOW_PROMPT = WINDOW_MARKER + "\n"
+            + "Írj rövid (2-3 mondatos), magyar napközbeni jegyzetet Danielnek társ-szemszögből, "
+            + "kizárólag a megadott mai állapotból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
+            + "déli (nudge) esetén a nap hátralévő részére adj egy konkrét, gyengéd fókuszt; esti "
+            + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI BRIEFING blokk, "
+            + "annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
+            + "adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi "
+            + "döntés. Sima folyószöveggel válaszolj, markdown és felsorolás nélkül.";
+
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
 
@@ -283,6 +297,56 @@ public class CompanionMessageGenerator {
         message.setKind(CompanionMessageEntity.KIND_WEIGHT);
         message.setContent(new CompanionMessageEnvelope(
                 parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
+        message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * Generates (or returns the existing) window message (midday/evening) for one day. Ported
+     * from {@link HeartbeatGenerator}: same window prompt and summary-emptiness gate, but the
+     * "MAI BRIEFING" dedupe block is replaced by {@link #earlierMessagesBlock} (which now covers
+     * morning/sleep/weight/midday), and the flat prose answer is wrapped as a
+     * {@link CompanionMessageEnvelope} with a code-set eyebrow (no JSON parse, no refs). Returns
+     * null when there is no daily summary in the window or the answer is blank — honest absence.
+     */
+    @Transactional
+    public CompanionMessageEntity generateWindow(UUID userId, LocalDate date, String kind) {
+        CompanionMessageEntity existing = companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(userId, date, kind)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        List<DailySummaryEntity> past = dailySummaryRepository
+                .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
+                        userId, date.minusDays(properties.briefing().pastDays()));
+        if (past.isEmpty()) {
+            log.debug("No daily summaries for {} in the {}-day window before {} — no {} message",
+                    userId, properties.briefing().pastDays(), date, kind);
+            return null;
+        }
+        DailySummaryEntity latest = past.getFirst();
+        boolean evening = CompanionMessageEntity.KIND_EVENING.equals(kind);
+        String window = evening ? "este (closing)" : "dél (nudge)";
+        String eyebrow = evening ? "Napzárás" : "Napközi jegyzet";
+        String payload = contextSnapshotAssembler.render(userId, date)
+                + knowledgeFactService.renderPromptBlock(userId)
+                + "\n\nUTOLSÓ NAPI ÖSSZEFOGLALÓ:\n- " + latest.getSummaryDate() + ": " + latest.getNarrative()
+                + earlierMessagesBlock(userId, date)
+                + "\n\nABLAK: " + window;
+
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_feed", kind, null, null),
+                () -> companionLlm.complete(WINDOW_PROMPT, payload));
+        if (answer == null || answer.isBlank()) {
+            log.warn("Unusable {} answer for {} on {} — no row persisted", kind, userId, date);
+            return null;
+        }
+        CompanionMessageEntity message = new CompanionMessageEntity();
+        message.setCreatedBy(userId);
+        message.setMessageDate(date);
+        message.setKind(kind);
+        message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), List.of()));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
     }

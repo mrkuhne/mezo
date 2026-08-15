@@ -163,4 +163,63 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
         assertThat(message).isNotNull();
         assertThat(message.getKind()).isEqualTo(CompanionMessageEntity.KIND_SLEEP);
     }
+
+    @Test
+    void testGenerateWindow_shouldPersistEnvelope_whenMiddayAndSummariesExist() {
+        UUID user = userPopulator.createUser("midday-gen@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(user, DAY, "12:00", 3, 2,
+                "[fake-heartbeat:Tarts egy kis szünetet delente.]");
+
+        CompanionMessageEntity message =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_MIDDAY);
+
+        assertThat(message).isNotNull();
+        assertThat(message.getKind()).isEqualTo(CompanionMessageEntity.KIND_MIDDAY);
+        assertThat(message.getContent().eyebrow()).isEqualTo("Napközi jegyzet");
+        assertThat(message.getContent().body()).containsExactly("Tarts egy kis szünetet delente.");
+        assertThat(message.getContent().refs()).isEmpty();
+        assertThat(message.getGeneratedAt()).isNotNull();
+    }
+
+    @Test
+    void testGenerateWindow_shouldPersistEnvelope_whenEveningAndSummariesExist() {
+        UUID user = userPopulator.createUser("evening-gen@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(user, DAY, "20:00", 3, 2,
+                "[fake-heartbeat:Szép napot zártál.]");
+
+        CompanionMessageEntity message =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_EVENING);
+
+        assertThat(message).isNotNull();
+        assertThat(message.getKind()).isEqualTo(CompanionMessageEntity.KIND_EVENING);
+        assertThat(message.getContent().eyebrow()).isEqualTo("Napzárás");
+        assertThat(message.getContent().body()).containsExactly("Szép napot zártál.");
+    }
+
+    @Test
+    void testGenerateWindow_shouldReturnNull_whenNoSummariesInWindow() {
+        UUID user = userPopulator.createUser("midday-empty@test.local").getId();
+
+        assertThat(companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_MIDDAY))
+                .isNull();
+        assertThat(companionMessageRepository.count()).isZero();
+    }
+
+    @Test
+    void testGenerateWindow_shouldReturnExistingRow_whenCalledTwice() {
+        UUID user = userPopulator.createUser("midday-idem@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap úszás volt.");
+        checkInPopulator.createCheckIn(user, DAY, "12:00", 3, 2,
+                "[fake-heartbeat:Tarts egy kis szünetet delente.]");
+
+        CompanionMessageEntity first =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_MIDDAY);
+        CompanionMessageEntity second =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_MIDDAY);
+
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(companionMessageRepository.count()).isEqualTo(1);
+    }
 }
