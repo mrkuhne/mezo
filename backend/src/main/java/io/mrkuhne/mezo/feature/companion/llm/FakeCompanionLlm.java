@@ -125,6 +125,26 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MORNING_SENTINEL =
             Pattern.compile("\\[fake-feed-morning:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of CompanionMessageGenerator.SLEEP_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
+     *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String SLEEP_MARKER_MIRROR = "ALVAS-REAKCIO-FELADAT";
+
+    /** Scripted sleep-reaction message (companion-feed): {@code [fake-feed-sleep:{…}]} planted via
+     *  a check-in note (the snapshot renders check-in notes, so this is the established sentinel-
+     *  planting channel). */
+    public static final Pattern SLEEP_SENTINEL =
+            Pattern.compile("\\[fake-feed-sleep:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Mirror of CompanionMessageGenerator.WEIGHT_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #SLEEP_MARKER_MIRROR}. */
+    public static final String WEIGHT_MARKER_MIRROR = "SULY-REAKCIO-FELADAT";
+
+    /** Scripted weight-reaction message (companion-feed): {@code [fake-feed-weight:{…}]} planted
+     *  via a check-in note (same channel as {@link #SLEEP_SENTINEL}). */
+    public static final Pattern WEIGHT_SENTINEL =
+            Pattern.compile("\\[fake-feed-weight:(\\{.*?\\})]", Pattern.DOTALL);
+
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
     public static final String WEEKLY_MARKER_MIRROR = "HETI-TERVJAVASLAT";
@@ -255,6 +275,18 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = valid minimal JSON so the un-scripted happy path still persists a row
             return m.find() ? m.group(1)
                     : "{\"eyebrow\":\"Fake reggeli\",\"body\":[\"FAKE-REGGELI-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(SLEEP_MARKER_MIRROR)) {
+            Matcher m = SLEEP_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake alvás\",\"body\":[\"FAKE-ALVAS-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(WEIGHT_MARKER_MIRROR)) {
+            Matcher m = WEIGHT_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake súly\",\"body\":[\"FAKE-SULY-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);

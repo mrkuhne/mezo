@@ -1,5 +1,11 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
+import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
+import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
+import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
@@ -12,6 +18,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -66,6 +73,44 @@ public class CompanionMessageGenerator {
             new CompanionMessageEnvelope.Ref("FuelDay", "mai üzemanyag"),
             new CompanionMessageEnvelope.Ref("Medication", "gyógyszer"));
 
+    /** Prompt prefix the fake LLM dispatches on — MIRRORED as a literal in FakeCompanionLlm
+     *  (see {@link #MORNING_MARKER}'s doc for the cycle rationale). */
+    public static final String SLEEP_MARKER = "ALVAS-REAKCIO-FELADAT";
+
+    private static final String SLEEP_PROMPT = SLEEP_MARKER + "\n"
+            + "Daniel most rögzítette a ma éjszakai alvását. Írj rövid magyar reakciót "
+            + "társ-szemszögből, kizárólag a megadott tényadatokból: (1) értékeld a MOST RÖGZÍTETT "
+            + "ALVÁS blokk adatait (időtartam, minőség) a cél és a szokásos mintázat tükrében; "
+            + "(2) mondd ki, mit jelent ez a mai napra (edzés, fókusz, energia); (3) ha volt már "
+            + "MAI KORÁBBI ÜZENET, ne ismételd. Számot kitalálni tilos; gyógyszer-adagolás "
+            + "változtatást SOHA ne javasolj. Válaszolj KIZÁRÓLAG szigorú JSON-nal: "
+            + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
+            + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
+
+    /** Prompt prefix the fake LLM dispatches on — MIRRORED as a literal in FakeCompanionLlm. */
+    public static final String WEIGHT_MARKER = "SULY-REAKCIO-FELADAT";
+
+    private static final String WEIGHT_PROMPT = WEIGHT_MARKER + "\n"
+            + "Daniel most mérte meg a testsúlyát. Írj rövid magyar reakciót társ-szemszögből, "
+            + "kizárólag a megadott tényadatokból: (1) a MOST RÖGZÍTETT MÉRÉS a kiindulópont — a "
+            + "trendérték (EWMA) simított szám, a kettőt ne keverd össze, és a mérést nevezd "
+            + "mérésnek, a trendet trendnek; (2) helyezd a mérést a heti trend és a cél "
+            + "kontextusába; (3) egyetlen mérésből messzemenő következtetést ne vonj le; (4) ha "
+            + "volt már MAI KORÁBBI ÜZENET, ne ismételd. Számot kitalálni tilos; gyógyszer-"
+            + "adagolás változtatást SOHA ne javasolj. Válaszolj KIZÁRÓLAG szigorú JSON-nal: "
+            + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
+            + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
+
+    static final List<CompanionMessageEnvelope.Ref> SLEEP_CANDIDATES = List.of(
+            new CompanionMessageEnvelope.Ref("Sleep", "ma éjszakai alvás"),
+            new CompanionMessageEnvelope.Ref("Goal", "cél"),
+            new CompanionMessageEnvelope.Ref("Workout", "mai edzés"));
+
+    static final List<CompanionMessageEnvelope.Ref> WEIGHT_CANDIDATES = List.of(
+            new CompanionMessageEnvelope.Ref("WeightTrend", "súlytrend"),
+            new CompanionMessageEnvelope.Ref("Goal", "cél"),
+            new CompanionMessageEnvelope.Ref("FuelDay", "mai üzemanyag"));
+
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
 
@@ -77,6 +122,9 @@ public class CompanionMessageGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ProactiveProperties properties;
     private final ObjectMapper objectMapper;
+    private final SleepLogRepository sleepLogRepository;
+    private final WeightLogRepository weightLogRepository;
+    private final WeightTrendService weightTrendService;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -134,6 +182,124 @@ public class CompanionMessageGenerator {
                 parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * Generates (or returns the existing) sleep-reaction message for one day. The freshly logged
+     * sleep row IS the grounding event — no daily-summary window gate. Returns null when there is
+     * no fresh sleep log (latest log missing, or not dated today/yesterday) or the answer is
+     * unusable — the caller renders honest absence.
+     */
+    @Transactional
+    public CompanionMessageEntity generateSleepReaction(UUID userId, LocalDate date) {
+        CompanionMessageEntity existing = companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(userId, date, CompanionMessageEntity.KIND_SLEEP)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        SleepLogEntity sleep = sleepLogRepository
+                .findFirstByCreatedByAndDeletedFalseOrderByDateDesc(userId).orElse(null);
+        if (sleep == null || !sleep.getDate().isAfter(date.minusDays(2))) {
+            log.debug("No fresh sleep log for {} on {} — no sleep-reaction message", userId, date);
+            return null;
+        }
+        List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(SLEEP_CANDIDATES);
+        StringBuilder payload = new StringBuilder();
+        payload.append(contextSnapshotAssembler.render(userId, date));
+        payload.append(knowledgeFactService.renderPromptBlock(userId));
+        payload.append(earlierMessagesBlock(userId, date));
+        payload.append("\n\nMOST RÖGZÍTETT ALVÁS (").append(sleep.getDate()).append("): ")
+                .append(num(sleep.getDurationH())).append(" h")
+                .append(sleep.getQuality() != null ? ", minőség " + sleep.getQuality() + "/5" : "")
+                .append(sleep.getAwakenings() != null ? ", ébredések: " + sleep.getAwakenings() : "");
+        appendCandidates(payload, candidates);
+
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_feed", "sleep", null, null),
+                () -> companionLlm.complete(SLEEP_PROMPT, payload.toString()));
+        ParsedMessage parsed = parse(answer);
+        if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
+                || parsed.body() == null || parsed.body().isEmpty()) {
+            log.warn("Unusable sleep-reaction answer for {} on {} — no row persisted", userId, date);
+            return null;
+        }
+        CompanionMessageEntity message = new CompanionMessageEntity();
+        message.setCreatedBy(userId);
+        message.setMessageDate(date);
+        message.setKind(CompanionMessageEntity.KIND_SLEEP);
+        message.setContent(new CompanionMessageEnvelope(
+                parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
+        message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * Generates (or returns the existing) weight-reaction message for one day. The freshly logged
+     * weigh-in IS the grounding event — no daily-summary window gate. Returns null when there is
+     * no weigh-in dated exactly {@code date}, or the answer is unusable — the caller renders
+     * honest absence.
+     */
+    @Transactional
+    public CompanionMessageEntity generateWeightReaction(UUID userId, LocalDate date) {
+        CompanionMessageEntity existing = companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(userId, date, CompanionMessageEntity.KIND_WEIGHT)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        WeightLogEntity weight = weightLogRepository
+                .findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId).orElse(null);
+        if (weight == null || !weight.getDate().equals(date)) {
+            log.debug("No today's weigh-in for {} on {} — no weight-reaction message", userId, date);
+            return null;
+        }
+        List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(WEIGHT_CANDIDATES);
+        StringBuilder payload = new StringBuilder();
+        payload.append(contextSnapshotAssembler.render(userId, date));
+        payload.append(knowledgeFactService.renderPromptBlock(userId));
+        payload.append(earlierMessagesBlock(userId, date));
+        WeightTrendResponse trend = weightTrendService.computeTrend(userId);
+        payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ")
+                .append(num(weight.getWeightKg())).append(" kg")
+                .append(trend.getLatestTrendKg() != null
+                        ? "; trendérték (EWMA, simított): " + num(trend.getLatestTrendKg()) + " kg" : "")
+                .append(trend.getWeeklyRateKgPerWeek() != null
+                        ? ", heti " + num(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
+        appendCandidates(payload, candidates);
+
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_feed", "weight", null, null),
+                () -> companionLlm.complete(WEIGHT_PROMPT, payload.toString()));
+        ParsedMessage parsed = parse(answer);
+        if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
+                || parsed.body() == null || parsed.body().isEmpty()) {
+            log.warn("Unusable weight-reaction answer for {} on {} — no row persisted", userId, date);
+            return null;
+        }
+        CompanionMessageEntity message = new CompanionMessageEntity();
+        message.setCreatedBy(userId);
+        message.setMessageDate(date);
+        message.setKind(CompanionMessageEntity.KIND_WEIGHT);
+        message.setContent(new CompanionMessageEnvelope(
+                parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
+        message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /** Numbered HIVATKOZÁS-JELÖLTEK block, identical shape to {@link #generateMorning}'s. */
+    private void appendCandidates(StringBuilder payload, List<CompanionMessageEnvelope.Ref> candidates) {
+        payload.append("\nHIVATKOZÁS-JELÖLTEK (a refIndexes ezekre mutat):\n");
+        for (int i = 0; i < candidates.size(); i++) {
+            CompanionMessageEnvelope.Ref ref = candidates.get(i);
+            payload.append(i).append(": [").append(ref.kind()).append("] ")
+                    .append(ref.label()).append('\n');
+        }
+    }
+
+    /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string. */
+    private static String num(BigDecimal v) {
+        return v == null ? "?" : v.stripTrailingZeros().toPlainString();
     }
 
     /** Today's already-persisted feed messages as a "ne ismételd" block; "" when none. */
