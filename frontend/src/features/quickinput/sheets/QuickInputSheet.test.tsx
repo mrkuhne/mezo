@@ -26,3 +26,10 @@ test('a tile closes the sheet and navigates to its target', async () => {
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
 })
+test('the chat row closes the sheet and navigates to the companion chat', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByText('Beszélgetés a társsal'))
+  await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+  expect(screen.getByTestId('loc')).toHaveTextContent('/insights/chat')
+})

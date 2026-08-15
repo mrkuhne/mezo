@@ -4,6 +4,7 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
 
 const ACTIONS = [
   { label: 'Étkezés', sub: 'recept vagy szabad', emoji: '🍽', to: '/fuel' },
@@ -22,6 +23,18 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
         <div className="quicklog">
           <h2 id="quicklog-title">Gyors logolás</h2>
           <p className="quicklog-sub">bármikor, két koppintás</p>
+          <button
+            type="button"
+            className="quicklog-chat np-press"
+            onClick={() => { close(); navigate('/insights/chat') }}
+          >
+            <span className="quicklog-chat-emoji" aria-hidden>💬</span>
+            <span className="quicklog-chat-text">
+              <span className="quicklog-chat-label">Beszélgetés a társsal</span>
+              <span className="quicklog-chat-hint">kérdezz, mesélj, tervezz</span>
+            </span>
+            <Icon name="chevron-right" size={18} />
+          </button>
           <div className="quicklog-grid">
             {ACTIONS.map(a => (
               <button key={a.label} type="button" className="quicklog-tile np-press"
