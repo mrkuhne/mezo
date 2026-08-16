@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -68,6 +68,25 @@ describe('PatternsPage (mock mode)', () => {
     // setState would drop all but the last toggle, leaving one domain filter stuck on).
     fireEvent.click(mindChip)
     expect(mindChip).toHaveClass('chip', 'brand')
+  })
+
+  test('a decide-bucket hypothesis entry with no monitor pair renders without a dead detail link (review fix, mezo-tk88.5)', () => {
+    renderPage()
+    // p3 (hyp-3fa1c2d9) has no matching monitor pair — its pairKey is never a real catalog key,
+    // so a "/insights/patterns/hyp-3fa1c2d9" link would guarantee "Nincs ilyen minta.".
+    const card = screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc').closest('.card') as HTMLElement
+    expect(within(card).queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
+    // a pair-backed decide card in the SAME bucket still gets its link.
+    const pairBackedCard = screen.getByText('Rosszabbul alszol, ha későn eszel?').closest('.card') as HTMLElement
+    expect(within(pairBackedCard).getByRole('link', { name: /Részletek és előzmények/ })).toBeInTheDocument()
+  })
+
+  test('a confirmed lifecycle row with no monitor pair renders as a plain row, no dead detail link (review fix, mezo-tk88.5)', () => {
+    renderPage()
+    // p1 (status: confirmed, pairKey "reta-dose~daily-kcal") has no matching monitor pair either —
+    // the confirmed bucket's mini-row falls back to the pattern's own title and must not link out.
+    const title = screen.getByText('Reta beadás + 36h ablakban étvágy lefulladás')
+    expect(title.closest('a')).toBeNull()
   })
 
   test('?pair= redirects to the detail page', () => {
