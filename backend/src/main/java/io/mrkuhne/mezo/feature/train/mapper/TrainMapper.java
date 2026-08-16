@@ -23,6 +23,9 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -99,5 +102,10 @@ public interface TrainMapper {
 
     default List<MesocycleResponse.PhaseCurveEnum> phaseCurve(List<String> curve) {
         return curve.stream().map(MesocycleResponse.PhaseCurveEnum::fromValue).toList();
+    }
+
+    /** Entity stores Instant; the generated contract type uses OffsetDateTime (UTC on the wire either way). */
+    default OffsetDateTime map(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 }
