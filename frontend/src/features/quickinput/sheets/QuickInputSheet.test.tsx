@@ -48,3 +48,12 @@ test('the Napló tile swaps the menu for the activity log sheet, without closing
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
+
+test('the Alvás tile swaps the menu for the sleep log sheet, without closing', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByText('Alvás'))
+  expect(await screen.findByText('Hogyan aludtunk?')).toBeInTheDocument()
+  expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})

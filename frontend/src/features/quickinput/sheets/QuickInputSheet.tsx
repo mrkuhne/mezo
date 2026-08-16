@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
+import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
 
 /** Which surface the sheet shows: the launcher grid, or a log sheet opened in its place. */
 type Phase = 'menu' | 'sleep' | 'naplo' | 'checkin'
@@ -39,6 +40,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
 
   // Each log sheet brings its own portal + backdrop, so it REPLACES the menu
   // rather than layering over it. Closing it closes the whole stack.
+  if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
   if (phase === 'naplo') return <ActivityLogSheet onClose={onClose} />
 
   return (
