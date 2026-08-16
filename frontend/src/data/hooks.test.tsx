@@ -71,10 +71,12 @@ test('useTodayScenario (real mode): medCycleDay follows a non-default derived cy
 
 test('useTodayScenario (real mode): ?medCycleDay= override still wins over the derived cycle', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  // The MSW default is the no-medication ghost (cycleDay 0), but the URL override is top priority → 5.
+  // The fixture's derived cycle is cycleDay 3, but the URL override is top priority → 5.
+  server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
   const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today?medCycleDay=5') })
   expect(result.current.medCycleDay).toBe(5)
-  // stays 5 even after the medication day resolves.
+  // stays 5 even after the medication day resolves (to cycleDay 3, not 5 — proves the override
+  // isn't just coincidentally matching the derived value).
   await new Promise(r => setTimeout(r, 0))
   expect(result.current.medCycleDay).toBe(5)
 })

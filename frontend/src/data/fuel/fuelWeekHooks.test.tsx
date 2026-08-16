@@ -69,7 +69,9 @@ describe('useFuelWeek (mock mode)', () => {
   it('returns the seeds, the demo title and the coach note', () => {
     const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
     expect(result.current.title).toBe('Máj 18 – 24')
-    expect(result.current.medCycleWeek).toHaveLength(7)
+    // mezo-lwmq: the owner tracks no medication — the mock seed's cycle week is empty, same as
+    // real mode's default. See the (real mode) test below for the populated strip.
+    expect(result.current.medCycleWeek).toEqual([])
     expect(result.current.gymSchedule).toHaveLength(7)
     expect(result.current.weeklySupplements.length).toBeGreaterThan(0)
     expect(result.current.patterns).toHaveLength(4)

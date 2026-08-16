@@ -9,10 +9,12 @@ import { makeHookWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useFuelWeek returns 7 medication cycle days, gym schedule, supplement matrix, patterns', () => {
+test('useFuelWeek returns an empty medication cycle week (nincs gyógyszer), gym schedule, supplement matrix, patterns', () => {
   const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
-  expect(result.current.medCycleWeek).toHaveLength(7)
-  expect(result.current.medCycleWeek[2].label).toBe('Stable')
+  // mezo-lwmq: the owner tracks no medication — the mock seed's cycle week is honestly empty too,
+  // same as real mode. Tests that need the populated strip drive it from an explicit fixture
+  // (see MedicationWeekStrip.test.tsx).
+  expect(result.current.medCycleWeek).toEqual([])
   expect(result.current.gymSchedule).toHaveLength(7)
   expect(result.current.weeklySupplements.length).toBeGreaterThan(0)
   expect(result.current.patterns.length).toBe(4)

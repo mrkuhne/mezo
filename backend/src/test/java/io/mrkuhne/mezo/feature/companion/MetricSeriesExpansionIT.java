@@ -176,7 +176,7 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     @Test
     void testSeries_shouldCarryLastDoseForward_whenDoseAdministeredEarlier() {
         UUID owner = userPopulator.createUser().getId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), DAY.minusDays(2), new BigDecimal("6"));
 
         Map<LocalDate, Double> series = metricSeriesService.series(

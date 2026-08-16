@@ -38,6 +38,8 @@ describe('FuelMedicationPage (mock mode)', () => {
     // Sage Napiv header (Task 7): the .over eyebrow copy is unchanged, only the pghead-np/
     // sage vocabulary + the "＋ Beadás" action chip's accent moved off brand-teal.
     expect(screen.getByText('Fuel · Gyógyszer')).toBeInTheDocument()
+    // De-branded page title (mezo-lwmq): guards against a regression back to "Reta".
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Gyógyszer')
     expect(screen.getByText('Teszt gyógyszer')).toBeInTheDocument()
     // route + cadence subtitle on the card (mockup: "subQ injekció · heti · hétfő")
     expect(screen.getByText(/subQ injekció · heti · hétfő/)).toBeInTheDocument()
@@ -64,7 +66,7 @@ describe('FuelMedicationPage (mock mode)', () => {
     expect(note.textContent).toMatch(/Stabil/)
   })
 
-  it('lists the 3 seeded doses in the Beadások log, newest first', () => {
+  it('lists the 3 fixture doses in the Beadások log, newest first', () => {
     renderView(clientWithFixture())
     const log = screen.getByRole('list', { name: /beadások/i })
     const rows = within(log).getAllByRole('listitem')
@@ -94,7 +96,7 @@ describe('FuelMedicationPage (real mode)', () => {
   })
   afterEach(() => vi.unstubAllEnvs())
 
-  it('renders the medication + cycle + 3 doses from the API handler fixture', async () => {
+  it('renders the medication + cycle + 3 doses from the overridden API handler', async () => {
     renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
     expect(await screen.findByText('Teszt gyógyszer')).toBeInTheDocument()
     const note = await screen.findByTestId('medication-phase-note')

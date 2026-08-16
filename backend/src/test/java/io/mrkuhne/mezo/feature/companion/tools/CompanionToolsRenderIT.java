@@ -824,7 +824,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeRetaAndDoseAnchored() {
         UUID owner = userPopulator.createUser().getId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
 
         String out = medicationTools.getMedication("reta", ctx(owner));
@@ -839,7 +839,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetMedication_shouldRenderHonestZero_whenScopeRetaAndNoDose() {
         UUID owner = userPopulator.createUser().getId();
-        medicationPopulator.createReta(owner);
+        medicationPopulator.createMedication(owner);
         assertThat(medicationTools.getMedication("reta", ctx(owner)))
                 .isEqualTo("Retatrutid ciklus: Teszt gyógyszer — nincs rögzített dózis");
     }
@@ -847,7 +847,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetMedication_shouldDefaultToReta_whenScopeOmitted() {
         UUID owner = userPopulator.createUser().getId();
-        medicationPopulator.createReta(owner);
+        medicationPopulator.createMedication(owner);
         assertThat(medicationTools.getMedication(null, ctx(owner)))
                 .isEqualTo("Retatrutid ciklus: Teszt gyógyszer — nincs rögzített dózis");
     }
@@ -855,7 +855,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetMedication_shouldRenderGeneralOverview_whenScopeAll() {
         UUID owner = userPopulator.createUser().getId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
 
         String out = medicationTools.getMedication("all", ctx(owner));
@@ -870,7 +870,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetMedication_shouldRenderRegimenWithoutCycleLine_whenScopeAllAndNoDose() {
         UUID owner = userPopulator.createUser().getId();
-        medicationPopulator.createReta(owner);
+        medicationPopulator.createMedication(owner);
 
         String out = medicationTools.getMedication("all", ctx(owner));
 

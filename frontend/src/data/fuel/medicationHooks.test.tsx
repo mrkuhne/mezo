@@ -77,16 +77,25 @@ describe('useMedication (mock mode)', () => {
 describe('useMedication (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
-  it('returns a no-medication ghost (NOT the seed) before the query resolves', () => {
-    server.use(http.get(`${API_BASE}/api/medication`, () => new Promise(() => {}))) // never resolves
+  it('returns a no-medication ghost before the query resolves, proven by an actual fetch (not a coincidental seed match)', async () => {
+    // mezo-lwmq: medicationSeed is now byte-identical to the ghost, so the ghost VALUES alone no
+    // longer distinguish "real mode correctly fell back to realEmpty" from "real mode wrongly fell
+    // back to the mock seed" (see useDualQuery's invariant, medicationHooks.ts:24-26 /
+    // useDualQuery.ts). Spy on the handler to prove the real branch actually issued the fetch.
+    let fetchCount = 0
+    server.use(http.get(`${API_BASE}/api/medication`, () => {
+      fetchCount++
+      return new Promise(() => {}) // never resolves
+    }))
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
+    await waitFor(() => expect(fetchCount).toBeGreaterThan(0))
     expect(result.current.cycle.cycleDay).toBe(0)
     expect(result.current.doses).toEqual([])
     expect(result.current.medication.name).toBe('')
   })
 
-  it('reads medication + cycle + doses from the API handler fixture', async () => {
+  it('reads medication + cycle + doses from the overridden API handler', async () => {
     server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })

@@ -127,7 +127,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Test
     void testResolve_shouldYieldNoMedicationAnchor_whenCycleDayIsZeroBecauseNoDoseWasEverLogged() {
         UUID owner = ownerId();
-        medicationPopulator.createReta(owner);
+        medicationPopulator.createMedication(owner);
         // No dose logged — MedicationCycleService.derive(...) reports the honest cycleDay == 0.
 
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
@@ -139,7 +139,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Test
     void testResolve_shouldYieldAMedicationAnchor_whenADoseWasLoggedSoCycleDayIsPositive() {
         UUID owner = ownerId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), WEDNESDAY, new BigDecimal("6"));
 
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);

@@ -30,7 +30,7 @@ class MedicationCycleServiceIT extends AbstractIntegrationTest {
 
     @Test
     void testDerive_shouldReturnStablePhaseDay3_whenLastDose2DaysAgo() {
-        var med = medPop.createReta(owner);
+        var med = medPop.createMedication(owner);
         dosePop.createDose(
             owner, med.getId(), LocalDate.of(2026, 6, 22), new java.math.BigDecimal("6")); // Mon
         var cycle = service.derive(owner, med, LocalDate.of(2026, 6, 24)); // +2 days
@@ -42,7 +42,7 @@ class MedicationCycleServiceIT extends AbstractIntegrationTest {
 
     @Test
     void testDerive_shouldReturnNoDoseGhost_whenNoDoses() {
-        var med = medPop.createReta(owner);
+        var med = medPop.createMedication(owner);
         var cycle = service.derive(owner, med, LocalDate.of(2026, 6, 24));
         assertThat(cycle.cycleDay()).isZero(); // honest-zero, no fabricated day
         assertThat(cycle.lastDoseAt()).isNull();

@@ -22,11 +22,14 @@ describe('FuelPlanPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('renders the demo title, weekly stats, reta strip and rhythm grid', () => {
+  it('renders the demo title, weekly stats and rhythm grid; hides the medication cycle card (nincs gyógyszer)', () => {
     renderView()
     expect(screen.getByText('Máj 18 – 24')).toBeInTheDocument()
-    expect(screen.getByText(/Gyógyszer-ciklus · 7 nap/)).toBeInTheDocument()
-    expect(screen.getByText('D3')).toBeInTheDocument()
+    // mezo-lwmq: the owner tracks no medication — the mock seed's cycle week is empty, so the
+    // `medCycleWeek.length > 0` gate hides the card, consistent with FuelMedicationPage's own
+    // "Nincs aktív gyógyszer" empty state. See FuelPlanPage (real mode) below for the populated
+    // card, driven from the neutral medicationFixture.
+    expect(screen.queryByText(/Gyógyszer-ciklus · 7 nap/)).not.toBeInTheDocument()
     expect(screen.getByText('Heti supplement-térkép')).toBeInTheDocument()
     expect(screen.getByText('92%')).toBeInTheDocument()
   })

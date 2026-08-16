@@ -30,7 +30,7 @@ class MedicationServiceIT extends AbstractIntegrationTest {
 
     @Test
     void testLogDose_shouldAppendDoseAndShiftCycle_whenValid() {
-        var med = medPop.createReta(owner);
+        var med = medPop.createMedication(owner);
         var req = new MedicationDoseRequest().dose(new java.math.BigDecimal("6"))
             .administeredAt(java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC));
         var saved = service.logDose(owner, med.getId(), req);
@@ -42,7 +42,7 @@ class MedicationServiceIT extends AbstractIntegrationTest {
 
     @Test
     void testLogDose_shouldReject_whenForeignMedication() {
-        var mine = medPop.createReta(owner);
+        var mine = medPop.createMedication(owner);
         assertThatThrownBy(() -> service.logDose(other, mine.getId(),
             new MedicationDoseRequest().dose(new java.math.BigDecimal("6"))))
             .isInstanceOf(io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException.class);

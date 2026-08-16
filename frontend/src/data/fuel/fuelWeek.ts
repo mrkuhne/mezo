@@ -15,16 +15,11 @@ export const weekTitle = 'Máj 18 – 24'
 export const weeklyNote =
   'Most kell egy **középmagas-protein héttel** menni — Reta D3-D5 a peak étvágy-süllyedés.'
 
-// fuel-plan.jsx heti gyógyszer-ciklus csík fázisai (227–235)
-export const medCycleWeek: MedCycleDayCell[] = [
-  { d: 1, label: 'Peak', color: 'var(--medcycle-d1)' },
-  { d: 2, label: 'Peak', color: 'var(--medcycle-d2)' },
-  { d: 3, label: 'Stable', color: 'var(--medcycle-d3)' },
-  { d: 4, label: 'Stable', color: 'var(--medcycle-d4)' },
-  { d: 5, label: 'Stable', color: 'var(--medcycle-d5)' },
-  { d: 6, label: 'Trough', color: 'var(--medcycle-d6)' },
-  { d: 7, label: 'Trough', color: 'var(--medcycle-d7)' },
-]
+// Medication cycle strip (mezo-lwmq): the owner tracks NO medication — an empty week, same as
+// the real-mode ghost. FuelPlanPage's `medCycleWeek.length > 0` gate hides the cycle card in
+// BOTH modes now, consistent with FuelMedicationPage's "Nincs aktív gyógyszer" empty state.
+// Tests that need the populated strip drive it from an explicit fixture instead.
+export const medCycleWeek: MedCycleDayCell[] = []
 
 // fuel-plan.jsx WeeklySupplementGrid DAYS (404) — duplicate 'Sz' = Szerda + Szombat
 export const DAYS_HU = ['H', 'K', 'Sz', 'Cs', 'P', 'Sz', 'V'] as const

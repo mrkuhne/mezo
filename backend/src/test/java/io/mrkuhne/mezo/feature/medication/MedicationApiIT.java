@@ -36,7 +36,7 @@ class MedicationApiIT extends ApiIntegrationTest {
 
     @Test
     void testLogDose_shouldReturn201AndStartCycle_whenPostedToday() {
-        MedicationEntity med = medPop.createReta(ownerId());
+        MedicationEntity med = medPop.createMedication(ownerId());
         // Dose administered TODAY at start-of-day UTC: never in the future regardless of when the
         // suite runs (mezo-yc9z), and the cycle is derived for today, so days-since-last-dose is 0
         // -> cycleDay 1 (the first cycle day).
@@ -67,7 +67,7 @@ class MedicationApiIT extends ApiIntegrationTest {
      */
     @Test
     void testLogDose_shouldRejectAndNotPersist_whenAdministeredAtHasNoZoneOffset() {
-        MedicationEntity med = medPop.createReta(ownerId());
+        MedicationEntity med = medPop.createMedication(ownerId());
         // Raw JSON with a zone-LESS administeredAt (no trailing offset / Z).
         String zonelessJson = "{\"dose\":6,\"administeredAt\":\"2026-06-26T00:00:00\"}";
         HttpHeaders headers = ownerAuthHeaders();

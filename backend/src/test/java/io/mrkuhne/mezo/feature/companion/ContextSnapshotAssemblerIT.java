@@ -391,7 +391,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     void testRender_shouldRenderCycleDayAndPhase_whenActiveMedicationWithDose() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
-        var med = medicationPopulator.createReta(owner);
+        var med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), today.minusDays(3), new BigDecimal("6"));
 
         String snapshot = assembler.render(owner, today);
