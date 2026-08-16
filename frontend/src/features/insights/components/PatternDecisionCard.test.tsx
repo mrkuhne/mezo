@@ -40,3 +40,12 @@ test('renders question title, decision verbs and the detail link', () => {
   // nyers statisztika SOSEM a kártyán:
   expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
 })
+
+test('showDetailLink={false} suppresses the self-referential detail link (mezo-tk88.5 review fix)', () => {
+  render(
+    <MemoryRouter>
+      <PatternDecisionCard pattern={statistical} pair={pair} onDecide={() => {}} showDetailLink={false} />
+    </MemoryRouter>,
+  )
+  expect(screen.queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
+})

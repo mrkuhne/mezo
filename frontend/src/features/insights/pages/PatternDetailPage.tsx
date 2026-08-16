@@ -107,6 +107,7 @@ export function PatternDetailPage() {
           onDecide={(d: PatternStatus) => decide(pattern.id, d)}
           showExplainer={false}
           titleSize={19}
+          showDetailLink={false}
         />
       ) : (
         <GatheringHeaderCard pair={pair} bottleneckCoveredDays={bottleneckCoveredDays} />
@@ -171,7 +172,7 @@ export function PatternDetailPage() {
 
       <PatternImpactCard pattern={pattern} impact={impact} />
 
-      <LifecycleSection title="🔧 Motor-diagnosztika" accent="var(--text-secondary)" count={1}>
+      <LifecycleSection title="🔧 Motor-diagnosztika" accent="var(--text-secondary)">
         <p style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-tertiary)', padding: '0 4px' }}>
           Ablak: {monitor?.windowFrom ?? '—'} – {monitor?.windowTo ?? '—'} ({monitor?.lookbackDays ?? '—'} nap) · lag: {pair.lagDays} nap · utolsó futás: {lastRunLabel(monitor?.lastRunAt)}
         </p>

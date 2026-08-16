@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -41,6 +41,26 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: 'Megerősítve' })).toBeInTheDocument()
     // raw r/n/p never appear outside the collapsed diagnostics section
     expect(screen.queryByText(/r=-0\.42/)).not.toBeInTheDocument()
+    // the header's own "Részletek és előzmények →" link would point at this very page — suppressed
+    // on the detail page (review fix)
+    expect(screen.queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
+    // the diagnostics section (mockup: no count) never shows a list-style "· N" suffix
+    expect(screen.queryByText(/Motor-diagnosztika · \d/)).not.toBeInTheDocument()
+  })
+
+  test('a decision made from the detail header updates the page without a reload (review fix, mezo-tk88.5)', async () => {
+    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    expect(screen.getByRole('button', { name: 'Megerősítve' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
+
+    // the pattern is no longer confirmed — the confirm button reverts to its inactive label
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Megerősítem' })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole('button', { name: 'Megerősítve' })).not.toBeInTheDocument()
+    // downstream of the same status flip: the impact card falls back to the future-tense row
+    expect(screen.getByText(/Ha megerősíted/)).toBeInTheDocument()
   })
 
   test('the strength/scatter captions use the first/last snapshot n and the latest day', () => {

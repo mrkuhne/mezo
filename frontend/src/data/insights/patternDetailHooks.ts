@@ -4,9 +4,13 @@ import { patternDetailApi } from '@/data/insights/patternDetailApi'
 import { mockPatternPairDetail } from '@/data/insights/insights'
 import type { PatternPairDetail } from '@/data/types'
 
-const detailKey = (pairKey: string) => ['pattern-pair-detail', pairKey]
+/** The bare query-key prefix — exported so a write elsewhere (e.g. `usePatternActions().decide`,
+ *  `patternsHooks.ts`) can invalidate/patch every cached pairKey's detail without importing the
+ *  full per-key builder. */
+export const PATTERN_PAIR_DETAIL_KEY = ['pattern-pair-detail']
+const detailKey = (pairKey: string) => [...PATTERN_PAIR_DETAIL_KEY, pairKey]
 
-interface PatternPairDetailBootstrap {
+export interface PatternPairDetailBootstrap {
   detail: PatternPairDetail | null
   notFound: boolean
   mode: 'mock' | 'live'

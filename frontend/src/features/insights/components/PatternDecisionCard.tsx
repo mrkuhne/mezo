@@ -22,6 +22,7 @@ export function PatternDecisionCard({
   onDecide,
   showExplainer = false,
   titleSize = 17,
+  showDetailLink = true,
 }: {
   pattern: Pattern
   pair: PatternMonitorPair | null
@@ -30,6 +31,9 @@ export function PatternDecisionCard({
   showExplainer?: boolean
   /** a részlet-oldal fejléc-kártyája (mezo-tk88.5) nagyobb címet kap, mint az inbox-kártya */
   titleSize?: number
+  /** hamis a részlet-oldalon (mezo-tk88.5 review fix) — a „Részletek és előzmények →" link
+   *  önmagára mutatna, ha a kártya már a részlet-oldal fejléce */
+  showDetailLink?: boolean
 }) {
   const railColor = patternCategoryColor(pattern.category)
   const status = pattern.status ?? 'proposed'
@@ -154,11 +158,13 @@ export function PatternDecisionCard({
         </button>
       </div>
 
-      <div className="row" style={{ justifyContent: 'flex-end', marginTop: 9 }}>
-        <Link to={`/insights/patterns/${pattern.pairKey}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
-          Részletek és előzmények →
-        </Link>
-      </div>
+      {showDetailLink && (
+        <div className="row" style={{ justifyContent: 'flex-end', marginTop: 9 }}>
+          <Link to={`/insights/patterns/${pattern.pairKey}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+            Részletek és előzmények →
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
