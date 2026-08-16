@@ -6,10 +6,12 @@ type NotificationScheduleEntry = components['schemas']['NotificationScheduleEntr
 type BackendNativeCategory = Exclude<NotificationCategoryKey, 'checkin' | 'fuel_slot'>
 
 /**
- * Today's resolvable anchor times for the 9 backend-native categories, straight off existing
+ * Today's resolvable anchor times for the 12 backend-native categories, straight off existing
  * FE hooks (design spec §7: "the FE already knows today's gym time, bed anchor and ritual
  * window") — `null`/`false` means no anchor today (nothing scheduled, the ritual feature is
- * unavailable, or not a medication dose day), never a fabricated minute.
+ * unavailable, or not a medication dose day), never a fabricated minute. `sleep_reaction`/
+ * `weight_reaction` are backend-native too but never resolvable here (mezo-gst9): their anchor
+ * is the companion message's own generation minute, unknowable client-side ahead of time.
  */
 export interface NotificationForecastAnchors {
   /** Wake anchor (briefing daily; weekly on Monday only) — HH:mm. */
@@ -43,6 +45,7 @@ export interface NotificationForecast {
 // Mirrors AnchorResolver's own hardcoded constants (backend, same package) — stable config-ish
 // values, not per-user data, so hardcoding them here for a client-side preview is honest.
 const MIDDAY_HHMM = '12:30'
+const EVENING_HHMM = '20:30'
 const MEMOIR_HHMM = '19:00'
 const MEDICATION_HHMM = '08:00' // mirrors mezo.notification.medication-time's default (spec §9)
 const ISO_MONDAY = 1
@@ -90,6 +93,8 @@ function backendAnchorMinute(
       return weekday === ISO_SUNDAY ? toMin(MEMOIR_HHMM) : null
     case 'midday':
       return toMin(MIDDAY_HHMM)
+    case 'evening':
+      return toMin(EVENING_HHMM)
     case 'gym':
       return anchors.gymTime ? toMin(anchors.gymTime) : null
     case 'medication':
@@ -100,6 +105,12 @@ function backendAnchorMinute(
       return anchors.bedTime ? toMin(anchors.bedTime) : null
     case 'wind_down':
       return anchors.ritualPrepStartsAt ? toMin(anchors.ritualPrepStartsAt) : null
+    case 'sleep_reaction':
+    case 'weight_reaction':
+      // Event-kind: the anchor is the companion message's OWN generation minute, which the FE
+      // cannot know ahead of generation — an honest "no resolvable anchor today", never a
+      // fabricated clock time (mirrors gym/medication/ritual's null-when-absent contract).
+      return null
   }
 }
 

@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * The 11 push-notification categories (bd mezo-h4wp.6.2). This enum is the single source of truth
+ * The 14 push-notification categories (bd mezo-h4wp.6.2, mezo-gst9). This enum is the single source of truth
  * for which categories exist, which default ON, which carry a notification-side lead offset, and
  * which are FE-written — see spec §6 (`docs/superpowers/specs/2026-07-29-push-notifications-design.md`)
  * for the authoritative catalog table (key, anchor, source of truth, v1 default).
@@ -52,7 +52,19 @@ public enum NotificationCategory {
     CHECKIN("checkin", false, 0, true),
 
     /** Anchor: 6 slots/day; FE-written — source FE snapshot ({@code buildProtocol}). */
-    FUEL_SLOT("fuel_slot", false, 0, true);
+    FUEL_SLOT("fuel_slot", false, 0, true),
+
+    /** Anchor: 20:30, generation-graced; source {@code companion_message} evening row
+     *  (companion-feed, mezo-gst9). */
+    EVENING("evening", true, 0, false),
+
+    /** Anchor: the row's own generation minute; source {@code companion_message} sleep row
+     *  (companion-feed, mezo-gst9). */
+    SLEEP_REACTION("sleep_reaction", true, 0, false),
+
+    /** Anchor: the row's own generation minute; source {@code companion_message} weight row
+     *  (companion-feed, mezo-gst9). */
+    WEIGHT_REACTION("weight_reaction", true, 0, false);
 
     private final String key;
     private final boolean defaultEnabled;

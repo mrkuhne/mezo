@@ -19,12 +19,20 @@ public class CompanionMessagePopulator {
 
     public CompanionMessageEntity createMessage(
             UUID owner, LocalDate date, String kind, String eyebrow, List<String> body) {
+        return createMessage(owner, date, kind, eyebrow, body, Instant.now());
+    }
+
+    /** Explicit {@code generatedAt} — needed by callers (e.g. AnchorResolverIT's event-kind
+     *  anchor tests) that assert on the row's OWN generation minute and so cannot tolerate
+     *  {@link Instant#now()}'s wall-clock nondeterminism. */
+    public CompanionMessageEntity createMessage(
+            UUID owner, LocalDate date, String kind, String eyebrow, List<String> body, Instant generatedAt) {
         CompanionMessageEntity entity = new CompanionMessageEntity();
         entity.setCreatedBy(owner);
         entity.setMessageDate(date);
         entity.setKind(kind);
         entity.setContent(new CompanionMessageEnvelope(eyebrow, body, List.of()));
-        entity.setGeneratedAt(Instant.now());
+        entity.setGeneratedAt(generatedAt);
         return companionMessageRepository.saveAndFlush(entity);
     }
 }

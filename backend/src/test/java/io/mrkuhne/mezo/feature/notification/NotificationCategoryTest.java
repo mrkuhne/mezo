@@ -12,15 +12,16 @@ class NotificationCategoryTest {
     void testValues_shouldMatchTheSpecCatalog_whenListed() {
         assertThat(Arrays.stream(NotificationCategory.values()).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
-                "weekly", "memoir", "wind_down", "midday", "checkin", "fuel_slot");
+                "weekly", "memoir", "wind_down", "midday", "checkin", "fuel_slot",
+                "evening", "sleep_reaction", "weight_reaction");
     }
 
     @Test
-    void testDefaultEnabled_shouldBeTheSevenSpecDefaults_whenFiltered() {
+    void testDefaultEnabled_shouldBeTheTenSpecDefaults_whenFiltered() {
         assertThat(Arrays.stream(NotificationCategory.values())
                 .filter(NotificationCategory::defaultEnabled).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
-                "weekly", "memoir");
+                "weekly", "memoir", "evening", "sleep_reaction", "weight_reaction");
     }
 
     @Test

@@ -102,4 +102,17 @@ describe('forecastToday (pure)', () => {
     expect(forecastToday(prefs, [], { ...NO_ANCHORS, medicationDay: false }, WEDNESDAY).total).toBe(0)
     expect(forecastToday(prefs, [], { ...NO_ANCHORS, medicationDay: true }, WEDNESDAY).total).toBe(1)
   })
+
+  it('evening counts every day at its fixed 20:30 anchor', () => {
+    const prefs = [pref('evening', true)]
+    const result = forecastToday(prefs, [], NO_ANCHORS, WEDNESDAY)
+    expect(result.total).toBe(1)
+    expect(result.perHour[20]).toBe(1)
+  })
+
+  it('sleep_reaction and weight_reaction are honestly skipped — no client-resolvable anchor', () => {
+    const prefs = [pref('sleep_reaction', true), pref('weight_reaction', true)]
+    const result = forecastToday(prefs, [], NO_ANCHORS, WEDNESDAY)
+    expect(result.total).toBe(0)
+  })
 })

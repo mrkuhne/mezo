@@ -1218,19 +1218,22 @@ export interface PushSubscriptionState {
   sendTest: () => Promise<{ attempted: number; sent: number }>
 }
 
-// ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3) ─────
-// The 11 keys/sections/defaults mirror the backend's authoritative enum
+// ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
+// evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
+// The 14 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
 export type NotificationCategoryKey =
   | 'briefing' | 'gym' | 'medication' | 'ritual' | 'lights_out'
   | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
+  | 'evening' | 'sleep_reaction' | 'weight_reaction'
 
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'briefing', 'gym', 'medication', 'ritual', 'lights_out',
   'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
+  'evening', 'sleep_reaction', 'weight_reaction',
 ]
 
 export interface NotificationPrefView {
@@ -1302,5 +1305,17 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
   fuel_slot: {
     label: 'Fuel & stack', emoji: '💊', section: 'reminder',
     description: 'Minden fuel/stack slotnál', showLeadChip: false, iconBg: '--wash-sage',
+  },
+  evening: {
+    label: 'Napzárás', emoji: '🌇', section: 'prose',
+    description: 'Esti záró üzenet a naptól.', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  sleep_reaction: {
+    label: 'Alvás-reakció', emoji: '💤', section: 'prose',
+    description: 'Üzenet az alvás rögzítése után.', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  weight_reaction: {
+    label: 'Súly-reakció', emoji: '⚖️', section: 'prose',
+    description: 'Üzenet a reggeli mérés után.', showLeadChip: false, iconBg: '--wash-sport',
   },
 }
