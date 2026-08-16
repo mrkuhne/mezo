@@ -54,6 +54,10 @@ export function phaseBarHeight(p: MesoPhase): number {
 export const mesocycles: Mesocycle[] = [
   {
     id: 'meso-hyp-04',
+    // Links to the template derived from this same run's days (mesoTemplatesMock below) —
+    // mirrors backend reality (every run started from a template carries its id) and lets
+    // mock-mode rerun resolve without materializing a throwaway template (mezo-meyc.1 fix).
+    templateId: 'a10e0000-0000-4000-8000-000000000000',
     title: 'Hypertrophy 04 · Tavasz',
     shortTitle: 'Hypertrophy 04',
     status: 'active',

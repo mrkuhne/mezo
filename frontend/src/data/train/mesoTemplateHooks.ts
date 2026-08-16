@@ -211,12 +211,36 @@ function mockStart(qc: QueryClient, id: string, body: MesoTemplateStartRequest):
   return started
 }
 
-// No per-instance template linkage exists in the mock mesocycles fixture — fall back to
-// the meso's own templateId when the client-owned cache carries one (set by mockStart
-// above), else the first known template, so the offline demo always resolves to something.
+// Mirrors backend rerun semantics (mezo-meyc.1 fix round 1): a meso started FROM a
+// template already carries that `templateId` — just return it. A legacy/direct run (no
+// `templateId`, e.g. `meso-rec-03`) has never had one, so the backend materializes a
+// fresh template from the run's own fields on first rerun; mock does the same — insert
+// a new template built from the meso's title/shortTitle/goal/weeks/split/style/phaseCurve
+// (days: [] — a legacy run's per-day recipe isn't reconstructable from the domain
+// Mesocycle shape in mock), then stamp the meso with the new id so a second rerun of the
+// SAME meso reuses it instead of materializing again.
 function mockRerun(qc: QueryClient, mesoId: string): MesoRerunResponse {
   const mesos = qc.getQueryData<Mesocycle[]>(MESOS_KEY) ?? mesocycles
-  const templates = qc.getQueryData<MesoTemplate[]>(TEMPLATES_KEY) ?? mesoTemplatesMock
   const meso = mesos.find((m) => m.id === mesoId)
-  return { templateId: meso?.templateId ?? templates[0]?.id ?? crypto.randomUUID() }
+  if (meso?.templateId) {
+    return { templateId: meso.templateId }
+  }
+  const materialized: MesoTemplate = {
+    id: crypto.randomUUID(),
+    title: meso?.title ?? 'Mesociklus',
+    shortTitle: meso?.shortTitle ?? null,
+    goal: meso?.goal ?? null,
+    weeks: meso?.weeks ?? 1,
+    split: meso?.split ?? null,
+    style: meso?.style ?? null,
+    phaseCurve: meso?.phaseCurve ?? [],
+    notes: null,
+    volumePerMuscle: null,
+    days: [],
+    runCount: 1,
+  }
+  qc.setQueryData<MesoTemplate[]>(TEMPLATES_KEY, (prev) => [...(prev ?? mesoTemplatesMock), materialized])
+  qc.setQueryData<Mesocycle[]>(MESOS_KEY, (prev) =>
+    (prev ?? mesocycles).map((m) => (m.id === mesoId ? { ...m, templateId: materialized.id } : m)))
+  return { templateId: materialized.id }
 }
