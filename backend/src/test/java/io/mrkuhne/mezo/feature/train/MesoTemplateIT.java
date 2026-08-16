@@ -5,14 +5,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
+import io.mrkuhne.mezo.api.dto.MesoRerunResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
+import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
+import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.VolumeBaseline;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,8 +31,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * HTTP-level tests for meso TEMPLATE CRUD (mezo-meyc.1) — the reusable plan document behind the
- * template/run split ({@code /api/train/meso-templates}).
+ * HTTP-level tests for the meso TEMPLATE/RUN split (mezo-meyc.1): template CRUD
+ * ({@code /api/train/meso-templates}), stamping a run from a template
+ * ({@code .../{id}/start}) and materializing a template out of a legacy run
+ * ({@code /api/train/mesocycles/{id}/rerun}).
  *
  * <p>The create round-trip deliberately carries a two-muscle {@code volumePerMuscle} map AND
  * nested day exercises: {@code meso_template} is the project's first
@@ -35,9 +44,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class MesoTemplateIT extends ApiIntegrationTest {
 
     private static final String TEMPLATES = "/api/train/meso-templates";
+    private static final String MESOCYCLES = "/api/train/mesocycles";
 
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private MesoTemplatePopulator mesoTemplatePopulator;
+    @Autowired private TrainPopulator trainPopulator;
     @Autowired private JdbcTemplate jdbcTemplate;
 
     /** Find-or-create yields the demodata-seeded owner's id — the principal behind ownerAuthHeaders(). */
@@ -201,7 +212,175 @@ class MesoTemplateIT extends ApiIntegrationTest {
         assertHasRequestError(body, "TRAIN_MESO_TEMPLATE_NOT_FOUND");
     }
 
+    // ── start: stamping a run from a template (Task 4) ───────────────────────────
+
+    @Test
+    void testStartTemplate_shouldStampFullRun_whenActive() {
+        UUID owner = ownerId();
+        MesoTemplateEntity template = mesoTemplatePopulator.template(owner);
+        HttpHeaders auth = ownerAuthHeaders();
+        LocalDate start = LocalDate.now();
+
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + template.getId() + "/start",
+            startRequest(start, MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(run.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        assertThat(run.getTemplateId()).isEqualTo(template.getId());
+        assertThat(run.getCurrentWeek()).isGreaterThanOrEqualTo(1);
+        assertThat(run.getTitle()).isEqualTo("Sablon A");
+        assertThat(run.getWeeks()).isEqualTo(4);
+        assertThat(run.getStartDate()).isEqualTo(start);
+        assertThat(run.getEndDate()).isEqualTo(start.plusWeeks(4));
+        assertThat(run.getClosedAt()).isNull();
+
+        List<MesocycleResponse> mesos =
+            getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class);
+        assertThat(mesos).singleElement().satisfies(m -> {
+            assertThat(m.getTemplateId()).isEqualTo(template.getId());
+            // days jsonb -> workout_session + exercise rows
+            assertThat(m.getDays()).hasSize(2);
+            assertThat(m.getDays().get(0).getDay()).isEqualTo("Hét");
+            assertThat(m.getDays().get(0).getMuscle()).isEqualTo("chest");
+            assertThat(m.getDays().get(0).getExercises()).extracting(GymExercise::getName)
+                .containsExactly("Bench Press", "Incline Bench Press");
+            assertThat(m.getDays().get(1).getExercises()).extracting(GymExercise::getName)
+                .containsExactly("Row", "Lat Pulldown");
+            // volumePerMuscle jsonb -> muscle_group_volume_log rows, W1 start at MEV
+            assertThat(m.getVolumePerMuscle()).containsOnlyKeys("chest", "back");
+            assertThat(m.getVolumePerMuscle().get("chest").getMev()).isEqualTo(8);
+            assertThat(m.getVolumePerMuscle().get("chest").getMav()).isEqualTo(14);
+            assertThat(m.getVolumePerMuscle().get("chest").getMrv()).isEqualTo(20);
+            assertThat(m.getVolumePerMuscle().get("chest").getCurrent()).isEqualTo(8);
+            assertThat(m.getVolumePerMuscle().get("back").getMev()).isEqualTo(10);
+            assertThat(m.getVolumePerMuscle().get("chest").getSource().getBaseline().getName())
+                .isEqualTo("RP guidelines · intermediate");
+            // The landmarks came from the PLAN, not from the generic RP table — the two happen to
+            // agree numerically for chest/back, so the provenance note is what tells them apart.
+            assertThat(m.getVolumePerMuscle().get("chest").getSource().getNote())
+                .startsWith("Sablon baseline");
+        });
+        // ...and the RP-table fill that runs after the plan seeding must not duplicate a muscle.
+        assertThat(jdbcTemplate.queryForObject(
+            "select count(*) from muscle_group_volume_log where mesocycle_id = ?",
+            Long.class, run.getId())).isEqualTo(2L);
+
+        // The template now counts its run.
+        assertThat(getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class))
+            .singleElement().satisfies(t -> assertThat(t.getRunCount()).isEqualTo(1));
+    }
+
+    @Test
+    void testStartTemplate_shouldArchiveOtherActives_whenActive() {
+        UUID owner = ownerId();
+        MesoTemplateEntity template = mesoTemplatePopulator.template(owner);
+        HttpHeaders auth = ownerAuthHeaders();
+        String startUri = TEMPLATES + "/" + template.getId() + "/start";
+
+        MesocycleResponse first = postForBody(startUri,
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        MesocycleResponse second = postForBody(startUri,
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(second.getId()).isNotEqualTo(first.getId());
+        assertThat(second.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        // Single-active invariant: the earlier run is archived by the new start.
+        assertThat(getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class))
+            .filteredOn(m -> m.getId().equals(first.getId())).singleElement()
+            .satisfies(m -> assertThat(m.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ARCHIVED));
+    }
+
+    @Test
+    void testStartTemplate_shouldCreatePlannedRun_whenPlannedStatus() {
+        UUID owner = ownerId();
+        MesoTemplateEntity template = mesoTemplatePopulator.template(owner);
+        MesocycleEntity running = trainPopulator.createMesocycle(owner, "Fut még", "active");
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + template.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.PLANNED), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(run.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.PLANNED);
+        assertThat(run.getCurrentWeek()).isZero();
+        // A planned run stays volume-profile-less until it is activated (MesoVolume "csak aktív").
+        assertThat(run.getVolumePerMuscle()).isNullOrEmpty();
+        // ...and it must NOT archive the running mesocycle.
+        assertThat(getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class))
+            .filteredOn(m -> m.getId().equals(running.getId())).singleElement()
+            .satisfies(m -> assertThat(m.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE));
+    }
+
+    // ── rerun: materializing a template out of a legacy run (Task 4) ─────────────
+
+    @Test
+    void testRerun_shouldMaterializeTemplate_whenLegacyRunHasNone() {
+        UUID owner = ownerId();
+        MesocycleEntity legacy = trainPopulator.createMesocycle(owner, "Legacy blokk", "archived");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(owner, legacy.getId(), "Hét", "Pull", 0, "planned");
+        trainPopulator.createExercise(owner, day.getId(), "Régi húzás", 0);
+        trainPopulator.createVolumeLog(owner, legacy.getId(), "back");
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoRerunResponse rerun = postForBody(MESOCYCLES + "/" + legacy.getId() + "/rerun", null, auth,
+            HttpStatus.OK, MesoRerunResponse.class);
+
+        assertThat(rerun.getTemplateId()).isNotNull();
+        // The legacy run is linked back to the freshly materialized template.
+        assertThat(getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class))
+            .singleElement()
+            .satisfies(m -> assertThat(m.getTemplateId()).isEqualTo(rerun.getTemplateId()));
+
+        MesoTemplateResponse template =
+            getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).stream()
+                .filter(t -> t.getId().equals(rerun.getTemplateId())).findFirst().orElseThrow();
+        assertThat(template.getTitle()).isEqualTo("Legacy blokk");
+        assertThat(template.getWeeks()).isEqualTo(6);
+        assertThat(template.getSplit()).isEqualTo("Pull / Push / Legs · 5×/hét");
+        assertThat(template.getPhaseCurve()).containsExactly(
+            MesoTemplateResponse.PhaseCurveEnum.MEV,
+            MesoTemplateResponse.PhaseCurveEnum.MAV,
+            MesoTemplateResponse.PhaseCurveEnum.DELOAD);
+        assertThat(template.getRunCount()).isEqualTo(1);
+        assertThat(template.getDays()).singleElement().satisfies(d -> {
+            assertThat(d.getDay()).isEqualTo("Hét");
+            assertThat(d.getType()).isEqualTo("Pull");
+            assertThat(d.getExercises()).extracting(GymExercise::getName).containsExactly("Régi húzás");
+            assertThat(d.getExercises().get(0).getWorkingSets()).isEqualTo(3);
+            assertThat(d.getExercises().get(0).getTargetRIR()).isEqualTo(1);
+        });
+        assertThat(template.getVolumePerMuscle()).containsOnlyKeys("back");
+        assertThat(template.getVolumePerMuscle().get("back").getMev()).isEqualTo(8);
+        assertThat(template.getVolumePerMuscle().get("back").getMav()).isEqualTo(14);
+        assertThat(template.getVolumePerMuscle().get("back").getMrv()).isEqualTo(20);
+    }
+
+    @Test
+    void testRerun_shouldReturnExistingTemplate_whenAlreadyLinked() {
+        UUID owner = ownerId();
+        MesoTemplateEntity template = mesoTemplatePopulator.template(owner);
+        HttpHeaders auth = ownerAuthHeaders();
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + template.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        MesoRerunResponse rerun = postForBody(MESOCYCLES + "/" + run.getId() + "/rerun", null, auth,
+            HttpStatus.OK, MesoRerunResponse.class);
+
+        assertThat(rerun.getTemplateId()).isEqualTo(template.getId());
+        // No duplicate template is materialized for an already-linked run.
+        assertThat(getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class)).hasSize(1);
+    }
+
     // ── fixtures ────────────────────────────────────────────────────────────────
+
+    private static MesoTemplateStartRequest startRequest(
+            LocalDate startDate, MesoTemplateStartRequest.StatusEnum status) {
+        return MesoTemplateStartRequest.builder().startDate(startDate).status(status).build();
+    }
 
     private static GymExerciseInput exercise(String name, String muscle, GymExerciseInput.TypeEnum type) {
         return GymExerciseInput.builder()

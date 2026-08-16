@@ -272,22 +272,6 @@ class TrainServiceIT extends AbstractIntegrationTest {
             .isEqualTo("archived");
     }
 
-    /** Bare wizard template — no days, no volume baseline; enough to stamp a run from. */
-    private MesoTemplateUpsertRequest minimalTemplate(String title, int weeks) {
-        return MesoTemplateUpsertRequest.builder()
-            .title(title).weeks(weeks).split("PPL").style("RP")
-            .phaseCurve(List.of(MesoTemplateUpsertRequest.PhaseCurveEnum.MEV))
-            .build();
-    }
-
-    /** Runs are born template-first (mezo-meyc.1): save the plan document, then stamp a run from it. */
-    private MesocycleResponse startFrom(UUID user, MesoTemplateUpsertRequest template,
-        LocalDate startDate, MesoTemplateStartRequest.StatusEnum status) {
-        UUID templateId = mesoTemplateService.create(user, template).getId();
-        return mesoTemplateService.start(user, templateId, MesoTemplateStartRequest.builder()
-            .startDate(startDate).status(status).build());
-    }
-
     @Test
     void testActivateMesocycle_shouldArchivePreviousActive_whenAnotherActiveExists() {
         UUID user = databasePopulator.populateUser("lifecycle-a@test.local");
@@ -421,5 +405,21 @@ class TrainServiceIT extends AbstractIntegrationTest {
         // only the template day appears — the started instance must not duplicate it
         assertThat(mesos.get(0).getDays()).hasSize(1);
         assertThat(mesos.get(0).getDays().get(0).getId()).isEqualTo(template.getId());
+    }
+
+    /** Bare wizard template — no days, no volume baseline; enough to stamp a run from. */
+    private MesoTemplateUpsertRequest minimalTemplate(String title, int weeks) {
+        return MesoTemplateUpsertRequest.builder()
+            .title(title).weeks(weeks).split("PPL").style("RP")
+            .phaseCurve(List.of(MesoTemplateUpsertRequest.PhaseCurveEnum.MEV))
+            .build();
+    }
+
+    /** Runs are born template-first (mezo-meyc.1): save the plan document, then stamp a run from it. */
+    private MesocycleResponse startFrom(UUID user, MesoTemplateUpsertRequest template,
+        LocalDate startDate, MesoTemplateStartRequest.StatusEnum status) {
+        UUID templateId = mesoTemplateService.create(user, template).getId();
+        return mesoTemplateService.start(user, templateId, MesoTemplateStartRequest.builder()
+            .startDate(startDate).status(status).build());
     }
 }

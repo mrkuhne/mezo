@@ -165,7 +165,9 @@ public class TrainService {
         // split/style are optional on a template but NOT NULL on a run — an unset one becomes "".
         m.setSplit(src.split() != null ? src.split() : "");
         m.setStyle(src.style() != null ? src.style() : "");
-        m.setPhaseCurve(src.phaseCurve());
+        // Defensive copy: the source list belongs to the template row — two managed entities must
+        // never share one text[] collection instance.
+        m.setPhaseCurve(List.copyOf(src.phaseCurve()));
         m.setNotes(src.notes());
         if (active) {
             // Single-active invariant holds on the start-as-active path too — the start sheet's
