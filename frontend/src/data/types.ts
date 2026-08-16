@@ -1280,7 +1280,7 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     description: 'A mai edzés kezdete előtt', showLeadChip: true, iconBg: '--wash-gym',
   },
   medication: {
-    label: 'Reta injekció', emoji: '💉', section: 'reminder',
+    label: 'Gyógyszer beadás', emoji: '💉', section: 'reminder',
     description: 'Injekciós napon, reggel', showLeadChip: false, iconBg: '--wash-amber',
   },
   ritual: {

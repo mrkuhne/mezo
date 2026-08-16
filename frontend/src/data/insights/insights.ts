@@ -18,17 +18,17 @@ export function patternCategoryColor(cat: PatternCategory): string {
 export const patterns: Pattern[] = [
   {
     id: 'p1',
-    pairKey: 'reta-dose~daily-kcal',
+    pairKey: 'sport-load~next-sleep-quality',
     category: 'physiology',
     categoryLabel: 'Fiziológia',
     confidence: 0.85,
-    title: 'Reta beadás + 36h ablakban étvágy lefulladás',
+    title: 'Magas sportterhelés → rákövetkező éjjel mélyebb alvás',
     mechanism:
-      'A Retatrutide beadás után 24-48h-val az étvágy a legalacsonyabb. A nézőpontunk: ezeken a napokon a kcal-pacing 15 órára 38% körül van (átlag: 51%).',
-    evidence: ['12 Reta beadás óta', '9 nap megerősítve', '0.85 statisztikai stabilitás'],
+      'A 90 perc feletti sportterhelésű napok után az alvásminőség érezhetően jobb. A nézőpontunk: ezeken az éjszakákon az alvás-score 84% körül van (átlag: 71%).',
+    evidence: ['12 terhelt nap óta', '9 éjszaka megerősítve', '0.85 statisztikai stabilitás'],
     critique: { statistical: 0.85, confounders: 0.72, l3align: 0.91, actionability: 0.88 },
     thinking:
-      'Megfigyelés: D2-D3 napokon a meal-count 3-ról 2-re csökken, és ez nem a tudatos döntés következménye, hanem az éhségérzet eltűnése. Hipotézis: a pacing-alert push T-2h-val az edzés előtt fix kell maradjon ezeken a napokon — különben az under-fueling kockázat magas.',
+      'Megfigyelés: a terhelt napokat követő éjszakákon az ébredések száma 3-ról 1-re esik, és ez nem a lefekvési idő következménye, hanem a terhelés utáni alvásnyomás. Hipotézis: a lecsendesítés-push T-60p-cel a lefekvés előtt ezeken a napokon is fix kell maradjon — különben a késői stimuláció elviszi a megnyert mélyalvást.',
   },
   {
     id: 'p2',

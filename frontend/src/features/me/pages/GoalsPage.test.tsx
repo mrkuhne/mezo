@@ -136,7 +136,7 @@ describe('mock mode (demo goal)', () => {
     // Feasibility verdict from the mock prescription (feasible-with-warnings).
     expect(screen.getByText('Reális, figyelmeztetésekkel')).toBeInTheDocument()
     // Both mock segments render with their labels + kcal.
-    expect(screen.getByText('Mély deficit · Reta cycle')).toBeInTheDocument()
+    expect(screen.getByText('Mély deficit')).toBeInTheDocument()
     expect(screen.getByText('Lassú befutó · taper')).toBeInTheDocument()
     expect(screen.getByText(/2150/)).toBeInTheDocument()
     expect(screen.getByText(/163/)).toBeInTheDocument()

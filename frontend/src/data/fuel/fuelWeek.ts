@@ -13,7 +13,7 @@ export const weekTitle = 'Máj 18 – 24'
 // fuel-plan.jsx FuelPlanPage stats-card Mezo note (81–84) — hand-authored coach prose;
 // real mode returns null (the generated weekly note is proactive-epic work).
 export const weeklyNote =
-  'Most kell egy **középmagas-protein héttel** menni — Reta D3-D5 a peak étvágy-süllyedés.'
+  'Most kell egy **középmagas-protein héttel** menni — a hét közepén a legalacsonyabb az étvágy.'
 
 // Medication cycle strip (mezo-lwmq): the owner tracks NO medication — an empty week, same as
 // the real-mode ghost. FuelPlanPage's `medCycleWeek.length > 0` gate hides the cycle card in

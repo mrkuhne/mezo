@@ -28,7 +28,7 @@ describe('PatternsPage (mock mode)', () => {
 
   test('renders one card per pattern', () => {
     renderPage()
-    expect(screen.getByText('Reta beadás + 36h ablakban étvágy lefulladás')).toBeInTheDocument()
+    expect(screen.getByText('Magas sportterhelés → rákövetkező éjjel mélyebb alvás')).toBeInTheDocument()
     expect(screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc')).toBeInTheDocument()
   })
 

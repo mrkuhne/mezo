@@ -70,12 +70,12 @@ describe('FuelStackPage (mock mode)', () => {
     renderView()
     await userEvent.click(screen.getByRole('button', { name: /Hozzáadás a Kamrából/ }))
     expect(await screen.findByText('Mit szedjünk')).toBeInTheDocument()
-    // 'reta' (Retatrutide) has no seed occurrence — adding it lands a NEW row in the wake zone
-    // (mockPlaceOccurrence's timing-hint pass: 'weekly-monday' → 'wake') without colliding with
-    // the seed kreatin/kohi/tastydose rows already there.
-    await userEvent.type(screen.getByPlaceholderText(/Keress a polcon/), 'reta')
-    await userEvent.click(await screen.findByText('Retatrutide'))
-    expect(await screen.findByRole('button', { name: 'Retatrutide beállítások' })).toBeInTheDocument()
+    // 'cink' (Cink-biszglicinát) az egyetlen seed-előfordulás nélküli elem — hozzáadva ÚJ sort
+    // ejt az esti zónába (mockPlaceOccurrence timing-hint ága: 'evening' → 'evening'), a már ott
+    // lévő seed magnézium-sor mellé.
+    await userEvent.type(screen.getByPlaceholderText(/Keress a polcon/), 'cink')
+    await userEvent.click(await screen.findByText('Cink-biszglicinát'))
+    expect(await screen.findByRole('button', { name: 'Cink-biszglicinát beállítások' })).toBeInTheDocument()
   })
 
   test('the day-summary strip shows edzésnap for the seeded training day (mock gym seed carries today:true)', () => {
