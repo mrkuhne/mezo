@@ -324,4 +324,37 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(historyBlock).doesNotContain("Daniel: és most?");
         assertThat(echoed).contains("user=[és most?]");
     }
+
+    @Test
+    void testSendMessage_shouldDropTerseInstructionAndCarryVoiceRules_whenAssemblingPrompt() {
+        UUID userId = databasePopulator.populateUser("chat-voice-rules@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        String echoed = answer.getContent();
+        // A "tömören" utasítás okozta a lélektelenül rövid válaszokat — nem térhet vissza.
+        assertThat(echoed).doesNotContain("Válaszolj magyarul, tömören");
+        assertThat(echoed).contains("[Hogyan beszélsz]");
+        assertThat(echoed).contains("[Mit szabad állítani]");
+        // A megőrzött guárdok
+        assertThat(echoed).contains("retatrutid");
+        assertThat(echoed).contains("[Eszköz-útmutató]");
+    }
+
+    @Test
+    void testSendMessage_shouldEndPromptWithToneReminder_whenAssemblingPrompt() {
+        UUID userId = databasePopulator.populateUser("chat-tone-tail@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        String echoed = answer.getContent();
+        String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
+        // A recency-pozíció a lényeg: az emlékeztető a futásidejű adatblokkok UTÁN áll.
+        assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
+                .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
+        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+    }
 }
