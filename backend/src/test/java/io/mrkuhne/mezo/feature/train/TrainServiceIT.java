@@ -6,7 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
-import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -18,6 +19,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -47,6 +49,7 @@ class TrainServiceIT extends AbstractIntegrationTest {
     @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private SportSessionRepository sportSessionRepository;
     @Autowired private TrainService trainService;
+    @Autowired private MesoTemplateService mesoTemplateService;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -188,21 +191,19 @@ class TrainServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testCreateMesocycle_shouldPersistNestedDaysAndComputeDerivedFields_whenValid() {
+    void testStartTemplate_shouldPersistNestedDaysAndComputeDerivedFields_whenValid() {
         UUID user = databasePopulator.populateUser("create-a@test.local");
         LocalDate start = LocalDate.now().minusDays(7);
-        MesocycleCreateRequest req = MesocycleCreateRequest.builder()
+        MesoTemplateUpsertRequest req = MesoTemplateUpsertRequest.builder()
             .title("Strength 02 · Nyár")
-            .status(MesocycleCreateRequest.StatusEnum.PLANNED)
             .goal("Maximális erő")
-            .startDate(start)
             .weeks(6)
             .split("Upper / Lower · 4×/hét")
             .style("Linear · 6 hét")
             .phaseCurve(List.of(
-                MesocycleCreateRequest.PhaseCurveEnum.MEV,
-                MesocycleCreateRequest.PhaseCurveEnum.MAV,
-                MesocycleCreateRequest.PhaseCurveEnum.DELOAD))
+                MesoTemplateUpsertRequest.PhaseCurveEnum.MEV,
+                MesoTemplateUpsertRequest.PhaseCurveEnum.MAV,
+                MesoTemplateUpsertRequest.PhaseCurveEnum.DELOAD))
             .days(List.of(
                 MesoDayInput.builder().day("Hét").type("Upper").muscle("chest+back")
                     .exercises(List.of(
@@ -216,7 +217,7 @@ class TrainServiceIT extends AbstractIntegrationTest {
                 MesoDayInput.builder().day("Kedd").type("Rest").build()))
             .build();
 
-        MesocycleResponse created = trainService.createMesocycle(user, req);
+        MesocycleResponse created = startFrom(user, req, start, MesoTemplateStartRequest.StatusEnum.PLANNED);
         entityManager.clear();
 
         assertThat(created.getId()).isNotNull();
@@ -245,44 +246,46 @@ class TrainServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testCreateMesocycle_shouldComputeCurrentWeek_whenActive() {
+    void testStartTemplate_shouldComputeCurrentWeek_whenActive() {
         UUID user = databasePopulator.populateUser("create-b@test.local");
-        MesocycleCreateRequest base = MesocycleCreateRequest.builder()
-            .title("Aktív teszt").status(MesocycleCreateRequest.StatusEnum.ACTIVE)
-            .startDate(LocalDate.now().minusDays(8)).weeks(6)
-            .split("PPL").style("RP")
-            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
-            .build();
-        assertThat(trainService.createMesocycle(user, base).getCurrentWeek()).isEqualTo(2);
+        MesoTemplateUpsertRequest template = minimalTemplate("Aktív teszt", 6);
 
-        MesocycleCreateRequest future = MesocycleCreateRequest.builder()
-            .title("Jövőbeli aktív").status(MesocycleCreateRequest.StatusEnum.ACTIVE)
-            .startDate(LocalDate.now().plusDays(7)).weeks(6)
-            .split("PPL").style("RP")
-            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
-            .build();
-        assertThat(trainService.createMesocycle(user, future).getCurrentWeek()).isEqualTo(1);
+        assertThat(startFrom(user, template, LocalDate.now().minusDays(8),
+            MesoTemplateStartRequest.StatusEnum.ACTIVE).getCurrentWeek()).isEqualTo(2);
+        assertThat(startFrom(user, template, LocalDate.now().plusDays(7),
+            MesoTemplateStartRequest.StatusEnum.ACTIVE).getCurrentWeek()).isEqualTo(1);
     }
 
     @Test
-    void testCreateMesocycle_shouldArchivePreviousActive_whenCreatedAsActive() {
+    void testStartTemplate_shouldArchivePreviousActive_whenStartedAsActive() {
         UUID user = databasePopulator.populateUser("create-c@test.local");
         MesocycleEntity previous = trainPopulator.createMesocycle(user, "Régi aktív", "active");
 
-        MesocycleCreateRequest req = MesocycleCreateRequest.builder()
-            .title("Azonnal aktív").status(MesocycleCreateRequest.StatusEnum.ACTIVE)
-            .startDate(LocalDate.now()).weeks(4)
-            .split("PPL").style("RP")
-            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
-            .build();
-        trainService.createMesocycle(user, req);
+        startFrom(user, minimalTemplate("Azonnal aktív", 4), LocalDate.now(),
+            MesoTemplateStartRequest.StatusEnum.ACTIVE);
         entityManager.flush();
         entityManager.clear();
 
-        // The single-active invariant must hold on the create-as-active path too,
+        // The single-active invariant must hold on the start-as-active path too,
         // not only on the explicit activate endpoint (live-smoke regression).
         assertThat(mesocycleRepository.findById(previous.getId()).orElseThrow().getStatus())
             .isEqualTo("archived");
+    }
+
+    /** Bare wizard template — no days, no volume baseline; enough to stamp a run from. */
+    private MesoTemplateUpsertRequest minimalTemplate(String title, int weeks) {
+        return MesoTemplateUpsertRequest.builder()
+            .title(title).weeks(weeks).split("PPL").style("RP")
+            .phaseCurve(List.of(MesoTemplateUpsertRequest.PhaseCurveEnum.MEV))
+            .build();
+    }
+
+    /** Runs are born template-first (mezo-meyc.1): save the plan document, then stamp a run from it. */
+    private MesocycleResponse startFrom(UUID user, MesoTemplateUpsertRequest template,
+        LocalDate startDate, MesoTemplateStartRequest.StatusEnum status) {
+        UUID templateId = mesoTemplateService.create(user, template).getId();
+        return mesoTemplateService.start(user, templateId, MesoTemplateStartRequest.builder()
+            .startDate(startDate).status(status).build());
     }
 
     @Test

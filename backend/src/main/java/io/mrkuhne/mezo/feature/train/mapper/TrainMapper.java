@@ -3,18 +3,24 @@ package io.mrkuhne.mezo.feature.train.mapper;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
+import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesoDayInput;
+import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportEventResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
+import io.mrkuhne.mezo.api.dto.VolumeBaseline;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.api.dto.VolumeRecompute;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
@@ -23,10 +29,14 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
+import io.mrkuhne.mezo.feature.train.entity.json.MesoDayJson;
+import io.mrkuhne.mezo.feature.train.entity.json.VolumeBaselineJson;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -100,8 +110,68 @@ public interface TrainMapper {
 
     VolumeRecompute toRecompute(VolumeRecomputeJson json);
 
+    // ── meso template (mezo-meyc.1): plan document ↔ jsonb ↔ contract ─────────────────────────
+    // A template's days/volumePerMuscle live as typed jsonb records, so the same plan travels three
+    // ways: OUT to the client (MesoDay/VolumeBaseline), IN from the wizard (MesoDayInput/
+    // VolumeBaseline) and ACROSS to the run stamper (MesoDayInput again — TrainService.stampRun
+    // reuses the wizard input shape, so it never learns about the template's storage records).
+
+    /** runCount needs a run-count query, so the service stitches it onto the mapped response. */
+    @Mapping(target = "phaseCurve", expression = "java(templatePhaseCurve(entity.getPhaseCurve()))")
+    @Mapping(target = "runCount", ignore = true)
+    MesoTemplateResponse toTemplateResponse(MesoTemplateEntity entity);
+
+    /** A template day has no {@code workout_session} row yet — {@code id}/{@code current} stay null. */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "current", ignore = true)
+    @Mapping(target = "exerciseCount",
+        expression = "java(json.exercises() == null ? 0 : json.exercises().size())")
+    MesoDay toDay(MesoDayJson json);
+
+    /** Same reason as {@link #toDay}: a stored recipe has no {@code exercise} row id or media yet. */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "targetRIR", source = "targetRir")
+    @Mapping(target = "type", expression = "java(GymExercise.TypeEnum.fromValue(json.type()))")
+    @Mapping(target = "videoUrl", ignore = true)
+    @Mapping(target = "imageStartUrl", ignore = true)
+    @Mapping(target = "imageEndUrl", ignore = true)
+    GymExercise toGymExercise(GymExerciseJson json);
+
+    List<MesoDayJson> toDaysJson(List<MesoDayInput> days);
+
+    MesoDayJson toDayJson(MesoDayInput input);
+
+    @Mapping(target = "targetRir", source = "targetRIR")
+    @Mapping(target = "type", expression = "java(input.getType().getValue())")
+    GymExerciseJson toExerciseJson(GymExerciseInput input);
+
+    /** Run rows → stored recipe (the rerun path materializes a template out of a legacy run). */
+    List<GymExerciseJson> toExercisesJson(List<ExerciseEntity> exercises);
+
+    GymExerciseJson toExerciseJson(ExerciseEntity entity);
+
+    List<MesoDayInput> toDayInputs(List<MesoDayJson> days);
+
+    MesoDayInput toDayInput(MesoDayJson json);
+
+    @Mapping(target = "targetRIR", source = "targetRir")
+    @Mapping(target = "type", expression = "java(GymExerciseInput.TypeEnum.fromValue(json.type()))")
+    GymExerciseInput toExerciseInput(GymExerciseJson json);
+
+    Map<String, VolumeBaseline> toBaselines(Map<String, VolumeBaselineJson> volumePerMuscle);
+
+    Map<String, VolumeBaselineJson> toBaselinesJson(Map<String, VolumeBaseline> volumePerMuscle);
+
+    VolumeBaseline toBaseline(VolumeBaselineJson json);
+
+    VolumeBaselineJson toBaselineJson(VolumeBaseline baseline);
+
     default List<MesocycleResponse.PhaseCurveEnum> phaseCurve(List<String> curve) {
         return curve.stream().map(MesocycleResponse.PhaseCurveEnum::fromValue).toList();
+    }
+
+    default List<MesoTemplateResponse.PhaseCurveEnum> templatePhaseCurve(List<String> curve) {
+        return curve.stream().map(MesoTemplateResponse.PhaseCurveEnum::fromValue).toList();
     }
 
     /** Entity stores Instant; the generated contract type uses OffsetDateTime (UTC on the wire either way). */

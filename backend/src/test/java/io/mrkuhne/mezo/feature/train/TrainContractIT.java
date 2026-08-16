@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
-import io.mrkuhne.mezo.api.dto.MesoDayInput;
-import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -61,38 +59,6 @@ class TrainContractIT extends ApiIntegrationTest {
         assertThat(mesos.get(0).getTitle()).isEqualTo("Hypertrophy 04");
         assertThat(mesos.get(0).getVolumePerMuscle()).isNotNull();
         assertThat(mesos.get(0).getVolumePerMuscle()).containsKey("chest");
-    }
-
-    @Test
-    void testCreateMesocycle_shouldReturn401_whenUnauthenticated() {
-        postForBody("/api/train/mesocycles", minimalCreateRequest(), null, HttpStatus.UNAUTHORIZED, Void.class);
-    }
-
-    @Test
-    void testCreateMesocycle_shouldReturn201WithAssembledBody_whenValid() {
-        ownerId();
-        MesocycleCreateRequest req = minimalCreateRequest();
-
-        MesocycleResponse created = postForBody(
-            "/api/train/mesocycles", req, ownerAuthHeaders(), HttpStatus.CREATED, MesocycleResponse.class);
-
-        assertThat(created.getId()).isNotNull();
-        assertThat(created.getTitle()).isEqualTo("Contract teszt meso");
-        assertThat(created.getEndDate()).isEqualTo(req.getStartDate().plusWeeks(4));
-        assertThat(created.getDays()).hasSize(1);
-        assertThat(created.getDays().get(0).getExercises()).hasSize(1);
-    }
-
-    @Test
-    void testCreateMesocycle_shouldReturn400SystemMessage_whenTitleMissing() {
-        ownerId();
-        MesocycleCreateRequest req = minimalCreateRequest();
-        req.setTitle(null);
-
-        String body = exchangeForBody(HttpMethod.POST, "/api/train/mesocycles", req,
-            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
-
-        assertHasFieldError(body, "title", "VALIDATION_REQUIRED_FIELD");
     }
 
     @Test
@@ -157,25 +123,6 @@ class TrainContractIT extends ApiIntegrationTest {
             "/api/train/mesocycles/" + meso.getId() + "/days/" + UUID.randomUUID() + "/exercises",
             List.of(), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
-    }
-
-    private MesocycleCreateRequest minimalCreateRequest() {
-        return MesocycleCreateRequest.builder()
-            .title("Contract teszt meso")
-            .status(MesocycleCreateRequest.StatusEnum.PLANNED)
-            .startDate(LocalDate.parse("2026-06-16"))
-            .weeks(4)
-            .split("Upper / Lower · 4×/hét")
-            .style("Linear · 4 hét")
-            .phaseCurve(List.of(
-                MesocycleCreateRequest.PhaseCurveEnum.MEV,
-                MesocycleCreateRequest.PhaseCurveEnum.MAV))
-            .days(List.of(MesoDayInput.builder().day("Hét").type("Upper")
-                .exercises(List.of(GymExerciseInput.builder().name("Bench Press").warmupSets(2)
-                    .workingSets(4).repMin(6).repMax(8).targetRIR(2)
-                    .type(GymExerciseInput.TypeEnum.COMPOUND).build()))
-                .build()))
-            .build();
     }
 
     @Test
