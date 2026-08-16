@@ -1,4 +1,11 @@
-import { fitLine, journalEntries, strengthSeries, strengthTickLabels } from '@/features/insights/logic/patternHistory'
+import {
+  fitLine,
+  firstLastSnapshotN,
+  journalEntries,
+  latestAlignedDay,
+  strengthSeries,
+  strengthTickLabels,
+} from '@/features/insights/logic/patternHistory'
 import type { AlignedDay, PatternEvent, PatternMonitorPair } from '@/data/types'
 
 const pair: PatternMonitorPair = {
@@ -239,4 +246,36 @@ test('fitLine least-squares a known 3-point set', () => {
 test('fitLine needs at least two points', () => {
   expect(fitLine([])).toBeNull()
   expect(fitLine([{ date: '2026-01-01', a: 1, b: 2 }])).toBeNull()
+})
+
+// --- firstLastSnapshotN ----------------------------------------------------
+
+test('firstLastSnapshotN reads the n of the first and last snapshot, chronologically', () => {
+  const events: PatternEvent[] = [
+    { kind: 'snapshot', occurredAt: '2026-06-24T02:40:00Z', r: -0.31, n: 18 },
+    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14 },
+    { kind: 'confirmed', occurredAt: '2026-07-12T09:15:00Z' },
+    { kind: 'snapshot', occurredAt: '2026-08-13T02:40:00Z', r: -0.58, n: 32 },
+  ]
+  expect(firstLastSnapshotN(events)).toEqual({ first: 14, last: 32 })
+})
+
+test('firstLastSnapshotN needs at least two n-bearing snapshots', () => {
+  expect(firstLastSnapshotN([])).toBeNull()
+  expect(firstLastSnapshotN([{ kind: 'snapshot', occurredAt: '2026-06-03T00:00:00Z', r: 0.2, n: 5 }])).toBeNull()
+})
+
+// --- latestAlignedDay --------------------------------------------------
+
+test('latestAlignedDay picks the day with the greatest ISO date', () => {
+  const days: AlignedDay[] = [
+    { date: '2026-08-11', a: 8.5, b: 4.4 },
+    { date: '2026-07-21', a: 4.8, b: 7.6 },
+    { date: '2026-08-13', a: 8.8, b: 4.1 },
+  ]
+  expect(latestAlignedDay(days)).toEqual({ date: '2026-08-13', a: 8.8, b: 4.1 })
+})
+
+test('latestAlignedDay is null on an empty list', () => {
+  expect(latestAlignedDay([])).toBeNull()
 })

@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-08-15
+updated: 2026-08-16
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -18,7 +18,7 @@ related: [_platform-data-layer, _platform-design-system, today, me, companion]
 
 # Insights — Feature Documentation
 
-> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All seven proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the post-epic **Memória** tab (§2.9, `mezo-al1i`, a read-only observatory over the memory pipeline itself), never phase-gated, for **all eight Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Reached via the `sparkle`-icon link in the Today `AppHero` (no bottom `TabBar` entry). **The post-epic Motor tab (was §2.8, `mezo-viqs`/`mezo-18bx`) is RETIRED (`mezo-tk88.4`)** — its pattern-gate diagnostics were folded into the Patterns tab's own dashboard (new §2.1: hero + decision inbox + lifecycle sections + a collapsed „Adat-egészség" coverage panel) and, going forward, the per-pattern S5 detail page; `/insights/motor` now redirects to `/insights` (`router.tsx`).
+> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All seven proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the post-epic **Memória** tab (§2.9, `mezo-al1i`, a read-only observatory over the memory pipeline itself), never phase-gated, for **all eight Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Reached via the `sparkle`-icon link in the Today `AppHero` (no bottom `TabBar` entry). **The post-epic Motor tab (was §2.8, `mezo-viqs`/`mezo-18bx`) is RETIRED (`mezo-tk88.4`)** — its pattern-gate diagnostics were folded into the Patterns tab's own dashboard (new §2.1: hero + decision inbox + lifecycle sections + a collapsed „Adat-egészség" coverage panel) and the per-pattern **pattern-pair detail page** (§2.1b, `mezo-tk88.5` — `PatternDetailPage.tsx`); `/insights/motor` now redirects to `/insights` (`router.tsx`).
 
 ---
 
@@ -44,7 +44,7 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 ## 2. User-facing behavior
 
-**Route:** `/insights` (entered via the `sparkle`-icon link in the Today `AppHero`, `frontend/src/features/today/pages/TodayPage.tsx:221` — no bottom `TabBar` entry). Shell + 8 sub-tabs wired in `frontend/src/app/router.tsx:105-118` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
+**Route:** `/insights` (entered via the `sparkle`-icon link in the Today `AppHero`, `frontend/src/features/today/pages/TodayPage.tsx:221` — no bottom `TabBar` entry). Shell + 8 sub-tabs wired in `frontend/src/app/router.tsx:111-127` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
 
 | Sub-tab | Route | Pill label (verbatim) | View | Real mode |
 |---|---|---|---|---|
@@ -109,8 +109,8 @@ produced a row for it yet.
    pattern's own `title`), the `📈 Amit eddig látunk` finding block (`findingSentence` — the same
    human-composition Motor used, **raw `r`/`p`/`n` NEVER rendered here**), an explainer block
    („Mi történik a döntéseddel" — **only on the FIRST card**, `showExplainer`), the
-   Confirm/Monitor/Reject three-button row, and a „Részletek és előzmények →" link to the (not yet
-   built, S5) `/insights/patterns/{pairKey}` detail page.
+   Confirm/Monitor/Reject three-button row, and a „Részletek és előzmények →" link to the
+   pattern-pair detail page (§2.1b, `/insights/patterns/{pairKey}`).
 3. **Five collapsible `LifecycleSection`s** (`components/LifecycleSection.tsx` — title+count header
    + chevron, `useState`-driven, renders nothing when its (domain-filtered) count is 0): `✓
    Megerősítve — él a tudásban` (defaultOpen, footnote „Ez a N összefüggés benne van a társ
@@ -119,7 +119,7 @@ produced a row for it yet.
    `○ Megnéztük — nincs összefüggés` (footnote „Ez is eredmény…"), `✕ Elvetve`. Each row is a
    `LifecycleMiniRow` (title + a one-line sub + a `→` link to the pattern-detail route): confirmed
    rows' sub is a plain „megerősítve" (the promoted-fact reinforcement count isn't part of this
-   page's reads — it belongs on the S5 detail page); monitoring/noRelationship rows' sub is a
+   page's reads — it belongs on the pattern-pair detail page, §2.1b); monitoring/noRelationship rows' sub is a
    `findingSentence`-composed one-liner when the pair has a live `r`.
 4. **„Adat-egészség"** — a collapsed card (defaultOpen `false`) hosting the same
    `MetricCoverageRing` list Motor's coverage table used — metrics sorted thinnest-covered-first,
@@ -140,6 +140,76 @@ minta-motor most nem elérhető…`) — no Motor link any more (the page IS the
 once none of the above apply does a genuinely empty state (`patterns.length===0 &&
 monitor.pairs.length===0`) render the pre-existing „Még nincs felismert minta…" copy, link removed
 for the same reason.
+
+### 2.1b Pattern-pair detail (`pages/PatternDetailPage.tsx`) — **`mezo-tk88.5`**
+The per-pair drill-down the retired Motor tab's `PairRow` used to expand into — now a full leaf
+route, **`/insights/patterns/:pairKey`** (`router.tsx`, a sibling registered BEFORE the `insights`
+group, same idiom as `fuel/recipes/:id` — no Insights sub-nav chrome, its own `← Minták` back
+link). Reached from the dashboard's „Részletek és előzmények →" (decision cards, §2.1 step 2) and
+every `LifecycleMiniRow`'s `→` link (§2.1 step 3), plus the legacy `?pair=` query param redirect
+(§2.1).
+
+**Data:** `usePatternPairDetail(pairKey)` (`data/insights/patternDetailHooks.ts`,
+`['pattern-pair-detail', pairKey]` dual-read → `{detail, notFound, degraded, mode, isPending,
+isError, refetch}`; real mode maps `GET /api/companion/pattern/pair/{pairKey}` via
+`patternDetailApi.ts` — reuses `patternsApi.ts`'s `toPattern`; **any 404 is one honest `notFound`
+state**, unknown `pairKey` and the companion switch off are deliberately indistinguishable, same
+discipline as the monitor's `degraded`) + `usePatternMonitor()` (§2.1, re-read here purely for the
+diagnostics section's window/lag/`sourceHu` meta — "cached" in practice since the dashboard already
+warmed the query on the way in). **States:** `isPending` → `GhostState`; a genuine fetch failure
+(`isError`) → `GhostState` + retry (`refetch`); `notFound` → the honest „Nincs ilyen minta." card +
+back link — never a blank page.
+
+**Top to bottom (spec-mockup screen 2, `docs/superpowers/specs/2026-08-14-patterns-dashboard-redesign-mockup.html`):**
+1. **Header** — the dashboard's own `PatternDecisionCard` **reused** (`showExplainer={false}`, a new
+   optional `titleSize` prop bumped to `19` for the bigger detail-page title; the judged state reads
+   through the button's own active styling, e.g. a green „Megerősítve" — no separate status badge
+   was added) when the pair HAS a persisted `Pattern` row (`detail.pattern != null`). A pair with no
+   row yet (still gathering, or LIVE but the nightly job hasn't produced one) gets a plain local
+   `GatheringHeaderCard` instead — same chips/title/pair-line, but **no decision buttons**, and the
+   finding block is replaced by the honest gate status via `verdictSentence` (`logic/verdicts.ts`,
+   the same sentence the „Még gyűlik az adat" lifecycle rows use).
+2. **„Hogyan erősödött a jel"** — `PatternStrengthChart` (`components/PatternStrengthChart.tsx`,
+   Task 12) over `detail.events`, plus a caption computed from the FIRST/LAST snapshot's own `n`
+   (common-day count, NOT |r| — `firstLastSnapshotN`, `logic/patternHistory.ts`): *"A jel
+   folyamatosan erősödik, ahogy gyűlnek a közös napok — {first} napról {last}-re."*; under 2
+   n-bearing snapshots → the honest *"Még nincs előzmény — az éjszakai futások töltik."*
+3. **„A {days.length} nap, amiből ez kijött"** — `PatternScatter` (`components/PatternScatter.tsx`,
+   Task 12) over `detail.days`, a caption naming the latest aligned day (`latestAlignedDay`,
+   `logic/patternHistory.ts`) and a `Napok listája →` toggle (local `useState`) revealing a plain
+   `<table>` (`dátum · {metricALabel} · {metricBLabel}`, one row per aligned day); under 2 days →
+   *"Még nincs elég nap az összevetéshez…"* instead of the chart+toggle (both chart components
+   already return `null` under 2 points — Task 12 — this is the page's matching text fallback).
+4. **„A minta története"** — `PatternJournal` (`components/PatternJournal.tsx`, new) renders
+   `journalEntries()` (`logic/patternHistory.ts`, Task 12 — the append-only `pattern_event` log
+   translated to Hungarian) as a left-rail timeline: one tone-colored dot per entry (neutral/
+   success/accent), the entry text through `SafeMarkdown` (`**Megerősítetted.**` → bold — the same
+   bold-only renderer curated app copy uses elsewhere), and a `→ a Tudástárban` link on the
+   `confirmed` entry that was later promoted (`entry.factLink`).
+5. **„Mit kezd ezzel az app"** — `PatternImpactCard` (`components/PatternImpactCard.tsx`, new) over
+   `detail.impact`. Only renders the real rows when the pattern is judged-and-confirmed
+   (`pattern?.status === 'confirmed'`) — **Tudástár-tény** (`×N megerősítve · benne van a társ
+   promptjában` / `nincs a promptban`, → `/insights/knowledge`), **N előrejelzés** (`{validated}
+   bejött · {pending} még fut`, → `/insights/predictions`), **N kísérlet** / **N kihívás** (an
+   honest generic open/closed status breakdown — `experiments`/`challenges` carry DIFFERENT status
+   vocabularies (`ExperimentStatus`/`ChallengeStatus`), so the row counts "still open"
+   (`proposed`/`active`/`accepted`) vs "closed" rather than importing either enum, → `/insights/experiments` /
+   `/train`). Any row whose ref list is empty is simply omitted (a fresh promotion may not have
+   grounded anything downstream yet). Not-yet-confirmed (or no-row) pairs get a single future-tense
+   row instead: *"Ha megerősíted: bekerül a Tudástárba és a társ fejébe, előrejelzés és kísérlet
+   épülhet rá."*
+6. **„🔧 Motor-diagnosztika"** — collapsed by default, **`LifecycleSection` reused** (`count={1}` so
+   it never hides — the prop's list-count semantics don't quite fit a single diagnostics block, a
+   deliberate small mismatch rather than a component fork). Window/lag/last-run
+   (`Ablak: {windowFrom} – {windowTo} ({lookbackDays} nap) · lag: {lagDays} nap · utolsó futás:
+   {lastRunAt}`, a local `lastRunLabel` mirroring `MotorStateHero`'s private one), a freeze note on
+   a judged row (**gated on `pattern?.status` being `confirmed`/`rejected`, deliberately NOT
+   `pair.verdict === 'frozen'`** — the mock showcase pair's own `verdict` stays `'live'` even though
+   its `Pattern.status` is `'confirmed'`, a Task 11 seed simplification reusing the same
+   `patternMonitor.pairs` row for both surfaces, §9), the two metric source chips (`{label} ·
+   {sourceHu}`, from `usePatternMonitor().monitor.metrics`), and the mono `r=… · n=… · p=…` stat —
+   **the ONLY place this page renders raw statistics**, matching the dashboard's own
+   never-raw-stats discipline (§2.1 step 2).
 
 ### 2.2 Weekly (`pages/WeeklyPage.tsx`) — **REAL dual-mode since D′ (`mezo-t16y.1`)**
 A big `score` `/100` with a `delta` label, a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card, and (E3 `mezo-6ng8`) a **"Growth — heti" `GrowthWeekCard`** last. Reads `useWeekly()` (`data/insights/weeklyHooks.ts`, exported via the `hooks.ts` barrel) → `{ weekly:{title,score,delta,items}, deltaLabel, weeklySuggestion, growthWeek, mode }`.
@@ -193,9 +263,9 @@ propose CTA — no proposed rows, so no accept/dismiss buttons). Behavior detail
 ### 2.8 Motor — **RETIRED** (`mezo-viqs`/`mezo-18bx` → retired `mezo-tk88.4`)
 The standalone Motor tab (`pages/MotorPage.tsx`) — a read-only transparency page onto the pattern
 gate — **no longer exists**. Its diagnostics were absorbed into the Patterns dashboard (§2.1: the
-hero's stamp/tiles, the `MetricCoverageRing` list under „Adat-egészség") and, going forward, will
-grow out into the per-pattern **S5 detail page** (`/insights/patterns/{pairKey}`, `mezo-tk88.5` —
-not yet built) for the per-pair drill-down (source pills, raw `r/n/p`, the strength timeline).
+hero's stamp/tiles, the `MetricCoverageRing` list under „Adat-egészség") and grew into the
+per-pattern **pattern-pair detail page** (§2.1b, `/insights/patterns/{pairKey}`, `mezo-tk88.5`) for
+the per-pair drill-down (source chips, raw `r/n/p`, the strength timeline).
 `router.tsx` maps `/insights/motor` to `<Navigate to="/insights" replace />` so old links/bookmarks
 still resolve. Every LIVE-recomputation guarantee Motor made (§2.1: no persistence, no historical
 log, never disagrees with the nightly job — [`companion.md`](companion.md) §1 V3.1) carries over
@@ -209,8 +279,9 @@ the hero itself. Motor's **domain sections** (`DomainSection`, one collapsible c
 metric-B-domain, `groupPairsByDomain`) are superseded by the lifecycle buckets as the primary
 grouping axis — `logic/domains.ts` (`DOMAIN_META`/`groupPairsByDomain`) itself is **kept** and
 still used for the hero's domain chips. Motor's expandable **`PairRow`** (source pills + raw
-`r/n/p` + „Minta megnyitása →") is gone — the raw stats move to the still-unbuilt S5 detail page;
-the dashboard's decision cards and lifecycle rows never render raw `r`/`p`/`n`, only the human
+`r/n/p` + „Minta megnyitása →") is gone — the raw stats moved to the pattern-pair detail page's
+collapsed „Motor-diagnosztika" section instead (§2.1b); the dashboard's decision cards and
+lifecycle rows never render raw `r`/`p`/`n`, only the human
 `findingSentence`/`confidenceMeta`/`verdictSentence` translations that already existed
 (`logic/findings.ts`/`logic/verdicts.ts`, unchanged, still exercised by the dashboard).
 
@@ -358,6 +429,22 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 - `Pattern { id; category; categoryLabel; confidence; title; mechanism; evidence: string[]; critique; thinking? }` — 3 patterns `p1`–`p3` (`insights.ts`)
 - `MIN_PATTERN_CONFIDENCE = 0.65` and `patternCategoryColor()` (`insights.ts:10-14`)
 
+**Pattern-pair detail** (`types.ts:768-795`, `mezo-tk88.5`) — the §2.1b detail page's payload:
+`PatternEventKind = 'snapshot'|'confirmed'|'monitoring'|'rejected'|'reinforced'|'promoted'` (mirrors
+the backend `pattern_event` CHECK constraint 1:1), `PatternEvent { kind; occurredAt; r?; n?; p?;
+reinforcementCount?; factId? }`, `AlignedDay { date; a; b }` (a live-computed scatter point, never
+stored), `PatternImpactRef { id; title; status }`, `PatternImpact { fact; predictions; experiments;
+challenges }`, `PatternPairDetail { pair: PatternMonitorPair; pattern: Pattern | null; events;
+days; impact }`. Real mode maps **`GET /api/companion/pattern/pair/{pairKey}`**
+(`data/insights/patternDetailApi.ts`, reuses `patternsApi.ts`'s `toPattern`) via
+`usePatternPairDetail(pairKey)` (`patternDetailHooks.ts`, `['pattern-pair-detail', pairKey]`
+dual-read; any 404 → one honest `notFound`, unlike the monitor's `degraded` — no distinct
+"companion off" signal on this endpoint). Mock seeds in `insights.ts`: one hand-authored confirmed
+„showcase" pair (`sleep-quality~next-day-training-rpe`) with a full 9-event history + 24 aligned
+days + a promoted fact/2 predictions/1 experiment/1 challenge, and a minimal synthesized detail
+(`pattern: null`, empty history/impact, `pair` straight off `patternMonitor.pairs`) for every other
+catalog pair — a still-gathering pair with no persisted row yet.
+
 **Memoir** (`types.ts:375-381`): `MemoirAnchor { kind; label }`, `Memoir { week; title; body; anchors }` — single `memoir` + `anniversaryNote` string. **Real mode (W2)** maps the same `Memoir` shape from the proactive `GET /api/proactive/memoir` (`MemoirResponse {weekStart, title, body, anchors[], generatedAt}` → `toMemoir`, the `week` label derived client-side); the FE type is reused **unchanged**, `anniversaryNote` stays a mock-only seed. Owned by the proactive layer, not Insights ([`proactive.md` §4](proactive.md); `api/feature/proactive/proactive.yml`).
 
 **Weekly** (`types.ts:406-408`): `WeeklyTrend = 'up'|'down'|'flat'`, `WeeklyItem { label; value; trend }`, `WeeklyReview { title; score; delta; items }` — mock `weekly` + `weeklySuggestion` seed. **Real mode (D′)** builds the same shape client-side in `useWeekly` (`weeklyHooks.ts`), returning `WeeklyView { weekly; deltaLabel; weeklySuggestion: string|null; growthWeek: WeeklyGrowth|null; mode }`. Two of its fields come from real backend reads (the rest stays client-composed): **`weeklySuggestion`** (W1 — the proactive `GET /api/proactive/weekly-suggestion` → `prose`, 404→null) and **`growthWeek`** (E3 `mezo-6ng8` — the Progression `GET /api/progression/growth-week/{start}`, `.catch(()=>null)`).
@@ -374,7 +461,7 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 
 **Memory** (`types.ts`, `mezo-al1i`) — like Weekly/Memoir, real data comes from ANOTHER feature's backend (here: companion), not an Insights-owned one: `MemoryOverview { l0: {daysWithAnyData; windowDays}; l1: {summaryCount; firstDate; lastDate; embeddings: {dailySummary; chatTurn}}; l2: {patterns: MemoryPatternCount[]; pendingFactCandidates}; l3: {facts: MemoryFactSourceCount[]; totalReinforcements; factsInPrompt}; jobs: {summaryCron; patternCron; hypothesisCron; lastSummaryDate; lastDetectedAt} }`, `MemorySummaryItem { date; narrative; embedded }`, `SimilarDay { date; excerpt; similarity; finalScore }`, `MemoryLlmUsage { enabled; perDay: LlmUsageDay[]; totals }` with `LlmUsageDay { date; calls; inputTokens; outputTokens; costUsd: number|null }`. These four shapes are **companion-owned** (`api/feature/companion/companion.yml`), not an Insights contract — mirrors the Weekly/Memoir precedent of a real-mode field fed by another feature's backend, except here ALL of a tab's data is companion-served. Mock seeds in `data/insights/memory.ts` (`memoryOverview`, `memorySummaries`, `similarDaysSeed`, `memoryLlmUsage`); wire mapping + the 4 REST calls in `data/insights/memoryApi.ts`; full endpoint + backend detail in [`companion.md`](companion.md) (new Memory-observatory block, near the pattern-monitor block).
 
-**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4, tool-chips real since V0.5, knowledge facts + candidates since V1.1/V1.2, the 4 memory-observatory reads since `mezo-al1i`** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn, fact CRUD, candidate inbox + decision, `memory/{overview,summary,similar-days,llm-usage}`; see [`companion.md`](companion.md) §4). The FE `FactCategory` is the backend enum (`train|fuel|health|life`) since V1.2. Patterns still have **no dedicated Insights contract** (served by the companion `pattern` endpoints). **Weekly's** deterministic review (D′) owns no endpoint — it composes over existing contracts, and the only new op it required is Train's **`GET /api/train/workouts?from&to`** → `WorkoutSummaryResponse {id, date, status}[]` (inclusive range, date-asc; **completed instances** (`status='completed'`) = "done", the same semantics as `weekDoneDates` since `mezo-cd8s` — was ≥1-non-skipped-set; `from>to` → 400 `TRAIN_INVALID_DATE_RANGE`) — documented in full in [`train.md`](train.md) §4 + `api/feature/train/train.yml`. **Its two backend-served fields** are `weeklySuggestion` (W1) and `growthWeek` (E3). **`weeklySuggestion`** — the proactive **`GET /api/proactive/weekly-suggestion?date=`** → `WeeklySuggestionResponse {weekStart, prose, generatedAt}` (lazy-generated smart-tier prose; **404** when the prior week has no `daily_summary`, which the FE reads as the honest placeholder), owned by the proactive layer ([`proactive.md` §4](proactive.md); `api/feature/proactive/proactive.yml`). **`growthWeek`** — the Progression **`GET /api/progression/growth-week/{date}`** → `GrowthWeekResponse {weekStart, questCompleted, questClosed, lifeXp, activities, savingsHuf}` (aggregates the ISO week; **honest zeros, never 404**), owned by the Progression/growth domain ([`growth.md` §4](growth.md); `api/feature/progression/progression.yml`) — the FE client is `data/insights/growthWeekApi.ts`. Both are single backend reads composed into the otherwise client-side Weekly. Real turns now carry the read-tool calls (15 scope-enumerated hub-tools since mezo-xixu: `get_training_log`, `get_training_plan`, `get_weight_trend`, `get_fuel_log`, `get_recovery`, `get_protocol`, `get_goal`, `get_medication`, plus `get_exercise_records`/`get_recipes`/`get_pantry`/`get_growth`/`get_daily_practice`/`get_insights`/`find_similar_past_days` — [`companion.md`](companion.md) §4 catalog); only the MOCK seed's fancier names (`predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain demo theater. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
+**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4, tool-chips real since V0.5, knowledge facts + candidates since V1.1/V1.2, the 4 memory-observatory reads since `mezo-al1i`** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn, fact CRUD, candidate inbox + decision, `memory/{overview,summary,similar-days,llm-usage}`; see [`companion.md`](companion.md) §4). The FE `FactCategory` is the backend enum (`train|fuel|health|life`) since V1.2. Patterns still have **no dedicated Insights contract** (served by the companion `pattern` endpoints) — **except the pair-detail read**, which has carried its own contract-backed schema (`PatternPairDetailResponse`) since backend S1 close (`mezo-tk88.3`); see [`companion.md`](companion.md) §4 for the endpoint row + schema, and above for the FE mapping. **Weekly's** deterministic review (D′) owns no endpoint — it composes over existing contracts, and the only new op it required is Train's **`GET /api/train/workouts?from&to`** → `WorkoutSummaryResponse {id, date, status}[]` (inclusive range, date-asc; **completed instances** (`status='completed'`) = "done", the same semantics as `weekDoneDates` since `mezo-cd8s` — was ≥1-non-skipped-set; `from>to` → 400 `TRAIN_INVALID_DATE_RANGE`) — documented in full in [`train.md`](train.md) §4 + `api/feature/train/train.yml`. **Its two backend-served fields** are `weeklySuggestion` (W1) and `growthWeek` (E3). **`weeklySuggestion`** — the proactive **`GET /api/proactive/weekly-suggestion?date=`** → `WeeklySuggestionResponse {weekStart, prose, generatedAt}` (lazy-generated smart-tier prose; **404** when the prior week has no `daily_summary`, which the FE reads as the honest placeholder), owned by the proactive layer ([`proactive.md` §4](proactive.md); `api/feature/proactive/proactive.yml`). **`growthWeek`** — the Progression **`GET /api/progression/growth-week/{date}`** → `GrowthWeekResponse {weekStart, questCompleted, questClosed, lifeXp, activities, savingsHuf}` (aggregates the ISO week; **honest zeros, never 404**), owned by the Progression/growth domain ([`growth.md` §4](growth.md); `api/feature/progression/progression.yml`) — the FE client is `data/insights/growthWeekApi.ts`. Both are single backend reads composed into the otherwise client-side Weekly. Real turns now carry the read-tool calls (15 scope-enumerated hub-tools since mezo-xixu: `get_training_log`, `get_training_plan`, `get_weight_trend`, `get_fuel_log`, `get_recovery`, `get_protocol`, `get_goal`, `get_medication`, plus `get_exercise_records`/`get_recipes`/`get_pantry`/`get_growth`/`get_daily_practice`/`get_insights`/`find_similar_past_days` — [`companion.md`](companion.md) §4 catalog); only the MOCK seed's fancier names (`predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain demo theater. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
 
 ---
 
@@ -435,7 +522,7 @@ const { memoir, anniversaryNote, mode } = useMemoir()
 
 Two pure helpers may be imported straight from the data module (stateless constants/utils, not data): `MIN_PATTERN_CONFIDENCE` and `patternCategoryColor` from `@/data/insights/insights`; `factCategoryColor` and `FACT_CATEGORIES` from `@/data/insights/knowledge`.
 
-Today these return **synchronous static data** (safe to read in render with no loading/null guard). **When Phase 3 lands they may become async** — write new consumers defensively now (ghost-guard for null), matching the real-mode convention used by biometrics/Train. To render a full sub-tab, mount the corresponding `pages/*View.tsx` under a child route of `/insights` (see `router.tsx:105-118` + `tabs.ts`).
+Today these return **synchronous static data** (safe to read in render with no loading/null guard). **When Phase 3 lands they may become async** — write new consumers defensively now (ghost-guard for null), matching the real-mode convention used by biometrics/Train. To render a full sub-tab, mount the corresponding `pages/*View.tsx` under a child route of `/insights` (see `router.tsx:111-127` + `tabs.ts`).
 
 ---
 
@@ -445,7 +532,7 @@ Today these return **synchronous static data** (safe to read in render with no l
 1. Add/extend the type in `frontend/src/data/types.ts` (Insights/Knowledge region).
 2. Add mock instances in `data/insights/insights.ts` (or `knowledge.ts`/`chat.ts`).
 3. Surface via the relevant hook in `hooks.ts` — **keep the returned object's shape stable** so the Phase-3 swap stays mechanical.
-4. New sub-tab: add to `INSIGHTS_TABS` (`tabs.ts`) + a child route in `router.tsx:105-118` + a view in `pages/`.
+4. New sub-tab: add to `INSIGHTS_TABS` (`tabs.ts`) + a child route in `router.tsx:111-127` + a view in `pages/`.
 5. Add a Vitest test mirroring the existing per-view + per-data tests (§8).
 
 ### 7.2 Make it real (Phase 3 / Slice D) — the recipe
@@ -486,7 +573,8 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   active domains in one click** (a regression test for the `mezo-tk88.4` functional-setState
   correction — `PatternsPage`'s `activeDomains` update must use `setActiveDomains(prev ⇒ …)` or a
   same-batch stale closure drops all but the last toggle), and the `?pair=` param **redirects** to
-  the (stubbed, not-yet-built) `/insights/patterns/:pairKey` route instead of highlighting a row in
+  `/insights/patterns/:pairKey` (stubbed locally in this test file — the real page now lives at
+  §2.1b, `PatternDetailPage.tsx`) instead of highlighting a row in
   place; `(real mode)` — MSW stubs BOTH `/api/companion/pattern` and `/api/companion/pattern/monitor`
   to compose the dashboard from two live reads, raw `r=…` is asserted absent from the decision card,
   a 404 on **both** endpoints renders the degraded card **with no Motor link**, a legitimately empty
@@ -494,6 +582,22 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   too), and a non-404 monitor failure still renders the honest retry card the old `MotorPage.test.tsx`
   proved (`isError`/`refetch`, review fix wave `mezo-viqs`, unchanged). **`domains.test.ts`** still
   covers `groupPairsByDomain` pure (the module survives the retirement, §2.8).
+- **Pattern-pair detail (§2.1b, `mezo-tk88.5`):** `data/insights/patternDetailHooks.test.tsx` (dual-mode —
+  the showcase pair's full snapshot/decision/reinforcement history + days + impact; a gathering
+  catalog pair synthesizes to `pattern: null`; an unknown key → `notFound`; real mode maps the wire
+  payload reusing `toPattern`, and any 404 → the same honest `notFound`). `logic/patternHistory.test.ts`
+  — pure, the append-only `pattern_event` → journal/strength-series/tick-label/first-last-snapshot-n
+  derivations (`journalEntries`/`strengthSeries`/`strengthTickLabels`/`firstLastSnapshotN`) + the
+  scatter's `fitLine`/`latestAlignedDay`. `pages/PatternDetailPage.test.tsx` — `(mock mode)`: the
+  confirmed showcase renders all five blocks in order + the judged header (button label, not a
+  status badge) + the strength/scatter captions off the real first/last-snapshot-n and latest-day
+  values; the diagnostics section stays collapsed by default (raw `r/n/p` absent) until clicked,
+  then shows the freeze note; `Napok listája →` toggles the inline aligned-days `<table>`; a
+  gathering (no-row) pair renders the `verdictSentence` gate nudge, both chart empty-state
+  fallbacks, and the future-tense impact row with no decision buttons; an unknown key renders the
+  honest not-found card. `(real mode)`: an MSW confirmed payload renders the five blocks; a 404
+  renders the not-found state. `PatternDecisionCard.test.tsx` is unchanged by the new optional
+  `titleSize` prop (default `17`, unused by its existing assertions).
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -528,6 +632,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **`InsightsSubNav.tsx` is DELETED (`mezo-ugqb`)** — superseded by the shared `@/shared/ui/SubNavDropdown` mounted via `InsightsSection`
 - `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end — **`title` field dropped**, `mezo-ugqb`: its only consumer was the retired per-page `h1`; **`memory` entry added `mezo-al1i`; the `motor` entry (added `mezo-viqs`) REMOVED `mezo-tk88.4`**) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2, memory never gated; all 8 remaining tabs visible in both modes)
 - `pages/PatternsPage.tsx` — **rewritten `mezo-tk88.4`**: the lifecycle dashboard (§2.1) — hero + decision inbox + 5 collapsible `LifecycleSection`s + the collapsed „Adat-egészség" coverage panel; owns the `activeDomains`/`dataHealthOpen` `useState`, the `bucketize()` call + per-bucket domain filtering, and the ported `metrics.sort`/referencing/waiting coverage-ring wiring (the retired `MotorPage`'s, verbatim)
+- `pages/PatternDetailPage.tsx` — **`mezo-tk88.5`**, the pattern-pair detail leaf page (§2.1b, `/insights/patterns/:pairKey`, sibling route registered before the `insights` group in `router.tsx`): header (`PatternDecisionCard` reuse or the local `GatheringHeaderCard`) → strength chart → scatter + aligned-days table → `PatternJournal` → `PatternImpactCard` → collapsed `LifecycleSection`-reused diagnostics; own `isPending`/`isError`/`notFound` `GhostState` triad, no Insights sub-nav
 - `pages/WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the other 6 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
 - **`pages/MotorPage.tsx` is DELETED (`mezo-tk88.4`)** — the 8th sub-tab (`mezo-viqs`, redesigned `mezo-18bx`) is retired; its diagnostics folded into `PatternsPage.tsx` above (§2.8 carries the full retirement note + what did/didn't carry over)
 - `pages/MemoryPage.tsx` — **`mezo-al1i`**, the 9th sub-tab (now the 8th): read-only memory-pipeline observatory (§2.9), 4 page-local segments (`useStickyTab('insights.memoria.view')`) over `useMemoryOverview`/`useMemorySummaries`, one page-level degraded card (companion 404) + per-panel `GhostState`/degraded lines in Kereső/Audit, shown in both modes
@@ -538,20 +643,25 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
 - **`components/PatternCard.tsx` is DELETED (`mezo-tk88.4`)** — superseded by `PatternDecisionCard.tsx` below (the flat-inbox card had no lifecycle awareness; `highlighted`/`?pair=` scroll-and-ring is gone too, replaced by the `?pair=` → detail-route redirect, §2.1)
 - `components/MotorStateHero.tsx` — **`mezo-tk88.4`**, the dashboard hero (§2.1 step 1): question count + confirmed/decide prose, the six `BUCKET_ORDER` tiles, the domain-chip filter row (`onToggleDomain`, the „Mind" chip's same-batch multi-toggle) — pure props, `bucketize()`'s counts computed by the caller
-- `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the decision-inbox card (§2.1 step 2, the `PatternCard` successor): category/confidence chips, the `findingSentence` finding block (never raw `r/p/n`), the optional „Mi történik a döntéseddel" explainer (first card only), Confirm/Monitor/Reject, a „Részletek és előzmények →" link to the (not-yet-built, S5) pattern-detail route
-- `components/LifecycleSection.tsx` — **`mezo-tk88.4`**, `LifecycleSection` (collapsible title+count card, renders nothing at count 0) + `LifecycleMiniRow` (title + one-line sub + `→` link) — the five bucket sections (§2.1 step 3) and „Adat-egészség" (step 4) are built from these
+- `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the decision-inbox card (§2.1 step 2, the `PatternCard` successor): category/confidence chips, the `findingSentence` finding block (never raw `r/p/n`), the optional „Mi történik a döntéseddel" explainer (first card only), Confirm/Monitor/Reject, a „Részletek és előzmények →" link to the pattern-pair detail route (§2.1b). **`mezo-tk88.5`** added an optional `titleSize` prop (default `17`) — the detail page's header (§2.1b step 1) reuses the whole card at `19` instead of forking a second header component
+- `components/LifecycleSection.tsx` — **`mezo-tk88.4`**, `LifecycleSection` (collapsible title+count card, renders nothing at count 0) + `LifecycleMiniRow` (title + one-line sub + `→` link) — the five bucket sections (§2.1 step 3) and „Adat-egészség" (step 4) are built from these. **`mezo-tk88.5`** reuses bare `LifecycleSection` a THIRD way, for the detail page's collapsed „Motor-diagnosztika" (§2.1b step 6, `count={1}` so it never hides — the prop's list-count semantics don't perfectly fit a single block, a deliberate small mismatch)
+- `components/PatternStrengthChart.tsx` — **`mezo-tk88.5`** (Task 12), the strength-over-time hand-drawn SVG (§2.1b step 2): |r| per snapshot off `strengthSeries`, dashed „érezhető"/„határozott" guide lines, the confirm point picked out in accent; `null` under 2 points (the page renders the text fallback instead)
+- `components/PatternScatter.tsx` — **`mezo-tk88.5`** (Task 12), the aligned-days scatter (§2.1b step 3): metric A × metric B, a least-squares trend line (`fitLine`), the latest day ringed in accent; `null` under 2 days
+- `components/PatternJournal.tsx` — **`mezo-tk88.5`**, the history timeline (§2.1b step 4): a left rail + one tone-colored dot per `journalEntries()` row, entry text through `SafeMarkdown` (bold-only inline renderer), a `→ a Tudástárban` link on a promoted `confirmed` entry
+- `components/PatternImpactCard.tsx` — **`mezo-tk88.5`**, „Mit kezd ezzel az app" (§2.1b step 5): the fact/predictions/experiments/challenges rows (only when `pattern.status === 'confirmed'`, each row omitted if its ref list is empty) or the single future-tense fallback row otherwise
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
 - **`components/MotorHero.tsx · VerdictFilterChips.tsx · DomainSection.tsx · PairRow.tsx` are DELETED (`mezo-tk88.4`)** — the Motor page's `mezo-18bx` presentational units (hero card, verdict-filter chips, collapsible domain sections, expandable pair rows); superseded by `MotorStateHero`/`LifecycleSection` above. **`components/MetricCoverageRing.tsx` survives unchanged** — its `metric`/`referencingTitles`/`waiting` props are still exactly what the „Adat-egészség" panel needs
 - `logic/domains.ts` — **mezo-18bx, KEPT `mezo-tk88.4`**: `DOMAIN_META`/`DOMAIN_ORDER` (token-based domain colors, feeds `MotorStateHero`'s chip row) + `comparePairs` + `groupPairsByDomain` (primary domain = metric-B; `comparePairs`/`groupPairsByDomain` no longer have a live page consumer post-retirement but stay pure-tested, `domains.test.ts`)
 - `logic/lifecycle.ts` — **`mezo-tk88.4`**, the dashboard's bucketing spine: `LifecycleBucket`/`BUCKET_ORDER` (the six-bucket taxonomy + section order), `isStrongSignal` (the display-layer `|r|≥0.3 && p≤0.15` gate, `STRONG_SIGNAL` in `insights.ts`), `bucketize(patterns, monitor)` — matches `Pattern.pairKey` to `PatternMonitorPair.key`, a user-judged `status` always wins, an unmatched pair always lands in `gathering`; pure, unit-tested in `lifecycle.test.ts`
 - `logic/verdicts.ts` — **`mezo-tk88.4`** (lifted off the retired `PairRow.tsx`, unchanged): `bottleneckLabel` + `verdictSentence` (the honest per-verdict sentence, few_days' 🎯 nudge included) — now backs the „Még gyűlik az adat"/„Elvetve" lifecycle rows
 - `logic/findings.ts` — **mezo-fj1g**, the human-finding composition: `strengthWord` (|r| bands), `findingSentence` (authored direction reading + „Igen/Meglepő" prefix + `{erősség}` substitution), `confidenceMeta` (honest Hungarian p-translation), `pairLine` — pure, unit-tested in `findings.test.ts`
+- `logic/patternHistory.ts` — **`mezo-tk88.5`** (Task 12 + 13), the detail page's pure derivations over `PatternEvent[]`/`AlignedDay[]`: `strengthSeries`/`strengthTickLabels` (the strength chart's per-point |r| + accent-on-confirm tick labels), `journalEntries` (the append-only `pattern_event` log → the Hungarian journal, `promoted` folding into the preceding `confirmed` entry's `factLink`), `fitLine` (the scatter's least-squares trend), `firstLastSnapshotN`/`latestAlignedDay` (the strength/scatter captions' first-last-n and latest-day picks), `chartDateLabel` (the chart axis's undotted date style — the journal's own dotted `huShortDate` stays a private helper) — pure, unit-tested in `patternHistory.test.ts`
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows; the answer body renders via `@/shared/lib/markdown`
 - `sheets/ConversationPickerSheet.tsx` — **`mezo-at8x.3`** the conversation list + "Új beszélgetés" row (presentational; ChatPage owns the `?c=` selection)
 - `logic/useStickToBottom.ts` — **`mezo-at8x.2`** rAF bottom-anchoring + the stick-while-at-bottom rule for the streamed answer
 - `logic/useVoiceInput.ts` — **`mezo-at8x.4`** the record → convert → transcribe state machine (`unsupported | idle | recording | transcribing`)
 - **`components/PhaseTeaserCard.tsx` — DELETED in the Napív S8 shell migration (`mezo-mifi`):** with `PHASE3_TAB_IDS` empty no tab is Phase-gated, so the ghost had no reachable consumer; the component is gone and the un-ghost/ghost-guard recipe survives only in git history (§2).
-- Tests: `pages/*.test.tsx`, `components/PatternDecisionCard.test.tsx`, `logic/{lifecycle,domains}.test.ts`, `insights.nav.test.tsx` (`InsightsSubNav.test.tsx` deleted with the component, `mezo-ugqb`; **`pages/MotorPage.test.tsx` + `components/PatternCard.test.tsx` deleted with their components, `mezo-tk88.4`**)
+- Tests: `pages/*.test.tsx` (incl. `PatternDetailPage.test.tsx`, `mezo-tk88.5`), `components/PatternDecisionCard.test.tsx`, `logic/{lifecycle,domains,patternHistory}.test.ts`, `insights.nav.test.tsx` (`InsightsSubNav.test.tsx` deleted with the component, `mezo-ugqb`; **`pages/MotorPage.test.tsx` + `components/PatternCard.test.tsx` deleted with their components, `mezo-tk88.4`**)
 
 **Data layer (`frontend/src/data/`):**
 - `insights.ts` — patterns (`p1` seeded `status: 'confirmed'` since `mezo-tk88.4` so the dashboard's mock „Megerősítve" bucket isn't empty — the other two stay `proposed`), weekly (seed), memoir, predictions, experiments, **growthWeek (E3 seed)** + `MIN_PATTERN_CONFIDENCE`, `STRONG_SIGNAL` (**`mezo-tk88.4`**, the decision-inbox display gate `|r|≥0.3 && p≤0.15` — `logic/lifecycle.ts`'s `isStrongSignal` reads it), `patternCategoryColor`
@@ -562,17 +672,18 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `growthWeekApi.ts` — **E3** `growthWeekApi.get(date)` → Progression `GET /api/progression/growth-week/{date}` (wire → `WeeklyGrowth`; caller `.catch(()=>null)`)
 - `memoirHooks.ts` — **`useMemoir` (W2)**: dual-mode `['memoir']` read (mock seed no-fetch / real `GET /api/proactive/memoir`, 404→null); returns `{ memoir, anniversaryNote, mode }`
 - `memoirApi.ts` — **W2** `memoirApi.latest()` → proactive `GET /api/proactive/memoir` (wire → FE `Memoir` via `toMemoir`, `Hét N …` week label derived client-side)
-- `monitorApi.ts` + `monitorHooks.ts` — **mezo-viqs**, consumer moved from the retired `MotorPage` to `PatternsPage` at **`mezo-tk88.4`**: `usePatternMonitor()` (`['pattern-monitor']` dual-mode, real → `GET /api/companion/pattern/monitor`, 404→degraded, `isError`/`refetch` for a genuine non-404 failure) — read-only, no writes; the mock seed `patternMonitor` (`insights.ts`) deliberately mixes all 5 verdicts + a spread of metric coverage so every render state is visible in mock/demo mode
+- `monitorApi.ts` + `monitorHooks.ts` — **mezo-viqs**, consumer moved from the retired `MotorPage` to `PatternsPage` at **`mezo-tk88.4`**: `usePatternMonitor()` (`['pattern-monitor']` dual-mode, real → `GET /api/companion/pattern/monitor`, 404→degraded, `isError`/`refetch` for a genuine non-404 failure) — read-only, no writes; the mock seed `patternMonitor` (`insights.ts`) deliberately mixes all 5 verdicts + a spread of metric coverage so every render state is visible in mock/demo mode. **`mezo-tk88.5`** added a THIRD consumer, `PatternDetailPage` (§2.1b) — re-reads `usePatternMonitor()` purely for the diagnostics section's window/lag/`sourceHu` meta
+- `patternDetailApi.ts` + `patternDetailHooks.ts` — **`mezo-tk88.5`** (Task 11), the §2.1b detail page's read: `usePatternPairDetail(pairKey)` (`['pattern-pair-detail', pairKey]` dual-mode, real → `GET /api/companion/pattern/pair/{pairKey}` via `patternDetailApi.get`, wire→FE mapping reuses `patternsApi.ts`'s `toPattern`; any 404 → one honest `notFound`, no separate `degraded`) — read-only, decisions still go through `usePatternActions()` (above)
 - `memory.ts` — **`mezo-al1i`** mock seeds: `memoryOverview`, `memorySummaries` (6 entries spanning 2 months, so the month separator renders), `similarDaysSeed` (3 deterministic hits), `memoryLlmUsage` (7-day series, `totals` = the exact sum of `perDay`)
 - `memoryApi.ts` — **`mezo-al1i`** the 4 REST calls + wire→FE mappers (`toOverview` normalizes optional wire fields to `null`) over `api.gen.ts`'s `MemoryOverviewResponse`/`MemorySummaryListResponse`/`SimilarDaysResponse`/`LlmUsageResponse`
 - `memoryHooks.ts` — **`mezo-al1i`** `useMemoryOverview`/`useMemorySummaries`/`useLlmUsage` (`useDualQuery`, `['memory', …]` keys, 404→`degraded`) + `useSimilarDays(query)` (a **raw** `useQuery`, not `useDualQuery` — `enabled` gates on a non-empty trimmed query so the lazy-submit search never fires on mount); re-exported from `hooks.ts`
 - `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′; its `memoir`/`anniversaryNote` fields no longer consumed since W2 — only `predictions`/`experiments` are live)
-- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`**, **`usePatternMonitor`**, **`useLlmUsage`/`useMemoryOverview`/`useMemorySummaries`/`useSimilarDays`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
-- `types.ts:599-743` — all Insights/Knowledge/Chat types (`PatternMonitor`/`PatternMonitorPair`/`PatternMetricCoverage` at `types.ts:644-683`; `MemoryOverview`/`MemorySummaryItem`/`SimilarDay`/`MemoryLlmUsage`/`FactSource` added `mezo-al1i`)
-- Tests: `insightsData.test.tsx`, `chatData.test.tsx`, `memoryHooks.test.tsx` (**`mezo-al1i`**, dual-mode + the lazy-search enabled-gate + the `enabled:false` audit branch), `pages/MemoryPage.test.tsx` (**`mezo-al1i`**, all 4 segments + degraded + the Napló focus-scroll)
+- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`**, **`usePatternMonitor`**, **`usePatternPairDetail`** (`mezo-tk88.5`), **`useLlmUsage`/`useMemoryOverview`/`useMemorySummaries`/`useSimilarDays`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
+- `types.ts:599-743` — all Insights/Knowledge/Chat types (`PatternMonitor`/`PatternMonitorPair`/`PatternMetricCoverage` at `types.ts:644-683`; `MemoryOverview`/`MemorySummaryItem`/`SimilarDay`/`MemoryLlmUsage`/`FactSource` added `mezo-al1i`; `PatternEventKind`/`PatternEvent`/`AlignedDay`/`PatternImpactRef`/`PatternImpact`/`PatternPairDetail` at `types.ts:768-795`, added `mezo-tk88.5`)
+- Tests: `insightsData.test.tsx`, `chatData.test.tsx`, `memoryHooks.test.tsx` (**`mezo-al1i`**, dual-mode + the lazy-search enabled-gate + the `enabled:false` audit branch), `pages/MemoryPage.test.tsx` (**`mezo-al1i`**, all 4 segments + degraded + the Napló focus-scroll), `patternDetailHooks.test.tsx` (**`mezo-tk88.5`**, dual-mode — see §8 for the full case list)
 
 **Cross-feature seams:**
-- `frontend/src/app/router.tsx:105-118` — route wiring · `frontend/src/features/today/pages/TodayPage.tsx:221` — the `sparkle`-icon entry link (no bottom `TabBar` entry, §2)
+- `frontend/src/app/router.tsx:111-127` — the `insights` group's sub-tab wiring; `router.tsx:110` — the `insights/patterns/:pairKey` sibling route (§2.1b, `mezo-tk88.5`, registered before the group, the `fuel/recipes/:id` idiom) · `frontend/src/features/today/pages/TodayPage.tsx:221` — the `sparkle`-icon entry link (no bottom `TabBar` entry, §2)
 - `frontend/src/features/me/pages/KnowledgePage.tsx` + `ProfilePage.tsx` — share `useKnowledge`
 - `frontend/src/features/me/components/InsightCard.tsx` — `TrendInsight` (lightweight insight, used by Goals/Sleep)
 - `frontend/src/data/train/train.ts:57` · `sleep.ts:25-33` · `fuelWeek.ts:55,151,156` · `goals.ts:50` — "pattern engine" references (shared `P2`/`P3` IDs)

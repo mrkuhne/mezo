@@ -21,12 +21,15 @@ export function PatternDecisionCard({
   pair,
   onDecide,
   showExplainer = false,
+  titleSize = 17,
 }: {
   pattern: Pattern
   pair: PatternMonitorPair | null
   onDecide: (d: PatternStatus) => void
   /** csak az inbox ELSŐ kártyáján */
   showExplainer?: boolean
+  /** a részlet-oldal fejléc-kártyája (mezo-tk88.5) nagyobb címet kap, mint az inbox-kártya */
+  titleSize?: number
 }) {
   const railColor = patternCategoryColor(pattern.category)
   const status = pattern.status ?? 'proposed'
@@ -65,7 +68,7 @@ export function PatternDecisionCard({
         )}
       </div>
 
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', marginTop: 10, lineHeight: 1.3, color: 'var(--text-primary)' }}>
+      <div style={{ fontFamily: 'var(--ff-display)', fontSize: titleSize, fontWeight: 700, letterSpacing: '-0.01em', marginTop: 10, lineHeight: 1.3, color: 'var(--text-primary)' }}>
         {questionTitle}
       </div>
 

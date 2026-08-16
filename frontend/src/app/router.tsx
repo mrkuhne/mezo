@@ -30,6 +30,7 @@ import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { InsightsSection } from '@/features/insights/pages/InsightsSection'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
+import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
 import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
@@ -104,6 +105,9 @@ export const routes: RouteObject[] = [
       // Meal-slot template editor (mezo-7102) — a full page, same sibling idiom as the recipe
       // editor above (no Fuel sub-nav chrome).
       { path: 'fuel/slots', element: <FuelSlotsPage /> },
+      // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
+      // fuel/recipes/:id above (no Insights sub-nav chrome).
+      { path: 'insights/patterns/:pairKey', element: <PatternDetailPage /> },
       {
         path: 'insights',
         element: <InsightsSection />,
@@ -116,8 +120,9 @@ export const routes: RouteObject[] = [
           { path: 'predictions', element: <PredictionsPage /> },
           { path: 'experiments', element: <ExperimentsPage /> },
           // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
-          // the S5 pattern-detail page; the route survives as an honest redirect so any old
-          // bookmark/link (`?pair=` cross-links included) still lands somewhere sensible.
+          // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
+          // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
+          // somewhere sensible.
           { path: 'motor', element: <Navigate to="/insights" replace /> },
           { path: 'memoria', element: <MemoryPage /> },
         ],

@@ -182,6 +182,27 @@ export function journalEntries(events: PatternEvent[], pair: PatternMonitorPair 
   return entries
 }
 
+/**
+ * The detail page's strength-card caption needs the raw `n` (common-day count) of the FIRST and
+ * LAST snapshot — not their |r| (that's `strengthSeries`'s job). `null` on fewer than 2 snapshots
+ * carrying an `n`, which is the page's own signal to show the "no history yet" fallback instead.
+ */
+export function firstLastSnapshotN(events: PatternEvent[]): { first: number; last: number } | null {
+  const ns = events
+    .filter((e) => e.kind === 'snapshot' && e.n != null)
+    .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt))
+    .map((e) => e.n as number)
+  if (ns.length < 2) return null
+  return { first: ns[0], last: ns[ns.length - 1] }
+}
+
+/** The most recent aligned day (by ISO date), for the scatter card's "kiemelt a legutóbbi" caption.
+ *  `null` on an empty list. */
+export function latestAlignedDay(days: AlignedDay[]): AlignedDay | null {
+  if (days.length === 0) return null
+  return days.reduce((acc, d) => (d.date > acc.date ? d : acc), days[0])
+}
+
 /** Least-squares fit of `b` on `a` over the aligned days — the scatter chart's trend line.
  *  `null` when there's nothing to fit (fewer than 2 points, or zero variance in `a`). */
 export function fitLine(days: AlignedDay[]): { slope: number; intercept: number } | null {
