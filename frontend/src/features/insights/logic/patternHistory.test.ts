@@ -1,4 +1,4 @@
-import { fitLine, journalEntries, strengthSeries } from '@/features/insights/logic/patternHistory'
+import { fitLine, journalEntries, strengthSeries, strengthTickLabels } from '@/features/insights/logic/patternHistory'
 import type { AlignedDay, PatternEvent, PatternMonitorPair } from '@/data/types'
 
 const pair: PatternMonitorPair = {
@@ -191,6 +191,36 @@ test('strengthSeries marks a confirmed day with its nearest snapshot |r|', () =>
 test('strengthSeries ignores a confirmed event when there is no snapshot to anchor it to', () => {
   const events: PatternEvent[] = [{ kind: 'confirmed', occurredAt: '2026-07-25T09:15:00Z' }]
   expect(strengthSeries(events)).toEqual([])
+})
+
+// --- strengthTickLabels -------------------------------------------------
+
+test('strengthTickLabels labels every point plainly when no date collides', () => {
+  const points = strengthSeries([
+    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14 },
+    { kind: 'snapshot', occurredAt: '2026-06-24T02:40:00Z', r: -0.31, n: 18 },
+  ])
+  expect(strengthTickLabels(points)).toEqual([
+    { text: 'jún 3', accent: false },
+    { text: 'jún 24', accent: false },
+  ])
+})
+
+test('strengthTickLabels suppresses a plain snapshot label that shares its day with the confirmed point', () => {
+  // Same fixture shape as the showcase pair: a snapshot and its confirm land on the same day,
+  // so strengthSeries produces two same-date points — the snapshot's own tick must not repeat
+  // the confirmed point's "{date} ✓" label right next to it.
+  const points = strengthSeries([
+    { kind: 'snapshot', occurredAt: '2026-06-24T02:40:00Z', r: -0.31, n: 18 },
+    { kind: 'snapshot', occurredAt: '2026-07-12T02:40:00Z', r: -0.42, n: 21 },
+    { kind: 'confirmed', occurredAt: '2026-07-12T09:15:00Z' },
+  ])
+  const labels = strengthTickLabels(points)
+  expect(labels).toEqual([
+    { text: 'jún 24', accent: false },
+    { text: '', accent: false }, // the plain júl 12 snapshot — suppressed
+    { text: 'júl 12 ✓', accent: true }, // the confirmed júl 12 point carries the date alone
+  ])
 })
 
 // --- fitLine -------------------------------------------------------------

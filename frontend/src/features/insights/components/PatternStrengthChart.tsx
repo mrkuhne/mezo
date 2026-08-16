@@ -1,4 +1,4 @@
-import { strengthSeries } from '@/features/insights/logic/patternHistory'
+import { chartDateLabel, strengthSeries, strengthTickLabels } from '@/features/insights/logic/patternHistory'
 import type { PatternEvent } from '@/data/types'
 
 // viewBox geometry — mirrors the approved mockup (spec: 2026-08-14-patterns-dashboard-redesign-mockup.html, screen 2).
@@ -23,13 +23,6 @@ function yForAbsR(absR: number): number {
   return Math.min(Y_MAX, Math.max(Y_MIN, y))
 }
 
-const HU_MONTHS = ['jan', 'feb', 'már', 'ápr', 'máj', 'jún', 'júl', 'aug', 'szep', 'okt', 'nov', 'dec']
-
-function tickLabel(iso: string): string {
-  const [, m, d] = iso.split('-').map(Number)
-  return `${HU_MONTHS[m - 1]} ${d}`
-}
-
 /**
  * Hand-drawn strength-over-time chart (mezo-tk88.5) — |r| per snapshot, dashed guides at the
  * "érezhető"/"határozott" bands, the confirm point picked out in accent. `null` on fewer than 2
@@ -39,20 +32,20 @@ export function PatternStrengthChart({ events }: { events: PatternEvent[] }) {
   const points = strengthSeries(events)
   if (points.length < 2) return null
 
-  const xFor = (i: number) =>
-    points.length === 1 ? X_START : X_START + (i * (X_END - X_START)) / (points.length - 1)
+  const xFor = (i: number) => X_START + (i * (X_END - X_START)) / (points.length - 1)
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i)} ${yForAbsR(p.absR)}`).join(' ')
 
   const first = points[0]
   const last = points[points.length - 1]
+  const tickLabels = strengthTickLabels(points)
 
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       style={{ width: '100%', height: 'auto' }}
       role="img"
-      aria-label={`A jel erőssége ${first.absR.toFixed(2)}-ról ${last.absR.toFixed(2)}-ra változott ${tickLabel(first.date)} és ${tickLabel(last.date)} között`}
+      aria-label={`A jel erőssége ${first.absR.toFixed(2)}-ról ${last.absR.toFixed(2)}-ra változott ${chartDateLabel(first.date)} és ${chartDateLabel(last.date)} között`}
     >
       <line x1={GUIDE_X0} y1={Y_AT_03} x2={GUIDE_X1} y2={Y_AT_03} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3 4" />
       <line x1={GUIDE_X0} y1={Y_AT_06} x2={GUIDE_X1} y2={Y_AT_06} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3 4" />
@@ -75,20 +68,23 @@ export function PatternStrengthChart({ events }: { events: PatternEvent[] }) {
         return <circle key={`${p.date}-${p.kind}`} cx={cx} cy={cy} r={4} fill="var(--success-base)" />
       })}
 
-      {points.map((p, i) => (
-        <text
-          key={`label-${p.date}-${p.kind}`}
-          x={xFor(i)}
-          y={LABEL_Y}
-          fill={p.kind === 'confirmed' ? 'var(--accent-base)' : 'var(--text-disabled)'}
-          fontSize="9"
-          fontWeight={p.kind === 'confirmed' ? 700 : 400}
-          textAnchor="middle"
-        >
-          {tickLabel(p.date)}
-          {p.kind === 'confirmed' ? ' ✓' : ''}
-        </text>
-      ))}
+      {points.map((p, i) => {
+        const label = tickLabels[i]
+        if (!label.text) return null
+        return (
+          <text
+            key={`label-${p.date}-${p.kind}`}
+            x={xFor(i)}
+            y={LABEL_Y}
+            fill={label.accent ? 'var(--accent-base)' : 'var(--text-disabled)'}
+            fontSize="9"
+            fontWeight={label.accent ? 700 : 400}
+            textAnchor="middle"
+          >
+            {label.text}
+          </text>
+        )
+      })}
     </svg>
   )
 }

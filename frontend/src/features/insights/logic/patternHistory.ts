@@ -18,11 +18,25 @@ function huShortDate(occurredAt: string): string {
   return `${HU_MONTHS[m - 1]} ${d}.`
 }
 
-/** Same three tiers as `strengthWord`, as a noun/adjective usable before "jel"/"sávot" — the
- *  strength chart's own guide labels ("érezhető · 0.3", "határozott · 0.6"). */
+/** '2026-08-13' -> 'aug 13' — the strength chart axis's undotted date style (the journal's
+ *  `huShortDate` wants a trailing period, the chart axis doesn't). */
+export function chartDateLabel(iso: string): string {
+  const [, m, d] = iso.split('-').map(Number)
+  return `${HU_MONTHS[m - 1]} ${d}`
+}
+
+// `strengthWord`'s three adverb tiers, remapped to the noun/adjective form usable before
+// "jel"/"sávot" (the strength chart's own guide labels "érezhető · 0.3" / "határozott · 0.6").
+// Keyed off `strengthWord`'s own output — never a second copy of its 0.3/0.6 thresholds — so the
+// two bandings cannot drift apart.
+const BAND_NAME_BY_STRENGTH_WORD: Record<string, string> = {
+  kicsit: 'gyenge',
+  érezhetően: 'érezhető',
+  határozottan: 'határozott',
+}
+
 function bandName(r: number): string {
-  const abs = Math.abs(r)
-  return abs < 0.3 ? 'gyenge' : abs < 0.6 ? 'érezhető' : 'határozott'
+  return BAND_NAME_BY_STRENGTH_WORD[strengthWord(r)]
 }
 
 /** "a" vs "az" before a quoted band name, by its first letter. */
@@ -70,6 +84,27 @@ export function strengthSeries(events: PatternEvent[]): StrengthPoint[] {
   }
 
   return points.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export interface StrengthTickLabel {
+  text: string
+  accent: boolean
+}
+
+/**
+ * Per-point x-axis tick labels for the strength chart. A confirmed point always shows
+ * "{date} ✓" in accent; a plain snapshot landing on the exact same calendar day as a confirmed
+ * point (the common case — the monitor snapshot and the confirm decision happen the same day, see
+ * `strengthSeries`) has its label suppressed so the axis doesn't repeat the date across two
+ * adjacent slots. Index spacing (not real elapsed time) stays the chart's job.
+ */
+export function strengthTickLabels(points: StrengthPoint[]): StrengthTickLabel[] {
+  const confirmedDates = new Set(points.filter((p) => p.kind === 'confirmed').map((p) => p.date))
+  return points.map((p) => {
+    if (p.kind === 'confirmed') return { text: `${chartDateLabel(p.date)} ✓`, accent: true }
+    if (confirmedDates.has(p.date)) return { text: '', accent: false }
+    return { text: chartDateLabel(p.date), accent: false }
+  })
 }
 
 export interface JournalEntry {
