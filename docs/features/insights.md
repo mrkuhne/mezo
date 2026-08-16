@@ -144,8 +144,12 @@ for the same reason.
 ### 2.1b Pattern-pair detail (`pages/PatternDetailPage.tsx`) — **`mezo-tk88.5`**
 The per-pair drill-down the retired Motor tab's `PairRow` used to expand into — now a full leaf
 route, **`/insights/patterns/:pairKey`** (`router.tsx`, a sibling registered BEFORE the `insights`
-group, same idiom as `fuel/recipes/:id` — no Insights sub-nav chrome, its own `← Minták` back
-link). Reached from the dashboard's „Részletek és előzmények →" (decision cards, §2.1 step 2) and
+group, same idiom as `fuel/recipes/:id` — no Insights sub-nav chrome). Since **`mezo-fy97`** every
+branch (loaded, pending, error, not-found) renders inside a local `DetailFrame`: page padding
+(`14px 16px 24px` — the sibling route sits outside `InsightsSection`'s padded outlet, so the page
+brings its own) + the house full-page header row (back chevron `‹` to `/insights`,
+`aria-label="Vissza"` + `h1` „Minta részletei" — the `AiUsagePage` idiom; the mockup's bare
+`← Minták` text link rendered glued edge-to-edge in the real shell, user QA). Reached from the dashboard's „Részletek és előzmények →" (decision cards, §2.1 step 2) and
 every `LifecycleMiniRow`'s `→` link (§2.1 step 3), plus the legacy `?pair=` query param redirect
 (§2.1).
 
@@ -177,7 +181,15 @@ back link — never a blank page.
 3. **„A {days.length} nap, amiből ez kijött"** — `PatternScatter` (`components/PatternScatter.tsx`,
    Task 12) over `detail.days`, a caption naming the latest aligned day (`latestAlignedDay`,
    `logic/patternHistory.ts`) and a `Napok listája →` toggle (local `useState`) revealing a plain
-   `<table>` (`dátum · {metricALabel} · {metricBLabel}`, one row per aligned day); under 2 days →
+   `<table>` (`dátum · {metricALabel} · {metricBLabel}`, one row per aligned day). Cell values go
+   through **`formatMetricValue`** (`logic/metricFormat.ts`, `mezo-fy97` — the wire carries raw
+   doubles): hour-kind metrics (`late-meal-hour`/`bedtime-hour`/`wakeup-hour`, fractional clock
+   hours; bedtime past-midnight-shifted `<12 → +24`) render as wall-clock `HH:mm`, binary metrics
+   (`weekend`/`ritual-closed`) as `igen`/`nem`, everything else trimmed to one decimal — the key
+   sets mirror the backend `MetricKey` extractors and need an entry when a new hour/binary metric
+   lands. The scatter's x-axis end labels come from the sibling **`axisEndLabels`** (named columns
+   `hétköznap`/`hétvége` for `weekend`, `korábban`/`később` for hour metrics, the mockup's generic
+   `alacsony`/`magas` otherwise); under 2 days →
    *"Még nincs elég nap az összevetéshez…"* instead of the chart+toggle (both chart components
    already return `null` under 2 points — Task 12 — this is the page's matching text fallback).
 4. **„A minta története"** — `PatternJournal` (`components/PatternJournal.tsx`, new) renders
@@ -209,7 +221,10 @@ back link — never a blank page.
    `patternMonitor.pairs` row for both surfaces, §9), the two metric source chips (`{label} ·
    {sourceHu}`, from `usePatternMonitor().monitor.metrics`), and the mono `r=… · n=… · p=…` stat —
    **the ONLY place this page renders raw statistics**, matching the dashboard's own
-   never-raw-stats discipline (§2.1 step 2).
+   never-raw-stats discipline (§2.1 step 2). Since `mezo-fy97` the stat is rounded to the approved
+   mockup's precision via `formatR`/`formatP` (`logic/metricFormat.ts` — r two decimals, p three
+   with trailing zeros trimmed, `<0.001` below display precision, `—` on null) instead of printing
+   the wire's full double precision.
 
 ### 2.2 Weekly (`pages/WeeklyPage.tsx`) — **REAL dual-mode since D′ (`mezo-t16y.1`)**
 A big `score` `/100` with a `delta` label, a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card, and (E3 `mezo-6ng8`) a **"Growth — heti" `GrowthWeekCard`** last. Reads `useWeekly()` (`data/insights/weeklyHooks.ts`, exported via the `hooks.ts` barrel) → `{ weekly:{title,score,delta,items}, deltaLabel, weeklySuggestion, growthWeek, mode }`.
@@ -595,8 +610,14 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   then shows the freeze note; `Napok listája →` toggles the inline aligned-days `<table>`; a
   gathering (no-row) pair renders the `verdictSentence` gate nudge, both chart empty-state
   fallbacks, and the future-tense impact row with no decision buttons; an unknown key renders the
-  honest not-found card. `(real mode)`: an MSW confirmed payload renders the five blocks; a 404
-  renders the not-found state. `PatternDecisionCard.test.tsx` is unchanged by the new optional
+  honest not-found card. `(real mode)`: an MSW confirmed payload renders the five blocks; a
+  weekend×late-meal payload proves the `mezo-fy97` formatting end-to-end (named scatter columns,
+  `HH:mm`/`igen`/`nem` table cells, rounded `r/p` in the diagnostics — full-precision doubles never
+  reach the DOM); a 404 renders the not-found state. Both header assertions target the `DetailFrame`
+  back row (`link name="Vissza"` + `heading "Minta részletei"`). `logic/metricFormat.test.ts` —
+  pure: clock folding (incl. the bedtime `+24` shift and the `:60` minute carry), binary mapping,
+  decimal trimming, axis-end labels, and the `formatR`/`formatP` precision rules.
+  `PatternDecisionCard.test.tsx` is unchanged by the new optional
   `titleSize` prop (default `17`, unused by its existing assertions).
 
 **Commands** (run from `frontend/`):
@@ -646,7 +667,8 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the decision-inbox card (§2.1 step 2, the `PatternCard` successor): category/confidence chips, the `findingSentence` finding block (never raw `r/p/n`), the optional „Mi történik a döntéseddel" explainer (first card only), Confirm/Monitor/Reject, a „Részletek és előzmények →" link to the pattern-pair detail route (§2.1b). **`mezo-tk88.5`** added an optional `titleSize` prop (default `17`) — the detail page's header (§2.1b step 1) reuses the whole card at `19` instead of forking a second header component
 - `components/LifecycleSection.tsx` — **`mezo-tk88.4`**, `LifecycleSection` (collapsible title+count card, renders nothing at count 0) + `LifecycleMiniRow` (title + one-line sub + `→` link) — the five bucket sections (§2.1 step 3) and „Adat-egészség" (step 4) are built from these. **`mezo-tk88.5`** reuses bare `LifecycleSection` a THIRD way, for the detail page's collapsed „Motor-diagnosztika" (§2.1b step 6, `count={1}` so it never hides — the prop's list-count semantics don't perfectly fit a single block, a deliberate small mismatch)
 - `components/PatternStrengthChart.tsx` — **`mezo-tk88.5`** (Task 12), the strength-over-time hand-drawn SVG (§2.1b step 2): |r| per snapshot off `strengthSeries`, dashed „érezhető"/„határozott" guide lines, the confirm point picked out in accent; `null` under 2 points (the page renders the text fallback instead)
-- `components/PatternScatter.tsx` — **`mezo-tk88.5`** (Task 12), the aligned-days scatter (§2.1b step 3): metric A × metric B, a least-squares trend line (`fitLine`), the latest day ringed in accent; `null` under 2 days
+- `components/PatternScatter.tsx` — **`mezo-tk88.5`** (Task 12), the aligned-days scatter (§2.1b step 3): metric A × metric B, a least-squares trend line (`fitLine`), the latest day ringed in accent; `null` under 2 days; x-axis end labels metric-aware via `axisEndLabels` (`mezo-fy97`)
+- `logic/metricFormat.ts` — **`mezo-fy97`**, human-readable rendering of the engine's raw wire doubles: `formatMetricValue` (hour-kind → `HH:mm`, binary → `igen`/`nem`, else one decimal; key sets mirror the backend `MetricKey` extractors), `axisEndLabels` (scatter x-ends), `formatR`/`formatP` (diagnostics precision) — pure, unit-tested in `metricFormat.test.ts`
 - `components/PatternJournal.tsx` — **`mezo-tk88.5`**, the history timeline (§2.1b step 4): a left rail + one tone-colored dot per `journalEntries()` row, entry text through `SafeMarkdown` (bold-only inline renderer), a `→ a Tudástárban` link on a promoted `confirmed` entry
 - `components/PatternImpactCard.tsx` — **`mezo-tk88.5`**, „Mit kezd ezzel az app" (§2.1b step 5): the fact/predictions/experiments/challenges rows (only when `pattern.status === 'confirmed'`, each row omitted if its ref list is empty) or the single future-tense fallback row otherwise
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
