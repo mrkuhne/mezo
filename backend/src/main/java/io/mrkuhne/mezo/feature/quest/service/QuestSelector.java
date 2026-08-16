@@ -24,6 +24,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -48,7 +49,22 @@ public class QuestSelector {
     private final GoalRepository goalRepository;
     private final QuestProperties properties;
 
-    @Transactional
+    /**
+     * Generates the day's three offers. Runs in its OWN transaction (mezo-5jly) because two
+     * callers race here by design: {@code QuestService.getDay}'s lazy first offer and the morning
+     * {@code QuestJob} cron. The loser's insert hits {@code uq_daily_quest_user_date_slot}, and on
+     * Postgres a constraint violation aborts the WHOLE transaction (SQLSTATE 25P02) — so a shared
+     * transaction would take the caller's read down with it. Confined here, the loser's inner
+     * transaction rolls back alone and {@code getDay} re-reads the winner's rows.
+     *
+     * <p>Rolling back the whole inner transaction is the RIGHT granularity for this one: slots are
+     * filled one at a time, so a per-row conflict absorb could leave a half-set stitched together
+     * from two racers. All-or-nothing means the winner's three offers are what everyone sees.
+     *
+     * <p>Consequence: on success this commits independently of the caller. Acceptable here — the
+     * offers are regenerable and carry no user intent yet (nothing is completed at generation).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<DailyQuestEntity> generate(UUID userId, LocalDate date) {
         String dayType = workoutService.findPlannedTemplateForDate(userId, date).isPresent()
             ? "GYM" : "REST";
