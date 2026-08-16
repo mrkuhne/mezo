@@ -63,8 +63,8 @@ function EmptyDayIsland({ onPlan }: { onPlan: () => void }) {
 // scored row reopens the existing `MealScoreSheet`, unchanged.
 //
 // Still-retired from the earlier window-river recomposition (mezo-jgh9 Task 5, unchanged by this
-// pass): the `.pghead-np` header row + the Reta D{n} link (Reta leaks in as a FACT via the
-// now-island's subtitle — `retaPeak`), `retamicro`, `NowWindowCard`, `MissedStrip`,
+// pass): the `.pghead-np` header row + the medication D{n} link (medication leaks in as a FACT via the
+// now-island's subtitle — `medPeak`), `medcycle-micro`, `NowWindowCard`, `MissedStrip`,
 // `DayZoneCard`/`ZoneSlotRow`, the protocol-meta/Replan row.
 //
 // Scrolling (mezo-gllr): spec §2's "L0 nem görgethető" was written when the sky WAS the page
@@ -110,11 +110,11 @@ export function FuelMaiPage() {
   const workoutTime = blocks.find(b => b.kind === 'gym')?.time ?? null
   // The cycle's OWN current-day phaseKey (never a page-local re-hardcoded phase model) — 'peak'
   // is the one phase the design calls out as appetite-relevant (spec §3.2).
-  const retaPeak = medicationCycle.phaseKey === 'peak'
+  const medPeak = medicationCycle.phaseKey === 'peak'
   const matchResult = matchMealsToStack(stackSlots, recipes, fuel.meals, yesterdayFuel.meals)
   const stackVerdicts = matchResult.verdicts.filter(v => v.dayLabel === 'ma')
   const river: WindowRiverVM = buildWindowRiver({
-    plan, budget, hero: heroResult, stackVerdicts, workoutTime, retaPeak, nowHHmm, meals: fuel.meals,
+    plan, budget, hero: heroResult, stackVerdicts, workoutTime, medPeak, nowHHmm, meals: fuel.meals,
   })
 
   // Same filter+sort `buildWindowRiver` uses internally (its own `islandKey` isn't exported —

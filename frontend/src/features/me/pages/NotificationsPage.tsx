@@ -57,7 +57,7 @@ interface SubLineContext {
   ritualPrepStartsAt: string
   gymBlock: { time: string; label: string } | null
   medicationDay: boolean
-  retaDay: number
+  medCycleDay: number
   fuelSlotCount: number
   todayHu: string
 }
@@ -87,7 +87,7 @@ function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx:
     case 'wind_down':
       return ctx.ritualPrepStartsAt
     case 'medication':
-      return ctx.medicationDay ? `${ctx.todayHu} · D${ctx.retaDay}` : fallback
+      return ctx.medicationDay ? `${ctx.todayHu} · D${ctx.medCycleDay}` : fallback
     case 'fuel_slot':
       return ctx.fuelSlotCount > 0 ? `${ctx.fuelSlotCount} slot / nap` : fallback
     default:
@@ -146,7 +146,7 @@ export function NotificationsPage() {
     gymTime: gymBlock?.time ?? null,
     ritualOpensAt: ritualDay.window.opensAt,
     ritualPrepStartsAt: ritualDay.window.prepStartsAt,
-    medicationDay: medicationCycle.retaDay > 0,
+    medicationDay: medicationCycle.cycleDay > 0,
   }
   const weekday = isoWeekday(new Date())
   const forecast = forecastToday(prefs, scheduleEntries, forecastAnchors, weekday)
@@ -157,8 +157,8 @@ export function NotificationsPage() {
     ritualOpensAt: ritualDay.window.opensAt,
     ritualPrepStartsAt: ritualDay.window.prepStartsAt,
     gymBlock,
-    medicationDay: medicationCycle.retaDay > 0,
-    retaDay: medicationCycle.retaDay,
+    medicationDay: medicationCycle.cycleDay > 0,
+    medCycleDay: medicationCycle.cycleDay,
     // A zone whose every entry is rest-day-skipped never renders as a stack card (mirrors
     // buildDayPlan's FuelSlot mapper) — the count the user reads here must match what actually
     // shows up in the "Mai" timeline, not the raw zone count.

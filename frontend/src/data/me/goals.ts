@@ -15,7 +15,7 @@ export const goal: Goal = {
   // a DIFFERENT quantity from the observed kg/hét trend the hero shows (mezo-5om).
   rateTarget: { value: 0.6, unit: '%/hét', direction: 'down' },
   mesocycles: ['meso-hyp-04', 'meso-str-02', 'meso-maint-01'],
-  identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a Reta cycle után.',
+  identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a mély deficit után.',
   // Day-planner settings (Fuel P5) — the eating-occasion count + wake/bed anchors
   // the fuel timeline plans around. Editable via EditGoalSheet's "Napi ritmus".
   mealsPerDay: 4,
@@ -57,14 +57,14 @@ export const goalResponse: GoalResponse = {
       {
         fromWeek: 1,
         toWeek: 12,
-        label: 'Mély deficit · Reta cycle',
+        label: 'Mély deficit',
         kcal: 2150,
         proteinG: 163,
         sleepTargetH: 7.5,
         restDays: [3, 7],
         projectedRateKgPerWk: -0.55,
         dailyEnergyBalanceKcal: -516,
-        rationale: 'A Reta cycle alatt agresszívabb deficit fér bele — a fehérje magasan tartja az izmot, az alvás védi a regenerációt.',
+        rationale: 'Ebben a szakaszban agresszívabb deficit fér bele — a fehérje magasan tartja az izmot, az alvás védi a regenerációt.',
       },
       {
         fromWeek: 13,
@@ -128,18 +128,18 @@ export const feasibilityPreview: FeasibilityPreviewResponse = {
 }
 
 export const weightLog: WeightEntry[] = [
-  { date: '2026-04-22', value: 81.4, note: 'Goal start · Reta cycle indul' },
+  { date: '2026-04-22', value: 81.4, note: 'Goal start · mély deficit indul' },
   { date: '2026-04-25', value: 81.0 },
   { date: '2026-04-28', value: 80.8 },
   { date: '2026-05-01', value: 80.5 },
-  { date: '2026-05-04', value: 80.2, note: 'Első hét Reta · étvágy lefulladás stabil' },
+  { date: '2026-05-04', value: 80.2, note: 'Első hét · étvágy stabil' },
   { date: '2026-05-07', value: 79.9 },
   { date: '2026-05-09', value: 79.7 },
   { date: '2026-05-11', value: 80.3, note: 'Volleyball szombat · folyadékvesztés kalibrálás' },
   { date: '2026-05-13', value: 79.5 },
   { date: '2026-05-15', value: 79.2 },
   { date: '2026-05-17', value: 79.0 },
-  { date: '2026-05-19', value: 79.4, note: 'Reta D1 reggel · hétfő reggeli súly nem reprezentatív' },
+  { date: '2026-05-19', value: 79.4, note: 'Hétfő reggeli súly nem reprezentatív' },
   { date: '2026-05-20', value: 78.9 },
   { date: '2026-05-21', value: 78.8 },
   { date: '2026-05-22', value: 78.6 },

@@ -85,7 +85,7 @@ public class ChatService {
             (A példában minden szám a kontextusból jött volna — a formát másold, ne a számokat.)
 
             [Tiltás]
-            Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi döntés.
+            Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés.
 
             [Eszközhasználat]
             Múltbeli vagy összesítő kérdéshez (edzések, étkezés, súly, alvás, protokoll, gyógyszerciklus) \
@@ -99,7 +99,7 @@ public class ChatService {
             - mai/holnapi/heti edzésterv, mezociklus → get_training_plan
             - múltbeli edzés/sport/futás → get_training_log | súlytrend, fogyás ütem → get_weight_trend
             - alvás, alvási cél, közérzet (energia/stressz) → get_recovery
-            - gyógyszer, reta-ciklus → get_medication
+            - gyógyszer, gyógyszer-ciklus → get_medication
             - recept, mit főzzek → get_recipes | mi van a kamrában → get_pantry
             - napi/heti étkezés, makró, víz → get_fuel_log
             - supplement, protokoll → get_protocol

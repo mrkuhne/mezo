@@ -22,7 +22,7 @@ export interface NotificationForecastAnchors {
   ritualOpensAt: string | null
   /** The wind-down (prep) anchor — HH:mm, or null alongside `ritualOpensAt`. */
   ritualPrepStartsAt: string | null
-  /** Whether today is an active medication dose day (mirrors the backend's honest retaDay===0
+  /** Whether today is an active medication dose day (mirrors the backend's honest cycleDay===0
    *  "no dose logged yet" — that state must never be treated as a dose day). */
   medicationDay: boolean
 }

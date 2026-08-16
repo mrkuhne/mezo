@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Plain JUnit unit test for {@link MedicationMapper} (no Spring) — built via the MapStruct
  * factory exactly like {@code MealMapperTest}. Asserts the derived {@link MedicationCycle} →
- * {@code MedicationCycleResponse} projection: the {@code retaDay} passes through and the cell
+ * {@code MedicationCycleResponse} projection: the {@code cycleDay} passes through and the cell
  * carrying the {@code current} flag survives the week mapping.
  */
 class MedicationMapperTest {
@@ -23,7 +23,7 @@ class MedicationMapperTest {
             java.util.List.of(new MedicationCycle.Cell(1, "peak", "Peak", false),
                               new MedicationCycle.Cell(3, "stable", "Stabil", true)));
         var resp = m.toCycleResponse(cycle);
-        assertThat(resp.getRetaDay()).isEqualTo(3);
+        assertThat(resp.getCycleDay()).isEqualTo(3);
         assertThat(resp.getWeek()).anySatisfy(c -> {
             assertThat(c.getCurrent()).isTrue();
         });

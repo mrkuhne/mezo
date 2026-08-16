@@ -1,7 +1,11 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
-import { useFuelWeek, mondayIso, deriveWeekTitle, toRetaCells, withDefaultDuration, deriveWeeklyStats } from '@/data/fuel/fuelWeekHooks'
+import { http, HttpResponse } from 'msw'
+import { useFuelWeek, mondayIso, deriveWeekTitle, toMedCycleCells, withDefaultDuration, deriveWeeklyStats } from '@/data/fuel/fuelWeekHooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { medicationFixture } from '@/test/fixtures/medication'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { GymScheduleDay, MedicationCycleCell } from '@/data/types'
 
@@ -18,18 +22,18 @@ test('deriveWeekTitle formats same-month and cross-month weeks', () => {
   expect(deriveWeekTitle('2026-06-29')).toBe('Jún 29 – Júl 5')
 })
 
-test('toRetaCells maps the medication cycle week to strip cells (empty stays empty)', () => {
+test('toMedCycleCells maps the medication cycle week to strip cells (empty stays empty)', () => {
   const week: MedicationCycleCell[] = [
     { day: 1, phaseKey: 'peak', label: 'Peak', current: false },
     { day: 3, phaseKey: 'stable', label: 'Stabil', current: true },
     { day: 7, phaseKey: 'trough', label: 'Trough', current: false },
   ]
-  expect(toRetaCells(week)).toEqual([
-    { d: 1, label: 'Peak', color: 'var(--reta-d1)' },
-    { d: 3, label: 'Stable', color: 'var(--reta-d3)' },
-    { d: 7, label: 'Trough', color: 'var(--reta-d7)' },
+  expect(toMedCycleCells(week)).toEqual([
+    { d: 1, label: 'Peak', color: 'var(--medcycle-d1)' },
+    { d: 3, label: 'Stable', color: 'var(--medcycle-d3)' },
+    { d: 7, label: 'Trough', color: 'var(--medcycle-d7)' },
   ])
-  expect(toRetaCells([])).toEqual([])
+  expect(toMedCycleCells([])).toEqual([])
 })
 
 test('withDefaultDuration fills only active timed days missing a duration', () => {
@@ -65,7 +69,9 @@ describe('useFuelWeek (mock mode)', () => {
   it('returns the seeds, the demo title and the coach note', () => {
     const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
     expect(result.current.title).toBe('Máj 18 – 24')
-    expect(result.current.retaWeek).toHaveLength(7)
+    // mezo-lwmq: the owner tracks no medication — the mock seed's cycle week is empty, same as
+    // real mode's default. See the (real mode) test below for the populated strip.
+    expect(result.current.medCycleWeek).toEqual([])
     expect(result.current.gymSchedule).toHaveLength(7)
     expect(result.current.weeklySupplements.length).toBeGreaterThan(0)
     expect(result.current.patterns).toHaveLength(4)
@@ -81,6 +87,10 @@ describe('useFuelWeek (real mode)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('composes the live week and returns honest-empty for the deferred surfaces', async () => {
+    // The app itself seeds no medication (mezo-lwmq) — an empty cycle would leave the strip
+    // empty, so this test overrides the handler with the neutral fixture (cycleDay 3, stable)
+    // to exercise the populated-strip branch.
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
 
     // weekly stats resolve from GET /api/fuel/week/{monday} (MSW fixture: 2 logged days)
@@ -89,9 +99,9 @@ describe('useFuelWeek (real mode)', () => {
     expect(result.current.weeklyStats.proteinHitDays).toBe(1)
     expect(result.current.weeklyStats.supplementsAdherence).toBeNull()
 
-    // Reta strip derives from the medication cycle fixture (retaDay 3, stable)
-    await waitFor(() => expect(result.current.retaWeek).toHaveLength(7))
-    expect(result.current.retaWeek[2]).toEqual({ d: 3, label: 'Stable', color: 'var(--reta-d3)' })
+    // Cycle strip derives from the medication cycle fixture (cycleDay 3, stable)
+    await waitFor(() => expect(result.current.medCycleWeek).toHaveLength(7))
+    expect(result.current.medCycleWeek[2]).toEqual({ d: 3, label: 'Stable', color: 'var(--medcycle-d3)' })
 
     // gym week derives from Train (meso fixture: Csü Pull + the 18:30 slot; default duration)
     await waitFor(() => expect(result.current.gymSchedule).toHaveLength(7))

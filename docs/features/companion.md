@@ -57,7 +57,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
-  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, retaDay/phase, last
+  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, cycleDay/phase, last
   sleep + latest check-in), rendered as eight Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT
   (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the static
   voice and the history transcript**.
@@ -91,8 +91,10 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `get_protocol(scope, days)` adherence/intake/supplements since mezo-xixu, see the catalog below),
   `GoalTools` (`get_goal_progress` — merged into one scoped `get_goal(scope)`
   progress/recept/timeline/guards/feasibility since mezo-xixu, see the catalog below),
-  `MedicationTools` (`get_reta_cycle` — merged into one scoped `get_medication(scope)` reta/all
-  since mezo-xixu, see the catalog below). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
+  `MedicationTools` — one scoped `get_medication(scope)` tool since mezo-xixu (`scope ∈
+  {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in
+  `mezo-lwmq`), see the catalog below. All
+  ownership-scoped via `ToolContext` (`userId` from the JWT principal,
   NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
 - **9th tool — `get_training_plan` (forward plan, mezo-xixu)**, added onto `TrainTools`: the
   companion's first FORWARD-looking read (the other 8 are backward/aggregate). `scope ∈
@@ -263,7 +265,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   one sentence; a hit skips the verdict that round), then `TurnVerdictCheck` (ONE cheap-tier
   LLM call → strict-JSON `{redundantQuestion, unmarkedClaim, reason}` — the second key was
   `ungroundedClaim` until it was renamed at mezo-q71s ([ADR
-  0027](../decisions/0027-marked-speculation-in-chat.md)) to allow marked speculation, defensively
+  0028](../decisions/0028-marked-speculation-in-chat.md)) to allow marked speculation, defensively
   parsed, **fail-open**). Violation → corrective re-prompt (`AdvisorRetry.block` appended to the
   system prompt; same tools + same audit) up to `advisors.max-retries`; a still-violating answer ships
   with `ai_message.degraded = true`. Sync path retries before delivery; the streamed path
@@ -303,7 +305,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
   deterministic, date-scoped Hungarian digest of one FINISHED day's L0 (train/sport/run, fuel-day
-  rollup, sleep, weight, Reta cycle-day + dose, check-ins — reusing the owning features' reads;
+  rollup, sleep, weight, medication cycle-day + dose, check-ins — reusing the owning features' reads;
   `nincs adat` semantics by omission; **since V3.4** also the qualitative fields: sleep/run
   notes, mention tone+excerpt, intention reflection — capped per `summary.note-max-chars`) → ONE cheap-tier `CompanionLlm` call (prompt behind
   `SUMMARY_MARKER`) → past-tense narrative row. Digest = pure code, narrative = pure LLM
@@ -355,7 +357,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   **upserts one row per `(user, kind, pair_key)`**: stats refresh while `proposed`/`monitoring`,
   a user-judged `confirmed`/`rejected` row is never auto-touched (V3.3 adds reinforcement).
 - **Series extraction** — `MetricSeriesService`: 12 `MetricKey`s v1 (sleep quality/duration,
-  training RPE, sport load, gym volume, late-meal hour, daily kcal, Reta cycle-day, water,
+  training RPE, sport load, gym volume, late-meal hour, daily kcal, medication cycle-day, water,
   morning weight-delta, check-in stress/energy) — **31 since V3.4** (the full list in the V3.4
   block below) — composed read-only from the owning features'
   EXISTING reads; deterministic multi-row aggregation, absence is absence (never bridged).
@@ -468,7 +470,7 @@ COMPLETE (all 14 slices):**
     **bedtime before-noon hours shift +24**, 01:00 → 25.0, so "later" stays monotone) ·
     `sleep-awakenings` (max) · `daily-protein-g` (FuelDay rollup, meal-days only — the
     DAILY_KCAL pattern generalized into `fuelRollup`) · `meal-score` (avg of scored meals) ·
-    `reta-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
+    `medication-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
     pattern) · `habits-done` (count of `done` rows; a habit-row day with zero done is a REAL 0)
     · `ritual-closed` (0/1 from the first-ever closed day onward — pre-adoption days are absent,
     not 0) · `daily-xp` (activity + habit + completed-quest XP sum; zero-XP days absent) ·
@@ -487,7 +489,7 @@ COMPLETE (all 14 slices):**
   (`habits-done~checkin-mental`, `daily-xp~checkin-mental`, `social-mentions~checkin-mental`,
   `training-monotony~checkin-energy`, `bedtime-variability~checkin-mental`,
   `wakeup-hour~checkin-energy`), nutrition→energy (`daily-protein~next-day-checkin-energy`,
-  `meal-score~next-day-checkin-energy`, `reta-dose~daily-kcal`), and recovery
+  `meal-score~next-day-checkin-energy`, `medication-dose~daily-kcal`), and recovery
   (`sport-load~next-sleep-quality`, `sleep-quality~next-day-hr-recovery`,
   `checkin-body~gym-joint-pain`, `gym-workload~next-day-checkin-body`). The monitor page shows
   them automatically — zero FE work, contract unchanged.
@@ -509,7 +511,7 @@ COMPLETE (all 14 slices):**
   actionable hypotheses about MISSING data ("ha edzés után workload-ot pontoznál…"). `gather()`
   became package-private for `HypothesisGatherContextIT`.
 - **Spec deviations (as-built):** `sourceHu` was NOT added to `MetricKey` (the monitor shipped
-  without it and the contract has no such field — no consumer); `reta-dose-mg` derives from the
+  without it and the contract has no such field — no consumer); `medication-dose-mg` derives from the
   dose log (`MedicationDoseEntity.dose`), not the cycle JSON (which holds only phase labels, no
   dose ladder); the driving bd issue's "20 metrics / 32 total" text predates the collector-UI
   audit — the approved count is 19/31 (deep-min dropped: permanently empty without a wearable
@@ -571,7 +573,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
-| Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0027](../decisions/0027-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
+| Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
@@ -615,7 +617,7 @@ multi-turn-aware; design of record:**
 [`docs/superpowers/specs/2026-08-16-companion-conversational-tone-design.md`](../superpowers/specs/2026-08-16-companion-conversational-tone-design.md),
 plan
 [`2026-08-16-companion-conversational-tone.md`](../superpowers/plans/2026-08-16-companion-conversational-tone.md),
-[ADR 0027](../decisions/0027-marked-speculation-in-chat.md):
+[ADR 0028](../decisions/0028-marked-speculation-in-chat.md):
 
 - **The `CompanionLlm` port carries the conversation as real prior messages, not a transcript
   glued into the system prompt.** The port's `complete`/`stream` grew a `List<Turn> history`
@@ -633,7 +635,7 @@ plan
   payload, the fake LLM's echo, and the llm-audit `conversation_history` column below.
 - **`ChatService.SYSTEM_PROMPT` is rebuilt into named blocks** — `[Ki vagy]` · `[Hogyan beszélsz]`
   (new — behavioural tone rules, not adjectives) · `[Mit szabad állítani]` (new — the
-  marked-speculation policy, [ADR 0027](../decisions/0027-marked-speculation-in-chat.md)) ·
+  marked-speculation policy, [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)) ·
   `[Példa a hangnemre]` (new — one contrasting "data-terminal vs conversational" answer pair) ·
   `[Tiltás]` · `[Eszközhasználat]` · `[Eszköz-útmutató]` — see §3 "Prompt assembly" below for the
   exact current shape. `Válaszolj magyarul, tömören.` is gone (identified as the single line most
@@ -642,7 +644,7 @@ plan
   prompt, after the snapshot/facts/pattern-ack blocks, in both `sendMessage` and `prepareTurn` —
   the recency-weighted counterweight to the persona sitting at the prompt's top.
 - **The advisor's `ungroundedClaim` criterion became `unmarkedClaim`** — see §3 "The advisor
-  chain" and [ADR 0027](../decisions/0027-marked-speculation-in-chat.md) for the full rationale:
+  chain" and [ADR 0028](../decisions/0028-marked-speculation-in-chat.md) for the full rationale:
   a linguistically hedged guess ("tippelek", "lehet, hogy") is no longer a violation by itself; an
   invented concrete number still is, hedged or not. `AdvisorViolation.check`'s `"grounding"`
   literal became `"unmarked"`; `AdvisorRetry.block` gained a closing tone-preservation sentence so
@@ -835,8 +837,9 @@ feature switch independent of `COMPANION_SWITCH`, so the assembler reaches all f
 `ObjectProvider<T>.getIfAvailable()` (the `TodayQuestSource` precedent) — switch off ⇒ that
 block's affected part renders `nincs adat` instead of failing Spring context startup. `[Mai üzemanyag]`
 (`FuelDayService.getDay` consumed/targets incl. water +
-active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
-phase; an active med with no dose renders `nincs rögzített dózis` — honest zero), and
+active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` cycleDay +
+phase; no active medication — since `mezo-lwmq` the standing state — renders `nincs adat`; an
+active med with no dose would render `nincs rögzített dózis` — honest zero either way), and
 `[Regeneráció]` (latest sleep + latest check-in, note truncated to
 `snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
@@ -865,7 +868,7 @@ the payload renders it explicitly with `ChatHistory.render`; without this the ju
 to the conversation and fire false `redundantQuestion`/`unmarkedClaim` verdicts. Parsed
 first-`{`-to-last-`}` into `{redundantQuestion, unmarkedClaim, reason}` — **fail-open** on any
 call/parse failure. **`unmarkedClaim`** (renamed from `ungroundedClaim`, mezo-q71s — [ADR
-0027](../decisions/0027-marked-speculation-in-chat.md)): the judge asks whether the answer states a
+0028](../decisions/0028-marked-speculation-in-chat.md)): the judge asks whether the answer states a
 concrete unsupported claim **confidently, without a linguistic hedge** — a marked hunch
 ("tippelek", "gyanítom", "lehet, hogy", "ezt csak sejtem") is no longer itself a violation; an
 invented concrete number still is, hedged or not. Violations map to `redundancy`/`unmarked`
@@ -898,10 +901,11 @@ follow-up question but never a courtesy one, builds on what was already said) ·
 állítani]` (mezo-q71s, new — the marked-speculation policy: a linguistically hedged hunch is
 allowed, a concrete number/date/past fact needs a source in the context/a tool call/Daniel's
 message, and inventing one is forbidden even hedged; see [ADR
-0027](../decisions/0027-marked-speculation-in-chat.md)) · `[Példa a hangnemre]` (mezo-q71s, new — one
+0028](../decisions/0028-marked-speculation-in-chat.md)) · `[Példa a hangnemre]` (mezo-q71s, new — one
 contrasting "data-terminal" vs "conversational" answer to the same question, calibrating what
-"marked" looks like) · `[Tiltás]` (the clinical guard — Rx dosage changes, e.g. retatrutid, are
-never the model's call) · `[Eszközhasználat]` (the V0.5 tool-usage line, "Múltbeli vagy összesítő
+"marked" looks like) · `[Tiltás]` (the clinical guard — *"Gyógyszer adagolására vonatkozó
+változtatást SOHA ne javasolj — az orvosi döntés."*; the drug-name example was removed in
+`mezo-lwmq`, the prohibition itself is unchanged) · `[Eszközhasználat]` (the V0.5 tool-usage line, "Múltbeli vagy összesítő
 kérdéshez … használd a kapott tool-okat", plus the mezo-280 tool-timing sentence below) ·
 `[Eszköz-útmutató]` ((mezo-xixu) the terse question-type → tool name routing hint, PR →
 `get_exercise_records`, edzésterv → `get_training_plan`, recept → `get_recipes`, … — one line per
@@ -1192,7 +1196,7 @@ see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-
 | `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
-| `get_medication(scope)` (mezo-xixu, merged from `get_reta_cycle`) | scope=reta (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no reta-specific naming) | `Medication`/name |
+| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming) | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
@@ -1232,9 +1236,11 @@ see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-
   (`COMPANION_ADVISORS_SWITCH`); off ⇒ the chain/check beans do not exist (V1.2 behavior).
 - `mezo.companion.advisors.max-retries` = **1** (`@Min(0) @Max(2)`) — corrective re-prompts
   before a violating answer ships `degraded` (0 = check-only flagging; old docs §4.5: 1).
-- `mezo.companion.advisors.rx-terms` = `[retatrutid, reta, tirzepatid, mounjaro, szemaglutid,
-  ozempic, wegovy]` (`@NotEmpty`) — the clinical check's guarded prescription-med terms
-  (accent-folded contains-match; only dose-CHANGE verbs trigger).
+- `mezo.companion.advisors.rx-terms` (`@NotEmpty`) — the clinical check's owner-curated
+  GLP-1-family drug-name dictionary (7 terms, `application.yml`) — the guard's vocabulary, not
+  user data, so it was deliberately left untouched by the medication-retirement pass ([ADR
+  0027](../decisions/0027-retire-retatrutide-generic-medication-domain.md)); accent-folded
+  contains-match, only dose-CHANGE verbs trigger.
 - `mezo.companion.transcription.max-audio-bytes` = **5 242 880** (`@Min(1)`) — the voice-note
   upload cap (`mezo-at8x.4`), kept under the 6 MB container multipart cap so the SERVICE check is
   the effective, message-bearing limit; ~2.5 minutes of the 16 kHz mono WAV the FE uploads.
@@ -1691,7 +1697,8 @@ adapter replaces Gemini while everything else stays real. `FakeCompanionLlm.comp
 `"FAKE-LLM system=[…] history=[…] user=[…]"`, where `history=[…]` is `ChatHistory.render(history)`
 (`FakeCompanionLlm.java:366-368`). This is what makes **prompt assembly assertable**: `ChatServiceIT`
 asserts the persisted answer's `system=[…]` segment contains the companion voice (`"Te vagy a
-mezo"`, `"retatrutid"`) and the `TONE_REMINDER` text but **NOT** any prior turn's content, the
+mezo"`, the drug-name-free clinical guard `"Gyógyszer adagolására vonatkozó változtatást"`)
+and the `TONE_REMINDER` text but **NOT** any prior turn's content, the
 `history=[…]` segment contains the windowed `"Daniel: …"`/`"Mezo: …"` transcript, and the
 `user=[…]` segment is exactly the current message — never the history. Before mezo-q71s this was a
 two-part echo with the history rendered INSIDE `system=[…]`; the three-way split is the single
@@ -1706,7 +1713,7 @@ regression guard for the observed hallucination bug: tomorrow's meso-template gy
 the matching sport-schedule slot, the active running block's prescribed session for that weekday,
 and the honest rest-day fallback when no template matches today OR tomorrow's weekday)**, account
 level + top skill (`[Növekedés]`), quest count +
-creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, retaDay+phase
+creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, cycleDay+phase
 (`4. nap (Stabil)`), sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced
 from the sleep goal (derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep
 goal exists, and determinism (two renders are `equals`).
@@ -1767,7 +1774,7 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`CompanionToolsRenderIT`** (77 tests, `@Transactional` + fake profile) — every tool's rendered
   Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
   with a hand-built `ToolContext`): happy paths, `nincs adat`/`nincs aktív …` absences, window
-  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero reta.
+  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero medication cycle.
 - **`CompanionToolRegistryIT`** — exactly the 15-tool batch registered, every callback wrapped in
   `RecordingToolCallback`; the tool-context carries `userId` + audit.
 - **`ToolCallAuditTest` + `RecordingToolCallbackTest`** (pure units) — null envelopes when empty,
@@ -1848,7 +1855,7 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   (`RETRY_MARKER` in the echo proves round 2), degraded persisted+on-wire, clinical-persists →
   degraded, verdict-broken → fail-open without retry, (**mezo-q71s**) a linguistically marked
   speculation does NOT trigger a retry — the policy's IT anchor ([ADR
-  0027](../decisions/0027-marked-speculation-in-chat.md)).
+  0028](../decisions/0028-marked-speculation-in-chat.md)).
 - **`ChatStreamAdvisorIT`** (2, NOT `@Transactional`) — deltas carry attempt-1 (no marker),
   `done` carries the retried answer clean; violate-always → `done.degraded` + persisted flag.
 - **`CompanionAdvisorsSwitchOffIT`** (2) — no chain bean; violation sentinels change nothing.
@@ -2023,7 +2030,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 33. **Chain depth v1 = 2 checks** (the roadmap's latency question answered small): deterministic
     clinical regex (~0 ms, first; a hit skips the LLM that round) + ONE combined cheap-tier
     verdict call for redundancy AND grounding-lite (**renamed `unmarkedClaim` at mezo-q71s** — see
-    the "Conversational tone" §1 entry and [ADR 0027](../decisions/0027-marked-speculation-in-chat.md);
+    the "Conversational tone" §1 entry and [ADR 0028](../decisions/0028-marked-speculation-in-chat.md);
     the criterion itself changed, not just the name — a linguistically hedged guess is no longer a
     violation, only an unmarked one). Full per-claim EvidenceCheck + numericGroundingCheck stay
     deferred (classifier-tier cost data first). Old ContinuityGate / MultiHorizonLoader intent is
@@ -2158,7 +2165,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — advisor chain (V1.3)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/CompanionAdvisorChain.java` — the §4.5 retry/degrade orchestrator (`complete` sync / `review` streamed).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/ClinicalOutputCheck.java` — deterministic Rx dose-change regex (accent-folded, sentence-scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse; `unmarkedClaim` since mezo-q71s — [ADR 0027](../decisions/0027-marked-speculation-in-chat.md) — renders `history` via `ChatHistory.render` into its own payload).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse; `unmarkedClaim` since mezo-q71s — [ADR 0028](../decisions/0028-marked-speculation-in-chat.md) — renders `history` via `ChatHistory.render` into its own payload).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/{AdvisorRetry,AdvisorViolation,AdvisedAnswer}.java` — retry block (mezo-q71s: gained a closing tone-preservation sentence) + value records (`AdvisorViolation.check` ∈ `clinical|redundancy|unmarked`, was `grounding`).
 
 **Backend — LLM port (ADR 0008)**

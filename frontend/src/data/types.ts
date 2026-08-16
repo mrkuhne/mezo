@@ -225,7 +225,7 @@ export interface MedicationDose { id: string; administeredAt: string; dose: numb
 /** The derived weekly cycle (which day of the cycle we're on + the phase grid). */
 export interface MedicationCycleCell { day: number; phaseKey: string; label: string; current: boolean }
 export interface MedicationCycle {
-  retaDay: number; phaseKey: string; phaseLabel: string
+  cycleDay: number; phaseKey: string; phaseLabel: string
   lastDoseAt?: string | null
   week: MedicationCycleCell[]
 }
@@ -251,7 +251,7 @@ export interface MedicationInput {
 /** Editor input for logging an injection. */
 export interface MedicationDoseInput { administeredAt?: string | null; dose: number; note?: string | null }
 
-export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; retaDay: number; mesoPhase: string }
+export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; mesoPhase: string }
 /** The workout teaser's prediction line — demo copy in mock mode; real predictions are a later epic (null hides the row). */
 export interface WorkoutPrediction { confidence: number; label: string }
 /** One cell of the Today quick-stats row ("Most"). */
@@ -267,7 +267,7 @@ export interface UserMeta {
   streakDays: number
 }
 export interface TodayScenario {
-  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  dayState: DayState; medCycleDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
   /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
   ritual: 'waiting' | 'open' | 'done' | null
 }
@@ -573,8 +573,8 @@ export interface MentionLogInput {
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---
-export type RetaPhase = 'Peak' | 'Stable' | 'Trough'
-export interface RetaDayCell { d: number; label: RetaPhase; color: string }
+export type MedCyclePhase = 'Peak' | 'Stable' | 'Trough'
+export interface MedCycleDayCell { d: number; label: MedCyclePhase; color: string }
 // NOTE: prototype data.js gymSchedule.weeklyTimes uses null for inactive (Szo/Vas)
 // days and `today` is present on only one row → fields adapted to the real data.
 export interface GymScheduleDay {
@@ -1309,7 +1309,7 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     description: 'A mai edzés kezdete előtt', showLeadChip: true, iconBg: '--wash-gym',
   },
   medication: {
-    label: 'Reta injekció', emoji: '💉', section: 'reminder',
+    label: 'Gyógyszer beadás', emoji: '💉', section: 'reminder',
     description: 'Injekciós napon, reggel', showLeadChip: false, iconBg: '--wash-amber',
   },
   ritual: {

@@ -45,7 +45,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         // no critique sentinel → the fake's default GOOD critique (0.8 each → score 0.8 ≥ 0.75)
         seedContext(owner, """
-                [{"title":"Reta-hét eleji alváshiány rontja a pénteki volument",\
+                [{"title":"Ciklus-hét eleji alváshiány rontja a pénteki volument",\
                 "mechanism":"A ciklus eleji étvágytalanság alváshiánnyal társulva csökkenti a heti volument.",\
                 "category":"physiology"}]""");
 

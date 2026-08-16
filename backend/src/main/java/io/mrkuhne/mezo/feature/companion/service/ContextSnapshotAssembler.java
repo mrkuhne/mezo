@@ -448,11 +448,11 @@ public class ContextSnapshotAssembler {
             return "[Gyógyszer] " + NO_DATA;
         }
         MedicationCycle cycle = medicationCycleService.derive(userId, med, today);
-        if (cycle.retaDay() == 0) {
+        if (cycle.cycleDay() == 0) {
             // honest zero — active med but no recorded dose to anchor the cycle
             return "[Gyógyszer] " + med.getName() + ": nincs rögzített dózis";
         }
-        return "[Gyógyszer] " + med.getName() + ": ciklus " + cycle.retaDay() + ". nap ("
+        return "[Gyógyszer] " + med.getName() + ": ciklus " + cycle.cycleDay() + ". nap ("
                 + cycle.phaseLabel() + ")";
     }
 

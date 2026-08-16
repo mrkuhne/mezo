@@ -1,4 +1,4 @@
-# 0027 — Marked speculation is allowed in chat; the advisor punishes the missing marker, not the guess
+# 0028 — Marked speculation is allowed in chat; the advisor punishes the missing marker, not the guess
 
 - **Status:** Accepted
 - **Date:** 2026-08-16

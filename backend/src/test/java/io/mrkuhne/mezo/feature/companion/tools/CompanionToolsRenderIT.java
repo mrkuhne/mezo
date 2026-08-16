@@ -822,59 +822,59 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeRetaAndDoseAnchored() {
+    void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeCycleAndDoseAnchored() {
         UUID owner = userPopulator.createUser().getId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
 
-        String out = medicationTools.getMedication("reta", ctx(owner));
+        String out = medicationTools.getMedication("cycle", ctx(owner));
 
-        assertThat(out).startsWith("Retatrutid ciklus: Retatrutide — 4. nap (Stabil)")
+        assertThat(out).startsWith("Gyógyszer-ciklus: Teszt gyógyszer — 4. nap (Stabil)")
                 .contains("utolsó dózis: " + LocalDate.now().minusDays(3) + " (4 mg)")
                 .contains("következő esedékes: " + LocalDate.now().minusDays(3).plusDays(7));
         assertThat(audit.toRefsEnvelope().refs())
-                .containsExactly(new RefsEnvelope.Ref("Medication", "Retatrutide"));
+                .containsExactly(new RefsEnvelope.Ref("Medication", "Teszt gyógyszer"));
     }
 
     @Test
-    void testGetMedication_shouldRenderHonestZero_whenScopeRetaAndNoDose() {
+    void testGetMedication_shouldRenderHonestZero_whenScopeCycleAndNoDose() {
         UUID owner = userPopulator.createUser().getId();
-        medicationPopulator.createReta(owner);
-        assertThat(medicationTools.getMedication("reta", ctx(owner)))
-                .isEqualTo("Retatrutid ciklus: Retatrutide — nincs rögzített dózis");
+        medicationPopulator.createMedication(owner);
+        assertThat(medicationTools.getMedication("cycle", ctx(owner)))
+                .isEqualTo("Gyógyszer-ciklus: Teszt gyógyszer — nincs rögzített dózis");
     }
 
     @Test
-    void testGetMedication_shouldDefaultToReta_whenScopeOmitted() {
+    void testGetMedication_shouldDefaultToCycle_whenScopeOmitted() {
         UUID owner = userPopulator.createUser().getId();
-        medicationPopulator.createReta(owner);
+        medicationPopulator.createMedication(owner);
         assertThat(medicationTools.getMedication(null, ctx(owner)))
-                .isEqualTo("Retatrutid ciklus: Retatrutide — nincs rögzített dózis");
+                .isEqualTo("Gyógyszer-ciklus: Teszt gyógyszer — nincs rögzített dózis");
     }
 
     @Test
     void testGetMedication_shouldRenderGeneralOverview_whenScopeAll() {
         UUID owner = userPopulator.createUser().getId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
 
         String out = medicationTools.getMedication("all", ctx(owner));
 
-        assertThat(out).startsWith("Gyógyszer: Retatrutide (retatrutide) — weekly, 6 mg")
+        assertThat(out).startsWith("Gyógyszer: Teszt gyógyszer (teszthatoanyag) — weekly, 6 mg")
                 .contains("ciklus: 4. nap (Stabil)")
                 .contains("Utolsó dózisok: " + LocalDate.now().minusDays(3) + ": 4 mg");
         assertThat(audit.toRefsEnvelope().refs())
-                .containsExactly(new RefsEnvelope.Ref("Medication", "Retatrutide"));
+                .containsExactly(new RefsEnvelope.Ref("Medication", "Teszt gyógyszer"));
     }
 
     @Test
     void testGetMedication_shouldRenderRegimenWithoutCycleLine_whenScopeAllAndNoDose() {
         UUID owner = userPopulator.createUser().getId();
-        medicationPopulator.createReta(owner);
+        medicationPopulator.createMedication(owner);
 
         String out = medicationTools.getMedication("all", ctx(owner));
 
-        assertThat(out).isEqualTo("Gyógyszer: Retatrutide (retatrutide) — weekly, 6 mg");
+        assertThat(out).isEqualTo("Gyógyszer: Teszt gyógyszer (teszthatoanyag) — weekly, 6 mg");
     }
 
     @Test

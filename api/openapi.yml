@@ -48,7 +48,7 @@ tags:
   - name: Medication
     description: >-
       Medication (Gyógyszer) — owned medication definition + a dose event-log;
-      the 7-day cycle (retaDay + phase) is derived from the logged doses. GET
+      the 7-day cycle (cycleDay + phase) is derived from the logged doses. GET
       /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
   - name: Progression
   - name: Fuel
@@ -10764,12 +10764,12 @@ components:
     MedicationCycleResponse:
       type: object
       required:
-        - retaDay
+        - cycleDay
         - phaseKey
         - phaseLabel
         - week
       properties:
-        retaDay:
+        cycleDay:
           type: integer
         phaseKey:
           type: string

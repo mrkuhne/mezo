@@ -71,12 +71,12 @@ class BriefingGeneratorIT extends AbstractIntegrationTest {
         dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
         // the check-in note rides into the snapshot's [Regeneráció] block -> the fake sees it
         checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2,
-                "[fake-briefing:{\"eyebrow\":\"Reta nap 3\",\"body\":[\"Jó reggelt!\"],\"refIndexes\":[5,6]}]");
+                "[fake-briefing:{\"eyebrow\":\"Gyógyszer nap 3\",\"body\":[\"Jó reggelt!\"],\"refIndexes\":[5,6]}]");
 
         BriefingEntity briefing = briefingGenerator.generate(user, DAY);
 
         assertThat(briefing).isNotNull();
-        assertThat(briefing.getContent().eyebrow()).isEqualTo("Reta nap 3");
+        assertThat(briefing.getContent().eyebrow()).isEqualTo("Gyógyszer nap 3");
         assertThat(briefing.getContent().body()).containsExactly("Jó reggelt!");
         assertThat(briefing.getContent().refs()).extracting("kind")
                 .containsExactly("Sleep", "Memory");               // candidates #5 and #6

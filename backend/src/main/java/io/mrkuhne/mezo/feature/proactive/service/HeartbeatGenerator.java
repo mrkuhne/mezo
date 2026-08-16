@@ -47,7 +47,7 @@ public class HeartbeatGenerator {
             + "déli (nudge) esetén a nap hátralévő részére adj egy konkrét, gyengéd fókuszt; esti "
             + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI BRIEFING blokk, "
             + "annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
-            + "adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi "
+            + "adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi "
             + "döntés. Sima folyószöveggel válaszolj, markdown és felsorolás nélkül.";
 
     private final HeartbeatNoteRepository heartbeatNoteRepository;

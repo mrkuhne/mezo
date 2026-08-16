@@ -19,6 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +65,60 @@ public class VolumeProgressionService {
 
     /** Per-muscle-group signals derived from last completed week's logged working sets. */
     private record WeeklySignals(Map<String, Integer> loggedLastWeek, Map<String, Boolean> grind) {}
+
+    /**
+     * Baseline seeding on the create/activate path (mezo-xlmp): one volume-log row per coarse
+     * {@link MuscleGroup} the meso's TEMPLATE days actually train, from the fixed
+     * {@code mezo.volume.baselines} RP table, {@code currentSets = MEV} (the W1 start —
+     * {@link #rolloverIfDue}'s first run stamps the START audit on top). Idempotent: an existing
+     * row's group is skipped untouched, so activate doubles as a backfill for pre-seed mesos; a
+     * group with no baselines entry is never fabricated (DA5).
+     */
+    @Transactional
+    public void seedBaselines(UUID createdBy, UUID mesoId) {
+        List<UUID> templateIds = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)).stream()
+            .filter(s -> s.getTemplateSessionId() == null)
+            .map(WorkoutSessionEntity::getId)
+            .toList();
+        if (templateIds.isEmpty()) {
+            return;
+        }
+        SortedSet<String> trained = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateIds).stream()
+            .map(e -> MuscleGroup.of(e.getMuscle()))
+            .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> existing = volumeLogRepository
+            .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(mesoId)).stream()
+            .map(MuscleGroupVolumeLogEntity::getMuscle)
+            .collect(Collectors.toSet());
+
+        List<MuscleGroupVolumeLogEntity> fresh = new ArrayList<>();
+        for (String group : trained) {
+            VolumeProperties.Baseline b = props.baselines().get(group);
+            if (b == null || existing.contains(group)) {
+                continue;
+            }
+            MuscleGroupVolumeLogEntity row = new MuscleGroupVolumeLogEntity();
+            row.setCreatedBy(createdBy);
+            row.setMesocycleId(mesoId);
+            row.setMuscle(group);
+            row.setMev(b.mev());
+            row.setMav(b.mav());
+            row.setMrv(b.mrv());
+            row.setCurrentSets(b.mev());
+            // confidence is contract-required on VolumeSource; 0.5 = generic table, not personalized.
+            row.setSource(new ProvenanceEnvelope(
+                new ProvenanceEnvelope.Baseline("RP guidelines · intermediate", b.mev(), b.mav(), b.mrv()),
+                List.of(), 0.5,
+                "RP irányelv baseline — a mesociklus aktiválásakor seedelve, személyre szabás nélkül.",
+                null));
+            fresh.add(row);
+        }
+        if (!fresh.isEmpty()) {
+            volumeLogRepository.saveAll(fresh);
+        }
+    }
 
     @Transactional
     public void rolloverIfDue(UUID createdBy, MesocycleEntity meso) {

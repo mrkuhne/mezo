@@ -227,7 +227,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         // The fake echoes system=[...] user=[...] — the persisted answer proves prompt assembly.
         assertThat(answer.getContent()).contains("Te vagy a mezo");
-        assertThat(answer.getContent()).contains("retatrutid");
+        assertThat(answer.getContent()).contains("Gyógyszer adagolására vonatkozó változtatást");
         assertThat(answer.getContent()).contains("user=[szia mezo]");
         assertThat(answer.getContent()).contains("history=[]");
     }
@@ -337,8 +337,8 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(echoed).doesNotContain("Válaszolj magyarul, tömören");
         assertThat(echoed).contains("[Hogyan beszélsz]");
         assertThat(echoed).contains("[Mit szabad állítani]");
-        // A megőrzött guárdok
-        assertThat(echoed).contains("retatrutid");
+        // A megőrzött guárdok — a klinikai tiltás mezo-lwmq óta gyógyszernév nélkül szól
+        assertThat(echoed).contains("Gyógyszer adagolására vonatkozó változtatást");
         assertThat(echoed).contains("[Eszköz-útmutató]");
     }
 

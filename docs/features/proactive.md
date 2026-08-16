@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-14
+updated: 2026-08-16
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -671,7 +671,7 @@ generate(userId, weekStart)                             WeeklySuggestionGenerato
 ```
 
 The prompt (`WEEKLY_SUGGESTION_MARKER "HETI-TERVJAVASLAT"` + HU rules: 3-5 sentences, 2-3 actionable
-suggestions, plain prose no markdown, invent-no-numbers, never suggest a retatrutid/med-dose change)
+suggestions, plain prose no markdown, invent-no-numbers, never suggest a medication-dose change)
 mirrors the briefing guardrails at the smart tier. The gather composes patterns via the companion
 `PatternRepository` (the V3.1/V3.2 Inbox rows) — a fourth companion read on top of the briefing's three.
 

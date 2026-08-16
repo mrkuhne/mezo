@@ -25,14 +25,14 @@ export function patternCategoryColor(cat: PatternCategory): string {
 export const patterns: Pattern[] = [
   {
     id: 'p1',
-    pairKey: 'reta-dose~daily-kcal',
+    pairKey: 'sport-load~next-sleep-quality',
     category: 'physiology',
     categoryLabel: 'Fiziológia',
     confidence: 0.85,
-    title: 'Reta beadás + 36h ablakban étvágy lefulladás',
+    title: 'Magas sportterhelés → rákövetkező éjjel mélyebb alvás',
     mechanism:
-      'A Retatrutide beadás után 24-48h-val az étvágy a legalacsonyabb. A nézőpontunk: ezeken a napokon a kcal-pacing 15 órára 38% körül van (átlag: 51%).',
-    evidence: ['12 Reta beadás óta', '9 nap megerősítve', '0.85 statisztikai stabilitás'],
+      'A 90 perc feletti sportterhelésű napok után az alvásminőség érezhetően jobb. A nézőpontunk: ezeken az éjszakákon az alvás-score 84% körül van (átlag: 71%).',
+    evidence: ['12 terhelt nap óta', '9 éjszaka megerősítve', '0.85 statisztikai stabilitás'],
     critique: { statistical: 0.85, confounders: 0.72, l3align: 0.91, actionability: 0.88 },
     thinking:
       'Megfigyelés: D2-D3 napokon a meal-count 3-ról 2-re csökken, és ez nem a tudatos döntés következménye, hanem az éhségérzet eltűnése. Hipotézis: a pacing-alert push T-2h-val az edzés előtt fix kell maradjon ezeken a napokon — különben az under-fueling kockázat magas.',
@@ -101,16 +101,16 @@ export const weeklySuggestion =
 export const memoir: Memoir = {
   week: 'Hét 20 · 2026 · Máj 11-17',
   title: 'Egy hét amikor a tested megtanult várni',
-  body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a Reta-beadás reggelén mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi. A Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',
+  body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a hétfő reggeleken mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi. A Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',
   anchors: [
     { kind: 'PR', label: 'Chest Row 102.5 × 9' },
-    { kind: 'Reta', label: 'D1 reggel · pihenve' },
+    { kind: 'Medication', label: 'D1 reggel · pihenve' },
     { kind: 'Identity', label: 'Peak performance · life' },
   ],
 }
 
 export const anniversaryNote =
-  'Egy hónapja kezdtük a Reta-protokollt. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
+  'Egy hónapja kezdtük tudatosan korábbra tolni a vacsorát. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
 
 export const predictions: Prediction[] = [
   {
@@ -120,7 +120,7 @@ export const predictions: Prediction[] = [
     status: 'pending',
     date: 'Máj 22',
     basis:
-      'Március óta a 102.5 stabil. Múlt heti RIR 2 + Reta D3 alacsony étvágy + 7.5h alvás kombináció historikusan +5kg-os emelést támogatott.',
+      'Március óta a 102.5 stabil. Múlt heti RIR 2 + 7.5h alvás kombináció historikusan +5kg-os emelést támogatott.',
   },
   {
     id: 'pred2',
@@ -128,7 +128,7 @@ export const predictions: Prediction[] = [
     confidence: 0.81,
     status: 'pending',
     date: 'Máj 26',
-    basis: 'Hét 20 átlag 78.6kg. Reta D3-D7 alacsonyabb intake. 7-day MA trend.',
+    basis: 'Hét 20 átlag 78.6kg. Hét közepén jellemzően alacsonyabb intake. 7-day MA trend.',
   },
   {
     id: 'pred3',
@@ -169,7 +169,7 @@ export const experiments: Experiment[] = [
   },
 ]
 
-/** A monitor demo-pillanatképe (mezo-viqs) — mind az 5 verdikt látszik a 8 katalógus-páron. */
+/** A monitor demo-pillanatképe (mezo-viqs) — a 8 katalógus-páron 4 verdikt látszik (live, few_days, no_data, degenerate). */
 export const patternMonitor: PatternMonitor = {
   windowFrom: '2026-06-13',
   windowTo: '2026-08-10',
@@ -277,18 +277,18 @@ export const patternMonitor: PatternMonitor = {
       r: null, n: null, p: null, status: null,
     },
     {
-      key: 'reta-cycle-day~daily-kcal',
-      title: 'Reta-ciklusnap ↔ napi kalória',
+      key: 'medication-cycle-day~daily-kcal',
+      title: 'Gyógyszer-ciklusnap ↔ napi kalória',
       category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 0,
-      metricAKey: 'reta-cycle-day', metricALabel: 'Reta-ciklusnap',
+      metricAKey: 'medication-cycle-day', metricALabel: 'Gyógyszer-ciklusnap',
       metricBKey: 'daily-kcal', metricBLabel: 'napi kalória',
       mechanismHu: 'A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt.',
       questionHu: 'A ciklus vége felé nő az étvágyad?', expectedDirection: 'positive',
       whenPositiveHu: 'a ciklus későbbi napjain {erősség} többet ettél',
       whenNegativeHu: 'a ciklus későbbi napjain {erősség} kevesebbet ettél',
       metricADomain: 'fuel', metricBDomain: 'fuel',
-      verdict: 'frozen', alignedDays: 28, missingDays: null, bottleneckMetricKey: null,
-      r: 0.55, n: 28, p: 0.002, status: 'confirmed',
+      verdict: 'no_data', alignedDays: 0, missingDays: null, bottleneckMetricKey: 'medication-cycle-day',
+      r: null, n: null, p: null, status: null,
     },
   ],
   // Deliberately NOT ascending by coveredDays (a wire response carries no ordering guarantee) —
@@ -297,7 +297,7 @@ export const patternMonitor: PatternMonitor = {
   metrics: [
     { key: 'sleep-quality', label: 'alvásminőség', sourceHu: 'Alvás-napló', domain: 'sleep', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
     { key: 'training-rpe', label: 'edzés-RPE', sourceHu: 'Sport- és futás-napló (RPE)', domain: 'train', coveredDays: 12, windowDays: 60, lastDayWithData: '2026-08-09', pairCount: 2 },
-    { key: 'reta-cycle-day', label: 'Reta-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'medication-cycle-day', label: 'Gyógyszer-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'sport-load-min', label: 'sportterhelés', sourceHu: 'Sport-napló (perc)', domain: 'train', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'checkin-stress', label: 'stressz-szint', sourceHu: 'Check-in sheet', domain: 'mind', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'late-meal-hour', label: 'utolsó étkezés ideje', sourceHu: 'Étkezés-napló (utolsó étkezés)', domain: 'fuel', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
