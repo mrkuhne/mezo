@@ -100,9 +100,10 @@ public class PatternMonitorService {
         return latest == null ? null : latest.atOffset(ZoneOffset.UTC);
     }
 
-    private PatternMonitorPair toPair(CompanionProperties.PatternPair pair,
-                                      Map<MetricKey, Map<LocalDate, Double>> cache,
-                                      PatternEntity row, int minN, LocalDate from, LocalDate to) {
+    /** Package-private (mezo-tk88.3): {@link PatternPairDetailService} reuses this EXACT math. */
+    PatternMonitorPair toPair(CompanionProperties.PatternPair pair,
+                              Map<MetricKey, Map<LocalDate, Double>> cache,
+                              PatternEntity row, int minN, LocalDate from, LocalDate to) {
         PatternMonitorPair.PatternMonitorPairBuilder builder = PatternMonitorPair.builder()
                 .key(pair.key())
                 .title(pair.title())

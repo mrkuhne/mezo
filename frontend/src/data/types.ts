@@ -765,6 +765,35 @@ export interface PatternMonitor {
   metrics: PatternMetricCoverage[]
 }
 
+// --- Pattern pair detail (mezo-tk88.5) — /insights/patterns/:pairKey ---
+/** Az append-only pattern_event történet sor-fajtái (mirrors the backend CHECK constraint). */
+export type PatternEventKind = 'snapshot' | 'confirmed' | 'monitoring' | 'rejected' | 'reinforced' | 'promoted'
+export interface PatternEvent {
+  kind: PatternEventKind
+  occurredAt: string          // ISO datetime
+  r?: number; n?: number; p?: number
+  reinforcementCount?: number
+  factId?: string
+}
+/** Egy illesztett nap a szórásdiagramhoz — élőben számolva, sosem tárolt. */
+export interface AlignedDay { date: string; a: number; b: number }
+/** Egy hatás-hivatkozás (tény/előrejelzés/kísérlet/kihívás) — a saját felületére vezet. */
+export interface PatternImpactRef { id: string; title: string; status: string }
+export interface PatternImpact {
+  fact: { id: string; text: string; reinforcementCount: number; includeInPrompt: boolean } | null
+  predictions: PatternImpactRef[]
+  experiments: PatternImpactRef[]
+  challenges: PatternImpactRef[]
+}
+/** A pár-részletező nézet teljes payloadja — mirrors PatternPairDetailResponse. */
+export interface PatternPairDetail {
+  pair: PatternMonitorPair
+  pattern: Pattern | null
+  events: PatternEvent[]
+  days: AlignedDay[]
+  impact: PatternImpact
+}
+
 export interface MemoirAnchor { kind: string; label: string }
 export interface Memoir {
   week: string

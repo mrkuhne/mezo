@@ -259,6 +259,23 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testTrainBlock_shouldRenderRestDay_whenTodayTemplateExistsWithoutExercises() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        // The meso wizard stores ALL 7 days as template rows — weekend rest days are real rows
+        // with type "Rest" and zero exercises (mezo-650a live-data shape). A present-but-empty
+        // template is a rest day, exactly as TrainTools.dayContentLine already renders it.
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "Rest", 0, "planned");
+
+        String snapshot = assembler.render(owner, today);
+
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        assertThat(maSegment).contains("pihenőnap (gym)").doesNotContain("gym (");
+    }
+
+    @Test
     void testTrainBlock_shouldResolveTodayGymAndSport_whenScheduledForTodayWeekday() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();

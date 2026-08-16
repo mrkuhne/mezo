@@ -1122,6 +1122,16 @@ patterns + snapshot + facts via `completeSmart` (the P1 pattern-grounding gate).
 proactive. This one-way rule is why the fake sentinels' markers are literal mirrors rather than
 imports (§9 gotcha a).
 
+**S1 close (`mezo-tk88.3`) added the mirror-image seam — proactive DATA reaching companion, still
+without a reverse import.** The pattern-detail endpoint (`companion.md` §4) needs the
+predictions/experiments/challenges grounded on a pattern (§ above's `sourcePatternId` finders), but
+`PatternPairDetailService` lives in `feature.companion`, which must not import `feature.proactive`
+(would open a NEW 2-slice cycle on top of the one-way rule above). `PatternImpactService`
+(`feature.proactive.service`, §10) implements a companion-owned interface, `PatternImpactSource` —
+so the only import crossing the boundary is still proactive → companion (unchanged direction), and
+companion reaches proactive's data purely through Spring DI, never a compile-time dependency. See
+[`companion.md`](companion.md) §5.5 for the companion-side writeup of the same seam.
+
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
 All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per
 briefing) and **smart tier** (`completeSmart`, one call per weekly suggestion / one per memoir — the
@@ -1773,9 +1783,10 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/MemoirRepository.java` — **W2** `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/HeartbeatNoteRepository.java` — **H1** `findByCreatedByAndNoteDateAndWindowKey` + `findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/PredictionRepository.java` — **P1** `existsByCreatedByAndWeekStart` + `findByCreatedByOrderByValidFromDescGeneratedAtDesc` + `findByCreatedByAndStatusAndValidToBefore` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2` — the pattern-detail impact list, a later slice consumes it) (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ExperimentRepository.java` — **P2** `findByIdAndCreatedByAndDeletedFalse` + `findByCreatedByAndStatusInOrderByGeneratedAtDesc` + `findByCreatedByAndStatusOrderByGeneratedAtDesc` + `countByCreatedByAndStatusIn` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`) (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ChallengeRepository.java` — **HBWI** `findByCreatedByAndTemplateSessionIdAndWorkoutDate…` (the session/day list) + `findByIdAndCreatedBy…` (decide) + the accepted-due finder for `evaluateDue` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`) (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/PredictionRepository.java` — **P1** `existsByCreatedByAndWeekStart` + `findByCreatedByOrderByValidFromDescGeneratedAtDesc` + `findByCreatedByAndStatusAndValidToBefore` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2` — the pattern-detail impact list; consumed by `PatternImpactService` since S1 close `mezo-tk88.3`) (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ExperimentRepository.java` — **P2** `findByIdAndCreatedByAndDeletedFalse` + `findByCreatedByAndStatusInOrderByGeneratedAtDesc` + `findByCreatedByAndStatusOrderByGeneratedAtDesc` + `countByCreatedByAndStatusIn` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`; consumed by `PatternImpactService` since `mezo-tk88.3`) (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ChallengeRepository.java` — **HBWI** `findByCreatedByAndTemplateSessionIdAndWorkoutDate…` (the session/day list) + `findByIdAndCreatedBy…` (decide) + the accepted-due finder for `evaluateDue` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`; consumed by `PatternImpactService` since `mezo-tk88.3`) (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PatternImpactService.java` — **S1 close (`mezo-tk88.3`)** `implements` companion's `PatternImpactSource` port — the pattern-detail page's "what came of this" assembly (promoted `KnowledgeFactRepository` fact + the three `sourcePatternId` finders above); `@ConditionalOnProperty(COMPANION_SWITCH)` (NOT `PROACTIVE_SWITCH` — must resolve whenever companion is on). Lives here (not in `feature.companion`) so the read stays a proactive→companion import (the existing, already-cycle-safe direction) — see [`companion.md`](companion.md) §5.5.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/weight/repository/WeightLogRepository.java` — **P1** added `findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc` (the validation window read; sleep already had the sibling).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.*, weekly.cron, memoir.cron, heartbeat.*, prediction.*, experiment.{propose-cron,outcome-cron,max-open,min-days,max-days}, challenge.{outcome-cron,max-per-workout}}` (@Validated, nested records).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).

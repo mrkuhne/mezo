@@ -23,7 +23,7 @@ describe('insights nav (real mode default)', () => {
   test('Insights opens on Minták; the dropdown reaches Heti / Memoár / Előrejelzések / Kísérletek', async () => {
     renderApp('/insights')
     expect(screen.getByRole('button', { name: 'Minták' })).toHaveAttribute('aria-haspopup', 'menu')
-    expect(await screen.findByText(/Új minták ·/)).toBeInTheDocument()
+    expect(await screen.findByText('A motor állapota')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Minták' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Heti' }))
@@ -48,13 +48,10 @@ describe('insights nav (real mode default)', () => {
       await screen.findByText('Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.'),
     ).toBeInTheDocument()
 
-    // Motor — az átláthatósági al-oldal (mezo-viqs)
+    // Memória — a memória-obszervatórium tab (mezo-al1i). Motor retirálva (mezo-tk88.4) — a
+    // diagnosztika a Minták dashboardba (Adat-egészség) + az S5 minta-részlet oldalba költözött;
+    // `/insights/motor` egy honest redirect, lásd `router.test`-szerű lefedettséget nem igényel itt.
     await userEvent.click(screen.getByRole('button', { name: 'Kísérletek' }))
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Motor' }))
-    expect(await screen.findByText('Minta-motor')).toBeInTheDocument() // a mezo-18bx hero eyebrow-ja
-
-    // Memória — a memória-obszervatórium tab (mezo-al1i)
-    await userEvent.click(screen.getByRole('button', { name: 'Motor' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Memória' }))
     expect(await screen.findByText('L0 · Nyers adat')).toBeInTheDocument()
   })
