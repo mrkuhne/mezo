@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · FuelMedicationPage (Fuel — "Gyógyszer" tab)
-// The owner's single active medication (Retatrutide), restyled to the agreed mockup
+// The owner's single active medication, restyled to the agreed mockup
 // (gyogyszer-a-szellos.html · "A modell — szellősebben"): a medication card
 // (name · route · cadence · current dose) → the MedicationCycleBar (7-cell kinetic
 // strip, current day outlined) → a phase note ("N. nap · {phase} fázis · utolsó
@@ -51,6 +51,31 @@ function lastDoseAgo(lastDoseAt: string | null | undefined): string | null {
 export function FuelMedicationPage() {
   const { medication: med, cycle, doses } = useMedication()
   const [logOpen, setLogOpen] = useState(false)
+
+  // Honest empty state (mezo-lwmq): there is no active medication and no way to add one from
+  // the UI — the slice keeps its generic machinery, but the owner tracks no medication.
+  if (!med.id) {
+    return (
+      <>
+        <div className="pghead-np sage">
+          <div>
+            <div className="over">Fuel · Gyógyszer</div>
+            <h1>Gyógyszer</h1>
+          </div>
+        </div>
+        <div style={{ padding: '0 24px 32px' }}>
+          <div data-testid="medication-empty" className="card" style={{ padding: 24, textAlign: 'center' }}>
+            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
+              Nincs aktív gyógyszer
+            </span>
+            <span className="text-tertiary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+              Nem követsz gyógyszert. Jelenleg nincs felvételi út a felületen — ha kellene, az külön fejlesztés.
+            </span>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   const routeLabel = ROUTE_LABEL[med.route] ?? med.route
   const cadenceLabel = CADENCE_LABEL[med.cadence] ?? med.cadence

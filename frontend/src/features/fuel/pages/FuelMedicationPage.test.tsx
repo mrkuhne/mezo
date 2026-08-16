@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
@@ -87,5 +90,28 @@ describe('FuelMedicationPage (real mode)', () => {
     expect(note.textContent).toMatch(/Stabil/)
     const log = screen.getByRole('list', { name: /beadások/i })
     expect(within(log).getAllByRole('listitem')).toHaveLength(3)
+  })
+})
+
+describe('FuelMedicationPage (nincs aktív gyógyszer)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('üres állapotot mutat, és nincs "＋ Beadás" akció', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () =>
+      HttpResponse.json({
+        medication: {
+          id: '', name: '', activeIngredient: '', route: '', cadence: '',
+          defaultDose: 0, doseUnit: '', active: false,
+          cycle: { cycleLengthDays: 0, phases: [] },
+        },
+        cycle: { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] },
+        recentDoses: [],
+      })))
+    renderView()
+    expect(await screen.findByTestId('medication-empty')).toBeInTheDocument()
+    expect(screen.getByText('Nincs aktív gyógyszer')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Beadás/ })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('medication-phase-note')).not.toBeInTheDocument()
   })
 })
