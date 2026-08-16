@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** V0.5 read tool over the medication feature (Reta cycle + general dose ledger). NEVER advises dosing (spec §6). */
+/** V0.5 read tool over the medication feature (cycle position + general dose ledger). NEVER advises dosing (spec §6). */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MedicationTools {
 
-    /** get_medication's supported scope values; anything else (incl. null) falls back to "reta". */
-    private static final List<String> MEDICATION_SCOPES = List.of("reta", "all");
+    /** get_medication's supported scope values; anything else (incl. null) falls back to "cycle". */
+    private static final List<String> MEDICATION_SCOPES = List.of("cycle", "all");
 
     private final MedicationRepository medicationRepository;
     private final MedicationDoseRepository medicationDoseRepository;
@@ -41,45 +41,45 @@ public class MedicationTools {
      *  so injected directly (the {@code ProgressionService}/{@code GrowthWeekService} precedent). */
     private final MedicationService medicationService;
 
-    @Tool(name = "get_medication", description = "Gyógyszer: retatrutid-ciklus vagy általános "
-            + "gyógyszer-áttekintés. scope=reta (alapértelmezés) — az aktív gyógyszer retatrutid-ciklusállása: "
+    @Tool(name = "get_medication", description = "Gyógyszer: ciklusállás vagy általános "
+            + "gyógyszer-áttekintés. scope=cycle (alapértelmezés) — az aktív gyógyszer ciklusállása: "
             + "hányadik nap, fázis, utolsó dózis, következő esedékes nap, utolsó dózisok. scope=all — az "
             + "aktív gyógyszer általános adatai: név, hatóanyag, adagolási rend, alapdózis, ciklusállás "
             + "(ha van már rögzített dózis), utolsó dózisok. Használd, amikor a user a gyógyszeréről / a "
-            + "retatrutid-ciklusáról kérdez. scope: reta (alapértelmezés), all.")
+            + "gyógyszer-ciklusáról kérdez. scope: cycle (alapértelmezés), all.")
     public String getMedication(
-            @ToolParam(required = false, description = "reta|all (alapértelmezés: reta).") String scope,
+            @ToolParam(required = false, description = "cycle|all (alapértelmezés: cycle).") String scope,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
         String s = normalizeScope(scope);
-        return "all".equals(s) ? renderAll(userId, toolContext) : renderReta(userId, toolContext);
+        return "all".equals(s) ? renderAll(userId, toolContext) : renderCycle(userId, toolContext);
     }
 
     private static String normalizeScope(String scope) {
         if (scope == null) {
-            return "reta";
+            return "cycle";
         }
         String s = scope.trim().toLowerCase();
-        return MEDICATION_SCOPES.contains(s) ? s : "reta";
+        return MEDICATION_SCOPES.contains(s) ? s : "cycle";
     }
 
-    /** scope=reta (default) — the original get_reta_cycle body, unchanged. */
-    private String renderReta(UUID userId, ToolContext toolContext) {
+    /** scope=cycle (default) — the medication cycle position + the recent dose ledger. */
+    private String renderCycle(UUID userId, ToolContext toolContext) {
         MedicationEntity med =
                 medicationRepository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
         if (med == null) {
-            return "Retatrutid ciklus: " + ToolText.NO_DATA;
+            return "Gyógyszer-ciklus: " + ToolText.NO_DATA;
         }
         LocalDate today = LocalDate.now();
         MedicationCycle cycle = medicationCycleService.derive(userId, med, today);
         if (cycle.cycleDay() == 0) {
             // honest zero — active med but no recorded dose to anchor the cycle
-            return "Retatrutid ciklus: " + med.getName() + " — nincs rögzített dózis";
+            return "Gyógyszer-ciklus: " + med.getName() + " — nincs rögzített dózis";
         }
         List<MedicationDoseEntity> doses = medicationDoseRepository
                 .findTop10ByCreatedByAndMedicationIdAndDeletedFalseOrderByAdministeredAtDesc(userId, med.getId());
         MedicationDoseEntity last = doses.getFirst();
-        StringBuilder b = new StringBuilder("Retatrutid ciklus: ").append(med.getName())
+        StringBuilder b = new StringBuilder("Gyógyszer-ciklus: ").append(med.getName())
                 .append(" — ").append(cycle.cycleDay()).append(". nap (").append(cycle.phaseLabel()).append(')')
                 .append("; utolsó dózis: ").append(last.getAdministeredDate())
                 .append(" (").append(ToolText.num(last.getDose())).append(' ').append(med.getDoseUnit()).append(')');
@@ -99,9 +99,9 @@ public class MedicationTools {
     /**
      * scope=all — the general medications view over {@link MedicationService#getDay}: name, active
      * ingredient, dosing regimen (cadence + default dose), and — once at least one dose is on record
-     * — the cycle position and recent doses. No reta-specific naming: renders whichever medication
+     * — the cycle position and recent doses. No brand-specific naming: renders whichever medication
      * the owner has active, generically. "nincs adat" only when the owner has no active medication
-     * at all (checked via {@link #medicationRepository} first, mirroring {@link #renderReta}'s own
+     * at all (checked via {@link #medicationRepository} first, mirroring {@link #renderCycle}'s own
      * null-med check, so {@code getDay}'s 404 is never hit); the "no dose yet" case (cycle day 0) is
      * an honest partial render — name/regimen without a cycle line — never an absence.
      */

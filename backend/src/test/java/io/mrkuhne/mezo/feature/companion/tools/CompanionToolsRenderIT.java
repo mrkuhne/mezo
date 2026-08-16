@@ -822,14 +822,14 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeRetaAndDoseAnchored() {
+    void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeCycleAndDoseAnchored() {
         UUID owner = userPopulator.createUser().getId();
         MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
 
-        String out = medicationTools.getMedication("reta", ctx(owner));
+        String out = medicationTools.getMedication("cycle", ctx(owner));
 
-        assertThat(out).startsWith("Retatrutid ciklus: Teszt gyógyszer — 4. nap (Stabil)")
+        assertThat(out).startsWith("Gyógyszer-ciklus: Teszt gyógyszer — 4. nap (Stabil)")
                 .contains("utolsó dózis: " + LocalDate.now().minusDays(3) + " (4 mg)")
                 .contains("következő esedékes: " + LocalDate.now().minusDays(3).plusDays(7));
         assertThat(audit.toRefsEnvelope().refs())
@@ -837,19 +837,19 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetMedication_shouldRenderHonestZero_whenScopeRetaAndNoDose() {
+    void testGetMedication_shouldRenderHonestZero_whenScopeCycleAndNoDose() {
         UUID owner = userPopulator.createUser().getId();
         medicationPopulator.createMedication(owner);
-        assertThat(medicationTools.getMedication("reta", ctx(owner)))
-                .isEqualTo("Retatrutid ciklus: Teszt gyógyszer — nincs rögzített dózis");
+        assertThat(medicationTools.getMedication("cycle", ctx(owner)))
+                .isEqualTo("Gyógyszer-ciklus: Teszt gyógyszer — nincs rögzített dózis");
     }
 
     @Test
-    void testGetMedication_shouldDefaultToReta_whenScopeOmitted() {
+    void testGetMedication_shouldDefaultToCycle_whenScopeOmitted() {
         UUID owner = userPopulator.createUser().getId();
         medicationPopulator.createMedication(owner);
         assertThat(medicationTools.getMedication(null, ctx(owner)))
-                .isEqualTo("Retatrutid ciklus: Teszt gyógyszer — nincs rögzített dózis");
+                .isEqualTo("Gyógyszer-ciklus: Teszt gyógyszer — nincs rögzített dózis");
     }
 
     @Test
