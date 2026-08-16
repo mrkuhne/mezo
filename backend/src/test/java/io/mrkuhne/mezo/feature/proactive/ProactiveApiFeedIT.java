@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
@@ -35,6 +36,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
+    @Autowired private CompanionMessageRepository companionMessageRepository;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -106,10 +108,22 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
 
     @Test
     void testGetFeed_shouldNotGenerate_whenPastDate() {
+        // deliberately plant everything morning-generation needs FOR the past date (a daily
+        // summary inside its pastDays window + a working [fake-feed-morning:…] sentinel) so
+        // that WITHOUT the today-only guard, a row would visibly be generated — proving the
+        // 200 [] comes from the guard, not merely from missing ingredients
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        dailySummaryPopulator.summary(ownerId(), pastDate.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(ownerId(), pastDate, "06:30", 4, 2,
+                "[fake-feed-morning:{\"eyebrow\":\"Jó reggelt\",\"body\":[\"Mai terv.\"],\"refIndexes\":[]}]");
+
         List<FeedMessageResponse> feed = getForList(
-                "/api/proactive/feed?date=" + LocalDate.now().minusDays(1),
+                "/api/proactive/feed?date=" + pastDate,
                 ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
 
         assertThat(feed).isEmpty();
+        assertThat(companionMessageRepository
+                .findByCreatedByAndMessageDateOrderByGeneratedAtAsc(ownerId(), pastDate))
+                .isEmpty();
     }
 }
