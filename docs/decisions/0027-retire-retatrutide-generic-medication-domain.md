@@ -39,9 +39,9 @@ turned the Gyógyszer tab into an honest permanently-empty state.
    `medication.id === ''`, with no dose-logging affordance surfaced. There is no
    `POST /api/medication` in the contract and no "+ Add medication" sheet was built — **YAGNI**:
    the owner does not plan to track medication, and a create-flow with no user is speculative
-   surface area (auth screens, validation, a sheet, tests) for a need that does not exist. If it's
-   ever needed, [the task brief's own follow-up note](../../.superpowers/sdd/2026-08-15-retatrutide-retirement/task-8-brief.md)
-   scopes it as a separate spec + bd issue. The populated branch of `FuelMedicationPage` (medication
+   surface area (auth screens, validation, a sheet, tests) for a need that does not exist. If it is
+   ever needed, that is a separate spec + bd issue: `POST /api/medication`, a create sheet, and
+   tests — not built here. The populated branch of `FuelMedicationPage` (medication
    card, `MedicationCycleBar`, `LogDoseSheet`) is kept as generic, tested-via-fixture machinery —
    unreachable in production, but not deleted, since the domain design itself is sound and cheap to
    keep alive (`frontend/src/test/fixtures/medication.ts`'s `medicationFixture` drives those tests).
