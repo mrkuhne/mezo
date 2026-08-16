@@ -80,7 +80,17 @@ modell kap.
 
 > ⚠️ **Implementációkor ellenőrizni, nem feltételezni:** a Spring AI 2.0 `ChatClient`-nél a
 > `.messages(...)` + `.user(...)` sorrendje — hogy a user-üzenet tényleg a history *után* kerül a
-> prompt-listába. Ez assertálandó IT (§6), nem feltevés.
+> prompt-listába.
+>
+> Ezt **nem IT fedi le**: az ITs a `companion-fake` profilon futnak, ahol a `GeminiCompanionLlm`
+> bean nem is létezik, a fake echója pedig a *hívó* összeállítását bizonyítja, nem a Spring AI
+> prompt-sorrendjét. A helyes eszköz egy **plain unit teszt egy `Prompt`-ot rögzítő `ChatModel`
+> stubbal** (kézzel írt stub, nem Mockito — ugyanaz a filozófia, mint a fake bean). Ez az egyetlen
+> hely, ahol a valódi adapter viselkedése hálózat nélkül megfogható.
+>
+> A verifikált API-alak (spring-ai 2.0.0 jar ellenőrizve): `ChatClientRequestSpec.messages(List<Message>)`
+> és `messages(Message...)` létezik; `new UserMessage(String)` és `new AssistantMessage(String)`
+> publikus konstruktorok.
 
 ### 3.1 Csatolások, amiket a portváltás megbont
 
@@ -210,8 +220,8 @@ megjeleníthető — de ez opcionális, és nem feltétele az issue lezárásán
 - **Új IT — a lényegi bizonyíték:** a system prompt **nem tartalmazza** a korábbi üzeneteket, a
   history-felület viszont igen. Ez az egyetlen teszt, ami elbukik, ha valaki később visszacsempészi
   a transcriptet a system promptba.
-- **Új IT — sorrend:** a user-üzenet a history *után* van (a §3-ban jelzett Spring AI feltevés
-  assertálva).
+- **Új unit teszt — sorrend:** `GeminiCompanionLlmPromptOrderTest` egy `Prompt`-ot rögzítő
+  `ChatModel` stubbal: a küldött üzenetlista `[system, history…, user]` sorrendű. Nem IT — lásd §3.
 - **`CompanionAdvisorChainIT`:** az átnevezett `unmarkedClaim`, plusz egy ma hiányzó eset —
   *„tippelem, hogy az alvás miatt" NEM vált ki retry-t*.
 - **`ChatStreamAdvisorIT`:** a history a streamelt úton is átmegy az advisornak.
