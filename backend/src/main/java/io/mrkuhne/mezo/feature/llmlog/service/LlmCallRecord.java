@@ -37,6 +37,9 @@ public record LlmCallRecord(
     TokenUsage tokens,
     EmbedUsage embed,
     String systemPrompt,
+    /** mezo-q71s: rendered prior chat turns (see {@code ChatHistory.render}) — chat/tool/stream
+     *  calls only; every other call kind leaves this null (never a fabricated empty string). */
+    String conversationHistory,
     String userMessage,
     String responseText,
     Integer imageCount,

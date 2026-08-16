@@ -89,6 +89,83 @@ class GeminiCompanionLlmRecordingTest {
         assertThat(record.systemPrompt()).isEqualTo("sys");
     }
 
+    /**
+     * mezo-q71s: the audit's {@code conversation_history} column must carry the RENDERED prior
+     * turns — the only way the fidelity that used to live inside the system prompt survives now
+     * that the history rides the port as real prior messages. {@code systemPrompt} keeps its exact
+     * pre-change meaning: precisely what the model received as system prompt, nothing appended.
+     */
+    @Test
+    void testComplete_shouldRecordConversationHistorySeparateFromSystemPrompt_whenPriorTurnsExist() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+        List<CompanionLlm.Turn> history = List.of(
+            new CompanionLlm.Turn(CompanionLlm.Role.USER, "korábbi kérdés"),
+            new CompanionLlm.Turn(CompanionLlm.Role.ASSISTANT, "korábbi válasz"));
+
+        llm.complete("sys", history, "és most?", List.of(), Map.of());
+
+        LlmCallRecord record = recorder.last();
+        assertThat(record.conversationHistory()).contains("Daniel: korábbi kérdés");
+        assertThat(record.conversationHistory()).contains("Mezo: korábbi válasz");
+        assertThat(record.systemPrompt()).isEqualTo("sys");
+        assertThat(record.systemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+    }
+
+    /** History-less chat calls render to {@code ""} (mezo-q71s), never null — {@link
+     *  io.mrkuhne.mezo.feature.companion.ChatHistory#render} guarantees it for an empty list. */
+    @Test
+    void testComplete_shouldRecordEmptyConversationHistory_whenNoPriorTurns() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+
+        llm.complete("sys", "hi");
+
+        assertThat(recorder.last().conversationHistory()).isEmpty();
+    }
+
+    @Test
+    void testStream_shouldRecordConversationHistorySeparateFromSystemPrompt_whenPriorTurnsExist() {
+        GeminiCompanionLlm llm = adapter(streamingChatModel(chunk("hello", usageMetadata())));
+        List<CompanionLlm.Turn> history = List.of(
+            new CompanionLlm.Turn(CompanionLlm.Role.USER, "korábbi kérdés"));
+
+        llm.stream("sys", history, "és most?", List.of(), Map.of()).collectList().block();
+
+        LlmCallRecord record = recorder.last();
+        assertThat(record.conversationHistory()).contains("Daniel: korábbi kérdés");
+        assertThat(record.systemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+    }
+
+    /** Non-chat paths have no conversation — the column must stay null, not empty (mezo-q71s). */
+    @Test
+    void testCompleteSmart_shouldLeaveConversationHistoryNull_whenCalled() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+
+        llm.completeSmart("sys", "hi");
+
+        assertThat(recorder.last().conversationHistory()).isNull();
+    }
+
+    /** Vision calls have no conversation — the column must stay null (mezo-q71s). */
+    @Test
+    void testComplete_shouldLeaveConversationHistoryNull_whenVisionCall() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+
+        llm.complete("sys", "what is this", List.of(
+            new CompanionLlm.InlineImage(new byte[] {1, 2, 3}, "image/jpeg")));
+
+        assertThat(recorder.last().conversationHistory()).isNull();
+    }
+
+    /** Audio (transcription) calls have no conversation — the column must stay null (mezo-q71s). */
+    @Test
+    void testComplete_shouldLeaveConversationHistoryNull_whenAudioCall() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+
+        llm.complete("sys", "hi", new CompanionLlm.InlineAudio(new byte[] {1, 2, 3}, "audio/webm"));
+
+        assertThat(recorder.last().conversationHistory()).isNull();
+    }
+
     @Test
     void testComplete_shouldRecordToolKind_whenToolsAreRegistered() {
         GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));

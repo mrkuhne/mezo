@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
@@ -101,7 +102,8 @@ public class GeminiCompanionLlm implements CompanionLlm {
         // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
         // count arrives per-call via the GeminiRoundUsage tally (mezo-58ig).
         CallKind kind = tools.isEmpty() ? CallKind.CHAT : CallKind.TOOL;
-        CallSpec spec = CallSpec.of(kind, chatModel(), systemPrompt, userMessage);
+        CallSpec spec = new CallSpec(kind, chatModel(), systemPrompt, userMessage,
+            ChatHistory.render(history), null, null, null, false);
         GeminiRoundUsage tally = new GeminiRoundUsage();
         return recorded(spec, tally,
             () -> request(systemPrompt, history, userMessage, tools, toolContext, tally)
@@ -111,7 +113,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
     @Override
     public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
         // Image MARKERS only — the bytes are ephemeral by contract and must never reach the log.
-        CallSpec spec = new CallSpec(CallKind.VISION, chatModel(), systemPrompt, userMessage,
+        CallSpec spec = new CallSpec(CallKind.VISION, chatModel(), systemPrompt, userMessage, null,
             images.size(), totalBytes(images), firstMimeType(images), false);
         GeminiRoundUsage tally = new GeminiRoundUsage();
         return recorded(spec, tally, () -> chatClient.prompt()
@@ -134,7 +136,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
     public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
         // Audio MARKERS only — like the vision path, the bytes are ephemeral and never logged.
         // They ride the same image_* columns (count/bytes/mime), which are the generic media block.
-        CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, chatModel(), systemPrompt, userMessage,
+        CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, chatModel(), systemPrompt, userMessage, null,
             1, (long) (audio.bytes() == null ? 0 : audio.bytes().length), audio.mimeType(), false);
         GeminiRoundUsage tally = new GeminiRoundUsage();
         return recorded(spec, tally, () -> chatClient.prompt()
@@ -168,8 +170,8 @@ public class GeminiCompanionLlm implements CompanionLlm {
     @Override
     public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
-        CallSpec spec = new CallSpec(
-            CallKind.CHAT_STREAM, chatModel(), systemPrompt, userMessage, null, null, null, true);
+        CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, chatModel(), systemPrompt, userMessage,
+            ChatHistory.render(history), null, null, null, true);
         LlmCallContext context = llmCallContextHolder.get();
 
         return Flux.defer(() -> {
@@ -283,6 +285,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
             .latencyMs(elapsedMillis(startedAt))
             .streamed(spec.streamed())
             .systemPrompt(spec.systemPrompt())
+            .conversationHistory(spec.conversationHistory())
             .userMessage(spec.userMessage())
             .imageCount(spec.imageCount())
             .imageBytesTotal(spec.imageBytesTotal())
@@ -357,10 +360,11 @@ public class GeminiCompanionLlm implements CompanionLlm {
      * its identity once and the record builders stay uniform across success, failure and stream.
      */
     private record CallSpec(CallKind kind, String requestedModel, String systemPrompt, String userMessage,
-                            Integer imageCount, Long imageBytesTotal, String imageMime, boolean streamed) {
+                            String conversationHistory, Integer imageCount, Long imageBytesTotal,
+                            String imageMime, boolean streamed) {
 
         static CallSpec of(CallKind kind, String requestedModel, String systemPrompt, String userMessage) {
-            return new CallSpec(kind, requestedModel, systemPrompt, userMessage, null, null, null, false);
+            return new CallSpec(kind, requestedModel, systemPrompt, userMessage, null, null, null, null, false);
         }
     }
 }
