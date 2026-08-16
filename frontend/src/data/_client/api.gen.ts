@@ -1753,6 +1753,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The unified companion-message feed for one day (companion-feed) — morning/sleep/weight/midday/evening
+         * @description Returns the day's persisted companion-feed messages in generation order. For TODAY the cron-kind miss-recovery lazily generates: morning always (its cron is dawn — by any read it has elapsed); midday/evening once their fire-time (derived from the SAME cron the job runs on) has passed. Event-triggered kinds (sleep/weight) are born from their events, never from this miss-recovery. Past dates never generate. An empty array is the honest empty state (never a 404 — this is a list endpoint, the P1 precedent).
+         */
+        get: operations["getFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/weekly-suggestion": {
         parameters: {
             query?: never;
@@ -5044,6 +5064,22 @@ export interface components {
             body: string[];
             /** @description Code-collected, model-SELECTED source references (never model-invented) */
             refs: components["schemas"]["BriefingRef"][];
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        FeedRef: {
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            kind: string;
+            label: string;
+        };
+        FeedMessageResponse: {
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening";
+            eyebrow: string;
+            body: string[];
+            refs: components["schemas"]["FeedRef"][];
             /** Format: date-time */
             generatedAt: string;
         };
@@ -11229,6 +11265,38 @@ export interface operations {
             };
             /** @description No briefing possible — no narrative memory (daily_summary) in the configured past-days window. The FE renders its honest state (B1.2). */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFeed: {
+        parameters: {
+            query?: {
+                /** @description The fed day — the FE sends its LOCAL date (the briefing precedent); defaults to the server's today. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's companion-feed messages (possibly empty), in generation order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedMessageResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

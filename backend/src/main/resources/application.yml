@@ -819,6 +819,15 @@ mezo:
       # Daily outcome backstop (after the experiment outcome run)
       outcome-cron: "0 25 6 * * *"
       max-per-workout: 3
+    feed:
+      # Companion-feed (mezo-gst9) cron kinds — the lazy GET derives midday/evening fire-times
+      # from these SAME expressions (CronExpression), same idiom as heartbeat above
+      morning-cron: "0 45 5 * * *"
+      midday-cron: "0 30 12 * * *"
+      evening-cron: "0 30 20 * * *"
+      # How many finished days of narrative memory (daily_summary) the feed gather reads;
+      # doubles as the emptiness gate: zero summaries in the window -> no message
+      past-days: 7
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

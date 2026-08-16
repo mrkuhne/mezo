@@ -20,7 +20,8 @@ public record ProactiveProperties(
         @NotNull @Valid Heartbeat heartbeat,
         @NotNull @Valid Prediction prediction,
         @NotNull @Valid Experiment experiment,
-        @NotNull @Valid Challenge challenge) {
+        @NotNull @Valid Challenge challenge,
+        @NotNull @Valid Feed feed) {
 
     public record Briefing(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
@@ -88,5 +89,20 @@ public record ProactiveProperties(
         @NotBlank String outcomeCron,
         /** Cap on challenges proposed per workout session/day. */
         @Min(1) @Max(6) int maxPerWorkout
+    ) {}
+
+    /** Companion-feed cron kinds (morning/midday/evening) — the unified feed's miss-recovery
+     *  derives the midday/evening fire-times from these SAME crons (the heartbeat idiom), and
+     *  the generator's gather window is this {@code pastDays} (replacing {@link Briefing#pastDays()}). */
+    public record Feed(
+        /** Dawn pre-generation schedule (server zone) — before the typical wake. */
+        @NotBlank String morningCron,
+        /** Midday nudge schedule (server zone). */
+        @NotBlank String middayCron,
+        /** Evening closing schedule (server zone). */
+        @NotBlank String eveningCron,
+        /** How many finished days of narrative memory (daily_summary) the gather reads;
+         *  doubles as the emptiness gate: zero summaries in the window -> no message. */
+        @Min(1) @Max(14) int pastDays
     ) {}
 }

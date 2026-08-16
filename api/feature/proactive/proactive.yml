@@ -38,6 +38,39 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/feed:
+    get:
+      tags: [Proactive]
+      operationId: getFeed
+      summary: The unified companion-message feed for one day (companion-feed) — morning/sleep/weight/midday/evening
+      description: >-
+        Returns the day's persisted companion-feed messages in generation order. For TODAY the
+        cron-kind miss-recovery lazily generates: morning always (its cron is dawn — by any read
+        it has elapsed); midday/evening once their fire-time (derived from the SAME cron the job
+        runs on) has passed. Event-triggered kinds (sleep/weight) are born from their events, never
+        from this miss-recovery. Past dates never generate. An empty array is the honest empty
+        state (never a 404 — this is a list endpoint, the P1 precedent).
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: >-
+            The fed day — the FE sends its LOCAL date (the briefing precedent); defaults to the
+            server's today.
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The day's companion-feed messages (possibly empty), in generation order
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FeedMessageResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/proactive/weekly-suggestion:
     get:
       tags: [Proactive]
@@ -325,6 +358,31 @@ components:
           type: array
           items: { $ref: '#/components/schemas/BriefingRef' }
           description: Code-collected, model-SELECTED source references (never model-invented)
+        generatedAt: { type: string, format: date-time }
+    FeedRef:
+      type: object
+      required: [kind, label]
+      properties:
+        kind:
+          type: string
+          description: FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
+        label:
+          type: string
+    FeedMessageResponse:
+      type: object
+      required: [date, kind, eyebrow, body, refs, generatedAt]
+      properties:
+        date: { type: string, format: date }
+        kind:
+          type: string
+          enum: [morning, sleep, weight, midday, evening]
+        eyebrow: { type: string }
+        body:
+          type: array
+          items: { type: string }
+        refs:
+          type: array
+          items: { $ref: '#/components/schemas/FeedRef' }
         generatedAt: { type: string, format: date-time }
     WeeklySuggestionResponse:
       type: object

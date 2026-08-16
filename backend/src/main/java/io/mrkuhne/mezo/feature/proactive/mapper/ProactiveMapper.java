@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.BriefingResponse;
 import io.mrkuhne.mezo.api.dto.ChallengeRef;
 import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.api.dto.ExperimentResponse;
+import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
+import io.mrkuhne.mezo.api.dto.FeedRef;
 import io.mrkuhne.mezo.api.dto.HeartbeatNoteResponse;
 import io.mrkuhne.mezo.api.dto.MemoirAnchor;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
@@ -14,6 +16,8 @@ import io.mrkuhne.mezo.feature.proactive.entity.BriefingContentEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.BriefingEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeRefsEnvelope;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
@@ -60,6 +64,21 @@ public interface ProactiveMapper {
     ChallengeResponse toChallengeResponse(ChallengeEntity e);
 
     ChallengeRef toChallengeRef(ChallengeRefsEnvelope.Ref r);
+
+    @Mapping(target = "date", source = "messageDate")
+    @Mapping(target = "eyebrow", source = "content.eyebrow")
+    @Mapping(target = "body", source = "content.body")
+    @Mapping(target = "refs", source = "content.refs")
+    FeedMessageResponse toFeedResponse(CompanionMessageEntity entity);
+
+    FeedRef toFeedRef(CompanionMessageEnvelope.Ref ref);
+
+    /** String→enum via the generated {@code fromValue} (the wire value, e.g. "morning"), not
+     *  MapStruct's default {@code Enum.valueOf} (the constant NAME, "MORNING") — the entity's
+     *  {@code kind} column stores the lowercase {@code CompanionMessageEntity.KIND_*} value. */
+    default FeedMessageResponse.KindEnum map(String kind) {
+        return kind == null ? null : FeedMessageResponse.KindEnum.fromValue(kind);
+    }
 
     default OffsetDateTime map(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);

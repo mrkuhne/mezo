@@ -155,10 +155,10 @@ public class CompanionMessageGenerator {
         }
         List<DailySummaryEntity> past = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
-                        userId, date.minusDays(properties.briefing().pastDays()));
+                        userId, date.minusDays(properties.feed().pastDays()));
         if (past.isEmpty()) {
             log.debug("No daily summaries for {} in the {}-day window before {} — no morning message",
-                    userId, properties.briefing().pastDays(), date);
+                    userId, properties.feed().pastDays(), date);
             return null;
         }
         List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(MORNING_CANDIDATES);
@@ -319,10 +319,10 @@ public class CompanionMessageGenerator {
         }
         List<DailySummaryEntity> past = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
-                        userId, date.minusDays(properties.briefing().pastDays()));
+                        userId, date.minusDays(properties.feed().pastDays()));
         if (past.isEmpty()) {
             log.debug("No daily summaries for {} in the {}-day window before {} — no {} message",
-                    userId, properties.briefing().pastDays(), date, kind);
+                    userId, properties.feed().pastDays(), date, kind);
             return null;
         }
         DailySummaryEntity latest = past.getFirst();
