@@ -26,35 +26,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-    post:
-      tags: [Train]
-      operationId: createMesocycle
-      summary: Create a mesocycle (wizard) with nested template days and exercises
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MesocycleCreateRequest'
-      responses:
-        '201':
-          description: Created mesocycle
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MesocycleResponse'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '401':
-          description: Missing/invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
   /api/train/mesocycles/{id}/activate:
     post:
       tags: [Train]
@@ -195,6 +166,198 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle/day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles/{id}/rerun:
+    post:
+      tags: [Train]
+      operationId: rerunMesocycle
+      summary: Start a new run from a closed mesocycle's originating template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The originating template id, for starting a fresh run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoRerunResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-templates:
+    get:
+      tags: [Train]
+      operationId: listMesoTemplates
+      summary: All mesocycle templates of the current user, with run counts, title ascending
+      responses:
+        '200':
+          description: Meso templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MesoTemplateResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [Train]
+      operationId: createMesoTemplate
+      summary: Create a mesocycle template (wizard) with nested days and exercises
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+      responses:
+        '200':
+          description: Created template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoTemplateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-templates/{id}:
+    put:
+      tags: [Train]
+      operationId: updateMesoTemplate
+      summary: Update a mesocycle template's fields, days and exercises (full replace)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+      responses:
+        '200':
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoTemplateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags: [Train]
+      operationId: deleteMesoTemplate
+      summary: Soft-delete a mesocycle template (past runs survive)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-templates/{id}/start:
+    post:
+      tags: [Train]
+      operationId: startMesoTemplate
+      summary: Start a mesocycle run from a template on the given date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoTemplateStartRequest'
+      responses:
+        '200':
+          description: The started mesocycle run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template not found or not owned
           content:
             application/json:
               schema:
@@ -1312,6 +1475,11 @@ components:
         id:
           type: string
           format: uuid
+        templateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The originating template this run was started from (null for legacy/direct runs)
         title:
           type: string
         shortTitle:
@@ -1327,6 +1495,11 @@ components:
         endDate:
           type: string
           format: date
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When this run was closed (archived); null while active/planned
         weeks:
           type: integer
         currentWeek:
@@ -1355,6 +1528,58 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MesoDay'
+    MesoTemplateResponse:
+      type: object
+      required:
+        - id
+        - title
+        - weeks
+        - phaseCurve
+        - days
+        - runCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        shortTitle:
+          type: string
+          nullable: true
+        goal:
+          type: string
+          nullable: true
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 16
+        split:
+          type: string
+          nullable: true
+        style:
+          type: string
+          nullable: true
+        phaseCurve:
+          type: array
+          items:
+            type: string
+            enum: [MEV, MAV, MRV, Deload]
+        notes:
+          type: string
+          nullable: true
+        volumePerMuscle:
+          type: object
+          nullable: true
+          description: Per-muscle volume baseline keyed by muscle id (chest, back, ...)
+          additionalProperties:
+            $ref: '#/components/schemas/VolumeBaseline'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoDay'
+        runCount:
+          type: integer
+          description: Number of mesocycle runs started from this template
     VolumeRecompute:
       type: object
       required:
@@ -1645,40 +1870,33 @@ components:
           type: string
           nullable: true
           description: Demo still (end position); alternated with imageStartUrl to convey the movement
-    MesocycleCreateRequest:
+    MesoTemplateUpsertRequest:
       type: object
       required:
         - title
-        - status
-        - startDate
         - weeks
-        - split
-        - style
         - phaseCurve
+        - days
       properties:
         title:
           type: string
           minLength: 1
         shortTitle:
           type: string
-        status:
-          type: string
-          enum: [active, planned]
+          nullable: true
         goal:
           type: string
-        startDate:
-          type: string
-          format: date
+          nullable: true
         weeks:
           type: integer
           minimum: 1
           maximum: 16
         split:
           type: string
-          minLength: 1
+          nullable: true
         style:
           type: string
-          minLength: 1
+          nullable: true
         phaseCurve:
           type: array
           minItems: 1
@@ -1687,10 +1905,37 @@ components:
             enum: [MEV, MAV, MRV, Deload]
         notes:
           type: string
+          nullable: true
+        volumePerMuscle:
+          type: object
+          nullable: true
+          description: Per-muscle volume baseline keyed by muscle id (chest, back, ...)
+          additionalProperties:
+            $ref: '#/components/schemas/VolumeBaseline'
         days:
           type: array
           items:
             $ref: '#/components/schemas/MesoDayInput'
+    MesoTemplateStartRequest:
+      type: object
+      required:
+        - startDate
+        - status
+      properties:
+        startDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, planned]
+    MesoRerunResponse:
+      type: object
+      required:
+        - templateId
+      properties:
+        templateId:
+          type: string
+          format: uuid
     MesoDayInput:
       type: object
       required:
