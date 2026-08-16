@@ -75,7 +75,7 @@ describe('usePatternMonitor (mock mode)', () => {
     expect(result.current.mode).toBe('mock')
     expect(result.current.monitor!.pairs).toHaveLength(8)
     const verdicts = new Set(result.current.monitor!.pairs.map((p) => p.verdict))
-    expect(verdicts).toEqual(new Set(['live', 'few_days', 'no_data', 'degenerate', 'frozen']))
+    expect(verdicts).toEqual(new Set(['live', 'few_days', 'no_data', 'degenerate']))
     expect(result.current.monitor!.metrics).toHaveLength(12)
   })
 })

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info: { title: '', version: '' }
 tags:
   - name: Medication
-    description: Medication (Gyógyszer) — owned medication definition + a dose event-log; the 7-day cycle (retaDay + phase) is derived from the logged doses. GET /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
+    description: Medication (Gyógyszer) — owned medication definition + a dose event-log; the 7-day cycle (cycleDay + phase) is derived from the logged doses. GET /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
 paths:
   /api/medication:
     get:
@@ -80,9 +80,9 @@ components:
         current: { type: boolean }
     MedicationCycleResponse:
       type: object
-      required: [retaDay, phaseKey, phaseLabel, week]
+      required: [cycleDay, phaseKey, phaseLabel, week]
       properties:
-        retaDay: { type: integer }
+        cycleDay: { type: integer }
         phaseKey: { type: string }
         phaseLabel: { type: string }
         lastDoseAt: { type: string, format: date-time, nullable: true }

@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-15
+updated: 2026-08-16
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -57,7 +57,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
-  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, retaDay/phase, last
+  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, cycleDay/phase, last
   sleep + latest check-in), rendered as eight Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT
   (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the static
   voice and the history transcript**.
@@ -91,8 +91,10 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `get_protocol(scope, days)` adherence/intake/supplements since mezo-xixu, see the catalog below),
   `GoalTools` (`get_goal_progress` — merged into one scoped `get_goal(scope)`
   progress/recept/timeline/guards/feasibility since mezo-xixu, see the catalog below),
-  `MedicationTools` (`get_reta_cycle` — merged into one scoped `get_medication(scope)` reta/all
-  since mezo-xixu, see the catalog below). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
+  `MedicationTools` — one scoped `get_medication(scope)` tool since mezo-xixu (`scope ∈
+  {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in
+  `mezo-lwmq`), see the catalog below. All
+  ownership-scoped via `ToolContext` (`userId` from the JWT principal,
   NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
 - **9th tool — `get_training_plan` (forward plan, mezo-xixu)**, added onto `TrainTools`: the
   companion's first FORWARD-looking read (the other 8 are backward/aggregate). `scope ∈
@@ -301,7 +303,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
   deterministic, date-scoped Hungarian digest of one FINISHED day's L0 (train/sport/run, fuel-day
-  rollup, sleep, weight, Reta cycle-day + dose, check-ins — reusing the owning features' reads;
+  rollup, sleep, weight, medication cycle-day + dose, check-ins — reusing the owning features' reads;
   `nincs adat` semantics by omission; **since V3.4** also the qualitative fields: sleep/run
   notes, mention tone+excerpt, intention reflection — capped per `summary.note-max-chars`) → ONE cheap-tier `CompanionLlm` call (prompt behind
   `SUMMARY_MARKER`) → past-tense narrative row. Digest = pure code, narrative = pure LLM
@@ -353,7 +355,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   **upserts one row per `(user, kind, pair_key)`**: stats refresh while `proposed`/`monitoring`,
   a user-judged `confirmed`/`rejected` row is never auto-touched (V3.3 adds reinforcement).
 - **Series extraction** — `MetricSeriesService`: 12 `MetricKey`s v1 (sleep quality/duration,
-  training RPE, sport load, gym volume, late-meal hour, daily kcal, Reta cycle-day, water,
+  training RPE, sport load, gym volume, late-meal hour, daily kcal, medication cycle-day, water,
   morning weight-delta, check-in stress/energy) — **31 since V3.4** (the full list in the V3.4
   block below) — composed read-only from the owning features'
   EXISTING reads; deterministic multi-row aggregation, absence is absence (never bridged).
@@ -466,7 +468,7 @@ COMPLETE (all 14 slices):**
     **bedtime before-noon hours shift +24**, 01:00 → 25.0, so "later" stays monotone) ·
     `sleep-awakenings` (max) · `daily-protein-g` (FuelDay rollup, meal-days only — the
     DAILY_KCAL pattern generalized into `fuelRollup`) · `meal-score` (avg of scored meals) ·
-    `reta-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
+    `medication-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
     pattern) · `habits-done` (count of `done` rows; a habit-row day with zero done is a REAL 0)
     · `ritual-closed` (0/1 from the first-ever closed day onward — pre-adoption days are absent,
     not 0) · `daily-xp` (activity + habit + completed-quest XP sum; zero-XP days absent) ·
@@ -485,7 +487,7 @@ COMPLETE (all 14 slices):**
   (`habits-done~checkin-mental`, `daily-xp~checkin-mental`, `social-mentions~checkin-mental`,
   `training-monotony~checkin-energy`, `bedtime-variability~checkin-mental`,
   `wakeup-hour~checkin-energy`), nutrition→energy (`daily-protein~next-day-checkin-energy`,
-  `meal-score~next-day-checkin-energy`, `reta-dose~daily-kcal`), and recovery
+  `meal-score~next-day-checkin-energy`, `medication-dose~daily-kcal`), and recovery
   (`sport-load~next-sleep-quality`, `sleep-quality~next-day-hr-recovery`,
   `checkin-body~gym-joint-pain`, `gym-workload~next-day-checkin-body`). The monitor page shows
   them automatically — zero FE work, contract unchanged.
@@ -507,7 +509,7 @@ COMPLETE (all 14 slices):**
   actionable hypotheses about MISSING data ("ha edzés után workload-ot pontoznál…"). `gather()`
   became package-private for `HypothesisGatherContextIT`.
 - **Spec deviations (as-built):** `sourceHu` was NOT added to `MetricKey` (the monitor shipped
-  without it and the contract has no such field — no consumer); `reta-dose-mg` derives from the
+  without it and the contract has no such field — no consumer); `medication-dose-mg` derives from the
   dose log (`MedicationDoseEntity.dose`), not the cycle JSON (which holds only phase labels, no
   dose ladder); the driving bd issue's "20 metrics / 32 total" text predates the collector-UI
   audit — the approved count is 19/31 (deep-min dropped: permanently empty without a wearable
@@ -790,8 +792,9 @@ feature switch independent of `COMPANION_SWITCH`, so the assembler reaches all f
 `ObjectProvider<T>.getIfAvailable()` (the `TodayQuestSource` precedent) — switch off ⇒ that
 block's affected part renders `nincs adat` instead of failing Spring context startup. `[Mai üzemanyag]`
 (`FuelDayService.getDay` consumed/targets incl. water +
-active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
-phase; an active med with no dose renders `nincs rögzített dózis` — honest zero), and
+active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` cycleDay +
+phase; no active medication — since `mezo-lwmq` the standing state — renders `nincs adat`; an
+active med with no dose would render `nincs rögzített dózis` — honest zero either way), and
 `[Regeneráció]` (latest sleep + latest check-in, note truncated to
 `snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
@@ -828,8 +831,9 @@ block (`ChatService.java:54-58`). `renderHistory` (`ChatService.java:73`) prepen
 `HISTORY_HEADER` (`"Eddigi beszélgetés (legrégebbitől a legújabbig):"`) then one line per prior
 message — `"Daniel: …"` for a user row, `"Mezo: …"` for an assistant row. `SYSTEM_PROMPT`
 (`ChatService.java:48`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
-clinical guard "Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az
-orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6, + the V0.5 tool-usage line
+clinical guard "Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi
+döntés." (drug-name example removed in `mezo-lwmq` — the prohibition itself is unchanged) +
+"számot vagy adatot kitalálni tilos", spec §6, + the V0.5 tool-usage line
 "Múltbeli vagy összesítő kérdéshez … használd a kapott tool-okat" + (mezo-xixu) a terse
 `[Eszköz-útmutató]` block mapping question-type → tool name (PR → `get_exercise_records`, edzésterv
 → `get_training_plan`, recept → `get_recipes`, … — one line per tool, kept in sync with the
@@ -1093,7 +1097,7 @@ see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-
 | `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
-| `get_medication(scope)` (mezo-xixu, merged from `get_reta_cycle`) | scope=reta (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no reta-specific naming) | `Medication`/name |
+| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming) | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
@@ -1133,9 +1137,11 @@ see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-
   (`COMPANION_ADVISORS_SWITCH`); off ⇒ the chain/check beans do not exist (V1.2 behavior).
 - `mezo.companion.advisors.max-retries` = **1** (`@Min(0) @Max(2)`) — corrective re-prompts
   before a violating answer ships `degraded` (0 = check-only flagging; old docs §4.5: 1).
-- `mezo.companion.advisors.rx-terms` = `[retatrutid, reta, tirzepatid, mounjaro, szemaglutid,
-  ozempic, wegovy]` (`@NotEmpty`) — the clinical check's guarded prescription-med terms
-  (accent-folded contains-match; only dose-CHANGE verbs trigger).
+- `mezo.companion.advisors.rx-terms` (`@NotEmpty`) — the clinical check's owner-curated
+  GLP-1-family drug-name dictionary (7 terms, `application.yml`) — the guard's vocabulary, not
+  user data, so it was deliberately left untouched by the medication-retirement pass ([ADR
+  0027](../decisions/0027-retire-retatrutide-generic-medication-domain.md)); accent-folded
+  contains-match, only dose-CHANGE verbs trigger.
 - `mezo.companion.transcription.max-audio-bytes` = **5 242 880** (`@Min(1)`) — the voice-note
   upload cap (`mezo-at8x.4`), kept under the 6 MB container multipart cap so the SERVICE check is
   the effective, message-bearing limit; ~2.5 minutes of the 16 kHz mono WAV the FE uploads.
@@ -1590,7 +1596,7 @@ base test profiles (`AbstractIntegrationTest`/`ApiIntegrationTest` run `demodata
 adapter replaces Gemini while everything else stays real. `FakeCompanionLlm.complete` **echoes
 both prompt halves** (`"FAKE-LLM system=[…] user=[…]"`, `FakeCompanionLlm.java:24`), which makes
 **prompt assembly assertable** — `ChatServiceIT` asserts the persisted answer contains the
-companion voice (`"Te vagy a mezo"`, `"retatrutid"`), the windowed history block
+companion voice (`"Te vagy a mezo"`, `"Gyógyszer adagolására vonatkozó változtatást"`), the windowed history block
 (`"Daniel: …"`/`"Mezo: …"`), and that the current message rides as the `user=[…]` param, not the
 history.
 
@@ -1602,7 +1608,7 @@ regression guard for the observed hallucination bug: tomorrow's meso-template gy
 the matching sport-schedule slot, the active running block's prescribed session for that weekday,
 and the honest rest-day fallback when no template matches today OR tomorrow's weekday)**, account
 level + top skill (`[Növekedés]`), quest count +
-creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, retaDay+phase
+creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, cycleDay+phase
 (`4. nap (Stabil)`), sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced
 from the sleep goal (derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep
 goal exists, and determinism (two renders are `equals`).
@@ -1660,7 +1666,7 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`CompanionToolsRenderIT`** (77 tests, `@Transactional` + fake profile) — every tool's rendered
   Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
   with a hand-built `ToolContext`): happy paths, `nincs adat`/`nincs aktív …` absences, window
-  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero reta.
+  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero medication cycle.
 - **`CompanionToolRegistryIT`** — exactly the 15-tool batch registered, every callback wrapped in
   `RecordingToolCallback`; the tool-context carries `userId` + audit.
 - **`ToolCallAuditTest` + `RecordingToolCallbackTest`** (pure units) — null envelopes when empty,

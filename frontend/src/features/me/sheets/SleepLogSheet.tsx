@@ -303,7 +303,7 @@ export function SleepLogSheet({
                 <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
                 <div className="card" style={{ padding: 10 }}>
                   <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
-                    placeholder='pl. "magnézium kihagyva" · "Reta D1 reggel" · "késő vacsora"'
+                    placeholder='pl. "magnézium kihagyva" · "sok só tegnap" · "késő vacsora"'
                     style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
                 </div>
               </div>
@@ -316,7 +316,7 @@ export function SleepLogSheet({
                         was repointed to durationH (mezo-fk9a), so the tip must agree with what
                         the user is actually looking at. */}
                     {durationH < 7 ? '7h alatt — a sleep-first triage alapján a reggeli briefing ezt fogja primary risk-ként jelölni.'
-                      : quality <= 5 ? 'Alacsony minőség — keressük meg a faktort együtt (késő szénhidrát? kávé? Reta?).'
+                      : quality <= 5 ? 'Alacsony minőség — keressük meg a faktort együtt (késő szénhidrát? kávé? stressz?).'
                       : durationH >= 7.5 && quality >= 8 ? 'Target felett · ragyogó nap. Pattern engine ezt boldog vasárnap megerősíti.'
                       : 'Stabil tartomány — beírom a 7-napos MA-ba.'}
                   </p>

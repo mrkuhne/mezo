@@ -2,7 +2,7 @@
 //
 // MOCK: byte-parity with the Phase-1 seeds (`fuelWeek.ts` + `today.ts` volleyball).
 // REAL: composes the LIVE week — gym days from Train's derived schedule (meso WHAT × slot WHEN),
-//   volleyball from Train's sport schedule, the Reta strip from the medication cycle, and the
+//   volleyball from Train's sport schedule, the cycle strip from the medication cycle, and the
 //   weekly stats from the 7-day rollup (`GET /api/fuel/week/{start}`). Surfaces with no real
 //   source yet return honest-empty (`patterns`/`weeklySupplements` []) or null (`weeklyNote`,
 //   `supplementsAdherence`) — never the seed (the `useReplanScenarios` precedent).
@@ -18,7 +18,7 @@ import { mealApi, type FuelWeekDay } from '@/data/fuel/mealApi'
 import {
   weekTitle as mockWeekTitle,
   weeklyNote as mockWeeklyNote,
-  retaWeek as mockRetaWeek,
+  medCycleWeek as mockMedCycleWeek,
   gymSchedule as mockGymSchedule,
   weeklySupplements as mockWeeklySupplements,
   recurringPatterns as mockPatterns,
@@ -32,8 +32,8 @@ import type {
   GymScheduleDay,
   MedicationCycleCell,
   RecurringPattern,
-  RetaDayCell,
-  RetaPhase,
+  MedCycleDayCell,
+  MedCyclePhase,
   VolleyballSession,
   WeeklyStats,
   WeeklySupplementRow,
@@ -42,7 +42,7 @@ import type {
 export interface FuelWeekView {
   /** Header title — mock keeps the demo week label, real derives the current Monday-based week. */
   title: string
-  retaWeek: RetaDayCell[]
+  medCycleWeek: MedCycleDayCell[]
   gymSchedule: GymScheduleDay[]
   weeklySupplements: WeeklySupplementRow[]
   patterns: RecurringPattern[]
@@ -66,14 +66,14 @@ export function deriveWeekTitle(startIso: string): string {
   return `${huMonthDay(startIso)} – ${endLabel}`
 }
 
-const PHASE_LABEL: Record<string, RetaPhase> = { peak: 'Peak', stable: 'Stable', trough: 'Trough' }
+const PHASE_LABEL: Record<string, MedCyclePhase> = { peak: 'Peak', stable: 'Stable', trough: 'Trough' }
 
-/** Medication cycle week → the Reta strip cells; empty (no dose → ghost cycle) stays empty. */
-export function toRetaCells(week: MedicationCycleCell[]): RetaDayCell[] {
+/** Medication cycle week → the cycle strip cells; empty (no dose → ghost cycle) stays empty. */
+export function toMedCycleCells(week: MedicationCycleCell[]): MedCycleDayCell[] {
   return week.map((c) => ({
     d: c.day,
     label: PHASE_LABEL[c.phaseKey] ?? 'Stable',
-    color: `var(--reta-d${c.day})`,
+    color: `var(--medcycle-d${c.day})`,
   }))
 }
 
@@ -112,7 +112,7 @@ export function useFuelWeek(): FuelWeekView {
   if (mock) {
     return {
       title: mockWeekTitle,
-      retaWeek: mockRetaWeek,
+      medCycleWeek: mockMedCycleWeek,
       gymSchedule: mockGymSchedule,
       weeklySupplements: mockWeeklySupplements,
       patterns: mockPatterns,
@@ -123,7 +123,7 @@ export function useFuelWeek(): FuelWeekView {
   }
   return {
     title: deriveWeekTitle(start),
-    retaWeek: toRetaCells(cycle.week),
+    medCycleWeek: toMedCycleCells(cycle.week),
     gymSchedule: (trainGym?.weeklyTimes ?? []).map(withDefaultDuration),
     weeklySupplements: [],
     patterns: [],

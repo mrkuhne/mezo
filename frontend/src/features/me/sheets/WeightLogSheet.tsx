@@ -48,7 +48,7 @@ export function WeightLogSheet({
             <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
             <div className="card" style={{ padding: 10 }}>
               <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
-                placeholder='pl. "vasárnap reggel · folyadékvesztés" · "Reta D1 reggel"'
+                placeholder='pl. "vasárnap reggel · folyadékvesztés" · "sok só tegnap"'
                 style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
             </div>
           </div>

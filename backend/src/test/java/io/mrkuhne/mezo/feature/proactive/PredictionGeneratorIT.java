@@ -74,7 +74,7 @@ class PredictionGeneratorIT extends AbstractIntegrationTest {
         PatternEntity confirmedPattern =
                 patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
         checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
-                "[fake-prediction:{\"predictions\":[{\"title\":\"Súly csökken\",\"basis\":\"Reta.\","
+                "[fake-prediction:{\"predictions\":[{\"title\":\"Súly csökken\",\"basis\":\"Ciklus.\","
                         + "\"patternIndex\":0,\"metricKey\":\"weight_trend\","
                         + "\"expectedDirection\":\"down\"}]}]");
         List<PredictionEntity> saved = generator.generate(user, WEEK_START);
@@ -95,7 +95,7 @@ class PredictionGeneratorIT extends AbstractIntegrationTest {
         UUID user = userPopulator.createUser("pg-oob@test.local").getId();
         patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
         checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
-                "[fake-prediction:{\"predictions\":[{\"title\":\"Alvás javul\",\"basis\":\"Reta.\","
+                "[fake-prediction:{\"predictions\":[{\"title\":\"Alvás javul\",\"basis\":\"Ciklus.\","
                         + "\"patternIndex\":9,\"metricKey\":\"sleep_avg\","
                         + "\"expectedDirection\":\"up\"}]}]");
         List<PredictionEntity> saved = generator.generate(user, WEEK_START);

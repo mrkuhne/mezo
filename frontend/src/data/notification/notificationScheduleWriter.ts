@@ -28,7 +28,7 @@ const FUEL_DEEPLINK = '/fuel/stack'
  * one (and collided with `briefing`/`wind_down`/`midday`, which also deeplink to `/today`).
  * Distinct urls is the smaller, safer fix than changing the worker's tag strategy.
  *
- * `useTodayScenario` reads only its own named params (`day`/`retaDay`/`niggle`/`vulnerable`/
+ * `useTodayScenario` reads only its own named params (`day`/`medCycleDay`/`niggle`/`vulnerable`/
  * `ritual`) and React Router matches on the path, so `?checkin=` is harmlessly IGNORED today —
  * it is a tag discriminator, not a feature. Opening the check-in sheet from it would be genuinely
  * useful and is deliberately NOT built here.

@@ -231,7 +231,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         // The fake echoes system=[...] user=[...] — the persisted answer proves prompt assembly.
         assertThat(answer.getContent()).contains("Te vagy a mezo");
-        assertThat(answer.getContent()).contains("retatrutid");
+        assertThat(answer.getContent()).contains("Gyógyszer adagolására vonatkozó változtatást");
         assertThat(answer.getContent()).contains("user=[szia mezo]");
         assertThat(answer.getContent()).doesNotContain("Eddigi beszélgetés");
     }

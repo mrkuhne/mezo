@@ -116,7 +116,7 @@ public class TrainSeedData implements CommandLineRunner {
                 new Adjustment("recovery", "7.2h alvás átlag · stabil", Map.of("mav", 2), null)),
             0.78,
             "Daniel-personalizált MRV. Bench Press + Incline DB + Cable Fly historikusan jól tolerál"
-                + " — 22-re is felmehetnénk, de Reta cycle alatt 20 a felső limit.",
+                + " — 22-re is felmehetnénk, de mély deficitben 20 a felső limit.",
             null));
 
         volume(by, mesoId, "back", 10, 16, 22, 16, new ProvenanceEnvelope(
@@ -250,7 +250,7 @@ public class TrainSeedData implements CommandLineRunner {
             "Upper / Lower · 4×/hét", "Linear · 7 hét",
             List.of("MEV", "MEV", "MAV", "MAV", "MRV", "MRV", "Deload"),
             null,
-            "Daniel: 'Idő egy erő-blokkra is.' Reta cycle befejezésével szinkronban indul.",
+            "Daniel: 'Idő egy erő-blokkra is.' A deficit-szakasz lezárásával szinkronban indul.",
             null);
 
         meso(by,
@@ -260,7 +260,7 @@ public class TrainSeedData implements CommandLineRunner {
             "Full body · 4×/hét", "Maintenance · 3 hét",
             List.of("MAV", "MAV", "MAV"),
             null,
-            "Reta cycle vége — kalória deficit nélkül erő- és izom-tartás.",
+            "Deficit-szakasz vége — kalória deficit nélkül erő- és izom-tartás.",
             null);
 
         meso(by,

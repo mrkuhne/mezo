@@ -405,16 +405,16 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRender_shouldRenderRetaDayAndPhase_whenActiveMedicationWithDose() {
+    void testRender_shouldRenderCycleDayAndPhase_whenActiveMedicationWithDose() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
-        var med = medicationPopulator.createReta(owner);
+        var med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), today.minusDays(3), new BigDecimal("6"));
 
         String snapshot = assembler.render(owner, today);
 
-        // dose 3 days ago → retaDay 4 → "Stabil" phase (3-5) of the populator's 7-day cycle
-        assertThat(snapshot).contains("[Gyógyszer] Retatrutide: ciklus 4. nap (Stabil)");
+        // dose 3 days ago → cycleDay 4 → "Stabil" phase (3-5) of the populator's 7-day cycle
+        assertThat(snapshot).contains("[Gyógyszer] Teszt gyógyszer: ciklus 4. nap (Stabil)");
     }
 
     @Test
