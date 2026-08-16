@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-14
+updated: 2026-08-15
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -108,10 +108,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   snapshot's `Ma:`/`Holnap:`. Only the **sport** part is actually shared code (both build it with
   `ToolText.sportLine`, so tool and prompt can never disagree about a day's sport) — the **gym**
   part is rendered separately in each (`TrainTools.dayContentLine` vs
-  `ContextSnapshotAssembler.dayLine`) and their formats differ: a template with zero exercises
-  renders `gym: pihenőnap` from the tool but `gym (<day label>)` from the snapshot, so the two CAN
-  disagree about a day's gym (an unlikely data shape — a planned day with no exercises added —
-  left as-is). `nincs adat` only when there is neither an active mesocycle, nor an active running
+  `ContextSnapshotAssembler.dayLine`), but **since mezo-650a they share the rest-day criterion**:
+  a present-but-empty template (zero exercises) renders as a rest day in BOTH (`gym: pihenőnap`
+  from the tool, `pihenőnap (gym)` from the snapshot). This was NOT an unlikely data shape — the
+  meso wizard stores all 7 weekdays as template rows, weekend rest days included (`type=Rest`,
+  zero exercises), so the snapshot's old `gym (<day label>)` rendering claimed a gym day every
+  weekend (the weekend-training hallucination). `nincs adat` only when there is neither an active mesocycle, nor an active running
   block, **nor a sport slot** at all — a volleyball evening is a plan in its own right; a real rest
   day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
@@ -406,8 +408,8 @@ frozen `confirmed` rows) and `.reinforcePromotedFact` (`PatternDetectionService.
 one `reinforced` row per cooled-down recurrence); `PatternService.decide`
 (`PatternService.java:66-79`, helper at `PatternService.java:92-101`) appends a
 `confirmed`/`monitoring`/`rejected` row on **every** decision, plus — on the FIRST confirm only —
-a `promoted` row (payload = the new `factId`) written **after** the decision row. No reader yet —
-a future strength chart/journal will derive from this table.
+a `promoted` row (payload = the new `factId`) written **after** the decision row. **First reader
+(S1 close, `mezo-tk88.3`):** the pattern-pair-detail endpoint's `events[]` — see below.
 
 **V3.2 (`mezo-fnnq.13`) shipped the AI hypothesis loop — propose → critique → revise:**
 
@@ -761,7 +763,9 @@ anchor, so both lines always render, falling back to the config ghost when no sl
 DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
 (mezo-xixu, the flagship fix)** — both render through ONE `dayLine` method (mezo-ajp): that day's
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
-`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)`, PLUS any
+`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)` — since
+mezo-650a a present-but-EMPTY template (the meso wizard's explicit `Rest` rows, zero exercises)
+also renders `pihenőnap (gym)`, the same criterion as `TrainTools#dayContentLine` — PLUS any
 recurring sport-schedule slot on that weekday, PLUS the active running block's prescribed session
 for that weekday (best-effort — absent block/week renders nothing, never fabricated). They used to
 be two near-identical renderers that had drifted: `Ma:` resolved gym only, so today's sport and run
@@ -1027,6 +1031,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 | `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). **mezo-18bx (additive):** pairs carry `mechanismHu` (the catalog's config `mechanism`) + `metricADomain`/`metricBDomain`, coverage rows carry `sourceHu` + `domain` — straight pass-through from `MetricKey`/`PatternPair`, no new computation. |
+| `GET /api/companion/pattern/pair/{pairKey}` | `PatternPairDetailResponse` | 200 · 401 · 404 | **S1 close (`mezo-tk88.3`):** the pattern detail page's one-stop read — `PatternPairDetailService.detail` reuses `PatternMonitorService.toPair` (package-widened) so the gate verdict can never disagree with the Motor dashboard. `pattern` is `null` until the pair goes live (no synthetic row); `events[]` is the `pattern_event` history (first reader, oldest-first); `days[]` are the CURRENT window's aligned points, computed live (never stored — frozen `confirmed`/`rejected` rows still show today's data); `impact` is the "what came of this" block (promoted fact + grounded predictions/experiments/challenges). Unknown `pairKey` (not in the `mezo.companion.patterns.pairs` catalog) → 404 `COMPANION_PATTERN_PAIR_NOT_FOUND`. |
 | `GET /api/companion/memory/overview` | `MemoryOverviewResponse` | 200 · 401 · 404 | `mezo-al1i` — L0–L3 layer counts + the 3 job cron strings, one read-only aggregate (`MemoryObservatoryService.overview`). |
 | `GET /api/companion/memory/summary` | `MemorySummaryListResponse` | 200 · 401 · 404 | `mezo-al1i` — the L1 journal, date-desc, optional `from`/`to`; `embedded` flags a live `memory_embedding` row for that day. |
 | `GET /api/companion/memory/similar-days` | `SimilarDaysResponse` | 200 · 400 · 401 · 404 | `mezo-al1i` — reuses `MemoryRecallService` (V2.3) verbatim; `q` required (1..∞ chars), `k` 1..5 (default 3); below-floor matches never returned (the same honest empty-list rule as the tool). |
@@ -1063,6 +1068,19 @@ SimilarDayItem[]}` (`{date, excerpt, similarity, finalScore}` — `finalScore` i
 LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, costUsd?}` —
 `costUsd` null means no priced row that day, never a fabricated 0). All four schemas are defined in
 `api/feature/companion/companion.yml`, alongside the existing `Companion` tag schemas.
+
+**`PatternPairDetailResponse` (S1 close, `mezo-tk88.3`):** `{pair: PatternMonitorPair,
+pattern: PatternResponse | null, events: PatternEventResponse[], days: AlignedDayResponse[],
+impact: PatternImpactResponse}` — `pair`/`days` are the SAME `PatternMonitorPair`/live-window
+shapes the monitor endpoint returns (§ above), so the two surfaces never disagree. `PatternEventResponse
+{kind, occurredAt, r?, n?, p?, reinforcementCount?, factId?}` mirrors one `pattern_event` row 1:1
+(`CompanionMapper.toPatternEventResponse`) — only the fields the `kind` actually uses are non-null.
+`PatternImpactResponse {fact: PatternImpactFact | null, predictions: PatternImpactRef[],
+experiments: PatternImpactRef[], challenges: PatternImpactRef[]}` — `fact` is the promoted knowledge
+fact (via `PatternEntity.promotedFactId`), the three ref lists are grounded rows found by each
+proactive repository's `findByCreatedByAndSourcePatternIdAndDeletedFalse` (S2, `mezo-tk88.2`);
+`PatternImpactRef {id, title, status}`. **Assembly crosses the companion↔proactive boundary** —
+see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-clean.
 
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
@@ -1435,6 +1453,24 @@ migration. The digest additionally reads `MentionRepository` + `DailyIntentionRe
 repository read closes a slice cycle (`feature_slices_are_cycle_free` caught exactly this);
 `TodayActivitySource.awardedXpByDay` + `TodayQuestSource.completedXpByDay` extend the existing
 inversion ports, consumed via `ObjectProvider` (absent bean = that source contributes nothing).
+
+**S1 close (`mezo-tk88.3`) added the FIRST port pointing the OTHER way.** Every port above lets
+companion pull data IN from a feature that itself depends on companion. The pattern-pair-detail
+endpoint needs the opposite: `PatternPairDetailService` (companion) needs predictions/experiments/
+challenges grounded on a pattern (`source_pattern_id`, S2 `mezo-tk88.2`) — but those live in
+`feature.proactive`, which ALREADY imports companion extensively (§ below), so a direct companion
+→ proactive import would open a brand-new 2-slice cycle (`feature_slices_are_cycle_free` is
+FROZEN — only the pre-existing biometrics↔goal/meal↔recipe cycles are tolerated; a NEW cycle
+fails outright). **`PatternImpactSource`** (`feature.companion.service`, plain interface, no
+`ObjectProvider` needed since its implementor is unconditioned relative to it — see below) inverts
+the dependency exactly like `TodayQuestSource` does, just mirrored: `PatternPairDetailService`
+depends only on its own package; the real assembly (`feature.proactive.service.PatternImpactService`)
+imports `feature.companion` (the already-existing direction) and implements the interface — Spring
+wires it in, no compile-time edge crosses the boundary in the new direction. `PatternImpactService`
+is `@ConditionalOnProperty(COMPANION_SWITCH)` — the SAME switch as `PatternPairDetailService`, not
+`PROACTIVE_SWITCH` — so the detail endpoint always resolves a bean when companion is on; with the
+proactive generators off it just lists nothing (the finder repositories are plain, unconditioned
+Spring Data beans). See [`proactive.md`](proactive.md) §5.1 for the mirror-image writeup.
 
 **V3.3 promotion seam (✅ wired — the loop closes).** Pattern-confirm →
 `knowledge_fact(source=pattern)` → the V1.1 top-N injection carries it into every prompt → the
@@ -1979,7 +2015,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{ChatTurnCompleted,FactExtractionListener}.java` — the V1.2 AFTER_COMMIT async trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactCandidateService.java` — V1.2 pending inbox + accept/refine/reject decision.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/AsyncConfiguration.java` — `@EnableAsync` (born with V1.2).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3; + `toPatternEventResponse` since S1 close `mezo-tk88.3`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternPairDetailService.java` — **S1 close (`mezo-tk88.3`)** the pattern detail page's read; reuses `PatternMonitorService.toPair` (package-widened) + delegates the impact block to `PatternImpactSource`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternImpactSource.java` — the companion-owned inversion port `PatternPairDetailService` depends on; implemented in `feature.proactive.service.PatternImpactService` (see [`proactive.md`](proactive.md) §10) — keeps the companion↔proactive dependency graph cycle-free in the NEW direction, mirroring `TodayQuestSource`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MemoryObservatoryService.java` — **`mezo-al1i`** the memory-observatory read-only aggregate: `overview`/`summaries`/`similarDays`/`llmUsage`, companion-switch conditional.
 
 **Backend — advisor chain (V1.3)**
