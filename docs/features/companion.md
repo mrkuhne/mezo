@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-14
+updated: 2026-08-15
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -108,10 +108,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   snapshot's `Ma:`/`Holnap:`. Only the **sport** part is actually shared code (both build it with
   `ToolText.sportLine`, so tool and prompt can never disagree about a day's sport) — the **gym**
   part is rendered separately in each (`TrainTools.dayContentLine` vs
-  `ContextSnapshotAssembler.dayLine`) and their formats differ: a template with zero exercises
-  renders `gym: pihenőnap` from the tool but `gym (<day label>)` from the snapshot, so the two CAN
-  disagree about a day's gym (an unlikely data shape — a planned day with no exercises added —
-  left as-is). `nincs adat` only when there is neither an active mesocycle, nor an active running
+  `ContextSnapshotAssembler.dayLine`), but **since mezo-650a they share the rest-day criterion**:
+  a present-but-empty template (zero exercises) renders as a rest day in BOTH (`gym: pihenőnap`
+  from the tool, `pihenőnap (gym)` from the snapshot). This was NOT an unlikely data shape — the
+  meso wizard stores all 7 weekdays as template rows, weekend rest days included (`type=Rest`,
+  zero exercises), so the snapshot's old `gym (<day label>)` rendering claimed a gym day every
+  weekend (the weekend-training hallucination). `nincs adat` only when there is neither an active mesocycle, nor an active running
   block, **nor a sport slot** at all — a volleyball evening is a plan in its own right; a real rest
   day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
@@ -761,7 +763,9 @@ anchor, so both lines always render, falling back to the config ghost when no sl
 DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
 (mezo-xixu, the flagship fix)** — both render through ONE `dayLine` method (mezo-ajp): that day's
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
-`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)`, PLUS any
+`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)` — since
+mezo-650a a present-but-EMPTY template (the meso wizard's explicit `Rest` rows, zero exercises)
+also renders `pihenőnap (gym)`, the same criterion as `TrainTools#dayContentLine` — PLUS any
 recurring sport-schedule slot on that weekday, PLUS the active running block's prescribed session
 for that weekday (best-effort — absent block/week renders nothing, never fabricated). They used to
 be two near-identical renderers that had drifted: `Ma:` resolved gym only, so today's sport and run

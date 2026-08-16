@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-07-26
+updated: 2026-08-15
 tags: [goal, engine, backend, tdee, projection, guards]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
@@ -140,7 +140,7 @@ The engine is a **consumer hub** — it reads three other domains and writes one
 - **← Train weekly scheduled EAT (the training-energy port, mezo-eujg).** *Contract:* the train-owned **`WeeklyScheduledActivityService`** (`feature/train/service`) — `totalWeeklyEatKcalPerDay(userId, weightKg)` (the bootstrap's `weeklyEatKcalPerDay`) + `scheduledWeeklyEatKcalPerDay` / `runWeeklyEatKcalPerDay(sessions, weightKg)` (the projection's per-segment gym+sport vs running EAT). Train owns the recurring gym/sport slots + the MET model (`mezo.train.met`, MET×kg×óra ÷ 7); a drift-guard test binds that MET table to the FE `fuelConfig.MET_BY_KIND`. This replaced the retired goal-side `met.*` deltas (§4 config) so training energy is one source across Train, the engine, and Fuel.
 - **→ Goal (writes).** *Contract:* `tdeeBootstrap` + `prescription` jsonb persisted onto `GoalEntity`, surfaced via `GoalResponse` → the FE `GoalRecept` card ([`me.md`](me.md) §2).
 
-**Cross-domain bridges (spec §5.4):** `prescription.kcal/proteinG` → Fuel is **now wired** — Fuel P5 (`mezo-9ys`) reads the current-week segment as the Mai day-planner's daily budget (`deriveDailyBudget`; see [`fuel.md`](fuel.md) §5). Still emitted-but-unconsumed: `sleepTargetH` (seeded at 8.0) → Sleep; `restDays`/deload → Train/Today.
+**Cross-domain bridges (spec §5.4):** `prescription.kcal/proteinG` → Fuel is **now wired twice** — Fuel P5 (`mezo-9ys`) reads the current-week segment as the Mai day-planner's daily budget (`deriveDailyBudget`; see [`fuel.md`](fuel.md) §5), and **since mezo-najo the backend `FuelDayService` day/week `targets` kcal + protein come from the date's goal-week segment too** (config `mezo.nutrition.*` as fallback — so the MacroHero, the chat snapshot and `get_fuel_log` all carry the recept number). Still emitted-but-unconsumed: `sleepTargetH` (seeded at 8.0) → Sleep; `restDays`/deload → Train/Today.
 
 ## 6. How to use it (consume)
 

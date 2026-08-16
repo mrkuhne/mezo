@@ -2,9 +2,12 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { TabBar } from '@/app/TabBar'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 function renderAt(path: string) {
-  return render(<MemoryRouter initialEntries={[path]}><TabBar /></MemoryRouter>)
+  return render(
+    <QueryWrapper><MemoryRouter initialEntries={[path]}><TabBar /></MemoryRouter></QueryWrapper>,
+  )
 }
 
 test('renders the four tab labels and no Insights tab', () => {
