@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { usePatternPairDetail, usePatternActions, usePatternMonitor } from '@/data/hooks'
@@ -16,6 +16,7 @@ import {
   strengthSeries,
   strengthTrendCaption,
 } from '@/features/insights/logic/patternHistory'
+import { formatMetricValue, formatP, formatR } from '@/features/insights/logic/metricFormat'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import { pairLine } from '@/features/insights/logic/findings'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
@@ -32,6 +33,24 @@ function lastRunLabel(lastRunAt: string | null | undefined): string {
   if (!lastRunAt) return '—'
   const time = new Date(lastRunAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
   return `ma ${time}`
+}
+
+/**
+ * The full-page frame every branch of the detail page renders inside (mezo-fy97): the sibling
+ * route sits outside `InsightsSection`'s padded outlet, so the page brings its own padding and
+ * the house full-page header row (back chevron + h1 — the AiUsagePage idiom). Wrapping the
+ * pending/error/not-found branches too keeps a way back on every state.
+ */
+function DetailFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="col gap-md" style={{ padding: '14px 16px 24px' }}>
+      <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+        <Link to="/insights" aria-label="Vissza" style={{ fontSize: 19, color: 'var(--text-tertiary)' }}>‹</Link>
+        <h1 style={{ fontSize: 16.5, fontWeight: 800, flex: 1, margin: 0 }}>Minta részletei</h1>
+      </div>
+      {children}
+    </div>
+  )
 }
 
 /**
@@ -76,23 +95,28 @@ export function PatternDetailPage() {
   const [showDays, setShowDays] = useState(false)
 
   if (isPending) {
-    return <GhostState message="A minta betöltése…" />
+    return (
+      <DetailFrame>
+        <GhostState message="A minta betöltése…" />
+      </DetailFrame>
+    )
   }
 
   if (isError) {
-    return <GhostState message="Nem sikerült betölteni a mintát." ctaLabel="Újra" onCta={refetch} />
+    return (
+      <DetailFrame>
+        <GhostState message="Nem sikerült betölteni a mintát." ctaLabel="Újra" onCta={refetch} />
+      </DetailFrame>
+    )
   }
 
   if (notFound || !detail) {
     return (
-      <div className="col gap-md">
-        <Link to="/insights" style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-tertiary)', padding: 2 }}>
-          ← Minták
-        </Link>
+      <DetailFrame>
         <div className="card" style={{ padding: 16, textAlign: 'center' }}>
           <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen minta.</span>
         </div>
-      </div>
+      </DetailFrame>
     )
   }
 
@@ -108,11 +132,7 @@ export function PatternDetailPage() {
   const hasEnoughDays = days.length >= 2
 
   return (
-    <div className="col gap-md">
-      <Link to="/insights" style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-tertiary)', padding: 2 }}>
-        ← Minták
-      </Link>
-
+    <DetailFrame>
       {pattern ? (
         <PatternDecisionCard
           pattern={pattern}
@@ -171,8 +191,8 @@ export function PatternDetailPage() {
               {days.map((d) => (
                 <tr key={d.date}>
                   <td style={{ padding: '4px 6px', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>{d.date}</td>
-                  <td style={{ padding: '4px 6px', textAlign: 'right', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>{d.a}</td>
-                  <td style={{ padding: '4px 6px', textAlign: 'right', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>{d.b}</td>
+                  <td style={{ padding: '4px 6px', textAlign: 'right', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>{formatMetricValue(pair.metricAKey, d.a)}</td>
+                  <td style={{ padding: '4px 6px', textAlign: 'right', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>{formatMetricValue(pair.metricBKey, d.b)}</td>
                 </tr>
               ))}
             </tbody>
@@ -208,9 +228,9 @@ export function PatternDetailPage() {
           <span className="chip" style={{ fontSize: 10 }}>{pair.metricBLabel} · {coverageByKey.get(pair.metricBKey)?.sourceHu ?? '—'}</span>
         </div>
         <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-secondary)', padding: '0 4px' }}>
-          r={pair.r ?? '—'} · n={pair.n ?? '—'} · p={pair.p ?? '—'}
+          r={formatR(pair.r)} · n={pair.n ?? '—'} · p={formatP(pair.p)}
         </span>
       </LifecycleSection>
-    </div>
+    </DetailFrame>
   )
 }
