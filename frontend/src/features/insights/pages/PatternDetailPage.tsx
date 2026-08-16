@@ -8,12 +8,24 @@ import { PatternScatter } from '@/features/insights/components/PatternScatter'
 import { PatternJournal } from '@/features/insights/components/PatternJournal'
 import { PatternImpactCard } from '@/features/insights/components/PatternImpactCard'
 import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
-import { chartDateLabel, firstLastSnapshotN, journalEntries, latestAlignedDay } from '@/features/insights/logic/patternHistory'
+import {
+  chartDateLabel,
+  firstLastSnapshotN,
+  journalEntries,
+  latestAlignedDay,
+  strengthSeries,
+  strengthTrendCaption,
+} from '@/features/insights/logic/patternHistory'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import { pairLine } from '@/features/insights/logic/findings'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
 import { patternCategoryColor } from '@/data/insights/insights'
 import type { PatternMonitorPair, PatternStatus } from '@/data/types'
+
+// Shared between the strength card and the journal card (review fix, item 3) — the two empty
+// states describe the SAME condition (no `pattern_event` history yet), so they use the identical
+// sentence rather than two copies that could drift apart.
+const NO_HISTORY_YET = 'Még nincs előzmény — az éjszakai futások töltik.'
 
 /** „ma HH:mm" — mirrors `MotorStateHero`'s own private formatter (the job runs once nightly). */
 function lastRunLabel(lastRunAt: string | null | undefined): string {
@@ -93,6 +105,7 @@ export function PatternDetailPage() {
   const snapshotRange = firstLastSnapshotN(events)
   const latestDay = latestAlignedDay(days)
   const entries = journalEntries(events, pair)
+  const hasEnoughDays = days.length >= 2
 
   return (
     <div className="col gap-md">
@@ -118,15 +131,17 @@ export function PatternDetailPage() {
         <PatternStrengthChart events={events} />
         <p style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-tertiary)', marginTop: 6 }}>
           {snapshotRange
-            ? `A jel folyamatosan erősödik, ahogy gyűlnek a közös napok — ${snapshotRange.first} napról ${snapshotRange.last}-re.`
-            : 'Még nincs előzmény — az éjszakai futások töltik.'}
+            ? strengthTrendCaption(strengthSeries(events), snapshotRange.first, snapshotRange.last)
+            : NO_HISTORY_YET}
         </p>
       </div>
 
       <div className="card" style={{ padding: '15px 16px' }}>
-        <span className="eyebrow">A {days.length} nap, amiből ez kijött</span>
+        <span className="eyebrow">
+          {hasEnoughDays ? `A ${days.length} nap, amiből ez kijött` : 'Napok, amikből ez majd kijön'}
+        </span>
         <PatternScatter days={days} pair={pair} />
-        {latestDay ? (
+        {hasEnoughDays && latestDay ? (
           <p style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-tertiary)', marginTop: 6 }}>
             Minden pont egy nap. A kiemelt a legutóbbi: {chartDateLabel(latestDay.date)}.{' '}
             <button
@@ -143,7 +158,7 @@ export function PatternDetailPage() {
             Még nincs elég nap az összevetéshez — ahogy gyűlnek, itt jelennek meg.
           </p>
         )}
-        {showDays && days.length > 0 && (
+        {showDays && hasEnoughDays && (
           <table style={{ width: '100%', marginTop: 10, borderCollapse: 'collapse', fontSize: 11.5 }}>
             <thead>
               <tr>
@@ -167,7 +182,13 @@ export function PatternDetailPage() {
 
       <div className="card" style={{ padding: '15px 16px' }}>
         <span className="eyebrow">A minta története</span>
-        <PatternJournal entries={entries} />
+        {entries.length > 0 ? (
+          <PatternJournal entries={entries} />
+        ) : (
+          <p style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-tertiary)', marginTop: 6 }}>
+            {NO_HISTORY_YET}
+          </p>
+        )}
       </div>
 
       <PatternImpactCard pattern={pattern} impact={impact} />

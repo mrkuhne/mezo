@@ -54,22 +54,31 @@ export function LifecycleSection({
   )
 }
 
-/** Egy sor egy `LifecycleSection` belsejében — a pár/minta rövid állapota + link a részletekhez. */
-export function LifecycleMiniRow({ title, sub, to }: { title: string; sub: string; to: string }) {
-  return (
-    <Link
-      to={to}
-      className="row"
-      style={{
-        justifyContent: 'space-between', alignItems: 'center', gap: 10,
-        padding: '10px 12px', background: 'var(--surface-recess)', borderRadius: 14,
-      }}
-    >
+/** Egy sor egy `LifecycleSection` belsejében — a pár/minta rövid állapota + link a részletekhez.
+ *  `to` opcionális (mezo-tk88.5 review fix): egy V3.2 AI-hipotézis sornak nincs katalógus-párja
+ *  (`hyp-<hash>` pairKey, sosem szerepel a monitorban), így a `/insights/patterns/{pairKey}` cél
+ *  garantáltan „Nincs ilyen minta."-ra futna — `to` hiányában a sor egyszerű, link/nyíl nélküli
+ *  `<div>`-ként rendereli magát. */
+export function LifecycleMiniRow({ title, sub, to }: { title: string; sub: string; to?: string }) {
+  const rowStyle = {
+    justifyContent: 'space-between' as const, alignItems: 'center' as const, gap: 10,
+    padding: '10px 12px', background: 'var(--surface-recess)', borderRadius: 14,
+  }
+  const content = (
+    <>
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, color: 'var(--text-primary)' }}>{title}</div>
         <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', marginTop: 2 }}>{sub}</div>
       </div>
-      <span style={{ color: 'var(--lav-deep)', fontWeight: 700, fontSize: 14 }}>→</span>
+      {to && <span style={{ color: 'var(--lav-deep)', fontWeight: 700, fontSize: 14 }}>→</span>}
+    </>
+  )
+  if (!to) {
+    return <div className="row" style={rowStyle}>{content}</div>
+  }
+  return (
+    <Link to={to} className="row" style={rowStyle}>
+      {content}
     </Link>
   )
 }

@@ -5,6 +5,7 @@ import {
   latestAlignedDay,
   strengthSeries,
   strengthTickLabels,
+  strengthTrendCaption,
 } from '@/features/insights/logic/patternHistory'
 import type { AlignedDay, PatternEvent, PatternMonitorPair } from '@/data/types'
 
@@ -228,6 +229,51 @@ test('strengthTickLabels suppresses a plain snapshot label that shares its day w
     { text: '', accent: false }, // the plain júl 12 snapshot — suppressed
     { text: 'júl 12 ✓', accent: true }, // the confirmed júl 12 point carries the date alone
   ])
+})
+
+// --- strengthTrendCaption --------------------------------------------------
+
+test('strengthTrendCaption reads "erősödik" when the last snapshot is stronger than the first', () => {
+  const points = strengthSeries([
+    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14 },
+    { kind: 'snapshot', occurredAt: '2026-08-13T02:40:00Z', r: -0.58, n: 32 },
+  ])
+  expect(strengthTrendCaption(points, 14, 32)).toBe(
+    'A jel folyamatosan erősödik, ahogy gyűlnek a közös napok — 14 napról 32-re.',
+  )
+})
+
+test('strengthTrendCaption reads "gyengült" when the last snapshot is weaker than the first', () => {
+  const points = strengthSeries([
+    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.55, n: 14 },
+    { kind: 'snapshot', occurredAt: '2026-08-13T02:40:00Z', r: -0.22, n: 32 },
+  ])
+  expect(strengthTrendCaption(points, 14, 32)).toBe(
+    'A jel gyengült az utóbbi futások során — 14 napról 32-re nőtt a közös napok száma.',
+  )
+})
+
+test('strengthTrendCaption reads "stabil" when the band is unchanged and |Δr| is under 0.05', () => {
+  const points = strengthSeries([
+    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: 0.4, n: 14 },
+    { kind: 'snapshot', occurredAt: '2026-08-13T02:40:00Z', r: 0.42, n: 32 },
+  ])
+  expect(strengthTrendCaption(points, 14, 32)).toBe(
+    'A jel stabil, ahogy gyűlnek a közös napok — 14 napról 32-re.',
+  )
+})
+
+test('strengthTrendCaption compares the first/last SNAPSHOT, ignoring a confirmed point outside that range', () => {
+  // The confirmed point's own date can, in principle, land outside the snapshot span — the
+  // direction must still come from the snapshots, not from whichever point sorts first/last.
+  const points = strengthSeries([
+    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14 },
+    { kind: 'snapshot', occurredAt: '2026-08-13T02:40:00Z', r: -0.58, n: 32 },
+    { kind: 'confirmed', occurredAt: '2026-08-13T09:15:00Z' },
+  ])
+  expect(strengthTrendCaption(points, 14, 32)).toBe(
+    'A jel folyamatosan erősödik, ahogy gyűlnek a közös napok — 14 napról 32-re.',
+  )
 })
 
 // --- fitLine -------------------------------------------------------------

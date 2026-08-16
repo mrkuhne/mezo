@@ -142,6 +142,10 @@ export function PatternsPage() {
               pair={entry.pair}
               onDecide={(d: PatternStatus) => decide(entry.pattern!.id, d)}
               showExplainer={i === 0}
+              // A V3.2 AI-hipotézis soroknak nincs katalógus-párja (hyp-<hash> pairKey) — a
+              // részlet-link garantáltan "Nincs ilyen minta."-ra futna, ezért csak pár-backed
+              // sorokon jelenik meg (mezo-tk88.5 review fix).
+              showDetailLink={entry.pair != null}
             />
           ))}
         </>
@@ -155,7 +159,7 @@ export function PatternsPage() {
         footNote={`Ez a ${confirmedVisible.length} összefüggés benne van a társ fejében minden beszélgetésnél, és ebből épülnek az előrejelzések.`}
       >
         {confirmedVisible.map((entry) => (
-          <LifecycleMiniRow key={entry.key} title={rowTitle(entry)} sub="megerősítve" to={`/insights/patterns/${entry.key}`} />
+          <LifecycleMiniRow key={entry.key} title={rowTitle(entry)} sub="megerősítve" to={entry.pair ? `/insights/patterns/${entry.key}` : undefined} />
         ))}
       </LifecycleSection>
 
@@ -165,7 +169,7 @@ export function PatternsPage() {
             key={entry.key}
             title={rowTitle(entry)}
             sub={findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''}
-            to={`/insights/patterns/${entry.key}`}
+            to={entry.pair ? `/insights/patterns/${entry.key}` : undefined}
           />
         ))}
       </LifecycleSection>
@@ -181,7 +185,7 @@ export function PatternsPage() {
             key={entry.key}
             title={rowTitle(entry)}
             sub={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : ''}
-            to={`/insights/patterns/${entry.key}`}
+            to={entry.pair ? `/insights/patterns/${entry.key}` : undefined}
           />
         ))}
       </LifecycleSection>
@@ -197,7 +201,7 @@ export function PatternsPage() {
             key={entry.key}
             title={rowTitle(entry)}
             sub={findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''}
-            to={`/insights/patterns/${entry.key}`}
+            to={entry.pair ? `/insights/patterns/${entry.key}` : undefined}
           />
         ))}
       </LifecycleSection>
@@ -208,7 +212,7 @@ export function PatternsPage() {
             key={entry.key}
             title={rowTitle(entry)}
             sub={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : 'elvetve'}
-            to={`/insights/patterns/${entry.key}`}
+            to={entry.pair ? `/insights/patterns/${entry.key}` : undefined}
           />
         ))}
       </LifecycleSection>

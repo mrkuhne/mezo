@@ -91,8 +91,15 @@ describe('PatternDetailPage (mock mode)', () => {
   test('gathering pair (no persisted row) renders the gate nudge, honest empty states and the future-tense impact row', () => {
     renderAt(`/insights/patterns/${GATHERING_KEY}`)
     expect(screen.getByText(/Még \d+ nap adat/)).toBeInTheDocument() // verdictSentence's few_days nudge
-    expect(screen.getByText(/Még nincs előzmény/)).toBeInTheDocument()
+    // "Még nincs előzmény…" is the shared no-history line — it renders TWICE (strength card +
+    // journal card, review fix item 3), both describing the same empty `events: []`.
+    expect(screen.getAllByText('Még nincs előzmény — az éjszakai futások töltik.')).toHaveLength(2)
+    // scatter card: days.length < 2 gets the future-tense title, not "A 0 nap…" (review fix item 4)
+    expect(screen.getByText('Napok, amikből ez majd kijön')).toBeInTheDocument()
+    expect(screen.queryByText(/nap, amiből ez kijött/)).not.toBeInTheDocument()
     expect(screen.getByText(/Még nincs elég nap az összevetéshez/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Napok listája →' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
     expect(screen.getByText(/Ha megerősíted/)).toBeInTheDocument()
     // the plain header has no decision buttons
     expect(screen.queryByRole('button', { name: /Megerősítem/ })).not.toBeInTheDocument()

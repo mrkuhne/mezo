@@ -107,6 +107,32 @@ export function strengthTickLabels(points: StrengthPoint[]): StrengthTickLabel[]
   })
 }
 
+/**
+ * The strength card's caption (mezo-tk88.5 review fix) — direction-aware off the FIRST and LAST
+ * snapshot's |r| (never the mixed snapshot+confirmed `points`' extremes wholesale — a `confirmed`
+ * point's own date can, in principle, sit outside the snapshot range, so this filters back down to
+ * `kind === 'snapshot'` before comparing). The old copy always read "erősödik", which was honest
+ * for the showcase seed but WRONG for a weakening history — this branches three ways: `firstN`/
+ * `lastN` are the first/last snapshot's `n` (from `firstLastSnapshotN`), kept separate from the
+ * |r| comparison so the sentence's two numbers and its direction can never disagree with each
+ * other's source data.
+ */
+export function strengthTrendCaption(points: StrengthPoint[], firstN: number, lastN: number): string {
+  const snapshots = points.filter((p) => p.kind === 'snapshot')
+  const first = snapshots[0] ?? points[0]
+  const last = snapshots[snapshots.length - 1] ?? points[points.length - 1]
+  const delta = last.absR - first.absR
+  const sameBand = strengthWord(first.absR) === strengthWord(last.absR)
+
+  if (sameBand && Math.abs(delta) < 0.05) {
+    return `A jel stabil, ahogy gyűlnek a közös napok — ${firstN} napról ${lastN}-re.`
+  }
+  if (delta > 0) {
+    return `A jel folyamatosan erősödik, ahogy gyűlnek a közös napok — ${firstN} napról ${lastN}-re.`
+  }
+  return `A jel gyengült az utóbbi futások során — ${firstN} napról ${lastN}-re nőtt a közös napok száma.`
+}
+
 export interface JournalEntry {
   date: string
   tone: 'neutral' | 'success' | 'accent'
