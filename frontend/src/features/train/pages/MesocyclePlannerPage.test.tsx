@@ -41,13 +41,28 @@ test('selecting Hypertrophy then Tovább advances to step 1', async () => {
 
 test('the wizard persists the mesocycle in real mode and lands on the library', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  let posted: { title?: string; status?: string; startDate?: string; weeks?: number; days?: unknown[] } | null = null
+  let postedTemplate: { title?: string; weeks?: number; days?: unknown[] } | null = null
+  let postedStart: { startDate?: string; status?: string } | null = null
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
-    http.post(`${API_BASE}/api/train/mesocycles`, async ({ request }) => {
-      posted = (await request.json()) as typeof posted
-      return HttpResponse.json({ id: 'b6f3a0e2-0000-4000-8000-00000000d00d' }, { status: 201 })
+    // Two-step save (mezo-meyc.1): the wizard now creates a template, then starts a run from it.
+    http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+      postedTemplate = (await request.json()) as typeof postedTemplate
+      return HttpResponse.json(
+        { id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...postedTemplate, runCount: 0 },
+        { status: 201 },
+      )
+    }),
+    http.post(`${API_BASE}/api/train/meso-templates/:id/start`, async ({ request }) => {
+      postedStart = (await request.json()) as typeof postedStart
+      return HttpResponse.json({
+        id: 'b6f3a0e2-0000-4000-8000-00000000d00d',
+        templateId: 'e1f3a0e2-0000-4000-8000-00000000d00d',
+        title: 'Teszt', shortTitle: 'Teszt', status: postedStart!.status,
+        startDate: postedStart!.startDate, endDate: postedStart!.startDate,
+        weeks: 4, currentWeek: 0, split: '', style: '', phaseCurve: ['MEV'],
+      })
     }),
   )
   const user = userEvent.setup()
@@ -75,11 +90,11 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   await user.click(screen.getByRole('button', { name: /Hozzáad mint tervezett/i }))
 
-  await waitFor(() => expect(posted).not.toBeNull())
-  expect(posted!.status).toBe('planned')
-  expect(posted!.startDate).toBe('2026-06-16')
-  expect(posted!.weeks).toBeGreaterThan(0)
-  expect(posted!.days).toHaveLength(7) // all template days travel, rest days included
+  await waitFor(() => expect(postedStart).not.toBeNull())
+  expect(postedTemplate!.weeks).toBeGreaterThan(0)
+  expect(postedTemplate!.days).toHaveLength(7) // all template days travel, rest days included
+  expect(postedStart!.status).toBe('planned')
+  expect(postedStart!.startDate).toBe('2026-06-16')
   // the planner also persists the standing gym schedule (mezo-4t43): one slot per selected day
   await waitFor(() => expect(putSpy).toHaveBeenCalled())
   const savedSlots = putSpy.mock.calls[0][0]

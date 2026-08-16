@@ -966,6 +966,27 @@ export interface Mesocycle {
   volumeRecompute?: VolumeRecompute
   volumePerMuscle?: Record<string, VolumeProfile>
   days?: MesoDay[]
+  templateId?: string | null // the originating template this run was started from (null for legacy/direct runs)
+  closedAt?: string | null   // when this run was closed (archived); null while active/planned
+}
+
+// A reusable mesocycle blueprint (mezo-meyc): the wizard now saves a template first, then
+// starts a run from it (POST .../start) — the run carries the template's `id` as its
+// `templateId` and a closed run can `rerun` from the same template. `runCount` is the number
+// of runs ever started from this template (server-computed, read-only).
+export interface MesoTemplate {
+  id: string
+  title: string
+  shortTitle: string | null
+  goal: string | null
+  weeks: number
+  split: string | null
+  style: string | null
+  phaseCurve: MesoPhase[]
+  notes: string | null
+  volumePerMuscle: Record<string, VolumeBaseline> | null
+  days: MesoDay[]
+  runCount: number
 }
 
 export interface LastWeekSet { weight: number; reps: number; rir: number }

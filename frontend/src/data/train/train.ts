@@ -1,6 +1,7 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
   GoalPreset, SplitOption, MesoPhase, CustomWorkout, MesoVolumeArc, MuscleVolumeArc, VolumeArcWeek,
+  MesoTemplate,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
 
@@ -281,6 +282,141 @@ export const mesocycles: Mesocycle[] = [
 ]
 
 export const activeMeso: Mesocycle = mesocycles.find((m) => m.status === 'active')!
+
+// --- meso templates (mezo-meyc): reusable blueprints the wizard saves before starting a
+// run. Mirrors the backend's per-write invariants so mock parity holds: every exercise
+// carries a non-null id (fixed literal uuids here — the backend regenerates them on every
+// full update), every day's `muscle` is a string (never undefined; '' on rest days), and
+// `exercises` is always an array (never null), even on a day with none.
+export const mesoTemplatesMock: MesoTemplate[] = [
+  // Derived from the active `meso-hyp-04` fixture's days — the same PPL block, already run once.
+  {
+    id: 'a10e0000-0000-4000-8000-000000000000',
+    title: 'Hypertrophy 04 · Tavasz',
+    shortTitle: 'Hypertrophy 04',
+    goal: 'Felsőtest hypertrophy · izomtömeg építés',
+    weeks: 6,
+    split: 'Pull / Push / Legs · 5×/hét',
+    style: 'RP · 6 hét',
+    phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    notes: null,
+    volumePerMuscle: null,
+    runCount: 1,
+    days: [
+      {
+        day: 'Hét', type: 'Push', muscle: 'chest+shoulder+tricep',
+        exerciseCount: 5,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000002', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound', warning: 'Niggle-kíméletes verzió · cable variánssal helyettesítve' },
+          { id: 'a10e0000-0000-4000-8000-000000000004', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000005', name: 'Tricep Pushdown', muscle: 'triceps-medial', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Kedd', type: 'Legs A', muscle: 'quad+ham+glute',
+        exerciseCount: 4,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000006', name: 'Front Squat', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000007', name: 'Leg Curl', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000008', name: 'Walking Lunge', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 12, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000009', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 0, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Sze', type: 'Legs', muscle: 'quad+ham+glute',
+        exerciseCount: 6,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000010', name: 'Barbell Squat', muscle: 'quad', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000011', name: 'Romanian Deadlift', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000012', name: 'Leg Press', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000013', name: 'Leg Curl', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000014', name: 'Hip Thrust', muscle: 'glute', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000015', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 0, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Csü', type: 'Pull', muscle: 'back+bicep', muscleAccent: true,
+        exerciseCount: 5,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000016', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000017', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', warning: 'Pronated grif · csukló-kíméletes' },
+          { id: 'a10e0000-0000-4000-8000-000000000018', name: 'Cable Pull-Around', muscle: 'back-mid', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000019', name: 'Hammer Curl', muscle: 'biceps-brachialis', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000020', name: 'Face Pull', muscle: 'shoulder-rear', warmupSets: 2, workingSets: 3, repMin: 15, repMax: 20, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Pén', type: 'Push · light', muscle: 'chest+shoulder',
+        exerciseCount: 4,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000021', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000022', name: 'Cable Fly', muscle: 'chest-mid', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000023', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000024', name: 'Overhead Tricep Ext', muscle: 'triceps-long', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      { day: 'Szo', type: 'Volleyball · meccs', muscle: 'sport', exerciseCount: 0, exercises: [] },
+      { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+    ],
+  },
+  // A fresh, never-started template — no run yet.
+  {
+    id: 'b20f0000-0000-4000-8000-000000000000',
+    title: 'Upper/Lower Power',
+    shortTitle: 'Power Block',
+    goal: 'Erő + hypertrophy kombinált blokk',
+    weeks: 5,
+    split: 'Upper / Lower · 4×/hét',
+    style: 'Linear · 5 hét',
+    phaseCurve: ['MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    notes: null,
+    volumePerMuscle: null,
+    runCount: 0,
+    days: [
+      {
+        day: 'Hét', type: 'Upper A', muscle: 'chest+back',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound' },
+        ],
+      },
+      {
+        day: 'Kedd', type: 'Lower A', muscle: 'quad+ham',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000004', name: 'Barbell Squat', muscle: 'quad', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000005', name: 'Romanian Deadlift', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000006', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      { day: 'Sze', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+      {
+        day: 'Csü', type: 'Upper B', muscle: 'shoulder+bicep+tricep',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000007', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000008', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000009', name: 'Hammer Curl', muscle: 'biceps-brachialis', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Pén', type: 'Lower B', muscle: 'glute+calf',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000010', name: 'Hip Thrust', muscle: 'glute', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000011', name: 'Leg Press', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000012', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 0, type: 'isolation' },
+        ],
+      },
+      { day: 'Szo', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+      { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+    ],
+  },
+]
 
 // --- volume arc mock derivation (Phase B, Task B3) ---
 // Same planned-scaffold algorithm as the backend (VolumeArcService, spec DA7): week 1 starts

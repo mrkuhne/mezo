@@ -4,9 +4,13 @@ import type { components } from '@/data/_client/api.gen'
 // Contract types generated from api/openapi.yml — regenerate with `pnpm generate:api`.
 export type MesocycleResponse = components['schemas']['MesocycleResponse']
 export type SportSessionResponse = components['schemas']['SportSessionResponse']
-export type MesocycleCreateRequest = components['schemas']['MesocycleCreateRequest']
 export type GymExerciseInput = components['schemas']['GymExerciseInput']
 export type MesoDayResponse = components['schemas']['MesoDay']
+export type MesoDayInput = components['schemas']['MesoDayInput']
+export type MesoTemplateResponse = components['schemas']['MesoTemplateResponse']
+export type MesoTemplateUpsertRequest = components['schemas']['MesoTemplateUpsertRequest']
+export type MesoTemplateStartRequest = components['schemas']['MesoTemplateStartRequest']
+export type MesoRerunResponse = components['schemas']['MesoRerunResponse']
 export type WorkoutTodayResponse = components['schemas']['WorkoutTodayResponse']
 export type WorkoutInstanceResponse = components['schemas']['WorkoutInstanceResponse']
 export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
@@ -42,8 +46,21 @@ export type MesocycleVolumeArcResponse = components['schemas']['MesocycleVolumeA
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
   sportSessions: (): Promise<SportSessionResponse[]> => apiFetch<SportSessionResponse[]>('/api/train/sport-sessions'),
-  create: (body: MesocycleCreateRequest): Promise<MesocycleResponse> =>
-    apiFetch<MesocycleResponse>('/api/train/mesocycles', { method: 'POST', body: JSON.stringify(body) }),
+  rerunMesocycle: (id: string): Promise<MesoRerunResponse> =>
+    apiFetch<MesoRerunResponse>(`/api/train/mesocycles/${id}/rerun`, { method: 'POST' }),
+  mesoTemplates: (): Promise<MesoTemplateResponse[]> =>
+    apiFetch<MesoTemplateResponse[]>('/api/train/meso-templates'),
+  createMesoTemplate: (body: MesoTemplateUpsertRequest): Promise<MesoTemplateResponse> =>
+    apiFetch<MesoTemplateResponse>('/api/train/meso-templates', { method: 'POST', body: JSON.stringify(body) }),
+  updateMesoTemplate: (id: string, body: MesoTemplateUpsertRequest): Promise<MesoTemplateResponse> =>
+    apiFetch<MesoTemplateResponse>(`/api/train/meso-templates/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteMesoTemplate: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/train/meso-templates/${id}`, { method: 'DELETE' }),
+  startMesoTemplate: (id: string, body: MesoTemplateStartRequest): Promise<MesocycleResponse> =>
+    apiFetch<MesocycleResponse>(`/api/train/meso-templates/${id}/start`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   activate: (id: string): Promise<MesocycleResponse> =>
     apiFetch<MesocycleResponse>(`/api/train/mesocycles/${id}/activate`, { method: 'POST' }),
   close: (id: string): Promise<MesocycleResponse> =>

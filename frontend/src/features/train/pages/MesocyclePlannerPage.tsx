@@ -16,11 +16,11 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useTrain, useMesoTemplates } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, SplitOption } from '@/data/types'
-import type { MesocycleCreateRequest } from '@/data/train/trainApi'
+import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { huMonthDay } from '@/shared/lib/dates'
 import { DAY_ORDER, GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
 import { Icon } from '@/shared/ui/Icon'
@@ -46,7 +46,12 @@ const PAGE_TITLES = [
 
 export function MesocyclePlannerPage() {
   const navigate = useNavigate()
-  const { createMesocycle, mesoMutationPending, gymSlots, saveGymSchedule } = useTrain()
+  const { gymSlots, saveGymSchedule } = useTrain()
+  const { createTemplate, startTemplate } = useMesoTemplates()
+  // Minimal Task 5 rewire (mezo-meyc.1): the wizard now saves a template, then starts a run
+  // from it (two calls instead of one createMesocycle POST) — `saving` covers the whole
+  // two-step flow since neither mutation alone reflects it. Task 6 owns the real planner UX.
+  const [saving, setSaving] = useState(false)
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState<GoalPreset | null>(null)
   const [name, setName] = useState('')
@@ -183,13 +188,13 @@ export function MesocyclePlannerPage() {
 
   // Wizard state -> contract payload. All 7 template days travel (rest days too) so the
   // backend mirrors the seed/template shape; mock mode no-ops and just navigates (Phase 1).
+  // Two-step save (mezo-meyc.1): create the template, then start a run from it — replaces
+  // the old single createMesocycle POST now that the backend saves templates first.
   const saveMesocycle = (status: 'planned' | 'active') => {
-    const request: MesocycleCreateRequest = {
+    const request: MesoTemplateUpsertRequest = {
       title: name || `${goal?.label ?? 'Mesociklus'} · ${getSeason(startDate)}`,
       shortTitle: goal?.label,
-      status,
       goal: goal?.description,
-      startDate: startDateIso,
       weeks,
       split: split ? `${split.label} · ${days}×/hét` : `${days}×/hét`,
       style: goal?.style ?? `${weeks} hét`,
@@ -215,7 +220,14 @@ export function MesocyclePlannerPage() {
         .map((d) => ({ dayOfWeek: DAY_ORDER.indexOf(d as (typeof DAY_ORDER)[number]), time: timeForDay(d) }))
         .filter((s) => s.dayOfWeek >= 0),
     )
-    createMesocycle(request, { onSuccess: backToLibrary })
+    setSaving(true)
+    createTemplate(request)
+      .then((tpl) => startTemplate(tpl.id, { startDate: startDateIso, status }))
+      .then(backToLibrary)
+      // The QueryClient mutation cache already toasts every failed mutation (§7a) — swallow
+      // here only to stop the spinner + avoid an unhandled rejection; no UI logic is skipped.
+      .catch(() => {})
+      .finally(() => setSaving(false))
   }
 
   const canNext =
@@ -356,8 +368,8 @@ export function MesocyclePlannerPage() {
               type="button"
               className="cta-primary"
               onClick={() => saveMesocycle('planned')}
-              disabled={mesoMutationPending || !program}
-              style={{ padding: 14, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
+              disabled={saving || !program}
+              style={{ padding: 14, opacity: saving || !program ? 0.5 : 1 }}
             >
               <Icon name="check" size={16} />
               <span>Hozzáad mint tervezett</span>
@@ -365,9 +377,9 @@ export function MesocyclePlannerPage() {
             <button
               type="button"
               className="cta-ghost"
-              style={{ padding: 12, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
+              style={{ padding: 12, opacity: saving || !program ? 0.5 : 1 }}
               onClick={() => saveMesocycle('active')}
-              disabled={mesoMutationPending || !program}
+              disabled={saving || !program}
             >
               Aktiválás most · {startDate}
             </button>
