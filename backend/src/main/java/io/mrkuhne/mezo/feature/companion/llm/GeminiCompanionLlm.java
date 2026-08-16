@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.llm.GeminiUsageExtractor.UsageInfo;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -13,6 +15,9 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -91,7 +96,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public String complete(String systemPrompt, String userMessage,
+    public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
         // count arrives per-call via the GeminiRoundUsage tally (mezo-58ig).
@@ -99,7 +104,8 @@ public class GeminiCompanionLlm implements CompanionLlm {
         CallSpec spec = CallSpec.of(kind, chatModel(), systemPrompt, userMessage);
         GeminiRoundUsage tally = new GeminiRoundUsage();
         return recorded(spec, tally,
-            () -> request(systemPrompt, userMessage, tools, toolContext, tally).call().chatResponse());
+            () -> request(systemPrompt, history, userMessage, tools, toolContext, tally)
+                .call().chatResponse());
     }
 
     @Override
@@ -160,7 +166,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
      * generated up to that point even though neither complete nor error will ever fire.
      */
     @Override
-    public Flux<String> stream(String systemPrompt, String userMessage,
+    public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
         CallSpec spec = new CallSpec(
             CallKind.CHAT_STREAM, chatModel(), systemPrompt, userMessage, null, null, null, true);
@@ -172,7 +178,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
             AtomicBoolean recordedOnce = new AtomicBoolean(false);
             GeminiRoundUsage tally = new GeminiRoundUsage();
             StringBuilder answer = new StringBuilder();
-            return request(systemPrompt, userMessage, tools, toolContext, tally).stream().chatResponse()
+            return request(systemPrompt, history, userMessage, tools, toolContext, tally).stream().chatResponse()
                 .doOnNext(response -> {
                     lastChunk.set(response);
                     String text = textOf(response);
@@ -284,16 +290,29 @@ public class GeminiCompanionLlm implements CompanionLlm {
             .context(context);
     }
 
-    private ChatClient.ChatClientRequestSpec request(String systemPrompt, String userMessage,
-                                                     List<ToolCallback> tools, Map<String, Object> toolContext,
+    private ChatClient.ChatClientRequestSpec request(String systemPrompt, List<Turn> history,
+                                                     String userMessage, List<ToolCallback> tools,
+                                                     Map<String, Object> toolContext,
                                                      GeminiRoundUsage tally) {
-        ChatClient.ChatClientRequestSpec spec = chatClient.prompt().system(systemPrompt).user(userMessage)
+        ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
+            .system(systemPrompt)
+            .messages(toMessages(history))
+            .user(userMessage)
             .advisors(a -> a.param(GeminiRoundUsage.CONTEXT_KEY, tally));
         if (!tools.isEmpty()) {
             // tools(Object...) is the unified 2.0 registration API (toolCallbacks(..) is deprecated)
             spec = spec.tools((Object[]) tools.toArray(ToolCallback[]::new)).toolContext(toolContext);
         }
         return spec;
+    }
+
+    /** A port provider-független Turn-jei -> spring-ai üzenetek. Üres history -> üres lista. */
+    private static List<Message> toMessages(List<Turn> history) {
+        return history.stream()
+            .map(turn -> turn.role() == Role.USER
+                ? (Message) new UserMessage(turn.content())
+                : new AssistantMessage(turn.content()))
+            .toList();
     }
 
     private String chatModel() {

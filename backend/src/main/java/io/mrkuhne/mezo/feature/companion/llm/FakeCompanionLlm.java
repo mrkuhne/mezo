@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
@@ -219,7 +220,7 @@ public class FakeCompanionLlm implements CompanionLlm {
             Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
     @Override
-    public String complete(String systemPrompt, String userMessage,
+    public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
@@ -350,7 +351,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (mealCoach.find()) {
             return mealCoach.group(1);
         }
-        return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
+        return PREFIX + " system=[" + systemPrompt + "]"
+                + " history=[" + ChatHistory.render(history) + "]"
+                + " user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
     }
 
@@ -452,7 +455,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public Flux<String> stream(String systemPrompt, String userMessage,
+    public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_STREAM)) {
             return Flux.concat(
@@ -462,6 +465,7 @@ public class FakeCompanionLlm implements CompanionLlm {
         List<String> chunks = new ArrayList<>(List.of(
             PREFIX,
             " system=[" + systemPrompt + "]",
+            " history=[" + ChatHistory.render(history) + "]",
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);

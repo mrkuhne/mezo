@@ -52,6 +52,7 @@ class CompanionLlmFakeIT extends AbstractIntegrationTest {
         assertThat(chunks).containsExactly(
             FakeCompanionLlm.PREFIX,
             " system=[rendszer-prompt]",
+            " history=[]",
             " user=[szia mezo]");
     }
 
