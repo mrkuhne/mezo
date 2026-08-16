@@ -196,6 +196,19 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
         assertThat(message.getKind()).isEqualTo(CompanionMessageEntity.KIND_EVENING);
         assertThat(message.getContent().eyebrow()).isEqualTo("Napzárás");
         assertThat(message.getContent().body()).containsExactly("Szép napot zártál.");
+        assertThat(message.getContent().refs()).isEmpty();
+        assertThat(message.getGeneratedAt()).isNotNull();
+    }
+
+    @Test
+    void testGenerateWindow_shouldReturnNull_whenAnswerBlank() {
+        UUID user = userPopulator.createUser("midday-blank@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(user, DAY, "12:00", 3, 2, "[fake-heartbeat:]");
+
+        assertThat(companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_MIDDAY))
+                .isNull();
+        assertThat(companionMessageRepository.count()).isZero();
     }
 
     @Test

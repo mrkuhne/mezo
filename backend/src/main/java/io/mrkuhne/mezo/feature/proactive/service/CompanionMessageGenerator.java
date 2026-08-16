@@ -120,8 +120,8 @@ public class CompanionMessageGenerator {
             + "Írj rövid (2-3 mondatos), magyar napközbeni jegyzetet Danielnek társ-szemszögből, "
             + "kizárólag a megadott mai állapotból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
             + "déli (nudge) esetén a nap hátralévő részére adj egy konkrét, gyengéd fókuszt; esti "
-            + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI BRIEFING blokk, "
-            + "annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
+            + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI KORÁBBI "
+            + "ÜZENETEK blokk, annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
             + "adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi "
             + "döntés. Sima folyószöveggel válaszolj, markdown és felsorolás nélkül.";
 
