@@ -17,18 +17,19 @@ class TurnVerdictCheckIT extends AbstractIntegrationTest {
 
     @Test
     void testCheck_shouldReturnNoViolations_whenAnswerIsClean() {
-        assertThat(verdictCheck.check("PROMPT", "kérdés", "tiszta válasz", List.of())).isEmpty();
+        assertThat(verdictCheck.check("PROMPT", List.of(), "kérdés", "tiszta válasz", List.of())).isEmpty();
     }
 
     @Test
     void testCheck_shouldReturnViolation_whenFakeScriptsRedundancy() {
         List<AdvisorViolation> violations =
-                verdictCheck.check("PROMPT", "kérdés", "válasz [fake-violate]", List.of());
+                verdictCheck.check("PROMPT", List.of(), "kérdés", "válasz [fake-violate]", List.of());
         assertThat(violations).extracting(AdvisorViolation::check).containsExactly("redundancy");
     }
 
     @Test
     void testCheck_shouldFailOpen_whenVerdictIsNotJson() {
-        assertThat(verdictCheck.check("PROMPT", "kérdés", "válasz [fake-verdict-broken]", List.of())).isEmpty();
+        assertThat(verdictCheck.check("PROMPT", List.of(), "kérdés", "válasz [fake-verdict-broken]", List.of()))
+                .isEmpty();
     }
 }

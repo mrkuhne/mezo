@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisedAnswer;
 import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -72,8 +74,6 @@ public class ChatService {
             - minták, „mit vettél észre rólam" → get_insights (csak megerősített minták; predikció/kísérlet még nem elérhető)
             - hasonló korábbi nap → find_similar_past_days""";
 
-    static final String HISTORY_HEADER = "\n\nEddigi beszélgetés (legrégebbitől a legújabbig):\n";
-
     private final AiConversationRepository conversationRepository;
     private final AiMessageRepository messageRepository;
     private final ConversationService conversationService;
@@ -89,7 +89,8 @@ public class ChatService {
     private final LlmCallContextHolder llmCallContextHolder;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction. */
-    public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt, String userContent) {}
+    public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
+                               List<Turn> history, String userContent) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -104,12 +105,12 @@ public class ChatService {
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + knowledgeFactService.renderPromptBlock(userId)
-                + knowledgeFactService.renderNewPatternFactsBlock(userId)
-                + renderHistory(loadWindow(userId, conversationId));
+                + knowledgeFactService.renderNewPatternFactsBlock(userId);
+        List<Turn> history = toTurns(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
         touchConversation(conversation, request.getContent());
-        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, request.getContent());
+        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent());
     }
 
     /**
@@ -137,12 +138,13 @@ public class ChatService {
 
         // Window BEFORE persisting the new message — the current content travels as the user param.
         // Prompt order: voice -> snapshot (V0.3) -> top-N facts (V1.1) -> fresh pattern-facts
-        // acknowledgment (V3.3) -> history.
+        // acknowledgment (V3.3). The history travels as real prior messages (mezo-q71s), not a
+        // transcript inside the system prompt.
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + knowledgeFactService.renderPromptBlock(userId)
-                + knowledgeFactService.renderNewPatternFactsBlock(userId)
-                + renderHistory(loadWindow(userId, conversationId));
+                + knowledgeFactService.renderNewPatternFactsBlock(userId);
+        List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
@@ -158,13 +160,13 @@ public class ChatService {
         if (chain != null) {
             // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
             AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
-                    () -> chain.complete(systemPrompt, request.getContent(),
+                    () -> chain.complete(systemPrompt, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
             answer = advised.answer();
             degraded = advised.degraded();
         } else {
             answer = llmCallContextHolder.runWith(turnContext,
-                    () -> companionLlm.complete(systemPrompt, request.getContent(),
+                    () -> companionLlm.complete(systemPrompt, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
@@ -184,17 +186,13 @@ public class ChatService {
                 .reversed();
     }
 
-    private String renderHistory(List<AiMessageEntity> window) {
-        if (window.isEmpty()) {
-            return "";
-        }
-        StringBuilder history = new StringBuilder(HISTORY_HEADER);
-        for (AiMessageEntity message : window) {
-            history.append(AiMessageEntity.ROLE_USER.equals(message.getRole()) ? "Daniel: " : "Mezo: ")
-                    .append(message.getContent())
-                    .append('\n');
-        }
-        return history.toString();
+    /** Az ablak entitásai -> a port provider-független Turn-jei, legrégebbitől a legújabbig. */
+    private static List<Turn> toTurns(List<AiMessageEntity> window) {
+        return window.stream()
+                .map(message -> new Turn(
+                        AiMessageEntity.ROLE_USER.equals(message.getRole()) ? Role.USER : Role.ASSISTANT,
+                        message.getContent()))
+                .toList();
     }
 
     private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,

@@ -141,7 +141,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndHistory_whenSending() {
+    void testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndFacts_whenSending() {
         UUID userId = databasePopulator.populateUser("chat-snapshot@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
@@ -151,17 +151,15 @@ class ChatServiceIT extends AbstractIntegrationTest {
         String echoed = answer.getContent();
         int voice = echoed.indexOf("Te vagy a mezo");
         int snapshot = echoed.indexOf("AKTUÁLIS ÁLLAPOT");
-        int history = echoed.indexOf("Eddigi beszélgetés");
         assertThat(voice).isPositive();
         assertThat(snapshot).isGreaterThan(voice);
-        assertThat(history).isGreaterThan(snapshot);
         assertThat(echoed).contains("[Profil]").contains("[Regeneráció]");
         // the snapshot renders today's date
         assertThat(echoed).contains("pillanatkép — " + java.time.LocalDate.now());
     }
 
     @Test
-    void testSendMessage_shouldInjectFactsBetweenSnapshotAndHistory_whenConfirmedFactsExist() {
+    void testSendMessage_shouldInjectFactsAfterSnapshot_whenConfirmedFactsExist() {
         UUID userId = databasePopulator.populateUser("chat-facts@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
@@ -173,10 +171,8 @@ class ChatServiceIT extends AbstractIntegrationTest {
         String echoed = answer.getContent();
         int snapshot = echoed.indexOf("AKTUÁLIS ÁLLAPOT");
         int facts = echoed.indexOf("MEGERŐSÍTETT TÉNYEK");
-        int history = echoed.indexOf("Eddigi beszélgetés");
         assertThat(snapshot).isPositive();
         assertThat(facts).isGreaterThan(snapshot);
-        assertThat(history).isGreaterThan(facts);
         assertThat(echoed).contains("- (egészség) Laktózérzékeny");
         assertThat(echoed).doesNotContain("Kikapcsolt tény");
     }
@@ -233,7 +229,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(answer.getContent()).contains("Te vagy a mezo");
         assertThat(answer.getContent()).contains("retatrutid");
         assertThat(answer.getContent()).contains("user=[szia mezo]");
-        assertThat(answer.getContent()).doesNotContain("Eddigi beszélgetés");
+        assertThat(answer.getContent()).contains("history=[]");
     }
 
     @Test
@@ -302,5 +298,30 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> chatService.sendMessage(mine, foreign.getId(), request("hahó")))
                 .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testSendMessage_shouldKeepHistoryOutOfSystemPrompt_whenPriorTurnsExist() {
+        UUID userId = databasePopulator.populateUser("chat-separation@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_ASSISTANT, "korábbi válasz");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+
+        // A fake echója a hívó összeállítását tükrözi: system=[...] history=[...] user=[...]
+        String echoed = answer.getContent();
+        String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
+        String historyBlock = echoed.substring(echoed.indexOf("history=["), echoed.indexOf("] user=["));
+
+        // Ez a teszt bukik el, ha valaki visszacsempészi a transcriptet a system promptba.
+        assertThat(systemBlock).doesNotContain("Eddigi beszélgetés");
+        assertThat(systemBlock).doesNotContain("Daniel: korábbi kérdés");
+        assertThat(systemBlock).doesNotContain("Mezo: korábbi válasz");
+        assertThat(historyBlock).contains("Daniel: korábbi kérdés");
+        assertThat(historyBlock).contains("Mezo: korábbi válasz");
+        // Az aktuális üzenet a user-paraméter, nem a history része.
+        assertThat(historyBlock).doesNotContain("Daniel: és most?");
+        assertThat(echoed).contains("user=[és most?]");
     }
 }

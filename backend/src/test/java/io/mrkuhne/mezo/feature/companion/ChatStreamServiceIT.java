@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     @Autowired private AiConversationRepository conversationRepository;
     @Autowired private AiMessageRepository messageRepository;
     @Autowired private AiConversationPopulator conversationPopulator;
+    @Autowired private AiMessagePopulator messagePopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
 
@@ -206,5 +208,32 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
 
         assertThat(events).noneMatch(e -> "tool".equals(e.event()));
         assertThat(events.getLast().event()).isEqualTo("done");
+    }
+
+    @Test
+    void testStreamMessage_shouldPassHistoryAsPriorMessages_whenPriorTurnsExist() {
+        UUID userId = databasePopulator.populateUser("stream-history@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+
+        // A delta-eseményekből összefűzött teljes szöveg — a fájl meglévő mintája szerint.
+        String streamed = collectDeltas(userId, conversation.getId(), "és most?");
+
+        String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
+        String historyBlock = streamed.substring(streamed.indexOf("history=["), streamed.indexOf("] user=["));
+        assertThat(systemBlock).doesNotContain("Daniel: korábbi kérdés");
+        assertThat(historyBlock).contains("Daniel: korábbi kérdés");
+    }
+
+    /** The delta text, concatenated in order — the same map+reduce the happy-path test above uses,
+     *  filtered by event type instead of by index so a scripted 'tool' event never sneaks in. */
+    private String collectDeltas(UUID userId, UUID conversationId, String content) {
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversationId, request(content))
+                .collectList().block();
+        return events.stream()
+                .filter(e -> "delta".equals(e.event()))
+                .map(e -> ((StreamDelta) e.data()).getText())
+                .reduce("", String::concat);
     }
 }

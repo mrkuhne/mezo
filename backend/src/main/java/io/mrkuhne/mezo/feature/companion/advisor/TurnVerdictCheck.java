@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.advisor;
 
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -45,9 +47,12 @@ public class TurnVerdictCheck {
 
     record TurnVerdict(boolean redundantQuestion, boolean ungroundedClaim, String reason) {}
 
-    public List<AdvisorViolation> check(
-            String turnSystemPrompt, String userMessage, String answer, List<String> toolCallNames) {
+    public List<AdvisorViolation> check(String turnSystemPrompt, List<Turn> history,
+            String userMessage, String answer, List<String> toolCallNames) {
+        // A history már NEM része a system promptnak (mezo-q71s) — külön kell renderelni, különben
+        // a bíráló megvakul a beszélgetésre és hamis redundancia/grounding ítéleteket hoz.
         String payload = "KONTEXTUS:\n" + turnSystemPrompt
+                + ChatHistory.render(history)
                 + "\n\nESZKÖZHÍVÁSOK: " + (toolCallNames.isEmpty() ? "nincs" : String.join(", ", toolCallNames))
                 + "\n\nDaniel üzenete: " + userMessage
                 + "\n\nMEZO VÁLASZA:\n" + answer;
