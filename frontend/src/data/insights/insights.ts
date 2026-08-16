@@ -99,7 +99,7 @@ export const memoir: Memoir = {
 }
 
 export const anniversaryNote =
-  'Egy hónapja kezdtük a gyógyszeres protokollt. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
+  'Egy hónapja kezdtük tudatosan korábbra tolni a vacsorát. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
 
 export const predictions: Prediction[] = [
   {
@@ -109,7 +109,7 @@ export const predictions: Prediction[] = [
     status: 'pending',
     date: 'Máj 22',
     basis:
-      'Március óta a 102.5 stabil. Múlt heti RIR 2 + gyógyszer-ciklus alacsony étvágy + 7.5h alvás kombináció historikusan +5kg-os emelést támogatott.',
+      'Március óta a 102.5 stabil. Múlt heti RIR 2 + 7.5h alvás kombináció historikusan +5kg-os emelést támogatott.',
   },
   {
     id: 'pred2',
@@ -117,7 +117,7 @@ export const predictions: Prediction[] = [
     confidence: 0.81,
     status: 'pending',
     date: 'Máj 26',
-    basis: 'Hét 20 átlag 78.6kg. Gyógyszer-ciklus D3-D7 alacsonyabb intake. 7-day MA trend.',
+    basis: 'Hét 20 átlag 78.6kg. Hét közepén jellemzően alacsonyabb intake. 7-day MA trend.',
   },
   {
     id: 'pred3',
@@ -158,7 +158,7 @@ export const experiments: Experiment[] = [
   },
 ]
 
-/** A monitor demo-pillanatképe (mezo-viqs) — mind az 5 verdikt látszik a 8 katalógus-páron. */
+/** A monitor demo-pillanatképe (mezo-viqs) — a 8 katalógus-páron 4 verdikt látszik (live, few_days, no_data, degenerate). */
 export const patternMonitor: PatternMonitor = {
   windowFrom: '2026-06-13',
   windowTo: '2026-08-10',
@@ -276,8 +276,8 @@ export const patternMonitor: PatternMonitor = {
       whenPositiveHu: 'a ciklus későbbi napjain {erősség} többet ettél',
       whenNegativeHu: 'a ciklus későbbi napjain {erősség} kevesebbet ettél',
       metricADomain: 'fuel', metricBDomain: 'fuel',
-      verdict: 'frozen', alignedDays: 28, missingDays: null, bottleneckMetricKey: null,
-      r: 0.55, n: 28, p: 0.002, status: 'confirmed',
+      verdict: 'no_data', alignedDays: 0, missingDays: null, bottleneckMetricKey: 'medication-cycle-day',
+      r: null, n: null, p: null, status: null,
     },
   ],
   // Deliberately NOT ascending by coveredDays (a wire response carries no ordering guarantee) —
@@ -286,7 +286,7 @@ export const patternMonitor: PatternMonitor = {
   metrics: [
     { key: 'sleep-quality', label: 'alvásminőség', sourceHu: 'Alvás-napló', domain: 'sleep', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
     { key: 'training-rpe', label: 'edzés-RPE', sourceHu: 'Sport- és futás-napló (RPE)', domain: 'train', coveredDays: 12, windowDays: 60, lastDayWithData: '2026-08-09', pairCount: 2 },
-    { key: 'medication-cycle-day', label: 'Gyógyszer-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'medication-cycle-day', label: 'Gyógyszer-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'sport-load-min', label: 'sportterhelés', sourceHu: 'Sport-napló (perc)', domain: 'train', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'checkin-stress', label: 'stressz-szint', sourceHu: 'Check-in sheet', domain: 'mind', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'late-meal-hour', label: 'utolsó étkezés ideje', sourceHu: 'Étkezés-napló (utolsó étkezés)', domain: 'fuel', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },

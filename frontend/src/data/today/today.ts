@@ -30,7 +30,7 @@ export const briefing: Briefing = {
   body: [
     {
       type: 'p',
-      text: 'Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, a gyógyszer-beadás óta vagyunk 72h-nál, étvágy ma még magas lesz.',
+      text: 'Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, a kemény szett után az étvágyad ma még magas lesz.',
     },
     {
       type: 'p',
@@ -45,7 +45,6 @@ export const briefing: Briefing = {
     { kind: 'Workout', id: 'w-2026-05-21', label: 'Push Day · Tegnap' },
     { kind: 'PR', id: 'pr-2026-03-04', label: 'Chest Row 105.8 · Márc 4' },
     { kind: 'Pattern', id: 'p-late-carb-sleep', label: 'Késő szénhidrát ↔ alvás' },
-    { kind: 'Medication', id: 'med-2026-05-19', label: 'Gyógyszer · Hétfő' },
   ],
   confidence: 0.88,
 }

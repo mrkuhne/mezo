@@ -54,6 +54,8 @@ describe('MotorPage (mock mode)', () => {
     }
   }
 
+  // 'frozen' is no longer asserted here: the medication pair was the seed's only frozen entry,
+  // and it now permanently reads no_data (mezo-lwmq) — no fixture pair carries 'frozen' any more.
   test('renders every verdict with its honest sentence (nudge on few_days)', () => {
     renderPage()
     openAllSections()
@@ -64,9 +66,6 @@ describe('MotorPage (mock mode)', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText('A(z) vízbevitel nem mozdul az ablakban — így nincs mit korrelálni.'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('Te ítélted meg (megerősítve) — az éjszakai job nem számolja újra.'),
     ).toBeInTheDocument()
   })
 
@@ -130,12 +129,19 @@ describe('MotorPage (mock mode)', () => {
   test('coverage rings: waiting label on live-less metrics, expand reveals source + pairs', () => {
     renderPage()
     const rows = screen.getAllByTestId('coverage-ring-row')
-    // a legvékonyabb elöl: sportterhelés (0/60), egyetlen párja no_data → "vár rá"
-    expect(within(rows[0]).getByText('sportterhelés')).toBeInTheDocument()
+    // a legvékonyabb elöl, holtversenyben (0/60): Gyógyszer-ciklusnap (a seed-tömbben előbb áll),
+    // majd sportterhelés — mindkettő egyetlen párja no_data → "vár rá"
+    expect(within(rows[0]).getByText('Gyógyszer-ciklusnap')).toBeInTheDocument()
     expect(within(rows[0]).getByText(/1 pár vár rá/)).toBeInTheDocument()
     fireEvent.click(rows[0])
-    expect(within(rows[0]).getByText('Sport-napló (perc)')).toBeInTheDocument()
-    expect(within(rows[0]).getByText('Elveszi a sport a másnapi gym-erőt?')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('Gyógyszer-napló')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('A ciklus vége felé nő az étvágyad?')).toBeInTheDocument()
+
+    expect(within(rows[1]).getByText('sportterhelés')).toBeInTheDocument()
+    expect(within(rows[1]).getByText(/1 pár vár rá/)).toBeInTheDocument()
+    fireEvent.click(rows[1])
+    expect(within(rows[1]).getByText('Sport-napló (perc)')).toBeInTheDocument()
+    expect(within(rows[1]).getByText('Elveszi a sport a másnapi gym-erőt?')).toBeInTheDocument()
     // az alvásminőségnek van élő párja → sima "3 párban"
     const sleepRow = rows.find((r) => within(r).queryByText('alvásminőség'))!
     expect(within(sleepRow).getByText(/3 párban él/)).toBeInTheDocument()
@@ -147,6 +153,7 @@ describe('MotorPage (mock mode)', () => {
     renderPage()
     const labels = screen.getAllByTestId('coverage-label').map((el) => el.textContent)
     expect(labels).toEqual([
+      'Gyógyszer-ciklusnap',
       'sportterhelés',
       'gym-volumen',
       'reggeli súlyváltozás',
@@ -155,7 +162,6 @@ describe('MotorPage (mock mode)', () => {
       'vízbevitel',
       'alváshossz',
       'napi kalória',
-      'Gyógyszer-ciklusnap',
       'stressz-szint',
       'energia-szint',
       'alvásminőség',
