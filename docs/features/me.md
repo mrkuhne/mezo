@@ -282,6 +282,21 @@ The Profil **`GrowthSummaryCard`** and the **`/me/growth` page** are the Me-side
 ### 5.8 Me ↔ Notification platform (wired, N1+N2+N3 all shipped)
 `Értesítés` is Me's only surface for the cross-cutting **notification** platform layer ([`_platform-notifications.md`](_platform-notifications.md), `mezo-h4wp.6.1`/`.6.2`/`.6.3`) — it owns no notification data itself, only drives the settings UI. **Contracts crossing the seam:** `PushSubscriptionState` (N1, unchanged — incl. `error: PushErrorCode | null`) from `usePushSubscription()`; `NotificationPrefView[]` (N2) from `useNotificationPrefs()` (`data/notification/notificationPrefHooks.ts`, a normal `useDualQuery` read, unlike N1's device-owned hook); the page also composes `useCheckins`/`useStack`/`useProtocol`/`useSleepGoal`/`useTrain`/`useRunning`/`useRitualDay`/`useMedication` (all already used elsewhere in Me/Fuel/Train) purely to derive the preview header + per-row sub-lines client-side — no new reads exist just for this page. No other Me view reads or writes push state. The dispatcher itself (`NotificationDispatchJob`, reading the proactive tables + Today/Ritual/Train anchors) lives entirely in `feature/notification` — see the platform doc §3/§5/§9.
 
+### 5.9 Sleep/Weight logging → Proactive companion feed (wired, one-way OUT, `mezo-gst9`)
+`SleepLogService.log`/`WeightLogService.log` (`feature/biometrics/{sleep,weight}/service/`) each publish a
+`SleepLogSavedEvent{userId, date}`/`WeightLogSavedEvent{userId, date}` via `ApplicationEventPublisher`, right
+before returning, **inside** the `@Transactional` write method — so a listener bound to `AFTER_COMMIT`
+only ever sees a log that actually persisted. `feature/proactive`'s `CompanionMessageEventListener`
+(`@Async` off the request thread) is the sole consumer: it generates the day's `sleep`/`weight`
+companion-feed reaction message within moments of the log landing, gated on freshness (a backfilled
+date never triggers). **This is a fire-and-forget, one-way dependency** — `feature/biometrics` defines
+and publishes the event with no import of `feature/proactive` at all (a plain Spring
+`ApplicationEvent`, not a direct method call), so the write path's latency and success are completely
+unaffected by whether the listener exists, is slow, or fails. Neither `Súly` nor `Alvás` renders
+anything from this seam — the reaction message surfaces on **Today**'s MezoChip thread, not here. See
+[proactive.md §1/§3](proactive.md) (`CompanionMessageEventListener`) and [today.md](today.md)
+(`useCompanionFeed`) for the consuming side.
+
 ## 6. How to use it (consume)
 
 Import the hook from `@/data/hooks` (never deeper) and destructure. Always ghost-guard real mode (empty arrays / `lastNight === undefined` on first paint).

@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-14
+updated: 2026-08-16
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -794,6 +794,22 @@ phase; an active med with no dose renders `nincs rögzített dózis` — honest 
 `snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
 features; ArchUnit's cycle rule guards the reverse).
+
+**The biometrics-free variant (companion-feed, `mezo-gst9`).** `renderWithoutBiometrics(userId,
+today)` is a second entry point alongside `render`, used ONLY by
+`feature/proactive/service/CompanionMessageGenerator.generateMorning`. It composes the SAME eight
+blocks in the SAME order, but `profileBlock`/`recoveryBlock` each take a `withWeight`/`withSleep`
+boolean: `render` passes `true` (the full `[Profil]` mérés+trend line, the full `[Regeneráció]`
+sleep line); `renderWithoutBiometrics` passes `false`, so `[Profil]` stops after the height/age/sex
+clause (no `mérés:`/`súlytrend:` at all) and `[Regeneráció]` renders only the latest check-in (no
+sleep line). This exists because the companion-feed `morning` message is generated BEFORE the
+day's sleep/weight can be logged — the design decision (spec §3) is that the morning message must
+never discuss sleep or weight at all, and a prompt instruction alone can't guarantee that (the
+model still sees and could still leak numbers that are merely "please don't mention" in a payload
+it can read). Stripping the two blocks **at the source** removes the leak vector structurally
+instead of relying on prompt discipline. Every OTHER companion-feed kind (`sleep`/`weight`/
+`midday`/`evening`) calls the ordinary `render` — only `morning` is biometrics-free. See
+[proactive.md §1/§3](proactive.md) for the generator side.
 
 **The knowledge-fact injection (V1.1).** `KnowledgeFactService.renderPromptBlock(userId)`
 (`service/KnowledgeFactService.java`) loads the top-N (`mezo.companion.facts.top-n`)

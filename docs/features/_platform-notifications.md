@@ -32,8 +32,10 @@ related: [proactive, today, ritual, me, fuel, _platform-api-backend]
 
 ## 1. Summary
 
-mezo's proactive layer (`briefing`/`heartbeat_note`/`weekly_suggestion`/`memoir`, see
-[`proactive.md`](proactive.md)) generates content on crons; this platform layer delivers it — plus a
+mezo's proactive layer (`companion_message`/`weekly_suggestion`/`memoir` — `companion_message`
+replaced the retired `briefing`/`heartbeat_note` tables, `mezo-gst9`; see
+[`proactive.md`](proactive.md)) generates content on crons (+ two event-triggered kinds); this
+platform layer delivers it — plus a
 second feed of time-anchored reminders the app's own data already implies (gym start, sleep wind-down
 + lights-out, the medication cycle day, the 4 daily check-ins, the fuel/stack slots) — to Daniel's
 iPhone **with the app closed**. It is a Web Push (RFC 8030/8291/8292) stack the backend owns end to

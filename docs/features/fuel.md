@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-08-12
+updated: 2026-08-16
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel

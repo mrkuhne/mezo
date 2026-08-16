@@ -1,15 +1,15 @@
 ---
-title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
+title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-14
-tags: [proactive, briefing, ai, llm, backend, phase-4]
+updated: 2026-08-16
+tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607061100_mezo-h4wp.1_create_briefing.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202608151200_mezo-gst9_create_companion_message.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071800_mezo-h4wp.5_create_heartbeat_note.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
@@ -18,115 +18,162 @@ key_files:
 related: [companion, today, insights, train, _platform-api-backend, _platform-notifications]
 ---
 
-# Proactive layer (briefing, weekly prose, heartbeat, predictions) — Feature Documentation
+# Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
 
-> One-line: the Phase-4 layer where the companion **speaks first**. The **B stage is complete** and
-> the **W stage („ír rólam hetente") is now COMPLETE — W1 (weeklySuggestion prose) + W2 (weekly
-> Memoir) are both LIVE**. The morning briefing runs end-to-end: a `feature/proactive` package
-> (behind `mezo.feature.proactive.enabled`, dual-gated with the companion switch) with a `briefing`
-> table, a pure-code+one-LLM-call `BriefingGenerator`, a dawn `BriefingJob` cron, sleep-triggered
-> capped regeneration on the read path, and a `GET /api/proactive/briefing` the **Today card now
-> renders** — the companion's own morning words, zero demo copy (the „Demo tartalom" label survives
-> only as the honest fallback). **W1** adds a second surface: a `weekly_suggestion` table + a
-> **smart-tier** `WeeklySuggestionGenerator`, a Monday-06:00 `WeeklySuggestionJob`, and a lazy
-> `GET /api/proactive/weekly-suggestion` the **Insights Weekly „heti tervjavaslat" card now renders**
-> in real mode (404 = the FE's honest placeholder). **W2** adds a third surface: a `memoir` table
-> (title + body + typed-jsonb `anchors`) + a **smart-tier** `MemoirGenerator`, a **Sunday-19:00**
-> `MemoirJob`, and a lazy `GET /api/proactive/memoir` (latest row, else generate the LAST COMPLETED
-> week) the **Insights Memoir tab now un-ghosts** in real mode (404 = the FE's honest „készül"
-> state). **H1** opens the H stage („napközben is jelen van"): a `heartbeat_note` table (user+day+
-> window identity) + a **cheap-tier** `HeartbeatGenerator`, a two-window `HeartbeatJob` (midday
-> 12:30 nudge + evening 20:30 closing, config crons), and a lazy `GET /api/proactive/heartbeat`
-> that generates the **latest already-elapsed window** of today on a miss — the **Today page gains
-> a `CompanionNoteCard`** (honest absence: no card). **P1** opens the P stage („előre lát"): a
-> `prediction` table (pattern-grounded, code-set validity windows, nullable confidence) + a
-> **smart-tier** `PredictionGenerator`, a weekly `PredictionJob` + a **deterministic daily
-> validation** run, and a list `GET /api/proactive/prediction` that **un-ghosts the Insights
-> Predictions tab** (real dual-mode, „tanulom" on null confidence, honest derived accuracy header).
-> **Status: backend 🟢 B1.2 + 🟢 W1 + 🟢 W2 + 🟢 H1 + 🟢 P1 · FE 🟢 B1.2 (Today card real) +
-> 🟢 W1 (Weekly card real, inert buttons hidden in live) + 🟢 W2 (Memoir tab real, demo extras
-> mock-only) + 🟢 H1 (CompanionNoteCard on Today) + 🟢 P1 (Predictions tab real, un-ghosted) —
-> with the briefing the IDENT-3 in-app rhythm (≥3 touches/day) is delivered and the first Insights
-> forecast surface is honest.** The four value stages (B briefing → W weekly prose → H heartbeat →
-> P predictions) and the 8-slice map live in the roadmap; this doc tracks **what exists now**.
+> One-line: the Phase-4 layer where the companion **speaks first**. **The original B stage (dawn
+> briefing) and H stage (in-day heartbeat) were REDESIGNED into a single event/cron-driven
+> "companion feed" (`mezo-gst9`, 2026-08-15 design doc,
+> [`specs/2026-08-15-companion-feed-design.md`](../superpowers/specs/2026-08-15-companion-feed-design.md)).**
+> The old `briefing` + `heartbeat_note` tables and their generators/jobs/read-path staleness
+> machinery are GONE (dropped, no data migration — the disposable generated rows were never worth
+> preserving). One new table, `companion_message`, holds **five kinds**: `morning` (dawn cron, the
+> briefing's successor — sleep/weight-free by construction, spec §3), `sleep` (fired by a sleep-log
+> event), `weight` (fired by a weight-log event), and `midday`/`evening` (the heartbeat's two window
+> crons, ported near-verbatim). A `CompanionMessageGenerator` with one method per kind, a
+> `CompanionMessageJob` (3 crons: dawn/midday/evening) + a `CompanionMessageEventListener`
+> (`@Async` `AFTER_COMMIT` on the sleep/weight log services' own events), and a unified
+> `GET /api/proactive/feed?date=` (lazy miss-recovery for the cron kinds, `200 []` honest empty —
+> never 404, a list endpoint) replace the old `briefing`/`heartbeat` read paths end to end. The
+> **Today MezoChip thread now reads this feed** (`useCompanionFeed`, 60s poll in real mode) — the
+> companion's own words, zero demo copy except an honestly-labelled fallback when the day's
+> `morning` message hasn't landed yet. **The sleep-triggered "regen" mechanism the old briefing had
+> is RETIRED, not ported** — event-triggered generation means the `sleep`/`weight` messages are
+> already grounded in fresh data at generation time, so there is nothing left to correct after the
+> fact (§9 decision retired-regen). **W1/W2 (`ír rólam hetente`) remain LIVE and UNCHANGED** —
+> weeklySuggestion prose + weekly Memoir. **P1/P2 (`előre lát`) remain LIVE and UNCHANGED** —
+> pattern-grounded predictions + N=1 experiments. **HBWI (workout challenges) remains LIVE and
+> UNCHANGED.**
 >
-> **P2** closes the P stage AND the whole epic („előre lát" complete): an `experiment` table
-> (proposed → active → completed | dismissed lifecycle) + a **smart-tier** `ExperimentProposalGenerator`,
-> a **write path** (`POST /api/proactive/experiment/{id}/decision` L2 accept/dismiss + `POST …/propose`),
-> a deterministic `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a
-> two-cron `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS`
-> ghost). **The proactive epic (`mezo-h4wp`, all 8 slices B1.1→B1.2→W1→W2→H1→P1→P2) is COMPLETE, and
-> so is `mezo-h4wp.6` (H2 Web Push)** — N1 delivery spine + N2 dispatcher + N3 FE-schedule snapshot
-> all shipped 2026-07-29, and a real push reached Daniel's iPhone from the k3s backend that same day
-> (confirmed). Every prose/forecast Insights surface is honest and real, and it now reaches Daniel's
-> lock screen too — see [`_platform-notifications.md`](_platform-notifications.md).
+> **W1** — a `weekly_suggestion` table + a **smart-tier** `WeeklySuggestionGenerator`, a
+> Monday-06:00 `WeeklySuggestionJob`, and a lazy `GET /api/proactive/weekly-suggestion` the
+> **Insights Weekly „heti tervjavaslat" card renders** in real mode (404 = the FE's honest
+> placeholder). **W2** — a `memoir` table (title + body + typed-jsonb `anchors`) + a **smart-tier**
+> `MemoirGenerator`, a **Sunday-19:00** `MemoirJob`, and a lazy `GET /api/proactive/memoir` (latest
+> row, else generate the LAST COMPLETED week) the **Insights Memoir tab un-ghosts** in real mode
+> (404 = the FE's honest „készül" state). **P1** — a `prediction` table (pattern-grounded, code-set
+> validity windows, nullable confidence) + a **smart-tier** `PredictionGenerator`, a weekly
+> `PredictionJob` + a **deterministic daily validation** run, and a list `GET
+> /api/proactive/prediction` that **un-ghosts the Insights Predictions tab** (real dual-mode,
+> „tanulom" on null confidence, honest derived accuracy header). **P2** closes the P stage AND the
+> original epic: an `experiment` table (proposed → active → completed | dismissed lifecycle) + a
+> **smart-tier** `ExperimentProposalGenerator`, a **write path** (`POST
+> /api/proactive/experiment/{id}/decision` L2 accept/dismiss + `POST …/propose`), a deterministic
+> `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a two-cron
+> `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS` ghost).
+>
+> **Status: backend 🟢 companion feed (morning/sleep/weight/midday/evening) + 🟢 W1 + 🟢 W2 + 🟢 P1
+> + 🟢 P2 + 🟢 HBWI · FE 🟢 Today MezoChip thread real (`useCompanionFeed`) + 🟢 W1 (Weekly card
+> real, inert buttons hidden in live) + 🟢 W2 (Memoir tab real, demo extras mock-only) + 🟢 P1
+> (Predictions tab real, un-ghosted) + 🟢 P2 (Experiments tab real) + 🟢 HBWI (Train challenge
+> surface real).** The value stages (companion feed → W weekly prose → P predictions) and the
+> original 8-slice map live in the roadmap; this doc tracks **what exists now**. **The proactive
+> epic (`mezo-h4wp`, all 8 original slices) is COMPLETE, `mezo-h4wp.6` (H2 Web Push) is COMPLETE**
+> — N1 delivery spine + N2 dispatcher + N3 FE-schedule snapshot all shipped 2026-07-29, a real push
+> reached Daniel's iPhone from the k3s backend that same day (confirmed), and **`mezo-gst9`
+> (2026-08-15) then redesigned the B+H stages into the unified companion feed above, including two
+> new push categories (`evening`, and the event-fired `sleep_reaction`/`weight_reaction`) —
+> `AnchorResolver`'s five prose anchors now read `companion_message`.** Every prose/forecast
+> Insights + Today surface is honest and real, and reaches Daniel's lock screen too — see
+> [`_platform-notifications.md`](_platform-notifications.md).
 
 ## 1. Summary
 
 The **proactive** layer is Phase-4: instead of answering when asked (the [companion](companion.md)
-chat), mezo starts the conversation — a morning briefing, a weekly memoir, an in-app heartbeat,
+chat), mezo starts the conversation — a companion feed of daily messages, a weekly memoir,
 predictions. It is built on the finished companion stack (V0.3 snapshot + V1.1 facts + V2.2 daily
-summaries) in 8 slices (epic `mezo-h4wp`); **B1.1 (`mezo-h4wp.1`) shipped the briefing spine;
-B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and the Today FE swap;
-W1 (`mezo-h4wp.3`) opened the W stage — the smart-tier weekly plan-suggestion, live on the Insights
-Weekly card; W2 (`mezo-h4wp.4`) closed the W stage — the smart-tier weekly Memoir, un-ghosting the
-Insights Memoir tab; H1 (`mezo-h4wp.5`) opened the H stage — the cheap-tier in-day heartbeat notes
-on a new Today card; P1 (`mezo-h4wp.7`) opened the P stage — pattern-grounded predictions with
-deterministic validation; P2 (`mezo-h4wp.8`) closed the P stage AND the epic — N=1 experiments with
-an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
+summaries); the original 8-slice epic (`mezo-h4wp`) shipped a morning briefing (B1.1/B1.2), a
+weekly plan-suggestion + Memoir (W1/W2), an in-day heartbeat (H1), predictions (P1) and N=1
+experiments (P2). **`mezo-gst9` (2026-08-15) then REDESIGNED the B+H stages** — the dawn briefing's
+sleep/weight blind spot (generated before those get logged, so it either omits them or, via the
+old regen path, corrects them after the fact) and the heartbeat's separate table were folded into
+one **companion feed**: a `companion_message` table + `CompanionMessageGenerator` (morning/sleep/
+weight/midday/evening) + `CompanionMessageJob` (3 crons) + `CompanionMessageEventListener` (sleep/
+weight log events) + a unified `GET /api/proactive/feed`. W1/W2/P1/P2/HBWI are **unaffected** by
+this redesign and remain as shipped.
 
-**B1.1 (`mezo-h4wp.1`) — skeleton + briefing spine:**
+**The companion feed (`mezo-gst9`) — event/cron-driven, 5 message kinds, one table:**
 
-- **A new package** — `feature/proactive/` is born, every bean `@ConditionalOnProperty` on **BOTH**
-  `mezo.feature.companion.enabled` AND `mezo.feature.proactive.enabled` (the generator calls the
-  `CompanionLlm` port, so proactive presupposes companion — §9 gotcha b). Switch either off ⇒ no
-  beans ⇒ the whole `/api/proactive/*` surface 404s.
-- **One owned table** — `briefing` (UUID PK, `created_by`, soft-delete; `content` is a **typed
-  jsonb envelope** `BriefingContentEnvelope{eyebrow, body[], refs[]}`, `generated_at` = the
-  staleness anchor B1.2 will read). Uniqueness is a **partial** unique index (one LIVE briefing per
-  user+day; a soft-deleted row doesn't block regeneration — B1.2's staleness path = soft-delete +
-  insert, the `daily_summary` precedent).
-- **`BriefingGenerator`** — the spine: a **pure-code gather** composes the shipped companion reads
-  (V0.3 `ContextSnapshotAssembler` + V1.1 `KnowledgeFactService` facts block + last-`past-days`
-  `daily_summary` narratives) plus a **numbered ref-candidate list** (6 static snapshot candidates
-  + one `Memory` candidate per summary) → **ONE cheap-tier `CompanionLlm.complete` call** answering
-  a **strict-JSON** contract `{eyebrow, body[], refIndexes[]}` → defensive parse → **bounds-checked,
-  deduped index→ref resolution** (the model SELECTS refs by index, can never invent one). Gather =
-  pure code, prose = pure LLM (NFR-M-4). **Empty summary window OR unusable answer ⇒ NO row**
-  (honest absence, never a fabricated briefing); existing row ⇒ returned untouched (idempotent).
-- **A lazy read** — `GET /api/proactive/briefing?date=` (contract fragment `proactive.yml`):
-  persisted row, or lazy-generate on the spot; `null` ⇒ **404 `RESOURCE_NOT_FOUND`** (the honest
-  empty-window state). `date` optional, defaults to the server's today.
-- **Fake sentinel** — `FakeCompanionLlm` gained a `[fake-briefing:{…}]` sentinel dispatched on a
-  **literal mirror** of `BRIEFING_MARKER` (`BRIEFING_MARKER_MIRROR`; a companion→proactive import
-  would be a package cycle — §9 gotcha a).
-- **FE untouched** — the real briefing FE swap is B1.2; the Today card still renders static demo
-  copy behind the „Demo tartalom" label.
-
-**B1.2 (`mezo-h4wp.2`) — cron + hybrid freshness + FE swap (the flagship goes live):**
-
-- **A dawn cron** — `BriefingJob` (`service/BriefingJob.java`) `@Scheduled` on
-  `mezo.proactive.briefing.cron` (05:45 server zone) pre-generates **TODAY's** briefing per user
-  before the typical wake. Gated on a THIRD switch on top of the dual gate —
-  `mezo.techcore.cron.briefing-job.enabled` (`BRIEFING_JOB_SWITCH`) — off ⇒ no bean.
-  **Deliberately NO multi-day backfill** (a past morning's briefing is never read; the lazy GET is
-  the miss-recovery), idempotent (an existing row is returned untouched, no LLM call), per-user
-  failures isolated so one bad user never kills the run (§9 decision f).
-- **Sleep-triggered capped regeneration** — the read path (`ProactiveBriefingService.refreshIfStale`)
-  now refreshes a stale briefing: if a `sleep_log` with `date >= day-1` was `created_at` AFTER the
-  briefing's `generated_at`, last night's sleep-first input (FR-2.1.1) was missing from the prose ⇒
-  **soft-delete + regenerate**, carrying `regen_count + 1`, capped at `regen-cap-per-day` (2). The
-  cap is checked FIRST (a hard ceiling); a failed regeneration serves 404 for THAT request and its
-  `@Transactional` rollback restores the old row intact — the next request retries (§9 decision g).
-  New `SleepLogRepository` exists-probe finder; no new table (the `regen_count` column is the only
-  schema add).
-- **The FE swap (Today card real)** — `useBriefing()` (`data/today/briefingHooks.ts`) reads the GET
-  for the FE's LOCAL day; `useToday` composes it (`briefing: Briefing | null`, `briefingDemo =
-  serverBriefing == null`). The Today card renders the generated prose + REAL ref chips with **no
-  label**; the „Demo tartalom" label survives only as the **honest fallback** (loading / 404 /
-  switch off → `resolveBriefing` static card at `TodayPage.tsx:35`). Mock mode returns null
-  synchronously ⇒ byte-identical Phase-1 fallback (§9 decision h). The FE `Briefing.confidence` went
-  **optional** (server briefings carry none — the fabricated-number rule; §9 gotcha c).
+- **The problem it solves** (design spec §1): the old dawn `BriefingJob` (05:45) ran BEFORE the
+  morning sleep-log write, so the briefing either narrated stale (yesterday's) sleep or needed the
+  since-retired `refreshIfStale` regen path to correct itself later; the snapshot's `[Profil]` block
+  quoted the smoothed EWMA trend as "your weight" instead of the actual weigh-in (fixed separately,
+  see [companion.md](companion.md)); and `FuelDayService`'s kcal targets came from static config
+  instead of the goal engine (fixed separately, see [fuel.md](fuel.md) §10). The fix: **generate
+  each topic's message when its data actually exists**, not on one fixed morning clock.
+- **One owned table, `companion_message`** (`entity/CompanionMessageEntity.java`) — UUID PK,
+  `created_by`, soft-delete; `message_date date` (the day the message is FOR), `kind varchar(16)`
+  (CHECK: `morning`/`sleep`/`weight`/`midday`/`evening` — `CompanionMessageEntity.KIND_*`
+  constants), `content jsonb` (the `BriefingContentEnvelope` idiom, renamed
+  `CompanionMessageEnvelope{eyebrow, body[], refs[]}`), `generated_at`. **Partial unique index**
+  `uq_companion_message_created_by_date_kind … where is_deleted = false` — one LIVE message per
+  user+day+kind (a second same-day weigh-in is idempotent, not a new message).
+- **`CompanionMessageGenerator`** (`service/CompanionMessageGenerator.java`) — one method per kind,
+  the same pure-code-gather → ONE `CompanionLlm.complete` call → defensive-parse → bounds-checked
+  ref-resolution → `saveAndFlush` idiom every prior generator in this doc uses:
+  - **`generateMorning`** — the briefing's successor. Its gather calls
+    `ContextSnapshotAssembler.renderWithoutBiometrics(userId, date)` (NOT `.render`) — sleep/weight
+    are stripped **at the source**, not just prompt-forbidden, because a prompt instruction alone
+    cannot stop the model from seeing and leaking numbers that are still in the payload (see
+    [companion.md](companion.md) for the two-variant assembler). Ref candidates: `Goal`/`Workout`/
+    `FuelDay`/`Medication` — deliberately **no** `WeightTrend`/`Sleep` candidate. Gate: empty
+    `daily_summary` window (`feed.past-days`) ⇒ no row.
+  - **`generateSleepReaction`** — fired by a fresh sleep log (event OR the morning cron, whichever
+    comes first — see below). Gate: the user's latest sleep log must be dated `>= today - 1` (a
+    backfilled/old log never triggers). Ref candidates: `Sleep`/`Goal`/`Workout`. Uses the FULL
+    `render` (sleep IS the topic here).
+  - **`generateWeightReaction`** — fired by a fresh weigh-in. Gate: the latest weight log must be
+    dated exactly `today`. Ref candidates: `WeightTrend`/`Goal`/`FuelDay`; the payload carries BOTH
+    the raw measurement and the `WeightTrendService` EWMA trend, explicitly labelled `mérés` (the
+    measurement) vs `trendérték` (the smoothed trend) so the model can't conflate them.
+  - **`generateWindow`** (midday/evening) — the heartbeat generator ported near-verbatim: same
+    prompt/gather/emptiness-gate, but its `MAI BRIEFING (ne ismételd):` dedupe block is replaced by
+    `earlierMessagesBlock` — now built from **any** earlier same-day `companion_message` row
+    (morning/sleep/weight/midday), not just the briefing. Flat prose answer (no JSON), code-set
+    eyebrow (`Napközi jegyzet`/`Napzárás`), no refs.
+  - All four share `earlierMessagesBlock` (a "MAI KORÁBBI ÜZENETEK (ne ismételd):" block listing
+    every already-persisted message of the day) — the heartbeat's dedupe idiom generalized from one
+    source (briefing) to all of them.
+- **`CompanionMessageJob`** (`service/CompanionMessageJob.java`) — the old `BriefingJob` +
+  `HeartbeatJob` merged into one `@Scheduled`-methods-one-switch bean: `runMorning` (05:45,
+  `feed.morning-cron`) generates the morning message AND, right after, calls
+  `generateSleepReaction` for every user — covering the case where sleep was logged BEFORE the
+  cron fires (spec §5's "cron előtt logolt alvás"); `runMidday`/`runEvening` (12:30/20:30) generate
+  the window kinds. Gated on the usual dual switch **plus** a THIRD, `FEED_JOB_SWITCH =
+  mezo.techcore.cron.feed-job.enabled` (replaces the old `briefing-job`/`heartbeat-job` switches —
+  now ONE switch for all three crons). Today-only, no backfill, idempotent, per-user failures
+  isolated.
+- **`CompanionMessageEventListener`** (`service/CompanionMessageEventListener.java`) — the NEW
+  trigger the old briefing/heartbeat model never had: `SleepLogService.log`/`WeightLogService.log`
+  each publish a `SleepLogSavedEvent`/`WeightLogSavedEvent` (`ApplicationEventPublisher`, right
+  before returning, inside the `@Transactional` method) which this listener consumes
+  `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async` — so it only reacts to a log that
+  actually persisted, and never adds LLM latency to the logging request itself (the
+  `PushDispatchExecutor` async precedent). Same freshness guards as the generator methods
+  (backfilled logs never trigger).
+- **The unified read — `GET /api/proactive/feed?date=`** (`service/ProactiveFeedService.java`,
+  replacing `GET …/briefing` + `GET …/heartbeat`): returns the day's `companion_message` rows in
+  `generated_at` order. For TODAY only, `ensureTodayCronKinds` lazily generates the cron kinds ahead
+  of the read (morning always; midday/evening once their fire-time — derived from the SAME cron
+  config via `CronExpression`, the old heartbeat idiom — has elapsed). **Event kinds (sleep/weight)
+  are NEVER lazily generated here** — only their own events create them. **`200 []` is the honest
+  empty state, never a 404** (a list endpoint, the P1/experiment precedent — a change from the old
+  single-resource briefing/heartbeat reads, which 404'd).
+- **The sleep-triggered "regen" mechanism is RETIRED, not ported.** The old
+  `ProactiveBriefingService.refreshIfStale` (soft-delete + regenerate a stale briefing, capped
+  `regen_count`) existed because the briefing was generated BEFORE sleep data existed and had to be
+  corrected after the fact. Event-triggered generation removes the need: the `sleep`/`weight`
+  messages are only ever generated once their grounding data already exists, so there is nothing
+  stale to detect or a cap to enforce. No successor property, no successor column.
+- **The FE swap (Today MezoChip thread)** — `useCompanionFeed()` (`data/today/feedHooks.ts`,
+  `['companionFeed', date]`, 60s `refetchInterval` in real mode so cron-kind arrivals and
+  event-triggered kinds land without a manual reload; mock mode always `[]` synchronously). `logic/
+  mezoMessages.ts`'s `buildMezoMessages({ feed, demoBriefing })` maps each `FeedMessage` 1:1 to a
+  thread bubble (kind→id, body→paragraphs, refs carried through); when the feed has **no** `morning`
+  kind yet, an honestly-labelled demo card (`meta: 'Demo tartalom'`) is PREPENDED from
+  `resolveBriefing(scenario.dayState)` — mock mode's only branch, and real mode's cold-load state
+  before the dawn cron/lazy-GET has produced today's morning message. The retired
+  `useCompanionNote()`/`CompanionNoteCard` are GONE — the midday/evening messages are just more
+  bubbles in the same thread now. See [today.md](today.md) §1/§3.
 
 **W1 (`mezo-h4wp.3`) — weekly plan-suggestion prose (the W stage opens):**
 
@@ -213,37 +260,14 @@ an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
   false affordance, the W1 button precedent — §9 decision k). Mock keeps the full Phase-1 demo +
   byte-parity. Details: [insights.md §2.3](insights.md).
 
-**H1 (`mezo-h4wp.5`) — in-app heartbeat (the H stage opens):**
+**H1 (`mezo-h4wp.5`) — in-app heartbeat (SUPERSEDED by the companion feed, `mezo-gst9`):**
 
-- **A fourth owned table** — `heartbeat_note` (UUID PK, `created_by`, soft-delete; `note_date date`,
-  **`window_key varchar(16)`** = `midday`/`evening` (NOT `window` — reserved word), `kind
-  varchar(16)` = `nudge`/`closing`, `content text`, `generated_at`). A **partial** unique index
-  (one LIVE note per user+day+window); DB CHECKs pin both vocabularies. **No regeneration path**
-  (a note is written once — the W1/W2 YAGNI reasoning at window cadence, §9 decision r).
-- **`HeartbeatGenerator`** — the weekly-suggestion prose idiom at the **CHEAP tier**: a pure-code
-  gather composes the V0.3 snapshot (today's actual state: fuel progress, training, check-ins) +
-  V1.1 facts + the latest `daily_summary` + **today's persisted briefing body under a `MAI BRIEFING
-  (ne ismételd):` block** (overlap-dedupe, §9 decision q) + the window instruction (`ABLAK: dél
-  (nudge)` / `este (closing)`) → **ONE `CompanionLlm.complete` call** (Flash — the tier policy) →
-  flat HU prose. **Emptiness gate:** zero `daily_summary` in the shared `briefing.past-days` window
-  ⇒ NO row (§9 decision s); blank answer ⇒ NO row; existing row ⇒ returned untouched (idempotent).
-- **A two-window cron** — `HeartbeatJob` with **two `@Scheduled` methods** on
-  `mezo.proactive.heartbeat.midday-cron` (12:30, nudge) and `evening-cron` (20:30, closing), gated
-  on a THIRD switch `mezo.techcore.cron.heartbeat-job.enabled` (`HEARTBEAT_JOB_SWITCH`); today-only,
-  idempotent, per-user failures isolated, **no backfill** (a past window is never read).
-- **A lazy read** — `GET /api/proactive/heartbeat?date=`: the day's **latest** persisted note
-  (evening beats midday by `generated_at`); for **TODAY** the latest **already-elapsed** window
-  lazy-generates when missing — the window fire-times are derived from the SAME cron expressions
-  via Spring `CronExpression` (no duplicated time config, §9 decision r); past dates never
-  generate. `null` ⇒ **404 `RESOURCE_NOT_FOUND`** (honest absence).
-- **Fake sentinel** — `FakeCompanionLlm` gained `[fake-heartbeat:…]` (bare string) dispatched on
-  `HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT"` (literal mirror, §9 gotcha a); planted
-  via a **check-in note** (the gather renders the snapshot, so the briefing/weekly channel works).
-- **The FE surface (Today CompanionNoteCard)** — a new dual-mode `useCompanionNote()`
-  (`data/today/heartbeatHooks.ts`, `['heartbeat', date]`, 404→null, mock always null);
-  `TodayPage` renders **`CompanionNoteCard`** (deliberately NOT named `Heartbeat*` — the check-in
-  strip owns that copy) after the check-in strip, **only when a note exists** — honest absence is
-  simply no card; mock mode = Phase-1 byte-parity (never a card).
+H1 originally shipped a standalone `heartbeat_note` table + `HeartbeatGenerator` + `HeartbeatJob` +
+a Today `CompanionNoteCard`. **All of it is retired** — the `midday`/`evening` window kinds now
+live in the SAME `companion_message` table/generator/job/read as the morning message (see the
+companion-feed block above), and the Today surface is the MezoChip thread, not a separate card.
+Nothing below this heading exists in the codebase any more; kept only so the H1 bd-issue history
+resolves to something.
 
 **P1 (`mezo-h4wp.7`) — predictions + validation (the P stage opens):**
 
@@ -437,48 +461,55 @@ evaluator**. Design of record:
 
 | Layer | State | Notes |
 |---|---|---|
-| Backend (table + envelope + generator + lazy read) | 🟢 B1.2 | Behind BOTH `mezo.feature.companion.enabled` AND `mezo.feature.proactive.enabled`; either off ⇒ the whole HTTP surface 404s. |
-| Briefing generation | 🟢 B1.2 | Pure-code gather + ONE cheap-tier `CompanionLlm.complete`, strict-JSON, model-selected refs, empty-window/unusable ⇒ 404. |
-| Cron (dawn pre-generation) | 🟢 B1.2 | `BriefingJob` 05:45, today-only per user (NO backfill — the lazy GET is the miss-recovery), failures isolated; third switch `briefing-job.enabled`. |
-| Read-path freshness (sleep-triggered regen) | 🟢 B1.2 | `refreshIfStale`: late `sleep_log` (`date >= day-1`, after `generated_at`) ⇒ soft-delete + regenerate, `regen_count` cap 2/day; failed regen ⇒ 404 + rollback restores the old row. |
-| Frontend (Today card swap) | 🟢 B1.2 | Today renders the generated briefing (real ref chips, no label); „Demo tartalom" survives only as the honest fallback. |
+| Backend (table + envelope + generator + unified read) | 🟢 `mezo-gst9` | `companion_message` table (5 kinds); behind BOTH `mezo.feature.companion.enabled` AND `mezo.feature.proactive.enabled`; either off ⇒ the whole HTTP surface 404s. |
+| Companion-feed generation (morning/sleep/weight/midday/evening) | 🟢 `mezo-gst9` | `CompanionMessageGenerator`, one method per kind; pure-code gather + ONE cheap-tier `CompanionLlm.complete`; morning gather uses `renderWithoutBiometrics` (no sleep/weight leak); sleep/weight gated on a FRESH log existing; midday/evening ported from the retired heartbeat; empty-window/unusable ⇒ no row. |
+| Crons (dawn + midday + evening pre-generation) | 🟢 `mezo-gst9` | `CompanionMessageJob` — `runMorning` (05:45) also triggers `generateSleepReaction` right after (covers sleep logged before the cron); `runMidday`/`runEvening` (12:30/20:30); today-only per user (NO backfill — the lazy GET is the miss-recovery); ONE third switch `feed-job.enabled` for all three (replaces the old `briefing-job`+`heartbeat-job` pair). |
+| Event triggers (sleep/weight log → reaction message) | 🟢 `mezo-gst9` | `CompanionMessageEventListener` — `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent` (published by `SleepLogService`/`WeightLogService`); backfilled/old logs never trigger. **Replaces the retired sleep-triggered "regen" (`refreshIfStale`)** — see §9. |
+| Frontend (Today MezoChip thread) | 🟢 `mezo-gst9` | `useCompanionFeed()` (`['companionFeed', date]`, 60s poll real mode); `buildMezoMessages` maps the feed 1:1 to thread bubbles, prepending an honestly-labelled demo card only while no `morning` kind exists; the retired `CompanionNoteCard`/`useCompanionNote()` are gone. |
 | Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
 | Frontend (Insights Weekly card swap) | 🟢 W1 | `useWeekly().weeklySuggestion` real (404→null); the Weekly card renders the generated prose, else the honest placeholder; „Elfogad/Hangoljuk" hidden in live. |
 | Memoir (table + generator + Sunday cron + lazy read) | 🟢 W2 | `memoir` table (ISO-Monday identity, partial unique, typed-jsonb `anchors`); smart-tier `MemoirGenerator` (gather = the week's OWN summaries + facts + patterns + numbered anchor candidates → ONE `completeSmart` call, model-selected anchors, honest-null); Sunday-19:00 `MemoirJob` (three-switch, no backfill); `GET /api/proactive/memoir` (no params; latest row else lazy-generate the LAST COMPLETED week; 404 = empty week). |
 | Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; reactions/anniversary/archive mock-only. |
-| Heartbeat (table + generator + window crons + lazy read) | 🟢 H1 | `heartbeat_note` table (user+day+`window_key` partial unique, `kind` nudge/closing); **cheap-tier** `HeartbeatGenerator` (gather = snapshot + facts + latest summary + today's-briefing dedupe block + window instruction → ONE `complete` call, honest-null); `HeartbeatJob` two `@Scheduled` windows (midday/evening crons, three-switch, no backfill); `GET /api/proactive/heartbeat` (lazy latest-elapsed-window for TODAY only; 404 = honest absence). |
-| Frontend (Today CompanionNoteCard) | 🟢 H1 | `useCompanionNote()` real (404→null, mock always null — Phase-1 parity); `TodayPage` renders `CompanionNoteCard` after the check-in strip only when a note exists (honest absence = no card). |
 | Predictions (table + generator + validation + weekly/daily job + list read) | 🟢 P1 | `prediction` table (week_start idempotence probe, nullable confidence, CHECK-pinned direction/status); smart-tier `PredictionGenerator` (gather = snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog → ONE `completeSmart`, code-set windows, pattern-copied confidence, honest-empty); deterministic `PredictionValidationService` (window-vs-prior-7-days, no-data ⇒ stays pending); `PredictionJob` two crons (Mon 06:30 generate + daily 06:15 validate, three-switch); `GET /api/proactive/prediction` (list; lazy current-week; `[]` = honest empty, never 404). |
 | Frontend (Insights Predictions tab un-ghost) | 🟢 P1 | `usePredictions()` real (list, `[]` on error); `predictions` left `PHASE3_TAB_IDS`, `PredictionsPage` ghost dropped; renders real cards („tanulom" on null confidence, `✗ Missed` state, accuracy header derived from closed rows), else the honest „still learning" null-state; mock keeps the Phase-1 seed + literal header. |
 | Experiments (table + proposal + outcome + write path + two-cron job) | 🟢 P2 | `experiment` table (proposed/active/completed/dismissed lifecycle, nullable start_date/outcome_good); smart-tier `ExperimentProposalGenerator` (cap-gated, CONFIRMED-pattern-grounded); deterministic `ExperimentOutcomeService` (shared `MetricWindowEvaluator`); **write path** `POST …/decision` (L2, 409 on non-proposed) + `POST …/propose`; list `GET` (lazy propose, `[]` = honest); `ExperimentJob` two crons (weekly propose + daily outcome, three-switch). |
 | Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
 | Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); lazy-on-prep `ChallengeGenerator`; deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` outcome-cron backstop (three-switch). |
 | Frontend (ActiveWorkoutPage challenge surface) | 🟢 HBWI | `useChallenges()`/`useChallengeActions()` (`data/train/challengeHooks.ts`); `ActiveWorkoutPage` prep feeds the live list into `ChallengesCarousel`, accepted map + `decide()` from server status in live (local toggle in mock, byte-parity); `ChallengeCard` honest states — „tanulom" on null confidence, tools hidden in live, `hit/miss/inconclusive` outcome chip + line with the accept/skip row hidden. |
-| **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push is also shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29 — a real push reached Daniel's iPhone; full detail in [`_platform-notifications.md`](_platform-notifications.md)). Every prose/forecast Insights + Today surface is honest and real — and now reaches the lock screen too. |
+| **Epic status** | ✅ COMPLETE | Original 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29); **`mezo-gst9` (2026-08-15) then redesigned B1.1/B1.2/H1 into the unified companion feed above** (W1/W2/P1/P2/HBWI unaffected). Every prose/forecast Insights + Today surface is honest and real — and reaches the lock screen too. |
 
-**Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
+**Driver:** `mezo-gst9` (companion feed, the current B/H-stage design) on top of `mezo-h4wp.4`
+(W2)/`mezo-h4wp.1`'s spine. **Design of record (current B/H model):**
+[`docs/superpowers/specs/2026-08-15-companion-feed-design.md`](../superpowers/specs/2026-08-15-companion-feed-design.md).
+**Design of record (W/P/HBWI, and the original — now superseded — B/H design):**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
-(§2 hybrid generation, §3-§4 briefing data model, §5 weekly suggestion, §6 honest-numbers guardrails,
-§7 emptiness gate); slice map
-[`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
+(§2 hybrid generation, §5 weekly suggestion, §6 honest-numbers guardrails, §7 emptiness gate); slice
+map [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
 §B1.1–§B1.2 + §W1 + §W2. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
 
 ## 2. User-facing behavior
 
-**Live since B1.2 — the Today „Reggeli briefing" card.** When Daniel opens the app in the morning
-the card shows **the companion's own generated prose** about HIS night and HIS day, with **real
-reference chips** (the code-collected, model-selected `refs` — Sleep/Goal/Workout/… tags) and **no
-label** — zero demo copy. The dawn cron has usually already written it; if not, the first GET of the
-day generates it on the spot (lazy fallback), and a late-arriving sleep log triggers one capped
-regeneration so the prose reflects last night.
+**Live since `mezo-gst9` — the Today MezoChip message thread.** When Daniel opens the app the
+`MezoChip`'s preview shows the **latest** companion-feed message, and tapping it opens the full
+thread: a **morning** message about his day (never HIS night or weight — sleep/weight-free by
+construction, so it can't be stale or wrong about them), a **sleep** reaction the moment he logs
+last night, a **weight** reaction the moment he weighs in, and **midday**/**evening** notes at their
+usual windows — each with **real reference chips** where the kind carries them (morning/sleep/
+weight) and **no label** — zero demo copy, except the one honest exception below. The dawn/midday/
+evening crons usually write the cron kinds ahead of time; a missed one lazily generates on the next
+GET. The sleep/weight messages are event-triggered — they appear within moments of logging (the FE
+polls every 60s and also invalidates on the log's own mutation), not on any fixed clock, so they are
+never stale by construction (the point of the whole redesign — see §1).
 
-**The honest fallback.** When there is no generated briefing — the proactive/companion/cron switch
-is off, generation failed / the narrative window is empty (404), or the read is still loading — the
-card falls back to the **static Phase-1 demo copy behind the „Demo tartalom" label**
-([today.md](today.md)), the degraded state rather than the default. In **mock mode** the card is
-always this static card (byte-parity with Phase-1). The label is now the exception, not the rule.
+**The honest fallback.** While the day's `morning` message hasn't landed yet — the proactive/
+companion/cron switch is off, generation failed / the narrative window is empty, the read is still
+loading, or it's simply too early — the thread's first bubble is the **static Phase-1 demo copy
+behind the „Demo tartalom" label** ([today.md](today.md)), prepended by `buildMezoMessages`, the
+degraded state rather than the default; once a real `morning` message exists the demo card
+disappears. In **mock mode** the thread is always just this one static card (byte-parity with
+Phase-1) — the feed itself is always `[]` in mock mode.
 
-See [today.md §2](today.md) for the card in the context of the full Today screen.
+See [today.md §2](today.md) for the thread in the context of the full Today screen.
 
 **Live since W1 — the Insights Weekly „Mezo · heti tervjavaslat" card.** On the Insights → Weekly
 sub-tab the plan-suggestion card now shows **the companion's own generated prose** for the week that
@@ -504,14 +535,11 @@ deferred surfaces = false affordance); **mock mode** keeps the full Phase-1 demo
 reactions + anniversary + archive, byte-parity). See [insights.md §2.3](insights.md) for the tab in
 the context of the full Insights sub-nav (Memoir now shows as the 3rd of 5 real-mode tabs).
 
-**Live since H1 — the Today companion-note card.** During the day a new card appears under the
-check-in strip: at midday a short **nudge** for the rest of the day, in the evening a **closing**
-observation — 2-3 sentences grounded in the day's actual state (fuel progress, training, check-ins),
-explicitly instructed not to repeat the morning briefing. The window crons usually pre-write it; if
-one was missed, the first GET of the day generates the latest elapsed window on the spot. **Honest
-absence:** before the first window, with no narrative memory, or on failure there is simply **no
-card** (never placeholder fiction); mock mode never shows one (Phase-1 byte-parity). See
-[today.md §2](today.md).
+**H1's separate companion-note card is retired.** The midday nudge / evening closing observation it
+introduced — 2-3 sentences grounded in the day's actual state, explicitly told not to repeat the
+morning message — now arrive as `midday`/`evening` bubbles in the SAME MezoChip thread described
+above, not a second card under the check-in strip. Same honest-absence rule, same window crons, same
+lazy miss-recovery — just one thread instead of two surfaces.
 
 **Live since P1 — the Insights Predictions tab.** The Predictions sub-tab, a real-mode ghost until
 now, shows **pattern-grounded weekly forecasts** — each a short claim (e.g. „a hét testsúlya csökken")
@@ -551,79 +579,130 @@ unified so `challenges` drives both modes). See [train.md §Active workout](trai
 
 ## 3. Architecture & data flow
 
-**The briefing read (B1.2 — persisted row · refresh-if-stale · lazy generate):**
+**The unified feed read (`mezo-gst9` — persisted rows · lazy cron-kind miss-recovery · no 404):**
 
 ```
-GET /api/proactive/briefing?date=YYYY-MM-DD    (date optional)
-  → ProactiveController.getBriefing(date)         controller/ProactiveController.java:24  (implements ProactiveApi)
+GET /api/proactive/feed?date=YYYY-MM-DD        (date optional)
+  → ProactiveController.getFeed(date)              controller/ProactiveController.java  (implements ProactiveApi)
       currentUserId.get()  (JWT subject → UUID; techcore/security/CurrentUserId)
-  → ProactiveBriefingService.getBriefing(userId, date)   service/ProactiveBriefingService.java:41  @Transactional
+  → ProactiveFeedService.getFeed(userId, date)   service/ProactiveFeedService.java:40  @Transactional
       day = date != null ? date : LocalDate.now()          (FE sends its LOCAL date — check-in precedent)
-      findByCreatedByAndBriefingDate(userId, day)          persisted row?
-        ├─ present ⇒ refreshIfStale(userId, day, existing)  (B1.2 — sleep-triggered capped regen)
-        └─ empty   ⇒ briefingGenerator.generate(userId, day) (lazy generation)
-      null ⇒ throw SystemRuntimeErrorException(RESOURCE_NOT_FOUND, 404)   (honest empty-window / failed-regen state)
-      → mapper.toBriefingResponse(briefing)                (Instant → UTC OffsetDateTime)
+      if day == today: ensureTodayCronKinds(userId, day)   (below — cron-kind miss-recovery ONLY)
+      findByCreatedByAndMessageDateOrderByGeneratedAtAsc(userId, day)
+      → List<FeedMessageResponse>   (possibly empty — `200 []` is the honest state, NEVER 404)
 ```
 
-**The dawn cron (B1.2 — `service/BriefingJob.java`):**
+```
+ensureTodayCronKinds(userId, day):                   service/ProactiveFeedService.java:54
+  generator.generateMorning(userId, day)              ALWAYS attempted (its cron is dawn — always elapsed by any read)
+  if elapsed(feed.midday-cron, day):  generator.generateWindow(userId, day, MIDDAY)
+  if elapsed(feed.evening-cron, day): generator.generateWindow(userId, day, EVENING)
+  (elapsed = CronExpression.parse(cron).next(dayStart) has passed "now" — the retired heartbeat's
+   window-fire-time idiom, one source of truth for the schedule)
+```
+
+**Event kinds (`sleep`/`weight`) are NEVER generated by the read path** — only their own events
+create them (below). This is the one behavioral asymmetry vs the old briefing/heartbeat reads: those
+were single-resource 404-on-absence; the feed is a list, so absence is simply a shorter array.
+
+**The crons (`mezo-gst9` — `service/CompanionMessageJob.java`):**
 
 ```
-@Scheduled(cron = "${mezo.proactive.briefing.cron}")   05:45 server zone; three-switch bean
+@Scheduled(cron = "${mezo.proactive.feed.morning-cron}")   05:45 server zone; three-switch bean
   today = LocalDate.now()
   for each appUserRepository.findAll():
-     try  briefingGenerator.generate(user.id, today)   (TODAY only — no multi-day backfill)
-     catch → log.warn + continue                        (per-user isolation; one bad user never kills the run)
+     try  companionMessageGenerator.generateMorning(user.id, today)   (TODAY only — no backfill)
+     catch → log.warn + continue                                      (per-user isolation)
+     try  companionMessageGenerator.generateSleepReaction(user.id, today)   ── ALSO tried right after
+     catch → log.warn + continue                                            morning (spec §5: covers
+                                                                              sleep logged BEFORE the cron)
+
+@Scheduled(cron = "${mezo.proactive.feed.midday-cron}")   runWindow(MIDDAY)
+@Scheduled(cron = "${mezo.proactive.feed.evening-cron}")  runWindow(EVENING)
+  (same per-user try/catch loop, TODAY only, idempotent)
 ```
 
-Idempotent (an existing row is returned untouched, no LLM call), so a cron run that overlaps the
-lazy GET can't double-generate. There is **no catch-up loop** — a past morning is never read, and a
-missed run is covered by the lazy GET the next time the app opens (§9 decision f).
+Idempotent (an existing row is returned untouched, no LLM call), so a cron run overlapping the lazy
+GET can't double-generate. **No catch-up loop** — a past morning/window is never read, and a missed
+run is covered by the lazy GET the next time the app opens (the old briefing/heartbeat §9 decision f
+reasoning, unchanged).
 
-**Refresh-if-stale (B1.2 — `ProactiveBriefingService.refreshIfStale`, service:62):**
-
-```
-refreshIfStale(userId, day, existing):
-  cap = properties.briefing().regenCapPerDay()          (2)
-  if existing.regenCount >= cap        → return existing  ── HARD CEILING, checked FIRST
-  lateSleep = sleepLogRepository.existsBy…DateGreaterThanEqualAndCreatedAtAfter(
-                 userId, day.minusDays(1), existing.generatedAt)   ── sleep_log date >= day-1, created after generation
-  if !lateSleep                        → return existing  ── fresh enough
-  nextCount = existing.regenCount + 1
-  delete(existing); flush()            ── @SQLDelete soft-delete; flush frees the partial-unique slot BEFORE insert
-  fresh = briefingGenerator.generate(userId, day)
-  if fresh == null                     → return null      ── regen failed ⇒ getBriefing throws 404 ⇒ @Transactional
-                                                              rollback UNDOES the delete+flush → old row restored,
-                                                              next request retries (§9 decision g)
-  fresh.setRegenCount(nextCount); return fresh
-```
-
-**The generator (`service/BriefingGenerator.java`):**
+**Event triggers (`mezo-gst9` — `service/CompanionMessageEventListener.java`), the NEW half the old
+model never had:**
 
 ```
-generate(userId, date)                                  BriefingGenerator.java:87  @Transactional
+SleepLogService.log(...) / WeightLogService.log(...)     @Transactional
+  ... persist the row ...
+  eventPublisher.publishEvent(new SleepLogSavedEvent(userId, date))   ── right before returning,
+                                                                          INSIDE the tx (so AFTER_COMMIT
+                                                                          only fires once durable)
+
+CompanionMessageEventListener                            @Async  @TransactionalEventListener(AFTER_COMMIT)
+  onSleepLogged(event):
+    if event.date().isBefore(today.minusDays(1)) → return    ── backfilled/old log never triggers
+    try  generator.generateSleepReaction(event.userId(), today)
+    catch → log.warn                                          (never fails the original log request —
+                                                                 it already committed)
+  onWeightLogged(event):  same shape, gate = event.date().equals(today)
+```
+
+`@Async` off the request thread (the `applicationTaskExecutor`, the `PushDispatchExecutor`
+precedent) means a slow/failed LLM call never delays or fails the sleep/weight-logging response
+itself.
+
+**The generator (`service/CompanionMessageGenerator.java`) — one method per kind, same idiom
+throughout (pure-code gather → ONE `CompanionLlm.complete` call → defensive-parse → bounds-checked
+ref-resolution → `saveAndFlush`):**
+
+```
+generateMorning(userId, date)                           @Transactional
   1. existing row? ⇒ return untouched                   (idempotent; NO LLM call)
-  2. gather(userId, date)                                BriefingGenerator.java:120  PURE CODE, LLM-free
-       past = last past-days daily_summary narratives (newest first)
-       past.isEmpty() ⇒ return null                      ── THE EMPTINESS GATE (§9 gotcha d)
-       payload = ContextSnapshotAssembler.render(V0.3)   (six HU blocks, nincs adat absences)
-               + KnowledgeFactService.renderPromptBlock (V1.1 top-N confirmed facts)
-               + "KORÁBBI NAPOK" past-summary narratives
-               + "HIVATKOZÁS-JELÖLTEK" numbered candidate list (index: [kind] label)
-       candidates = 6 static snapshot Refs + one Memory Ref per summary
-  3. companionLlm.complete(PROMPT, payload)              ── ONE cheap-tier call (BRIEFING_MARKER prompt)
-  4. parse(answer)                                       first-{ to last-} defensive JSON → ParsedBriefing
-       null / blank eyebrow / empty body ⇒ return null   ── unusable answer, NO row (§9 gotcha d)
-  5. resolveRefs(refIndexes, candidates)                 bounds-checked, order-preserving, deduped
-       (model SELECTS by index; out-of-range/dupes dropped — can never invent a ref)
-  6. saveAndFlush BriefingEntity{content envelope, generatedAt=now truncated-to-µs}
-       (µs truncation matches Postgres timestamptz precision — keeps the B1.2 idempotence assert stable)
+  2. gather: past = last feed.past-days daily_summary narratives (newest first)
+       past.isEmpty() ⇒ return null                      ── THE EMPTINESS GATE
+       payload = ContextSnapshotAssembler.renderWithoutBiometrics(userId, date)   ── NOT .render:
+               sleep/weight stripped AT THE SOURCE, not just prompt-forbidden (companion.md)
+               + KnowledgeFactService.renderPromptBlock + "KORÁBBI NAPOK" + numbered candidates
+       candidates = Goal/Workout/FuelDay/Medication (NO WeightTrend/Sleep) + one Memory per summary
+  3. companionLlm.complete(MORNING_PROMPT, payload)      ── ONE cheap-tier call
+  4. parse(answer) → null/blank eyebrow/empty body ⇒ return null   (unusable answer, NO row)
+  5. resolveRefs(refIndexes, candidates)                 bounds-checked, deduped, model-SELECTED only
+  6. saveAndFlush CompanionMessageEntity{kind=morning, content envelope, generatedAt=now truncated-µs}
+
+generateSleepReaction(userId, date)                      @Transactional
+  1. existing row (kind=sleep, date)? ⇒ return untouched
+  2. gate: latest sleep log dated >= date-1 ? else return null   (the grounding event IS the gate —
+                                                                    no daily_summary window check)
+  3. gather: ContextSnapshotAssembler.render (FULL — sleep IS the topic) + facts +
+       earlierMessagesBlock(today's already-persisted messages, "ne ismételd") +
+       "MOST RÖGZÍTETT ALVÁS" (duration/quality/awakenings) + Sleep/Goal/Workout candidates
+  4-6. same complete → parse → resolveRefs → saveAndFlush shape as morning (SLEEP_PROMPT)
+
+generateWeightReaction(userId, date)                     @Transactional
+  1. existing row (kind=weight, date)? ⇒ return untouched
+  2. gate: latest weight log dated == date ? else return null
+  3. gather: render (FULL) + facts + earlierMessagesBlock + "MOST RÖGZÍTETT MÉRÉS" (the raw kg,
+       labelled "mérés:") + WeightTrendService's EWMA trend (labelled "trendérték (EWMA, simított):"
+       — the two numbers explicitly distinguished so the model can't conflate a measurement with a
+       trend) + WeightTrend/Goal/FuelDay candidates
+  4-6. same shape (WEIGHT_PROMPT)
+
+generateWindow(userId, date, kind)                       @Transactional   kind = midday | evening
+  1. existing row (kind, date)? ⇒ return untouched
+  2. gather: past-days summaries; empty ⇒ return null (same emptiness gate as morning)
+       payload = render (FULL) + facts + latest daily_summary + earlierMessagesBlock + "ABLAK: …"
+  3. companionLlm.complete(WINDOW_PROMPT, payload)   ── flat prose answer, NO JSON parse
+  4. blank ⇒ return null
+  5. saveAndFlush {kind, content = Envelope(code-set eyebrow, [answer.strip()], NO refs)}
+       (eyebrow = "Napközi jegyzet"/"Napzárás" by kind — the heartbeat's flat-prose shape, ported)
 ```
 
-Gather = pure code (IT-asserted LLM-free), prose = pure LLM — the companion V2.2 summary-generator
-split (NFR-M-4). The prompt (`BRIEFING_MARKER` + HU rules: lead with poor sleep, multi-horizon,
-close with 2-3 focus points, invent-no-numbers, never suggest med-dose changes) mirrors the
-companion clinical/honest-number guardrails.
+All four share `earlierMessagesBlock(userId, date)`: a `"MAI KORÁBBI ÜZENETEK (ne ismételd):"` block
+built from every already-persisted `companion_message` row of the day (any kind) — the old
+heartbeat's `MAI BRIEFING` dedupe block, generalized from ONE hardcoded source to all of them. Gather
+= pure code (IT-asserted LLM-free), prose = pure LLM (NFR-M-4, unchanged from the old briefing
+split). Each kind's prompt (`MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + HU
+rules: invent-no-numbers, never suggest med-dose changes) mirrors the companion clinical/honest-
+number guardrails the retired briefing prompt carried.
 
 **The weekly-suggestion read (W1 — persisted row · lazy generate; NO staleness/regen):**
 
@@ -734,31 +813,9 @@ carries a typed jsonb anchor envelope (unlike the weekly suggestion's flat prose
 the same companion reads as the weekly generator (summaries + facts + patterns) but over the week's
 OWN window, not the prior week.
 
-**The heartbeat read (H1 — latest note · lazy latest-elapsed-window; NO staleness/regen):**
-
-```
-GET /api/proactive/heartbeat?date=YYYY-MM-DD           (date optional)
-  → ProactiveController.getHeartbeat(date)              controller/ProactiveController.java  (implements ProactiveApi)
-  → ProactiveHeartbeatService.getHeartbeat(userId, date)   service/ProactiveHeartbeatService.java:47  @Transactional
-      day = date != null ? date : LocalDate.now()
-      if day == today:
-        latestElapsedWindow(day)                        CronExpression.parse(midday/evening cron).next(day start)
-          — windows whose fire-time ≤ now, take the latest; missing note ⇒ generator.generate(userId, day, key)
-      findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc(userId, day)   the day's newest note
-      null ⇒ throw SystemRuntimeErrorException(RESOURCE_NOT_FOUND, 404)    (honest absence)
-      → mapper.toHeartbeatResponse(note)                (noteDate→date, windowKey→window)
-```
-
-**The window crons (H1 — `service/HeartbeatJob.java`):** two `@Scheduled` methods (`runMidday` on
-`mezo.proactive.heartbeat.midday-cron`, `runEvening` on `evening-cron`), each looping
-`appUserRepository.findAll()` with per-user try/catch — the MemoirJob idiom; three-switch bean;
-idempotent; today-only, no backfill.
-
-**The heartbeat generator (`service/HeartbeatGenerator.java`):** `generate(userId, day, windowKey)`
-— existing row ⇒ untouched; `gather` (PURE CODE: snapshot + facts + latest summary + briefing
-dedupe block + `ABLAK:` instruction; empty past-days summary window ⇒ null) → ONE **cheap-tier**
-`companionLlm.complete(PROMPT, payload)` (`HEARTBEAT_MARKER`) → blank ⇒ null, else persisted
-`HeartbeatNoteEntity` (kind derived from the window: evening→closing, else nudge).
+**H1's heartbeat read/crons/generator are retired** — folded into the unified feed read
+(`GET /api/proactive/feed`) and `CompanionMessageJob`/`generateWindow` documented above (§1/§3
+companion-feed block). `midday`/`evening` are now just two more `companion_message` kinds.
 
 **The prediction read (P1 — list · lazy current-week; NO 404):**
 
@@ -855,45 +912,53 @@ users → `outcomeService.evaluateClosed`; three-switch bean.
 row → the shared `MetricWindowEvaluator` over `[start, start+total-1]` vs the equal baseline before
 start → `completed` + `outcome`/`outcome_good` (null = inconclusive).
 
-**Switch-gating.** `ProactiveController`, `ProactiveBriefingService`, `ProactiveWeeklySuggestionService`,
-`ProactiveMemoirService`, `ProactiveHeartbeatService`, `ProactivePredictionService`,
-`ProactiveExperimentService`, `BriefingGenerator`, `WeeklySuggestionGenerator`, `MemoirGenerator`,
-`HeartbeatGenerator`, `PredictionGenerator`, `PredictionValidationService`, `MetricWindowEvaluator`,
+**Switch-gating.** `ProactiveController`, `ProactiveFeedService`, `CompanionMessageGenerator`,
+`CompanionMessageEventListener`, `ProactiveWeeklySuggestionService`, `ProactiveMemoirService`,
+`ProactivePredictionService`, `ProactiveExperimentService`, `WeeklySuggestionGenerator`,
+`MemoirGenerator`, `PredictionGenerator`, `PredictionValidationService`, `MetricWindowEvaluator`,
 `ExperimentProposalGenerator`, `ExperimentOutcomeService`, `ProactiveChallengeService`,
 `ChallengeGenerator`, `ChallengeOutcomeEvaluator` (and the mapper via the services) are all
 `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — **both**
 must be `true`. Either off ⇒ no proactive beans ⇒ the whole `/api/proactive/*` surface 404s (there's
-no controller to route to). The seven jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`,
-`HeartbeatJob`, `PredictionJob`, `ExperimentJob`, `ChallengeJob`) each add a THIRD switch on top. The dual gate is
-structural, not a runtime check (§9 gotcha b).
+no controller to route to). The **six** jobs (`CompanionMessageJob`, `WeeklySuggestionJob`,
+`MemoirJob`, `PredictionJob`, `ExperimentJob`, `ChallengeJob` — down from seven since `mezo-gst9`
+merged the old `BriefingJob`+`HeartbeatJob` into one) each add a THIRD switch on top. The dual gate
+is structural, not a runtime check (§9 gotcha b).
 
-**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` + `HeartbeatNoteEntity` + `PredictionEntity` + `ExperimentEntity` all `extend OwnedEntity`
-(soft-delete via `@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()`
-server-side, the finders (`findByCreatedByAndBriefingDate` / `findByCreatedByAndWeekStart` /
-`findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` for memoir) are owner +
+**Ownership.** `CompanionMessageEntity` + `WeeklySuggestionEntity` + `MemoirEntity` +
+`PredictionEntity` + `ExperimentEntity` all `extend OwnedEntity` (soft-delete via
+`@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()` server-side, the
+finders (`findByCreatedByAndMessageDateAndKind` / `findByCreatedByAndMessageDateOrderByGeneratedAtAsc`
+/ `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` for memoir) are owner +
 soft-delete scoped. Standard auth spine ([`_platform-api-backend.md`](_platform-api-backend.md); the
 companion precedent).
 
 ## 4. Data model & API
 
-### Backend tables (B1.1 + B1.2 + W1 + W2 + H1 + P1 + P2 + HBWI, 🟢)
+### Backend tables (companion feed `mezo-gst9` + W1 + W2 + P1 + P2 + HBWI, 🟢)
 
-Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h4wp.2_briefing_regen_count.sql`
-+ `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` + `202607071500_mezo-h4wp.4_create_memoir.sql`
-+ `202607071800_mezo-h4wp.5_create_heartbeat_note.sql` + `202607071900_mezo-h4wp.7_create_prediction.sql`
-+ `202607072000_mezo-h4wp.8_create_experiment.sql` + `202607072100_mezo-hbwi_create_challenge.sql`
+Migrations `202608151200_mezo-gst9_create_companion_message.sql` +
+`202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql` (drops `briefing` + `heartbeat_note` — the
+old B1.1/B1.2/B1.2-regen/H1 changesets `202607061100_mezo-h4wp.1_create_briefing.sql` /
+`202607070900_mezo-h4wp.2_briefing_regen_count.sql` / `202607071800_mezo-h4wp.5_create_heartbeat_note.sql`
+themselves stay untouched — Liquibase changesets are immutable once released, so a drop is a NEW
+changeset, not an edit) + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` +
+`202607071500_mezo-h4wp.4_create_memoir.sql` + `202607071900_mezo-h4wp.7_create_prediction.sql` +
+`202607072000_mezo-h4wp.8_create_experiment.sql` + `202607072100_mezo-hbwi_create_challenge.sql`
 (all registered in `db/changelog/1.0.0/1.0.0_master.yml`):
 
-- **`briefing`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
-  CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
-  `briefing_date date not null` (the morning it is FOR — not when generated), `content jsonb not
-  null` (the typed envelope), `generated_at timestamptz not null` (the staleness anchor
-  `refreshIfStale` compares against), **`regen_count int not null default 0`** (B1.2 — how many
-  sleep-triggered regenerations this day's briefing has had; the read path stops at
-  `regen-cap-per-day`). Uniqueness is a **partial unique index**
-  `uq_briefing_created_by_briefing_date … where is_deleted = false` (one LIVE briefing per user+day;
-  a soft-deleted row doesn't block regeneration — the staleness path soft-deletes + reinserts,
-  carrying `regen_count + 1`) which doubles as the lookup index.
+- **`companion_message`** (`mezo-gst9`, replaces `briefing` + `heartbeat_note`) — `id uuid pk
+  (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`, `is_deleted boolean not
+  null default false`, `created_at timestamptz not null default now()`, `message_date date not null`
+  (the day it is FOR — not when generated), `kind varchar(16) not null` (CHECK
+  `morning|sleep|weight|midday|evening`), `content jsonb not null` (the typed envelope, the old
+  `BriefingContentEnvelope` idiom renamed `CompanionMessageEnvelope`), `generated_at timestamptz not
+  null`. Uniqueness is a **partial unique index**
+  `uq_companion_message_created_by_date_kind … where is_deleted = false` (one LIVE message per
+  user+day+**kind** — the briefing's precedent, widened by one column; a second same-day weigh-in
+  probes this index and finds the existing row, so it's idempotent rather than blocked). **No
+  `regen_count`** — the column that made `refreshIfStale` possible has no successor; nothing in this
+  table is ever staleness-refreshed (§9 decision retired-regen).
 - **`weekly_suggestion`** (W1) — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id)
   ON DELETE CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
   `week_start date not null` (the **ISO Monday** the suggestion is FOR), `prose text not null` (plain
@@ -911,15 +976,6 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   `briefing`/`weekly_suggestion` partial-unique precedent — a soft-deleted row could be regenerated,
   but W2 has no regen path). **Has a jsonb envelope (like `briefing`) but no `regen_count`** — a
   memoir is written once, structured but not staleness-refreshed (§9 decision l).
-- **`heartbeat_note`** (H1) — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id)
-  ON DELETE CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
-  `note_date date not null`, `window_key varchar(16) not null` (**`midday`/`evening`** — the column
-  is NOT named `window`, a reserved word; DB CHECK pins the vocabulary), `kind varchar(16) not null`
-  (`nudge`/`closing`, CHECK-pinned), `content text not null` (plain HU prose), `generated_at
-  timestamptz not null`. Uniqueness is a **partial unique index**
-  `uq_heartbeat_note_created_by_note_date_window_key … where is_deleted = false` (one LIVE note per
-  user+day+window). **Flat prose like `weekly_suggestion`, no envelope, no `regen_count`** — a note
-  is written once per window (§9 decision r).
 - **`prediction`** (P1) — `id uuid pk`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`,
   `is_deleted`/`created_at`, `week_start date not null` (the generation week — a **plain index**
   `idx_prediction_created_by_week_start`, NOT unique: a week holds several predictions), `title
@@ -955,13 +1011,19 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
 
 ### Entities + envelope
 
-`BriefingEntity` (`entity/BriefingEntity.java`) `extends OwnedEntity`, UUID `@GeneratedValue` id,
-soft-deleted; `content` maps as a typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto
-`BriefingContentEnvelope` (`entity/BriefingContentEnvelope.java`) — a record
-`{String eyebrow, List<String> body, List<Ref> refs}` with a nested `Ref(String kind, String
-label)` (ADR 0006 / `ProvenanceEnvelope` typed-jsonb precedent). The envelope **deliberately
-mirrors the FE Briefing shape MINUS `confidence` and `tone`** (§9 gotcha c). `refs` are code-
-collected candidates the model selected by index, never invented.
+`CompanionMessageEntity` (`entity/CompanionMessageEntity.java`, replaces `BriefingEntity` +
+`HeartbeatNoteEntity`) `extends OwnedEntity`, UUID `@GeneratedValue` id, soft-deleted; `messageDate`/
+`kind` (the `KIND_MORNING`/`KIND_SLEEP`/`KIND_WEIGHT`/`KIND_MIDDAY`/`KIND_EVENING` constants) +
+`generatedAt`, and `content` maps as a typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto
+`CompanionMessageEnvelope` (`entity/CompanionMessageEnvelope.java`, renamed from
+`BriefingContentEnvelope`) — a record `{String eyebrow, List<String> body, List<Ref> refs}` with
+a nested `Ref(String kind, String label)` (ADR 0006 / `ProvenanceEnvelope` typed-jsonb precedent,
+unchanged). The envelope **deliberately mirrors the FE Briefing shape MINUS `confidence` and
+`tone`** (§9 gotcha c, unchanged — a fabricated-number rule that predates and outlives the rename).
+`refs` are code-collected candidates the model selected by index, never invented — empty for the
+`midday`/`evening` kinds (the retired heartbeat generator never collected refs either). **No
+`regenCount` field** — the column that made the old briefing's `refreshIfStale` possible has no
+successor on this entity.
 
 `WeeklySuggestionEntity` (`entity/WeeklySuggestionEntity.java`) `extends OwnedEntity`, UUID
 `@GeneratedValue` id, soft-deleted; three flat columns `{LocalDate weekStart, String prose, Instant
@@ -976,12 +1038,6 @@ with a nested `Anchor(String kind, String label)` (the `BriefingContentEnvelope`
 typed-jsonb precedent). `anchors` are code-collected candidates the model selected by index, never
 invented; `kind` is the FE `RefTag` vocabulary (`Memory`/`Pattern` in practice). The memoir is the
 briefing's structured-envelope shape at the weekly-suggestion smart tier.
-
-`HeartbeatNoteEntity` (`entity/HeartbeatNoteEntity.java`) `extends OwnedEntity`, UUID
-`@GeneratedValue` id, soft-deleted; flat columns `{LocalDate noteDate, String windowKey, String
-kind, String content, Instant generatedAt}` — **no jsonb** (plain prose, the `weekly_suggestion`
-shape). Carries the window/kind vocabulary constants (`WINDOW_MIDDAY`/`WINDOW_EVENING`/
-`KIND_NUDGE`/`KIND_CLOSING`).
 
 `PredictionEntity` (`entity/PredictionEntity.java`) `extends OwnedEntity`, UUID `@GeneratedValue` id,
 soft-deleted; flat columns `{LocalDate weekStart, String title, String basis, BigDecimal confidence
@@ -1017,10 +1073,9 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
-| `GET /api/proactive/briefing?date=` | `BriefingResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when no `daily_summary` in the past-days window (§9 gotcha d). |
+| `GET /api/proactive/feed?date=` | `FeedMessageResponse[]` | 200 · 401 | **Replaces the old `…/briefing` + `…/heartbeat`.** `date` optional (FE sends its LOCAL date; defaults to server today). The day's `companion_message` rows in generation order; for TODAY, cron-kind (morning/midday/evening) miss-recovery lazy-generates ahead of the read — event kinds (sleep/weight) never lazy-generate here. **`200 []` is the honest empty state, NEVER a 404** (a list endpoint — a behavioral change from the single-resource briefing/heartbeat reads it replaces). |
 | `GET /api/proactive/weekly-suggestion?date=` | `WeeklySuggestionResponse` | 200 · 401 · 404 | `date` optional (any day of the wanted week; the week identity is its ISO Monday; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when the prior week has no `daily_summary` (§9 gotcha d) — the FE keeps its honest placeholder. |
 | `GET /api/proactive/memoir` | `MemoirResponse` | 200 · 401 · 404 | **No parameters.** The LATEST persisted memoir, else lazy-generate the LAST COMPLETED week (`previousOrSame(MONDAY).minusWeeks(1)`); **404 `RESOURCE_NOT_FOUND`** when that week has no `daily_summary` (§9 gotcha d) — the FE renders its honest „készül" state. Archive (older rows) is a later slice. |
-| `GET /api/proactive/heartbeat?date=` | `HeartbeatNoteResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). The day's LATEST note; for TODAY the latest already-elapsed window lazy-generates when missing (§9 decision r); past dates never generate. **404 `RESOURCE_NOT_FOUND`** = honest absence — the Today card simply stays absent. |
 | `GET /api/proactive/prediction` | `PredictionResponse[]` | 200 · 401 | **No parameters.** ALL live predictions, newest window first; lazily generates the CURRENT week when it has no rows (needs CONFIRMED patterns). **`200 []` is the honest empty state — NEVER a 404** (a list endpoint). |
 | `GET /api/proactive/experiment` | `ExperimentResponse[]` | 200 · 401 | **No parameters.** Live experiments (proposed/active/completed, dismissed excluded), newest first; lazily proposes when the user has none. **`200 []` = honest empty, never 404.** |
 | `POST /api/proactive/experiment/{id}/decision` | `ExperimentResponse` | 200 · 400 · 401 · 404 · 409 | **L2 accept/dismiss** (`{decision: accept\|dismiss}`). `accept` ⇒ active + start_date=today; `dismiss` ⇒ dismissed. 404 = not-found/foreign; **409 `PROACTIVE_EXPERIMENT_NOT_PROPOSED`** = already decided; 400 = invalid decision value. |
@@ -1028,15 +1083,16 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `GET /api/proactive/challenge?templateSessionId=&date=` | `ChallengeResponse[]` | 200 · 401 | HBWI. A planned session's live challenges for `date` (dismissed excluded), oldest first. **Lazily generates** when none exist AND `date == today`; **lazily resolves** accepted ones when the instance is done. **`200 []` = honest empty, never 404.** Owner-scoped. |
 | `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
-Schemas: `BriefingResponse{date, eyebrow, body[], refs[], generatedAt}` +
-`BriefingRef{kind, label}` — **no `confidence`, no `tone`** on the wire (§9 gotcha c). `refs[].kind`
-is the FE `RefTag` vocabulary (`WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory`).
+Schemas: `FeedMessageResponse{date, kind, eyebrow, body[], refs[], generatedAt}` (replaces
+`BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`, no
+`tone`** on the wire (§9 gotcha c, unchanged). `kind` is the 5-value companion-feed enum
+(`morning|sleep|weight|midday|evening`); `refs[].kind` is the FE `RefTag` vocabulary
+(`WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory`) — always `[]` for the `midday`/
+`evening` kinds (the retired heartbeat generator carried no refs either).
 `WeeklySuggestionResponse{weekStart, prose, generatedAt}` — plain prose, no structured fields.
 `MemoirResponse{weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
 `anchors[].kind` is the same FE `RefTag` vocabulary (`Memory`/`Pattern` in practice), model-SELECTED
 from code-collected candidates, never invented.
-`HeartbeatNoteResponse{date, window, kind, content, generatedAt}` — flat prose; `window` on the
-wire maps from the entity's `windowKey`.
 `PredictionResponse{id, title, basis, confidence?, metricKey, expectedDirection, validFrom, validTo,
 status, actual?, generatedAt}` — `confidence` nullable on the wire (the FE renders „tanulom" on null;
 the `BigDecimal → Double` mapper default); the FE derives its `date` window label + accuracy header
@@ -1054,22 +1110,26 @@ mapper, §3 / §9 gotcha), not stored; `confidence`/`outcome`/`outcomeGood` null
 
 ### Configuration
 
-`config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.*` — nested `briefing` +
-`weekly` + `memoir` + `heartbeat` + `prediction` + `experiment` + `challenge` records):
+`config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.*` — nested `weekly` +
+`memoir` + `prediction` + `experiment` + `challenge` + **`feed`** records; the old `briefing` +
+`heartbeat` nested records are GONE):
 
-- **`briefing.past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative
-  memory the briefing gather reads — and doubles as the **emptiness gate** (zero summaries ⇒ 404).
-- **`briefing.cron`** (`@NotBlank`, default `0 45 5 * * *`): the dawn `BriefingJob` schedule (server
-  zone), before the typical wake.
-- **`briefing.regen-cap-per-day`** (`@Min(0) @Max(5)`, default **2**): the per-user+day ceiling on
-  sleep-triggered regenerations (`refreshIfStale`); 0 = never regenerate.
+- **`feed.past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative
+  memory the morning/midday/evening gathers read — and doubles as the **emptiness gate** for those
+  three kinds (zero summaries ⇒ no row; `sleep`/`weight` use their OWN fresh-log gate instead, not
+  this one). Replaces `briefing.past-days`/the retired `heartbeat`'s shared use of it.
+- **`feed.morning-cron`** (`@NotBlank`, default `0 45 5 * * *`): the dawn `CompanionMessageJob.
+  runMorning` schedule (server zone), before the typical wake — replaces `briefing.cron`.
+- **`feed.midday-cron`** (`@NotBlank`, default **`0 30 12 * * *`**) + **`feed.evening-cron`**
+  (`@NotBlank`, default **`0 30 20 * * *`**): the two window schedules — replaces `heartbeat.midday-
+  cron`/`heartbeat.evening-cron`. The lazy GET derives the window fire-times from these SAME
+  expressions — one source of truth (unchanged idiom from the retired heartbeat).
+- **No successor to `briefing.regen-cap-per-day`.** The sleep-triggered regen mechanism it capped
+  is retired outright (§9 decision retired-regen) — there is nothing left to cap.
 - **`weekly.cron`** (`@NotBlank`, default **`0 0 6 * * MON`** — Monday 06:00 server zone): the
   `WeeklySuggestionJob` schedule; the suggestion is FOR the week that is starting (§9 decision j).
 - **`memoir.cron`** (`@NotBlank`, default **`0 0 19 * * SUN`** — Sunday 19:00 server zone): the
   `MemoirJob` schedule; the memoir is FOR the week ENDING that Sunday (§9 decision l).
-- **`heartbeat.midday-cron`** (`@NotBlank`, default **`0 30 12 * * *`**) + **`heartbeat.evening-cron`**
-  (`@NotBlank`, default **`0 30 20 * * *`**): the two H1 window schedules (§9 decision p). The lazy
-  GET derives the window fire-times from these SAME expressions — one source of truth (§9 decision r).
 - **`prediction.cron`** (`@NotBlank`, default **`0 30 6 * * MON`**) + **`prediction.validation-cron`**
   (`@NotBlank`, default **`0 15 6 * * *`**) + **`prediction.max-per-week`** (`@Min(1) @Max(10)`, default
   **3**) + **`prediction.weight-epsilon-kg`** (`@DecimalMin("0.0")`, default **0.1**) +
@@ -1086,11 +1146,12 @@ mapper, §3 / §9 gotcha), not stored; `confidence`/`outcome`/`outcomeGood` null
   outcome-backstop schedule and the per-workout proposal cap. **No propose/generation cron** —
   challenges are generated lazily on the prep-read (§9 challenge decision).
 
-Plus the seven techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
-of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still serves):
-**`briefing-job`** (`BRIEFING_JOB_SWITCH`), **`weekly-suggestion-job`** (`WEEKLY_SUGGESTION_JOB_SWITCH`),
-**`memoir-job`** (`MEMOIR_JOB_SWITCH`), **`heartbeat-job`** (`HEARTBEAT_JOB_SWITCH` — one switch for
-BOTH windows), **`prediction-job`** (`PREDICTION_JOB_SWITCH` — generation + validation),
+Plus the **six** techcore job switches (down from seven — `mezo-gst9` merged `briefing-job` +
+`heartbeat-job` into one `feed-job`), each the THIRD `@ConditionalOnProperty` on its job bean (on
+top of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still
+serves): **`feed-job`** (`FEED_JOB_SWITCH` — ALL THREE `CompanionMessageJob` crons, morning +
+midday + evening), **`weekly-suggestion-job`** (`WEEKLY_SUGGESTION_JOB_SWITCH`), **`memoir-job`**
+(`MEMOIR_JOB_SWITCH`), **`prediction-job`** (`PREDICTION_JOB_SWITCH` — generation + validation),
 **`experiment-job`** (`EXPERIMENT_JOB_SWITCH` — propose + outcome), and **`challenge-job`**
 (`CHALLENGE_JOB_SWITCH` — outcome backstop only), all `mezo.techcore.cron.*.enabled`, default `true`.
 
@@ -1099,51 +1160,62 @@ BOTH windows), **`prediction-job`** (`PREDICTION_JOB_SWITCH` — generation + va
 Proactive is a **Phase-4 domain that reads from companion + the other features, never the reverse**
 (the roadmap coupling rule; the frozen ArchUnit cycle rule guards it).
 
-### 5.1 Proactive → Companion (✅ B1.1 + W1 wired — read-only, one-way)
-The briefing generator composes three companion capabilities directly:
-`ContextSnapshotAssembler.render(userId, date)` (V0.3 today-block),
+### 5.1 Proactive → Companion (✅ wired — read-only, one-way)
+`CompanionMessageGenerator` composes three companion capabilities per kind:
+`ContextSnapshotAssembler.render(userId, date)` for `sleep`/`weight`/`midday`/`evening` — but
+`.renderWithoutBiometrics(userId, date)` for `morning` (the sleep/weight strip-at-source, see §1) —
 `KnowledgeFactService.renderPromptBlock(userId)` (V1.1 top-N facts),
 `DailySummaryRepository.findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(…)`
-(V2.2 narratives), and the `CompanionLlm.complete(system, user)` port for the one prose call.
-**W1's `WeeklySuggestionGenerator` adds a fourth read** — `PatternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(…)`
-(the V3.1/V3.2 Inbox rows) — and calls the port's **`completeSmart`** variant (Pro tier) instead of
-`complete`. **W2's `MemoirGenerator` composes the same four reads** (summaries + facts + patterns +
-the `completeSmart` port) but over the week's OWN window `[weekStart, weekStart+6]` rather than the
-prior week — no new companion capability, just a different window. **H1's `HeartbeatGenerator`**
-reuses the briefing's three reads (snapshot + facts + summaries) via the CHEAP-tier `complete` —
-plus one proactive-internal read (`BriefingRepository`, the dedupe block). **P1's `PredictionGenerator`**
-reads snapshot + facts + **CONFIRMED patterns only** (`findByCreatedByAndStatusAndDeletedFalse…`, the
-grounding gate) via `completeSmart`; **P1's validation + P2's outcome** read
-`WeightLogRepository` / `SleepLogRepository` / `WorkoutSessionRepository.findDoneInstanceDates`
-(biometrics + train, read-only) via the shared **`MetricWindowEvaluator`** — the proactive reach
-beyond companion, still strictly one-way. **P2's `ExperimentProposalGenerator`** reads CONFIRMED
-patterns + snapshot + facts via `completeSmart` (the P1 pattern-grounding gate).
+(V2.2 narratives, `morning`/`midday`/`evening` only — `sleep`/`weight` are grounded by their own
+fresh log instead), and the `CompanionLlm.complete(system, user)` port for each kind's one prose
+call — plus one proactive-internal read (`CompanionMessageRepository`, the `earlierMessagesBlock`
+same-day dedupe). **W1's `WeeklySuggestionGenerator` adds a fourth companion read** —
+`PatternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(…)` (the V3.1/V3.2 Inbox
+rows) — and calls the port's **`completeSmart`** variant (Pro tier) instead of `complete`. **W2's
+`MemoirGenerator` composes the same four reads** (summaries + facts + patterns + the `completeSmart`
+port) but over the week's OWN window `[weekStart, weekStart+6]` rather than the prior week — no new
+companion capability, just a different window. **P1's `PredictionGenerator`** reads snapshot + facts
++ **CONFIRMED patterns only** (`findByCreatedByAndStatusAndDeletedFalse…`, the grounding gate) via
+`completeSmart`; **P1's validation + P2's outcome** read `WeightLogRepository` / `SleepLogRepository`
+/ `WorkoutSessionRepository.findDoneInstanceDates` (biometrics + train, read-only) via the shared
+**`MetricWindowEvaluator`** — the proactive reach beyond companion, still strictly one-way. **P2's
+`ExperimentProposalGenerator`** reads CONFIRMED patterns + snapshot + facts via `completeSmart` (the
+P1 pattern-grounding gate).
 **Contract crossing the seam:** these read methods with explicit `userId` scoping; strictly one-way — no companion code imports
 proactive. This one-way rule is why the fake sentinels' markers are literal mirrors rather than
 imports (§9 gotcha a).
 
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
 All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per
-briefing) and **smart tier** (`completeSmart`, one call per weekly suggestion / one per memoir — the
-V3.2 Pro-tier routing). Real `GeminiCompanionLlm` / test `FakeCompanionLlm` (the `[fake-briefing:{…}]`
-+ `[fake-weekly:…]` + `[fake-memoir:{…}]` sentinels; the fake's `completeSmart` delegates to
-`complete`, so one dispatch covers both tiers). Provider detail is hidden by the port; proactive adds
-no new adapter.
+companion-feed message) and **smart tier** (`completeSmart`, one call per weekly suggestion / one per
+memoir — the V3.2 Pro-tier routing). Real `GeminiCompanionLlm` / test `FakeCompanionLlm` (the
+`[fake-feed-morning:{…}]`/`[fake-feed-sleep:{…}]`/`[fake-feed-weight:{…}]` sentinels for the three
+JSON-answering kinds, plus `[fake-heartbeat:…]` (the sentinel string itself wasn't renamed even
+though its marker mirror now points at `CompanionMessageGenerator.WINDOW_MARKER`) for midday/
+evening's flat-prose answer — plus `[fake-weekly:…]` + `[fake-memoir:{…}]`; the fake's
+`completeSmart` delegates to `complete`, so one dispatch covers both tiers). Provider detail is
+hidden by the port; proactive adds no new adapter.
 
 ### 5.3 Proactive ↔ API contract & backend platform (wired)
 On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backend.md)):
 `proactive.yml` → merged `api/openapi.yml` → generated `ProactiveApi` + DTOs (backend) and
 `api.gen.ts` types (FE). Drift = compile error.
 
-### 5.4 Proactive → Today FE (✅ B1.2 wired — dual-mode read)
-The Today „Reggeli briefing" card ([today.md](today.md)) is the consumer. `useBriefing()`
-(`data/today/briefingHooks.ts`) reads `GET /api/proactive/briefing?date=<local>` via
-`briefingApi.get` (`data/today/briefingApi.ts`, `toBriefing` wire→`Briefing`), and `useToday`
-composes it into `briefing: Briefing | null` + `briefingDemo = serverBriefing == null`. `TodayPage`
-renders the generated prose when present, else `resolveBriefing` behind the „Demo tartalom" label.
-Mock mode: `useBriefing` returns null synchronously (no fetch) ⇒ the static fallback (byte-parity).
-The seam type is the FE `Briefing` **minus** `confidence`/`tone` (the wire omits both — §9 gotcha c;
-`Briefing.confidence` is now optional to model that).
+### 5.4 Proactive → Today FE (✅ `mezo-gst9` wired — dual-mode read, replaces the B1.2+H1 seams)
+The Today `MezoChip` message thread ([today.md](today.md)) is the consumer. `useCompanionFeed()`
+(`data/today/feedHooks.ts`, `['companionFeed', date]`) reads `GET /api/proactive/feed?date=<local>`
+via `feedApi.get` (`data/today/feedApi.ts`, `toFeedMessages` wire→`FeedMessage[]`; mock mode returns
+`[]` synchronously — no fetch), polled every 60s in real mode (`refetchInterval`) so event-triggered
+kinds (sleep/weight) and any missed cron-kind land without a manual reload — the sleep/weight-log
+mutations ALSO invalidate `['companionFeed', …]` directly on success, so a fresh log usually shows
+up in the thread well before the next poll tick. `logic/mezoMessages.ts`'s `buildMezoMessages({feed,
+demoBriefing})` maps each `FeedMessage` 1:1 to a `MezoMessageItem` (kind→id, `body[].text`→
+paragraphs, refs pass through) and prepends the labelled demo card (`resolveBriefing(scenario.
+dayState)`) only while the feed carries no `morning` kind. `TodayPage.tsx` calls `useCompanionFeed()`
+directly (not through `useToday`) and passes the result to `buildMezoMessages`. **This replaces BOTH**
+the old `useBriefing()`/`briefingHooks.ts`/`BriefingCard.tsx` seam (B1.2) **and** the old
+`useCompanionNote()`/`heartbeatHooks.ts`/`CompanionNoteCard.tsx` seam (H1) — all now deleted. The
+seam type omits `confidence`/`tone` same as before (§9 gotcha c, unchanged).
 
 ### 5.5 Proactive → Insights Weekly FE (✅ W1 wired — real-only read)
 The Insights Weekly „Mezo · heti tervjavaslat" card ([insights.md §2.2](insights.md)) is the
@@ -1167,13 +1239,9 @@ renders the memoir card or the honest null-state, with reactions/anniversary/arc
 `mode === 'mock'`. The FE `Memoir` type (`{week, title, body, anchors}`) is reused **unchanged** from
 Phase 1. `memoir` also leaves `PHASE3_TAB_IDS` (`tabs.ts`) so the tab is visible in real mode.
 
-### 5.7 Proactive → Today FE, companion note (✅ H1 wired — dual-mode read)
-The Today `CompanionNoteCard` is the consumer. `useCompanionNote()` (`data/today/heartbeatHooks.ts`,
-`['heartbeat', date]`) reads `GET /api/proactive/heartbeat?date=<local>` via `heartbeatApi.get`
-(`data/today/heartbeatApi.ts`, wire→FE `CompanionNote{window, kind, text}`), 404→null, `retry:false`;
-mock mode returns null synchronously (no fetch — the Phase-1 Today has no such card, byte-parity).
-`TodayPage.tsx` calls the hook directly (not through `useToday` — the card is independent of the
-composed Today payload) and renders the card after the check-in strip only when the note exists.
+### 5.7 (retired — folded into §5.4)
+H1's separate `CompanionNoteCard` seam is gone; see §5.4 above (`useCompanionFeed` now covers
+midday/evening the same way it covers morning/sleep/weight).
 
 ### 5.8 Proactive → Insights Predictions FE (✅ P1 wired — dual-mode read)
 The Insights Predictions tab ([insights.md §2.4](insights.md)) is the consumer. `usePredictions()`
@@ -1221,16 +1289,20 @@ never imports proactive — challenges are NOT in `WorkoutPlan`, sourced separat
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
 the owner exists, and BOTH `mezo.feature.companion.enabled=true` + `mezo.feature.proactive.enabled=true`
-— the defaults). A briefing only generates when at least one `daily_summary` exists in the past-days
-window; for a keyless local run use the fake adapter and plant a `[fake-briefing:{…}]` sentinel via a
-check-in note (the `BriefingGeneratorIT` pattern):
+— the defaults). The `morning`/`midday`/`evening` kinds only generate when at least one
+`daily_summary` exists in the `feed.past-days` window; `sleep`/`weight` need a fresh log instead (an
+empty feed is `200 []`, never a 404 — see §3). For a keyless local run use the fake adapter and plant
+a `[fake-feed-morning:{…}]` sentinel via a check-in note (the `CompanionMessageGeneratorIT` pattern):
 
 ```bash
 TOKEN=... # from POST /api/auth/login
-curl -s "http://localhost:8090/api/proactive/briefing?date=2026-07-06" \
+curl -s "http://localhost:8090/api/proactive/feed?date=2026-08-16" \
   -H "Authorization: Bearer $TOKEN"
-# → { "date":"2026-07-06", "eyebrow":"…", "body":["…"], "refs":[{"kind":"Sleep","label":"regeneráció"}], "generatedAt":… }
-# → 404 SystemMessageList when there is no daily_summary in the window (honest empty state)
+# → [ { "date":"2026-08-16", "kind":"morning", "eyebrow":"…", "body":["…"],
+#       "refs":[{"kind":"Goal","label":"cél"}], "generatedAt":… },
+#     { "date":"2026-08-16", "kind":"sleep", "eyebrow":"…", "body":["…"],
+#       "refs":[{"kind":"Sleep","label":"ma éjszakai alvás"}], "generatedAt":… } ]
+# → [] (200) when nothing has generated yet — honest empty, NEVER a 404
 
 curl -s "http://localhost:8090/api/proactive/weekly-suggestion?date=2026-07-06" \
   -H "Authorization: Bearer $TOKEN"
@@ -1242,11 +1314,6 @@ curl -s "http://localhost:8090/api/proactive/memoir" \
 # → { "weekStart":"2026-06-29", "title":"…", "body":"…", "anchors":[{"kind":"Memory","label":"2026-07-01"}], "generatedAt":… }
 # → 404 SystemMessageList when the last completed week has no daily_summary (the FE's honest „készül" state)
 
-curl -s "http://localhost:8090/api/proactive/heartbeat" \
-  -H "Authorization: Bearer $TOKEN"
-# → { "date":"2026-07-07", "window":"midday", "kind":"nudge", "content":"…", "generatedAt":… }
-# → 404 SystemMessageList before the first window / without narrative memory (honest absence — no card)
-
 curl -s "http://localhost:8090/api/proactive/prediction" \
   -H "Authorization: Bearer $TOKEN"
 # → [ { "id":"…", "title":"…", "basis":"…", "confidence":null, "metricKey":"weight_trend",
@@ -1255,6 +1322,9 @@ curl -s "http://localhost:8090/api/proactive/prediction" \
 # → [] (200) when there are no confirmed patterns yet (honest empty — NOT a 404)
 ```
 
+The `sleep`/`weight` kinds don't lazy-generate off this GET at all — they need a `POST
+/api/biometrics/sleep`/`POST /api/biometrics/weight` first (or the fake's `[fake-feed-sleep:{…}]`/
+`[fake-feed-weight:{…}]` sentinel planted via a check-in note, `CompanionMessageEventIT`'s pattern).
 The prediction generator needs at least one CONFIRMED `pattern`; for a keyless local run plant a
 `[fake-prediction:{…}]` sentinel via a check-in note (the `PredictionGeneratorIT` pattern).
 
@@ -1277,18 +1347,27 @@ run plant a `[fake-weekly:…]` sentinel via a prior-week check-in note (the `We
 pattern). The **memoir** needs a `daily_summary` inside the last completed week — and because its
 gather is a PAST-week composition with no snapshot, the `[fake-memoir:{…}]` sentinel is planted via a
 daily-summary NARRATIVE, not a check-in note (the `MemoirGeneratorIT` pattern — §9 gotcha m).
-**FE consumers:** the Today card (B1.2, [today.md](today.md)), the Insights Weekly card (W1) and the
-Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoints dual-mode.
+**FE consumers:** the Today MezoChip thread (`mezo-gst9`, [today.md](today.md)), the Insights Weekly
+card (W1) and the Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoints
+dual-mode.
 
 ## 7. How to extend it
 
-- **B1.2 shipped (cron + staleness + FE swap) — the extension pattern:** the dawn `BriefingJob`
-  (`@Scheduled`, three-switch, today-only, per-user isolation), the read-path `refreshIfStale`
-  (soft-delete + regenerate on a late `sleep_log`, `regen_count` cap), and the dual-mode `useBriefing`
-  Today swap are the working templates for the next stages. **To tune freshness:** widen the staleness
-  trigger beyond sleep (more `existsBy…` probes in `refreshIfStale`) or raise `regen-cap-per-day`.
-  **To move the cron:** `mezo.proactive.briefing.cron` (never add a catch-up loop — a past morning is
-  never read; §9 decision f).
+- **`mezo-gst9` shipped (companion feed: 5 kinds, 2 triggers, 1 table) — the current extension
+  pattern for anything that speaks first.** `CompanionMessageJob` (`@Scheduled`, three-switch,
+  today-only, per-user isolation), `CompanionMessageEventListener` (`@Async`
+  `@TransactionalEventListener(AFTER_COMMIT)` on a domain event — the pattern for ANY future
+  "reacts to a fresh write" surface, not just sleep/weight), and the dual-mode `useCompanionFeed`
+  Today swap are the working templates. **To add a new event-triggered kind:** publish a
+  `*SavedEvent` from the owning service's `@Transactional` write method (right before returning),
+  add a listener method + a `generate*Reaction` method with its own freshness gate, add the kind to
+  the `ck_companion_message_kind` CHECK. **To add a new cron-triggered kind:** add a `*-cron`
+  property to `ProactiveProperties.Feed`, a `@Scheduled` method on `CompanionMessageJob`, and widen
+  `ensureTodayCronKinds`' elapsed-check in `ProactiveFeedService` for its lazy miss-recovery. **To
+  move a cron:** `mezo.proactive.feed.{morning,midday,evening}-cron` (never add a catch-up loop — a
+  past day is never read; unchanged from the old briefing/heartbeat reasoning, §9 decision f).
+  **There is no successor to `refreshIfStale`/`regen_count`** — do not resurrect a staleness-regen
+  path; if a kind needs fresher data, make it event-triggered instead (§9 decision retired-regen).
 - **W1 shipped (weekly generator + Monday cron + FE swap) — the smart-tier template:** `WeeklySuggestionGenerator`
   (pure-code `gather` at the smart tier, `completeSmart`, plain-prose output, honest-null),
   `WeeklySuggestionJob` (`@Scheduled`, three-switch, current-week-only, per-user isolation) and the
@@ -1304,13 +1383,6 @@ Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoin
   envelope. It is also the recipe for un-ghosting the remaining Insights tabs (predictions/experiments
   in P): drop from `PHASE3_TAB_IDS`, remove the page guard, render real data + the honest null-state,
   keep unpersisted extras mock-only.
-- **H1 shipped (heartbeat generator + two window crons + Today card) — the cheap-tier in-day
-  template:** `HeartbeatGenerator` (snapshot-grounded gather + briefing dedupe + window
-  instruction, `complete`, flat prose, honest-null), `HeartbeatJob` (two `@Scheduled` methods on
-  config crons under ONE switch) and the `CronExpression`-derived lazy-elapsed-window read
-  (`ProactiveHeartbeatService.latestElapsedWindow`) are the template for any future intra-day
-  surface. **To add a window:** extend the `Heartbeat` properties record + a third `@Scheduled`
-  method + the service's window list (and widen the DB CHECK on `window_key`).
 - **P1 shipped (prediction generator + validation + weekly/daily job + list read + tab un-ghost) —
   the deterministic-forecast template:** `PredictionGenerator` (smart-tier gather over CONFIRMED
   patterns + a fixed metric catalog, code-set windows, pattern-copied confidence, honest-empty),
@@ -1327,58 +1399,79 @@ Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoin
   **write path** (`ProactiveExperimentService.decide` — fetch-owned-or-404 → state-guard 409 →
   mutate, the companion `PatternService` idiom) is the template for any future proactive L2 surface.
   **The `PHASE3_TAB_IDS` set is now empty** — every Insights tab is real.
-- **The proactive epic is COMPLETE (all 8 slices), and so is `mezo-h4wp.6` (H2 Web Push).** N1
-  (delivery spine — VAPID + `push_subscription` + the SW push handler), N2 (the per-minute
+- **The original proactive epic is COMPLETE (all 8 slices), `mezo-h4wp.6` (H2 Web Push) is
+  COMPLETE, and `mezo-gst9` then redesigned the B/H stages into the companion feed.** N1 (delivery
+  spine — VAPID + `push_subscription` + the SW push handler), N2 (the per-minute
   `NotificationDispatchJob` + `notification_pref`/`push_log` + categories 1-9), and N3
   (`notification_schedule` + the FE preview header + categories 10-11) all shipped 2026-07-29 — the
-  heartbeat/briefing/weekly/memoir prose this epic generates now reaches Daniel's iPhone with the app
-  closed, not only the in-app surfaces. Full design + data model + gotchas:
-  [`_platform-notifications.md`](_platform-notifications.md). New proactive surfaces belong to the
+  companion-feed/weekly/memoir prose reaches Daniel's iPhone with the app closed, not only the
+  in-app surfaces (`AnchorResolver` now reads `companion_message` for five of its seven prose
+  categories, two of them NEW — `evening`, `sleep_reaction`, `weight_reaction` — see
+  [`_platform-notifications.md`](_platform-notifications.md)). New proactive surfaces belong to the
   deferred-signals epic (spec §1: vulnerable/niggle sources, crisis/drift, opportunity scanner,
-  anniversaries) — map it companion-style when picked up. Any new surface: add a sibling `*Generator`
-  + table + `*.yml` fragment in `feature/proactive/`, gated on the same dual switch; smart-tier
-  narratives reuse the gather idiom, a plain-prose surface follows `weekly_suggestion`, a structured
-  one follows `briefing`/`memoir`, a deterministic-verdict one reuses `MetricWindowEvaluator`.
-- **Prompt / marker tuning:** the prompts are `BriefingGenerator.PROMPT` /
-  `WeeklySuggestionGenerator.PROMPT` / `MemoirGenerator.PROMPT` / `HeartbeatGenerator.PROMPT` /
-  `PredictionGenerator.PROMPT` / `ExperimentProposalGenerator.PROMPT` (keep each `*_MARKER` prefix +
-  its `FakeCompanionLlm` literal mirror in sync — §9 gotcha a); briefing ref candidates are
-  `SNAPSHOT_CANDIDATES` + the per-summary `Memory` refs in `gather` (the weekly suggestion and the
-  heartbeat carry no refs; the prediction/experiment carry pattern candidates — the prediction
-  resolves them to CONFIDENCE, the experiment only uses them for grounding).
+  anniversaries) — map it companion-style when picked up. Any new EVENT-triggered surface follows
+  the companion-feed pattern above; any new STANDALONE weekly/structured surface: add a sibling
+  `*Generator` + table + `*.yml` fragment in `feature/proactive/`, gated on the same dual switch;
+  smart-tier narratives reuse the gather idiom, a plain-prose surface follows `weekly_suggestion`, a
+  structured one follows `memoir`, a deterministic-verdict one reuses `MetricWindowEvaluator`.
+- **Prompt / marker tuning:** the prompts are `CompanionMessageGenerator.MORNING_PROMPT` /
+  `SLEEP_PROMPT` / `WEIGHT_PROMPT` / `WINDOW_PROMPT` / `WeeklySuggestionGenerator.PROMPT` /
+  `MemoirGenerator.PROMPT` / `PredictionGenerator.PROMPT` / `ExperimentProposalGenerator.PROMPT`
+  (keep each `*_MARKER` prefix + its `FakeCompanionLlm` literal mirror in sync — §9 gotcha a); the
+  morning ref candidates are `MORNING_CANDIDATES` (Goal/Workout/FuelDay/Medication, deliberately no
+  WeightTrend/Sleep) + the per-summary `Memory` refs in `gather`; `SLEEP_CANDIDATES`/
+  `WEIGHT_CANDIDATES` are the sleep/weight-kind lists; `midday`/`evening` carry no refs (the
+  retired-heartbeat precedent); the prediction/experiment carry pattern candidates — the prediction
+  resolves them to CONFIDENCE, the experiment only uses them for grounding.
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing
 
 Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake LLM's
-`[fake-briefing:{…}]` + `[fake-weekly:…]` + `[fake-memoir:{…}]` + `[fake-heartbeat:…]` +
-`[fake-prediction:{…}]` + `[fake-experiment:{…}]` sentinels script deterministic answers. **~103
-tests across 31 classes** — the B/W/H/P1 classes plus the P2 additions:
+`[fake-feed-morning:{…}]`/`[fake-feed-sleep:{…}]`/`[fake-feed-weight:{…}]`/`[fake-heartbeat:…]`
+(window kinds) + `[fake-weekly:…]` + `[fake-memoir:{…}]` + `[fake-prediction:{…}]` +
+`[fake-experiment:{…}]` sentinels script deterministic answers.
 
-**B (briefing):**
+**Companion feed (`mezo-gst9`, replaces the old B/H1 test classes — `BriefingPersistenceIT`/
+`BriefingGeneratorIT`/`BriefingJobIT`/`BriefingJobSwitchOffIT`/`BriefingFreshnessIT`/
+`HeartbeatPersistenceIT`/`HeartbeatGeneratorIT`/`HeartbeatJobIT`/`HeartbeatJobSwitchOffIT`/
+`HeartbeatLazyIT` are ALL DELETED, not renamed):**
 
-- **`BriefingPersistenceIT` (4)** — envelope jsonb round-trip; the partial-unique index rejects a
-  second LIVE row for the same day; soft-delete allows regeneration; owner-scoped finder isolation.
-- **`BriefingGeneratorIT` (6)** — gather composes snapshot+facts+summaries+candidates when data
-  exists; gather returns null on an empty window; generate persists the scripted envelope; generate
-  returns the existing row without an LLM call; generate returns null on non-parseable JSON; generate
-  drops out-of-range (hallucinated) ref indexes.
-- **`ProactiveApiIT` (9)** — HTTP briefing: lazy-generate + idempotent re-GET; `date` param honored for
-  a past date; 404 when no narrative memory; 401 without a token. **+ W1 weekly-suggestion (2):**
-  lazy-generate when the prior week has memory; 404 when no prior-week memory. **+ W2 memoir (3):**
-  returns the latest persisted row; lazily generates the last completed week (the fake's un-scripted
-  „Fake memoir" default); 404 when no memoir and no memory.
-- **`ProactiveApiSwitchOffIT` (3)** — `mezo.feature.proactive.enabled=false` ⇒ 404 for briefing,
-  weekly-suggestion **and** memoir (bean absence).
-- **`ProactiveApiCompanionOffIT` (1)** — `mezo.feature.companion.enabled=false` ⇒ 404 (dual gate).
-- **`BriefingJobIT` (3, B1.2)** — the dawn run generates today's briefing when the user has narrative
-  memory; is idempotent when a briefing already exists; skips a user without memory and still serves
-  the others (per-user failure isolation).
-- **`BriefingJobSwitchOffIT` (1, B1.2)** — `mezo.techcore.cron.briefing-job.enabled=false` ⇒ no
-  `BriefingJob` bean (the third switch).
-- **`BriefingFreshnessIT` (4, B1.2)** — `refreshIfStale` regenerates when a sleep log arrived after
-  generation; serves the existing row when no late input; stops regenerating once the cap is reached;
-  serves 404 **and preserves the old row** when regeneration fails (the rollback path).
+- **`CompanionMessagePersistenceIT` (5)** — envelope jsonb round-trip; the partial unique index
+  rejects a second LIVE row for the same (user, day, **kind**) but allows another kind the same day;
+  soft-delete allows regeneration; owner-scoped finder isolation; the generation-order finder.
+- **`CompanionMessageGeneratorIT` (14)** — per kind: `generateMorning` persists when the summary
+  window has data / returns null on an empty window / idempotent on a second call;
+  `generateSleepReaction` persists when a fresh sleep log exists / returns null without one /
+  idempotent / includes the `earlierMessagesBlock` when a morning message already exists;
+  `generateWeightReaction` persists when today has a weigh-in / returns null without one;
+  `generateWindow` persists for midday / persists for evening / returns null on a blank answer /
+  returns null on an empty summary window / idempotent.
+- **`CompanionMessageJobIT` (6)** — `runMorning` generates today's morning message for a user with
+  narrative memory / is idempotent / skips a user without memory and still serves others (per-user
+  isolation) / ALSO generates the sleep reaction right after morning when a fresh sleep log already
+  exists (the spec §5 "cron előtt logolt alvás" case); `runMidday`/`runEvening` each generate their
+  window kind for a user with memory.
+- **`CompanionMessageJobSwitchOffIT` (2)** — `mezo.techcore.cron.feed-job.enabled=false` ⇒ no
+  `CompanionMessageJob` bean (the third switch, now covering all three crons at once).
+- **`CompanionMessageEventIT` (4)** — logging fresh sleep creates the sleep-reaction message;
+  logging a backfilled sleep date does NOT (freshness guard); logging today's weight creates the
+  weight-reaction message; logging a backfilled weight date does NOT. Exercises the REAL
+  `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` path end-to-end over HTTP (`ApiIntegrationTest`),
+  not a mocked listener.
+- **`ProactiveApiFeedIT` (6)** — `GET /api/proactive/feed`: empty list when no messages and no
+  narrative memory (honest empty, not 404); returns persisted rows in `generatedAt` order; lazily
+  generates the morning message when missing for today; lazily generates elapsed window kinds
+  (midday, via a midday-or-later clock override) when missing; does **NOT** generate for a past date.
+- **Known gap (flagged, not fixed here):** `ProactiveApiSwitchOffIT`/`ProactiveApiCompanionOffIT`
+  still assert `GET /api/proactive/briefing` and `GET /api/proactive/heartbeat` 404 under the
+  switch-off properties — those paths no longer route to any controller method at all (Spring's
+  generic no-handler 404, not the dual-switch bean-absence path the tests intend to prove), so they
+  pass for the wrong reason. Neither switch-off class has a `GET /api/proactive/feed` case. The
+  suite is green because ANY unmapped path 404s the same way, but the specific "feed 404s when
+  proactive/companion is off" behavior is currently untested — a real coverage gap, not a design
+  issue in the feed itself (`ensureTodayCronKinds`/`getFeed` are behind the same
+  `@ConditionalOnProperty` as every other proactive bean, §9 gotcha b).
 
 **W (weekly suggestion, W1):**
 
@@ -1408,23 +1501,6 @@ tests across 31 classes** — the B/W/H/P1 classes plus the P2 additions:
   narrative memory; is idempotent when a memoir already exists.
 - **`MemoirJobSwitchOffIT` (1)** — `mezo.techcore.cron.memoir-job.enabled=false` ⇒ no `MemoirJob`
   bean (the third switch).
-
-**H (heartbeat, H1):**
-
-- **`HeartbeatPersistenceIT` (3)** — round-trip; the partial-unique index rejects a second LIVE row
-  for the same (user, day, window) but allows another window the same day; the latest-first
-  owner-scoped finder returns the own newest note.
-- **`HeartbeatGeneratorIT` (5)** — gather composes snapshot + latest summary + the `MAI BRIEFING`
-  dedupe block + the `ABLAK:` instruction; gather returns null without narrative memory; generate
-  persists the scripted note (via a `[fake-heartbeat:…]` check-in-note sentinel — the gather HAS a
-  snapshot, unlike the memoir §9 gotcha m) with the window-derived kind; generate is idempotent;
-  generate returns null on a blank answer.
-- **`HeartbeatJobIT` (2)** — the midday run writes a nudge for a user with memory; the evening run
-  is idempotent. **`HeartbeatJobSwitchOffIT` (1)** — the third switch ⇒ no `HeartbeatJob` bean.
-- **`HeartbeatLazyIT` (2)** — with midnight-override crons the GET lazy-generates the LATEST
-  elapsed window (evening) for today; 404 without memory. **`ProactiveApiIT` (+3)** — persisted
-  latest note wins (evening beats midday); a PAST date never lazy-generates (404 despite memory);
-  401 without a token. **`ProactiveApiSwitchOffIT` (+1)** — heartbeat 404 when proactive off.
 
 **P (predictions, P1):**
 
@@ -1465,10 +1541,14 @@ tests across 31 classes** — the B/W/H/P1 classes plus the P2 additions:
 - **`PredictionValidationIT` (4, unchanged)** — re-run against the extracted `MetricWindowEvaluator`
   to prove the refactor is behavior-identical.
 
-**FE (Vitest + RTL):** `data/today/briefingHooks.test.tsx` (3) — wire→`Briefing` mapping (no
-confidence), 404→null, mock null without fetching; `features/today/components/BriefingCard.test.tsx`
-adds a generated-briefing-no-label case; `data/today/todayHooks.test.tsx` adds real-mode
-server-briefing (`briefingDemo=false`) + default-404 fallback (`briefingDemo=true`) cases. **W1:**
+**FE (Vitest + RTL):** `data/today/feedHooks.test.tsx` — wire→`FeedMessage[]` mapping via
+`toFeedMessages`, real-mode 60s poll config, mock mode returns `[]` synchronously without fetching
+(replaces `briefingHooks.test.tsx`/`heartbeatHooks.test.tsx`, both deleted);
+`features/today/logic/mezoMessages.test.ts` — thread building from `{feed, demoBriefing}`: feed
+messages map 1:1 in order; the demo card prepends only when the feed has no `morning` kind; the demo
+card is absent once a real morning message exists; an empty feed with no demo briefing ⇒ `[]`
+(replaces the old briefing-only+heartbeat-note thread-building coverage — `CompanionNoteCard.test.tsx`
+is deleted, there is no separate card any more). **W1:**
 `data/insights/weeklyHooks.test.tsx` (+2) — serves the generated prose when the GET succeeds; keeps
 `weeklySuggestion` null on the default 404; `features/insights/pages/WeeklyPage.test.tsx` (+1) —
 renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
@@ -1479,10 +1559,7 @@ real-mode describe (renders the real memoir + anchors, no reactions/anniversary/
 the honest „készül" placeholder, not demo fiction); `insights.nav.test.tsx` flips Memoir from hidden to
 visible (5 real-mode tabs incl. Memoir) — at the time `InsightsSubNav.test.tsx` covered this too, but
 that file is since deleted with the component it tested (compact-header redesign, `mezo-ugqb`; the
-dropdown-based `SubNavDropdown`/`insights.nav.test.tsx` cover the same visibility behavior now). **H1:**
-`data/today/heartbeatHooks.test.tsx` (3) — maps the wire note to `CompanionNote`; null on the
-default 404; mock null without fetching (byte-parity);
-`features/today/components/CompanionNoteCard.test.tsx` (2) — nudge/closing eyebrow copy. **P1:**
+dropdown-based `SubNavDropdown`/`insights.nav.test.tsx` cover the same visibility behavior now). **P1:**
 `data/insights/predictionsHooks.test.tsx` (3) — maps wire rows preserving null confidence + the
 derived window label; `[]` on the default empty array; mock seed without fetching;
 `features/insights/pages/PredictionsPage.test.tsx` gains a real-mode describe (real cards + „tanulom"
@@ -1493,72 +1570,87 @@ undefined); `[]` on the default; mock seed without fetching;
 `features/insights/pages/ExperimentsPage.test.tsx` gains a real-mode describe (a proposed row +
 Elfogadom/Elvetem, clicking Elfogadom POSTs the decision; the empty-array null-state);
 `insights.nav.test.tsx` flips Experiments from hidden to visible (**all 7
-tabs now**). MSW defaults: `/api/proactive/{briefing,weekly-suggestion,memoir,heartbeat}` return 404,
-`/api/proactive/prediction` and **`/api/proactive/experiment` return `200 []`**, plus default
+tabs now**). MSW defaults: `/api/proactive/feed` returns `200 []`, `/api/proactive/{weekly-suggestion,memoir}`
+return 404, `/api/proactive/prediction` and **`/api/proactive/experiment` return `200 []`**, plus default
 `POST …/experiment/{propose,{id}/decision}` handlers (list endpoints' honest default is an empty array).
 
-Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator,HeartbeatNotePopulator,PredictionPopulator,ExperimentPopulator}.java`
-(aggregate factories, all in the `AbstractIntegrationTest` `@Import` list) + `briefing`,
-`weekly_suggestion`, `memoir`, `heartbeat_note`, `prediction` and `experiment` in the `ResetDatabase`
-TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, FE both modes + build).
+Test infra: `support/populator/{CompanionMessagePopulator,WeeklySuggestionPopulator,MemoirPopulator,PredictionPopulator,ExperimentPopulator}.java`
+(`CompanionMessagePopulator` replaces the deleted `BriefingPopulator`+`HeartbeatNotePopulator`; all
+in the `AbstractIntegrationTest` `@Import` list) + `companion_message`, `weekly_suggestion`,
+`memoir`, `prediction` and `experiment` in the `ResetDatabase` TRUNCATE list (`briefing`/
+`heartbeat_note` dropped from both the schema and the list together). Full backend + FE gates green
+at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both modes + build).
 
 ## 9. Decisions, gotchas & deferred
 
-- **(a) All SEVEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
-  fake dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`), `WEEKLY_MARKER_MIRROR`
+- **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
+  fake dispatches on `MORNING_MARKER_MIRROR` (`"REGGELI-ELIGAZITAS-FELADAT"`), `SLEEP_MARKER_MIRROR`
+  (`"ALVAS-REAKCIO-FELADAT"`), `WEIGHT_MARKER_MIRROR` (`"SULY-REAKCIO-FELADAT"`) — the three NEW
+  `mezo-gst9` kinds, replacing the single retired `BRIEFING_MARKER_MIRROR` — `WEEKLY_MARKER_MIRROR`
   (`"HETI-TERVJAVASLAT"`), `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`), `HEARTBEAT_MARKER_MIRROR`
-  (`"NAPKOZBENI-JEGYZET-FELADAT"`), `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`),
-  `EXPERIMENT_MARKER_MIRROR` (`"N1-KISERLET-FELADAT"`) and the SEVENTH `CHALLENGE_MARKER_MIRROR`
-  (`"EDZES-KIHIVAS-FELADAT"`, mirroring `ChallengeGenerator.CHALLENGE_MARKER`), **copies** of the seven
-  generators' `*_MARKER` constants, NOT imports — a `companion` → `proactive` import would create a
-  package cycle that the frozen ArchUnit rule fails the build on. Each literal pair must be edited
-  together (both carry a comment pointing at the other; drift fails the generator IT loudly). The
-  markers are prefix-collision-checked (`FakeCompanionLlm` dispatches by `startsWith`): the three
-  `HETI-*` markers all diverge by char 6, and `NAPKOZBENI-*`/`N1-*`/`EDZES-*` share no prefix with any.
+  (`"NAPKOZBENI-JEGYZET-FELADAT"` — the sentinel NAME survives from H1 even though it now mirrors
+  `CompanionMessageGenerator.WINDOW_MARKER`, not a `HeartbeatGenerator` that no longer exists),
+  `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`), `EXPERIMENT_MARKER_MIRROR`
+  (`"N1-KISERLET-FELADAT"`) and `CHALLENGE_MARKER_MIRROR` (`"EDZES-KIHIVAS-FELADAT"`, mirroring
+  `ChallengeGenerator.CHALLENGE_MARKER`), **copies** of the generators' `*_MARKER` constants, NOT
+  imports — a `companion` → `proactive` import would create a package cycle that the frozen ArchUnit
+  rule fails the build on. Each literal pair must be edited together (both carry a comment pointing
+  at the other; drift fails the generator IT loudly). The markers are prefix-collision-checked
+  (`FakeCompanionLlm` dispatches by `startsWith`): the three `HETI-*` markers all diverge by char 6,
+  and `REGGELI-*`/`ALVAS-*`/`SULY-*`/`NAPKOZBENI-*`/`N1-*`/`EDZES-*` share no prefix with any.
   **The prediction, experiment AND challenge sentinel regexes are GREEDY** (`\[fake-…:(\{.*\})]`, DOTALL)
   unlike the memoir's non-greedy one — those payloads (`{"predictions":[{…}]}` / `{"experiments":[{…}]}`
   / the challenge `{…proposals…}`) nest objects, so a non-greedy match would stop at the FIRST inner
-  `}` and truncate the JSON.
+  `}` and truncate the JSON. The morning/sleep/weight sentinels (`[fake-feed-morning:{…}]`/
+  `[fake-feed-sleep:{…}]`/`[fake-feed-weight:{…}]`) are non-greedy (their JSON is flat, no nesting).
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
   ⇒ `/api/proactive/*` 404s (proven by both switch-off ITs). The gate is structural (bean absence),
   not a runtime 403.
 - **(c) `confidence`/`tone` are deliberately absent from the wire.** The FE `Briefing` type carries
-  `confidence`/`tone`, but the envelope and `BriefingResponse` omit both: an LLM's self-reported
-  confidence is a **fabricated number** (the honest-numbers rule, spec §6), and `tone` is dead FE
-  data with no source. Don't reintroduce either without a real computed value.
-- **(d) Empty summary window ⇒ 404 by design (both surfaces).** No `daily_summary` in the briefing's
-  `past-days` window / the weekly suggestion's **prior week** (or an unusable LLM answer — briefing:
-  null/blank eyebrow/empty body; weekly: null/blank prose) ⇒ `generate` returns null ⇒ the service
-  throws 404. A generation with no narrative memory to ground it would be fabricated; the honest state
-  is "nothing yet" (the FE renders the placeholder). The briefing v1 emptiness gate (spec §7) — **B1.2
-  may loosen it** (e.g. a first-day briefing from the snapshot alone).
-- **(e) Staleness is sleep-only in v1, windowed `date >= day-1`, capped 2/day.** The only key input
-  that triggers a regeneration is a `sleep_log` (FR-2.1.1 — the briefing leads with the night); the
-  window is `date >= day-1` so a log entered just after midnight for "last night" still counts, and
-  `created_at > generated_at` is what makes it "late". The cap (`regen-cap-per-day`, 2) is checked
-  FIRST as a hard ceiling — an unstable input can't loop the LLM. Widening the trigger set (fuel,
-  check-ins) is a future tuning knob (§7), deliberately NOT in v1.
-- **(f) The cron does NOT backfill — today only.** `BriefingJob` generates only `LocalDate.now()`
-  per user. A past morning's briefing is never read (the card shows TODAY), so pre-generating history
+  `confidence`/`tone`, but the envelope and `FeedMessageResponse` (the old `BriefingResponse`) omit
+  both: an LLM's self-reported confidence is a **fabricated number** (the honest-numbers rule, spec
+  §6), and `tone` is dead FE data with no source. Don't reintroduce either without a real computed
+  value.
+- **(d) Empty summary window ⇒ no row for the cron kinds (a shorter feed array, never a
+  fabrication).** No `daily_summary` in `feed.past-days` for `morning`/`midday`/`evening` (or an
+  unusable LLM answer — JSON kinds: null/blank eyebrow/empty body; window kinds: blank prose) ⇒
+  `generate*` returns null ⇒ that kind simply doesn't appear in the feed array. `sleep`/`weight`
+  have their OWN gate instead (a fresh log, not the summary window — decision retired-regen below).
+  A generation with no narrative memory to ground it would be fabricated; the honest state is
+  "nothing yet" (the FE thread shows fewer bubbles, or the demo fallback while `morning` is absent).
+  The weekly suggestion's own emptiness gate (prior week, unrelated table) is unaffected — see (i).
+- **(e retired) Staleness was sleep-only in the old briefing, windowed `date >= day-1`, capped
+  2/day — RETIRED, see "retired-regen" below.** This decision letter is intentionally left as a
+  historical marker; do not reuse it for something unrelated.
+- **(f) The crons do NOT backfill — today only.** `CompanionMessageJob` generates only
+  `LocalDate.now()` per user, for all three cron kinds. A past day's message is never read (the feed
+  read is always for a given day, but only TODAY triggers miss-recovery), so pre-generating history
   would be pure waste; a missed cron run is recovered by the lazy GET the next time the app opens.
   This is the deliberate difference from the companion `DailySummaryJob`'s catch-up=backfill idiom
-  (summaries ARE read historically; briefings are not).
-- **(g) A failed regeneration serves 404 for THAT request only — the old row survives.** In
-  `refreshIfStale`, the soft-delete + flush happen inside `getBriefing`'s `@Transactional`; if the
-  regeneration returns null (unusable LLM answer), the service throws 404, which **rolls the whole
-  transaction back** — undoing the delete+flush and restoring the old row intact. Only that one
-  request 404s; the next request retries. There is never a permanently blank morning from a transient
-  LLM failure. (`BriefingFreshnessIT.testGetBriefing_shouldServe404AndPreserveOldRow_whenRegenerationFails`
-  pins this.)
-- **(h) FE fallback: the static card is the honest degraded state, and `briefingVariants` never
-  apply to a generated briefing.** `useToday` renders the server briefing when present; on null (mock,
-  loading, 404, switch off) it falls back to `resolveBriefing(dayState)` — the labelled Phase-1 static
-  card, merged with `briefingVariants` (good/rough tone spread). Those variants shape ONLY the fallback;
-  a generated briefing is rendered verbatim. `Briefing.confidence` went **optional** in `types.ts` so
-  the server shape (no confidence) is a valid `Briefing` — the card shows „Demo tartalom" in demo mode,
-  a Confidence % only if a real confidence is ever set, else nothing (§9 gotcha c / the honest-numbers rule).
+  (summaries ARE read historically; feed messages are not) — unchanged reasoning from the retired
+  `BriefingJob`.
+- **(g retired) A failed regeneration used to serve 404 for that request only, restoring the old
+  row via transaction rollback — RETIRED with `refreshIfStale`.** See "retired-regen" below; there
+  is no regeneration left to fail.
+- **(h) FE fallback: the demo card is the honest degraded state, and `briefingVariants` never apply
+  to a generated message.** `buildMezoMessages` prepends `resolveBriefing(dayState)` — the labelled
+  Phase-1 static card, merged with `briefingVariants` (good/rough tone spread) — ONLY while the feed
+  carries no `morning` kind (mock mode: always, since the feed is always `[]`). Those variants shape
+  ONLY the fallback card; every generated message renders verbatim. `Briefing.confidence` stayed
+  **optional** in `types.ts` (unchanged from B1.2) so the server shape (no confidence) is a valid
+  `Briefing` for the fallback path — the demo card shows „Demo tartalom", a real message shows a
+  Confidence % only if one is ever set, else nothing (§9 gotcha c / the honest-numbers rule).
+- **(retired-regen) The sleep-triggered "regen" mechanism the old briefing had — `refreshIfStale` +
+  `regen_count`, capped 2/day, soft-delete + reinsert on a late `sleep_log` — is RETIRED, not
+  ported, and there is deliberately no successor decision/property/column.** It existed only because
+  the old dawn briefing was generated BEFORE the morning's sleep log could exist, so a late log had
+  to trigger a correction. Event-triggered generation (`CompanionMessageEventListener`) removes the
+  root cause: `sleep`/`weight` messages are now generated ONLY once their grounding data already
+  exists, so there is nothing to detect as stale and nothing to regenerate. Do not re-add a
+  staleness check "just in case" — if a future kind needs fresher data than its cron provides, make
+  it event-triggered (§7's extension recipe), don't reinvent read-path regen.
 - **(i) W1 has NO weekly staleness / regeneration path — YAGNI.** Unlike the briefing (which sleep
   can invalidate mid-day, §9 decision e), a weekly suggestion is written once at Monday dawn (or
   lazily on first open) and stands for the whole week. There is no `refreshIfStale`, no `regen_count`,
@@ -1603,24 +1695,33 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   'mock'` (the W1 „Elfogad/Hangoljuk" precedent, §9 decision k). **Follow-up filed:** persisted memoir
   reactions as a companion signal (the controller files the bd issue at close-out); the anniversary
   card + archive are a deferred epic (spec §1).
-- **(p) Two heartbeat windows v1 — explicit config records, not a dynamic list.** `midday` (kind
-  `nudge`, `0 30 12 * * *`) + `evening` (kind `closing`, `0 30 20 * * *`) under
-  `mezo.proactive.heartbeat.*`. The roadmap's "config window list" is satisfied by two named crons —
-  a dynamic window list would need programmatic scheduling for zero current benefit (YAGNI); adding
-  a third window is a §7 recipe.
-- **(q) Briefing overlap-dedupe is prompt-level.** The gather injects today's persisted briefing
-  body under `MAI BRIEFING (ne ismételd):` and the prompt forbids repeating it — deterministic,
-  zero infra. If today has no briefing the block is simply absent.
+- **(p) Two window kinds v1 — explicit config properties, not a dynamic list.** `midday` (eyebrow
+  `Napközi jegyzet`, `0 30 12 * * *`) + `evening` (eyebrow `Napzárás`, `0 30 20 * * *`) under
+  `mezo.proactive.feed.{midday,evening}-cron` (ported unchanged from the retired
+  `mezo.proactive.heartbeat.*`, just relocated). The roadmap's "config window list" is satisfied by
+  two named crons — a dynamic window list would need programmatic scheduling for zero current
+  benefit (YAGNI); adding a third window is a §7 recipe.
+- **(q) Same-day overlap-dedupe is prompt-level, and now covers every kind, not just the
+  morning message.** `earlierMessagesBlock` injects every already-persisted `companion_message` row
+  of the day under `MAI KORÁBBI ÜZENETEK (ne ismételd):` and each kind's prompt forbids repeating
+  it — deterministic, zero infra, the retired heartbeat's `MAI BRIEFING` idiom generalized from ONE
+  hardcoded source (the briefing) to ALL earlier same-day messages (morning/sleep/weight/midday). If
+  today has no earlier message the block is simply absent.
 - **(r) The lazy path derives window fire-times from the SAME job crons (`CronExpression`), only
-  for TODAY, only the LATEST elapsed window; no staleness/regen.** One source of truth for the
-  schedule; a past date never lazy-generates (a heartbeat is grounded in the day's live state —
-  generating yesterday's "midday" note today would be fiction); a missed window is simply absent
-  once the next window's note exists (the GET serves the day's newest). No `refreshIfStale`, no
-  cap — the next window is hours away (the W1/W2 YAGNI reasoning at intra-day cadence).
-- **(s) The heartbeat emptiness gate reuses `briefing.past-days`.** One knob answers "does the
-  companion have narrative memory of Daniel yet" for both daily surfaces; a heartbeat with zero
-  `daily_summary` grounding would be generic filler (the honest-absence rule). The snapshot itself
-  always renders (`nincs adat` absences), so the gate must come from the summaries.
+  for TODAY, only the elapsed windows; no staleness/regen for ANY kind (not just the window ones).**
+  One source of truth for the schedule (`ProactiveFeedService.elapsed`, unchanged idiom from the
+  retired `ProactiveHeartbeatService.latestElapsedWindow`); a past date never lazy-generates (a
+  window message is grounded in the day's live state — generating yesterday's "midday" note today
+  would be fiction); a missed window's message simply appears once the next lazy GET runs. No cap,
+  no regen anywhere in the feed model (decision retired-regen) — the next window is hours away
+  regardless (the W1/W2 YAGNI reasoning at intra-day cadence, unchanged).
+- **(s) The morning/midday/evening emptiness gate reuses `feed.past-days` — but `sleep`/`weight`
+  do NOT.** One knob answers "does the companion have narrative memory of Daniel yet" for the three
+  cron kinds; a cron-kind message with zero `daily_summary` grounding would be generic filler (the
+  honest-absence rule). `sleep`/`weight` instead gate on a FRESH log existing (their OWN grounding
+  event) — narrative-memory emptiness is irrelevant to them, they're reacting to a just-logged fact,
+  not summarizing a history. The snapshot itself always renders (`nincs adat` absences), so the
+  cron-kind gate must come from the summaries specifically.
 - **(t) The metric catalog is 3 deterministic keys, each window-avg/count vs the prior 7 days.**
   `weight_trend` (avg `weight_log.weightKg`), `sleep_avg` (avg `sleep_log.durationH`),
   `training_volume` (count of done gym instances via `findDoneInstanceDates` — sport excluded v1).
@@ -1672,6 +1773,32 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   bounds they pass. The extraction is behavior-preserving; `PredictionValidationIT` re-runs green
   against it (the regression guard). The epsilon config still lives under `mezo.proactive.prediction.*`.
 
+**Companion feed (`mezo-gst9`) additional decisions:**
+
+- **(cc-feed) The event-fired push categories deviate from the design spec's literal wording —
+  DELIBERATELY.** Spec §8 (`2026-08-15-companion-feed-design.md`) says the event kinds
+  (`sleep`/`weight`) get "közvetlen dispatch" — a direct `PushDispatchExecutor` call right after
+  generation, since they have no fixed daily slot to anchor on. The SHIPPED implementation instead
+  anchors them on **the row's own `generatedAt` minute** (`AnchorResolver.sleepReactionAnchor`/
+  `weightReactionAnchor`) and rides the EXISTING per-minute `NotificationDispatchJob` spine — the
+  same spine every other category (gym, medication, briefing/morning, …) already uses — rather than
+  a second, parallel dispatch path. This is a superset of the spec's intent ("push shortly after
+  generation") that gets pref/dedup/catch-up **for free** from the shared spine instead of
+  reimplementing them for one-off direct dispatch (the self-review note that flagged this before
+  Task 10 shipped it). Two NEW preference categories exist as specified — `SLEEP_REACTION`,
+  `WEIGHT_REACTION` (plus a third, `EVENING`, replacing the old `midday`-adjacent heartbeat-closing
+  category) — see [`_platform-notifications.md`](_platform-notifications.md) for the full 14-category
+  catalog and `AnchorResolver`'s per-category anchor rules.
+- **(dd-feed) The event listener never touches the logging request's own transaction or response.**
+  `@TransactionalEventListener(phase = AFTER_COMMIT)` fires ONLY after `SleepLogService.log`/
+  `WeightLogService.log`'s transaction has already committed (so a rolled-back log never spawns a
+  reaction message), and `@Async` moves the LLM call off the request thread entirely (the
+  `applicationTaskExecutor`, the `PushDispatchExecutor` precedent) — a slow Gemini call adds ZERO
+  latency to "how long did saving my sleep log take", and a failed generation (caught + logged
+  inside the listener) can never surface as an error on that request either. This is why the feed
+  message can lag the log by a few hundred ms to a couple of seconds in practice, which the FE's
+  60s poll + mutation-triggered invalidation both account for (§5.4).
+
 **Workout challenges (HBWI — a separate epic on the proactive template):**
 
 - **(cc) Backend lives in `feature/proactive`, the FE hook in `data/train`.** Challenges are the
@@ -1713,11 +1840,13 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   an implicit converter for EVERY String property and corrupt the sibling responses — hence the helpers
   are a separate class.
 
-- **Epic complete, and H2 Web Push with it.** All eight slices shipped
-  (B1.1→B1.2→W1→W2→H1→P1→P2), and **H2 (`mezo-h4wp.6`) is no longer deferred** — N1 (delivery spine)
-  + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3 (`notification_schedule` +
-  preview header + categories 10-11) all shipped 2026-07-29, and a real push reached Daniel's iPhone
-  from the k3s backend that same day (confirmed). Full detail:
+- **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
+  All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
+  (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3
+  (`notification_schedule` + preview header + categories 10-11) all shipped 2026-07-29, a real push
+  reached Daniel's iPhone from the k3s backend that same day (confirmed) — and **`mezo-gst9`
+  (2026-08-15) then folded B1.1/B1.2/H1 into the companion feed** (14 categories now, three added:
+  `evening`/`sleep_reaction`/`weight_reaction`). Full detail:
   [`_platform-notifications.md`](_platform-notifications.md). `PHASE3_TAB_IDS` is now empty. The
   D′ score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to
   backend config (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
@@ -1725,24 +1854,26 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 ## 10. Key files
 
 **API contract**
-- `api/feature/proactive/proactive.yml` — 10 endpoints (briefing + weekly-suggestion + memoir +
-  heartbeat + prediction + experiment list/propose/decide + **challenge list/decide**) + 12 schemas
-  (…+ `ExperimentResponse`, `ExperimentDecisionRequest`, **`ChallengeResponse`, `ChallengeRef`,
-  `ChallengeDecisionRequest`**) (tag `Proactive` → `ProactiveApi`); registered in `api/generate/merge.yml`
-  → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
+- `api/feature/proactive/proactive.yml` — 9 endpoints (**feed** (replaces briefing + heartbeat) +
+  weekly-suggestion + memoir + prediction + experiment list/propose/decide + **challenge
+  list/decide**) + schemas (`FeedMessageResponse`/`FeedRef` replace `BriefingResponse`/`BriefingRef`
+  and `HeartbeatNoteResponse`; …+ `ExperimentResponse`, `ExperimentDecisionRequest`,
+  `ChallengeResponse`, `ChallengeRef`, `ChallengeDecisionRequest`) (tag `Proactive` →
+  `ProactiveApi`); registered in `api/generate/merge.yml` → merged `api/openapi.yml` →
+  `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
 **Backend — controller / services / mapper**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (…+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveBriefingService.java` — the briefing read path (persisted row · `refreshIfStale` · lazy-generate; null ⇒ 404).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getFeed` replaces `getBriefing`+`getHeartbeat`; …+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveFeedService.java` — `mezo-gst9` the unified feed read path (persisted rows in `generatedAt` order · `ensureTodayCronKinds` lazy miss-recovery for morning/midday/evening only · `200 []` = honest, never 404); replaces `ProactiveBriefingService` + `ProactiveHeartbeatService` (both DELETED).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, also triggers `generateSleepReaction`) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageEventListener.java` — `mezo-gst9` NEW: `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent`, each gated on log freshness before calling the matching `generate*Reaction`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveMemoirService.java` — **W2** the memoir read path (latest row · else lazy-generate the LAST COMPLETED week; null ⇒ 404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveHeartbeatService.java` — **H1** the heartbeat read path (day's latest note · lazy latest-elapsed-window via `CronExpression`; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactivePredictionService.java` — **P1** the prediction list read path (all live rows · lazy current-week; `[]` = honest, never 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveExperimentService.java` — **P2** the experiment read + WRITE path (list · lazy propose · `decide` with the 404/409 guards · `propose`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingJob.java` — **B1.2** dawn `@Scheduled` cron (today-only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionJob.java` — **W1** Monday-06:00 `@Scheduled` cron (current-week only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirJob.java` — **W2** Sunday-19:00 `@Scheduled` cron (the week ending that Sunday, per-user isolation, three-switch-gated).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatJob.java` — **H1** two `@Scheduled` window crons (midday nudge + evening closing, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionJob.java` — **P1** two `@Scheduled` crons (Mon-06:30 `runWeekly` generate + daily-06:15 `runValidation`, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionValidationService.java` — **P1** deterministic window-close validation, now delegating to `MetricWindowEvaluator`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MetricWindowEvaluator.java` — **P1+P2 SHARED** pure-code metric window-vs-baseline verdict (weight/sleep/training, epsilon-banded, code-formatted; no-data ⇒ null).
@@ -1752,50 +1883,42 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume/overload hit/miss (`overload` = the null-weight-tolerant PR mirror); no logged sets ⇒ inconclusive (`outcome_good null`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeJob.java` — **HBWI** single `@Scheduled` outcome-backstop cron (daily 06:25 `runOutcome` → `evaluateDue`, per-user isolation, three-switch-gated `CHALLENGE_JOB_SWITCH`); NO propose cron.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatGenerator.java` — **H1** pure-code `gather` (snapshot + facts + latest summary + `MAI BRIEFING` dedupe block + `ABLAK:` instruction) + one **cheap-tier** `CompanionLlm.complete` + flat prose; `HEARTBEAT_MARKER` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` persists the grounding pattern id on `sourcePatternId` (the only pattern-derived field this generator stores).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (…+ `toPredictionResponse` + `toExperimentResponse` + **`toChallengeResponse`** (`exerciseName`→`exercise`, `refs.refs()`→`List<ChallengeRef>`, derived `typeLabel`/`target` via `@Mapping(expression=…)`); Instant → UTC OffsetDateTime, BigDecimal → Double default methods).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toFeedResponse` replaces `toBriefingResponse`+`toHeartbeatResponse`; …+ `toPredictionResponse` + `toExperimentResponse` + **`toChallengeResponse`** (`exerciseName`→`exercise`, `refs.refs()`→`List<ChallengeRef>`, derived `typeLabel`/`target` via `@Mapping(expression=…)`); Instant → UTC OffsetDateTime, BigDecimal → Double default methods).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ChallengeDisplay.java` — **HBWI** the static `typeLabel`/`target` derivation helpers, deliberately OUTSIDE the `@Mapper` interface (§9 gotcha hh — a String→String default method there would be auto-selected as an implicit converter for every String property).
 
 **Backend — entity / repo / config**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{BriefingEntity,BriefingContentEnvelope}.java` — the owned entity + typed jsonb envelope (`Ref` nested).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{CompanionMessageEntity,CompanionMessageEnvelope}.java` — `mezo-gst9` the owned entity (`messageDate`/`kind`/`generatedAt` + `content` typed jsonb) + envelope (`Ref` nested); replaces `{BriefingEntity,BriefingContentEnvelope}` + `HeartbeatNoteEntity` (all DELETED).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/WeeklySuggestionEntity.java` — **W1** the owned entity (flat `weekStart`/`prose`/`generatedAt`, no jsonb).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{MemoirEntity,MemoirAnchorsEnvelope}.java` — **W2** the owned entity (`weekStart`/`title`/`body`/`generatedAt` + `anchors` typed jsonb) + the `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}` record.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/HeartbeatNoteEntity.java` — **H1** the owned entity (flat `noteDate`/`windowKey`/`kind`/`content`/`generatedAt`) + the window/kind constants.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/PredictionEntity.java` — **P1** the owned entity (flat `weekStart`/`title`/`basis`/`confidence?`/`metricKey`/`expectedDirection`/`validFrom`/`validTo`/`status`/`actual?`/`generatedAt`/**`sourcePatternId?`** (S2, `mezo-tk88.2`, loose ref, `ON DELETE SET NULL`)) + the status/direction/metric constants (metric+direction SHARED).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/ExperimentEntity.java` — **P2** the owned entity (flat `title`/`hypothesis`/`status`(@Pattern)/`metricKey`/`expectedDirection`(@Pattern)/`startDate?`/`totalDays`/`outcome?`/`outcomeGood?`/`generatedAt`/**`sourcePatternId?`** (S2, `mezo-tk88.2`)) + the lifecycle constants.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{ChallengeEntity,ChallengeRefsEnvelope}.java` — **HBWI** the owned entity (`templateSessionId`/`workoutDate`/`exerciseId`/`exerciseName`/`type`/`status`/`risk`/`title`/`why`/`glory`/structured targets/`confidence?`/`outcome?`/`outcomeGood?`/`generatedAt`/**`sourcePatternId?`** (S2, `mezo-tk88.2`) + `refs` typed jsonb) + the `ChallengeRefsEnvelope{List<Ref(kind,label)>}` record; carries the `TYPE_*`/`STATUS_*`/`RISK_*` constants.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/BriefingRepository.java` — `findByCreatedByAndBriefingDate` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/CompanionMessageRepository.java` — `mezo-gst9` `findByCreatedByAndMessageDateAndKind` + `findByCreatedByAndMessageDateOrderByGeneratedAtAsc` (owner + soft-delete scoped); replaces `BriefingRepository` + `HeartbeatNoteRepository` (both DELETED).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/MemoirRepository.java` — **W2** `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/HeartbeatNoteRepository.java` — **H1** `findByCreatedByAndNoteDateAndWindowKey` + `findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/PredictionRepository.java` — **P1** `existsByCreatedByAndWeekStart` + `findByCreatedByOrderByValidFromDescGeneratedAtDesc` + `findByCreatedByAndStatusAndValidToBefore` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2` — the pattern-detail impact list, a later slice consumes it) (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ExperimentRepository.java` — **P2** `findByIdAndCreatedByAndDeletedFalse` + `findByCreatedByAndStatusInOrderByGeneratedAtDesc` + `findByCreatedByAndStatusOrderByGeneratedAtDesc` + `countByCreatedByAndStatusIn` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`) (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ChallengeRepository.java` — **HBWI** `findByCreatedByAndTemplateSessionIdAndWorkoutDate…` (the session/day list) + `findByIdAndCreatedBy…` (decide) + the accepted-due finder for `evaluateDue` + **`findByCreatedByAndSourcePatternIdAndDeletedFalse`** (S2, `mezo-tk88.2`) (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/weight/repository/WeightLogRepository.java` — **P1** added `findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc` (the validation window read; sleep already had the sibling).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.*, weekly.cron, memoir.cron, heartbeat.*, prediction.*, experiment.{propose-cron,outcome-cron,max-open,min-days,max-days}, challenge.{outcome-cron,max-per-workout}}` (@Validated, nested records).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + the seven job switches (`BRIEFING`/`WEEKLY_SUGGESTION`/`MEMOIR`/`HEARTBEAT`/`PREDICTION`/`EXPERIMENT`/**`CHALLENGE`**`_JOB_SWITCH` = `mezo.techcore.cron.challenge-job.enabled`) (+ the companion `COMPANION_SWITCH` they pair with).
-- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{…, experiment.*, challenge.{outcome-cron: "0 25 6 * * *", max-per-workout: 3}}` + `mezo.techcore.cron.{…,experiment-job,challenge-job}.enabled`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{weekly.cron, memoir.cron, prediction.*, experiment.{propose-cron,outcome-cron,max-open,min-days,max-days}, challenge.{outcome-cron,max-per-workout}, feed.{morning-cron,midday-cron,evening-cron,past-days}}` (@Validated, nested records; the old `briefing`/`heartbeat` nested records are GONE).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/service/SleepLogSavedEvent.java` + `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/weight/service/WeightLogSavedEvent.java` — `mezo-gst9` NEW: the `{userId, date}` events `SleepLogService.log`/`WeightLogService.log` publish (see [me.md §5.3](me.md)).
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + the SIX job switches (`FEED`/`WEEKLY_SUGGESTION`/`MEMOIR`/`PREDICTION`/`EXPERIMENT`/**`CHALLENGE`**`_JOB_SWITCH` — `FEED_JOB_SWITCH = mezo.techcore.cron.feed-job.enabled` replaces the old `BRIEFING`+`HEARTBEAT` pair) (+ the companion `COMPANION_SWITCH` they pair with).
+- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{feed.{morning-cron: "0 45 5 * * *", midday-cron: "0 30 12 * * *", evening-cron: "0 30 20 * * *", past-days: 7}, …, experiment.*, challenge.{outcome-cron: "0 25 6 * * *", max-per-workout: 3}}` + `mezo.techcore.cron.{feed-job,…,experiment-job,challenge-job}.enabled`.
 - `backend/src/main/resources/messages.properties` — **P2** `PROACTIVE_EXPERIMENT_NOT_FOUND` (404) + `PROACTIVE_EXPERIMENT_NOT_PROPOSED` (409); **HBWI** `PROACTIVE_CHALLENGE_NOT_FOUND` (404) + `PROACTIVE_CHALLENGE_NOT_PROPOSED` (409).
 
 **Backend — LLM fake (companion side, additive)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — the seven mirrors + sentinels (briefing/weekly/memoir/heartbeat/prediction/experiment + **`CHALLENGE_MARKER_MIRROR = "EDZES-KIHIVAS-FELADAT"` + `[fake-challenge:{…}]`** GREEDY/DOTALL) (literals; §9 gotcha a) — the challenge default returns a valid proposals payload planted via a check-in note.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — the ten mirrors + sentinels (`mezo-gst9`: morning/sleep/weight replace the single old briefing mirror; weekly/memoir/heartbeat(window)/prediction/experiment + **`CHALLENGE_MARKER_MIRROR = "EDZES-KIHIVAS-FELADAT"` + `[fake-challenge:{…}]`** GREEDY/DOTALL) (literals; §9 gotcha a) — the challenge default returns a valid proposals payload planted via a check-in note.
 
-**Frontend — Today consumer (B1.2)**
-- `frontend/src/data/today/briefingApi.ts` — `briefingApi.get` + `toBriefing` (wire→`Briefing`, no confidence).
-- `frontend/src/data/today/briefingHooks.ts` — `useBriefing()` (dual-mode; mock null no-fetch, real GET or null on 404); re-exported by `data/hooks.ts`.
-- `frontend/src/data/today/todayHooks.ts` — `useToday` composes `useBriefing` (`briefing`, `briefingDemo`); `frontend/src/features/today/{pages/TodayPage.tsx,components/BriefingCard.tsx}` — render + three-state label; `frontend/src/data/types.ts` — `Briefing.confidence?` optional.
-
-**Frontend — Today companion-note consumer (H1)**
-- `frontend/src/data/today/heartbeatApi.ts` — `heartbeatApi.get(date)` + `toCompanionNote` (wire→`CompanionNote{window, kind, text}`).
-- `frontend/src/data/today/heartbeatHooks.ts` — `useCompanionNote()` (dual-mode; mock null no-fetch, real GET or null on 404); re-exported by `data/hooks.ts`.
-- `frontend/src/features/today/components/CompanionNoteCard.tsx` — the in-day note card (nudge/closing eyebrow copy); rendered by `TodayPage.tsx` after the check-in strip only when a note exists.
-- `frontend/src/data/types.ts` — the `CompanionNote` interface.
+**Frontend — Today consumer (`mezo-gst9`, replaces the B1.2 briefing seam + the H1 companion-note seam)**
+- `frontend/src/data/today/feedApi.ts` — `feedApi.get(date)` + `toFeedMessages` (wire→`FeedMessage[]`); replaces `briefingApi.ts` + `heartbeatApi.ts` (both DELETED).
+- `frontend/src/data/today/feedHooks.ts` — `useCompanionFeed()` (`['companionFeed', date]`; dual-mode: mock `[]` synchronous, real GET with 60s `refetchInterval`); re-exported by `data/hooks.ts`; replaces `briefingHooks.ts` + `heartbeatHooks.ts` (both DELETED).
+- `frontend/src/features/today/logic/mezoMessages.ts` — `buildMezoMessages({feed, demoBriefing})`: maps each `FeedMessage` to a thread bubble, prepends the labelled demo card only while no `morning` kind exists.
+- `frontend/src/features/today/pages/TodayPage.tsx` — calls `useCompanionFeed()` directly and passes the result + `resolveBriefing(scenario.dayState)` into `buildMezoMessages`; renders `MezoChip`/`MezoMessagesSheet` (see [today.md](today.md)); the retired `BriefingCard.tsx`/`CompanionNoteCard.tsx` are DELETED.
+- `frontend/src/data/types.ts` — `FeedMessage{kind, eyebrow, body, refs, generatedAt}` (NEW); `Briefing.confidence?` stays optional (used only by the demo-fallback path now); the `CompanionNote` interface is DELETED (no successor type — feed messages ARE `FeedMessage`, no separate note shape).
 
 **Frontend — Train ActiveWorkoutPage consumer (HBWI)**
 - `frontend/src/data/train/challengeApi.ts` — `challengeApi.{list,decide}` + `toChallenge` (wire→FE `Challenge`; `confidence ?? null`, `outcomeGood: null→undefined`).
@@ -1830,15 +1953,17 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `frontend/src/features/insights/pages/tabs.ts` — `PHASE3_TAB_IDS = {predictions, experiments}` (memoir un-ghosted at W2).
 
 **Backend — migrations**
-- `backend/src/main/resources/db/changelog/1.0.0/script/{…,202607071900_mezo-h4wp.7_create_prediction,202607072000_mezo-h4wp.8_create_experiment}.sql` (all in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608151200_mezo-gst9_create_companion_message.sql` (the new table) + `202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql` (drops the two retired tables — a NEW changeset, the old `202607061100_mezo-h4wp.1_create_briefing.sql`/`202607070900_mezo-h4wp.2_briefing_regen_count.sql`/`202607071800_mezo-h4wp.5_create_heartbeat_note.sql` stay untouched, immutable) + `{…,202607071900_mezo-h4wp.7_create_prediction,202607072000_mezo-h4wp.8_create_experiment}.sql` (all in `1.0.0_master.yml`).
 
 **Backend — tests**
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{CompanionMessagePersistenceIT,CompanionMessageGeneratorIT,CompanionMessageJobIT,CompanionMessageJobSwitchOffIT,CompanionMessageEventIT,ProactiveApiFeedIT}.java` — `mezo-gst9`, replacing the DELETED `{Briefing,Heartbeat}{PersistenceIT,GeneratorIT,JobIT,JobSwitchOffIT},BriefingFreshnessIT,HeartbeatLazyIT`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{…P1 classes…,ExperimentPersistenceIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ExperimentJobIT,ExperimentJobSwitchOffIT,ProactiveApiExperimentIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{…,PredictionPopulator,ExperimentPopulator}.java` + `support/ResetDatabase.java` (`…prediction, experiment` in the TRUNCATE list).
-- FE: `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,insights.nav.test.tsx}` (`InsightsSubNav.test.tsx` deleted with the component, compact-header redesign `mezo-ugqb`), `frontend/src/test/msw/handlers.ts` (four defaults 404 + prediction/experiment `200 []` + experiment POST handlers).
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{CompanionMessagePopulator,WeeklySuggestionPopulator,MemoirPopulator,PredictionPopulator,ExperimentPopulator}.java` (`CompanionMessagePopulator` replaces the deleted `BriefingPopulator`+`HeartbeatNotePopulator`) + `support/ResetDatabase.java` (`companion_message` in the TRUNCATE list, `briefing`/`heartbeat_note` removed from it).
+- FE: `frontend/src/data/today/feedHooks.test.tsx` + `frontend/src/features/today/logic/mezoMessages.test.ts` (replace `briefingHooks.test.tsx`/`heartbeatHooks.test.tsx`/`CompanionNoteCard.test.tsx`, all DELETED), `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,insights.nav.test.tsx}` (`InsightsSubNav.test.tsx` deleted with the component, compact-header redesign `mezo-ugqb`), `frontend/src/test/msw/handlers.ts` (`/api/proactive/feed` → `200 []`, weekly-suggestion/memoir → 404, prediction/experiment `200 []` + experiment POST handlers).
 
 **Docs (link, don't duplicate)**
-- Design spec: [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
+- Companion-feed design spec (current B/H model): [`docs/superpowers/specs/2026-08-15-companion-feed-design.md`](../superpowers/specs/2026-08-15-companion-feed-design.md)
+- Original proactive-layer design spec (W/P/HBWI, and the now-superseded original B/H design): [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
 - Roadmap (8 slices): [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
 - Companion stack it builds on: [`companion.md`](companion.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
