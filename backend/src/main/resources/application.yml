@@ -762,6 +762,20 @@ mezo:
     step: 2                 # sets added per productive week
     deload-fraction: 0.5    # deload target = round(prevSets * this)
     grind-rir-gap: 2        # RIR-below-target gap that counts as a grind
+    # RP intermediate MEV/MAV/MRV landmarks per coarse muscle group (mezo-xlmp) — seeded onto
+    # muscle_group_volume_log at meso create-as-active/activate for the groups the template
+    # actually trains. Bands match the demofixtures seed; core/traps intentionally absent
+    # (RP treats their MEV as ~0 — indirect volume from compounds covers them).
+    baselines:
+      chest:    { mev: 8,  mav: 14, mrv: 20 }
+      back:     { mev: 10, mav: 16, mrv: 22 }
+      shoulder: { mev: 8,  mav: 12, mrv: 18 }
+      biceps:   { mev: 6,  mav: 10, mrv: 14 }
+      triceps:  { mev: 6,  mav: 10, mrv: 14 }
+      quad:     { mev: 8,  mav: 12, mrv: 18 }
+      ham:      { mev: 6,  mav: 10, mrv: 14 }
+      glute:    { mev: 8,  mav: 12, mrv: 18 }
+      calf:     { mev: 6,  mav: 10, mrv: 16 }
   train:
     gym-default-minutes: 60        # gym schedule slots carry no duration
     run-default-minutes: 45        # interval runs have no single continuous duration
