@@ -715,46 +715,72 @@ Az audit ne veszítsen fidelitást. A `system_prompt` oszlop szemantikája **nem
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmCallRecord.java`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogWriter.java:116-133`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` (`CallSpec` + a chat-utak)
-- Test: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ChatServiceIT.java` (új teszt)
+- Test: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlmRecordingTest.java` (új tesztek), `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogWriterIT.java` (új tesztek)
 
 **Interfaces:**
 - Consumes: `ChatHistory.render` (Task 1), az 5-arg adapter (Task 2), a history-t átadó `ChatService` (Task 3).
 - Produces: `LlmCallRecord.conversationHistory()` → `String` (nullable); `LlmLogEntity.getConversationHistory()`.
 
-- [ ] **Step 1: Írd meg a bukó tesztet**
+> **Végrehajtás közben javítva (nem az eredeti terv):** ez a lépés eredetileg egy
+> `ChatServiceIT`-be tett tesztet írt elő. Ez szerkezetileg lehetetlen: `ChatServiceIT` a
+> `companion-fake` profilon fut, ahol `FakeCompanionLlm` van kiválasztva és `GeminiCompanionLlm`
+> — az egyetlen hely, ahonnan `LlmCallRecorder` valaha meghívódik — **nem is létezik beanként**.
+> Egy `ChatServiceIT`-beli assertion tehát soha nem tudná elérni azt a kódutat, amit bizonyítania
+> kellene volna. A bizonyíték helyette két szinten fut: adapter-szinten
+> (`GeminiCompanionLlmRecordingTest`, hálózat nélkül, egy `Prompt`-ot rögzítő `ChatModel` stubbal
+> — a Task 2 verifikációjának ugyanaz az eszköze) és writer/DB-szinten (`LlmLogWriterIT`, a
+> `persist(...)` közvetlen hívásával, a meglévő minta szerint). A lenti lépések ezt a helyes
+> elhelyezést követik.
 
-`ChatServiceIT.java` végére. **Előbb nézd meg**, hogyan éri el egy meglévő IT az llm-log sorokat
-(`grep -rn "LlmLogRepository\|llmLogRepository" backend/src/test/java | head`), és azt a mintát kövesd
-— ha nincs ilyen minta a companion ITs-ben, a repository injektálása `@Autowired` mezővel történik,
-ahogy a többi populátornál.
+- [ ] **Step 1: Írd meg a bukó teszteket**
+
+**(a) Adapter-szint — `GeminiCompanionLlmRecordingTest.java` végére**, a fájl meglévő
+`CapturingRecorder`/`chatModel(...)` fixture-jeit felhasználva:
 
 ```java
     @Test
-    void testSendMessage_shouldRecordConversationHistoryInAudit_whenPriorTurnsExist() {
-        UUID userId = databasePopulator.populateUser("chat-audit-history@test.local");
-        AiConversationEntity conversation = conversationPopulator.conversation(userId);
-        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+    void testComplete_shouldRecordConversationHistorySeparateFromSystemPrompt_whenPriorTurnsExist() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+        List<CompanionLlm.Turn> history = List.of(
+            new CompanionLlm.Turn(CompanionLlm.Role.USER, "korábbi kérdés"),
+            new CompanionLlm.Turn(CompanionLlm.Role.ASSISTANT, "korábbi válasz"));
 
-        chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+        llm.complete("sys", history, "és most?", List.of(), Map.of());
 
-        LlmLogEntity chatRow = llmLogRepository.findAll().stream()
-                .filter(row -> "companion_chat".equals(row.getFeature()))
-                .findFirst().orElseThrow();
-        assertThat(chatRow.getConversationHistory()).contains("Daniel: korábbi kérdés");
-        assertThat(chatRow.getSystemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+        LlmCallRecord record = recorder.last();
+        assertThat(record.conversationHistory()).contains("Daniel: korábbi kérdés");
+        assertThat(record.systemPrompt()).doesNotContain("Daniel: korábbi kérdés");
     }
 ```
 
-> A `getFeature()` mezőnév ellenőrizendő az `LlmLogEntity`-n (`grep -n "feature" .../LlmLogEntity.java`);
-> ha a `LlmCallContext` grouping máshogy landol a soron, azt a mezőt szűrd.
+**(b) Writer/DB-szint — `LlmLogWriterIT.java` végére**, a fájl meglévő `ownerId()`/`LlmCallRecord.builder()`
+mintáját követve:
+
+```java
+    @Test
+    void testPersist_shouldMapConversationHistory_whenChatCallHasPriorTurns() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT).requestedModel("gemini-2.5-flash").servedModel("gemini-2.5-flash")
+            .status(CallStatus.SUCCESS).latencyMs(10)
+            .systemPrompt("sys").conversationHistory("Daniel: korábbi kérdés\n").userMessage("és most?")
+            .context(new LlmCallContext("companion_chat", "chat_turn", null, null))
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.parse("2026-07-28T10:00:00Z")));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.getConversationHistory()).contains("Daniel: korábbi kérdés");
+        assertThat(row.getSystemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+    }
+```
 
 - [ ] **Step 2: Futtasd — bukjon**
 
 ```bash
-cd backend && ./mvnw clean test -Dtest=ChatServiceIT#testSendMessage_shouldRecordConversationHistoryInAudit_whenPriorTurnsExist -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw clean test -Dtest='GeminiCompanionLlmRecordingTest,LlmLogWriterIT' -Dmezo.test.use-testcontainers=true
 ```
 
-Elvárt: fordítási hiba — nincs `getConversationHistory()`.
+Elvárt: fordítási hiba — nincs `conversationHistory()`/`getConversationHistory()`.
 
 - [ ] **Step 3: Liquibase changeset**
 
@@ -842,7 +868,7 @@ factory intézi.
 - [ ] **Step 6: Futtasd**
 
 ```bash
-cd backend && ./mvnw clean test -Dtest='Chat*IT,LlmLog*IT' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw clean test -Dtest='GeminiCompanionLlmRecordingTest,LlmLog*IT' -Dmezo.test.use-testcontainers=true
 ```
 
 Elvárt: PASS.
@@ -850,7 +876,7 @@ Elvárt: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add backend/src/main/resources/db/changelog backend/src/main/java/io/mrkuhne/mezo/feature/llmlog backend/src/main/java/io/mrkuhne/mezo/feature/companion backend/src/test/java/io/mrkuhne/mezo/feature/companion
+git add backend/src/main/resources/db/changelog backend/src/main/java/io/mrkuhne/mezo/feature/llmlog backend/src/main/java/io/mrkuhne/mezo/feature/companion backend/src/test/java/io/mrkuhne/mezo/feature/companion backend/src/test/java/io/mrkuhne/mezo/feature/llmlog
 git commit -m "feat(llmlog): conversation_history column keeps the chat audit whole (mezo-q71s)
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"

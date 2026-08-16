@@ -78,15 +78,21 @@ továbbra is *szöveg* kell belőle: (a) a verdict-bíráló payloadja, (b) a fa
 llm-log `history_text` oszlopa. A „Daniel: / Mezo:" formátum megmarad — csak már nem az, amit a
 modell kap.
 
-> ⚠️ **Implementációkor ellenőrizni, nem feltételezni:** a Spring AI 2.0 `ChatClient`-nél a
-> `.messages(...)` + `.user(...)` sorrendje — hogy a user-üzenet tényleg a history *után* kerül a
-> prompt-listába.
+> ✅ **Implementációkor VERIFIKÁLVA, nem feltételezve:** a Spring AI 2.0 `ChatClient`-nél a
+> `.messages(...)` + `.user(...)` sorrendje ténylegesen `[SYSTEM, history…, USER]` — a user-üzenet
+> a history *után* kerül a kimenő `Prompt` üzenetlistájába, ahogy a tervezéskor feltételeztük.
+> Nem kellett workaround.
 >
 > Ezt **nem IT fedi le**: az ITs a `companion-fake` profilon futnak, ahol a `GeminiCompanionLlm`
 > bean nem is létezik, a fake echója pedig a *hívó* összeállítását bizonyítja, nem a Spring AI
-> prompt-sorrendjét. A helyes eszköz egy **plain unit teszt egy `Prompt`-ot rögzítő `ChatModel`
-> stubbal** (kézzel írt stub, nem Mockito — ugyanaz a filozófia, mint a fake bean). Ez az egyetlen
-> hely, ahol a valódi adapter viselkedése hálózat nélkül megfogható.
+> prompt-sorrendjét. A verifikáció eszköze egy **plain unit teszt egy `Prompt`-ot rögzítő
+> `ChatModel` stubbal** (kézzel írt stub, nem Mockito — ugyanaz a filozófia, mint a fake bean):
+> `GeminiCompanionLlmPromptOrderTest` (`backend/src/test/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlmPromptOrderTest.java`)
+> hív egy `complete(...)`-ot két korábbi `Turn`-nel, majd asszertálja a rögzített `Prompt`
+> `getInstructions()` listájának típus- ÉS tartalom-sorrendjét: `[SYSTEM, USER, ASSISTANT, USER]`
+> — a system prompt, a két history-üzenet (user majd assistant), és a mostani user-üzenet a végén.
+> Ez az egyetlen hely, ahol a valódi adapter viselkedése hálózat nélkül megfogható, és ez pinneli
+> le a sorrendet a jövőre nézve is.
 >
 > A verifikált API-alak (spring-ai 2.0.0 jar ellenőrizve): `ChatClientRequestSpec.messages(List<Message>)`
 > és `messages(Message...)` létezik; `new UserMessage(String)` és `new AssistantMessage(String)`
@@ -225,8 +231,16 @@ megjeleníthető — de ez opcionális, és nem feltétele az issue lezárásán
 - **`CompanionAdvisorChainIT`:** az átnevezett `unmarkedClaim`, plusz egy ma hiányzó eset —
   *„tippelem, hogy az alvás miatt" NEM vált ki retry-t*.
 - **`ChatStreamAdvisorIT`:** a history a streamelt úton is átmegy az advisornak.
-- **Az llm-log oldala:** egy chat-kör után a `conversation_history` kitöltött, egy pipeline-hívás
-  után `null` — ez zárja le, hogy az audit tényleg nem vesztett fidelitást.
+- **Az llm-log oldala — két szinten, NEM egy `ChatServiceIT`-beli teszttel.** `LlmCallRecorder`-t
+  kizárólag `GeminiCompanionLlm` hívja; a companion ITs viszont a `companion-fake` profilon futnak,
+  ahol `FakeCompanionLlm` van kiválasztva és `GeminiCompanionLlm` bean **nem is létezik** — egy
+  `ChatServiceIT`-be tett audit-teszt tehát szerkezetileg nem tudná elérni a kódutat, amit
+  bizonyítania kellene. A bizonyíték ezért két helyen fut: `GeminiCompanionLlmRecordingTest`
+  (adapter-szint, hálózat nélkül, egy `Prompt`-ot rögzítő `ChatModel` stubbal — lásd §3) asszertálja,
+  hogy egy chat-kör után a rögzített `LlmCallRecord.conversationHistory()` a renderelt history-t
+  tartalmazza és a `systemPrompt()` NEM; `LlmLogWriterIT` (writer/DB round-trip) asszertálja, hogy
+  ugyanez a mező a `conversation_history` oszlopra térképeződik, a többi payload-oszloppal azonos
+  cap/truncated/payload_bytes fegyelem alatt, és egy nem-chat híváson (pl. `SMART`) `null` marad.
 
 Gate: `./mvnw clean test -Dmezo.test.use-testcontainers=true` (a fixed-DB mód versenyez), majd a
 self-PR CI a teljes suite-ra.
