@@ -52,7 +52,7 @@ describe('ChatPage (mock mode)', () => {
     await act(async () => {
       vi.advanceTimersByTime(1300)
     })
-    expect(screen.getByText(/A Reta D3-on ez gyakori/)).toBeInTheDocument()
+    expect(screen.getByText(/A gyógyszer-ciklus D3-án ez gyakori/)).toBeInTheDocument()
     vi.useRealTimers()
   })
 })

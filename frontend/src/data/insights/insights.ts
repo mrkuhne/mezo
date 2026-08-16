@@ -90,16 +90,16 @@ export const weeklySuggestion =
 export const memoir: Memoir = {
   week: 'Hét 20 · 2026 · Máj 11-17',
   title: 'Egy hét amikor a tested megtanult várni',
-  body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a Reta-beadás reggelén mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi. A Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',
+  body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a hétfő reggeleken mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi. A Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',
   anchors: [
     { kind: 'PR', label: 'Chest Row 102.5 × 9' },
-    { kind: 'Reta', label: 'D1 reggel · pihenve' },
+    { kind: 'Medication', label: 'D1 reggel · pihenve' },
     { kind: 'Identity', label: 'Peak performance · life' },
   ],
 }
 
 export const anniversaryNote =
-  'Egy hónapja kezdtük a Reta-protokollt. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
+  'Egy hónapja kezdtük a gyógyszeres protokollt. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
 
 export const predictions: Prediction[] = [
   {
@@ -109,7 +109,7 @@ export const predictions: Prediction[] = [
     status: 'pending',
     date: 'Máj 22',
     basis:
-      'Március óta a 102.5 stabil. Múlt heti RIR 2 + Reta D3 alacsony étvágy + 7.5h alvás kombináció historikusan +5kg-os emelést támogatott.',
+      'Március óta a 102.5 stabil. Múlt heti RIR 2 + gyógyszer-ciklus alacsony étvágy + 7.5h alvás kombináció historikusan +5kg-os emelést támogatott.',
   },
   {
     id: 'pred2',
@@ -117,7 +117,7 @@ export const predictions: Prediction[] = [
     confidence: 0.81,
     status: 'pending',
     date: 'Máj 26',
-    basis: 'Hét 20 átlag 78.6kg. Reta D3-D7 alacsonyabb intake. 7-day MA trend.',
+    basis: 'Hét 20 átlag 78.6kg. Gyógyszer-ciklus D3-D7 alacsonyabb intake. 7-day MA trend.',
   },
   {
     id: 'pred3',
@@ -266,10 +266,10 @@ export const patternMonitor: PatternMonitor = {
       r: null, n: null, p: null, status: null,
     },
     {
-      key: 'reta-cycle-day~daily-kcal',
-      title: 'Reta-ciklusnap ↔ napi kalória',
+      key: 'medication-cycle-day~daily-kcal',
+      title: 'Gyógyszer-ciklusnap ↔ napi kalória',
       category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 0,
-      metricAKey: 'reta-cycle-day', metricALabel: 'Reta-ciklusnap',
+      metricAKey: 'medication-cycle-day', metricALabel: 'Gyógyszer-ciklusnap',
       metricBKey: 'daily-kcal', metricBLabel: 'napi kalória',
       mechanismHu: 'A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt.',
       questionHu: 'A ciklus vége felé nő az étvágyad?', expectedDirection: 'positive',
@@ -286,7 +286,7 @@ export const patternMonitor: PatternMonitor = {
   metrics: [
     { key: 'sleep-quality', label: 'alvásminőség', sourceHu: 'Alvás-napló', domain: 'sleep', coveredDays: 58, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 3 },
     { key: 'training-rpe', label: 'edzés-RPE', sourceHu: 'Sport- és futás-napló (RPE)', domain: 'train', coveredDays: 12, windowDays: 60, lastDayWithData: '2026-08-09', pairCount: 2 },
-    { key: 'reta-cycle-day', label: 'Reta-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'medication-cycle-day', label: 'Gyógyszer-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'sport-load-min', label: 'sportterhelés', sourceHu: 'Sport-napló (perc)', domain: 'train', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'checkin-stress', label: 'stressz-szint', sourceHu: 'Check-in sheet', domain: 'mind', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'late-meal-hour', label: 'utolsó étkezés ideje', sourceHu: 'Étkezés-napló (utolsó étkezés)', domain: 'fuel', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },

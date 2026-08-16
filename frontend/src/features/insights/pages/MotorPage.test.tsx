@@ -155,7 +155,7 @@ describe('MotorPage (mock mode)', () => {
       'vízbevitel',
       'alváshossz',
       'napi kalória',
-      'Reta-ciklusnap',
+      'Gyógyszer-ciklusnap',
       'stressz-szint',
       'energia-szint',
       'alvásminőség',

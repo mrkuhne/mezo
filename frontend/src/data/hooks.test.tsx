@@ -60,7 +60,7 @@ test('useTodayScenario (real mode): medCycleDay follows a non-default derived cy
   // a cycle on day 5 proves the scenario truly derives (not the coincidental default 3).
   server.use(http.get(`${API_BASE}/api/medication`, () =>
     HttpResponse.json({
-      medication: { id: 'm', name: 'Reta', activeIngredient: '', route: '', cadence: '', defaultDose: 0, doseUnit: '', active: true, cycle: { cycleLengthDays: 7, phases: [] } },
+      medication: { id: 'm', name: 'Gyógyszer', activeIngredient: '', route: '', cadence: '', defaultDose: 0, doseUnit: '', active: true, cycle: { cycleLengthDays: 7, phases: [] } },
       cycle: { cycleDay: 5, phaseKey: 'stable', phaseLabel: '', lastDoseAt: null, week: [] },
       recentDoses: [],
     }),

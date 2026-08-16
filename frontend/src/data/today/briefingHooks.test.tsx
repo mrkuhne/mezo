@@ -12,7 +12,7 @@ afterEach(() => {
 
 const briefingFixture = {
   date: '2026-07-06',
-  eyebrow: 'Reggeli briefing · Reta nap 3',
+  eyebrow: 'Reggeli briefing · Gyógyszer nap 3',
   body: ['Jól aludtál, **7.4 óra**.', 'Ma leg-day vár.'],
   refs: [{ kind: 'Sleep', label: 'regeneráció' }, { kind: 'Memory', label: '2026-07-05' }],
   generatedAt: '2026-07-06T05:45:00Z',
@@ -24,7 +24,7 @@ describe('useBriefing (real mode default)', () => {
     server.use(http.get(`${API_BASE}/api/proactive/briefing`, () => HttpResponse.json(briefingFixture)))
     const { result } = renderHook(() => useBriefing(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current).not.toBeNull())
-    expect(result.current!.eyebrow).toBe('Reggeli briefing · Reta nap 3')
+    expect(result.current!.eyebrow).toBe('Reggeli briefing · Gyógyszer nap 3')
     expect(result.current!.body).toEqual([
       { type: 'p', text: 'Jól aludtál, **7.4 óra**.' },
       { type: 'p', text: 'Ma leg-day vár.' },

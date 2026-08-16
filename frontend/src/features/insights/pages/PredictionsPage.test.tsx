@@ -32,7 +32,7 @@ describe('PredictionsPage (real mode)', () => {
           {
             id: 'p1',
             title: 'Hét 27 testsúly csökken',
-            basis: 'Reta D3-D7 alacsonyabb intake.',
+            basis: 'Gyógyszer-ciklus D3-D7 alacsonyabb intake.',
             confidence: null,
             metricKey: 'weight_trend',
             expectedDirection: 'down',

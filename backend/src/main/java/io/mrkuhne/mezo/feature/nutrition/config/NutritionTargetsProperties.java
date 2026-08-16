@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
  * config-driven domain value feeding a UI hero; replaces the hardcoded mock {@code 2500}/{@code 3100}.
  *
  * <p>Natural next step (out of scope): read targets from the active {@code goal.prescription} jsonb
- * so they become Reta-phase-aware. For v1 these are constants.
+ * so they become medication-cycle-phase-aware. For v1 these are constants.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.nutrition")

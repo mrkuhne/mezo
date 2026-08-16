@@ -45,7 +45,7 @@ export const weeklySupplements: WeeklySupplementRow[] = [
   { name: 'AAKG (pre-gym)', dose: '6g', days: [1, 1, 1, 1, 1, 0, 0], color: 'var(--warning)' },
   { name: 'Beta-Alanin', dose: '3g', days: [1, 1, 1, 1, 1, 0, 0], color: 'var(--warning)' },
   { name: 'Koffein 200', dose: '1×', days: [0, 0, 1, 0, 1, 0, 0], color: 'var(--warning)', note: 'PR-attempt napokon' },
-  { name: 'Reta · hetente', dose: '6mg', days: [1, 0, 0, 0, 0, 0, 0], color: 'var(--error)' },
+  { name: 'Gyógyszer · hetente', dose: '6mg', days: [1, 0, 0, 0, 0, 0, 0], color: 'var(--error)' },
 ]
 
 // fuel-plan.jsx FuelPlanPage PatternRow instances (175–199)
