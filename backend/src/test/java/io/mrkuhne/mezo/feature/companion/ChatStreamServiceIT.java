@@ -11,12 +11,14 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
+import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ChatStreamService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
+import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
@@ -50,6 +52,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     @Autowired private AiMessagePopulator messagePopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private KnowledgeFactPopulator factPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
@@ -223,6 +226,23 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         String historyBlock = streamed.substring(streamed.indexOf("history=["), streamed.indexOf("] user=["));
         assertThat(systemBlock).doesNotContain("Daniel: korábbi kérdés");
         assertThat(historyBlock).contains("Daniel: korábbi kérdés");
+    }
+
+    @Test
+    void testStreamMessage_shouldEndPromptWithToneReminder_whenAssemblingPrompt() {
+        UUID userId = databasePopulator.populateUser("stream-tone-tail@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
+
+        // mezo-q71s: prepareTurn (the STREAMED assembly site) must carry the same recency
+        // counterweight as sendMessage — a mismatch between the two paths is a real bug that
+        // ChatServiceIT's sync-only coverage would not catch.
+        String streamed = collectDeltas(userId, conversation.getId(), "szia");
+
+        String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
+        assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
+                .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
+        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
     }
 
     /** The delta text, concatenated in order — the same map+reduce the happy-path test above uses,
