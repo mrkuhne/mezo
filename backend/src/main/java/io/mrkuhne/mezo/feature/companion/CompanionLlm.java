@@ -19,6 +19,12 @@ import java.util.Map;
  */
 public interface CompanionLlm {
 
+    /** Ki beszélt egy korábbi körben — a port provider-független szerepfogalma. */
+    enum Role { USER, ASSISTANT }
+
+    /** Egy lezárt korábbi üzenet. A history ezekből áll, legrégebbitől a legújabbig. */
+    record Turn(Role role, String content) {}
+
     /** One-shot completion on the cheap chat tier, with the turn's tools registered. */
     String complete(String systemPrompt, String userMessage,
                     List<ToolCallback> tools, Map<String, Object> toolContext);
