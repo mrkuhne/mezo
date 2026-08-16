@@ -18,14 +18,14 @@ public class MedicationPopulator {
     private final MedicationRepository repository;
 
     /**
-     * A Retatrutide catalog row with a 7-day cycle partitioned into peak (1-2) / stable (3-5) /
+     * A test medication catalog row with a 7-day cycle partitioned into peak (1-2) / stable (3-5) /
      * trough (6-7), active, default dose 6 mg.
      */
     public MedicationEntity createReta(UUID owner) {
         MedicationEntity e = new MedicationEntity();
         e.setCreatedBy(owner);
-        e.setName("Retatrutide");
-        e.setActiveIngredient("retatrutide");
+        e.setName("Teszt gyógyszer");
+        e.setActiveIngredient("teszthatoanyag");
         e.setRoute("subcutaneous");
         e.setCadence("weekly");
         e.setDefaultDose(new BigDecimal("6"));

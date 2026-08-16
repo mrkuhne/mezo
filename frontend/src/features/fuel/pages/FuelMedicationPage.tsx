@@ -88,7 +88,7 @@ export function FuelMedicationPage() {
       <div className="pghead-np sage">
         <div>
           <div className="over">Fuel · Gyógyszer</div>
-          <h1>Reta</h1>
+          <h1>Gyógyszer</h1>
         </div>
         <button
           type="button"

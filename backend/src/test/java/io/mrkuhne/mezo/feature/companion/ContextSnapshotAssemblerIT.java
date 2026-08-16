@@ -397,7 +397,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String snapshot = assembler.render(owner, today);
 
         // dose 3 days ago → cycleDay 4 → "Stabil" phase (3-5) of the populator's 7-day cycle
-        assertThat(snapshot).contains("[Gyógyszer] Retatrutide: ciklus 4. nap (Stabil)");
+        assertThat(snapshot).contains("[Gyógyszer] Teszt gyógyszer: ciklus 4. nap (Stabil)");
     }
 
     @Test

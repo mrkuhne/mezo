@@ -6,6 +6,7 @@ import { LogDoseSheet } from '@/features/fuel/sheets/LogDoseSheet'
 import { useMedication } from '@/data/hooks'
 import { medicationApi } from '@/data/fuel/medicationApi'
 import { localDateString } from '@/shared/lib/dates'
+import { medicationFixture } from '@/test/fixtures/medication'
 
 // ONE shared QueryClient so the sheet's mutation (setQueryData on ['medication'])
 // is visible to a co-rendered useMedication() read — we assert the REAL effect
@@ -18,12 +19,21 @@ function setup() {
   return { qc, wrapper }
 }
 
+// The app itself seeds no medication (mezo-lwmq) — mock-mode tests that exercise the POPULATED
+// branch (a real prefilled dose, a real cycle recompute) preload the neutral fixture into the
+// cache before rendering.
+function setupWithFixture() {
+  const shared = setup()
+  shared.qc.setQueryData(['medication'], medicationFixture)
+  return shared
+}
+
 describe('LogDoseSheet (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
   it('prefills the dose from the last dose', () => {
-    const { qc, wrapper } = setup()
+    const { qc, wrapper } = setupWithFixture()
     const med = renderHook(() => useMedication(), { wrapper })
     const lastDose = med.result.current.doses[0]?.dose
 
@@ -46,7 +56,7 @@ describe('LogDoseSheet (mock mode)', () => {
   })
 
   it('saves a dose: it lands in the medication cache, the cycle recomputes to day 1, then closes', async () => {
-    const { qc, wrapper } = setup()
+    const { qc, wrapper } = setupWithFixture()
     const med = renderHook(() => useMedication(), { wrapper })
     const before = med.result.current.doses.length
     const onClose = vi.fn()

@@ -32,14 +32,12 @@ export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
   const day = params.get('day')
   const dayState: DayState = day === 'good' || day === 'rough' ? day : 'medium'
-  // The medCycleDay base is the real medication cycle in real mode (the single FE source every
-  // medication surface reads), the mock default in mock mode. cycle.cycleDay is 0 when there is no
-  // medication / no dose (the ghost, or the cold-load window) → fall back to today.medCycleDay so
-  // nothing ever shows a 0 day. The ?medCycleDay= URL override stays TOP priority in BOTH modes.
+  // The medCycleDay base is the derived medication cycle in BOTH modes. It is 0 when there is no
+  // medication / no dose (mezo-lwmq: the owner tracks no medication, so this is the normal state) —
+  // the honest zero. The ?medCycleDay= URL override stays TOP priority, as a dev switch.
   const { cycle } = useMedication()
-  const base = isMockMode() ? today.medCycleDay : cycle.cycleDay || today.medCycleDay
   const rawDay = parseInt(params.get('medCycleDay') ?? '', 10)
-  const medCycleDay = Number.isFinite(rawDay) ? Math.min(7, Math.max(1, rawDay)) : base
+  const medCycleDay = Number.isFinite(rawDay) ? Math.min(7, Math.max(1, rawDay)) : cycle.cycleDay
   const niggle = params.get('niggle') !== 'off'
   const vulnerable = params.get('vulnerable') === 'on'
   const ritualRaw = params.get('ritual')
@@ -104,7 +102,6 @@ export function useToday(): TodayData {
       dateLabel: huMonthDay(localDateString(now)),
       workoutType: train.workout?.title ?? '',
       workoutTime: gymToday?.time ?? '',
-      medCycleDay: today.medCycleDay, // unused in real mode — the scenario derives it from useMedication
       mesoPhase: meso?.phaseCurve?.[meso.currentWeek - 1] ?? '',
     },
     // Only the meso-derived fields go real here; the identity statics (name/handle/...) are

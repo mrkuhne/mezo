@@ -1,7 +1,11 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { useFuelWeek, mondayIso, deriveWeekTitle, toMedCycleCells, withDefaultDuration, deriveWeeklyStats } from '@/data/fuel/fuelWeekHooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { medicationFixture } from '@/test/fixtures/medication'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { GymScheduleDay, MedicationCycleCell } from '@/data/types'
 
@@ -81,6 +85,10 @@ describe('useFuelWeek (real mode)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('composes the live week and returns honest-empty for the deferred surfaces', async () => {
+    // The app itself seeds no medication (mezo-lwmq) — an empty cycle would leave the strip
+    // empty, so this test overrides the handler with the neutral fixture (cycleDay 3, stable)
+    // to exercise the populated-strip branch.
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
 
     // weekly stats resolve from GET /api/fuel/week/{monday} (MSW fixture: 2 logged days)

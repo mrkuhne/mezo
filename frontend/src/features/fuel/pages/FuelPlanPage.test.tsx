@@ -1,8 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { medicationFixture } from '@/test/fixtures/medication'
 
 // FuelPlanPage reads the composed dual-mode useFuelWeek() (Train + medication + week rollup
 // queries) and useTodayScenario() (a ['medication'] query), so the view needs a QueryClient
@@ -37,7 +41,13 @@ describe('FuelPlanPage (mock mode)', () => {
 })
 
 describe('FuelPlanPage (real mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    // The app itself seeds no medication (mezo-lwmq) — an empty cycle would hide the medication
+    // card entirely, so this suite overrides the handler with the neutral fixture to exercise
+    // the populated-card branch.
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
+  })
   afterEach(() => vi.unstubAllEnvs())
 
   it('renders honest states: derived title, deferred sections hidden, adherence —', async () => {

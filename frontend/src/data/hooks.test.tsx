@@ -8,6 +8,7 @@ import { useTodayScenario, useCheckins, useRecipes, useRecipeActions, useMedicat
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { medicationFixture } from '@/test/fixtures/medication'
 
 // useTodayScenario now reads useMedication() (a ['medication'] query) for its real-mode
 // medCycleDay base, so the router wrapper must also provide a fresh QueryClient.
@@ -22,9 +23,9 @@ const wrap = (path: string) => ({ children }: { children: ReactNode }) => {
 
 afterEach(() => vi.unstubAllEnvs())
 
-test('useTodayScenario defaults: medium, medCycleDay 3, niggle on, vulnerable off, not anchor, no ritual override', () => {
+test('useTodayScenario defaults: medium, medCycleDay 0 (nincs gyógyszer), niggle on, vulnerable off, not anchor, no ritual override', () => {
   const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today') })
-  expect(result.current).toEqual({ dayState: 'medium', medCycleDay: 3, niggle: true, vulnerable: false, anchorMode: false, ritual: null })
+  expect(result.current).toEqual({ dayState: 'medium', medCycleDay: 0, niggle: true, vulnerable: false, anchorMode: false, ritual: null })
 })
 test('useTodayScenario parses params: rough → anchor, overrides', () => {
   const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today?day=rough&niggle=off&vulnerable=on&medCycleDay=6') })
@@ -41,13 +42,14 @@ test('useTodayScenario ?ritual= is whitelist-validated (mirrors the day/dayState
 
 test('useTodayScenario (real mode): medCycleDay derives from useMedication().cycle.cycleDay', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
   const { result } = renderHook(
     () => ({ scenario: useTodayScenario(), med: useMedication() }),
     { wrapper: wrap('/today') },
   )
-  // before the ['medication'] query resolves the cycle is the ghost (cycleDay 0),
-  // so the scenario falls back to the mock default (3) — never a 0 day.
-  expect(result.current.scenario.medCycleDay).toBe(3)
+  // before the ['medication'] query resolves the cycle is the ghost (cycleDay 0) — the scenario
+  // has no fallback, so it is honestly 0 too (mezo-lwmq: no medication is the normal state).
+  expect(result.current.scenario.medCycleDay).toBe(0)
   // once the medication day resolves, the scenario broadcasts the derived cycle day.
   await waitFor(() => expect(result.current.med.cycle.cycleDay).toBe(3))
   expect(result.current.scenario.medCycleDay).toBe(result.current.med.cycle.cycleDay)
@@ -69,18 +71,12 @@ test('useTodayScenario (real mode): medCycleDay follows a non-default derived cy
 
 test('useTodayScenario (real mode): ?medCycleDay= override still wins over the derived cycle', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  // MSW cycle is cycleDay 3, but the URL override is top priority → 5.
+  // The MSW default is the no-medication ghost (cycleDay 0), but the URL override is top priority → 5.
   const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today?medCycleDay=5') })
   expect(result.current.medCycleDay).toBe(5)
   // stays 5 even after the medication day resolves.
   await new Promise(r => setTimeout(r, 0))
   expect(result.current.medCycleDay).toBe(5)
-})
-
-test('useTodayScenario (mock mode): medCycleDay defaults to today.medCycleDay, unchanged', () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today') })
-  expect(result.current.medCycleDay).toBe(3)
 })
 test('useCheckins.saveCheckIn marks a slot done with values', () => {
   const { result } = renderHook(() => useCheckins(), { wrapper: QueryWrapper })

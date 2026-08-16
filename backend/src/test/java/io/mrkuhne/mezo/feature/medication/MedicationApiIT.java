@@ -21,8 +21,8 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * HTTP-level contract IT for the Fuel "Gyógyszer" slice (drives the generated {@code MedicationApi}
- * over the real stack). Logging today's first dose against the owner's Retatrutide row returns 201,
- * and the day read then reports {@code cycleDay 1} — the day-of-dose is the first cycle day.
+ * over the real stack). Logging today's first dose against the owner's test medication row returns
+ * 201, and the day read then reports {@code cycleDay 1} — the day-of-dose is the first cycle day.
  */
 class MedicationApiIT extends ApiIntegrationTest {
 

@@ -251,7 +251,7 @@ export interface MedicationInput {
 /** Editor input for logging an injection. */
 export interface MedicationDoseInput { administeredAt?: string | null; dose: number; note?: string | null }
 
-export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; medCycleDay: number; mesoPhase: string }
+export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; mesoPhase: string }
 /** The workout teaser's prediction line — demo copy in mock mode; real predictions are a later epic (null hides the row). */
 export interface WorkoutPrediction { confidence: number; label: string }
 /** One cell of the Today quick-stats row ("Most"). */

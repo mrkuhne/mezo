@@ -7,6 +7,7 @@ import { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { localDateString } from '@/shared/lib/dates'
+import { medicationFixture } from '@/test/fixtures/medication'
 import type { MedicationDoseInput } from '@/data/types'
 
 function sharedWrapper() {
@@ -17,6 +18,15 @@ function sharedWrapper() {
   return { qc, Wrapper }
 }
 
+// The app itself seeds no medication (mezo-lwmq) — mock-mode tests that exercise the POPULATED
+// branch preload the neutral fixture into the cache; useDualQuery's initialData only applies
+// when the cache is empty, so this wins over the ghost `medicationSeed`.
+function sharedWrapperWithFixture() {
+  const shared = sharedWrapper()
+  shared.qc.setQueryData(['medication'], medicationFixture)
+  return shared
+}
+
 const doseToday: MedicationDoseInput = { administeredAt: `${localDateString()}T07:00:00`, dose: 6, note: null }
 
 afterEach(() => vi.unstubAllEnvs())
@@ -24,18 +34,18 @@ afterEach(() => vi.unstubAllEnvs())
 describe('useMedication (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('returns the seed medication + cycle (cycleDay 3) + doses', () => {
-    const { Wrapper } = sharedWrapper()
+  it('returns the fixture medication + cycle (cycleDay 3) + doses', () => {
+    const { Wrapper } = sharedWrapperWithFixture()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
     expect(Object.keys(result.current).sort()).toEqual(['cycle', 'doses', 'medication'])
-    expect(result.current.medication.name).toBe('Retatrutide')
+    expect(result.current.medication.name).toBe('Teszt gyógyszer')
     expect(result.current.cycle.cycleDay).toBe(3)
     expect(result.current.cycle.phaseKey).toBe('stable')
     expect(result.current.doses.length).toBe(3)
   })
 
   it('logDose appends a dose AND recomputes the cycle to cycleDay 1 (dose today)', async () => {
-    const { Wrapper } = sharedWrapper()
+    const { Wrapper } = sharedWrapperWithFixture()
     const { result } = renderHook(
       () => ({ read: useMedication(), actions: useMedicationActions() }),
       { wrapper: Wrapper },
@@ -51,7 +61,7 @@ describe('useMedication (mock mode)', () => {
   })
 
   it('removeDose drops a dose from the cache', async () => {
-    const { Wrapper } = sharedWrapper()
+    const { Wrapper } = sharedWrapperWithFixture()
     const { result } = renderHook(
       () => ({ read: useMedication(), actions: useMedicationActions() }),
       { wrapper: Wrapper },
@@ -77,15 +87,17 @@ describe('useMedication (real mode)', () => {
   })
 
   it('reads medication + cycle + doses from the API handler fixture', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
-    await waitFor(() => expect(result.current.medication.name).toBe('Retatrutide'))
+    await waitFor(() => expect(result.current.medication.name).toBe('Teszt gyógyszer'))
     expect(result.current.cycle.cycleDay).toBe(3)
     expect(result.current.cycle.phaseKey).toBe('stable')
     expect(result.current.doses.length).toBe(3)
   })
 
   it('logDose POSTs to the active medication and invalidates ["medication"], ["today"] AND ["fuelDay"]', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { qc, Wrapper } = sharedWrapper()
     const spy = vi.spyOn(qc, 'invalidateQueries')
     let postedMedId: string | null = null
@@ -99,9 +111,9 @@ describe('useMedication (real mode)', () => {
       () => ({ read: useMedication(), actions: useMedicationActions() }),
       { wrapper: Wrapper },
     )
-    await waitFor(() => expect(result.current.read.medication.id).toBe('med-reta'))
+    await waitFor(() => expect(result.current.read.medication.id).toBe('med-test'))
     act(() => result.current.actions.logDose(doseToday))
-    await waitFor(() => expect(postedMedId).toBe('med-reta'))
+    await waitFor(() => expect(postedMedId).toBe('med-test'))
     await waitFor(() => {
       const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
       expect(keys).toContain(JSON.stringify(['medication']))
@@ -111,6 +123,7 @@ describe('useMedication (real mode)', () => {
   })
 
   it('removeDose DELETEs from the active medication and invalidates the 3 caches', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { qc, Wrapper } = sharedWrapper()
     const spy = vi.spyOn(qc, 'invalidateQueries')
     let deletedMedId: string | null = null
@@ -122,9 +135,9 @@ describe('useMedication (real mode)', () => {
       () => ({ read: useMedication(), actions: useMedicationActions() }),
       { wrapper: Wrapper },
     )
-    await waitFor(() => expect(result.current.read.medication.id).toBe('med-reta'))
+    await waitFor(() => expect(result.current.read.medication.id).toBe('med-test'))
     act(() => result.current.actions.removeDose('dose-3'))
-    await waitFor(() => expect(deletedMedId).toBe('med-reta'))
+    await waitFor(() => expect(deletedMedId).toBe('med-test'))
     await waitFor(() => {
       const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
       expect(keys).toContain(JSON.stringify(['medication']))
