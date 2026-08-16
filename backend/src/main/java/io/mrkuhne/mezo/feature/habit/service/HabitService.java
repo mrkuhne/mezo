@@ -330,22 +330,18 @@ public class HabitService {
         if (missing.isEmpty()) {
             return existing;
         }
-        try {
-            List<HabitDayEntity> fresh = missing.stream().map(def -> {
-                HabitDayEntity e = new HabitDayEntity();
-                e.setCreatedBy(userId);
-                e.setHabitDate(date);
-                e.setHabitKey(def.getHabitKey());
-                return e;
-            }).toList();
-            List<HabitDayEntity> saved = repository.saveAllAndFlush(fresh);
-            List<HabitDayEntity> all = new ArrayList<>(existing);
-            all.addAll(saved);
-            return all;
-        } catch (DataIntegrityViolationException e) {
-            // lost the race against the cron/another read/concurrent check — the rows exist now
-            return repository.findByCreatedByAndHabitDate(userId, date);
-        }
+        // ON CONFLICT DO NOTHING absorbs a concurrent bootstrap (the cron, a second read, a
+        // check arriving together), so no constraint violation is ever raised and the transaction
+        // stays usable — which is what makes the re-read below safe in the SAME transaction.
+        // The retired guard caught the violation and re-read here; on Postgres that cannot work,
+        // because the violation aborts the transaction (25P02) and the recovery read fails too,
+        // taking down the whole getDay()/check() request (mezo-5jly, TxRaceGuardReproIT).
+        repository.insertMissing(userId, date,
+            missing.stream().map(HabitDefEntity::getHabitKey).toArray(String[]::new),
+            Instant.now());
+        // Re-read rather than trusting our own insert count: whoever won the race, this is the
+        // authoritative row set for the day.
+        return repository.findByCreatedByAndHabitDate(userId, date);
     }
 
     private Map<String, Integer> strengthByKey(UUID userId, LocalDate today) {
