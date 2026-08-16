@@ -1002,6 +1002,96 @@ git add -A && git commit -m "content(mock): a retatrutid-narratíva kivezetése 
 
 ---
 
+### Task 7b: A terv fájllistáiból kimaradt „Reta"-tartalom teljes kisöprése
+
+**Miért létezik ez a task:** a Task 7 végén futtatott repó-szintű keresés kiderítette, hogy a Task 1–7 fájllistái **nem voltak teljesek**. Kb. 22 frontend fájlban és 5 backend fájlban maradt valódi „Reta"-tartalom, amit egyetlen task sem birtokolt. Ez terv-hiba, nem implementációs hiba — ez a task pótolja.
+
+**Két lelet nem kozmetika:**
+
+1. **Kontraktus-elcsúszás.** A `frontend/src/data/insights/insights.ts:268-289` mintapár-katalógus mockja még a `reta-cycle-day~daily-kcal` / `reta-cycle-day` kulcsokat és a „Reta-ciklusnap" címkét tükrözi, holott a Task 3 ezeket a backenden `medication-cycle-day~daily-kcal` / `medication-cycle-day` / „Gyógyszer-ciklusnap"-ra nevezte át. A mock így **tényszerűen hazudik** a backend kontraktusáról.
+2. **Backend demo-seed próza.** A `TrainSeedData.java:119,253,263` „Reta cycle" szövegeket **ír a DB-be** induláskor — ez nem komment, hanem adat.
+
+**Files:**
+- Frontend adat/tartalom: `src/data/insights/insights.ts` (9 találat: memoir-szöveg, `{ kind: 'Reta' }` ref, predikció-basis, és a §1 szerinti mintapár-katalógus blokk), `src/data/insights/chat.ts` (4), `src/data/insights/knowledge.ts`, `src/data/insights/memory.ts`, `src/data/today/today.ts` (2: briefing-próza + a `{ kind: 'Medication', id: 'reta-2026-05-19', label: 'Reta · Hétfő' }` ref), `src/data/today/checkins.ts`, `src/data/me/sleep.ts`, `src/data/fuel/pantry.ts` (4), `src/data/fuel/fuelWeek.ts` (a `weeklySupplements` `'Reta · hetente'` sora), `src/test/msw/handlers.ts`
+- Frontend logika — **azonosító-átnevezés**: `src/features/fuel/logic/windowIslands.ts` (6: a `retaPeak` paraméter/mező **és** a renderelt `'Reta-csúcshéten megnőtt étvágy'` felirat), `src/features/fuel/pages/FuelMaiPage.tsx` (4: a `retaPeak` változó + kommentek)
+- Frontend UI-szöveg: `src/features/me/sheets/WeightLogSheet.tsx` és `src/features/me/sheets/SleepLogSheet.tsx` (input-placeholderek + egy minőség-tipp szövege) — **ezek felhasználónak látszó feliratok**
+- Frontend egyéb: `src/features/train/logic/planner.ts`
+- Frontend tesztek (a fentiek tükrei): `src/features/fuel/logic/windowIslands.test.ts`, `src/data/today/briefingHooks.test.tsx`, `src/features/insights/pages/{ChatPage,PredictionsPage,MotorPage}.test.tsx`, `src/data/hooks.test.tsx`
+- Backend: `feature/train/TrainSeedData.java` (3 seed-szöveg), `feature/nutrition/config/NutritionTargetsProperties.java` (komment), `feature/companion/HypothesisPipelineServiceIT.java`, `feature/proactive/BriefingGeneratorIT.java` (2), `feature/proactive/PredictionGeneratorIT.java` (2) — utóbbi három fake-LLM teszt-payload
+
+**AMI SZÁNDÉKOSAN MARAD** (ne nyúlj hozzá, és a záró grep is engedi):
+
+| Hely | Miért marad |
+|---|---|
+| `application.yml:762` `rx-terms` | A `ClinicalOutputCheck` őrének szótára — nem felhasználói adat, kifejezett tulajdonosi döntés |
+| `ClinicalOutputCheck.java:17` javadoc | Az őr ékezet-hajtogatását magyarázza, a „reta"→„Retát" a példa |
+| `ClinicalOutputCheckTest.java:13,17,27,37` | Magát az őrt bizonyítják; a bemenet szükségszerűen tartalmazza a szert |
+| `CompanionAdvisorChainIT.java:85` | Ugyanaz — az őr kioldását bizonyító user-üzenet |
+| `CompanionPropertiesIT.java:48` | Azt állítja, hogy az `rx-terms` lista tartalmazza a szót |
+| `202608151210_..._delete_medication_rows.sql` és `202608151200_..._rename_medication_pattern_keys.sql` | A migrációk szükségszerűen néven nevezik, amit eltávolítanak |
+| `FuelMedicationPage.test.tsx:41` komment | Kifejezetten a „Reta"-ra való visszaesés ellen véd |
+
+- [ ] **Step 1: A kontraktus-elcsúszás javítása (ez a legfontosabb)**
+
+`frontend/src/data/insights/insights.ts` — a `268-289` közötti blokkban a kulcsoknak és címkéknek pontosan azt kell tükrözniük, amit a backend `application.yml` pár-katalógusa a Task 3 után emit:
+
+```ts
+      key: 'medication-cycle-day~daily-kcal',
+      title: 'Gyógyszer-ciklusnap ↔ napi kalória',
+      category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 0,
+      metricAKey: 'medication-cycle-day', metricALabel: 'Gyógyszer-ciklusnap',
+```
+
+és a `metrics` tömbben:
+
+```ts
+    { key: 'medication-cycle-day', label: 'Gyógyszer-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 28, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+```
+
+A `MotorPage.test.tsx:158` várt címkéje ugyanígy `'Gyógyszer-ciklusnap'`-ra vált.
+
+- [ ] **Step 2: A `retaPeak` azonosító átnevezése**
+
+`windowIslands.ts` és `FuelMaiPage.tsx`: `retaPeak` → `medPeak` mindenhol (paraméter, interfész-mező, destrukturálás, hívási hely), és a renderelt felirat `'Reta-csúcshéten megnőtt étvágy'` → `'Csúcsfázisban megnőtt étvágy'`. A `windowIslands.test.ts` opciómezője és a teszt neve is követi. A `FuelMaiPage.tsx:66-67` komment `Reta D{n} link` / `Reta leaks in as a FACT` megfogalmazása is generikusra.
+
+- [ ] **Step 3: A felhasználónak látszó UI-szövegek**
+
+`WeightLogSheet.tsx:51` placeholder: a `· "Reta D1 reggel"` példa helyére gyógyszer-független példa (pl. `· "sok só tegnap"`).
+`SleepLogSheet.tsx:306` placeholder: ugyanígy.
+`SleepLogSheet.tsx:319`: `'Alacsony minőség — keressük meg a faktort együtt (késő szénhidrát? kávé? Reta?).'` → a `Reta?` faktor kiesik, helyette pl. `stressz?`.
+
+- [ ] **Step 4: A mock-narratíva és a backend seed-próza**
+
+A fenti fájllista összes maradék szövege gyógyszer-független megfogalmazásra, a Task 7-ben használt idiómát követve: a számok és a mondatszerkezet maradnak, csak a gyógyszer-ok esik ki. A `today.ts` `{ kind: 'Medication', id: 'reta-2026-05-19', label: 'Reta · Hétfő' }` referenciája: az `id` és a `label` is generikusra (`'med-2026-05-19'`, `'Gyógyszer · Hétfő'`). A `TrainSeedData.java` három szövege a `train.ts`-ben már használt megfogalmazást tükrözze (a mock és a seed ugyanazt a történetet mesélik).
+
+- [ ] **Step 5: Kapuk**
+
+```bash
+cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test
+```
+
+```bash
+cd backend && ./mvnw clean test -Dtest=TrainApiIT,BriefingGeneratorIT,PredictionGeneratorIT,HypothesisPipelineServiceIT -Dmezo.test.use-testcontainers=true
+```
+
+(plusz bármely más fókuszált osztály, amit érintesz — teljes suite-ot NE futtass, a gépen több worktree versenyez a megosztott DB-ért)
+
+- [ ] **Step 6: A záró seprés ellenőrzése**
+
+```bash
+rg -n -i -e '\breta\b' -e 'retatrutid' frontend/src backend/src api; rg -n -e 'reta[A-Z]' frontend/src backend/src api
+```
+
+Elvárt: **kizárólag** a fenti „AMI SZÁNDÉKOSAN MARAD" táblázat sorai. Bármi más maradék hiba. (Figyelem: a `reta[A-Z]` mintát **`-i` nélkül** kell futtatni, különben a `retain` / `retagged` / `RETARGETS` hamis találatokat ad.)
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add -A && git commit -m "content(sweep): a terv fájllistáiból kimaradt Reta-tartalom kivezetése (mezo-lwmq)"
+```
+
+---
+
 ### Task 8: Dokumentáció, ADR és záró ellenőrzés
 
 **Files:**
