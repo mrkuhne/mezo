@@ -49,6 +49,13 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted verdicts (V1.3): answer with non-JSON — exercises the fail-open path. */
     public static final String VERDICT_BROKEN = "[fake-verdict-broken]";
 
+    /** Scripted verdicts (mezo-q71s): proves the judge's payload carries the RENDERED history, not
+     *  just the checked answer/userMessage — planted in a history {@code Turn}'s content, this
+     *  string reaches the verdict payload ONLY through {@code ChatHistory.render(history)} inside
+     *  {@code TurnVerdictCheck.check(...)}. If that render call is ever dropped, the sentinel
+     *  disappears from the payload and this scripted verdict goes back to clean. */
+    public static final String HISTORY_SEEN_SENTINEL = "[fake-verdict-saw-history]";
+
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
@@ -425,6 +432,9 @@ public class FakeCompanionLlm implements CompanionLlm {
     private String verdictAnswer(String userMessage) {
         if (userMessage.contains(VERDICT_BROKEN)) {
             return "ez nem json";
+        }
+        if (userMessage.contains(HISTORY_SEEN_SENTINEL)) {
+            return "{\"redundantQuestion\":true,\"ungroundedClaim\":false,\"reason\":\"history-seen\"}";
         }
         boolean retryRound = userMessage.contains(AdvisorRetry.RETRY_MARKER);
         if (userMessage.contains(VIOLATE_ALWAYS) || (userMessage.contains(VIOLATE_ONCE) && !retryRound)) {
