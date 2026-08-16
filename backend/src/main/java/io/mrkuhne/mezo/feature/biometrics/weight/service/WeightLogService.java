@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class WeightLogService {
     private final WeightLogMapper mapper;
     private final GoalRepository goalRepository;
     private final GoalEngineService goalEngineService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<WeightLogResponse> list(UUID createdBy) {
         return repository.findAllOwned(createdBy).stream().map(mapper::toResponse).toList();
@@ -41,6 +43,8 @@ public class WeightLogService {
         // reflects the new weight trend. The G1 lifecycle enforces at most one active goal; if there
         // is none, skip gracefully — a weigh-in must never depend on having a goal.
         recomputeActiveGoal(createdBy);
+        // AFTER_COMMIT listener (CompanionMessageEventListener) reacts once this row is durable.
+        eventPublisher.publishEvent(new WeightLogSavedEvent(createdBy, req.getDate()));
         return resp;
     }
 
