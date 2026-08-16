@@ -54,6 +54,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MesoTemplateService {
 
+    /** Baseline label for a materialized landmark whose run row carried no provenance baseline. */
+    private static final String INHERITED_BASELINE_NAME = "Örökölt kiindulás";
+
     private final MesoTemplateRepository templateRepository;
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -180,7 +183,9 @@ public class MesoTemplateService {
 
     /**
      * The run's per-muscle landmarks as the plan's baseline: the CURRENT MEV/MAV/MRV of each
-     * volume-log row (what the run actually trained on), named after its provenance baseline.
+     * volume-log row (what the run actually trained on), named after its provenance baseline —
+     * or {@link #INHERITED_BASELINE_NAME} when that row carries none, since {@code VolumeBaseline
+     * .name} is contract-required and the name is copied on into every future run's provenance.
      */
     private Map<String, VolumeBaselineJson> baselinesOf(UUID createdBy, UUID mesocycleId) {
         Map<String, VolumeBaselineJson> baselines = volumeLogRepository
@@ -194,6 +199,7 @@ public class MesoTemplateService {
 
     private String baselineName(MuscleGroupVolumeLogEntity row) {
         ProvenanceEnvelope source = row.getSource();
-        return source != null && source.baseline() != null ? source.baseline().name() : null;
+        String name = source != null && source.baseline() != null ? source.baseline().name() : null;
+        return name != null ? name : INHERITED_BASELINE_NAME;
     }
 }

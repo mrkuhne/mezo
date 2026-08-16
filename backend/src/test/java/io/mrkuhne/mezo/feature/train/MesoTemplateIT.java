@@ -15,11 +15,13 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -129,6 +131,37 @@ class MesoTemplateIT extends ApiIntegrationTest {
             assertThat(back.getMav()).isEqualTo(16);
             assertThat(back.getMrv()).isEqualTo(22);
         });
+    }
+
+    @Test
+    void testCreateTemplate_shouldFillRequiredDayAndExerciseFields_whenRestDayHasNeither() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateUpsertRequest req = upsertRequest();
+        // A rest day carries neither muscle nor exercises — both are optional on MesoDayInput but
+        // REQUIRED on the MesoDay response, so the stored document must be coerced, not served null.
+        List<MesoDayInput> days = new ArrayList<>(req.getDays());
+        days.add(MesoDayInput.builder().day("Vas").type("Rest").build());
+        req.setDays(days);
+
+        postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+
+        MesoTemplateResponse t = getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class)
+            .get(0);
+        assertThat(t.getDays()).hasSize(3);
+        assertThat(t.getDays().get(2).getDay()).isEqualTo("Vas");
+        assertThat(t.getDays().get(2).getMuscle()).isEmpty();
+        assertThat(t.getDays().get(2).getExercises()).isEmpty();
+        assertThat(t.getDays().get(2).getExerciseCount()).isZero();
+
+        // Every recipe gets a server-synthesized, stable, per-exercise unique id (contract-required).
+        List<UUID> exerciseIds = t.getDays().stream()
+            .flatMap(d -> d.getExercises().stream()).map(GymExercise::getId).toList();
+        assertThat(exerciseIds).hasSize(3).doesNotContainNull().doesNotHaveDuplicates();
+        // ...and it is stable across reads — the id lives in the stored document, not in the mapper.
+        assertThat(getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).get(0)
+            .getDays().stream().flatMap(d -> d.getExercises().stream()).map(GymExercise::getId))
+            .containsExactlyElementsOf(exerciseIds);
     }
 
     @Test
@@ -260,6 +293,14 @@ class MesoTemplateIT extends ApiIntegrationTest {
             assertThat(m.getVolumePerMuscle().get("chest").getSource().getNote())
                 .startsWith("Sablon baseline");
         });
+        // The run's exercise rows are fresh rows with their own PKs — the template's recipe ids
+        // (stored in the plan jsonb) must never be reused as workout exercise ids.
+        List<UUID> recipeIds = template.getDays().stream()
+            .flatMap(d -> d.exercises().stream()).map(GymExerciseJson::id).toList();
+        List<UUID> runExerciseIds = mesos.get(0).getDays().stream()
+            .flatMap(d -> d.getExercises().stream()).map(GymExercise::getId).toList();
+        assertThat(recipeIds).hasSize(4).doesNotContainNull();
+        assertThat(runExerciseIds).hasSize(4).doesNotContainNull().doesNotContainAnyElementsOf(recipeIds);
         // ...and the RP-table fill that runs after the plan seeding must not duplicate a muscle.
         assertThat(jdbcTemplate.queryForObject(
             "select count(*) from muscle_group_volume_log where mesocycle_id = ?",
@@ -356,6 +397,42 @@ class MesoTemplateIT extends ApiIntegrationTest {
         assertThat(template.getVolumePerMuscle().get("back").getMev()).isEqualTo(8);
         assertThat(template.getVolumePerMuscle().get("back").getMav()).isEqualTo(14);
         assertThat(template.getVolumePerMuscle().get("back").getMrv()).isEqualTo(20);
+        assertThat(template.getVolumePerMuscle().get("back").getName())
+            .isEqualTo("RP guidelines · intermediate");
+        // The materialized recipes carry the run's own exercise row ids as their stored identity.
+        assertThat(template.getDays().get(0).getExercises().get(0).getId()).isNotNull();
+    }
+
+    @Test
+    void testRerun_shouldNameInheritedBaseline_whenVolumeLogHasNoProvenanceBaseline() {
+        UUID owner = ownerId();
+        MesocycleEntity legacy = trainPopulator.createMesocycle(owner, "Provenance nélküli", "archived");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(owner, legacy.getId(), "Hét", "Pull", 0, "planned");
+        trainPopulator.createExercise(owner, day.getId(), "Régi húzás", 0);
+        trainPopulator.createVolumeLogWithoutBaseline(owner, legacy.getId(), "back");
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoRerunResponse rerun = postForBody(MESOCYCLES + "/" + legacy.getId() + "/rerun", null, auth,
+            HttpStatus.OK, MesoRerunResponse.class);
+
+        // VolumeBaseline.name is contract-required, so the materialization names it rather than
+        // storing a null into the plan document.
+        MesoTemplateResponse template =
+            getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).stream()
+                .filter(t -> t.getId().equals(rerun.getTemplateId())).findFirst().orElseThrow();
+        assertThat(template.getVolumePerMuscle().get("back").getName()).isEqualTo("Örökölt kiindulás");
+
+        // ...and that name survives into the next run's volume-log provenance (the chain the null
+        // used to travel down).
+        MesocycleResponse restarted = postForBody(TEMPLATES + "/" + rerun.getTemplateId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        assertThat(getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class))
+            .filteredOn(m -> m.getId().equals(restarted.getId())).singleElement()
+            .satisfies(m -> assertThat(
+                m.getVolumePerMuscle().get("back").getSource().getBaseline().getName())
+                .isEqualTo("Örökölt kiindulás"));
     }
 
     @Test

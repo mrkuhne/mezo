@@ -35,18 +35,23 @@ public class MesoTemplatePopulator {
         t.setDays(List.of(
             new MesoDayJson("Hét", "gym", "chest", false, null,
                 List.of(
-                    new GymExerciseJson("Bench Press", "chest", 2, 3, 8, 12, 2, null, "compound", null, null),
-                    new GymExerciseJson("Incline Bench Press", "chest", 1, 3, 8, 12, 2, null, "compound", null,
-                        null))),
+                    exercise("Bench Press", "chest", 2),
+                    exercise("Incline Bench Press", "chest", 1))),
             new MesoDayJson("Csüt", "gym", "back", false, null,
                 List.of(
-                    new GymExerciseJson("Row", "back", 2, 3, 8, 12, 2, null, "compound", null, null),
-                    new GymExerciseJson("Lat Pulldown", "back", 1, 3, 8, 12, 2, null, "compound", null, null)))
+                    exercise("Row", "back", 2),
+                    exercise("Lat Pulldown", "back", 1)))
         ));
         t.setVolumePerMuscle(Map.of(
             "chest", new VolumeBaselineJson("RP guidelines · intermediate", 8, 14, 20),
             "back", new VolumeBaselineJson("RP guidelines · intermediate", 10, 16, 22)
         ));
         return mesoTemplateRepository.saveAndFlush(t);
+    }
+
+    /** A stored recipe with a server-synthesized id — what create/update mints for every exercise. */
+    private static GymExerciseJson exercise(String name, String muscle, int warmupSets) {
+        return new GymExerciseJson(UUID.randomUUID(), name, muscle, warmupSets, 3, 8, 12, 2, null,
+            "compound", null, null);
     }
 }

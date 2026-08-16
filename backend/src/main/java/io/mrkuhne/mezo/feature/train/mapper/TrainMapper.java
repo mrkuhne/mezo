@@ -121,15 +121,17 @@ public interface TrainMapper {
     @Mapping(target = "runCount", ignore = true)
     MesoTemplateResponse toTemplateResponse(MesoTemplateEntity entity);
 
-    /** A template day has no {@code workout_session} row yet — {@code id}/{@code current} stay null. */
+    /**
+     * A template day has no {@code workout_session} row yet — {@code id}/{@code current} stay null.
+     * {@code muscle}/{@code exercises} are guaranteed non-null by {@link MesoDayJson}'s compact
+     * constructor, so the required response fields are always well-formed.
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "current", ignore = true)
-    @Mapping(target = "exerciseCount",
-        expression = "java(json.exercises() == null ? 0 : json.exercises().size())")
+    @Mapping(target = "exerciseCount", expression = "java(json.exercises().size())")
     MesoDay toDay(MesoDayJson json);
 
-    /** Same reason as {@link #toDay}: a stored recipe has no {@code exercise} row id or media yet. */
-    @Mapping(target = "id", ignore = true)
+    /** {@code id} is the recipe's stored identity (see {@link GymExerciseJson}); media is run-side only. */
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExercise.TypeEnum.fromValue(json.type()))")
     @Mapping(target = "videoUrl", ignore = true)
@@ -141,11 +143,19 @@ public interface TrainMapper {
 
     MesoDayJson toDayJson(MesoDayInput input);
 
+    /**
+     * The wizard never sends a recipe id, so every create/update mints a fresh one — the plan
+     * document owns its exercise identities, and a full-replace update legitimately renews them.
+     */
+    @Mapping(target = "id", expression = "java(java.util.UUID.randomUUID())")
     @Mapping(target = "targetRir", source = "targetRIR")
     @Mapping(target = "type", expression = "java(input.getType().getValue())")
     GymExerciseJson toExerciseJson(GymExerciseInput input);
 
-    /** Run rows → stored recipe (the rerun path materializes a template out of a legacy run). */
+    /**
+     * Run rows → stored recipe (the rerun path materializes a template out of a legacy run); the
+     * recipe's {@code id} is that run's {@code exercise} row id.
+     */
     List<GymExerciseJson> toExercisesJson(List<ExerciseEntity> exercises);
 
     GymExerciseJson toExerciseJson(ExerciseEntity entity);
@@ -154,6 +164,10 @@ public interface TrainMapper {
 
     MesoDayInput toDayInput(MesoDayJson json);
 
+    /**
+     * Stamping direction: {@code GymExerciseInput} deliberately has no id, so the template's recipe
+     * ids can never leak into the run — its {@code exercise} rows get their own generated PKs.
+     */
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExerciseInput.TypeEnum.fromValue(json.type()))")
     GymExerciseInput toExerciseInput(GymExerciseJson json);
