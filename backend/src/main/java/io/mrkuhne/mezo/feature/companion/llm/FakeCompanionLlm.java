@@ -56,6 +56,11 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  disappears from the payload and this scripted verdict goes back to clean. */
     public static final String HISTORY_SEEN_SENTINEL = "[fake-verdict-saw-history]";
 
+    /** Scripted verdicts (mezo-q71s): a MARKED speculation is clean — the policy's IT anchor.
+     *  Proves the fake keeps the "jelölt sejtés" clean-verdict rule in sync with the real judge's
+     *  VERDICT_PROMPT criterion #2, so the retry chain never fires on a linguistically hedged hunch. */
+    public static final String MARKED_SPECULATION = "[fake-marked-spec]";
+
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
@@ -434,13 +439,18 @@ public class FakeCompanionLlm implements CompanionLlm {
             return "ez nem json";
         }
         if (userMessage.contains(HISTORY_SEEN_SENTINEL)) {
-            return "{\"redundantQuestion\":true,\"ungroundedClaim\":false,\"reason\":\"history-seen\"}";
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"history-seen\"}";
+        }
+        // mezo-q71s: a jelölt sejtés kifejezetten TISZTA ítéletet kap — ez rögzíti a politikát
+        // a fake oldalán is, nem csak a valódi bíráló promptjában.
+        if (userMessage.contains(MARKED_SPECULATION)) {
+            return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"jelölt sejtés\"}";
         }
         boolean retryRound = userMessage.contains(AdvisorRetry.RETRY_MARKER);
         if (userMessage.contains(VIOLATE_ALWAYS) || (userMessage.contains(VIOLATE_ONCE) && !retryRound)) {
-            return "{\"redundantQuestion\":true,\"ungroundedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
         }
-        return "{\"redundantQuestion\":false,\"ungroundedClaim\":false,\"reason\":\"\"}";
+        return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"\"}";
     }
 
     /**
