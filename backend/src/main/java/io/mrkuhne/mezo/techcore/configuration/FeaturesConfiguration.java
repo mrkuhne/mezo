@@ -53,13 +53,10 @@ public class FeaturesConfiguration {
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */
     public static final String MEAL_COACH_SWITCH = "mezo.feature.meal-coach.enabled";
 
-    /** Proactive layer (mezo-h4wp) — generated briefing + weekly prose + heartbeat + predictions.
+    /** Proactive layer (mezo-h4wp) — companion-feed + weekly prose + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
     public static final String PROACTIVE_SWITCH = "mezo.feature.proactive.enabled";
-
-    /** B1.2 dawn briefing pre-generation job — techcore cron zone (schedule: mezo.proactive.briefing.cron). */
-    public static final String BRIEFING_JOB_SWITCH = "mezo.techcore.cron.briefing-job.enabled";
 
     /** Companion-feed morning/midday/evening crons (mezo-gst9) — techcore cron zone
      *  (schedules: mezo.proactive.feed.*-cron). */
@@ -70,9 +67,6 @@ public class FeaturesConfiguration {
 
     /** W2 Sunday memoir job — techcore cron zone (schedule: mezo.proactive.memoir.cron). */
     public static final String MEMOIR_JOB_SWITCH = "mezo.techcore.cron.memoir-job.enabled";
-
-    /** H1 heartbeat window crons — techcore cron zone (schedules: mezo.proactive.heartbeat.*). */
-    public static final String HEARTBEAT_JOB_SWITCH = "mezo.techcore.cron.heartbeat-job.enabled";
 
     /** P1 prediction generation + validation crons — techcore cron zone (schedules: mezo.proactive.prediction.*). */
     public static final String PREDICTION_JOB_SWITCH = "mezo.techcore.cron.prediction-job.enabled";

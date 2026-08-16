@@ -10,28 +10,16 @@ import java.math.BigDecimal;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-/** Proactive-layer tuning (mezo.proactive). B1.1: briefing gather window; B1.2 adds cron + regen. */
+/** Proactive-layer tuning (mezo.proactive). */
 @Validated
 @ConfigurationProperties(prefix = "mezo.proactive")
 public record ProactiveProperties(
-        @NotNull @Valid Briefing briefing,
         @NotNull @Valid Weekly weekly,
         @NotNull @Valid Memoir memoir,
-        @NotNull @Valid Heartbeat heartbeat,
         @NotNull @Valid Prediction prediction,
         @NotNull @Valid Experiment experiment,
         @NotNull @Valid Challenge challenge,
         @NotNull @Valid Feed feed) {
-
-    public record Briefing(
-        /** How many finished days of narrative memory (daily_summary) the gather reads;
-         *  doubles as the emptiness gate: zero summaries in the window -> no briefing (404). */
-        @Min(1) @Max(14) int pastDays,
-        /** Dawn pre-generation schedule (server zone) — before the typical wake. */
-        @NotBlank String cron,
-        /** Max staleness regenerations per user+day (the GET path's cap). */
-        @Min(0) @Max(5) int regenCapPerDay
-    ) {}
 
     /** W1 weekly plan-suggestion generation. */
     public record Weekly(
@@ -43,16 +31,6 @@ public record ProactiveProperties(
     public record Memoir(
         /** Sunday-evening schedule (server zone) — the memoir is FOR the week ending that Sunday. */
         @NotBlank String cron
-    ) {}
-
-    /** H1 in-day heartbeat notes — the two v1 windows (§9 decision p). The lazy GET derives the
-     *  window fire-times from these SAME crons (CronExpression), so there is no duplicated
-     *  time config (§9 decision r). */
-    public record Heartbeat(
-        /** Midday nudge schedule (server zone). */
-        @NotBlank String middayCron,
-        /** Evening closing schedule (server zone). */
-        @NotBlank String eveningCron
     ) {}
 
     /** P1 weekly prediction generation + daily deterministic window-close validation. */
@@ -92,8 +70,8 @@ public record ProactiveProperties(
     ) {}
 
     /** Companion-feed cron kinds (morning/midday/evening) — the unified feed's miss-recovery
-     *  derives the midday/evening fire-times from these SAME crons (the heartbeat idiom), and
-     *  the generator's gather window is this {@code pastDays} (replacing {@link Briefing#pastDays()}). */
+     *  derives the midday/evening fire-times from these SAME crons, and the generator's gather
+     *  window is this {@code pastDays}. */
     public record Feed(
         /** Dawn pre-generation schedule (server zone) — before the typical wake. */
         @NotBlank String morningCron,

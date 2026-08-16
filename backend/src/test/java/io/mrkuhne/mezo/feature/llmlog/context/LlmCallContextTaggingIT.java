@@ -8,8 +8,8 @@ import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
-import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
-import io.mrkuhne.mezo.feature.proactive.service.HeartbeatGenerator;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.service.CompanionMessageGenerator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
@@ -45,7 +45,7 @@ import reactor.core.publisher.Flux;
  * {@code LlmLogWriterIT}.
  *
  * <p>Two representative sites are proven: one WITH an entity id ({@link MealCoachService}) and one
- * feature-only ({@link HeartbeatGenerator}). Every other tagged site applies the identical
+ * feature-only ({@link CompanionMessageGenerator}). Every other tagged site applies the identical
  * mechanical wrapper.
  */
 @ActiveProfiles("companion-fake")
@@ -117,7 +117,7 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
 
     @Autowired private CapturingCompanionLlm capturingCompanionLlm;
     @Autowired private MealCoachService mealCoachService;
-    @Autowired private HeartbeatGenerator heartbeatGenerator;
+    @Autowired private CompanionMessageGenerator companionMessageGenerator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealRepository mealRepository;
@@ -153,18 +153,18 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGenerate_shouldTagTheCallWithTheHeartbeatFeature_whenNoEntityIsTheSubject() {
+    void testGenerateWindow_shouldTagTheCallWithTheProactiveFeedFeature_whenNoEntityIsTheSubject() {
         UUID user = userPopulator.createUser("llm-tagging-heartbeat@test.local").getId();
         LocalDate day = LocalDate.now();
         dailySummaryPopulator.summary(user, day.minusDays(1), "Tegnapi nap összefoglaló.");
         capturingCompanionLlm.answerWith("Szép tempó, tartsd a vizet.");
 
-        heartbeatGenerator.generate(user, day, HeartbeatNoteEntity.WINDOW_MIDDAY);
+        companionMessageGenerator.generateWindow(user, day, CompanionMessageEntity.KIND_MIDDAY);
 
         LlmCallContext captured = capturingCompanionLlm.captured();
         assertThat(captured).isNotNull().isNotEqualTo(LlmCallContext.UNKNOWN);
-        assertThat(captured.feature()).isEqualTo("proactive_heartbeat");
-        assertThat(captured.operation()).isEqualTo("generate");
+        assertThat(captured.feature()).isEqualTo("proactive_feed");
+        assertThat(captured.operation()).isEqualTo(CompanionMessageEntity.KIND_MIDDAY);
         assertThat(captured.entityKind()).isNull();
         assertThat(captured.entityId()).isNull();
     }

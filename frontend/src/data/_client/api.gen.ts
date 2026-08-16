@@ -1736,23 +1736,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/proactive/briefing": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The generated morning briefing for one day (lazily generated when the dawn cron has not produced it yet) */
-        get: operations["getBriefing"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/proactive/feed": {
         parameters: {
             query?: never;
@@ -1799,26 +1782,6 @@ export interface paths {
         };
         /** The latest weekly memoir (lazily generated for the last completed week when none exists yet) */
         get: operations["getMemoir"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/proactive/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The day's latest heartbeat note (napközbeni jelenlét, H1)
-         * @description Returns the latest persisted heartbeat note for the given day (evening closing beats midday nudge by generation time). For TODAY the latest already-elapsed window lazy-generates when missing (the miss-recovery); past dates never generate. 404 = honest absence (no elapsed window yet, no narrative memory, or generation failed).
-         */
-        get: operations["getHeartbeat"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5050,23 +5013,6 @@ export interface components {
             tiedToLabel?: string;
             flagged: boolean;
         };
-        BriefingRef: {
-            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
-            kind: string;
-            label: string;
-        };
-        BriefingResponse: {
-            /** Format: date */
-            date: string;
-            /** @description One-line header above the briefing prose */
-            eyebrow: string;
-            /** @description Briefing paragraphs — the FE maps each to a BriefingPara */
-            body: string[];
-            /** @description Code-collected, model-SELECTED source references (never model-invented) */
-            refs: components["schemas"]["BriefingRef"][];
-            /** Format: date-time */
-            generatedAt: string;
-        };
         FeedRef: {
             /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
             kind: string;
@@ -5104,18 +5050,6 @@ export interface components {
             /** @description The memoir prose (single narrative paragraph block) */
             body: string;
             anchors: components["schemas"]["MemoirAnchor"][];
-            /** Format: date-time */
-            generatedAt: string;
-        };
-        HeartbeatNoteResponse: {
-            /** Format: date */
-            date: string;
-            /** @description Window key (midday | evening) — the config window the note was written for */
-            window: string;
-            /** @description nudge (midday) | closing (evening) */
-            kind: string;
-            /** @description The generated HU note (plain prose, cheap tier) */
-            content: string;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -11233,47 +11167,6 @@ export interface operations {
             };
         };
     };
-    getBriefing: {
-        parameters: {
-            query?: {
-                /** @description The briefed day — the FE sends its LOCAL date (the check-in read precedent); defaults to the server's today. */
-                date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The persisted (or just-generated) briefing */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BriefingResponse"];
-                };
-            };
-            /** @description Missing or invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No briefing possible — no narrative memory (daily_summary) in the configured past-days window. The FE renders its honest state (B1.2). */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
     getFeed: {
         parameters: {
             query?: {
@@ -11375,47 +11268,6 @@ export interface operations {
                 };
             };
             /** @description No memoir possible — no narrative memory in the last completed week. The FE renders its honest "készül" state. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
-    getHeartbeat: {
-        parameters: {
-            query?: {
-                /** @description The noted day — the FE sends its LOCAL date (the briefing precedent); defaults to the server's today. */
-                date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The day's latest heartbeat note */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HeartbeatNoteResponse"];
-                };
-            };
-            /** @description Missing or invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No note for the day (honest absence). The Today card simply stays absent. */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -105,15 +105,6 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern REVISE_SENTINEL =
             Pattern.compile("\\[fake-revise:(\\{.*?\\})]", Pattern.DOTALL);
 
-    /** Mirror of BriefingGenerator.BRIEFING_MARKER (feature/proactive) — a LITERAL, not an
-     *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
-     *  Drift is caught loudly by BriefingGeneratorIT (echo answer -> parse fails -> null row). */
-    public static final String BRIEFING_MARKER_MIRROR = "REGGELI-BRIEFING-FELADAT";
-
-    /** Scripted briefing (B1.1): {@code [fake-briefing:{…}]} planted via a check-in note. */
-    public static final Pattern BRIEFING_SENTINEL =
-            Pattern.compile("\\[fake-briefing:(\\{.*?\\})]", Pattern.DOTALL);
-
     /** Mirror of CompanionMessageGenerator.MORNING_MARKER (feature/proactive) — a LITERAL, not an
      *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
      *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
@@ -160,7 +151,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEMOIR_SENTINEL =
             Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
 
-    /** Mirror of HeartbeatGenerator.HEARTBEAT_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
 
     /** Scripted heartbeat prose (H1): {@code [fake-heartbeat:…]} planted via a check-in note. */
@@ -263,12 +254,6 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
             return summaryAnswer(userMessage);
-        }
-        if (systemPrompt.startsWith(BRIEFING_MARKER_MIRROR)) {
-            Matcher m = BRIEFING_SENTINEL.matcher(userMessage);
-            // default = valid minimal JSON so the un-scripted happy path still persists a row
-            return m.find() ? m.group(1)
-                    : "{\"eyebrow\":\"Fake briefing\",\"body\":[\"FAKE-BRIEFING-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(MORNING_MARKER_MIRROR)) {
             Matcher m = MORNING_SENTINEL.matcher(userMessage);

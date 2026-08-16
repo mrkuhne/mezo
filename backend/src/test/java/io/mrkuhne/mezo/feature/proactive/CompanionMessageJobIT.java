@@ -18,7 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Companion-feed crons (spec §3): three window methods (morning/midday/evening), one switch.
- * run*() invoked directly (the BriefingJobIT idiom); NOT @Transactional so the job's own
+ * run*() invoked directly; NOT @Transactional so the job's own
  * transactions commit and ResetDatabase cleans up. runMorning additionally fires the sleep
  * reaction right after the morning message — its own freshness gate makes it a safe no-op when
  * sleep isn't logged yet, and a real generation when a fresh sleep log already exists (the

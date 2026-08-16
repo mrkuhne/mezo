@@ -377,7 +377,7 @@ public class AnchorResolver {
      * instead. The offset is <b>config</b> ({@code mezo.notification.prose-generation-grace-min}),
      * never a magic number — <b>do not "tidy" it away</b>, and do not hardcode 06:00/12:30/19:00
      * here: the generator's minute is read from the generator's OWN cron
-     * ({@code mezo.proactive.*}) via {@link CronExpression}, the {@code ProactiveHeartbeatService}
+     * ({@code mezo.proactive.*}) via {@link CronExpression}, the {@code CompanionMessageGenerator}
      * precedent, so the schedule keeps living in exactly one place.
      *
      * @param preferredMinute the anchor this category would use if there were no collision

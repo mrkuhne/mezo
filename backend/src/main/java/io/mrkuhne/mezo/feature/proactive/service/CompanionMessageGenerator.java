@@ -37,8 +37,8 @@ import tools.jackson.databind.ObjectMapper;
  * Companion-feed morning-kind generator (spec §3): the day's FIRST message, generated before
  * sleep/weight logging — its gather must not carry biometric state at all (a prompt prohibition
  * alone is not enough, so the gather is stripped at the source via {@link
- * ContextSnapshotAssembler#renderWithoutBiometrics}). Mirrors {@link BriefingGenerator}'s idiom
- * (pure-code gather -> ONE cheap-tier LLM call -> defensive parse -> bounds-checked ref
+ * ContextSnapshotAssembler#renderWithoutBiometrics}). Same idiom as the other companion-feed
+ * generators (pure-code gather -> ONE cheap-tier LLM call -> defensive parse -> bounds-checked ref
  * resolution -> saveAndFlush); no summaries in the window or a broken answer ⇒ NO row (honest
  * absence). Existing row ⇒ returned untouched (idempotent).
  */
@@ -111,7 +111,7 @@ public class CompanionMessageGenerator {
             new CompanionMessageEnvelope.Ref("Goal", "cél"),
             new CompanionMessageEnvelope.Ref("FuelDay", "mai üzemanyag"));
 
-    /** Prompt prefix the fake LLM dispatches on — the EXISTING {@code HeartbeatGenerator}
+    /** Prompt prefix the fake LLM dispatches on — the retired heartbeat generator's original
      *  marker/sentinel ({@code [fake-heartbeat:…]} in {@code FakeCompanionLlm}), reused verbatim
      *  so no new fake-LLM wiring is needed for the window kinds (midday/evening). */
     public static final String WINDOW_MARKER = "NAPKOZBENI-JEGYZET-FELADAT";
@@ -303,7 +303,7 @@ public class CompanionMessageGenerator {
 
     /**
      * Generates (or returns the existing) window message (midday/evening) for one day. Ported
-     * from {@link HeartbeatGenerator}: same window prompt and summary-emptiness gate, but the
+     * from the retired heartbeat generator: same window prompt and summary-emptiness gate, but the
      * "MAI BRIEFING" dedupe block is replaced by {@link #earlierMessagesBlock} (which now covers
      * morning/sleep/weight/midday), and the flat prose answer is wrapped as a
      * {@link CompanionMessageEnvelope} with a code-set eyebrow (no JSON parse, no refs). Returns

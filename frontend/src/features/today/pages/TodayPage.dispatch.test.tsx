@@ -80,7 +80,7 @@ const ALL_KINDS: HabitItem[] = KIND_FIXTURES.map((f, i) =>
   habit({ key: f.key, title: f.title, mode: f.mode, position: i + 1 }))
 
 const baseToday = {
-  today, user, briefing: null, briefingDemo: false,
+  today, user,
   workout, workoutTime: today.workoutTime, prediction: workoutPrediction,
   volleyballSessions: [] as VolleyballSession[], volleyballNote,
 }

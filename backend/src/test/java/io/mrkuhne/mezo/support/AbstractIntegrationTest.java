@@ -5,7 +5,6 @@ import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
-import io.mrkuhne.mezo.support.populator.BriefingPopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
@@ -22,7 +21,6 @@ import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MealSlotTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
-import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
@@ -74,9 +72,9 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
-    DailySummaryPopulator.class, PatternPopulator.class, BriefingPopulator.class,
+    DailySummaryPopulator.class, PatternPopulator.class,
     CompanionMessagePopulator.class,
-    WeeklySuggestionPopulator.class, MemoirPopulator.class, HeartbeatNotePopulator.class,
+    WeeklySuggestionPopulator.class, MemoirPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
     IntentionPopulator.class, RitualPopulator.class,

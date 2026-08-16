@@ -10,8 +10,6 @@ export interface CheckinSlot { time: string; state: CheckinState; values: Checki
 export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
-/** Proactive H1 in-day note — the CompanionNoteCard's data (mock mode has none; honest absence). */
-export interface CompanionNote { window: string; kind: 'nudge' | 'closing'; text: string }
 /** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per generation. */
 export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */

@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.TestPropertySource;
 
-/** Cron switch off ⇒ the CompanionMessageJob bean does not exist (the BriefingJobSwitchOffIT idiom). */
+/** Cron switch off ⇒ the CompanionMessageJob bean does not exist. */
 @TestPropertySource(properties = "mezo.techcore.cron.feed-job.enabled=false")
 class CompanionMessageJobSwitchOffIT extends AbstractIntegrationTest {
 
