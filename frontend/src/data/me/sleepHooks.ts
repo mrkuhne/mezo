@@ -43,6 +43,9 @@ export function useSleep() {
         // only on the next read — nudge both so the ✓ appears without a remount.
         qc.invalidateQueries({ queryKey: ['habitDay'] })
         qc.invalidateQueries({ queryKey: ['dailyQuests', entry.date] })
+        // A sleep log fires the companion feed's sleep_reaction kind (mezo-gst9) — nudge the
+        // thread so the reaction lands without a manual reload.
+        qc.invalidateQueries({ queryKey: ['companionFeed'] })
       }
     },
   })

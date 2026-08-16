@@ -321,6 +321,10 @@ export const handlers = [
   // with server.use(http.get(..., () => HttpResponse.json(fixture))).
   http.get(`${API_BASE}/api/proactive/briefing`, () => new HttpResponse(null, { status: 404 })),
 
+  // Unified companion-message feed (companion-feed, mezo-gst9) — default: honest empty array
+  // (never a 404 — a list endpoint, the P1 precedent). Tests override with server.use(...).
+  http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json([])),
+
   // Proactive weekly suggestion (W1) — default: honest 404, the Weekly card keeps its placeholder.
   http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => new HttpResponse(null, { status: 404 })),
 

@@ -1,0 +1,23 @@
+import { apiFetch } from '@/data/_client/api'
+import type { paths } from '@/data/_client/api.gen'
+import type { FeedMessage } from '@/data/types'
+
+type FeedWire =
+  paths['/api/proactive/feed']['get']['responses']['200']['content']['application/json']
+
+/** Wire → FE FeedMessage[]: paragraphs wrap into BriefingPara, refs pass through. */
+export function toFeedMessages(wire: FeedWire): FeedMessage[] {
+  return wire.map((m) => ({
+    kind: m.kind,
+    eyebrow: m.eyebrow,
+    body: m.body.map((text) => ({ type: 'p' as const, text })),
+    refs: m.refs.map((r) => ({ kind: r.kind, label: r.label })),
+    generatedAt: m.generatedAt,
+  }))
+}
+
+export const feedApi = {
+  /** The feed for the FE's LOCAL day (the check-in date precedent). */
+  get: (date: string) =>
+    apiFetch<FeedWire>(`/api/proactive/feed?date=${date}`).then(toFeedMessages),
+}

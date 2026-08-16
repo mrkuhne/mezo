@@ -12,6 +12,16 @@ export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
 /** Proactive H1 in-day note — the CompanionNoteCard's data (mock mode has none; honest absence). */
 export interface CompanionNote { window: string; kind: 'nudge' | 'closing'; text: string }
+/** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per generation. */
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
+/** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
+export interface FeedMessage {
+  kind: FeedMessageKind
+  eyebrow: string
+  body: BriefingPara[]
+  refs: BriefingRef[]
+  generatedAt: string // ISO date-time
+}
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
 /** `date`+`oneOff` mark a dated one-off event merged into the weekly rhythm (mezo-e1sp) — recurring slots carry neither. */
 export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; sport?: 'volleyball' | 'cross' | 'trx'; today?: boolean; flex?: boolean; date?: string; oneOff?: boolean }
