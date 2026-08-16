@@ -30,7 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +58,10 @@ public class TrainService {
     private final SportSessionRepository sportSessionRepository;
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
+    // Baseline seeding (mezo-xlmp): volume-log rows born on the create-as-active/activate path,
+    // behind the volume-progression switch (gate bean absent ⇔ switch off — mirrors WorkoutService).
+    private final VolumeProgressionService volumeProgressionService;
+    private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
         List<MesocycleEntity> mesos = mesocycleRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(createdBy);
@@ -153,12 +159,23 @@ public class TrainService {
                 exerciseRepository.save(toExerciseEntity(createdBy, savedDay.getId(), exercises.get(e), e));
             }
         }
+        // Baseline seeding (mezo-xlmp): only an ACTIVE meso carries volume-log rows — a planned
+        // create stays profile-less until activation (MesoVolume's "csak aktív" guard holds).
+        if (req.getStatus() == MesocycleCreateRequest.StatusEnum.ACTIVE
+                && volumeGate.getIfAvailable() != null) {
+            volumeProgressionService.seedBaselines(createdBy, saved.getId());
+        }
         return assembleResponse(createdBy, saved);
     }
 
     @Transactional
     public MesocycleResponse activateMesocycle(UUID createdBy, UUID id) {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
+        // Unconditional (even when already active): idempotent seeding doubles as the backfill
+        // path for pre-mezo-xlmp mesos that were created without volume-log rows.
+        if (volumeGate.getIfAvailable() != null) {
+            volumeProgressionService.seedBaselines(createdBy, id);
+        }
         if (!"active".equals(target.getStatus())) {
             // Single-active invariant (spec rule): activating archives every other active meso.
             archiveActiveMesos(createdBy);
