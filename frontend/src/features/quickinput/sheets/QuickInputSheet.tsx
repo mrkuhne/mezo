@@ -41,16 +41,23 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('menu')
 
-  // The day's four canonical slots are already in the Today query cache, so this is a
-  // cache read, not a second fetch. -1 = every slot is done for today.
+  // The day's four canonical slots are usually still in the Today query cache — cheap and
+  // shared with Today's own read — but past the 30s staleTime (QueryProvider.tsx) a `+` tap
+  // does issue a real GET. -1 = every slot is done for today.
   const { checkins, saveCheckIn } = useCheckins()
-  const checkInIdx = checkins.findIndex(isFillableSlot)
+  // Pinned at click time (see the tile below), NOT recomputed here: `saveCheckIn` flips this
+  // slot's state synchronously via its own optimistic `local` layer, so a live `findIndex`
+  // would flip out from under `CheckInSheet` mid-save and unmount it before its exit
+  // animation's onClose ever fires (mezo-967c finding 1). `nextCheckInIdx` below still drives
+  // the tile's hint/click with a fresh read — only the mounted sheet needs the pin.
+  const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
+  const nextCheckInIdx = checkins.findIndex(isFillableSlot)
 
   // Each log sheet brings its own portal + backdrop, so it REPLACES the menu
   // rather than layering over it. Closing it closes the whole stack.
   if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
   if (phase === 'naplo') return <ActivityLogSheet onClose={onClose} />
-  if (phase === 'checkin' && checkInIdx >= 0) {
+  if (phase === 'checkin' && checkInIdx !== null) {
     return (
       <CheckInSheet
         slot={checkins[checkInIdx]}
@@ -87,9 +94,9 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                 onClick={() => { close(); navigate(a.to) }} />
             ))}
             <Tile emoji="❤️" label="Check-in"
-              hint={checkInIdx >= 0 ? `${checkins[checkInIdx].time} · hogy vagyok` : 'mára mind megvan'}
+              hint={nextCheckInIdx >= 0 ? `${checkins[nextCheckInIdx].time} · hogy vagyok` : 'mára mind megvan'}
               onClick={() => {
-                if (checkInIdx >= 0) setPhase('checkin')
+                if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
                 else { close(); navigate('/today') }
               }} />
             <Tile emoji="😴" label="Alvás" hint="az éjszakád"
