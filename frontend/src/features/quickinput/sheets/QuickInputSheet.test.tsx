@@ -83,7 +83,10 @@ test('the Check-in tile swaps the menu for the check-in sheet on the next fillab
   const onClose = vi.fn()
   renderSheet(onClose)
   await userEvent.click(screen.getByText('Check-in'))
-  expect(await screen.findByText(/Heartbeat ·/)).toBeInTheDocument()
+  // Asserts the exact slot, not just that A sheet opened: `initialCheckins` has 06:30 and 10:00
+  // done, so the next fillable slot is index 2 (14:00). A regression that pinned a constant index
+  // instead of `nextCheckInIdx` would still open a sheet — only the time gives it away.
+  expect(await screen.findByText('Heartbeat · 14:00')).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
