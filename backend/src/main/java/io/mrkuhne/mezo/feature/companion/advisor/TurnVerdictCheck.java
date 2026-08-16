@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.advisor;
 
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -15,11 +17,13 @@ import java.util.List;
 
 /**
  * V1.3 combined LLM verdict — ONE cheap-tier call judging the answer for (1) never-ask-twice
- * redundancy against the injected fact block and (2) grounding-lite (specific past claims with
- * no source in the provided context). Strict JSON, defensively parsed, FAIL-OPEN: a broken or
- * unreachable judge yields zero violations (availability over strictness) + a warn log.
- * Tool results are not captured in v1 — the judge is told claims may derive from the listed
- * tool calls (conservative; the high-value catch is the no-tool fabrication case).
+ * redundancy against the injected fact block and (2) unmarked claims (mezo-q71s: specific past
+ * claims with no source in the provided context AND no linguistic hedge — a marked hunch is
+ * allowed, an invented concrete number never is, marked or not). Strict JSON, defensively
+ * parsed, FAIL-OPEN: a broken or unreachable judge yields zero violations (availability over
+ * strictness) + a warn log. Tool results are not captured in v1 — the judge is told claims may
+ * derive from the listed tool calls (conservative; the high-value catch is the no-tool
+ * fabrication case).
  */
 @Slf4j
 @Component
@@ -35,19 +39,22 @@ public class TurnVerdictCheck {
     static final String VERDICT_PROMPT = VERDICT_MARKER + """
             . Bíráld el a Mezo asszisztens válaszát az alábbi szempontok szerint.
             1) redundantQuestion: rákérdez-e a válasz olyasmire, amire a kontextus MEGERŐSÍTETT TÉNYEK blokkja már választ ad?
-            2) ungroundedClaim: állít-e a válasz konkrét múltbeli adatot vagy számot, amit sem a kontextus, sem a felsorolt eszközhívások, sem Daniel üzenete nem támaszt alá? A kontextusban szereplő adatokból számolt/becsült érték alátámasztottnak számít.
+            2) unmarkedClaim: állít-e a válasz MAGABIZTOSAN, JELÖLÉS NÉLKÜL konkrét múltbeli adatot vagy számot, amit sem a kontextus, sem a felsorolt eszközhívások, sem Daniel üzenete nem támaszt alá? Ha a válasz nyelvileg jelöli a bizonytalanságot („tippelek", „gyanítom", „lehet, hogy", „ezt csak sejtem"), az NEM sértés — a jelölt sejtés megengedett. Kitalált konkrét szám viszont jelöléssel is sértés. A kontextusban szereplő adatokból számolt/becsült érték alátámasztottnak számít.
             Válaszolj KIZÁRÓLAG ezzel a JSON objektummal, magyarázat nélkül:
-            {"redundantQuestion":true|false,"ungroundedClaim":true|false,"reason":"rövid indoklás"}""";
+            {"redundantQuestion":true|false,"unmarkedClaim":true|false,"reason":"rövid indoklás"}""";
 
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
 
-    record TurnVerdict(boolean redundantQuestion, boolean ungroundedClaim, String reason) {}
+    record TurnVerdict(boolean redundantQuestion, boolean unmarkedClaim, String reason) {}
 
-    public List<AdvisorViolation> check(
-            String turnSystemPrompt, String userMessage, String answer, List<String> toolCallNames) {
+    public List<AdvisorViolation> check(String turnSystemPrompt, List<Turn> history,
+            String userMessage, String answer, List<String> toolCallNames) {
+        // A history már NEM része a system promptnak (mezo-q71s) — külön kell renderelni, különben
+        // a bíráló megvakul a beszélgetésre és hamis redundancia/unmarked ítéleteket hoz.
         String payload = "KONTEXTUS:\n" + turnSystemPrompt
+                + ChatHistory.render(history)
                 + "\n\nESZKÖZHÍVÁSOK: " + (toolCallNames.isEmpty() ? "nincs" : String.join(", ", toolCallNames))
                 + "\n\nDaniel üzenete: " + userMessage
                 + "\n\nMEZO VÁLASZA:\n" + answer;
@@ -65,8 +72,8 @@ public class TurnVerdictCheck {
         if (verdict.redundantQuestion()) {
             violations.add(new AdvisorViolation("redundancy", verdict.reason()));
         }
-        if (verdict.ungroundedClaim()) {
-            violations.add(new AdvisorViolation("grounding", verdict.reason()));
+        if (verdict.unmarkedClaim()) {
+            violations.add(new AdvisorViolation("unmarked", verdict.reason()));
         }
         return violations;
     }

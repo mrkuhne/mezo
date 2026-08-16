@@ -629,3 +629,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608151210_mezo-lwmq_delete_medication_rows.sql
+  - changeSet:
+      id: "1.0.0:202608161200_mezo-q71s_llm_log_conversation_history"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161200_mezo-q71s_llm_log_conversation_history.sql
