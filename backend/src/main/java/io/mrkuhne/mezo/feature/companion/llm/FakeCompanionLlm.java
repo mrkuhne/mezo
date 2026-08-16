@@ -61,6 +61,15 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  VERDICT_PROMPT criterion #2, so the retry chain never fires on a linguistically hedged hunch. */
     public static final String MARKED_SPECULATION = "[fake-marked-spec]";
 
+    /** Scripted verdicts (mezo-q71s): pins the renamed {@code unmarkedClaim} JSON key / {@code
+     *  TurnVerdict} record component against the {@code "unmarked"} {@code AdvisorViolation} check
+     *  name — the whole point of the {@code ungroundedClaim} -> {@code unmarkedClaim} / {@code
+     *  "grounding"} -> {@code "unmarked"} rename. If the VERDICT_PROMPT's JSON key and the
+     *  TurnVerdict record component ever diverge (a prompt reword, a partial revert), Jackson
+     *  silently defaults the field to false — no violation, no retry, no degrade — and this
+     *  scripted verdict goes back to clean. */
+    public static final String UNMARKED_CLAIM_SENTINEL = "[fake-unmarked-claim]";
+
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
@@ -445,6 +454,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         // a fake oldalán is, nem csak a valódi bíráló promptjában.
         if (userMessage.contains(MARKED_SPECULATION)) {
             return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"jelölt sejtés\"}";
+        }
+        if (userMessage.contains(UNMARKED_CLAIM_SENTINEL)) {
+            return "{\"redundantQuestion\":false,\"unmarkedClaim\":true,\"reason\":\"jelöletlen állítás\"}";
         }
         boolean retryRound = userMessage.contains(AdvisorRetry.RETRY_MARKER);
         if (userMessage.contains(VIOLATE_ALWAYS) || (userMessage.contains(VIOLATE_ONCE) && !retryRound)) {

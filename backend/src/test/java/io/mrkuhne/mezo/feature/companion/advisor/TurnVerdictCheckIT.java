@@ -37,6 +37,17 @@ class TurnVerdictCheckIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testCheck_shouldReturnUnmarkedViolation_whenFakeScriptsUnmarkedClaim() {
+        // Pins the renamed unmarkedClaim/"unmarked" pair end to end: the fake answers the
+        // VERDICT_PROMPT's unmarkedClaim JSON key true, TurnVerdict binds it, and check(...) must
+        // map it onto an AdvisorViolation named "unmarked" — not "grounding", the pre-rename name.
+        List<AdvisorViolation> violations = verdictCheck.check("PROMPT", List.of(), "kérdés",
+                "válasz " + FakeCompanionLlm.UNMARKED_CLAIM_SENTINEL, List.of());
+
+        assertThat(violations).extracting(AdvisorViolation::check).containsExactly("unmarked");
+    }
+
+    @Test
     void testCheck_shouldRenderHistoryIntoJudgePayload_whenPriorTurnsExist() {
         // The sentinel lives ONLY inside a history Turn's content — it can reach the judge's
         // payload exclusively through ChatHistory.render(history) inside check(...). A violation

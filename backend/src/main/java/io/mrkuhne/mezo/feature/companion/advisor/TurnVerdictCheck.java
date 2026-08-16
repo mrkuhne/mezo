@@ -52,7 +52,7 @@ public class TurnVerdictCheck {
     public List<AdvisorViolation> check(String turnSystemPrompt, List<Turn> history,
             String userMessage, String answer, List<String> toolCallNames) {
         // A history már NEM része a system promptnak (mezo-q71s) — külön kell renderelni, különben
-        // a bíráló megvakul a beszélgetésre és hamis redundancia/grounding ítéleteket hoz.
+        // a bíráló megvakul a beszélgetésre és hamis redundancia/unmarked ítéleteket hoz.
         String payload = "KONTEXTUS:\n" + turnSystemPrompt
                 + ChatHistory.render(history)
                 + "\n\nESZKÖZHÍVÁSOK: " + (toolCallNames.isEmpty() ? "nincs" : String.join(", ", toolCallNames))
