@@ -529,8 +529,8 @@ paths:
         - Train
       operationId: listMesoTemplates
       summary: >-
-        All mesocycle templates of the current user, with run counts, title
-        ascending
+        All mesocycle templates of the current user, with run counts, created
+        date ascending
       responses:
         '200':
           description: Meso templates

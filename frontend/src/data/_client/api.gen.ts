@@ -201,7 +201,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** All mesocycle templates of the current user, with run counts, title ascending */
+        /** All mesocycle templates of the current user, with run counts, created date ascending */
         get: operations["listMesoTemplates"];
         put?: never;
         /** Create a mesocycle template (wizard) with nested days and exercises */
