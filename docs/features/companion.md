@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-16
+updated: 2026-08-17
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1723,10 +1723,11 @@ two-part echo with the history rendered INSIDE `system=[…]`; the three-way spl
 test surface that would fail if the history were ever accidentally reglued into the system prompt
 (see also the dedicated history-separation IT below).
 
-**`ContextSnapshotAssemblerIT` (V0.3, 21 tests)** — the snapshot is fully assertable without any
+**`ContextSnapshotAssemblerIT` (V0.3, 24 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
-`nincs adat` with no weigh-in row), current-week segment + planner selection, train digest +
+`nincs adat` with no weigh-in row vs. two same-day weigh-ins, where only `created_at` breaks the
+tie), current-week segment + planner selection, train digest +
 schedules, digest-window exclusion, **tomorrow's dated gym+sport+run resolution (mezo-xixu — the
 regression guard for the observed hallucination bug: tomorrow's meso-template gym day + exercises,
 the matching sport-schedule slot, the active running block's prescribed session for that weekday,
@@ -2242,7 +2243,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 17 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 24 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, 40-case set, baseline 37/40).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.

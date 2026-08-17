@@ -152,6 +152,23 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRender_shouldShowTheLastLoggedMeasurement_whenTwoWeighInsShareTheDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        // A same-day correction: identical date, so only created_at orders them. The finder's
+        // tie-break must surface the LATER entry, not whichever the DB happens to return first.
+        weightLogPopulator.createWeightLogAt(owner, today, new BigDecimal("96.4"),
+            Instant.now().minusSeconds(3600));
+        weightLogPopulator.createWeightLogAt(owner, today, new BigDecimal("95.8"),
+            Instant.now().minusSeconds(60));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: 95.8 kg (" + today + ")");
+        assertThat(snapshot).doesNotContain("mérés: 96.4 kg");
+    }
+
+    @Test
     void testRender_shouldShowNoDataMeasurement_whenNoWeighIns() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();

@@ -157,7 +157,7 @@ public class ContextSnapshotAssembler {
         if (profile == null) {
             b.append(NO_DATA);
         } else {
-            b.append(num(profile.getHeightCm())).append(" cm");
+            b.append(ToolText.num(profile.getHeightCm())).append(" cm");
             if (profile.getBirthDate() != null) {
                 b.append(", ").append(ChronoUnit.YEARS.between(profile.getBirthDate(), today)).append(" év");
             }
@@ -169,7 +169,7 @@ public class ContextSnapshotAssembler {
         b.append("; mérés: ");
         weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
                 .ifPresentOrElse(
-                        w -> b.append(num(w.getWeightKg())).append(" kg (").append(w.getDate()).append(')'),
+                        w -> b.append(ToolText.num(w.getWeightKg())).append(" kg (").append(w.getDate()).append(')'),
                         () -> b.append(NO_DATA));
         b.append("; súlytrend: ");
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
@@ -177,14 +177,14 @@ public class ContextSnapshotAssembler {
         if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
             b.append(NO_DATA);
         } else {
-            b.append(num(trend.getLatestTrendKg())).append(" kg");
+            b.append(ToolText.num(trend.getLatestTrendKg())).append(" kg");
             // rates are only defined from 2+ distinct days (NONE = no slope yet)
             if (trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE) {
                 if (trend.getWeeklyRateKgPerWeek() != null) {
-                    b.append(", heti ").append(num(trend.getWeeklyRateKgPerWeek())).append(" kg");
+                    b.append(", heti ").append(ToolText.num(trend.getWeeklyRateKgPerWeek())).append(" kg");
                 }
                 if (trend.getWeeklyRatePctPerWeek() != null) {
-                    b.append(" (").append(num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
+                    b.append(" (").append(ToolText.num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
                 }
             }
         }
@@ -199,8 +199,8 @@ public class ContextSnapshotAssembler {
         }
         StringBuilder b = new StringBuilder("[Cél] ");
         b.append(goal.getTitle()).append(" (").append(goal.getTrajectory()).append("): ")
-                .append(num(goal.getStartWeightKg())).append(" → ")
-                .append(goal.getTargetWeightKg() != null ? num(goal.getTargetWeightKg()) : "?")
+                .append(ToolText.num(goal.getStartWeightKg())).append(" → ")
+                .append(goal.getTargetWeightKg() != null ? ToolText.num(goal.getTargetWeightKg()) : "?")
                 .append(" kg, ").append(goal.getStartDate()).append(" → ").append(goal.getTargetDate());
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), today) / 7 + 1;
         b.append(", ").append(week).append(". hét");
@@ -209,7 +209,7 @@ public class ContextSnapshotAssembler {
             b.append("; e heti recept: ").append(seg.kcal()).append(" kcal, ")
                     .append(seg.proteinG()).append(" g fehérje");
             if (seg.sleepTargetH() != null) {
-                b.append(", alvás ").append(num(seg.sleepTargetH())).append(" h");
+                b.append(", alvás ").append(ToolText.num(seg.sleepTargetH())).append(" h");
             }
             if (seg.restDays() != null && !seg.restDays().isEmpty()) {
                 b.append(", pihenőnap: ").append(seg.restDays().stream()
@@ -458,11 +458,11 @@ public class ContextSnapshotAssembler {
         MacroSet c = day.getConsumed();
         MacroSet t = day.getTargets();
         StringBuilder b = new StringBuilder("[Mai üzemanyag] ");
-        b.append(num(c.getKcal())).append('/').append(num(t.getKcal())).append(" kcal, fehérje ")
-                .append(num(c.getP())).append('/').append(num(t.getP())).append(" g, szénhidrát ")
-                .append(num(c.getC())).append('/').append(num(t.getC())).append(" g, zsír ")
-                .append(num(c.getF())).append('/').append(num(t.getF())).append(" g, víz ")
-                .append(num(c.getWater())).append('/').append(num(t.getWater())).append(" ml");
+        b.append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal())).append(" kcal, fehérje ")
+                .append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP())).append(" g, szénhidrát ")
+                .append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC())).append(" g, zsír ")
+                .append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g, víz ")
+                .append(ToolText.num(c.getWater())).append('/').append(ToolText.num(t.getWater())).append(" ml");
         ProtocolResponse active = protocolService.getView(userId).getActive();
         b.append("; protokoll: ").append(active == null ? NO_DATA : "v" + active.getVersion() + " aktív");
         b.append(", mai bevitel: ").append(intakeService.listForDay(userId, today).getIntakes().size());
@@ -493,7 +493,7 @@ public class ContextSnapshotAssembler {
             if (sleep == null) {
                 b.append(": ").append(NO_DATA);
             } else {
-                b.append(" (").append(sleep.getDate()).append("): ").append(num(sleep.getDurationH())).append(" h");
+                b.append(" (").append(sleep.getDate()).append("): ").append(ToolText.num(sleep.getDurationH())).append(" h");
                 if (sleep.getQuality() != null) {
                     b.append(", minőség ").append(sleep.getQuality()).append("/5");
                 }
@@ -517,11 +517,6 @@ public class ContextSnapshotAssembler {
             }
         }
         return b.toString();
-    }
-
-    /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string. */
-    private static String num(BigDecimal v) {
-        return v == null ? "?" : v.stripTrailingZeros().toPlainString();
     }
 
     private static String huDay(Integer dayOfWeek) {

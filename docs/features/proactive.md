@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-16
+updated: 2026-08-17
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -157,7 +157,9 @@ this redesign and remain as shipped.
   config via `CronExpression`, the old heartbeat idiom — has elapsed). **Event kinds (sleep/weight)
   are NEVER lazily generated here** — only their own events create them. **`200 []` is the honest
   empty state, never a 404** (a list endpoint, the P1/experiment precedent — a change from the old
-  single-resource briefing/heartbeat reads, which 404'd).
+  single-resource briefing/heartbeat reads, which 404'd). **Miss-recovery never costs the reader the
+  messages that already exist** (`mezo-y33b`): each generate is caught and logged, and `getFeed`
+  carries **no `@Transactional`** so the catch actually holds — see §9 gotcha *read-path isolation*.
 - **The sleep-triggered "regen" mechanism is RETIRED, not ported.** The old
   `ProactiveBriefingService.refreshIfStale` (soft-delete + regenerate a stale briefing, capped
   `regen_count`) existed because the briefing was generated BEFORE sleep data existed and had to be
@@ -585,7 +587,7 @@ unified so `challenges` drives both modes). See [train.md §Active workout](trai
 GET /api/proactive/feed?date=YYYY-MM-DD        (date optional)
   → ProactiveController.getFeed(date)              controller/ProactiveController.java  (implements ProactiveApi)
       currentUserId.get()  (JWT subject → UUID; techcore/security/CurrentUserId)
-  → ProactiveFeedService.getFeed(userId, date)   service/ProactiveFeedService.java:40  @Transactional
+  → ProactiveFeedService.getFeed(userId, date)   service/ProactiveFeedService.java  (NO @Transactional — §9 read-path isolation)
       day = date != null ? date : LocalDate.now()          (FE sends its LOCAL date — check-in precedent)
       if day == today: ensureTodayCronKinds(userId, day)   (below — cron-kind miss-recovery ONLY)
       findByCreatedByAndMessageDateOrderByGeneratedAtAsc(userId, day)
@@ -593,10 +595,11 @@ GET /api/proactive/feed?date=YYYY-MM-DD        (date optional)
 ```
 
 ```
-ensureTodayCronKinds(userId, day):                   service/ProactiveFeedService.java:54
-  generator.generateMorning(userId, day)              ALWAYS attempted (its cron is dawn — always elapsed by any read)
-  if elapsed(feed.midday-cron, day):  generator.generateWindow(userId, day, MIDDAY)
-  if elapsed(feed.evening-cron, day): generator.generateWindow(userId, day, EVENING)
+ensureTodayCronKinds(userId, day):                   service/ProactiveFeedService.java
+  generateQuietly(MORNING)                            ALWAYS attempted (its cron is dawn — always elapsed by any read)
+  if elapsed(feed.midday-cron, day):  generateQuietly(MIDDAY)
+  if elapsed(feed.evening-cron, day): generateQuietly(EVENING)
+  (generateQuietly = try/catch + warn — a failed generate must not cost the reader the rest)
   (elapsed = CronExpression.parse(cron).next(dayStart) has passed "now" — the retired heartbeat's
    window-fire-time idiom, one source of truth for the schedule)
 ```
@@ -1469,10 +1472,13 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   weight-reaction message; logging a backfilled weight date does NOT. Exercises the REAL
   `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` path end-to-end over HTTP (`ApiIntegrationTest`),
   not a mocked listener.
-- **`ProactiveApiFeedIT` (6)** — `GET /api/proactive/feed`: empty list when no messages and no
+- **`ProactiveApiFeedIT` (7)** — `GET /api/proactive/feed`: empty list when no messages and no
   narrative memory (honest empty, not 404); returns persisted rows in `generatedAt` order; lazily
   generates the morning message when missing for today; lazily generates elapsed window kinds
-  (midday, via a midday-or-later clock override) when missing; does **NOT** generate for a past date.
+  (midday, via a midday-or-later clock override) when missing; does **NOT** generate for a past date;
+  **still serves the messages that exist when a lazy generate throws** (`[fake-fail]` planted in the
+  check-in note — the §9 read-path-isolation guard; it fails if `getFeed` is made `@Transactional`
+  again).
 - **`ProactiveApiSwitchOffIT`/`ProactiveApiCompanionOffIT` (feed cases, mezo-8g61)** —
   `GET /api/proactive/feed` 404s (`RESOURCE_NOT_FOUND`) with `mezo.feature.proactive.enabled=false`
   and with `mezo.feature.companion.enabled=false` — the dual-switch `@ConditionalOnProperty`
@@ -1806,6 +1812,20 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
   inside the listener) can never surface as an error on that request either. This is why the feed
   message can lag the log by a few hundred ms to a couple of seconds in practice, which the FE's
   60s poll + mutation-triggered invalidation both account for (§5.4).
+
+- **(ee-feed) Read-path isolation: `getFeed` carries NO `@Transactional`, and that is what makes its
+  try/catch real** (`mezo-y33b`). The lazy miss-recovery calls generators that are themselves
+  `@Transactional`; under an ambient transaction they would JOIN it, so a failed generate marks the
+  whole read rollback-only and the reader gets `UnexpectedRollbackException` **no matter how the call
+  is wrapped** — the exact trap recorded for `OverloadChallengeGenerator` below. Unannotated, each
+  generate opens its own transaction, `generateQuietly` catches + warns, and the read still returns
+  everything already persisted. The realistic trigger is a lost insert race (the FE's 60s poll and
+  the cron both find a kind missing, both insert, the loser trips
+  `uq_companion_message_created_by_date_kind`) — previously a transient 500 on an otherwise perfectly
+  serviceable feed. Dropping `@Transactional` is safe here because every mapped column is a basic or
+  jsonb attribute: there is no lazy association to walk with `open-in-view` off.
+  `ProactiveApiFeedIT.testGetFeed_shouldStillServeExistingMessages_whenLazyGenerationThrows` is the
+  guard and fails the moment `@Transactional` returns.
 
 **Workout challenges (HBWI — a separate epic on the proactive template):**
 
