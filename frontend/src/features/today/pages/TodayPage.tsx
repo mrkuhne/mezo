@@ -67,6 +67,7 @@ import {
 } from '@/features/today/logic/islandFacts'
 import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
+import { deriveNudges, toNudgeMessage } from '@/features/today/logic/needsNudges'
 import {
   buildTodayItems, isFillableSlot, itemsForFace,
   type SessionItemInput, type TodayItem,
@@ -75,6 +76,7 @@ import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/fe
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
 import { lastSeenMessage, markMessagesSeen } from '@/shared/lib/seenMessages'
+import { markNudgeShown, shownNudges, type NudgeSeenEntry } from '@/shared/lib/nudgeSeen'
 import { emitToast } from '@/shared/lib/toastBus'
 import { Icon } from '@/shared/ui/Icon'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
@@ -157,6 +159,19 @@ export function TodayPage() {
   const tick = useMinuteTick()
   const needs = useNeeds(tick)
   const [needSheet, setNeedSheet] = useState<NeedKey | null>(null)
+  // Küszöb-nudge-ok a mezo-szálban (mezo-dhzk Task 5): a nap eddig megjelent nudge-jai
+  // localStorage-ból (`shownNudges`), `deriveNudges` ebből + a friss ring-állapotokból adja
+  // vissza a TELJES mai listát. Consume-once, a quest/habit level-up dance idiómája: csak
+  // amikor VAN friss elem, mentjük el (`markNudgeShown`) és bővítjük a shown-halmazt — így a
+  // hatás nem fut újra ugyanarra a nudge-ra, és nem kerülhet loopba.
+  const [shownEntries, setShownEntries] = useState<NudgeSeenEntry[]>(() => shownNudges(date))
+  const nudgeEntries = deriveNudges(needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownEntries)
+  useEffect(() => {
+    const fresh = nudgeEntries.filter((n) => n.fresh)
+    if (fresh.length === 0) return
+    fresh.forEach((n) => markNudgeShown(date, n.key, n.at))
+    setShownEntries((prev) => [...prev, ...fresh.map(({ key, at }) => ({ key, at }))])
+  }, [nudgeEntries])
   // The sheet's quick-log CTA reuses the SAME sheet states / mutations every other row on
   // this screen already dispatches through — no new sheet, no new mutation (mezo-dhzk Task 4).
   const onNeedCta = (key: NeedKey) => {
@@ -388,7 +403,10 @@ export function TodayPage() {
   // A mezo hangja: a nap üzenet-szála a unified companion-feedből épül (mezo-gst9).
   // Az olvasatlan-jelzés a szál UTOLSÓ elemének id-jét hasonlítja a napra mentett
   // `localStorage` értékhez; a napváltás magától elavulttá teszi a kulcsot.
-  const messages = buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) })
+  const messages = buildMezoMessages({
+    feed, demoBriefing: resolveBriefing(scenario.dayState),
+    nudges: nudgeEntries.map(toNudgeMessage),
+  })
   const latestId = messages.length > 0 ? messages[messages.length - 1].id : null
   const msgsUnread = latestId != null && latestId !== seenId
   const openMessages = () => {

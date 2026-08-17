@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
+import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import type { Briefing, FeedMessage } from '@/data/types'
 
 const demoBriefing: Briefing = {
@@ -72,5 +72,27 @@ describe('buildMezoMessages', () => {
   test('üres feed + van demo → egyetlen demo-üzenet', () => {
     const msgs = buildMezoMessages({ feed: [], demoBriefing })
     expect(msgs.map((m) => m.id)).toEqual(['briefing-demo'])
+  })
+
+  // mezo-dhzk Task 5 — küszöb-nudge-ok a szál VÉGÉN.
+  const nudge: MezoMessageItem = {
+    id: 'nudge-hidratacio-2026-07-06T15:00:00.000Z',
+    eyebrow: 'Életjel', time: '15:00',
+    paragraphs: ['💧 Ma még alig ittál.'], refs: [], meta: 'Életjel-figyelő',
+  }
+
+  test('nudges: a feed ÉS a demo-előtag UTÁN, a szál VÉGÉRE fűződnek', () => {
+    const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [nudge] })
+    expect(msgs.map((m) => m.id)).toEqual(['briefing-demo', 'midday', 'nudge-hidratacio-2026-07-06T15:00:00.000Z'])
+  })
+
+  test('nudges elhagyva (paraméter nélkül) → a viselkedés változatlan', () => {
+    expect(buildMezoMessages({ feed: [morning, midday], demoBriefing: null }))
+      .toEqual(buildMezoMessages({ feed: [morning, midday], demoBriefing: null, nudges: undefined }))
+  })
+
+  test('üres nudges tömb → nem told be semmit', () => {
+    const msgs = buildMezoMessages({ feed: [midday], demoBriefing: null, nudges: [] })
+    expect(msgs.map((m) => m.id)).toEqual(['midday'])
   })
 })
