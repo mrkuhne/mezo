@@ -4,11 +4,15 @@ import {
   MESOCYCLE_PHASE_COLORS, phaseBarHeight,
 } from '@/data/train/train'
 
-test('mesocycles: one active, two planned, one archived', () => {
-  expect(mesocycles).toHaveLength(4)
+test('mesocycles: one active, two planned, two archived (both with a report)', () => {
+  expect(mesocycles).toHaveLength(5)
   expect(mesocycles.filter((m) => m.status === 'active')).toHaveLength(1)
   expect(mesocycles.filter((m) => m.status === 'planned')).toHaveLength(2)
-  expect(mesocycles.filter((m) => m.status === 'archived')).toHaveLength(1)
+  // Two closed runs since mezo-meyc.4 — the compare view needs a pair with reports.
+  const archived = mesocycles.filter((m) => m.status === 'archived')
+  expect(archived).toHaveLength(2)
+  expect(archived.map((m) => m.id)).toEqual(['meso-rec-03', 'meso-hyp-03'])
+  expect(archived.every((m) => m.hasReport === true)).toBe(true)
   expect(activeMeso.shortTitle).toBe('Hypertrophy 04')
   expect(activeMeso.currentWeek).toBe(3)
   expect(activeMeso.phaseCurve).toEqual(['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'])

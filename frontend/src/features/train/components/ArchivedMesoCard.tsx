@@ -5,6 +5,16 @@
 // builder); the footer's „Újrafuttatás" action
 // (mezo-meyc.1) reruns the closed block — the parent resolves its template
 // (materializing one for a legacy run) and opens MesoStartSheet on it.
+//
+// Two additions in mezo-meyc.4:
+//  · a footer chip stating whether the run HAS a frozen report („riport →") or not
+//    („nincs riport") — a legacy closed run may carry none, and finding that out only
+//    after tapping through is a dead end. It is deliberately a plain <span>, not a
+//    button: the card body already goes to the report, and a nested button would both
+//    be unnecessary and fight the selection mode below.
+//  · `selectMode` — the library's „Összevetés" mode, where a tap SELECTS the run for the
+//    compare view instead of navigating. The body then carries `aria-pressed` and the
+//    rerun action steps aside, so the whole card reads as one toggle.
 // Ported from prototype mesocycles.jsx ArchivedMesoCard.
 // ============================================================
 import { Icon } from '@/shared/ui/Icon'
@@ -12,16 +22,35 @@ import type { Mesocycle } from '@/data/types'
 
 interface ArchivedMesoCardProps {
   meso: Mesocycle
+  /** Opens the frozen report — or, in `selectMode`, toggles this run's selection. */
   onOpen: () => void
   onRerun: () => void
+  selectMode?: boolean
+  selected?: boolean
 }
 
-export function ArchivedMesoCard({ meso, onOpen, onRerun }: ArchivedMesoCardProps) {
+export function ArchivedMesoCard({ meso, onOpen, onRerun, selectMode = false, selected = false }: ArchivedMesoCardProps) {
   return (
     // A plain card, not a <button>: the rerun action is a button of its own and
     // buttons cannot nest.
-    <div className="card col" style={{ padding: 'var(--sp-4)', width: '100%', opacity: 0.7 }}>
-      <button type="button" onClick={onOpen} className="row" style={{ width: '100%', textAlign: 'left', justifyContent: 'space-between' }}>
+    <div
+      className="card col"
+      style={{
+        padding: 'var(--sp-4)',
+        width: '100%',
+        // A selected run comes fully into focus; everything else stays in the archive's dim.
+        opacity: selected ? 1 : 0.7,
+        border: selected ? '1px solid var(--coral)' : undefined,
+        background: selected ? 'color-mix(in srgb, var(--coral) 6%, transparent)' : undefined,
+      }}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        {...(selectMode ? { 'aria-pressed': selected } : {})}
+        className="row"
+        style={{ width: '100%', textAlign: 'left', justifyContent: 'space-between' }}
+      >
         <div className="col flex-1">
           <span className="eyebrow text-tertiary">
             Archív · {meso.endDate}
@@ -33,12 +62,32 @@ export function ArchivedMesoCard({ meso, onOpen, onRerun }: ArchivedMesoCardProp
             </p>
           ) : null}
         </div>
-        <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        {selectMode ? (
+          <span
+            className="label-mono"
+            style={{ fontSize: 12, color: selected ? 'var(--coral)' : 'var(--text-tertiary)' }}
+            aria-hidden="true"
+          >
+            {selected ? '✓' : '○'}
+          </span>
+        ) : (
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        )}
       </button>
-      <div className="row mt-md" style={{ justifyContent: 'flex-end' }}>
-        <button type="button" className="chip tapchip" onClick={onRerun}>
-          <Icon name="sparkle" size={10} /> Újrafuttatás
-        </button>
+      <div className="row mt-md" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        {meso.hasReport ? (
+          <span className="chip">riport →</span>
+        ) : (
+          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+            nincs riport
+          </span>
+        )}
+        {/* While selecting, the only meaningful tap on this card is the selection itself. */}
+        {!selectMode && (
+          <button type="button" className="chip tapchip" onClick={onRerun}>
+            <Icon name="sparkle" size={10} /> Újrafuttatás
+          </button>
+        )}
       </div>
     </div>
   )

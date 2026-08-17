@@ -139,12 +139,24 @@ describe('MesoCloseSheet (mock mode)', () => {
     // EVERY post-click assertion is awaited — a synchronous getBy here can lose the race
     // against the navigation + the report render.
     // The run really is archived (the cache write under test)...
-    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('archived'))
-    // ...the seeded report renders, carrying the note the owner just submitted...
-    expect(await screen.findByText('Offline demo zárás.')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('archived'), { timeout: 3000 })
+    // ...the seeded report renders, carrying the note the owner just submitted.
+    //
+    // `selector: 'p'` + a re-querying waitFor, NOT a bare `findByText`, and the reason is
+    // subtle: while the sheet is still mounted, the note ALSO lives in its `<textarea>` —
+    // React mirrors a controlled textarea's value into `defaultValue`, which IS the element's
+    // text content — so a plain `findByText` can resolve against the TEXTAREA, and by the time
+    // the assertion runs the sheet has unmounted and that node is detached ("element could not
+    // be found in the document", with the note plainly visible in the DOM). A longer timeout
+    // cannot fix it: the find succeeds immediately, on the wrong node. Re-querying for the
+    // report's own <p> each attempt is immune to both the collision and the unmount ordering.
+    await waitFor(
+      () => expect(screen.getByText('Offline demo zárás.', { selector: 'p' })).toBeInTheDocument(),
+      { timeout: 3000 },
+    )
     // ...titled from the run itself, not from mockClose's last-resort literal...
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }),
+      await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }, { timeout: 3000 }),
     ).toBeInTheDocument()
     // ...and nothing claims the run is still going.
     expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()
