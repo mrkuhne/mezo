@@ -19,6 +19,8 @@ import io.mrkuhne.mezo.api.dto.MesoRerunResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
+import io.mrkuhne.mezo.api.dto.MesocycleCloseRequest;
+import io.mrkuhne.mezo.api.dto.MesocycleReportResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
 import io.mrkuhne.mezo.api.dto.RunSessionLogRequest;
@@ -45,6 +47,7 @@ import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
+import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -64,6 +67,7 @@ public class TrainController implements TrainApi {
 
     private final TrainService service;
     private final MesoTemplateService mesoTemplateService;
+    private final MesocycleReportService mesocycleReportService;
     private final WorkoutService workoutService;
     private final SportService sportService;
     private final GymScheduleService gymScheduleService;
@@ -161,8 +165,20 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public MesocycleResponse closeMesocycle(UUID id) {
-        return service.closeMesocycle(currentUserId.get(), id);
+    public MesocycleResponse closeMesocycle(UUID id, MesocycleCloseRequest mesocycleCloseRequest) {
+        // The body is optional (close without a self-eval note is the common case).
+        return service.closeMesocycle(currentUserId.get(), id,
+            mesocycleCloseRequest != null ? mesocycleCloseRequest.getSelfEval() : null);
+    }
+
+    @Override
+    public MesocycleReportResponse getMesocycleReport(UUID id) {
+        return mesocycleReportService.getReport(currentUserId.get(), id);
+    }
+
+    @Override
+    public void regenerateMesocycleReport(UUID id) {
+        mesocycleReportService.regenerate(currentUserId.get(), id);
     }
 
     @Override

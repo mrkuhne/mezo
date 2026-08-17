@@ -127,6 +127,28 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
     Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateBetweenOrderByDateDescCreatedAtDesc(
         UUID createdBy, UUID templateSessionId, String status, LocalDate from, LocalDate to);
 
+    /**
+     * The COMPLETED meso-origin INSTANCES of ONE run inside its close window (mezo-meyc.2) — the
+     * close report's adherence/strength input. Scoped to the run itself (not just its dates), so a
+     * parallel custom (saját) workout or another run's instance can never inflate the numbers;
+     * the date bound is the run's {@code [startDate, closedAt]} window (closedAt falling back to
+     * {@code endDate} for a legacy archived run with no close timestamp).
+     */
+    @Query("""
+        SELECT s FROM WorkoutSessionEntity s
+        WHERE s.createdBy = :createdBy
+          AND s.mesocycleId = :mesoId
+          AND s.templateSessionId IS NOT NULL
+          AND s.origin = 'meso'
+          AND s.status = 'completed'
+          AND s.date IS NOT NULL
+          AND s.date BETWEEN :from AND :to
+        ORDER BY s.date ASC, s.createdAt ASC
+        """)
+    List<WorkoutSessionEntity> findCompletedMesoInstancesInWindow(
+        @Param("createdBy") UUID createdBy, @Param("mesoId") UUID mesoId,
+        @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     /** The owner's CUSTOM (saját) workout templates, oldest first (mezo-ws2x). */
     List<WorkoutSessionEntity> findByCreatedByAndOriginAndTemplateSessionIdIsNullOrderByCreatedAtAsc(
         UUID createdBy, String origin);
