@@ -376,7 +376,9 @@ paths:
       tags:
         - Train
       operationId: closeMesocycle
-      summary: Close (archive) a mesocycle (idempotent)
+      summary: >-
+        Close (archive) a mesocycle (idempotent); optional self-eval note is
+        captured on close
       parameters:
         - name: id
           in: path
@@ -384,6 +386,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleCloseRequest'
       responses:
         '200':
           description: Archived mesocycle
@@ -399,6 +407,74 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/report':
+    get:
+      tags:
+        - Train
+      operationId: getMesocycleReport
+      summary: >-
+        The generated end-of-mesocycle report — adherence, volume arc, strength
+        deltas, records and optional AI narrative
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The mesocycle report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleReportResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No report exists yet, or the mesocycle is not found/not owned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/report/regenerate':
+    post:
+      tags:
+        - Train
+      operationId: regenerateMesocycleReport
+      summary: Recompute the report for an archived mesocycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Regeneration accepted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The mesocycle run is not archived
           content:
             application/json:
               schema:
@@ -6674,6 +6750,7 @@ components:
         - split
         - style
         - phaseCurve
+        - hasReport
       properties:
         id:
           type: string
@@ -6708,6 +6785,10 @@ components:
           format: date-time
           nullable: true
           description: When this run was closed (archived); null while active/planned
+        hasReport:
+          type: boolean
+          default: false
+          description: True once an end-of-mesocycle report has been generated for this run
         weeks:
           type: integer
         currentWeek:
@@ -7182,6 +7263,276 @@ components:
         templateId:
           type: string
           format: uuid
+    MesocycleCloseRequest:
+      type: object
+      description: Optional self-eval note captured when closing a mesocycle
+      properties:
+        selfEval:
+          type: string
+          maxLength: 2000
+    MesocycleReportResponse:
+      type: object
+      description: >-
+        The generated end-of-mesocycle report — adherence, volume arc,
+        per-exercise strength deltas, PR/medal highlights, and an optional AI
+        narrative eval. context is declared for forward-compat (populated in a
+        later slice) so this contract does not change shape then.
+      required:
+        - mesocycleId
+        - title
+        - startDate
+        - weeks
+        - aiEvalStatus
+        - aiEvalEnabled
+        - adherence
+        - strength
+        - records
+      properties:
+        mesocycleId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The originating template this run was started from (null for
+            legacy/direct runs)
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        weeks:
+          type: integer
+        selfEval:
+          type: string
+          nullable: true
+          description: The owner's free-text self-eval note captured on close
+        aiEval:
+          type: string
+          nullable: true
+          description: >-
+            The AI-generated narrative eval (null until generated / when the
+            feature is off)
+        aiEvalStatus:
+          type: string
+          enum:
+            - pending
+            - ready
+            - failed
+        aiEvalGeneratedAt:
+          type: string
+          format: date-time
+          nullable: true
+        aiEvalEnabled:
+          type: boolean
+        adherence:
+          $ref: '#/components/schemas/MesoReportAdherence'
+        volume:
+          allOf:
+            - $ref: '#/components/schemas/MesocycleVolumeArcResponse'
+          nullable: true
+        strength:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoStrengthDelta'
+        records:
+          $ref: '#/components/schemas/MesoReportRecords'
+        context:
+          allOf:
+            - $ref: '#/components/schemas/MesoContext'
+          nullable: true
+          description: >-
+            Lifestyle/wellbeing context correlated to the mesocycle window
+            (populated in a later slice)
+    MesoReportAdherence:
+      type: object
+      required:
+        - plannedSessions
+        - completedSessions
+        - plannedWeeks
+        - completedWeeks
+        - completionPct
+      properties:
+        plannedSessions:
+          type: integer
+        completedSessions:
+          type: integer
+        plannedWeeks:
+          type: integer
+        completedWeeks:
+          type: integer
+        completionPct:
+          type: integer
+    MesoStrengthDelta:
+      type: object
+      required:
+        - exerciseName
+        - muscle
+        - firstWeek
+        - lastWeek
+        - firstTopReps
+        - lastTopReps
+      properties:
+        exerciseName:
+          type: string
+        catalogId:
+          type: string
+          format: uuid
+        muscle:
+          type: string
+        firstWeek:
+          type: integer
+        lastWeek:
+          type: integer
+        firstTopKg:
+          type: number
+        firstTopReps:
+          type: integer
+        lastTopKg:
+          type: number
+        lastTopReps:
+          type: integer
+        firstE1rm:
+          type: number
+        lastE1rm:
+          type: number
+        deltaKg:
+          type: number
+        deltaPct:
+          type: number
+    MesoReportRecords:
+      type: object
+      required:
+        - medalCount
+        - top
+      properties:
+        medalCount:
+          type: integer
+        top:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoRecordHighlight'
+    MesoRecordHighlight:
+      type: object
+      required:
+        - exerciseName
+        - kind
+        - date
+      properties:
+        exerciseName:
+          type: string
+        kind:
+          type: string
+        date:
+          type: string
+          format: date
+        value:
+          type: number
+    MesoContext:
+      type: object
+      description: >-
+        Lifestyle/wellbeing context for the mesocycle window (populated in a
+        later slice)
+      required:
+        - weeks
+        - totals
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoContextWeek'
+        totals:
+          $ref: '#/components/schemas/MesoContextTotals'
+    MesoContextWeek:
+      type: object
+      required:
+        - week
+      properties:
+        week:
+          type: integer
+        sleepAvgH:
+          type: number
+          nullable: true
+        sleepQualityAvg:
+          type: number
+          nullable: true
+        kcalAvg:
+          type: number
+          nullable: true
+        kcalTargetAvg:
+          type: number
+          nullable: true
+        mealCoverageDays:
+          type: number
+          nullable: true
+        waterAvgMl:
+          type: number
+          nullable: true
+        energyAvg:
+          type: number
+          nullable: true
+        stressAvg:
+          type: number
+          nullable: true
+        weightDeltaKg:
+          type: number
+          nullable: true
+        sportMinutes:
+          type: number
+          nullable: true
+        sportSessions:
+          type: number
+          nullable: true
+        runSessions:
+          type: number
+          nullable: true
+        gymRpeAvg:
+          type: number
+          nullable: true
+    MesoContextTotals:
+      type: object
+      required:
+        - daysTotal
+      properties:
+        daysTotal:
+          type: integer
+        sleepAvgH:
+          type: number
+          nullable: true
+        kcalAvg:
+          type: number
+          nullable: true
+        energyAvg:
+          type: number
+          nullable: true
+        stressAvg:
+          type: number
+          nullable: true
+        weightChangeKg:
+          type: number
+          nullable: true
+        sportMinutes:
+          type: number
+          nullable: true
+        sportSessions:
+          type: number
+          nullable: true
+        runSessions:
+          type: number
+          nullable: true
+        mealCoverageDays:
+          type: number
+          nullable: true
     MesoDayInput:
       type: object
       required:

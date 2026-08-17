@@ -310,7 +310,7 @@ class TrainServiceIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("lifecycle-c@test.local");
         MesocycleEntity active = trainPopulator.createMesocycle(user, "Lezárandó", "active");
 
-        MesocycleResponse closed = trainService.closeMesocycle(user, active.getId());
+        MesocycleResponse closed = trainService.closeMesocycle(user, active.getId(), null);
         entityManager.flush(); // see activate test — dirty-checked UPDATE needs a flush pre-clear
         entityManager.clear();
 

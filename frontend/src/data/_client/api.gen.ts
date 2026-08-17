@@ -135,8 +135,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Close (archive) a mesocycle (idempotent) */
+        /** Close (archive) a mesocycle (idempotent); optional self-eval note is captured on close */
         post: operations["closeMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The generated end-of-mesocycle report — adherence, volume arc, strength deltas, records and optional AI narrative */
+        get: operations["getMesocycleReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/report/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute the report for an archived mesocycle */
+        post: operations["regenerateMesocycleReport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2880,6 +2914,11 @@ export interface components {
              * @description When this run was closed (archived); null while active/planned
              */
             closedAt?: string | null;
+            /**
+             * @description True once an end-of-mesocycle report has been generated for this run
+             * @default false
+             */
+            hasReport: boolean;
             weeks: number;
             currentWeek: number;
             split: string;
@@ -3057,6 +3096,110 @@ export interface components {
         MesoRerunResponse: {
             /** Format: uuid */
             templateId: string;
+        };
+        /** @description Optional self-eval note captured when closing a mesocycle */
+        MesocycleCloseRequest: {
+            selfEval?: string;
+        };
+        /** @description The generated end-of-mesocycle report — adherence, volume arc, per-exercise strength deltas, PR/medal highlights, and an optional AI narrative eval. context is declared for forward-compat (populated in a later slice) so this contract does not change shape then. */
+        MesocycleReportResponse: {
+            /** Format: uuid */
+            mesocycleId: string;
+            /**
+             * Format: uuid
+             * @description The originating template this run was started from (null for legacy/direct runs)
+             */
+            templateId?: string | null;
+            title: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate?: string | null;
+            /** Format: date-time */
+            closedAt?: string | null;
+            weeks: number;
+            /** @description The owner's free-text self-eval note captured on close */
+            selfEval?: string | null;
+            /** @description The AI-generated narrative eval (null until generated / when the feature is off) */
+            aiEval?: string | null;
+            /** @enum {string} */
+            aiEvalStatus: "pending" | "ready" | "failed";
+            /** Format: date-time */
+            aiEvalGeneratedAt?: string | null;
+            aiEvalEnabled: boolean;
+            adherence: components["schemas"]["MesoReportAdherence"];
+            volume?: components["schemas"]["MesocycleVolumeArcResponse"] | null;
+            strength: components["schemas"]["MesoStrengthDelta"][];
+            records: components["schemas"]["MesoReportRecords"];
+            /** @description Lifestyle/wellbeing context correlated to the mesocycle window (populated in a later slice) */
+            context?: components["schemas"]["MesoContext"] | null;
+        };
+        MesoReportAdherence: {
+            plannedSessions: number;
+            completedSessions: number;
+            plannedWeeks: number;
+            completedWeeks: number;
+            completionPct: number;
+        };
+        MesoStrengthDelta: {
+            exerciseName: string;
+            /** Format: uuid */
+            catalogId?: string;
+            muscle: string;
+            firstWeek: number;
+            lastWeek: number;
+            firstTopKg?: number;
+            firstTopReps: number;
+            lastTopKg?: number;
+            lastTopReps: number;
+            firstE1rm?: number;
+            lastE1rm?: number;
+            deltaKg?: number;
+            deltaPct?: number;
+        };
+        MesoReportRecords: {
+            medalCount: number;
+            top: components["schemas"]["MesoRecordHighlight"][];
+        };
+        MesoRecordHighlight: {
+            exerciseName: string;
+            kind: string;
+            /** Format: date */
+            date: string;
+            value?: number;
+        };
+        /** @description Lifestyle/wellbeing context for the mesocycle window (populated in a later slice) */
+        MesoContext: {
+            weeks: components["schemas"]["MesoContextWeek"][];
+            totals: components["schemas"]["MesoContextTotals"];
+        };
+        MesoContextWeek: {
+            week: number;
+            sleepAvgH?: number | null;
+            sleepQualityAvg?: number | null;
+            kcalAvg?: number | null;
+            kcalTargetAvg?: number | null;
+            mealCoverageDays?: number | null;
+            waterAvgMl?: number | null;
+            energyAvg?: number | null;
+            stressAvg?: number | null;
+            weightDeltaKg?: number | null;
+            sportMinutes?: number | null;
+            sportSessions?: number | null;
+            runSessions?: number | null;
+            gymRpeAvg?: number | null;
+        };
+        MesoContextTotals: {
+            daysTotal: number;
+            sleepAvgH?: number | null;
+            kcalAvg?: number | null;
+            energyAvg?: number | null;
+            stressAvg?: number | null;
+            weightChangeKg?: number | null;
+            sportMinutes?: number | null;
+            sportSessions?: number | null;
+            runSessions?: number | null;
+            mealCoverageDays?: number | null;
         };
         MesoDayInput: {
             /** @description 'Hét'..'Vas' */
@@ -6312,7 +6455,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MesocycleCloseRequest"];
+            };
+        };
         responses: {
             /** @description Archived mesocycle */
             200: {
@@ -6334,6 +6481,93 @@ export interface operations {
             };
             /** @description Mesocycle not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMesocycleReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mesocycle report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleReportResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No report exists yet, or the mesocycle is not found/not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    regenerateMesocycleReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Regeneration accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The mesocycle run is not archived */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -197,6 +197,35 @@ public class TrainPopulator {
         return mesocycleRepository.saveAndFlush(m);
     }
 
+    /**
+     * {@link #activeMesoStartedWeeksAgo} with an explicit {@code currentWeek}, which on a real run
+     * only advances on the weekly volume rollover and can therefore lag the calendar. Lets a test
+     * pin the run's stored progress INDEPENDENTLY of its dates — both the up-to-date case and the
+     * deliberately STALE one (the close report must freeze an arc consistent with adherence either
+     * way, mezo-meyc.2).
+     */
+    public MesocycleEntity activeMesoStartedWeeksAgo(
+        UUID createdBy, int weeksAgo, int weeks, int currentWeek, List<String> phaseCurve) {
+        MesocycleEntity m = activeMesoStartedWeeksAgo(createdBy, weeksAgo, weeks, phaseCurve);
+        m.setCurrentWeek(currentWeek);
+        return mesocycleRepository.saveAndFlush(m);
+    }
+
+    /**
+     * An ARCHIVED run with NO {@code closedAt} — the legacy backfill fixture (mezo-meyc.2): the
+     * shape every run archived before the close-report feature (or auto-archived by starting the
+     * next one) has on disk. {@code endDate} deliberately stays AHEAD of today, so a report window
+     * that fell back to "now" instead of {@code endDate} would produce different numbers.
+     */
+    public MesocycleEntity legacyArchivedMesoStartedWeeksAgo(
+        UUID createdBy, int weeksAgo, int weeks, List<String> phaseCurve) {
+        MesocycleEntity m = activeMesoStartedWeeksAgo(createdBy, weeksAgo, weeks, phaseCurve);
+        m.setStatus("archived");
+        m.setCurrentWeek(weeks);
+        m.setClosedAt(null);
+        return mesocycleRepository.saveAndFlush(m);
+    }
+
     /** A template day (templateSessionId null) hanging off a meso — logSet's exercise chain root. */
     public WorkoutSessionEntity createTemplateDay(UUID createdBy, UUID mesocycleId, String dayLabel) {
         return createWorkoutSession(createdBy, mesocycleId, dayLabel, "gym", 0, "active");

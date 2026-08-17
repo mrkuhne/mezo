@@ -4,9 +4,10 @@
 // new" CTA — the planner saves templates now) → Aktív hero → Tervezett →
 // Történet (closed runs, each rerunnable). Thin TrainSection shell ⇒ this view
 // owns its own .page-header, whose `+ Új` chip and the Sablonok CTA navigate to
-// the planner; run cards navigate to their builder, template cards to the
-// template editor. Both „Indítás" (template) and „Újrafuttatás" (closed run)
-// funnel into the one shared MesoStartSheet.
+// the planner; live run cards navigate to their builder, a CLOSED run card to its
+// frozen report (mezo-meyc.2), template cards to the template editor. Both
+// „Indítás" (template) and „Újrafuttatás" (closed run) funnel into the one
+// shared MesoStartSheet.
 // Ported from prototype mesocycles.jsx MesocycleLibrary.
 // ============================================================
 import { useState } from 'react'
@@ -41,6 +42,9 @@ export function MesocycleLibraryPage() {
   const archived = mesocycles.filter((m) => m.status === 'archived')
 
   const openBuilder = (id: string) => navigate(`/train/mesocycles/${id}`)
+  // A closed run opens its FROZEN report, not the builder (mezo-meyc.2) — the builder
+  // redirects there anyway, so route the card straight at the destination.
+  const openReport = (id: string) => navigate(`/train/mesocycles/${id}/report`)
   const openPlanner = () => navigate('/train/mesocycles/new')
   const openTemplateEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
   const rerunMeso = (id: string, title: string) => {
@@ -129,7 +133,7 @@ export function MesocycleLibraryPage() {
             <ArchivedMesoCard
               key={m.id}
               meso={m}
-              onOpen={() => openBuilder(m.id)}
+              onOpen={() => openReport(m.id)}
               onRerun={() => rerunMeso(m.id, m.title)}
             />
           ))}

@@ -121,6 +121,44 @@ const challengeWire = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
+/** The one seeded run that HAS a frozen report (mezo-meyc.2) — every other id 404s. */
+export const REPORT_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
+
+// Minimal MesocycleReportResponse: enough shape for the report page to render end-to-end
+// (adherence + one strength row + one record), no volume arc (the contract allows null).
+const mesoReportFixture = {
+  mesocycleId: REPORT_MESO_ID,
+  templateId: null,
+  title: 'Recovery rebuild · Tél',
+  startDate: '2026-02-12',
+  endDate: '2026-04-23',
+  closedAt: '2026-04-23T19:40:00Z',
+  weeks: 8,
+  selfEval: 'Stabil blokk.',
+  aiEval: null,
+  // Backend parity: an S2 report is always written `pending` (nothing generates the narrative
+  // yet) with the feature off — which must NOT start the FE's poll.
+  aiEvalStatus: 'pending',
+  aiEvalGeneratedAt: null,
+  aiEvalEnabled: false,
+  adherence: {
+    plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
+  },
+  volume: null,
+  strength: [
+    {
+      exerciseName: 'Chest Supported Row', muscle: 'back-mid', firstWeek: 1, lastWeek: 8,
+      firstTopKg: 72.5, firstTopReps: 8, lastTopKg: 85, lastTopReps: 8,
+      firstE1rm: 91.83, lastE1rm: 107.67, deltaKg: 12.5, deltaPct: 17.2,
+    },
+  ],
+  records: {
+    medalCount: 3,
+    top: [{ exerciseName: 'Chest Supported Row', kind: 'WEIGHT', date: '2026-04-09', value: 85 }],
+  },
+  context: null,
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
 
@@ -631,8 +669,24 @@ export const handlers = [
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
     HttpResponse.json({ id: params.id }),
   ),
-  http.post(`${API_BASE}/api/train/mesocycles/:id/close`, ({ params }) =>
-    HttpResponse.json({ id: params.id }),
+  // Close accepts an OPTIONAL `{ selfEval }` body (mezo-meyc.2) — read and ignore it here so
+  // the default stays a happy path; tests that assert the payload override with a spy.
+  http.post(`${API_BASE}/api/train/mesocycles/:id/close`, async ({ params, request }) => {
+    await request.text()
+    return HttpResponse.json({ id: params.id, status: 'archived', hasReport: true })
+  }),
+  // Run report (mezo-meyc.2). Exactly one seeded run has one; every other id answers the
+  // contract's 404 so the FE's notFound → „Riport generálása" path is the default.
+  http.get(`${API_BASE}/api/train/mesocycles/:id/report`, ({ params }) =>
+    String(params.id) === REPORT_MESO_ID
+      ? HttpResponse.json(mesoReportFixture)
+      : HttpResponse.json(
+          [{ code: 'TRAIN_MESO_REPORT_NOT_FOUND', message: 'Ehhez a futamhoz még nincs riport.' }],
+          { status: 404 },
+        ),
+  ),
+  http.post(`${API_BASE}/api/train/mesocycles/:id/report/regenerate`, () =>
+    new HttpResponse(null, { status: 202 }),
   ),
   http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, () =>
     HttpResponse.json({ day: 'Hét', type: 'Pull', muscle: '', exerciseCount: 0, exercises: [] }),

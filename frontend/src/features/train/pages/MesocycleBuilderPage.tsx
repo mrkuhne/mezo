@@ -5,16 +5,20 @@
 // switcher (Áttekintés | Volumen | Gyakorlatok) and status-dependent bottom
 // actions. This task ships the shell + the Áttekintés view + DayDetailSheet;
 // Volumen and Gyakorlatok are placeholders filled by Task 9 / Task 10.
+// Run lifecycle (mezo-meyc.2): „Meso lezárása" opens MesoCloseSheet (which owns
+// the confirm + the optional self-eval and lands on the report), and an ARCHIVED
+// run redirects straight to its report — a closed run has no builder.
 // Ported from prototype mesocycles.jsx MesocycleBuilderPage.
 // ============================================================
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { MesoOverview } from '@/features/train/components/MesoOverview'
 import { MesoVolume } from '@/features/train/components/MesoVolume'
 import { MesoExercises } from '@/features/train/components/MesoExercises'
+import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 
 type BuilderView = 'overview' | 'volume' | 'exercises'
 
@@ -27,11 +31,19 @@ const VIEWS: { id: BuilderView; label: string }[] = [
 export function MesocycleBuilderPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { mesocycles, activateMesocycle, closeMesocycle, mesoMutationPending } = useTrain()
+  const { mesocycles, activateMesocycle, mesoMutationPending } = useTrain()
   const [view, setView] = useState<BuilderView>('overview')
+  const [closing, setClosing] = useState(false)
 
   const meso = mesocycles.find((m) => m.id === id)
   const backToLibrary = () => navigate('/train/mesocycles')
+
+  // A closed run has no builder — its plan is history, and the thing worth opening is the
+  // frozen report (mezo-meyc.2). Deep links / back-nav land here too, so redirect rather
+  // than render a read-only builder nobody can act on.
+  if (meso?.status === 'archived') {
+    return <Navigate to={`/train/mesocycles/${meso.id}/report`} replace />
+  }
 
   if (!meso) {
     return (
@@ -121,9 +133,11 @@ export function MesocycleBuilderPage() {
             <CtaGhost style={{ padding: 12 }}>
               Heti terv másolása
             </CtaGhost>
+            {/* Closing freezes a report — MesoCloseSheet owns the confirm + the optional
+                self-eval note and lands on the report (mezo-meyc.2). */}
             <CtaGhost
               style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
-              onClick={() => closeMesocycle(meso.id)}
+              onClick={() => setClosing(true)}
               disabled={mesoMutationPending}
             >
               Meso lezárása
@@ -139,6 +153,10 @@ export function MesocycleBuilderPage() {
           </CtaPrimary>
         )}
       </div>
+
+      {closing && (
+        <MesoCloseSheet mesoId={meso.id} title={meso.title} onClose={() => setClosing(false)} />
+      )}
     </div>
   )
 }

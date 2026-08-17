@@ -13,12 +13,14 @@ import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleReportRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
@@ -26,11 +28,14 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
@@ -62,6 +67,8 @@ public class TrainService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final SportSessionRepository sportSessionRepository;
+    private final MesocycleReportRepository reportRepository;
+    private final MesocycleReportService reportService;
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
     // Baseline seeding (mezo-xlmp): volume-log rows born on the create-as-active/activate path,
@@ -98,9 +105,15 @@ public class TrainService {
             .collect(Collectors.groupingBy(WorkoutSessionEntity::getMesocycleId, LinkedHashMap::new,
                 Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog),
                     Collectors.toList())));
+        // hasReport in ONE batched query (mezo-meyc.2) — the Történet list's "van riportja" flag
+        // must never become a per-run lookup.
+        Set<UUID> reported = reportRepository
+            .findByCreatedByAndMesocycleIdInAndDeletedFalse(createdBy, mesoIds).stream()
+            .map(MesocycleReportEntity::getMesocycleId).collect(Collectors.toSet());
 
         return mesos.stream().map(m -> {
             MesocycleResponse r = mapper.toResponse(m);
+            r.setHasReport(reported.contains(m.getId()));
             Map<String, VolumeProfile> volume = volumeByMeso.get(m.getId());
             List<MesoDay> days = daysByMeso.get(m.getId());
             if (volume != null && !volume.isEmpty()) {
@@ -224,11 +237,38 @@ public class TrainService {
         return assembleResponse(createdBy, target);
     }
 
+    /**
+     * Closes (archives) a run and FREEZES its end-of-mesocycle report in the same transaction
+     * (mezo-meyc.2): {@code status = archived}, {@code closedAt = now}, the computed
+     * adherence/volume/strength/records snapshot, and the owner's optional close-time self-eval.
+     *
+     * <p>IDEMPOTENT: re-closing an already archived run never recomputes (the report is a snapshot of
+     * the moment the run was closed, not of "now") and never overwrites a self-eval already
+     * captured. Refreshing a stale report is the explicit {@code MesocycleReportService.regenerate}
+     * path, never a second close.
+     *
+     * <p>The ONE thing a second close may still do is FILL a self-eval that was never written: a run
+     * auto-archived by starting the next one (the single-active invariant) gets its report through
+     * the regenerate/backfill path and would otherwise have no way to ever receive the owner's note —
+     * S2 has no other self-eval write path. Fill-if-empty only; an existing note is untouchable.
+     */
     @Transactional
-    public MesocycleResponse closeMesocycle(UUID createdBy, UUID id) {
+    public MesocycleResponse closeMesocycle(UUID createdBy, UUID id, String selfEval) {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
+        boolean hasNote = selfEval != null && !selfEval.isBlank();
         if (!"archived".equals(target.getStatus())) {
             target.setStatus("archived");
+            // timestamptz stores micros — truncate so the pre/post-persist responses match
+            target.setClosedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+            MesocycleReportEntity report = reportService.computeAndStore(target);
+            if (hasNote) {
+                report.setSelfEval(selfEval);
+            }
+        } else if (hasNote) {
+            // No report row yet ⇒ nothing to attach the note to; the owner regenerates first.
+            reportRepository.findByMesocycleIdAndCreatedByAndDeletedFalse(id, createdBy)
+                .filter(r -> r.getSelfEval() == null || r.getSelfEval().isBlank())
+                .ifPresent(r -> r.setSelfEval(selfEval));
         }
         return assembleResponse(createdBy, target);
     }
@@ -403,6 +443,10 @@ public class TrainService {
     /** Single-aggregate variant of the list stitching — write paths return the same shape as GET. */
     private MesocycleResponse assembleResponse(UUID createdBy, MesocycleEntity m) {
         MesocycleResponse r = mapper.toResponse(m);
+        // Lombok's @Builder on the generated DTO ignores the contract's `default: false`, so every
+        // assembly must state hasReport explicitly or it goes out null (mezo-meyc.2).
+        r.setHasReport(reportRepository
+            .findByMesocycleIdAndCreatedByAndDeletedFalse(m.getId(), createdBy).isPresent());
         Map<String, VolumeProfile> volume = volumeLogRepository
             .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(m.getId())).stream()
             .collect(Collectors.toMap(v -> v.getMuscle(), mapper::toProfile, (a, b) -> a, LinkedHashMap::new));

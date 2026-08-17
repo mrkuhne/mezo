@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http } from 'msw'
 import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
@@ -13,11 +13,16 @@ import { API_BASE } from '@/test/msw/handlers'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
+function LocationProbe() {
+  return <div data-testid="loc">{useLocation().pathname}</div>
+}
+
 function setup() {
   render(
     <QueryWrapper>
       <MemoryRouter>
         <MesocycleLibraryPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -84,6 +89,13 @@ test('the closed-run section head reads Történet, not Archív', () => {
   setup()
   expect(screen.getByText(/Történet · 1/)).toBeInTheDocument()
   expect(screen.queryByText('Archív · 1')).toBeNull() // the old section head is gone
+})
+
+test('tapping a closed run opens its RUN REPORT, not the builder (mezo-meyc.2)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-rec-03/report')
 })
 
 test('Újrafuttatás on a closed run reruns it and opens the start sheet', async () => {
