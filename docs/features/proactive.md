@@ -1463,15 +1463,13 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   narrative memory (honest empty, not 404); returns persisted rows in `generatedAt` order; lazily
   generates the morning message when missing for today; lazily generates elapsed window kinds
   (midday, via a midday-or-later clock override) when missing; does **NOT** generate for a past date.
-- **Known gap (flagged, not fixed here):** `ProactiveApiSwitchOffIT`/`ProactiveApiCompanionOffIT`
-  still assert `GET /api/proactive/briefing` and `GET /api/proactive/heartbeat` 404 under the
-  switch-off properties — those paths no longer route to any controller method at all (Spring's
-  generic no-handler 404, not the dual-switch bean-absence path the tests intend to prove), so they
-  pass for the wrong reason. Neither switch-off class has a `GET /api/proactive/feed` case. The
-  suite is green because ANY unmapped path 404s the same way, but the specific "feed 404s when
-  proactive/companion is off" behavior is currently untested — a real coverage gap, not a design
-  issue in the feed itself (`ensureTodayCronKinds`/`getFeed` are behind the same
-  `@ConditionalOnProperty` as every other proactive bean, §9 gotcha b).
+- **`ProactiveApiSwitchOffIT`/`ProactiveApiCompanionOffIT` (feed cases, mezo-8g61)** —
+  `GET /api/proactive/feed` 404s (`RESOURCE_NOT_FOUND`) with `mezo.feature.proactive.enabled=false`
+  and with `mezo.feature.companion.enabled=false` — the dual-switch `@ConditionalOnProperty`
+  bean-absence gating (§9 gotcha b). Meaningful because `ProactiveApiFeedIT` proves the same path
+  serves 200 when both switches are on, so the 404 can only come from bean absence. (The classes'
+  earlier briefing/heartbeat cases were retired with those endpoints — an unmapped path 404s the
+  same way for any URL, so they had stopped proving the gating.)
 
 **W (weekly suggestion, W1):**
 
