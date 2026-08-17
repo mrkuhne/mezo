@@ -5,7 +5,7 @@
 // (the last is the early-finish entry point — lands on the WorkoutSummary
 // closing screen, mezo-cd8s).
 //
-// Áthelyezés reorders the remaining exercises via the shared SortableList
+// Áthelyezés reorders the current + remaining exercises via the shared SortableList
 // (client-only / ephemeral: it only re-orders session.order). Every other
 // row is wired to an optional handler prop and is `disabled` until its
 // handler is provided.
@@ -19,9 +19,10 @@ import { SortableList } from '@/shared/ui/SortableList'
 interface ExerciseActionSheetProps {
   /** Current exercise — titles the sheet. */
   exerciseName: string
-  /** The reorderable (remaining / future) exercises. */
-  remaining: { id: string; label: string }[]
-  /** New id order of `remaining`. */
+  /** The reorderable exercises: the CURRENT one (flagged, always first) + everything
+   *  after it in session order — the current one is movable too (mezo-vad0). */
+  reorderable: { id: string; label: string; current?: boolean }[]
+  /** New id order of `reorderable`. */
   onReorder: (ids: string[]) => void
   onSkip?: () => void
   onAddSet?: () => void
@@ -73,7 +74,7 @@ function ActionRow({
 
 export function ExerciseActionSheet({
   exerciseName,
-  remaining,
+  reorderable,
   onReorder,
   onSkip,
   onAddSet,
@@ -108,16 +109,23 @@ export function ExerciseActionSheet({
                 </button>
                 <Display size="md">Áthelyezés</Display>
               </div>
-              {remaining.length < 2 ? (
+              {reorderable.length < 2 ? (
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)', padding: '8px 0' }}>
                   Nincs átrendezhető gyakorlat
                 </p>
               ) : (
                 <SortableList
-                  items={remaining}
+                  items={reorderable}
                   onReorder={onReorder}
                   renderItem={(it) => (
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{it.label}</span>
+                    <span className="row gap-sm" style={{ alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{it.label}</span>
+                      {/* The exercise on screen right now — moving it back hands the
+                          session to whatever ends up first (mezo-vad0). */}
+                      {it.current && (
+                        <span className="chip" style={{ fontSize: 9 }}>most</span>
+                      )}
+                    </span>
                   )}
                 />
               )}

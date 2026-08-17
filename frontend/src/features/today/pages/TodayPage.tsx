@@ -111,7 +111,10 @@ const heroCardOf = (s: DaySession, onLog: () => void): DayHero => {
 export function TodayPage() {
   const date = localDateString()
   const scenario = useTodayScenario()
-  const { user, workout, volleyballSessions, workoutTime, prediction } = useToday()
+  const {
+    user, workout, volleyballSessions, workoutTime, prediction,
+    workoutDone, workoutDoneSets, workoutInProgress, workoutOpenSets, loggedSportKinds,
+  } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
   const { quests, levelUps: questLevelUps } = useDailyQuests(date)
@@ -174,21 +177,36 @@ export function TodayPage() {
   // object, so tag/facts/CTA drift is structurally impossible.
   // Array order IS hero precedence: the gym session wins, a sport session heroes on a rest day.
   const gymMinutes = workout ? estimateSessionMinutes(workout.exercises) : 0
+  // A started-but-unfinished session resumes, it does not restart (mezo-6kap) — the same
+  // `/train` target, an honest label. `workoutDone` gates ahead of this, so a finished day
+  // never offers a resume; 0 logged sets drops the count rather than reading „0 szett kész".
+  const gymCta = workoutInProgress
+    ? `Folytassuk${workoutOpenSets ? ` · ${workoutOpenSets} szett kész` : ''}`
+    : 'Indítsuk'
+  // The sport hero's own done-state: a session logged TODAY of THIS hero's kind (mezo-6kap).
+  const sportDone = sportToday ? loggedSportKinds.includes(sportOf(sportToday)) : false
   const sessions = useMemo<DaySession[]>(() => [
     ...(workout ? [{
       id: 'gym', tone: 'gym' as const, emoji: '🏋️',
       tag: `GYM${workout.tag ? ` · ${workout.tag}` : ''}`, title: workout.title,
       time: workoutTime ?? null,
       facts: [`${workout.exercises.length} gyakorlat`, gymMinutes > 0 ? `~${gymMinutes} perc` : null, prediction?.label],
-      logged: false, ctaLabel: 'Indítsuk',
+      // The done-state is server truth, not a Today-local guess (mezo-v84m): the hero drops its
+      // start CTA for the „Kész" footnote and the row moves into the done fold, exactly like the
+      // Train tab's hero. The set count is a detail — a finish with none still reads Kész.
+      logged: workoutDone,
+      loggedSummary: workoutDone
+        ? `Kész${workoutDoneSets ? ` · ${workoutDoneSets} szett` : ''}`
+        : undefined,
+      ctaLabel: gymCta,
     }] : []),
     ...(sportToday ? [{
       id: 'sport', tone: SPORT_TONE[sportOf(sportToday)], emoji: SPORT_EMOJI[sportOf(sportToday)],
       tag: SPORT_TAGS[sportOf(sportToday)], title: SPORT_TITLES[sportOf(sportToday)],
       time: sportToday.time, facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
-      logged: false, ctaLabel: 'Logold',
+      logged: sportDone, loggedSummary: sportDone ? 'Kész' : undefined, ctaLabel: 'Logold',
     }] : []),
-  ], [workout, workoutTime, prediction, sportToday, gymMinutes])
+  ], [workout, workoutTime, prediction, sportToday, gymMinutes, workoutDone, workoutDoneSets, gymCta, sportDone])
   const heroSession = sessions[0] ?? null
   const heroItemId = heroSession ? `session:${heroSession.id}` : null
 

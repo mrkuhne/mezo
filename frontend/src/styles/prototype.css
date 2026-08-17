@@ -3736,6 +3736,9 @@ ol.md-list { list-style: decimal; }
 .td-foot { padding: 7px var(--sp-4) 0; font-family: var(--ff-body); font-size: 12px;
            line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
 .td-foot.is-warn { color: var(--warning-hover); }
+/* A CTA helyén álló kész-felirat (mezo-v84m) — a `.is-warn` testvére, ugyanaz a lábjegyzet-sor,
+   csak a siker-tokennel; nem új szín, és nem lesz belőle gomb (a kész edzés nem indítható újra). */
+.td-foot.is-done { color: var(--success-hover); font-weight: 600; }
 
 /* ── kész-hajtás ── */
 .td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--sp-4));

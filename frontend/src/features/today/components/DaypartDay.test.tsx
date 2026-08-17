@@ -48,6 +48,25 @@ describe('DaypartDay', () => {
     expect(onLog).toHaveBeenCalled()
   })
 
+  // mezo-v84m — a finished session must not keep offering its start CTA. The hero stays
+  // (the day still happened at 13:00), the button is replaced by the done footnote.
+  test('a logged session drops the CTA for a done footnote', () => {
+    const onLog = vi.fn()
+    const { container } = renderDay({
+      hero: { ...hero, logged: true, loggedSummary: 'Kész · 18 szett', onLog },
+    })
+    expect(screen.getByText('13:00')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+    expect(onLog).not.toHaveBeenCalled()
+  })
+
+  test('a logged session with no summary still reads Kész', () => {
+    const { container } = renderDay({ hero: { ...hero, logged: true } })
+    expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész')
+  })
+
   test('a rest day reads Pihenő and offers Saját edzés', async () => {
     const onCustom = vi.fn()
     renderDay({ hero: null, onCustom })
