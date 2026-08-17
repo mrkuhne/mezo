@@ -198,9 +198,11 @@ public class TrainPopulator {
     }
 
     /**
-     * {@link #activeMesoStartedWeeksAgo} with an explicit {@code currentWeek} — the close-report
-     * fixture needs the run to sit in its LAST week so the frozen volume arc carries actuals for
-     * every week (the arc leaves future weeks' {@code actual} null).
+     * {@link #activeMesoStartedWeeksAgo} with an explicit {@code currentWeek}, which on a real run
+     * only advances on the weekly volume rollover and can therefore lag the calendar. Lets a test
+     * pin the run's stored progress INDEPENDENTLY of its dates — both the up-to-date case and the
+     * deliberately STALE one (the close report must freeze an arc consistent with adherence either
+     * way, mezo-meyc.2).
      */
     public MesocycleEntity activeMesoStartedWeeksAgo(
         UUID createdBy, int weeksAgo, int weeks, int currentWeek, List<String> phaseCurve) {

@@ -112,13 +112,18 @@ public class MesocycleReportService {
         LocalDate start = run.getStartDate();
         int weeks = run.getWeeks();
         LocalDate windowEnd = closeWindowEnd(run);
+        int weeksElapsed = MesoWeeks.weekOf(start, windowEnd, weeks);
 
         List<WorkoutSessionEntity> instances = workoutSessionRepository
             .findCompletedMesoInstancesInWindow(createdBy, run.getId(), start, windowEnd);
 
         MesoReportJson report = new MesoReportJson(
-            adherence(createdBy, run, windowEnd, instances),
-            mapper.toArcJson(volumeArcService.arc(createdBy, run.getId())),
+            adherence(createdBy, run, weeksElapsed, instances),
+            // The arc's future-week mask must agree with adherence: a run whose `currentWeek` went
+            // stale (it only advances on the weekly rollover) would otherwise freeze week 2 as
+            // "not reached" while adherence counts a week-2 session.
+            mapper.toArcJson(volumeArcService.arc(
+                createdBy, run.getId(), Math.max(run.getCurrentWeek(), weeksElapsed))),
             strength(createdBy, start, weeks, instances),
             records(createdBy, instances));
 
@@ -182,13 +187,12 @@ public class MesocycleReportService {
 
     /**
      * Plan vs reality. {@code plannedSessions} counts only template days that actually carry
-     * exercises (an empty day is not a session anyone could have done) times the meso-weeks elapsed
-     * at close — {@code MesoWeeks.weekOf} against the window end, which at close time IS
+     * exercises (an empty day is not a session anyone could have done) times {@code weeksElapsed} —
+     * {@code MesoWeeks.weekOf} against the close window's end, which at close time IS
      * {@code clampWeek(startDate, weeks)} and stays stable if the report is regenerated later.
      */
     private MesoReportJson.Adherence adherence(UUID createdBy, MesocycleEntity run,
-            LocalDate windowEnd, List<WorkoutSessionEntity> instances) {
-        int weeksElapsed = MesoWeeks.weekOf(run.getStartDate(), windowEnd, run.getWeeks());
+            int weeksElapsed, List<WorkoutSessionEntity> instances) {
         int plannedSessions = countNonEmptyTemplateDays(createdBy, run.getId()) * weeksElapsed;
         int completedSessions = instances.size();
         int completedWeeks = (int) instances.stream()

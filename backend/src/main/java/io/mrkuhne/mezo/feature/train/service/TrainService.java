@@ -242,22 +242,33 @@ public class TrainService {
      * (mezo-meyc.2): {@code status = archived}, {@code closedAt = now}, the computed
      * adherence/volume/strength/records snapshot, and the owner's optional close-time self-eval.
      *
-     * <p>IDEMPOTENT: re-closing an already archived run returns it untouched — no recompute (the
-     * report is a snapshot of the moment the run was closed, not of "now") and no overwrite of the
-     * self-eval already captured. Refreshing a stale report is the explicit
-     * {@code MesocycleReportService.regenerate} path, never a second close.
+     * <p>IDEMPOTENT: re-closing an already archived run never recomputes (the report is a snapshot of
+     * the moment the run was closed, not of "now") and never overwrites a self-eval already
+     * captured. Refreshing a stale report is the explicit {@code MesocycleReportService.regenerate}
+     * path, never a second close.
+     *
+     * <p>The ONE thing a second close may still do is FILL a self-eval that was never written: a run
+     * auto-archived by starting the next one (the single-active invariant) gets its report through
+     * the regenerate/backfill path and would otherwise have no way to ever receive the owner's note —
+     * S2 has no other self-eval write path. Fill-if-empty only; an existing note is untouchable.
      */
     @Transactional
     public MesocycleResponse closeMesocycle(UUID createdBy, UUID id, String selfEval) {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
+        boolean hasNote = selfEval != null && !selfEval.isBlank();
         if (!"archived".equals(target.getStatus())) {
             target.setStatus("archived");
             // timestamptz stores micros — truncate so the pre/post-persist responses match
             target.setClosedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
             MesocycleReportEntity report = reportService.computeAndStore(target);
-            if (selfEval != null && !selfEval.isBlank()) {
+            if (hasNote) {
                 report.setSelfEval(selfEval);
             }
+        } else if (hasNote) {
+            // No report row yet ⇒ nothing to attach the note to; the owner regenerates first.
+            reportRepository.findByMesocycleIdAndCreatedByAndDeletedFalse(id, createdBy)
+                .filter(r -> r.getSelfEval() == null || r.getSelfEval().isBlank())
+                .ifPresent(r -> r.setSelfEval(selfEval));
         }
         return assembleResponse(createdBy, target);
     }

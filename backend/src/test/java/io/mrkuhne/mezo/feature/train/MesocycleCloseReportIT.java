@@ -10,8 +10,10 @@ import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleReportRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * The close-time FROZEN run report (mezo-meyc.2, spec §2): closing an active run archives it,
@@ -55,8 +58,10 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
     @Autowired private MesocycleReportService reportService;
     @Autowired private TrainPopulator train;
     @Autowired private MesocycleRepository mesocycleRepository;
+    @Autowired private MesocycleReportRepository reportRepository;
     @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     // ── close → frozen report ────────────────────────────────────────────────────
 
@@ -140,10 +145,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         Instant firstClosedAt = mesocycleRepository.findById(run.getId()).orElseThrow().getClosedAt();
 
         // Mutating the run's data AFTER the close must not leak into the frozen report.
-        ExerciseSetEntity lastBenchSet = exerciseSetRepository.findAll().stream()
-            .filter(s -> owner.equals(s.getCreatedBy()))
-            .filter(s -> s.getWeightKg() != null && s.getWeightKg().compareTo(new BigDecimal("70")) == 0)
-            .findFirst().orElseThrow();
+        ExerciseSetEntity lastBenchSet = setWeighing(owner, "70");
         lastBenchSet.setWeightKg(new BigDecimal("100"));
         exerciseSetRepository.saveAndFlush(lastBenchSet);
 
@@ -157,6 +159,60 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         assertThat(report.getSelfEval()).isEqualTo("első");
         assertThat(report.getStrength().get(0).getLastTopKg()).isEqualByComparingTo("70");
         assertThat(report.getStrength().get(0).getDeltaKg()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void testCloseMesocycle_shouldFreezeArcUpToTheElapsedWeek_whenCurrentWeekIsStale() {
+        UUID owner = databasePopulator.populateUser("meso-close-f@test.local");
+        // currentWeek pinned at 1 while the run is really in week 2 — the shape a run has whenever
+        // the weekly volume rollover has not fired yet. VolumeArcService masks `actual` to null past
+        // currentWeek, so without the report-freeze override the arc would contradict adherence.
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner, 1);
+
+        trainService.closeMesocycle(owner, run.getId(), null);
+
+        MesocycleReportResponse report = reportService.getReport(owner, run.getId());
+        assertThat(report.getAdherence().getCompletedWeeks()).isEqualTo(2);
+        assertThat(report.getVolume().getMuscles()).singleElement().satisfies(m ->
+            assertThat(m.getWeeks().get(1).getActual())
+                .as("week 2 actual must be frozen, not masked away by the stale currentWeek")
+                .isEqualTo(1));
+    }
+
+    /**
+     * The auto-archived case: the single-active invariant archives the previous run when the next
+     * one starts, so that run reaches its report through the backfill path and never sees a close
+     * body. Closing it afterwards must be able to FILL the still-empty self-eval — S2 has no other
+     * write path for the owner's note — without recomputing anything.
+     */
+    @Test
+    void testCloseMesocycle_shouldFillSelfEval_whenArchivedReportHasNone() {
+        UUID owner = databasePopulator.populateUser("meso-close-h@test.local");
+        MesocycleEntity run = train.legacyArchivedMesoStartedWeeksAgo(
+            owner, 1, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+        reportService.regenerate(owner, run.getId()); // backfill — no self-eval anywhere
+        assertThat(reportService.getReport(owner, run.getId()).getSelfEval()).isNull();
+
+        trainService.closeMesocycle(owner, run.getId(), "Utólagos önértékelés");
+
+        MesocycleReportResponse report = reportService.getReport(owner, run.getId());
+        assertThat(report.getSelfEval()).isEqualTo("Utólagos önértékelés");
+        // Still a no-op close: the run keeps the closedAt it had (none) and stays archived.
+        assertThat(report.getClosedAt()).isNull();
+        assertThat(mesocycleRepository.findById(run.getId()).orElseThrow().getStatus())
+            .isEqualTo("archived");
+    }
+
+    @Test
+    void testCloseMesocycle_shouldNotOverwriteSelfEval_whenArchivedReportAlreadyHasOne() {
+        UUID owner = databasePopulator.populateUser("meso-close-i@test.local");
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner);
+        trainService.closeMesocycle(owner, run.getId(), "Eredeti jegyzet");
+
+        trainService.closeMesocycle(owner, run.getId(), "Felülíró jegyzet");
+
+        assertThat(reportService.getReport(owner, run.getId()).getSelfEval())
+            .isEqualTo("Eredeti jegyzet");
     }
 
     // ── report read ─────────────────────────────────────────────────────────────
@@ -202,6 +258,50 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         assertThat(report.getStrength()).isEmpty();
     }
 
+    /**
+     * The „Riport generálása" button's PRIMARY production path: a run that already has a report.
+     * Proves the upsert takes its UPDATE branch (one row, no {@code uq_mesocycle_report_mesocycle}
+     * violation), that the deterministic half really recomputes, that the AI half is reset — and
+     * that the owner's self-eval, which only the close path can write, survives all of it.
+     */
+    @Test
+    void testRegenerate_shouldUpsertInPlaceAndKeepSelfEval_whenReportAlreadyExists() {
+        UUID owner = databasePopulator.populateUser("meso-close-g@test.local");
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner);
+        trainService.closeMesocycle(owner, run.getId(), "Zárás jegyzet");
+
+        // Pretend S3's generator already produced a narrative against the OLD numbers…
+        MesocycleReportEntity row = reportRepository
+            .findByMesocycleIdAndCreatedByAndDeletedFalse(run.getId(), owner).orElseThrow();
+        row.setAiEval("Korábbi AI értékelés");
+        row.setAiEvalStatus(MesocycleReportEntity.AI_EVAL_STATUS_READY);
+        row.setAiEvalGeneratedAt(Instant.now());
+        reportRepository.saveAndFlush(row);
+        // …and that the underlying data moved after the close (a corrected set).
+        ExerciseSetEntity corrected = setWeighing(owner, "70");
+        corrected.setWeightKg(new BigDecimal("100"));
+        exerciseSetRepository.saveAndFlush(corrected);
+
+        reportService.regenerate(owner, run.getId());
+
+        // (a) upsert UPDATED the single row — a second insert would have hit the unique constraint
+        assertThat(jdbcTemplate.queryForObject(
+            "select count(*) from mesocycle_report where mesocycle_id = ?", Integer.class, run.getId()))
+            .isEqualTo(1);
+
+        MesocycleReportResponse report = reportService.getReport(owner, run.getId());
+        // (b) the close-time note is not collateral damage of a recompute
+        assertThat(report.getSelfEval()).isEqualTo("Zárás jegyzet");
+        // (c) the AI half is back to pending for S3 to regenerate
+        assertThat(report.getAiEval()).isNull();
+        assertThat(report.getAiEvalGeneratedAt()).isNull();
+        assertThat(report.getAiEvalStatus()).isEqualTo(MesocycleReportResponse.AiEvalStatusEnum.PENDING);
+        // (d) the deterministic half genuinely recomputed against the corrected set
+        assertThat(report.getStrength().get(0).getExerciseName()).isEqualTo(BENCH);
+        assertThat(report.getStrength().get(0).getLastTopKg()).isEqualByComparingTo("100");
+        assertThat(report.getStrength().get(0).getDeltaKg()).isEqualByComparingTo("40");
+    }
+
     @Test
     void testRegenerate_shouldReturn409_whenRunActive() {
         UUID owner = databasePopulator.populateUser("meso-close-e@test.local");
@@ -220,8 +320,13 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
      * meso instances (2 in W1, 1 in W2).
      */
     private MesocycleEntity twoWeekRunWithThreeCompletedInstances(UUID owner) {
+        return twoWeekRunWithThreeCompletedInstances(owner, 2);
+    }
+
+    /** Same fixture with the run's stored {@code currentWeek} pinned — 1 is the STALE-rollover case. */
+    private MesocycleEntity twoWeekRunWithThreeCompletedInstances(UUID owner, int currentWeek) {
         MesocycleEntity run =
-            train.activeMesoStartedWeeksAgo(owner, 1, 2, 2, List.of("MEV", "MAV"));
+            train.activeMesoStartedWeeksAgo(owner, 1, 2, currentWeek, List.of("MEV", "MAV"));
         train.createVolumeLog(owner, run.getId(), "chest", 12);
 
         WorkoutSessionEntity push =
@@ -253,5 +358,14 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
     /** Deterministic {@code doneAt} for a logged set — 18:00 local on the instance's date. */
     private Instant at(LocalDate date) {
         return date.atTime(18, 0).atZone(ZoneId.systemDefault()).toInstant();
+    }
+
+    /** The owner's logged set carrying exactly this load — the fixture's weights are unique. */
+    private ExerciseSetEntity setWeighing(UUID owner, String weightKg) {
+        BigDecimal target = new BigDecimal(weightKg);
+        return exerciseSetRepository.findAll().stream()
+            .filter(s -> owner.equals(s.getCreatedBy()))
+            .filter(s -> s.getWeightKg() != null && s.getWeightKg().compareTo(target) == 0)
+            .findFirst().orElseThrow();
     }
 }
