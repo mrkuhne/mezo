@@ -126,6 +126,10 @@ export const REPORT_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
 
 // Minimal MesocycleReportResponse: enough shape for the report page to render end-to-end
 // (adherence + one strength row + one record), no volume arc (the contract allows null).
+// aiEval/context are deliberately SHORT literals here (not imported from mesoReportMock,
+// data/train/train.ts is a big module — pulling it into handlers.ts would tax every test
+// file's setup, since nearly all of them import this file for MSW) but mirror its S3
+// shape: a `ready` eval with a populated context (mezo-meyc.3).
 const mesoReportFixture = {
   mesocycleId: REPORT_MESO_ID,
   templateId: null,
@@ -135,12 +139,10 @@ const mesoReportFixture = {
   closedAt: '2026-04-23T19:40:00Z',
   weeks: 8,
   selfEval: 'Stabil blokk.',
-  aiEval: null,
-  // Backend parity: an S2 report is always written `pending` (nothing generates the narrative
-  // yet) with the feature off — which must NOT start the FE's poll.
-  aiEvalStatus: 'pending',
-  aiEvalGeneratedAt: null,
-  aiEvalEnabled: false,
+  aiEval: 'Stabil, kontrollált blokk volt — jó alvással és fokozatos erő-progresszióval.\n\nA következő ciklusban érdemes a volument tovább emelni.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2026-04-23T19:45:00Z',
+  aiEvalEnabled: true,
   adherence: {
     plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
   },
@@ -156,7 +158,17 @@ const mesoReportFixture = {
     medalCount: 3,
     top: [{ exerciseName: 'Chest Supported Row', kind: 'WEIGHT', date: '2026-04-09', value: 85 }],
   },
-  context: null,
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.2, sleepQualityAvg: 7, kcalAvg: 2400, kcalTargetAvg: 2450, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 6.5, stressAvg: 4.5, weightDeltaKg: -0.2, sportMinutes: 90, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.0 },
+      // A deliberate null hole — no sleep data this week — exercises the "–" cell.
+      { week: 2, sleepAvgH: null, sleepQualityAvg: null, kcalAvg: 2420, kcalTargetAvg: 2450, mealCoverageDays: 7, waterAvgMl: 2500, energyAvg: 6.8, stressAvg: 4.2, weightDeltaKg: -0.1, sportMinutes: 100, sportSessions: 2, runSessions: null, gymRpeAvg: 7.1 },
+    ],
+    totals: {
+      daysTotal: 14, sleepAvgH: 7.2, kcalAvg: 2410, energyAvg: 6.7, stressAvg: 4.4,
+      weightChangeKg: -0.3, sportMinutes: 190, sportSessions: 4, runSessions: 1, mealCoverageDays: 13,
+    },
+  },
 }
 
 export const handlers = [

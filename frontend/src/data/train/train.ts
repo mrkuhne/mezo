@@ -525,15 +525,19 @@ export const mesoReportMock = {
   // The archived fixture's own summary line — on the backend this is the note captured by
   // MesoCloseSheet at close time.
   selfEval: '8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.',
-  aiEval: null,
-  // Backend parity (MesocycleReportEntity's default; regenerate resets to it): EVERY S2
-  // report is written `pending` and stays there — nothing generates the narrative yet.
-  aiEvalStatus: 'pending',
-  aiEvalGeneratedAt: null,
-  // S2 ships the report WITHOUT the AI narrative — the page must hide the block entirely,
-  // and `pending` must NOT start the poll while the feature is off. S3 (mezo-meyc.3) flips
-  // this to true and fills `aiEval`.
-  aiEvalEnabled: false,
+  // S3 (mezo-meyc.3): the generated Hungarian narrative — paragraphs are split on a blank
+  // line by the page (no markdown lib), so keep the `\n\n` separators literal.
+  aiEval:
+    'A Recovery rebuild blokk összességében stabil, kontrollált progressziót hozott: a 8 hét alatt az edzések 88%-át teljesítetted, ami kifejezetten jó arány egy olyan blokkban, ami eleve a regenerációra és a jobb vállad niggle-jének kezelésére épült.\n\n' +
+    'Az alvásod átlagosan 7,4 óra volt, ami a cél fölött van, és jól látszik, hogy a jobban alvó heteken (4. és 8. hét) az energiaszinted és a stresszed is kedvezőbben alakult. A 3. héten hiányzó alvásadat, illetve az 5. héten megszakadt kcal-naplózás rontja kicsit a kép élességét — érdemes ezt elkerülni a következő blokkban.\n\n' +
+    'Az erő oldalán a Chest Supported Row +12,5 kg-os, 17,2%-os e1RM-javulása kiemelkedő, és a Lateral Raise-en is valós progressziót értél el változatlan súly mellett. Az Overhead Pressen látott visszalépés a tudatos váll-menedzsment ára volt, nem visszaesés.\n\n' +
+    'Összességében a testsúlyod 1,1 kg-mal csökkent a mért napokon, a stressz-szint a deload hétre látványosan mérséklődött, a sport-terhelés pedig végig stabil maradt. Jó alapot ad ez a blokk a következő, magasabb volumenű ciklushoz.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2026-04-23T19:45:00Z',
+  // S3 (mezo-meyc.3): the feature is on and the narrative above is generated — the page
+  // renders the ready card. `mockClose` (trainHooks) keeps its OWN seeded report at
+  // pending/false on purpose (a freshly closed run has nothing to evaluate yet).
+  aiEvalEnabled: true,
   adherence: {
     plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
   },
@@ -595,8 +599,37 @@ export const mesoReportMock = {
       { exerciseName: 'Leg Curl', kind: 'REPS_AT_WEIGHT', date: '2026-03-26', value: 16 },
     ],
   },
-  // Lifestyle context lands in S3 (mezo-meyc.3) — the page renders nothing while it is null.
-  context: null,
+  // Lifestyle context (S3, mezo-meyc.3): weekly buckets + totals correlated to the run's
+  // window. A couple of deliberate holes (week 3's sleep, week 5's kcal, week 8's runs —
+  // deload week, no runs logged) exercise the report page's "–" null-cell rendering.
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.1, sleepQualityAvg: 7, kcalAvg: 2380, kcalTargetAvg: 2450, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 6.2, stressAvg: 4.8, weightDeltaKg: -0.2, sportMinutes: 90, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.0 },
+      { week: 2, sleepAvgH: 7.4, sleepQualityAvg: 7.5, kcalAvg: 2410, kcalTargetAvg: 2450, mealCoverageDays: 7, waterAvgMl: 2500, energyAvg: 6.6, stressAvg: 4.5, weightDeltaKg: -0.1, sportMinutes: 120, sportSessions: 3, runSessions: 1, gymRpeAvg: 7.2 },
+      // Sleep data missing this week (device sync gap) — sleepAvgH/sleepQualityAvg render "–".
+      { week: 3, sleepAvgH: null, sleepQualityAvg: null, kcalAvg: 2390, kcalTargetAvg: 2450, mealCoverageDays: 5, waterAvgMl: 2350, energyAvg: 6.0, stressAvg: 5.2, weightDeltaKg: -0.3, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.4 },
+      { week: 4, sleepAvgH: 7.6, sleepQualityAvg: 8, kcalAvg: 2420, kcalTargetAvg: 2500, mealCoverageDays: 7, waterAvgMl: 2600, energyAvg: 7.0, stressAvg: 4.1, weightDeltaKg: -0.2, sportMinutes: 110, sportSessions: 2, runSessions: 2, gymRpeAvg: 7.1 },
+      // Fuel logging lapsed this week — kcalAvg/kcalTargetAvg render "–".
+      { week: 5, sleepAvgH: 7.2, sleepQualityAvg: 7, kcalAvg: null, kcalTargetAvg: null, mealCoverageDays: 3, waterAvgMl: 2300, energyAvg: 6.4, stressAvg: 5.5, weightDeltaKg: 0.1, sportMinutes: 80, sportSessions: 1, runSessions: 1, gymRpeAvg: 7.6 },
+      { week: 6, sleepAvgH: 7.0, sleepQualityAvg: 6.5, kcalAvg: 2460, kcalTargetAvg: 2500, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 5.8, stressAvg: 6.0, weightDeltaKg: -0.1, sportMinutes: 95, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.8 },
+      { week: 7, sleepAvgH: 7.5, sleepQualityAvg: 7.5, kcalAvg: 2440, kcalTargetAvg: 2500, mealCoverageDays: 7, waterAvgMl: 2550, energyAvg: 6.8, stressAvg: 4.6, weightDeltaKg: -0.2, sportMinutes: 105, sportSessions: 2, runSessions: 2, gymRpeAvg: 7.3 },
+      // Deload week — no runs logged; runSessions renders "–" (not 0: absence, not a zero count).
+      { week: 8, sleepAvgH: 7.9, sleepQualityAvg: 8.5, kcalAvg: 2500, kcalTargetAvg: 2550, mealCoverageDays: 7, waterAvgMl: 2600, energyAvg: 7.4, stressAvg: 3.8, weightDeltaKg: -0.1, sportMinutes: 60, sportSessions: 1, runSessions: null, gymRpeAvg: 5.5 },
+    ],
+    totals: {
+      daysTotal: 56,
+      sleepAvgH: 7.4,
+      kcalAvg: 2429,
+      energyAvg: 6.5,
+      stressAvg: 4.8,
+      // Sum of the measured, consecutive-day deltas across the window — NOT "start minus end".
+      weightChangeKg: -1.1,
+      sportMinutes: 760,
+      sportSessions: 15,
+      runSessions: 9,
+      mealCoverageDays: 48,
+    },
+  },
 } satisfies import('@/data/train/trainApi').MesocycleReportResponse
 
 // --- active workout (data.js:626-701; challenges 642-700) ---
