@@ -4653,41 +4653,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  /api/proactive/briefing:
+  /api/proactive/feed:
     get:
       tags:
         - Proactive
-      operationId: getBriefing
+      operationId: getFeed
       summary: >-
-        The generated morning briefing for one day (lazily generated when the
-        dawn cron has not produced it yet)
+        The unified companion-message feed for one day (companion-feed) —
+        morning/sleep/weight/midday/evening
+      description: >-
+        Returns the day's persisted companion-feed messages in generation order.
+        For TODAY the cron-kind miss-recovery lazily generates: morning always
+        (its cron is dawn — by any read it has elapsed); midday/evening once
+        their fire-time (derived from the SAME cron the job runs on) has passed.
+        Event-triggered kinds (sleep/weight) are born from their events, never
+        from this miss-recovery. Past dates never generate. An empty array is
+        the honest empty state (never a 404 — this is a list endpoint, the P1
+        precedent).
       parameters:
         - name: date
           in: query
           required: false
           description: >-
-            The briefed day — the FE sends its LOCAL date (the check-in read
-            precedent); defaults to the server's today.
+            The fed day — the FE sends its LOCAL date (the briefing precedent);
+            defaults to the server's today.
           schema:
             type: string
             format: date
       responses:
         '200':
-          description: The persisted (or just-generated) briefing
+          description: >-
+            The day's companion-feed messages (possibly empty), in generation
+            order
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BriefingResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedMessageResponse'
         '401':
           description: Missing or invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: >-
-            No briefing possible — no narrative memory (daily_summary) in the
-            configured past-days window. The FE renders its honest state (B1.2).
           content:
             application/json:
               schema:
@@ -4757,49 +4762,6 @@ paths:
           description: >-
             No memoir possible — no narrative memory in the last completed week.
             The FE renders its honest "készül" state.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-  /api/proactive/heartbeat:
-    get:
-      tags:
-        - Proactive
-      operationId: getHeartbeat
-      summary: 'The day''s latest heartbeat note (napközbeni jelenlét, H1)'
-      description: >-
-        Returns the latest persisted heartbeat note for the given day (evening
-        closing beats midday nudge by generation time). For TODAY the latest
-        already-elapsed window lazy-generates when missing (the miss-recovery);
-        past dates never generate. 404 = honest absence (no elapsed window yet,
-        no narrative memory, or generation failed).
-      parameters:
-        - name: date
-          in: query
-          required: false
-          description: >-
-            The noted day — the FE sends its LOCAL date (the briefing
-            precedent); defaults to the server's today.
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: The day's latest heartbeat note
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HeartbeatNoteResponse'
-        '401':
-          description: Missing or invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: >-
-            No note for the day (honest absence). The Today card simply stays
-            absent.
           content:
             application/json:
               schema:
@@ -6133,7 +6095,7 @@ paths:
       responses:
         '200':
           description: >-
-            All 11 categories, always complete — a category with no stored row
+            All 14 categories, always complete — a category with no stored row
             reports its code default
           content:
             application/json:
@@ -12788,7 +12750,7 @@ components:
           type: string
         flagged:
           type: boolean
-    BriefingRef:
+    FeedRef:
       type: object
       required:
         - kind
@@ -12801,10 +12763,11 @@ components:
             (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
         label:
           type: string
-    BriefingResponse:
+    FeedMessageResponse:
       type: object
       required:
         - date
+        - kind
         - eyebrow
         - body
         - refs
@@ -12813,21 +12776,24 @@ components:
         date:
           type: string
           format: date
+        kind:
+          type: string
+          enum:
+            - morning
+            - sleep
+            - weight
+            - midday
+            - evening
         eyebrow:
           type: string
-          description: One-line header above the briefing prose
         body:
           type: array
           items:
             type: string
-          description: Briefing paragraphs — the FE maps each to a BriefingPara
         refs:
           type: array
           items:
-            $ref: '#/components/schemas/BriefingRef'
-          description: >-
-            Code-collected, model-SELECTED source references (never
-            model-invented)
+            $ref: '#/components/schemas/FeedRef'
         generatedAt:
           type: string
           format: date-time
@@ -12884,32 +12850,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MemoirAnchor'
-        generatedAt:
-          type: string
-          format: date-time
-    HeartbeatNoteResponse:
-      type: object
-      required:
-        - date
-        - window
-        - kind
-        - content
-        - generatedAt
-      properties:
-        date:
-          type: string
-          format: date
-        window:
-          type: string
-          description: >-
-            Window key (midday | evening) — the config window the note was
-            written for
-        kind:
-          type: string
-          description: nudge (midday) | closing (evening)
-        content:
-          type: string
-          description: 'The generated HU note (plain prose, cheap tier)'
         generatedAt:
           type: string
           format: date-time

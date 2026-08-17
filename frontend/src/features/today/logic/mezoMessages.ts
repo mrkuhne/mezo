@@ -1,11 +1,13 @@
 // ============================================================
-// Mezo · mezoMessages — a nap mezo-üzeneteinek egyetlen szála (mezo-e26w).
-// NINCS új adatforrás: a szál a Mai lapon MÁR meglévő két hookból áll össze
-// (`useToday().briefing` + `useCompanionNote()`). Ez a modul az a hely, ahova
-// minden jövőbeli generált üzenet befűződik — a chip és a sheet érintése nélkül.
-// Pure: no React, no hooks, no side effects.
+// Mezo · mezoMessages — a nap mezo-üzeneteinek egyetlen szála (mezo-e26w, feed-alapra
+// kötve mezo-gst9-ben). A szál a unified companion-feedből épül (`useCompanionFeed`,
+// data/today/feedHooks.ts): egy elem egy `FeedMessage`, kind→id, a bekezdéseket és a
+// refeket 1:1 hordozza. Ha a feedben nincs `morning` kind ÉS van demo briefing, a
+// szál elé egy őszintén cimkézett demo-kártya kerül — a mock mód és a real mód
+// cold-load ablakának egyetlen látható állapota. Pure: no React, no hooks, no side
+// effects.
 // ============================================================
-import type { Briefing, BriefingRef, CompanionNote } from '@/data/types'
+import type { Briefing, BriefingRef, FeedMessage } from '@/data/types'
 
 export interface MezoMessageItem {
   /** Stabil a napon belül. */
@@ -18,42 +20,37 @@ export interface MezoMessageItem {
   meta: string | null
 }
 
-const NOTE_EYEBROW: Record<CompanionNote['kind'], string> = {
-  nudge: 'Napközi jegyzet',
-  closing: 'Napzárás',
-}
-
 /** A briefing eyebrow-ja hordozhat egy `HH:mm`-et (pl. „Mezo · reggeli briefing · 06:30"). */
 const timeIn = (s: string): string | null => s.match(/\b([01]\d|2[0-3]):[0-5]\d\b/)?.[0] ?? null
 
-export function buildMezoMessages({ briefing, note, briefingDemo }: {
-  briefing: Briefing | null
-  note: CompanionNote | null
-  briefingDemo?: boolean
+/** Local `HH:mm` from a feed message's `generatedAt` ISO date-time. */
+const hhmm = (iso: string): string => {
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+export function buildMezoMessages({ feed, demoBriefing }: {
+  feed: FeedMessage[]
+  demoBriefing: Briefing | null
 }): MezoMessageItem[] {
-  const out: MezoMessageItem[] = []
-  if (briefing) {
-    out.push({
-      id: 'briefing',
+  const out: MezoMessageItem[] = feed.map((m) => ({
+    id: m.kind,
+    eyebrow: m.eyebrow,
+    time: hhmm(m.generatedAt),
+    paragraphs: m.body.map((p) => p.text),
+    refs: m.refs,
+    meta: null,
+  }))
+  // Honest fallback: no generated morning briefing has landed in the feed yet — show the
+  // labelled demo card instead of leaving the thread empty (mock mode: always this branch).
+  if (!feed.some((m) => m.kind === 'morning') && demoBriefing != null) {
+    out.unshift({
+      id: 'briefing-demo',
       eyebrow: 'Reggeli briefing',
-      time: timeIn(briefing.eyebrow),
-      paragraphs: briefing.body.map((p) => p.text),
-      refs: briefing.refs,
-      meta: briefingDemo
-        ? 'Demo tartalom'
-        : briefing.confidence != null
-          ? `Confidence ${Math.round(briefing.confidence * 100)}%`
-          : null,
-    })
-  }
-  if (note) {
-    out.push({
-      id: 'note',
-      eyebrow: NOTE_EYEBROW[note.kind],
-      time: note.window || null,
-      paragraphs: [note.text],
-      refs: [],
-      meta: null,
+      time: timeIn(demoBriefing.eyebrow),
+      paragraphs: demoBriefing.body.map((p) => p.text),
+      refs: demoBriefing.refs,
+      meta: 'Demo tartalom',
     })
   }
   return out

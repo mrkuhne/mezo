@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRep
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -91,6 +92,7 @@ public class ContextSnapshotAssembler {
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
+    private final WeightLogRepository weightLogRepository;
     private final GoalRepository goalRepository;
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleService gymScheduleService;
@@ -120,20 +122,37 @@ public class ContextSnapshotAssembler {
 
     public String render(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"
-                + profileBlock(userId, today) + '\n'
+                + profileBlock(userId, today, true) + '\n'
                 + goalBlock(userId, today) + '\n'
                 + trainBlock(userId, today) + '\n'
                 + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
-                + recoveryBlock(userId);
+                + recoveryBlock(userId, true);
     }
 
-    private String profileBlock(UUID userId, LocalDate today) {
+    /**
+     * The morning-message variant (companion-feed, spec §3): same block composition as
+     * {@link #render}, but strips weight/sleep entirely at the source — the morning message is
+     * generated BEFORE those get logged for the day, and a prompt prohibition alone is not
+     * enough (the model would still see and could still leak the numbers).
+     */
+    public String renderWithoutBiometrics(UUID userId, LocalDate today) {
+        return HEADER + today + "):\n"
+                + profileBlock(userId, today, false) + '\n'
+                + goalBlock(userId, today) + '\n'
+                + trainBlock(userId, today) + '\n'
+                + growthBlock(userId, today) + '\n'
+                + practiceBlock(userId, today) + '\n'
+                + fuelBlock(userId, today) + '\n'
+                + medicationBlock(userId, today) + '\n'
+                + recoveryBlock(userId, false);
+    }
+
+    private String profileBlock(UUID userId, LocalDate today, boolean withWeight) {
         BiometricProfileEntity profile =
                 biometricProfileRepository.findByCreatedByAndDeletedFalse(userId).orElse(null);
-        WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         StringBuilder b = new StringBuilder("[Profil] ");
         if (profile == null) {
             b.append(NO_DATA);
@@ -144,7 +163,16 @@ public class ContextSnapshotAssembler {
             }
             b.append(", ").append("M".equals(profile.getSex()) ? "férfi" : "nő");
         }
+        if (!withWeight) {
+            return b.toString();
+        }
+        b.append("; mérés: ");
+        weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
+                .ifPresentOrElse(
+                        w -> b.append(num(w.getWeightKg())).append(" kg (").append(w.getDate()).append(')'),
+                        () -> b.append(NO_DATA));
         b.append("; súlytrend: ");
+        WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         // empty series = no weigh-ins at all — the service's zeros would read as fabricated numbers
         if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
             b.append(NO_DATA);
@@ -456,19 +484,23 @@ public class ContextSnapshotAssembler {
                 + cycle.phaseLabel() + ")";
     }
 
-    private String recoveryBlock(UUID userId) {
-        StringBuilder b = new StringBuilder("[Regeneráció] alvás");
-        SleepLogEntity sleep =
-                sleepLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDesc(userId).orElse(null);
-        if (sleep == null) {
-            b.append(": ").append(NO_DATA);
-        } else {
-            b.append(" (").append(sleep.getDate()).append("): ").append(num(sleep.getDurationH())).append(" h");
-            if (sleep.getQuality() != null) {
-                b.append(", minőség ").append(sleep.getQuality()).append("/5");
+    private String recoveryBlock(UUID userId, boolean withSleep) {
+        StringBuilder b = new StringBuilder("[Regeneráció]");
+        if (withSleep) {
+            b.append(" alvás");
+            SleepLogEntity sleep =
+                    sleepLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDesc(userId).orElse(null);
+            if (sleep == null) {
+                b.append(": ").append(NO_DATA);
+            } else {
+                b.append(" (").append(sleep.getDate()).append("): ").append(num(sleep.getDurationH())).append(" h");
+                if (sleep.getQuality() != null) {
+                    b.append(", minőség ").append(sleep.getQuality()).append("/5");
+                }
             }
+            b.append(";");
         }
-        b.append("; check-in");
+        b.append(" check-in");
         CheckInEntity checkIn = checkInRepository
                 .findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc(userId).orElse(null);
         if (checkIn == null) {

@@ -139,6 +139,29 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRender_shouldShowLatestMeasurementBesideTrend_whenWeighInsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        weightLogPopulator.createWeightLog(owner, today.minusDays(3), new BigDecimal("97.5"));
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("96.4"));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: 96.4 kg (" + today + ")");
+        assertThat(snapshot).contains("súlytrend:");
+    }
+
+    @Test
+    void testRender_shouldShowNoDataMeasurement_whenNoWeighIns() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: nincs adat");
+    }
+
+    @Test
     void testRender_shouldPickCurrentWeekSegmentAndPlanner_whenActiveGoalWithPrescription() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
@@ -449,5 +472,23 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
 
         assertThat(assembler.render(owner, today)).isEqualTo(assembler.render(owner, today));
+    }
+
+    @Test
+    void testRenderWithoutBiometrics_shouldOmitWeightAndSleep_whenDataExists() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        biometricProfilePopulator.create(owner);
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("85.0"));
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.2"), 4);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, "fáradtan ébredtem");
+
+        String snapshot = assembler.renderWithoutBiometrics(owner, today);
+
+        assertThat(snapshot)
+            .doesNotContain("súlytrend")
+            .doesNotContain("mérés:")
+            .doesNotContain("alvás (");
+        assertThat(snapshot).contains("[Cél]").contains("[Edzés]").contains("check-in");
     }
 }

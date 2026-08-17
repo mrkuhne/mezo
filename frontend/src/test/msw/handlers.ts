@@ -293,10 +293,9 @@ export const handlers = [
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
 
-  // Proactive briefing (B1.2) — default: honest 404 "no generated briefing yet", so Today
-  // tests keep rendering the labelled static fallback. Tests with a real briefing override
-  // with server.use(http.get(..., () => HttpResponse.json(fixture))).
-  http.get(`${API_BASE}/api/proactive/briefing`, () => new HttpResponse(null, { status: 404 })),
+  // Unified companion-message feed (companion-feed, mezo-gst9) — default: honest empty array
+  // (never a 404 — a list endpoint, the P1 precedent). Tests override with server.use(...).
+  http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json([])),
 
   // Proactive weekly suggestion (W1) — default: honest 404, the Weekly card keeps its placeholder.
   http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => new HttpResponse(null, { status: 404 })),
@@ -315,9 +314,6 @@ export const handlers = [
 
   // Proactive memoir (W2) — default: honest 404, MemoirPage renders its "készül" state.
   http.get(`${API_BASE}/api/proactive/memoir`, () => new HttpResponse(null, { status: 404 })),
-
-  // Proactive heartbeat (H1) — default: honest 404, the Today CompanionNoteCard stays absent.
-  http.get(`${API_BASE}/api/proactive/heartbeat`, () => new HttpResponse(null, { status: 404 })),
 
   // Proactive prediction (P1) — default: honest empty ARRAY (list endpoint, never 404); the
   // PredictionsPage renders its "still learning" null-state.

@@ -3,8 +3,7 @@
 // so consumer import paths and the dual-mode contract stay stable.
 export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats } from '@/data/today/todayHooks'
 export { useCheckins } from '@/data/today/checkinHooks'
-export { useBriefing } from '@/data/today/briefingHooks'
-export { useCompanionNote } from '@/data/today/heartbeatHooks'
+export { useCompanionFeed } from '@/data/today/feedHooks'
 export { useSleep, useSleepGoal, useSleepGoalActions, useSleepShot } from '@/data/me/sleepHooks'
 export { useProfile } from '@/data/me/meHooks'
 export { usePeople } from '@/data/me/peopleHooks'

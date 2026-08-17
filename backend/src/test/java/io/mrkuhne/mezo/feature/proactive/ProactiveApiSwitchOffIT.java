@@ -10,9 +10,9 @@ import org.springframework.test.context.TestPropertySource;
 class ProactiveApiSwitchOffIT extends ApiIntegrationTest {
 
     @Test
-    void testGetBriefing_shouldReturn404_whenProactiveSwitchedOff() {
+    void testGetFeed_shouldReturn404_whenProactiveSwitchedOff() {
         String body = getForBody(
-                "/api/proactive/briefing", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
@@ -29,14 +29,6 @@ class ProactiveApiSwitchOffIT extends ApiIntegrationTest {
     void testGetMemoir_shouldReturn404_whenProactiveSwitchedOff() {
         String body = getForBody(
                 "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
-
-        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
-    }
-
-    @Test
-    void testGetHeartbeat_shouldReturn404_whenProactiveSwitchedOff() {
-        String body = getForBody(
-                "/api/proactive/heartbeat", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }

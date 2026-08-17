@@ -637,6 +637,20 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202608161200_mezo-q71s_llm_log_conversation_history.sql
   - changeSet:
+      id: "1.0.0:202608151200_mezo-gst9_create_companion_message"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151200_mezo-gst9_create_companion_message.sql
+  - changeSet:
+      id: "1.0.0:202608151230_mezo-gst9_drop_briefing_heartbeat_note"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
+  - changeSet:
       id: "1.0.0:202608161200_mezo-meyc.1_create_meso_template"
       author: daniel.kuhne
       changes:

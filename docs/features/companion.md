@@ -799,9 +799,11 @@ defaults (7 days / 4 weeks).
 
 **The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
 (`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with eight lines in
-render() order — `[Profil]` (biometric profile + `WeightTrendService` trend; an empty weigh-in
-series renders `nincs adat`, and rates are omitted while `dataSufficiency = NONE` — a zero trend
-would be a fabricated number), `[Cél]` (active goal, derived current week
+render() order — `[Profil]` (biometric profile + the latest actual weigh-in beside the
+`WeightTrendService` EWMA trend — `WeightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc`
+renders `mérés: {weight} kg ({date})`, or `mérés: nincs adat` with no weigh-in row; an empty
+EWMA series renders `súlytrend: nincs adat`, and rates are omitted while `dataSufficiency = NONE`
+— a zero trend would be a fabricated number), `[Cél]` (active goal, derived current week
 `DAYS(startDate→today)/7+1`, the prescription segment whose `fromWeek..toWeek` contains it, the
 goal's `mealsPerDay`, and the day's `ébredés`/`lefekvés` anchor resolved via `SleepAnchorPort`
 from the sleep goal — never the retired goal wake/bed columns; the resolver always returns an
@@ -844,6 +846,22 @@ active med with no dose would render `nincs rögzített dózis` — honest zero 
 `snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
 features; ArchUnit's cycle rule guards the reverse).
+
+**The biometrics-free variant (companion-feed, `mezo-gst9`).** `renderWithoutBiometrics(userId,
+today)` is a second entry point alongside `render`, used ONLY by
+`feature/proactive/service/CompanionMessageGenerator.generateMorning`. It composes the SAME eight
+blocks in the SAME order, but `profileBlock`/`recoveryBlock` each take a `withWeight`/`withSleep`
+boolean: `render` passes `true` (the full `[Profil]` mérés+trend line, the full `[Regeneráció]`
+sleep line); `renderWithoutBiometrics` passes `false`, so `[Profil]` stops after the height/age/sex
+clause (no `mérés:`/`súlytrend:` at all) and `[Regeneráció]` renders only the latest check-in (no
+sleep line). This exists because the companion-feed `morning` message is generated BEFORE the
+day's sleep/weight can be logged — the design decision (spec §3) is that the morning message must
+never discuss sleep or weight at all, and a prompt instruction alone can't guarantee that (the
+model still sees and could still leak numbers that are merely "please don't mention" in a payload
+it can read). Stripping the two blocks **at the source** removes the leak vector structurally
+instead of relying on prompt discipline. Every OTHER companion-feed kind (`sleep`/`weight`/
+`midday`/`evening`) calls the ordinary `render` — only `morning` is biometrics-free. See
+[proactive.md §1/§3](proactive.md) for the generator side.
 
 **The knowledge-fact injection (V1.1).** `KnowledgeFactService.renderPromptBlock(userId)`
 (`service/KnowledgeFactService.java`) loads the top-N (`mezo.companion.facts.top-n`)
@@ -1485,8 +1503,8 @@ compile error.
 
 ### 5.5 Companion ← other features (✅ V0.3 wired — read-only)
 **`ContextSnapshotAssembler` is live**: companion now injects reads from **twelve** other
-features — `biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `SleepLogRepository`,
-`CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
+features — `biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `WeightLogRepository`,
+`SleepLogRepository`, `CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
 (`MesocycleRepository`, `GymScheduleService`, `SportService`, `WorkoutSessionRepository.findDoneInstanceDates`,
 `SportSessionRepository`/`RunSessionLogRepository` since-date finders), `gamification`
 (`GamificationService.getProfile`), `progression` (`ProgressionService.getProfile`,
@@ -1705,9 +1723,10 @@ two-part echo with the history rendered INSIDE `system=[…]`; the three-way spl
 test surface that would fail if the history were ever accidentally reglued into the system prompt
 (see also the dedicated history-separation IT below).
 
-**`ContextSnapshotAssemblerIT` (V0.3, 17 tests)** — the snapshot is fully assertable without any
+**`ContextSnapshotAssemblerIT` (V0.3, 21 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
-targets still render), profile+trend, current-week segment + planner selection, train digest +
+targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
+`nincs adat` with no weigh-in row), current-week segment + planner selection, train digest +
 schedules, digest-window exclusion, **tomorrow's dated gym+sport+run resolution (mezo-xixu — the
 regression guard for the observed hallucination bug: tomorrow's meso-template gym day + exercises,
 the matching sport-schedule slot, the active running block's prescribed session for that weekday,

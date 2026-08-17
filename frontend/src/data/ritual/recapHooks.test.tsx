@@ -88,7 +88,7 @@ describe('useDayRecap (real mode)', () => {
 
     expect(result.current.checkinsDone).toBe(3)
     expect(result.current.thinDay).toBe(false)
-    // No heartbeat fixture override -> the default 404 -> null.
+    // No feed fixture override -> the default empty array -> no evening message -> null.
     expect(result.current.closingNote).toBeNull()
   })
 
@@ -101,24 +101,30 @@ describe('useDayRecap (real mode)', () => {
     expect(training).toEqual({ icon: '🏋️', label: 'Pull Day', meta: '✓', done: false })
   })
 
-  test('closingNote is non-null ONLY when the companion note kind is "closing"', async () => {
+  test('closingNote is non-null ONLY when the feed carries an "evening" kind message', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(
-      http.get(`${API_BASE}/api/proactive/heartbeat`, () =>
-        HttpResponse.json({ window: 'evening', kind: 'closing', content: 'Szép napod volt, pihenj jól.' })),
+      http.get(`${API_BASE}/api/proactive/feed`, () =>
+        HttpResponse.json([{
+          date: DATE, kind: 'evening', eyebrow: 'Napzárás',
+          body: ['Szép napod volt, pihenj jól.'], refs: [], generatedAt: `${DATE}T20:30:00Z`,
+        }])),
     )
     const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.closingNote).toBe('Szép napod volt, pihenj jól.'))
   })
 
-  test('closingNote stays null for a "nudge" kind note', async () => {
+  test('closingNote stays null for a "midday" kind message', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(
-      http.get(`${API_BASE}/api/proactive/heartbeat`, () =>
-        HttpResponse.json({ window: 'midday', kind: 'nudge', content: 'Igyál vizet.' })),
+      http.get(`${API_BASE}/api/proactive/feed`, () =>
+        HttpResponse.json([{
+          date: DATE, kind: 'midday', eyebrow: 'Napközi jegyzet',
+          body: ['Igyál vizet.'], refs: [], generatedAt: `${DATE}T12:30:00Z`,
+        }])),
     )
     const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
-    // Give the heartbeat query a chance to resolve before asserting the negative.
+    // Give the feed query a chance to resolve before asserting the negative.
     await waitFor(() => expect(result.current.events.length).toBeGreaterThan(0))
     await new Promise((r) => setTimeout(r, 20))
     expect(result.current.closingNote).toBeNull()
@@ -174,6 +180,6 @@ describe('useDayRecap (mock mode)', () => {
     expect(fociEvents.every((e) => e.done === false)).toBe(true) // reflection is null in the seed
 
     expect(result.current.checkinsDone).toBe(2) // initialCheckins: 2 'done'
-    expect(result.current.closingNote).toBeNull() // useCompanionNote is always null in mock mode
+    expect(result.current.closingNote).toBeNull() // useCompanionFeed is always [] in mock mode
   })
 })

@@ -19,7 +19,7 @@ export const notificationApi = {
       method: 'DELETE',
     }),
   test: () => apiFetch<TestResponse>('/api/notification/test', { method: 'POST' }),
-  /** All 11 categories, always — a stored row wins, a missing one reports the code default. */
+  /** All 14 categories, always — a stored row wins, a missing one reports the code default. */
   prefs: () => apiFetch<NotificationPrefListResponse>('/api/notification/pref'),
   /** Per-category upsert (never a full replace) — safe to send just the one changed category. */
   putPrefs: (prefs: NotificationPref[]) =>
