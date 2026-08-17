@@ -19,8 +19,10 @@ public final class ToolText {
     private ToolText() {
     }
 
-    /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string. */
-    static String num(BigDecimal v) {
+    /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string.
+     *  Public because every prompt/snapshot renderer needs exactly this rendering — it was
+     *  copy-pasted into three of them while this helper stayed package-private. */
+    public static String num(BigDecimal v) {
         return v == null ? "?" : v.stripTrailingZeros().toPlainString();
     }
 

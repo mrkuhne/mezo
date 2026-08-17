@@ -24,14 +24,16 @@ import org.springframework.stereotype.Component;
  * for every user, resolves the day's anchors, evaluates what is due this minute, and fires
  * whatever has not already been sent today.
  *
- * <p><b>The scheduler pool is size 1</b> ({@code SchedulingConfiguration} defines no
- * {@code TaskScheduler}, and nothing widens {@code spring.task.scheduling.pool.size}) — every one
- * of the app's {@code @Scheduled} methods, this one included, shares that single thread. So this
- * class only ever does DB-only, in-process work on the scheduler thread; the actual outbound push
- * (a 5 s-timeout HTTP call per device) is handed to {@link PushDispatchExecutor}'s {@code @Async}
- * method, which runs on Boot's separate {@code applicationTaskExecutor} pool instead. Sending
- * inline here would let one slow push service starve the nightly summary, the dawn briefing, the
- * habit close — every other cron in the app.
+ * <p><b>The scheduler pool is shared</b> ({@code SchedulingConfiguration} defines no
+ * {@code TaskScheduler}; {@code spring.task.scheduling.pool.size} sizes it) — every one of the
+ * app's {@code @Scheduled} methods, this one included, draws from it. So this class only ever
+ * does DB-only, in-process work on the scheduler thread; the actual outbound push (a 5 s-timeout
+ * HTTP call per device) is handed to {@link PushDispatchExecutor}'s {@code @Async} method, which
+ * runs on Boot's separate {@code applicationTaskExecutor} pool instead. Sending inline here would
+ * let one slow push service starve the nightly summary, the dawn briefing, the habit close —
+ * every other cron in the app. The reverse starvation is why the pool is no longer Boot's default
+ * of 1: this tick is the only latency-sensitive job in the app, and a minute spent queued behind
+ * an LLM-heavy generation cron is a minute of pushes lost to the catch-up window (mezo-y33b).
  *
  * <p><b>Write the {@code push_log} row FIRST, then hand off the send</b> (never the other way
  * around): a failed send must not re-fire the same notification on the next minute — a lost

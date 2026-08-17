@@ -76,6 +76,24 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetFeed_shouldStillServeExistingMessages_whenLazyGenerationThrows() {
+        // The realistic case is a lost insert race against the cron; [fake-fail] reproduces the
+        // shape (generation blows up mid-read) without one. The already-written message must
+        // still reach the reader — and it only can if the generate ran in its OWN transaction.
+        dailySummaryPopulator.summary(ownerId(), LocalDate.now().minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(ownerId(), LocalDate.now(), "06:30", 4, 2, "[fake-fail]");
+        companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+                CompanionMessageEntity.KIND_SLEEP, "Jó alvás", List.of("Pihenten kelsz."));
+
+        List<FeedMessageResponse> feed = getForList(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
+
+        assertThat(feed).extracting(FeedMessageResponse::getKind)
+                .containsExactly(FeedMessageResponse.KindEnum.SLEEP);
+        assertThat(feed.get(0).getEyebrow()).isEqualTo("Jó alvás");
+    }
+
+    @Test
     void testGetFeed_shouldLazilyGenerateMorning_whenTodayAndMissing() {
         dailySummaryPopulator.summary(ownerId(), LocalDate.now().minusDays(1), "Tegnap pihenőnap volt.");
         checkInPopulator.createCheckIn(ownerId(), LocalDate.now(), "06:30", 4, 2,
