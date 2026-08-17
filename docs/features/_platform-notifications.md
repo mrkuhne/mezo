@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: done
-updated: 2026-08-16
+updated: 2026-08-17
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -432,12 +432,19 @@ via `onMutate`/`onError` rollback.
   from the k3s backend on 2026-07-29 (N1's exit criterion — bd `mezo-h4wp.6.1`: "confirmed by
   Daniel"). N2's dispatcher and N3's FE feed both build on that proven platform path, not on an
   unverified assumption.
-- **The scheduler pool is size 1, shared by every `@Scheduled` method in the app — this is the most
+- **The scheduler pool is shared by every `@Scheduled` method in the app — this is the most
   important gotcha in the whole feature.** `NotificationDispatchJob` is the app's **first per-minute**
   cron; every other job anchors on a rare fixed time. `SchedulingConfiguration` defines no
-  `TaskScheduler` and nothing widens `spring.task.scheduling.pool.size`, so Boot's default pool size
-  of 1 serializes it against the nightly summary, the dawn briefing, the habit close — every other
-  cron. **`NotificationDispatchJob` therefore does DB-only due-computation on the scheduler thread and
+  `TaskScheduler`, so the pool is Boot's, sized by `spring.task.scheduling.pool.size` — and at Boot's
+  default of **1** every job serializes against every other: the nightly summary, the dawn
+  companion-feed generation, the habit close. That default is why `mezo-y33b` **widened the pool to
+  4** (`application.yml`, `spring.task.scheduling`): the dispatcher is the app's only
+  latency-sensitive job, and a tick delayed past `mezo.notification.catch-up-minutes` (2) by a
+  minutes-long LLM generation cron drops that minute's pushes permanently. Spring never re-enters a
+  single `@Scheduled` method concurrently, so widening only lets *different* (already per-user
+  idempotent) jobs overlap. The offload below is unchanged and still required — a wider pool bounds
+  the queueing, it does not make a blocking HTTP send on a scheduler thread acceptable.
+  **`NotificationDispatchJob` therefore does DB-only due-computation on the scheduler thread and
   hands the actual outbound HTTP send to `PushDispatchExecutor`**, a **separate `@Component`**
   (`service/PushDispatchExecutor.java`) whose `@Async` method runs on Boot's own
   `applicationTaskExecutor` pool instead. It must be a separate bean: `@Async` only takes effect

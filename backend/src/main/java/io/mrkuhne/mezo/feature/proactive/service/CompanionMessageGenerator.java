@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
+import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -182,7 +183,7 @@ public class CompanionMessageGenerator {
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "morning", null, null),
                 () -> companionLlm.complete(MORNING_PROMPT, payload.toString()));
-        ParsedMessage parsed = parse(answer);
+        ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_MORNING);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {
             log.warn("Unusable morning-message answer for {} on {} — no row persisted", userId, date);
@@ -224,7 +225,7 @@ public class CompanionMessageGenerator {
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(earlierMessagesBlock(userId, date));
         payload.append("\n\nMOST RÖGZÍTETT ALVÁS (").append(sleep.getDate()).append("): ")
-                .append(num(sleep.getDurationH())).append(" h")
+                .append(ToolText.num(sleep.getDurationH())).append(" h")
                 .append(sleep.getQuality() != null ? ", minőség " + sleep.getQuality() + "/5" : "")
                 .append(sleep.getAwakenings() != null ? ", ébredések: " + sleep.getAwakenings() : "");
         appendCandidates(payload, candidates);
@@ -232,7 +233,7 @@ public class CompanionMessageGenerator {
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "sleep", null, null),
                 () -> companionLlm.complete(SLEEP_PROMPT, payload.toString()));
-        ParsedMessage parsed = parse(answer);
+        ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_SLEEP);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {
             log.warn("Unusable sleep-reaction answer for {} on {} — no row persisted", userId, date);
@@ -275,17 +276,17 @@ public class CompanionMessageGenerator {
         payload.append(earlierMessagesBlock(userId, date));
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ")
-                .append(num(weight.getWeightKg())).append(" kg")
+                .append(ToolText.num(weight.getWeightKg())).append(" kg")
                 .append(trend.getLatestTrendKg() != null
-                        ? "; trendérték (EWMA, simított): " + num(trend.getLatestTrendKg()) + " kg" : "")
+                        ? "; trendérték (EWMA, simított): " + ToolText.num(trend.getLatestTrendKg()) + " kg" : "")
                 .append(trend.getWeeklyRateKgPerWeek() != null
-                        ? ", heti " + num(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
+                        ? ", heti " + ToolText.num(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
         appendCandidates(payload, candidates);
 
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "weight", null, null),
                 () -> companionLlm.complete(WEIGHT_PROMPT, payload.toString()));
-        ParsedMessage parsed = parse(answer);
+        ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_WEIGHT);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {
             log.warn("Unusable weight-reaction answer for {} on {} — no row persisted", userId, date);
@@ -361,11 +362,6 @@ public class CompanionMessageGenerator {
         }
     }
 
-    /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string. */
-    private static String num(BigDecimal v) {
-        return v == null ? "?" : v.stripTrailingZeros().toPlainString();
-    }
-
     /** Today's already-persisted feed messages as a "ne ismételd" block; "" when none. */
     private String earlierMessagesBlock(UUID userId, LocalDate date) {
         List<CompanionMessageEntity> earlier =
@@ -379,7 +375,7 @@ public class CompanionMessageGenerator {
     }
 
     /** Defensive first-{ to last-} JSON parse (the FactExtractionService idiom); null on any failure. */
-    private ParsedMessage parse(String answer) {
+    private ParsedMessage parse(String answer, String kind) {
         if (answer == null) {
             return null;
         }
@@ -391,7 +387,7 @@ public class CompanionMessageGenerator {
         try {
             return objectMapper.readValue(answer.substring(start, end + 1), ParsedMessage.class);
         } catch (Exception e) {
-            log.warn("Morning-message answer failed to parse: {}", e.getMessage());
+            log.warn("{}-message answer failed to parse: {}", kind, e.getMessage());
             return null;
         }
     }
