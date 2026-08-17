@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeBaseline;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.MesocycleClosed;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,6 +77,9 @@ public class TrainService {
     // behind the volume-progression switch (gate bean absent ⇔ switch off — mirrors WorkoutService).
     private final VolumeProgressionService volumeProgressionService;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
+    // mezo-meyc.3: fires only on a REAL close (never the idempotent re-close or fill-if-null
+    // branches) — the companion AI-review generator's AFTER_COMMIT trigger (S3 task 15).
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
         List<MesocycleEntity> mesos = mesocycleRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(createdBy);
@@ -251,6 +256,10 @@ public class TrainService {
      * auto-archived by starting the next one (the single-active invariant) gets its report through
      * the regenerate/backfill path and would otherwise have no way to ever receive the owner's note —
      * S2 has no other self-eval write path. Fill-if-empty only; an existing note is untouchable.
+     *
+     * <p>mezo-meyc.3: publishes {@link MesocycleClosed} on the REAL close branch ONLY — never on the
+     * idempotent re-close nor the fill-if-null branch above, both of which leave {@code ai_eval}
+     * untouched and would otherwise re-trigger the companion's AI-review generator for nothing.
      */
     @Transactional
     public MesocycleResponse closeMesocycle(UUID createdBy, UUID id, String selfEval) {
@@ -264,6 +273,9 @@ public class TrainService {
             if (hasNote) {
                 report.setSelfEval(selfEval);
             }
+            // Real close only — the report row is persisted (computeAndStore already saved it);
+            // AFTER_COMMIT consumers see it once this transaction lands.
+            eventPublisher.publishEvent(new MesocycleClosed(createdBy, id));
         } else if (hasNote) {
             // No report row yet ⇒ nothing to attach the note to; the owner regenerates first.
             reportRepository.findByMesocycleIdAndCreatedByAndDeletedFalse(id, createdBy)

@@ -194,11 +194,11 @@ describe('useMesoReport (mock mode)', () => {
     expect(result.current.report?.title).toBe('Recovery rebuild · Tél')
     expect(result.current.pending).toBe(false)
     expect(result.current.notFound).toBe(false)
-    // S2 keeps the AI block dark — the page must be able to hide it entirely. `pending` is
-    // what the backend actually writes, so the fixture must say so (and must not poll).
-    expect(result.current.report?.aiEvalStatus).toBe('pending')
-    expect(result.current.report?.aiEvalEnabled).toBe(false)
-    expect(result.current.report?.context).toBeNull()
+    // S3 (mezo-meyc.3): the fixture carries a READY narrative + a populated context, so
+    // the page renders both blocks and — since it is not `pending` — never starts the poll.
+    expect(result.current.report?.aiEvalStatus).toBe('ready')
+    expect(result.current.report?.aiEvalEnabled).toBe(true)
+    expect(result.current.report?.context).not.toBeNull()
   })
 
   it('reports notFound for any other id', () => {
