@@ -41,12 +41,12 @@ Every `@Tool` description MUST have all four of the following, in this order:
 Real code, `MedicationTools.java` — all four rules present, tight and unambiguous:
 
 ```java
-@Tool(name = "get_medication", description = "Gyógyszer: retatrutid-ciklus vagy általános "
-        + "gyógyszer-áttekintés. scope=reta (alapértelmezés) — az aktív gyógyszer retatrutid-ciklusállása: "
+@Tool(name = "get_medication", description = "Gyógyszer: ciklusállás vagy általános "
+        + "gyógyszer-áttekintés. scope=cycle (alapértelmezés) — az aktív gyógyszer ciklusállása: "
         + "hányadik nap, fázis, utolsó dózis, következő esedékes nap, utolsó dózisok. scope=all — az "
         + "aktív gyógyszer általános adatai: név, hatóanyag, adagolási rend, alapdózis, ciklusállás "
         + "(ha van már rögzített dózis), utolsó dózisok. Használd, amikor a user a gyógyszeréről / a "
-        + "retatrutid-ciklusáról kérdez. scope: reta (alapértelmezés), all.")
+        + "gyógyszer-ciklusáról kérdez. scope: cycle (alapértelmezés), all.")
 ```
 
 Another real example worth studying, `InsightsTools.java` — because it shows rule 4 (no

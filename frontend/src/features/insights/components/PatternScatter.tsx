@@ -1,3 +1,4 @@
+import { axisEndLabels } from '@/features/insights/logic/metricFormat'
 import { fitLine } from '@/features/insights/logic/patternHistory'
 import type { AlignedDay, PatternMonitorPair } from '@/data/types'
 
@@ -35,6 +36,7 @@ export function PatternScatter({ days, pair }: { days: AlignedDay[]; pair: Patte
 
   const latest = days.reduce((acc, d) => (d.date > acc.date ? d : acc), days[0])
   const fit = fitLine(days)
+  const xEnds = axisEndLabels(pair.metricAKey)
 
   return (
     <svg
@@ -67,8 +69,8 @@ export function PatternScatter({ days, pair }: { days: AlignedDay[]; pair: Patte
 
       <circle cx={scaleX(latest.a)} cy={scaleY(latest.b)} r="8" fill="none" stroke="var(--accent-base)" strokeWidth="2" />
 
-      <text x={AXIS_X0 + 4} y={AXIS_Y0 + 18} fill="var(--text-disabled)" fontSize="9" textAnchor="start">alacsony</text>
-      <text x={AXIS_X1} y={AXIS_Y0 + 18} fill="var(--text-disabled)" fontSize="9" textAnchor="end">magas</text>
+      <text x={AXIS_X0 + 4} y={AXIS_Y0 + 18} fill="var(--text-disabled)" fontSize="9" textAnchor="start">{xEnds.low}</text>
+      <text x={AXIS_X1} y={AXIS_Y0 + 18} fill="var(--text-disabled)" fontSize="9" textAnchor="end">{xEnds.high}</text>
       <text
         x={14}
         y={(AXIS_Y0 + AXIS_Y1) / 2}

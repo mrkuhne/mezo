@@ -24,8 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
  * story ({@code frontend/src/data/gamification/gamificationMock.ts}) so demo mode and mock mode
  * tell the same story: 240 coins, a living 6-day streak (1 banked saver, {@code lastStreakDate}
  * yesterday so the streak still reads alive on a fresh boot), equipped title "fegyelmezett".
- * Mirrors {@link io.mrkuhne.mezo.feature.medication.MedicationDemoLoader}'s owner resolution
- * (defensive {@code findByEmail(...).orElse(null)} no-op on a non-demodata boot), idempotency
+ * Mirrors the retired medication seeder's owner resolution (mezo-lwmq: the medication seed was
+ * removed — the owner tracks no medication) — defensive {@code findByEmail(...).orElse(null)}
+ * no-op on a non-demodata boot — and its idempotency
  * (skip once the owner already has a profile row) and "static row + one dated transactional row"
  * shape.
  *

@@ -86,17 +86,17 @@ describe('useStack / useProtocol (mock mode)', () => {
     expect(result.current.protocol.occurrences).toHaveLength(8)
   })
 
-  it('addItem with no slotKey uses mockPlaceOccurrence (timing pass) — weekly* lands on wake', async () => {
+  it('addItem with no slotKey uses mockPlaceOccurrence (timing pass) — evening lands on evening', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
       () => ({ protocol: useProtocol(), actions: useProtocolActions() }),
       { wrapper: Wrapper },
     )
-    // 'reta' (medication, timing 'weekly-monday') has no seed occurrence — no dup collision.
-    await act(async () => { await result.current.actions.addItem('reta') })
+    // 'cink' (supplement, timing 'evening') has no seed occurrence — no dup collision.
+    await act(async () => { await result.current.actions.addItem('cink') })
     await waitFor(() => expect(result.current.protocol.occurrences).toHaveLength(9))
-    const added = result.current.protocol.occurrences.find(o => o.pantryItemId === 'reta')
-    expect(added).toMatchObject({ slotKey: 'wake', pinned: false, placementSource: 'rule' })
+    const added = result.current.protocol.occurrences.find(o => o.pantryItemId === 'cink')
+    expect(added).toMatchObject({ slotKey: 'evening', pinned: false, placementSource: 'rule' })
   })
 
   it('moveItem pins the occurrence into the new zone', async () => {
@@ -193,7 +193,7 @@ describe('mockPlaceOccurrence (mezo-vx9v) — mirrors PlacementRules.zoneForTimi
     expect(mockPlaceOccurrence(byId('magnez'))).toMatchObject({ slotKey: 'evening', placementSource: 'rule' }) // evening
     expect(mockPlaceOccurrence(byId('omega3'))).toMatchObject({ slotKey: 'dinner', placementSource: 'rule' }) // dinner
     expect(mockPlaceOccurrence(byId('origin-pwo'))).toMatchObject({ slotKey: 'pre_workout', placementSource: 'rule' }) // pre-workout
-    expect(mockPlaceOccurrence(byId('reta'))).toMatchObject({ slotKey: 'wake', placementSource: 'rule' }) // weekly-monday
+    expect(mockPlaceOccurrence(byId('cink'))).toMatchObject({ slotKey: 'evening', placementSource: 'rule' }) // evening
   })
 
   it('falls back to breakfast/fallback for an unmapped timing (e.g. flexible)', () => {

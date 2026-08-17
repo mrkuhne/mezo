@@ -1,5 +1,5 @@
 import type {
-  RetaDayCell,
+  MedCycleDayCell,
   GymScheduleDay,
   WeeklySupplementRow,
   RecurringPattern,
@@ -13,18 +13,13 @@ export const weekTitle = 'Máj 18 – 24'
 // fuel-plan.jsx FuelPlanPage stats-card Mezo note (81–84) — hand-authored coach prose;
 // real mode returns null (the generated weekly note is proactive-epic work).
 export const weeklyNote =
-  'Most kell egy **középmagas-protein héttel** menni — Reta D3-D5 a peak étvágy-süllyedés.'
+  'Most kell egy **középmagas-protein héttel** menni — a hét közepén a legalacsonyabb az étvágy.'
 
-// fuel-plan.jsx RetaWeekStrip phases (227–235)
-export const retaWeek: RetaDayCell[] = [
-  { d: 1, label: 'Peak', color: 'var(--reta-d1)' },
-  { d: 2, label: 'Peak', color: 'var(--reta-d2)' },
-  { d: 3, label: 'Stable', color: 'var(--reta-d3)' },
-  { d: 4, label: 'Stable', color: 'var(--reta-d4)' },
-  { d: 5, label: 'Stable', color: 'var(--reta-d5)' },
-  { d: 6, label: 'Trough', color: 'var(--reta-d6)' },
-  { d: 7, label: 'Trough', color: 'var(--reta-d7)' },
-]
+// Medication cycle strip (mezo-lwmq): the owner tracks NO medication — an empty week, same as
+// the real-mode ghost. FuelPlanPage's `medCycleWeek.length > 0` gate hides the cycle card in
+// BOTH modes now, consistent with FuelMedicationPage's "Nincs aktív gyógyszer" empty state.
+// Tests that need the populated strip drive it from an explicit fixture instead.
+export const medCycleWeek: MedCycleDayCell[] = []
 
 // fuel-plan.jsx WeeklySupplementGrid DAYS (404) — duplicate 'Sz' = Szerda + Szombat
 export const DAYS_HU = ['H', 'K', 'Sz', 'Cs', 'P', 'Sz', 'V'] as const
@@ -50,7 +45,6 @@ export const weeklySupplements: WeeklySupplementRow[] = [
   { name: 'AAKG (pre-gym)', dose: '6g', days: [1, 1, 1, 1, 1, 0, 0], color: 'var(--warning)' },
   { name: 'Beta-Alanin', dose: '3g', days: [1, 1, 1, 1, 1, 0, 0], color: 'var(--warning)' },
   { name: 'Koffein 200', dose: '1×', days: [0, 0, 1, 0, 1, 0, 0], color: 'var(--warning)', note: 'PR-attempt napokon' },
-  { name: 'Reta · hetente', dose: '6mg', days: [1, 0, 0, 0, 0, 0, 0], color: 'var(--error)' },
 ]
 
 // fuel-plan.jsx FuelPlanPage PatternRow instances (175–199)

@@ -1,41 +1,54 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
-import { QueryWrapper } from '@/test/queryWrapper'
+import { medicationFixture } from '@/test/fixtures/medication'
 
 // FuelMedicationPage reads useMedication (a dual-mode TanStack query, Task 11).
-// Render under a router + QueryClientProvider; the assertions below are mode-agnostic
-// (the seed and the real-mode handler fixture both resolve Retatrutide · retaDay 3 · 3 doses),
-// so the same suite runs green in BOTH modes (mock pin in the outer beforeEach is overridden
-// in the real-mode describe).
-const renderView = () =>
+// Render under a router + QueryClientProvider; both suites drive the populated branch from
+// `medicationFixture` · cycleDay 3 (the app itself seeds no medication, mezo-lwmq — mock mode
+// preloads the fixture into the cache, real mode overrides the handler with it), so the same
+// suite runs green in BOTH modes (mock pin in the outer beforeEach is overridden in the
+// real-mode describe).
+const renderView = (client: QueryClient) =>
   render(
-    <QueryWrapper>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/fuel/gyogyszer']}>
         <FuelMedicationPage />
       </MemoryRouter>
-    </QueryWrapper>,
+    </QueryClientProvider>,
   )
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 describe('FuelMedicationPage (mock mode)', () => {
+  const clientWithFixture = () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['medication'], medicationFixture)
+    return client
+  }
+
   it('renders the medication name + route/cadence/dose card', () => {
-    renderView()
+    renderView(clientWithFixture())
     // Sage Napiv header (Task 7): the .over eyebrow copy is unchanged, only the pghead-np/
     // sage vocabulary + the "＋ Beadás" action chip's accent moved off brand-teal.
     expect(screen.getByText('Fuel · Gyógyszer')).toBeInTheDocument()
-    expect(screen.getByText('Retatrutide')).toBeInTheDocument()
+    // De-branded page title (mezo-lwmq): guards against a regression back to "Reta".
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Gyógyszer')
+    expect(screen.getByText('Teszt gyógyszer')).toBeInTheDocument()
     // route + cadence subtitle on the card (mockup: "subQ injekció · heti · hétfő")
     expect(screen.getByText(/subQ injekció · heti · hétfő/)).toBeInTheDocument()
     // the current dose (defaultDose + unit) appears on the card AND the log rows — at least one
     expect(screen.getAllByText('6 mg').length).toBeGreaterThan(0)
   })
 
-  it('shows the cycle bar with the current day (retaDay 3) outlined in the Stabil phase', () => {
-    renderView()
+  it('shows the cycle bar with the current day (cycleDay 3) outlined in the Stabil phase', () => {
+    renderView(clientWithFixture())
     const bar = screen.getByRole('list', { name: /ciklus/i })
     // 7 cells, one per cycle day
     const cells = within(bar).getAllByRole('listitem')
@@ -47,14 +60,14 @@ describe('FuelMedicationPage (mock mode)', () => {
   })
 
   it('shows the phase note naming the day + Stabil phase', () => {
-    renderView()
+    renderView(clientWithFixture())
     const note = screen.getByTestId('medication-phase-note')
     expect(note.textContent).toMatch(/3\.\s*nap/)
     expect(note.textContent).toMatch(/Stabil/)
   })
 
-  it('lists the 3 seeded doses in the Beadások log, newest first', () => {
-    renderView()
+  it('lists the 3 fixture doses in the Beadások log, newest first', () => {
+    renderView(clientWithFixture())
     const log = screen.getByRole('list', { name: /beadások/i })
     const rows = within(log).getAllByRole('listitem')
     expect(rows).toHaveLength(3)
@@ -65,7 +78,7 @@ describe('FuelMedicationPage (mock mode)', () => {
   })
 
   it('has a "＋ Beadás" button that opens the LogDoseSheet on click', () => {
-    renderView()
+    renderView(clientWithFixture())
     const btn = screen.getByRole('button', { name: /Beadás/ })
     expect(btn).toBeInTheDocument()
     // the sheet is closed until tapped
@@ -77,15 +90,41 @@ describe('FuelMedicationPage (mock mode)', () => {
 })
 
 describe('FuelMedicationPage (real mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
+  })
   afterEach(() => vi.unstubAllEnvs())
 
-  it('renders the medication + cycle + 3 doses from the API handler fixture', async () => {
-    renderView()
-    expect(await screen.findByText('Retatrutide')).toBeInTheDocument()
+  it('renders the medication + cycle + 3 doses from the overridden API handler', async () => {
+    renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
+    expect(await screen.findByText('Teszt gyógyszer')).toBeInTheDocument()
     const note = await screen.findByTestId('medication-phase-note')
     expect(note.textContent).toMatch(/Stabil/)
     const log = screen.getByRole('list', { name: /beadások/i })
     expect(within(log).getAllByRole('listitem')).toHaveLength(3)
+  })
+})
+
+describe('FuelMedicationPage (nincs aktív gyógyszer)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('üres állapotot mutat, és nincs "＋ Beadás" akció', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () =>
+      HttpResponse.json({
+        medication: {
+          id: '', name: '', activeIngredient: '', route: '', cadence: '',
+          defaultDose: 0, doseUnit: '', active: false,
+          cycle: { cycleLengthDays: 0, phases: [] },
+        },
+        cycle: { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] },
+        recentDoses: [],
+      })))
+    renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
+    expect(await screen.findByTestId('medication-empty')).toBeInTheDocument()
+    expect(screen.getByText('Nincs aktív gyógyszer')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Beadás/ })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('medication-phase-note')).not.toBeInTheDocument()
   })
 })

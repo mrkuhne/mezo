@@ -98,4 +98,17 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         assertThat(response.getDegraded()).isFalse();
         assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
     }
+
+    @Test
+    void testSendMessage_shouldNotRetry_whenSpeculationIsLinguisticallyMarked() {
+        UUID userId = databasePopulator.populateUser("advisor-marked@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse response = chatService.sendMessage(userId, conversation.getId(),
+                request("kérdés " + FakeCompanionLlm.MARKED_SPECULATION));
+
+        // A jelölt sejtés a mezo-q71s politika szerint MEGENGEDETT — nem indít korrekciós kört.
+        assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
+        assertThat(response.getDegraded()).isFalse();
+    }
 }

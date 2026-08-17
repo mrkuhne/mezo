@@ -440,16 +440,16 @@ mezo:
           metric-a: late-meal-hour
           metric-b: sleep-quality
           lag-days: 1
-        - key: reta-cycle-day~daily-kcal
+        - key: medication-cycle-day~daily-kcal
           category: physiology
           label: Fiziológia
-          title: "Reta-ciklusnap ↔ napi kalória"
+          title: "Gyógyszer-ciklusnap ↔ napi kalória"
           mechanism: "A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt."
           question: "A ciklus vége felé nő az étvágyad?"
           expected-direction: positive
           when-positive-hu: "a ciklus későbbi napjain {erősség} többet ettél"
           when-negative-hu: "a ciklus későbbi napjain {erősség} kevesebbet ettél"
-          metric-a: reta-cycle-day
+          metric-a: medication-cycle-day
           metric-b: daily-kcal
           lag-days: 0
         - key: sport-load~next-day-gym-volume
@@ -645,16 +645,16 @@ mezo:
           metric-a: meal-score
           metric-b: checkin-energy
           lag-days: 1
-        - key: reta-dose~daily-kcal
+        - key: medication-dose~daily-kcal
           category: physiology
           label: Fiziológia
-          title: "Reta-dózis ↔ napi kalória"
+          title: "Gyógyszer-dózis ↔ napi kalória"
           mechanism: "Az étvágy-elnyomás dózisfüggő lehet — magasabb dózis, kevesebb kalória."
-          question: "Kevesebbet eszel magasabb Reta-dózison?"
+          question: "Kevesebbet eszel magasabb dózison?"
           expected-direction: negative
           when-positive-hu: "a magasabb dózisú napokon {erősség} többet ettél"
           when-negative-hu: "a magasabb dózisú napokon {erősség} kevesebbet ettél"
-          metric-a: reta-dose-mg
+          metric-a: medication-dose-mg
           metric-b: daily-kcal
           lag-days: 0
         - key: sport-load~next-sleep-quality

@@ -124,6 +124,65 @@ class LlmLogWriterIT extends AbstractIntegrationTest {
     }
 
     /**
+     * mezo-q71s: {@code conversation_history} keeps the audit whole now that the chat history rides
+     * the port as real prior messages instead of being rendered into the system prompt — it must
+     * land on the row, and {@code system_prompt} must NOT contain it (a half-true audit column is
+     * worse than a missing one).
+     */
+    @Test
+    void testPersist_shouldMapConversationHistory_whenChatCallHasPriorTurns() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT).requestedModel("gemini-2.5-flash").servedModel("gemini-2.5-flash")
+            .status(CallStatus.SUCCESS).latencyMs(10)
+            .systemPrompt("sys").conversationHistory("Daniel: korábbi kérdés\n").userMessage("és most?")
+            .context(new LlmCallContext("companion_chat", "chat_turn", null, null))
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.parse("2026-07-28T10:00:00Z")));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.getConversationHistory()).contains("Daniel: korábbi kérdés");
+        assertThat(row.getSystemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+    }
+
+    /**
+     * The new column must participate in the SAME payload discipline as the other three: it counts
+     * toward {@code payload_bytes}, gets capped at {@code mezo.llm-log.max-payload-chars}, and its
+     * own overflow sets {@code truncated} — missing any one of these would be a silent audit defect.
+     */
+    @Test
+    void testPersist_shouldCapAndFlagConversationHistory_whenOverCap() {
+        String huge = "h".repeat(70_000);
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT).requestedModel("gemini-2.5-flash")
+            .status(CallStatus.SUCCESS).latencyMs(1)
+            .systemPrompt("sys").conversationHistory(huge).userMessage("hi")
+            .context(LlmCallContext.UNKNOWN)
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.now()));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.isTruncated()).isTrue();
+        assertThat(row.getConversationHistory()).hasSize(llmLogProperties.maxPayloadChars());
+        assertThat(row.getPayloadBytes()).isGreaterThanOrEqualTo(70_000);
+    }
+
+    /** Non-chat pipelines have no conversation to lose — the column must stay null (mezo-q71s). */
+    @Test
+    void testPersist_shouldLeaveConversationHistoryNull_whenRecordHasNone() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.SMART).requestedModel("gemini-2.5-pro")
+            .status(CallStatus.SUCCESS).latencyMs(1).userMessage("hi")
+            .context(LlmCallContext.UNKNOWN)
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.now()));
+
+        assertThat(llmLogRepository.findAll().getFirst().getConversationHistory()).isNull();
+    }
+
+    /**
      * Cost honesty on the generation path (bd mezo-xyud): a PRICED model plus NO usage block must
      * still record {@code cost_usd = null}. Summing four missing counts into {@code 0.000000} would
      * make an unknown-cost call indistinguishable from a genuinely free one — the exact thing the

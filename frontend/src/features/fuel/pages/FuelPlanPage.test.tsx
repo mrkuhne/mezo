@@ -1,8 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { medicationFixture } from '@/test/fixtures/medication'
 
 // FuelPlanPage reads the composed dual-mode useFuelWeek() (Train + medication + week rollup
 // queries) and useTodayScenario() (a ['medication'] query), so the view needs a QueryClient
@@ -18,11 +22,14 @@ describe('FuelPlanPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('renders the demo title, weekly stats, reta strip and rhythm grid', () => {
+  it('renders the demo title, weekly stats and rhythm grid; hides the medication cycle card (nincs gyógyszer)', () => {
     renderView()
     expect(screen.getByText('Máj 18 – 24')).toBeInTheDocument()
-    expect(screen.getByText(/Reta cycle · 7 nap/)).toBeInTheDocument()
-    expect(screen.getByText('D3')).toBeInTheDocument()
+    // mezo-lwmq: the owner tracks no medication — the mock seed's cycle week is empty, so the
+    // `medCycleWeek.length > 0` gate hides the card, consistent with FuelMedicationPage's own
+    // "Nincs aktív gyógyszer" empty state. See FuelPlanPage (real mode) below for the populated
+    // card, driven from the neutral medicationFixture.
+    expect(screen.queryByText(/Gyógyszer-ciklus · 7 nap/)).not.toBeInTheDocument()
     expect(screen.getByText('Heti supplement-térkép')).toBeInTheDocument()
     expect(screen.getByText('92%')).toBeInTheDocument()
   })
@@ -37,7 +44,13 @@ describe('FuelPlanPage (mock mode)', () => {
 })
 
 describe('FuelPlanPage (real mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    // The app itself seeds no medication (mezo-lwmq) — an empty cycle would hide the medication
+    // card entirely, so this suite overrides the handler with the neutral fixture to exercise
+    // the populated-card branch.
+    server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
+  })
   afterEach(() => vi.unstubAllEnvs())
 
   it('renders honest states: derived title, deferred sections hidden, adherence —', async () => {
@@ -52,7 +65,7 @@ describe('FuelPlanPage (real mode)', () => {
     // pattern-engine + supplement-map sections are hidden while empty
     expect(screen.queryByText('Visszatérő minták · Mezo')).not.toBeInTheDocument()
     expect(screen.queryByText('Heti supplement-térkép')).not.toBeInTheDocument()
-    // the Reta card IS present: the medication fixture provides a real cycle (D3)
-    expect(await screen.findByText(/Reta cycle · 7 nap/)).toBeInTheDocument()
+    // the medication cycle card IS present: the medication fixture provides a real cycle (D3)
+    expect(await screen.findByText(/Gyógyszer-ciklus · 7 nap/)).toBeInTheDocument()
   })
 })

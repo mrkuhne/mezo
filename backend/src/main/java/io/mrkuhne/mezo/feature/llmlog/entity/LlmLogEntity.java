@@ -160,6 +160,11 @@ public class LlmLogEntity {
     @Column(name = "system_prompt", columnDefinition = "text")
     private String systemPrompt;
 
+    /** mezo-q71s: a chat beszélgetés-előzménye, amit a modell PRIOR ÜZENETEKKÉNT kapott (nem a
+     *  system prompt része). Nem-chat hívásokon null. */
+    @Column(name = "conversation_history", columnDefinition = "text")
+    private String conversationHistory;
+
     @Column(name = "user_message", columnDefinition = "text")
     private String userMessage;
 

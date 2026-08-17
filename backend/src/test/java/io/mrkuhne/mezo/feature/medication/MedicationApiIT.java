@@ -21,8 +21,8 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * HTTP-level contract IT for the Fuel "Gyógyszer" slice (drives the generated {@code MedicationApi}
- * over the real stack). Logging today's first dose against the owner's Retatrutide row returns 201,
- * and the day read then reports {@code retaDay 1} — the day-of-dose is the first cycle day.
+ * over the real stack). Logging today's first dose against the owner's test medication row returns
+ * 201, and the day read then reports {@code cycleDay 1} — the day-of-dose is the first cycle day.
  */
 class MedicationApiIT extends ApiIntegrationTest {
 
@@ -36,10 +36,10 @@ class MedicationApiIT extends ApiIntegrationTest {
 
     @Test
     void testLogDose_shouldReturn201AndStartCycle_whenPostedToday() {
-        MedicationEntity med = medPop.createReta(ownerId());
+        MedicationEntity med = medPop.createMedication(ownerId());
         // Dose administered TODAY at start-of-day UTC: never in the future regardless of when the
         // suite runs (mezo-yc9z), and the cycle is derived for today, so days-since-last-dose is 0
-        // -> retaDay 1 (the first cycle day).
+        // -> cycleDay 1 (the first cycle day).
         MedicationDoseRequest req = new MedicationDoseRequest();
         req.setDose(new BigDecimal("6"));
         req.setAdministeredAt(OffsetDateTime.of(
@@ -52,7 +52,7 @@ class MedicationApiIT extends ApiIntegrationTest {
         ResponseEntity<String> day = exchangeForResponse(
             HttpMethod.GET, "/api/medication", null, ownerAuthHeaders());
         assertThat(day.getStatusCode().value()).isEqualTo(200);
-        assertThat(day.getBody()).contains("\"retaDay\":1");
+        assertThat(day.getBody()).contains("\"cycleDay\":1");
     }
 
     /**
@@ -67,7 +67,7 @@ class MedicationApiIT extends ApiIntegrationTest {
      */
     @Test
     void testLogDose_shouldRejectAndNotPersist_whenAdministeredAtHasNoZoneOffset() {
-        MedicationEntity med = medPop.createReta(ownerId());
+        MedicationEntity med = medPop.createMedication(ownerId());
         // Raw JSON with a zone-LESS administeredAt (no trailing offset / Z).
         String zonelessJson = "{\"dose\":6,\"administeredAt\":\"2026-06-26T00:00:00\"}";
         HttpHeaders headers = ownerAuthHeaders();
@@ -79,10 +79,10 @@ class MedicationApiIT extends ApiIntegrationTest {
         assertThat(res.getStatusCode().is2xxSuccessful()).isFalse();
         assertThat(res.getStatusCode().value()).isGreaterThanOrEqualTo(400);
 
-        // and nothing was persisted: no doses, so the cycle has no anchor (retaDay 0).
+        // and nothing was persisted: no doses, so the cycle has no anchor (cycleDay 0).
         ResponseEntity<String> day = exchangeForResponse(
             HttpMethod.GET, "/api/medication", null, ownerAuthHeaders());
         assertThat(day.getStatusCode().value()).isEqualTo(200);
-        assertThat(day.getBody()).contains("\"retaDay\":0");
+        assertThat(day.getBody()).contains("\"cycleDay\":0");
     }
 }

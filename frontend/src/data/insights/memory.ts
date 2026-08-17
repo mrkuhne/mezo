@@ -55,7 +55,7 @@ export const memorySummaries: MemorySummaryItem[] = [
     date: '2026-08-09',
     narrative:
       'Pihenőnap volt, de a napzárás elmaradt. Rövidebb alvás (6,1 óra, 2/5) követte — a vasárnap ' +
-      'esti mintázat megint kirajzolódott. Reta ciklusnap 6.',
+      'esti mintázat megint kirajzolódott. Gyógyszer-ciklusnap 6.',
     embedded: false,
   },
   {

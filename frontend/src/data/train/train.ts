@@ -89,7 +89,7 @@ export const mesocycles: Mesocycle[] = [
             { kind: 'recovery', label: '7.2h alvás átlag · stabil', delta: { mav: +2 } },
           ],
           confidence: 0.78,
-          note: 'Daniel-personalizált MRV. Bench Press + Incline DB + Cable Fly historikusan jól tolerál — 22-re is felmehetnénk, de Reta cycle alatt 20 a felső limit.',
+          note: 'Daniel-personalizált MRV. Bench Press + Incline DB + Cable Fly historikusan jól tolerál — 22-re is felmehetnénk, de mély deficitben 20 a felső limit.',
         },
       },
       back: {
@@ -251,7 +251,7 @@ export const mesocycles: Mesocycle[] = [
     split: 'Upper / Lower · 4×/hét',
     style: 'Linear · 7 hét',
     phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
-    notes: "Daniel: 'Idő egy erő-blokkra is.' Reta cycle befejezésével szinkronban indul.",
+    notes: "Daniel: 'Idő egy erő-blokkra is.' A deficit-szakasz lezárásával szinkronban indul.",
   },
   {
     id: 'meso-maint-01',
@@ -266,7 +266,7 @@ export const mesocycles: Mesocycle[] = [
     split: 'Full body · 4×/hét',
     style: 'Maintenance · 3 hét',
     phaseCurve: ['MAV', 'MAV', 'MAV'],
-    notes: 'Reta cycle vége — kalória deficit nélkül erő- és izom-tartás.',
+    notes: 'Deficit-szakasz vége — kalória deficit nélkül erő- és izom-tartás.',
   },
   {
     id: 'meso-rec-03',
@@ -578,10 +578,10 @@ export const workout: WorkoutPlan = {
       target: '107.5 kg × 8',
       confidence: 0.72,
       risk: 'low',
-      why: 'Március 4 óta 102.5 a stabil ablak. Múlt heti RIR 2 + Reta D3 alacsony étvágy + 7.2h alvás — historikusan ezek a kombináció 3/4-szer +5kg-os emelést támogatott.',
+      why: 'Március 4 óta 102.5 a stabil ablak. Múlt heti RIR 2 + alacsony étvágy + 7.2h alvás — historikusan ezek a kombináció 3/4-szer +5kg-os emelést támogatott.',
       refs: [
         { kind: 'PR', label: 'Chest Row 105.8 · Márc 4' },
-        { kind: 'Pattern', label: 'Reta-D3 + 7h+ alvás → PR window' },
+        { kind: 'Pattern', label: 'Alacsony étvágy + 7h+ alvás → PR window' },
       ],
       tools: [
         { type: 'read', name: 'get_pr_history(ex=chest_row)' },

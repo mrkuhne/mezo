@@ -37,6 +37,15 @@ public record LlmCallRecord(
     TokenUsage tokens,
     EmbedUsage embed,
     String systemPrompt,
+    /** mezo-q71s: rendered prior chat turns (see {@code ChatHistory.render}) for the CHAT/TOOL/
+     *  CHAT_STREAM call kinds. A history-less generation call of one of those kinds — a one-shot
+     *  pipeline (fact extraction, daily summary, activity classification, ...) or the first turn
+     *  of a conversation — still renders to {@code ""} (empty string), NOT null: the port
+     *  deliberately collapses "no history argument" into "empty history" at every one of those
+     *  call sites. Null is reserved for the call kinds that never carry a conversation at all
+     *  (SMART, VISION, TRANSCRIBE). So {@code conversationHistory IS NULL} does NOT mean "this was
+     *  a non-chat call" — it means the call kind has no concept of conversation history. */
+    String conversationHistory,
     String userMessage,
     String responseText,
     Integer imageCount,

@@ -190,7 +190,7 @@ public class DailySummaryService {
             return;
         }
         MedicationCycle cycle = medicationCycleService.derive(userId, med, date);
-        if (cycle.retaDay() == 0) {
+        if (cycle.cycleDay() == 0) {
             return; // active med but no dose anchor — nothing day-specific to remember
         }
         MedicationDoseEntity lastOnOrBefore = medicationDoseRepository
@@ -198,7 +198,7 @@ public class DailySummaryService {
                         userId, med.getId(), date)
                 .orElse(null);
         boolean dosedThatDay = lastOnOrBefore != null && date.equals(lastOnOrBefore.getAdministeredDate());
-        blocks.add("Gyógyszer: " + med.getName() + " " + cycle.retaDay() + ". ciklusnap ("
+        blocks.add("Gyógyszer: " + med.getName() + " " + cycle.cycleDay() + ". ciklusnap ("
                 + cycle.phaseLabel() + ")"
                 + (dosedThatDay ? ", dózis beadva: " + num(lastOnOrBefore.getDose()) + " " + med.getDoseUnit() : ""));
     }

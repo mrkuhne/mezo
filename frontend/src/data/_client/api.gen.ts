@@ -4448,7 +4448,7 @@ export interface components {
             current: boolean;
         };
         MedicationCycleResponse: {
-            retaDay: number;
+            cycleDay: number;
             phaseKey: string;
             phaseLabel: string;
             /** Format: date-time */

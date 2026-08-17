@@ -176,11 +176,11 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     @Test
     void testSeries_shouldCarryLastDoseForward_whenDoseAdministeredEarlier() {
         UUID owner = userPopulator.createUser().getId();
-        MedicationEntity med = medicationPopulator.createReta(owner);
+        MedicationEntity med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), DAY.minusDays(2), new BigDecimal("6"));
 
         Map<LocalDate, Double> series = metricSeriesService.series(
-                owner, MetricKey.RETA_DOSE_MG, DAY.minusDays(3), DAY);
+                owner, MetricKey.MEDICATION_DOSE_MG, DAY.minusDays(3), DAY);
 
         assertThat(series.get(DAY.minusDays(3))).isNull(); // dózis-horgony előtt nincs adat
         assertThat(series.get(DAY.minusDays(2))).isEqualTo(6.0);

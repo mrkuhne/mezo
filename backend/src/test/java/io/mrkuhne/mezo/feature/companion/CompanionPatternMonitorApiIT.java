@@ -183,7 +183,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
         // egy pár, amire nincs elég adat (nincs seedelve semmi rá): a monitor a job lefutása UTÁN
         // is no_data-t mond — a job nem hozott létre sort, amit a monitor "frozen"-ként olvashatna
-        assertThat(pair(after, "reta-cycle-day~daily-kcal").getVerdict()).isEqualTo("no_data");
+        assertThat(pair(after, "medication-cycle-day~daily-kcal").getVerdict()).isEqualTo("no_data");
     }
 
     @Test

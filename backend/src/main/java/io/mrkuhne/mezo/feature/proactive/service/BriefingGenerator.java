@@ -51,7 +51,7 @@ public class BriefingGenerator {
             + "tényadatokból. Szabályok: (1) ha az éjszakai alvás gyenge volt, azzal kezdd — az a "
             + "nap elsődleges tényezője; (2) többhorizontú: a mai terv mellett utalj a hét "
             + "trendjére; (3) zárd 2-3 konkrét, apró fókuszponttal; (4) számot vagy adatot "
-            + "kitalálni tilos; (5) gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást "
+            + "kitalálni tilos; (5) gyógyszer adagolására vonatkozó változtatást "
             + "SOHA ne javasolj — az orvosi döntés. Válaszolj KIZÁRÓLAG szigorú JSON-nal, "
             + "markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "

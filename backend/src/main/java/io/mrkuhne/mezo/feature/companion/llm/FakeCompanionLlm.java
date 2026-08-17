@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
@@ -47,6 +48,27 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String VIOLATE_ALWAYS = "[fake-violate-always]";
     /** Scripted verdicts (V1.3): answer with non-JSON — exercises the fail-open path. */
     public static final String VERDICT_BROKEN = "[fake-verdict-broken]";
+
+    /** Scripted verdicts (mezo-q71s): proves the judge's payload carries the RENDERED history, not
+     *  just the checked answer/userMessage — planted in a history {@code Turn}'s content, this
+     *  string reaches the verdict payload ONLY through {@code ChatHistory.render(history)} inside
+     *  {@code TurnVerdictCheck.check(...)}. If that render call is ever dropped, the sentinel
+     *  disappears from the payload and this scripted verdict goes back to clean. */
+    public static final String HISTORY_SEEN_SENTINEL = "[fake-verdict-saw-history]";
+
+    /** Scripted verdicts (mezo-q71s): a MARKED speculation is clean — the policy's IT anchor.
+     *  Proves the fake keeps the "jelölt sejtés" clean-verdict rule in sync with the real judge's
+     *  VERDICT_PROMPT criterion #2, so the retry chain never fires on a linguistically hedged hunch. */
+    public static final String MARKED_SPECULATION = "[fake-marked-spec]";
+
+    /** Scripted verdicts (mezo-q71s): pins the renamed {@code unmarkedClaim} JSON key / {@code
+     *  TurnVerdict} record component against the {@code "unmarked"} {@code AdvisorViolation} check
+     *  name — the whole point of the {@code ungroundedClaim} -> {@code unmarkedClaim} / {@code
+     *  "grounding"} -> {@code "unmarked"} rename. If the VERDICT_PROMPT's JSON key and the
+     *  TurnVerdict record component ever diverge (a prompt reword, a partial revert), Jackson
+     *  silently defaults the field to false — no violation, no retry, no degrade — and this
+     *  scripted verdict goes back to clean. */
+    public static final String UNMARKED_CLAIM_SENTINEL = "[fake-unmarked-claim]";
 
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
@@ -219,7 +241,7 @@ public class FakeCompanionLlm implements CompanionLlm {
             Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
     @Override
-    public String complete(String systemPrompt, String userMessage,
+    public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
@@ -350,7 +372,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (mealCoach.find()) {
             return mealCoach.group(1);
         }
-        return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
+        return PREFIX + " system=[" + systemPrompt + "]"
+                + " history=[" + ChatHistory.render(history) + "]"
+                + " user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
     }
 
@@ -423,11 +447,22 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (userMessage.contains(VERDICT_BROKEN)) {
             return "ez nem json";
         }
+        if (userMessage.contains(HISTORY_SEEN_SENTINEL)) {
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"history-seen\"}";
+        }
+        // mezo-q71s: a jelölt sejtés kifejezetten TISZTA ítéletet kap — ez rögzíti a politikát
+        // a fake oldalán is, nem csak a valódi bíráló promptjában.
+        if (userMessage.contains(MARKED_SPECULATION)) {
+            return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"jelölt sejtés\"}";
+        }
+        if (userMessage.contains(UNMARKED_CLAIM_SENTINEL)) {
+            return "{\"redundantQuestion\":false,\"unmarkedClaim\":true,\"reason\":\"jelöletlen állítás\"}";
+        }
         boolean retryRound = userMessage.contains(AdvisorRetry.RETRY_MARKER);
         if (userMessage.contains(VIOLATE_ALWAYS) || (userMessage.contains(VIOLATE_ONCE) && !retryRound)) {
-            return "{\"redundantQuestion\":true,\"ungroundedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
         }
-        return "{\"redundantQuestion\":false,\"ungroundedClaim\":false,\"reason\":\"\"}";
+        return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"\"}";
     }
 
     /**
@@ -452,7 +487,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public Flux<String> stream(String systemPrompt, String userMessage,
+    public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_STREAM)) {
             return Flux.concat(
@@ -462,6 +497,7 @@ public class FakeCompanionLlm implements CompanionLlm {
         List<String> chunks = new ArrayList<>(List.of(
             PREFIX,
             " system=[" + systemPrompt + "]",
+            " history=[" + ChatHistory.render(history) + "]",
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);

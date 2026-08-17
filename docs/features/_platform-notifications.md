@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: done
-updated: 2026-08-04
+updated: 2026-08-16
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -275,8 +275,9 @@ it, matched to what each endpoint is actually allowed to accept.
   `wind_down` read `RitualService.getDay(owner, date).getWindow()`, injected via `ObjectProvider`
   because the whole bean disappears when `RITUAL_SWITCH` is off.
 - **Medication** (`feature/medication`) — **now wired.** `medication` reads
-  `MedicationRepository` + `MedicationCycleService.derive(...)`; `retaDay == 0` (no dose logged yet)
-  is treated as "no anchor today", never as cycle day zero.
+  `MedicationRepository` + `MedicationCycleService.derive(...)`; `cycleDay == 0` (no dose logged yet
+  — since `mezo-lwmq` the standing state, as the owner tracks no medication) is treated as "no
+  anchor today", never as cycle day zero.
 - **Fuel** ([`fuel.md`](fuel.md)) — **new seam, both directions; re-platformed onto the living-occurrence Stack (mezo-vx9v Task 9).** Fuel's own `frontend/src/features/fuel/logic/buildProtocol.ts` exports `deriveBlocks` (today's gym/sport/run blocks; moved out of `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) and `PRE_WORKOUT_STACK_LEAD_MIN` — the **one canonical** "40 minutes before today's first training block" offset. Three callers now share the SAME `projectStackDay({occurrences, stash, intakes, wake, bed, mealsPerDay, blocks})` projection (each composing its own hooks inline, not via `useStackDay()` — the writer needs `useSleepGoal().isPending` for its fire-once gate, `NotificationsPage` needs the raw `blocks[]` for its gym sub-line): Fuel's own `useFuelTimeline`, this platform's `useScheduleSnapshotWriter` (the `fuel_slot` schedule rows), and `NotificationsPage`'s preview header — so the pre-workout stack time the Fuel/Stack page shows, the time persisted to `notification_schedule`, and the time the settings preview forecasts can never quietly disagree (a fix-round decision, `mezo-h4wp.6.3`, superseded onto occurrences by Task 9). The retired selection-based `buildProtocol()` builder and its `deriveProtocolAnchors`-mediated anchor derivation are gone from this path; `FUEL_WINDOW_LABEL` (`notificationScheduleWriter.ts`) is now keyed by the 8 `StackZoneKey` zone keys, not the old label set. Since the stim-aware split (mezo-j6c9) a day with ≥2 distinct-time training blocks can project TWO `pre_workout` slots (stim-free-named items anchor to the LAST block), so the writer emits up to two `fuel_slot` "edzés előtti" entries at their own times — per-slot emission handles this with no writer change.
 - **Me** ([`me.md`](me.md) §2 "`Értesítés`") — the FE consumer: the settings page owns no
   notification data itself beyond composing `usePushSubscription()` + `useNotificationPrefs()` +
@@ -451,8 +452,9 @@ via `onMutate`/`onError` rollback.
      empty (falls back to `SleepGoalProperties` defaults). The **retired** `goal.wake_time`/
      `goal.bed_time` columns are never read — `GoalService` still writes them, but every live
      consumer, including this one, reads `SleepAnchorPort`.
-  5. **`medication`'s `retaDay == 0` is `MedicationCycleService`'s honest "no dose logged yet" state**
-     and is treated as "no anchor today", never as cycle day zero.
+  5. **`medication`'s `cycleDay == 0` is `MedicationCycleService`'s honest "no dose logged yet" state**
+     (since `mezo-lwmq` the standing state, as the owner tracks no medication) and is treated as
+     "no anchor today", never as cycle day zero.
   6. **A prose anchor must never land on (or before) the minute its own content generator runs.**
      Because a prose anchor exists *only* when the content row exists, and both jobs queue on the
      **same size-1 scheduler thread** with an LLM call inside each generator, an anchor on the
@@ -492,7 +494,7 @@ via `onMutate`/`onError` rollback.
   (and collided with `briefing`/`wind_down`/`midday`, which also deeplink to `/today`). The writer
   therefore emits `/today?checkin=HH:mm` (`notificationScheduleWriter.ts`). **The param is a tag
   discriminator, not a feature** — `useTodayScenario` reads only its own named params
-  (`day`/`retaDay`/`niggle`/`vulnerable`/`ritual`) and React Router matches on the path, so
+  (`day`/`medCycleDay`/`niggle`/`vulnerable`/`ritual`) and React Router matches on the path, so
   `?checkin=` is harmlessly ignored; having it open the check-in sheet would be genuinely useful and
   is a deliberate non-goal here. Fixing this by changing the worker's tag strategy was rejected as
   the larger, riskier change.

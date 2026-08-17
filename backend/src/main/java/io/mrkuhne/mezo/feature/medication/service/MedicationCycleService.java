@@ -15,13 +15,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Derives where the owner sits in their medication cycle on a given day — the retaDay/phase logic at
+ * Derives where the owner sits in their medication cycle on a given day — the cycleDay/phase logic at
  * the heart of the Fuel "Gyógyszer" slice. Pure read: given the active {@link MedicationEntity} and a
  * date, it finds the most recent intake at-or-before that date and projects it onto the cycle config.
  *
- * <p>retaDay is {@code days-since-last-dose + 1}, 1-based, then CLAMPED to {@code cycleLengthDays} so a
+ * <p>cycleDay is {@code days-since-last-dose + 1}, 1-based, then CLAMPED to {@code cycleLengthDays} so a
  * dose older than one full cycle simply holds at the last cycle day (no separate "too old" state). With
- * no dose at all the result is an honest zero ({@code retaDay 0}, null {@code lastDoseAt}, ghost week) —
+ * no dose at all the result is an honest zero ({@code cycleDay 0}, null {@code lastDoseAt}, ghost week) —
  * never a fabricated day.
  */
 @Service

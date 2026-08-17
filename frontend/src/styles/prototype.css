@@ -261,9 +261,9 @@
   --ph-rem:   var(--rose);
   --ph-awake: var(--faint);
 
-  /* Reta phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
-  --reta-d1: #7FA48A; --reta-d2: #8FAC7E; --reta-d3: #A3B272; --reta-d4: #BCB466;
-  --reta-d5: #D6B25B; --reta-d6: #EBB250; --reta-d7: #FFB347;   /* sage→amber ramp */
+  /* Medication cycle phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
+  --medcycle-d1: #7FA48A; --medcycle-d2: #8FAC7E; --medcycle-d3: #A3B272; --medcycle-d4: #BCB466;
+  --medcycle-d5: #D6B25B; --medcycle-d6: #EBB250; --medcycle-d7: #FFB347;   /* sage→amber ramp */
 
   /* AnchorMode (light, warmer) */
   --anchor-canvas:  #FBF4EC;
@@ -915,24 +915,24 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .text-error { color: var(--error); }
 .text-success { color: var(--success); }
 
-/* RetaPhaseBar */
-.reta-bar {
+/* MedicationCyclePhaseBar */
+.medcycle-bar {
   display: flex; gap: 3px;
   padding: 0 24px;
   margin-top: 8px;
   height: 6px;
 }
-.reta-seg {
+.medcycle-seg {
   flex: 1;
   background: var(--surface-2);
   opacity: 0.5;
   transition: all 0.3s ease;
 }
-.reta-seg.active {
+.medcycle-seg.active {
   opacity: 1;
   box-shadow: 0 0 10px currentColor;
 }
-.reta-seg.past { opacity: 0.4; }
+.medcycle-seg.past { opacity: 0.4; }
 
 /* Set dots */
 .set-dots { display: flex; gap: 6px; }
@@ -2988,7 +2988,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   display: flex; align-items: center; justify-content: center; background: var(--surface-glass); }
 
 /* ===== Napív Fuel Mai — guided recomposition (mezo-rrtj), RETIRED (mezo-jgh9, window-river Task 6) =====
-   .retamicro (Reta micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
+   .medcycle-micro (gyógyszer-ciklus micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
    .daybudget/.dayseg/.brk/.ebchip/.mac* (DayBudgetCard) were all deleted whole with their sole
    consumer — the ablak-folyam recomposition replaced this page outright with the .sky-islands/.isl*
    family (window-island hero + KeretBelt's kibontott view owns the energy-breakdown + macro bars

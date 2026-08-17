@@ -30,7 +30,9 @@ describe('PatternDetailPage (mock mode)', () => {
 
   test('confirmed showcase pair renders all five blocks in order + the judged header', () => {
     renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
-    expect(screen.getByText('← Minták')).toBeInTheDocument()
+    // the house full-page header row (AiUsagePage idiom): back chevron + h1
+    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/insights')
+    expect(screen.getByRole('heading', { name: 'Minta részletei' })).toBeInTheDocument()
     expect(screen.getByText('Hogyan erősödött a jel')).toBeInTheDocument()
     expect(screen.getByText(/nap, amiből ez kijött/)).toBeInTheDocument()
     expect(screen.getByText('A minta története')).toBeInTheDocument()
@@ -107,7 +109,7 @@ describe('PatternDetailPage (mock mode)', () => {
 
   test('unknown key renders the honest not-found state with a back link', () => {
     renderAt('/insights/patterns/nonsense~key')
-    expect(screen.getByText('← Minták')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/insights')
     expect(screen.getByText(/Nincs ilyen minta/)).toBeInTheDocument()
   })
 })
@@ -182,6 +184,61 @@ describe('PatternDetailPage (real mode)', () => {
     expect(screen.getByText('A minta története')).toBeInTheDocument()
     expect(screen.getByText(/Motor-diagnosztika/)).toBeInTheDocument()
     expect(screen.getByText(/Megerősítetted/)).toBeInTheDocument()
+  })
+
+  test('hour + binary metric values render human-readable in the days table, the scatter and the diagnostics (mezo-fy97)', async () => {
+    const weekendKey = 'weekend~late-meal-hour'
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/pair/${weekendKey}`, () =>
+        HttpResponse.json({
+          pair: {
+            ...wirePair,
+            key: weekendKey,
+            title: 'Hétvége ↔ utolsó étkezés ideje',
+            lagDays: 0,
+            metricAKey: 'weekend',
+            metricALabel: 'hétvége',
+            metricBKey: 'late-meal-hour',
+            metricBLabel: 'utolsó étkezés ideje',
+            questionHu: 'Hétvégén később csúszik az utolsó étkezés?',
+            verdict: 'live',
+            alignedDays: 3,
+            r: -0.37383063546416445,
+            n: 14,
+            p: 0.18794141905232353,
+            status: null,
+          },
+          pattern: null,
+          events: [],
+          days: [
+            { date: '2026-07-01', a: 0, b: 15.683333333333334 },
+            { date: '2026-07-04', a: 1, b: 6.416666666666667 },
+            { date: '2026-07-19', a: 1, b: 20.3 },
+          ],
+          impact: { fact: null, predictions: [], experiments: [], challenges: [] },
+        }),
+      ),
+    )
+    renderAt(`/insights/patterns/${weekendKey}`)
+
+    // scatter x-axis: a binary metric gets named columns, not alacsony/magas
+    expect(await screen.findByText('hétköznap')).toBeInTheDocument()
+    expect(screen.getByText('hétvége')).toBeInTheDocument()
+    expect(screen.queryByText('alacsony')).not.toBeInTheDocument()
+
+    // days table: fractional hours become wall-clock times, 0/1 becomes igen/nem
+    fireEvent.click(screen.getByText('Napok listája →'))
+    expect(screen.getByText('15:41')).toBeInTheDocument()
+    expect(screen.getByText('06:25')).toBeInTheDocument()
+    expect(screen.getByText('20:18')).toBeInTheDocument()
+    expect(screen.getAllByText('igen')).toHaveLength(2)
+    expect(screen.getByText('nem')).toBeInTheDocument()
+    expect(screen.queryByText(/15\.68333/)).not.toBeInTheDocument()
+
+    // diagnostics: r/p rounded, never full double precision
+    fireEvent.click(screen.getByText(/Motor-diagnosztika/))
+    expect(screen.getByText(/r=-0\.37 · n=14 · p=0\.188/)).toBeInTheDocument()
+    expect(screen.queryByText(/0\.37383063546416445/)).not.toBeInTheDocument()
   })
 
   test('a 404 renders the honest not-found state', async () => {
