@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { isMockMode } from '@/data/_client/mode'
 import { ApiError } from '@/data/_client/api'
 import { trainApi, type MesocycleReportResponse } from '@/data/train/trainApi'
-import { mesoReportMock, mesocycles } from '@/data/train/train'
+import { mesoReportHyp03Mock, mesoReportMock, mesocycles } from '@/data/train/train'
 import type { Mesocycle } from '@/data/types'
 
 /** How often the report is re-read while something is still being generated server-side. */
@@ -12,9 +12,14 @@ const POLL_MS = 3000
 /** The one report cache key — `trainHooks`' mock close writes into it too (mezo-meyc.2). */
 export const mesoReportQueryKey = (id: string | null) => ['train', 'mesoReport', id]
 
-/** Mock mode has exactly one closed run with a FIXTURE report — every other id has none (404 parity). */
+/**
+ * The closed runs that ship with a FIXTURE report — every other id has none (404 parity).
+ * Two of them since mezo-meyc.4: the compare view needs a pair to line up.
+ */
+const MOCK_REPORTS: MesocycleReportResponse[] = [mesoReportMock, mesoReportHyp03Mock]
+
 function mockReportFor(id: string | null): MesocycleReportResponse | null {
-  return id === mesoReportMock.mesocycleId ? mesoReportMock : null
+  return MOCK_REPORTS.find((r) => r.mesocycleId === id) ?? null
 }
 
 /**
