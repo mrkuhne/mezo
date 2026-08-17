@@ -152,6 +152,25 @@ export function sharedStrengthDeltas(
 }
 
 /**
+ * Which side gets the sage highlight on a strength row: the higher SIGNED e1RM
+ * percentage — a real gain beats a regression. This is NOT `pctMagnitude`'s ordering key
+ * (that one is magnitude-only, so a big regression ranks as high as a big gain) — "loudest
+ * row" and "better side" are two different questions.
+ *
+ * When only ONE side has a percentage (a weightless identity, or the lift simply isn't in
+ * the other run's strength list), that lone side is highlighted **only if it is itself a
+ * gain** (`pct > 0`) — a lone measured REGRESSION must not win by default just because the
+ * other side has nothing to compare it to. A tie (including both-null) highlights nothing.
+ */
+export function betterSide(r: CompareStrengthRow): 'a' | 'b' | null {
+  if (r.aDeltaPct == null && r.bDeltaPct == null) return null
+  if (r.aDeltaPct == null) return (r.bDeltaPct ?? 0) > 0 ? 'b' : null
+  if (r.bDeltaPct == null) return r.aDeltaPct > 0 ? 'a' : null
+  if (r.aDeltaPct === r.bDeltaPct) return null
+  return r.aDeltaPct > r.bDeltaPct ? 'a' : 'b'
+}
+
+/**
  * The lifestyle rows, in a fixed order. Deliberately the TOTALS only (not the weekly
  * buckets): a per-week context table for two runs of different lengths would be a grid of
  * holes, while the averages are the thing that actually answers "which block did I live

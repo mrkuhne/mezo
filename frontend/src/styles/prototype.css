@@ -649,6 +649,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border-color: var(--error-soft);
   background: var(--error-bg);
 }
+/* A toggle chip's pressed state (e.g. the Mesociklusok library's „Összevetés" mode switch)
+   — same DS treatment as .segtab[aria-pressed='true'] below, for a plain chip that carries
+   no domain-accent override of its own. A chip with its own inline pressed styling (several
+   sheet mode-toggles) simply overrides this via specificity/inline style. */
+.chip[aria-pressed='true'] {
+  background: var(--primary-bg);
+  border-color: var(--primary-base);
+  color: var(--primary-deep);
+  font-weight: 700;
+}
 
 /* Tool chip (transparency) */
 .toolchip {

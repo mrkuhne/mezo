@@ -976,7 +976,7 @@ export interface Mesocycle {
   days?: MesoDay[]
   templateId?: string | null // the originating template this run was started from (null for legacy/direct runs)
   closedAt?: string | null   // when this run was closed (archived); null while active/planned
-  hasReport?: boolean        // true once an end-of-mesocycle report exists (mezo-meyc.4 — drives the Történet card's „riport →" / „nincs riport" chip; absent on a live run)
+  hasReport?: boolean        // true once an end-of-mesocycle report exists (mezo-meyc.4 — drives the Történet card's „riport" / „nincs riport" chip; absent on a live run)
 }
 
 // A reusable mesocycle blueprint (mezo-meyc): the wizard now saves a template first, then

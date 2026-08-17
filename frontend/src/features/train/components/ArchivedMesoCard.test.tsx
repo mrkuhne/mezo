@@ -12,16 +12,37 @@ const meso = (over: Partial<Mesocycle> = {}): Mesocycle => ({
   ...over,
 })
 
-test('advertises the frozen report when the run has one', () => {
+test('advertises the frozen report when the run has one — a plain state stamp, no arrow', () => {
   render(<ArchivedMesoCard meso={meso()} onOpen={() => {}} onRerun={() => {}} />)
-  expect(screen.getByText('riport →')).toBeInTheDocument()
+  expect(screen.getByText('riport')).toBeInTheDocument()
+  expect(screen.queryByText('riport →')).toBeNull()
   expect(screen.queryByText('nincs riport')).toBeNull()
 })
 
 test('says so honestly when the closed run carries NO report', () => {
   render(<ArchivedMesoCard meso={meso({ hasReport: false })} onOpen={() => {}} onRerun={() => {}} />)
   expect(screen.getByText('nincs riport')).toBeInTheDocument()
-  expect(screen.queryByText('riport →')).toBeNull()
+  expect(screen.queryByText('riport')).toBeNull()
+})
+
+test('the eyebrow shows the actual closedAt, not the plan endDate, when the two differ', () => {
+  // endDate is the PLANNED window; closedAt is when the run was actually archived —
+  // deliberately different months here to prove the eyebrow reads the real close date.
+  render(
+    <ArchivedMesoCard
+      meso={meso({ endDate: 'Márc 30', closedAt: '2026-04-23T19:40:00Z' })}
+      onOpen={() => {}}
+      onRerun={() => {}}
+    />,
+  )
+  expect(screen.getByText('Archív · Ápr 23')).toBeInTheDocument()
+  expect(screen.queryByText('Archív · Márc 30')).toBeNull()
+})
+
+test('falls back to endDate for a legacy run with no closedAt at all', () => {
+  const { closedAt: _drop, ...legacy } = meso({ endDate: 'Márc 30' })
+  render(<ArchivedMesoCard meso={legacy as Mesocycle} onOpen={() => {}} onRerun={() => {}} />)
+  expect(screen.getByText('Archív · Márc 30')).toBeInTheDocument()
 })
 
 test('a legacy run with no hasReport flag at all reads as "no report"', () => {

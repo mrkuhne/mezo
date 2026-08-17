@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   alignVolumeWeeks,
+  betterSide,
   contextDiff,
   sharedStrengthDeltas,
+  type CompareStrengthRow,
 } from '@/features/train/logic/mesoCompare'
 import type {
   MesocycleReportResponse,
@@ -227,5 +229,39 @@ describe('contextDiff', () => {
       { label: 'Alvás', aValue: 7.4, bValue: null, unit: 'h' },
     ])
     expect(contextDiff(report(), report())).toEqual([])
+  })
+})
+
+describe('betterSide', () => {
+  // Only the two delta-pct fields matter to this helper — everything else is filler.
+  const row = (over: Partial<CompareStrengthRow> = {}): CompareStrengthRow => ({
+    exerciseName: 'x', muscle: 'chest', aDeltaKg: null, aDeltaPct: null, bDeltaKg: null, bDeltaPct: null,
+    ...over,
+  })
+
+  it('is null when neither side has a percentage (both-null)', () => {
+    expect(betterSide(row())).toBeNull()
+  })
+
+  it('is null on an exact tie between two measured sides', () => {
+    expect(betterSide(row({ aDeltaPct: 10, bDeltaPct: 10 }))).toBeNull()
+  })
+
+  it('highlights the one measured side when it is a real gain', () => {
+    expect(betterSide(row({ aDeltaPct: null, bDeltaPct: 8 }))).toBe('b')
+    expect(betterSide(row({ aDeltaPct: 8, bDeltaPct: null }))).toBe('a')
+  })
+
+  it('does NOT crown a one-sided regression just because the other side has nothing', () => {
+    // Regression bug: the old code returned the non-null side unconditionally, so a
+    // weightless identity (null) next to a regression (negative %) wrongly "won".
+    expect(betterSide(row({ aDeltaPct: null, bDeltaPct: -6 }))).toBeNull()
+    expect(betterSide(row({ aDeltaPct: -6, bDeltaPct: null }))).toBeNull()
+  })
+
+  it('picks the higher SIGNED percentage when both sides are measured, magnitude be damned', () => {
+    // -20 is the louder number, but +5 is the real gain — betterSide is not pctMagnitude.
+    expect(betterSide(row({ aDeltaPct: 5, bDeltaPct: -20 }))).toBe('a')
+    expect(betterSide(row({ aDeltaPct: -20, bDeltaPct: 5 }))).toBe('b')
   })
 })

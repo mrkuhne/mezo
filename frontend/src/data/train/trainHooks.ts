@@ -296,7 +296,7 @@ function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void 
   qc.setQueryData<Mesocycle[]>(['train', 'mesocycles'], (prev) =>
     (prev ?? mesocycles).map((m) =>
       // `hasReport` flips with the status because a report is seeded below in the same
-      // breath (mezo-meyc.4) — the Történet card's „riport →" chip must not lie.
+      // breath (mezo-meyc.4) — the Történet card's „riport" chip must not lie.
       m.id === id ? { ...m, status: 'archived', closedAt: `${today}T00:00:00Z`, hasReport: true } : m,
     ),
   )

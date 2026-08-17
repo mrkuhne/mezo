@@ -310,6 +310,26 @@ export const mesocycles: Mesocycle[] = [
     closedAt: '2025-11-13T20:10:00Z',
     hasReport: true,
   },
+  // A THIRD closed run (mezo-meyc.4 fix wave) — deliberately minimal and with NO report:
+  // exists only so `MesocycleLibraryPage`'s selection mode has a third card to prove it
+  // refuses a third pick (the compare view is strictly pairwise). No report fixture needed —
+  // `hasReport: false` keeps this run out of every compare-page test.
+  {
+    id: 'meso-cut-02',
+    title: 'Cut prep · Nyár',
+    shortTitle: 'Cut 02',
+    status: 'archived',
+    goal: 'Zsírvesztés · fenntartó erő',
+    startDate: 'Jún 4',
+    endDate: 'Júl 16',
+    weeks: 6,
+    currentWeek: 6,
+    split: 'Full body · 4×/hét',
+    style: 'Maintenance · 6 hét',
+    phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MAV', 'Deload'],
+    closedAt: '2026-07-16T18:00:00Z',
+    hasReport: false,
+  },
 ]
 
 export const activeMeso: Mesocycle = mesocycles.find((m) => m.status === 'active')!
@@ -691,8 +711,8 @@ export const mesoReportHyp03Mock = {
   weeks: 6,
   selfEval: '7/10 — a volumen ment, az életmód nem.',
   aiEval:
-    'A Hypertrophy 03 blokk volumenben az eddigi legmagasabb volt, és a mellen, háton, tricepszen valós erő-progressziót hozott — a Bench Press +7,5 kg-ja és a Leg Press +12,5%-os e1RM-javulása a blokk két legerősebb eredménye.\n\n' +
-    'Az árát viszont az életmód fizette meg: az alvás 6,8 órára esett, a stressz 5,4-re emelkedett, és a mért napokon +1,4 kg jött vissza. Az edzések 79%-a teljesült — a kihagyott hat edzés túlnyomó része a 4. és 5. hétre esett, épp a legmagasabb volumenű szakaszra.',
+    'A Hypertrophy 03 blokk volumenben az eddigi legmagasabb volt, és a vállon, combon és háton valós erő-progressziót hozott — a Lateral Raise +14,5%-os és a Leg Press +12,5%-os e1RM-javulása a blokk két legerősebb eredménye.\n\n' +
+    'Az árát viszont az életmód fizette meg: az alvás 6,8 órára esett, a stressz 5,4-re emelkedett, és a mért napokon +1,4 kg jött vissza. Az edzések 79%-a teljesült — a kihagyott öt edzés túlnyomó része a 4. és 5. hétre esett, épp a legmagasabb volumenű szakaszra.',
   aiEvalStatus: 'ready',
   aiEvalGeneratedAt: '2025-11-13T20:15:00Z',
   aiEvalEnabled: true,

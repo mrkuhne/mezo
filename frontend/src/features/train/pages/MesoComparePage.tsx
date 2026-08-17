@@ -22,10 +22,10 @@ import { MUSCLE_LABELS } from '@/data/train/train'
 import type { MesocycleReportResponse } from '@/data/train/trainApi'
 import {
   alignVolumeWeeks,
+  betterSide,
   contextDiff,
   sharedStrengthDeltas,
   type CompareContextRow,
-  type CompareStrengthRow,
 } from '@/features/train/logic/mesoCompare'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -48,20 +48,6 @@ const CELL: CSSProperties = {
 }
 const HEAD: CSSProperties = { ...CELL, color: 'var(--text-tertiary)', fontWeight: 600 }
 const LABEL_MONO: CSSProperties = { fontSize: 9, color: 'var(--text-tertiary)' }
-
-/**
- * Which side gets the sage highlight: the higher SIGNED e1RM percentage — a real gain beats
- * a regression. Note this is NOT the list's ordering key (that one is the magnitude, so a
- * big drop still surfaces near the top): "loudest row" and "better side" are two different
- * questions. A tie, or a lift neither run has a percentage for, highlights nothing.
- */
-function betterSide(r: CompareStrengthRow): 'a' | 'b' | null {
-  if (r.aDeltaPct == null && r.bDeltaPct == null) return null
-  if (r.aDeltaPct == null) return 'b'
-  if (r.bDeltaPct == null) return 'a'
-  if (r.aDeltaPct === r.bDeltaPct) return null
-  return r.aDeltaPct > r.bDeltaPct ? 'a' : 'b'
-}
 
 /** A context cell: unit-suffixed, signed for the one delta metric (kg), „–" when unmeasured. */
 function contextCell(v: number | null, unit: string): string {

@@ -7,17 +7,23 @@
 // (materializing one for a legacy run) and opens MesoStartSheet on it.
 //
 // Two additions in mezo-meyc.4:
-//  · a footer chip stating whether the run HAS a frozen report („riport →") or not
+//  · a footer chip stating whether the run HAS a frozen report („riport") or not
 //    („nincs riport") — a legacy closed run may carry none, and finding that out only
 //    after tapping through is a dead end. It is deliberately a plain <span>, not a
 //    button: the card body already goes to the report, and a nested button would both
-//    be unnecessary and fight the selection mode below.
+//    be unnecessary and fight the selection mode below. It is a plain state stamp, not an
+//    arrow-suffixed link — the whole card body (not this chip) is what opens the report.
 //  · `selectMode` — the library's „Összevetés" mode, where a tap SELECTS the run for the
 //    compare view instead of navigating. The body then carries `aria-pressed` and the
 //    rerun action steps aside, so the whole card reads as one toggle.
+//
+// Eyebrow date (fix wave, mezo-meyc.4): shows the run's actual close timestamp
+// (`closedAt`, formatted like every other date on this card) when one exists, falling
+// back to the plan's `endDate` only for a legacy run closed before `closedAt` existed.
 // Ported from prototype mesocycles.jsx ArchivedMesoCard.
 // ============================================================
 import { Icon } from '@/shared/ui/Icon'
+import { huMonthDay } from '@/shared/lib/dates'
 import type { Mesocycle } from '@/data/types'
 
 interface ArchivedMesoCardProps {
@@ -53,7 +59,7 @@ export function ArchivedMesoCard({ meso, onOpen, onRerun, selectMode = false, se
       >
         <div className="col flex-1">
           <span className="eyebrow text-tertiary">
-            Archív · {meso.endDate}
+            Archív · {meso.closedAt ? huMonthDay(meso.closedAt.slice(0, 10)) : meso.endDate}
           </span>
           <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, marginTop: 4 }}>{meso.title}</div>
           {meso.summary ? (
@@ -76,7 +82,7 @@ export function ArchivedMesoCard({ meso, onOpen, onRerun, selectMode = false, se
       </button>
       <div className="row mt-md" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         {meso.hasReport ? (
-          <span className="chip">riport →</span>
+          <span className="chip">riport</span>
         ) : (
           <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
             nincs riport
