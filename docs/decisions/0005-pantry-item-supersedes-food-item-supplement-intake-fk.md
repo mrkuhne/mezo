@@ -15,9 +15,10 @@ The Phase-2 master design spec (`2026-06-10-phase2-backend-design.md`, Slice C) 
   (`recipe_ingredient`, `mezo-lns`) and meals (`meal_item`, `mezo-arb`) already FK.
 - `nutrition_targets` shipped as `@ConfigurationProperties` (`NutritionTargetsProperties`),
   not a table — single-user, one target set.
-- Retatrutide shipped as first-class **`medication` + `medication_dose`** (`mezo-d94`) with a
-  server-derived cycle — NOT a `pantry_item` row (the earlier "Reta keeps a pantry shelf card,
-  de-dup via `stashRefId`" idea is superseded).
+- The owner's medication shipped as first-class **`medication` + `medication_dose`** (`mezo-d94`)
+  with a server-derived cycle — NOT a `pantry_item` row (the earlier "medication keeps a pantry
+  shelf card, de-dup via `stashRefId`" idea is superseded). This domain was later retired to a
+  generic, permanently-empty state (`mezo-lwmq`) — see [ADR 0027](0027-retire-retatrutide-generic-medication-domain.md) — but the pantry-vs-first-class table shape this ADR records is unchanged.
 
 Open half: what does the P2 `supplement_intake` event reference?
 

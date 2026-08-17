@@ -31,8 +31,8 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     @Autowired private MealService service;
     @Autowired private FuelDayService fuelDayService;
     @Autowired private PantryItemPopulator pantryPopulator;
-    @Autowired private DatabasePopulator databasePopulator;
     @Autowired private GoalPopulator goalPopulator;
+    @Autowired private DatabasePopulator databasePopulator;
 
     private UUID owner;
 
@@ -70,6 +70,58 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(day.getTargets().getWater()).isEqualByComparingTo(BigDecimal.valueOf(4000));
         assertThat(day.getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(day.getMeals()).isEmpty();
+    }
+
+    /** Two-segment recept: weeks 1..2 → 2300 kcal / 170 g, weeks 3..6 → 2100 kcal / 180 g. */
+    private GoalPrescriptionJson twoSegmentPrescription() {
+        return new GoalPrescriptionJson(null, "formula",
+            List.of(
+                new GoalPrescriptionJson.Segment(1, 2, "bevezető", 2300, 170, null, null, null, null, null),
+                new GoalPrescriptionJson.Segment(3, 6, "vágás", 2100, 180, null, null, null, null, null)),
+            null, null);
+    }
+
+    @Test
+    void testGetDay_shouldUsePrescriptionKcalAndProtein_whenActiveGoalSegmentCoversDate() {
+        // goal started 2026-06-08 → 2026-06-24 is day 17 → goal-week 3 → the 2100/180 segment
+        goalPopulator.createGoalFull(owner, LocalDate.of(2026, 6, 8), LocalDate.of(2026, 7, 20),
+            twoSegmentPrescription(), 4, "06:30", "22:30");
+
+        FuelDayResponse day = fuelDayService.getDay(owner, LocalDate.of(2026, 6, 24));
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(2100));
+        assertThat(day.getTargets().getP()).isEqualByComparingTo(BigDecimal.valueOf(180));
+        // carbs/fat/water are not prescribed — they stay on the config targets
+        assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(380));
+        assertThat(day.getTargets().getF()).isEqualByComparingTo(BigDecimal.valueOf(95));
+        assertThat(day.getTargets().getWater()).isEqualByComparingTo(BigDecimal.valueOf(4000));
+    }
+
+    @Test
+    void testGetDay_shouldFallBackToConfigTargets_whenNoSegmentCoversDate() {
+        // goal starts AFTER the queried date → goal-week 0 → no segment → config fallback
+        goalPopulator.createGoalFull(owner, LocalDate.of(2026, 7, 6), LocalDate.of(2026, 8, 17),
+            twoSegmentPrescription(), 4, "06:30", "22:30");
+
+        FuelDayResponse day = fuelDayService.getDay(owner, LocalDate.of(2026, 6, 24));
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(3100));
+        assertThat(day.getTargets().getP()).isEqualByComparingTo(BigDecimal.valueOf(220));
+    }
+
+    @Test
+    void testGetWeek_shouldUsePrescriptionTargetsPerDay_whenSegmentBoundaryFallsInsideWeek() {
+        // goal starts 2026-06-08; the rendered week 2026-06-18..24 straddles the goal-week 2→3
+        // boundary: 06-18..21 are goal-week 2 (2300), 06-22..24 are goal-week 3 (2100).
+        goalPopulator.createGoalFull(owner, LocalDate.of(2026, 6, 8), LocalDate.of(2026, 7, 20),
+            twoSegmentPrescription(), 4, "06:30", "22:30");
+
+        FuelWeekResponse week = fuelDayService.getWeek(owner, LocalDate.of(2026, 6, 18));
+
+        assertThat(week.getDays().get(0).getTargets().getKcal())
+            .isEqualByComparingTo(BigDecimal.valueOf(2300));
+        assertThat(week.getDays().get(6).getTargets().getKcal())
+            .isEqualByComparingTo(BigDecimal.valueOf(2100));
     }
 
     @Test

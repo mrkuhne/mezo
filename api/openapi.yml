@@ -48,7 +48,7 @@ tags:
   - name: Medication
     description: >-
       Medication (Gyógyszer) — owned medication definition + a dose event-log;
-      the 7-day cycle (retaDay + phase) is derived from the logged doses. GET
+      the 7-day cycle (cycleDay + phase) is derived from the logged doses. GET
       /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
   - name: Progression
   - name: Fuel
@@ -4093,6 +4093,42 @@ paths:
                 $ref: '#/components/schemas/PatternMonitorResponse'
         '401':
           description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/pattern/pair/{pairKey}':
+    get:
+      tags:
+        - Companion
+      operationId: patternPairDetail
+      summary: >-
+        Egy katalógus-pár teljes részletező nézete (mezo-tk88.3): pár-meta + élő
+        kapu-állapot (a monitor matekja), a perzisztált minta (ha van), az
+        append-only esemény-történet, az illesztett napok (élőben számolva —
+        sosem tárolt), és a hatás-lista (tény + source_pattern_id hivatkozók).
+        Sor nélküli párra is válaszol (pattern: null).
+      parameters:
+        - name: pairKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A pár részletei
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatternPairDetailResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown pair key (not in the catalog)
           content:
             application/json:
               schema:
@@ -10690,12 +10726,12 @@ components:
     MedicationCycleResponse:
       type: object
       required:
-        - retaDay
+        - cycleDay
         - phaseKey
         - phaseLabel
         - week
       properties:
-        retaDay:
+        cycleDay:
           type: integer
         phaseKey:
           type: string
@@ -11924,6 +11960,139 @@ components:
         pairCount:
           type: integer
           description: Hány katalógus-pár hivatkozik erre a metrikára.
+    PatternPairDetailResponse:
+      type: object
+      required:
+        - pair
+        - events
+        - days
+        - impact
+      properties:
+        pair:
+          $ref: '#/components/schemas/PatternMonitorPair'
+        pattern:
+          allOf:
+            - $ref: '#/components/schemas/PatternResponse'
+          nullable: true
+          description: >-
+            A perzisztált minta-sor — null, amíg a pár nem ment át a kapun (még
+            gyűlik).
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternEventResponse'
+          description: 'Append-only történet, occurred_at szerint növekvő.'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlignedDayResponse'
+          description: 'Az AKTUÁLIS ablak illesztett napjai — élőben számolva, sosem tárolt.'
+        impact:
+          $ref: '#/components/schemas/PatternImpactResponse'
+    PatternEventResponse:
+      type: object
+      required:
+        - kind
+        - occurredAt
+      properties:
+        kind:
+          type: string
+          pattern: ^(snapshot|confirmed|monitoring|rejected|reinforced|promoted)$
+        occurredAt:
+          type: string
+          format: date-time
+        r:
+          type: number
+          format: double
+          nullable: true
+        'n':
+          type: integer
+          nullable: true
+        p:
+          type: number
+          format: double
+          nullable: true
+        reinforcementCount:
+          type: integer
+          nullable: true
+        factId:
+          type: string
+          format: uuid
+          nullable: true
+    AlignedDayResponse:
+      type: object
+      required:
+        - date
+        - a
+        - b
+      properties:
+        date:
+          type: string
+          format: date
+          description: metric-a napja (metric-b lagDays-szel később olvasódik).
+        a:
+          type: number
+          format: double
+        b:
+          type: number
+          format: double
+    PatternImpactResponse:
+      type: object
+      required:
+        - predictions
+        - experiments
+        - challenges
+      properties:
+        fact:
+          allOf:
+            - $ref: '#/components/schemas/PatternImpactFact'
+          nullable: true
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternImpactRef'
+        experiments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternImpactRef'
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternImpactRef'
+    PatternImpactFact:
+      type: object
+      required:
+        - id
+        - text
+        - reinforcementCount
+        - includeInPrompt
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        reinforcementCount:
+          type: integer
+        includeInPrompt:
+          type: boolean
+    PatternImpactRef:
+      type: object
+      required:
+        - id
+        - title
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          description: >-
+            A hivatkozó sor saját státusza (pending/validated/missed ·
+            proposed/active/completed/dismissed …).
     MemoryOverviewResponse:
       type: object
       required:

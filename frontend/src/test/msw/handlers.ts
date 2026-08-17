@@ -21,7 +21,7 @@ const recipeFixture = {
   // Same template as the mock seed's rec-1 → same role (mezo-uavr), so both modes agree.
   role: 'pre_workout',
   createdDate: 'Máj 14', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
-  mezoFit: { score: null, fitsFor: ['Reggel · Reta D3'] },
+  mezoFit: { score: null, fitsFor: ['Reggel · Gyógyszer D3'] },
   timesLogged: 0, avgScore: 0, lastLogged: '—',
   ingredients: [
     { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9, c: 42, f: 5 } },
@@ -89,39 +89,16 @@ const recipeBreakdownFixture = {
   fitsFor: ['Post-workout · este'],
 }
 
-// Medication day fixture (mezo-d94) mirroring MedicationDayResponse + the medicationSeed:
-// the owner's single active Retatrutide on a 7-day cycle, derived cycle on retaDay 3 (stable),
-// three most-recent weekly doses.
+// Medication day fixture (mezo-lwmq): the owner tracks NO medication — the honest no-medication
+// ghost. Tests that need the populated branch override this handler with `medicationFixture`.
 const medicationDayFixture = {
   medication: {
-    id: 'med-reta', name: 'Retatrutide', activeIngredient: 'retatrutide', route: 'subQ',
-    cadence: 'weekly-monday', defaultDose: 6, doseUnit: 'mg', active: true,
-    cycle: {
-      cycleLengthDays: 7,
-      phases: [
-        { key: 'peak', fromDay: 1, toDay: 2, label: 'Peak · étvágy ↓' },
-        { key: 'stable', fromDay: 3, toDay: 5, label: 'Stabil · plató' },
-        { key: 'trough', fromDay: 6, toDay: 7, label: 'Trough · étvágy ↑' },
-      ],
-    },
+    id: '', name: '', activeIngredient: '', route: '', cadence: '',
+    defaultDose: 0, doseUnit: '', active: false,
+    cycle: { cycleLengthDays: 0, phases: [] },
   },
-  cycle: {
-    retaDay: 3, phaseKey: 'stable', phaseLabel: 'Stabil · plató', lastDoseAt: '2026-06-22T07:00:00',
-    week: [
-      { day: 1, phaseKey: 'peak', label: 'Peak', current: false },
-      { day: 2, phaseKey: 'peak', label: 'Peak', current: false },
-      { day: 3, phaseKey: 'stable', label: 'Stabil', current: true },
-      { day: 4, phaseKey: 'stable', label: 'Stabil', current: false },
-      { day: 5, phaseKey: 'stable', label: 'Stabil', current: false },
-      { day: 6, phaseKey: 'trough', label: 'Trough', current: false },
-      { day: 7, phaseKey: 'trough', label: 'Trough', current: false },
-    ],
-  },
-  recentDoses: [
-    { id: 'dose-3', administeredAt: '2026-06-22T07:00:00', dose: 6, note: 'Hétfő reggel · subQ has' },
-    { id: 'dose-2', administeredAt: '2026-06-15T07:10:00', dose: 6, note: null },
-    { id: 'dose-1', administeredAt: '2026-06-08T07:05:00', dose: 6, note: null },
-  ],
+  cycle: { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] },
+  recentDoses: [],
 }
 
 // Proactive challenge (P7) wire factory — a minimal ChallengeResponse; tests override fields.

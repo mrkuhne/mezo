@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.PatternCritique;
+import io.mrkuhne.mezo.api.dto.PatternEventResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import org.mapstruct.Mapper;
@@ -62,6 +64,19 @@ public interface CompanionMapper {
                 .status(entity.getStatus())
                 .lastDetectedAt(toOffset(entity.getLastDetectedAt()))
                 .thinking(entity.getCritique() == null ? null : entity.getCritique().reasoning())
+                .build();
+    }
+
+    /** S1/mezo-tk88.3: one entry of a pattern's append-only history. */
+    default PatternEventResponse toPatternEventResponse(PatternEventEntity entity) {
+        return PatternEventResponse.builder()
+                .kind(entity.getKind())
+                .occurredAt(toOffset(entity.getOccurredAt()))
+                .r(entity.getPayload().r())
+                .n(entity.getPayload().n())
+                .p(entity.getPayload().p())
+                .reinforcementCount(entity.getPayload().reinforcementCount())
+                .factId(entity.getPayload().factId())
                 .build();
     }
 

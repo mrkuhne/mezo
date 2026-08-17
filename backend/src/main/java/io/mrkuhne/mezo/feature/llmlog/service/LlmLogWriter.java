@@ -120,14 +120,17 @@ public class LlmLogWriter {
     private void applyPayload(LlmLogEntity entity, LlmCallRecord record) {
         int cap = llmLogProperties.maxPayloadChars();
         long bytes = utf8Length(record.systemPrompt())
+            + utf8Length(record.conversationHistory())
             + utf8Length(record.userMessage())
             + utf8Length(record.responseText());
 
         entity.setPayloadBytes((int) Math.min(bytes, Integer.MAX_VALUE));
         entity.setSystemPrompt(cap(record.systemPrompt(), cap));
+        entity.setConversationHistory(cap(record.conversationHistory(), cap));
         entity.setUserMessage(cap(record.userMessage(), cap));
         entity.setResponseText(cap(record.responseText(), cap));
         entity.setTruncated(isOverCap(record.systemPrompt(), cap)
+            || isOverCap(record.conversationHistory(), cap)
             || isOverCap(record.userMessage(), cap)
             || isOverCap(record.responseText(), cap));
     }

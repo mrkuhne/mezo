@@ -298,19 +298,19 @@ public class ContextSnapshotAssembler {
         int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
         List<String> parts = new ArrayList<>();
         Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDate(userId, date);
-        if (template.isPresent()) {
-            WorkoutSessionEntity t = template.get();
-            List<ExerciseEntity> exercises = exerciseRepository
-                    .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId()));
-            String gymPart = "gym (" + t.getDayLabel() + ")";
-            if (!exercises.isEmpty()) {
-                gymPart += ": " + exercises.stream()
-                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
-                        .collect(Collectors.joining(", "));
-            }
-            parts.add(gymPart);
-        } else {
+        List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
+                .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
+                .orElse(List.of());
+        // A present-but-EMPTY template day is a rest day, not a gym day: the meso wizard stores
+        // all 7 weekdays as template rows, weekend rest days included (type "Rest", zero
+        // exercises) — rendering those as "gym (Szo)" was the weekend training hallucination
+        // (mezo-650a). Same criterion as TrainTools#dayContentLine, so tool and snapshot agree.
+        if (exercises.isEmpty()) {
             parts.add("pihenőnap (gym)");
+        } else {
+            parts.add("gym (" + template.orElseThrow().getDayLabel() + "): " + exercises.stream()
+                    .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                    .collect(Collectors.joining(", ")));
         }
         sport.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
@@ -476,11 +476,11 @@ public class ContextSnapshotAssembler {
             return "[Gyógyszer] " + NO_DATA;
         }
         MedicationCycle cycle = medicationCycleService.derive(userId, med, today);
-        if (cycle.retaDay() == 0) {
+        if (cycle.cycleDay() == 0) {
             // honest zero — active med but no recorded dose to anchor the cycle
             return "[Gyógyszer] " + med.getName() + ": nincs rögzített dózis";
         }
-        return "[Gyógyszer] " + med.getName() + ": ciklus " + cycle.retaDay() + ". nap ("
+        return "[Gyógyszer] " + med.getName() + ": ciklus " + cycle.cycleDay() + ". nap ("
                 + cycle.phaseLabel() + ")";
     }
 

@@ -21,19 +21,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Assembles {@link FuelDayResponse} for the Fuel-day MacroHero: {@code targets} are
- * goal-engine-driven with config fallback — kcal+protein come from the active goal's current
- * prescription segment (TDEE − deficit, weekly-stepped) when one exists, else from
- * {@link NutritionTargetsProperties}; carbs/fat/water always stay config (the engine prescribes
- * only kcal+protein). Also assembles the day's owner-scoped meals (logged_at-ordered) and
- * {@code consumed} = Σ the day's meal macros. {@code water} consumed is the real Σ of the
- * day's water-log entries (via {@link WaterLogService}); no meal carries water in v1.
+ * Assembles {@link FuelDayResponse} for the Fuel-day MacroHero: {@code targets} come from the
+ * active goal's prescribed recept when one covers the date — kcal + protein from the
+ * {@link GoalPrescriptionJson} segment of that date's goal-week (mezo-najo; the recept IS the
+ * TDEE + training + deficit prescription) — falling back to the config-driven
+ * {@link NutritionTargetsProperties} when there is no active/evaluated goal or no covering
+ * segment. Carbs/fat/water are not prescribed, so they always render from config. {@code consumed}
+ * = Σ the day's meal macros; {@code water} consumed is the real Σ of the day's water-log entries
+ * (via {@link WaterLogService}); no meal carries water in v1.
  */
 @Service
 @RequiredArgsConstructor
 public class FuelDayService {
-
-    private static final String GOAL_STATUS_ACTIVE = "active";
 
     private final MealRepository mealRepository;
     private final MealMapper mapper;
@@ -51,23 +50,25 @@ public class FuelDayService {
         int water = waterLogService.sumForDay(userId, date);
         return FuelDayResponse.builder()
             .date(date)
-            .targets(targetSet(userId, date))
+            .targets(targetSet(activeGoal(userId), date))
             .consumed(consumed(meals, water))
             .meals(meals)
             .build();
     }
 
     /**
-     * Seven-day rollup {@code start..start+6} — per-day goal/config targets + consumed Σ, no meal
-     * bodies. Feeds the Terv weekly stats (kcal avg / protein-hit days) and is the designated
-     * server aggregate for the Insights Weekly review (Phase-2 roadmap D′).
+     * Seven-day rollup {@code start..start+6} — per-day targets (the goal recept is week-segmented,
+     * so a segment boundary can fall inside the rendered week) + consumed Σ, no meal bodies. Feeds
+     * the Terv weekly stats (kcal avg / protein-hit days) and is the designated server aggregate
+     * for the Insights Weekly review (Phase-2 roadmap D′).
      */
     @Transactional(readOnly = true)
     public FuelWeekResponse getWeek(UUID userId, LocalDate start) {
+        GoalEntity goal = activeGoal(userId);
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> FuelDayRollup.builder()
                 .date(d)
-                .targets(targetSet(userId, d))
+                .targets(targetSet(goal, d))
                 .consumed(consumedFor(userId, d))
                 .build())
             .toList();
@@ -82,26 +83,26 @@ public class FuelDayService {
         return consumed(meals, waterLogService.sumForDay(userId, date));
     }
 
-    /** kcal+protein from the active goal's current prescription segment (TDEE − deficit, the
-     *  goal-engine truth); c/f/water stay config. No active goal / no segment ⇒ full config. */
-    private MacroSet targetSet(UUID userId, LocalDate date) {
-        GoalEntity goal = goalRepository
-            .findByCreatedByAndStatusAndDeletedFalse(userId, GOAL_STATUS_ACTIVE)
+    private GoalEntity activeGoal(UUID userId) {
+        return goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")
             .stream().findFirst().orElse(null);
-        Integer kcal = null;
-        Integer protein = null;
+    }
+
+    /**
+     * kcal + protein from the active goal's recept segment covering {@code date}'s goal-week
+     * (week derived from startDate — the ContextSnapshotAssembler#goalBlock idiom); config
+     * fallback per field when there is no goal, no evaluated prescription, or no covering
+     * segment (e.g. a date before the goal started).
+     */
+    private MacroSet targetSet(GoalEntity goal, LocalDate date) {
+        GoalPrescriptionJson.Segment seg = null;
         if (goal != null && goal.getStartDate() != null) {
             long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
-            GoalPrescriptionJson.Segment seg =
-                GoalPrescriptionJson.currentSegment(goal.getPrescription(), week);
-            if (seg != null) {
-                kcal = seg.kcal();
-                protein = seg.proteinG();
-            }
+            seg = GoalPrescriptionJson.currentSegment(goal.getPrescription(), week);
         }
         return MacroSet.builder()
-            .kcal(BigDecimal.valueOf(kcal != null ? kcal : targets.kcal()))
-            .p(BigDecimal.valueOf(protein != null ? protein : targets.p()))
+            .kcal(BigDecimal.valueOf(seg != null && seg.kcal() != null ? seg.kcal() : targets.kcal()))
+            .p(BigDecimal.valueOf(seg != null && seg.proteinG() != null ? seg.proteinG() : targets.p()))
             .c(BigDecimal.valueOf(targets.c()))
             .f(BigDecimal.valueOf(targets.f()))
             .water(BigDecimal.valueOf(targets.water()))

@@ -45,7 +45,7 @@ public class WeeklySuggestionGenerator {
             + "Írj rövid (3-5 mondatos), magyar heti tervjavaslatot Danielnek a most kezdődő "
             + "hétre, kizárólag a megadott adatokból. Építs az előző hét összefoglalóira, a "
             + "megerősített tényekre és a mintákra; adj 2-3 konkrét, végrehajtható javaslatot. "
-            + "Számot vagy adatot kitalálni tilos; gyógyszer adagolására (pl. retatrutid) "
+            + "Számot vagy adatot kitalálni tilos; gyógyszer adagolására "
             + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. Sima folyószöveggel "
             + "válaszolj, markdown és felsorolás nélkül.";
 

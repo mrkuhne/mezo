@@ -97,7 +97,7 @@ describe('forecastToday (pure)', () => {
     expect(wednesday.total).toBe(0)
   })
 
-  it('medication counts only on an active dose day, never on the honest retaDay===0 "no dose" state', () => {
+  it('medication counts only on an active dose day, never on the honest cycleDay===0 "no dose" state', () => {
     const prefs = [pref('medication', true)]
     expect(forecastToday(prefs, [], { ...NO_ANCHORS, medicationDay: false }, WEDNESDAY).total).toBe(0)
     expect(forecastToday(prefs, [], { ...NO_ANCHORS, medicationDay: true }, WEDNESDAY).total).toBe(1)

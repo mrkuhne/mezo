@@ -6,8 +6,8 @@ export function cannedReply(text: string): string {
   return (
     'Értem — és köszönöm hogy megosztottad. ' +
     (text.toLowerCase().includes('fáradt')
-      ? 'A Reta D3-on ez gyakori; ne erőltessük a Pull Day-t ma. Egy könnyű walk és egy fehérje-snack többet adhat mint egy fél-erővel csinált edzés.'
-      : 'Nézzük meg az adatokat: az elmúlt 3 napban a kalória-pacing 80%+ volt, és a Reta D3 ablakban ez stabil — innen indulhatunk.')
+      ? 'A gyógyszer-ciklus D3-án ez gyakori; ne erőltessük a Pull Day-t ma. Egy könnyű walk és egy fehérje-snack többet adhat mint egy fél-erővel csinált edzés.'
+      : 'Nézzük meg az adatokat: az elmúlt 3 napban a kalória-pacing 80%+ volt, és a gyógyszer-ciklus D3 ablakban ez stabil — innen indulhatunk.')
   )
 }
 
@@ -33,14 +33,14 @@ export const initialChat: ChatMessage[] = [
   {
     role: 'assistant',
     ts: '06:34',
-    text: 'Jó jel. 7h a héten az átlag fölött van — vasárnap óta négy nap volt 7+. A Reta D3-ot ne felejtsük: az étvágy ma délután fog leesni, és ha PR-t akarunk, a 13:30 pre-workout meal nem opcionális. Ha 30g whey + banán + földimogyoróvaj akkor is megy, ha nem éhezünk, az ma fontos.',
+    text: 'Jó jel. 7h a héten az átlag fölött van — vasárnap óta négy nap volt 7+. A gyógyszer-ciklus D3-át ne felejtsük: az étvágy ma délután fog leesni, és ha PR-t akarunk, a 13:30 pre-workout meal nem opcionális. Ha 30g whey + banán + földimogyoróvaj akkor is megy, ha nem éhezünk, az ma fontos.',
     tools: [
       { type: 'read', name: 'get_sleep(days=7)' },
-      { type: 'read', name: 'get_reta_phase()' },
+      { type: 'read', name: 'get_medication_phase()' },
       { type: 'compute', name: 'predictAppetiteCurve()' },
     ],
     refs: [
-      { kind: 'Pattern', id: 'p-reta-appetite' },
+      { kind: 'Pattern', id: 'p-medication-appetite' },
       { kind: 'SleepLog', id: 'sleep-2026-05-21' },
     ],
   },

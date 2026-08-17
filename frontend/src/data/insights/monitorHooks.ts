@@ -18,8 +18,9 @@ const EMPTY: PatternMonitorBootstrap = { monitor: null, degraded: false, mode: '
 /** Élő kapu-diagnosztika (mezo-viqs) — a companion switch kikapcsolva 404 ⇒ degraded.
  *  `isError`/`refetch` (mezo-viqs fix wave, the habitAdminHooks.ts/useHabitCatalog precedent):
  *  a 404 is caught above and mapped to the honest `degraded` card, so `isError` only ever fires
- *  on a genuinely failed fetch (500, network) — MotorPage needs it to tell that apart from the
- *  "unresolved yet" window, both of which otherwise read as `monitor === null`. */
+ *  on a genuinely failed fetch (500, network) — PatternsPage (the retired MotorPage's diagnostics
+ *  moved here at mezo-tk88.4) needs it to tell that apart from the "unresolved yet" window, both
+ *  of which otherwise read as `monitor === null`. */
 export function usePatternMonitor() {
   const { data, isPending, isError, refetch } = useDualQuery<PatternMonitorBootstrap>({
     queryKey: MONITOR_KEY,

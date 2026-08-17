@@ -1,10 +1,10 @@
 import { useFuelWeek } from '@/data/hooks'
 
-export function RetaWeekStrip({ currentDay }: { currentDay: number }) {
-  const { retaWeek } = useFuelWeek()
+export function MedicationWeekStrip({ currentDay }: { currentDay: number }) {
+  const { medCycleWeek } = useFuelWeek()
   return (
     <div className="row gap-xs" style={{ alignItems: 'stretch' }}>
-      {retaWeek.map((p) => {
+      {medCycleWeek.map((p) => {
         const active = p.d === currentDay
         const past = p.d < currentDay
         return (

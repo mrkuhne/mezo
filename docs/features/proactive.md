@@ -750,7 +750,7 @@ generate(userId, weekStart)                             WeeklySuggestionGenerato
 ```
 
 The prompt (`WEEKLY_SUGGESTION_MARKER "HETI-TERVJAVASLAT"` + HU rules: 3-5 sentences, 2-3 actionable
-suggestions, plain prose no markdown, invent-no-numbers, never suggest a retatrutid/med-dose change)
+suggestions, plain prose no markdown, invent-no-numbers, never suggest a medication-dose change)
 mirrors the briefing guardrails at the smart tier. The gather composes patterns via the companion
 `PatternRepository` (the V3.1/V3.2 Inbox rows) — a fourth companion read on top of the briefing's three.
 
@@ -1184,6 +1184,16 @@ P1 pattern-grounding gate).
 **Contract crossing the seam:** these read methods with explicit `userId` scoping; strictly one-way — no companion code imports
 proactive. This one-way rule is why the fake sentinels' markers are literal mirrors rather than
 imports (§9 gotcha a).
+
+**S1 close (`mezo-tk88.3`) added the mirror-image seam — proactive DATA reaching companion, still
+without a reverse import.** The pattern-detail endpoint (`companion.md` §4) needs the
+predictions/experiments/challenges grounded on a pattern (§ above's `sourcePatternId` finders), but
+`PatternPairDetailService` lives in `feature.companion`, which must not import `feature.proactive`
+(would open a NEW 2-slice cycle on top of the one-way rule above). `PatternImpactService`
+(`feature.proactive.service`, §10) implements a companion-owned interface, `PatternImpactSource` —
+so the only import crossing the boundary is still proactive → companion (unchanged direction), and
+companion reaches proactive's data purely through Spring DI, never a compile-time dependency. See
+[`companion.md`](companion.md) §5.5 for the companion-side writeup of the same seam.
 
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
 All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per

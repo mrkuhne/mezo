@@ -15,8 +15,9 @@ related: [companion, insights]
 ## Mi ez, és milyen problémát old meg?
 
 A klasszikus fájdalom: minden új AI-beszélgetés nulláról indul — újra el kell magyarázni, mikor
-edzel, mit eszel, mi a célod, hol tart a Reta-ciklus. Közben a mezo **már tárolja mindezt**: az
-edzéseket, az étkezéseket, az alvást, a súlyt, a gyógyszert, a check-ineket.
+edzel, mit eszel, mi a célod, hol tartasz (ha van ilyen) a gyógyszer-ciklusban. Közben a mezo **már
+tárolja mindezt**: az edzéseket, az étkezéseket, az alvást, a súlyt, a gyógyszert, a
+check-ineket.
 
 A companion egy chat, ami **e fölött az adat fölött ül**. Az első üzenetednél már képben van a mai
 napoddal, és minden beszélgetéssel többet tud rólad — de tartósan csak azt, amit **te
@@ -31,11 +32,11 @@ pedig egy tanuló társat adnak ki.
 
 Minden beszélgetés-forduló mögé automatikusan odakerül egy **pillanatkép a mai napodról**: az
 aktív célod és a hét étrendi/edzés-előírása, a meso-hét és az edzésbeosztás, a mai étkezések a
-célokhoz képest, vízbevitel, Reta-ciklusnap, a tegnapi alvás, a friss check-in és a súlytrend.
-Ezért tud a „mit egyek ma edzés előtt?" kérdésre azonnal, a TE számaidból válaszolni.
+célokhoz képest, vízbevitel, gyógyszer-ciklusnap, a tegnapi alvás, a friss check-in és a
+súlytrend. Ezért tud a „mit egyek ma edzés előtt?" kérdésre azonnal, a TE számaidból válaszolni.
 
 A múltra is rá tud nézni: kilenc **belső eszköze** van (edzések, sportok, súlytrend, étkezési
-napok, alvás, protokoll-követés, célhaladás, Reta-ciklus, hasonló napok felidézése). Amikor
+napok, alvás, protokoll-követés, célhaladás, gyógyszer-ciklus, hasonló napok felidézése). Amikor
 használ egyet, a válasz alatt egy **kis címke (chip)** jelzi — mindig látod, minek nézett utána,
 nem kell hinned neki vakon.
 
@@ -77,8 +78,9 @@ kedden?" típusú, beszélgetés-szintű visszakeresés még nem bekötött kép
 
 Két gépezet keresi az összefüggéseket az adataidban:
 
-- **Éjszakai statisztika** — 8 előre definiált összefüggés-párt számol át (pl. alvásminőség ↔
-  másnapi edzés-RPE, késői étkezés ↔ alvás, Reta-nap ↔ kalória, sportterhelés ↔ gym-volumen).
+- **Éjszakai statisztika** — 29 előre definiált összefüggés-párt számol át (pl. alvásminőség ↔
+  másnapi edzés-RPE, késői étkezés ↔ alvás, gyógyszer-ciklusnap ↔ kalória, sportterhelés ↔
+  gym-volumen).
   Csak akkor mutat bármit, ha van elég adat (legalább 8 összevethető nap) — és a bizonytalan
   mintára nem ír ki kitalált százalékot, hanem azt mondja: **„tanulom"**.
 - **Heti hipotézis-kör** — az erősebb modell mechanizmus-szintű sejtéseket fogalmaz meg a heted
@@ -125,10 +127,11 @@ Néhány kérdéstípus, amire kifejezetten fel van készítve:
 - **A válaszok önellenőrzésen mennek át.** Egy második lépés vizsgálja, hogy a válasz a te
   adataidra épül-e, és nem kérdez-e rá ismert tényre; egy javítási kör után, ha még mindig
   kétséges, a válasz apró **„nem ellenőrzött"** jelölést kap — sosem titkolja el.
-- **Gyógyszer-szabály.** A gyógyszer-adagolás módosítását soha nem javasolja — ezt a Retatrutidra
-  és rokonaira (a GLP-1 család ismert neveire) egy **beépített, nem-AI szabály** is kikényszeríti,
-  ami mindig ugyanúgy működik, nem az AI pillanatnyi döntésén múlik. Más szerekre az AI-nak adott
-  szigorú utasítás védi ugyanezt.
+- **Gyógyszer-szabály.** A gyógyszer-adagolás módosítását soha nem javasolja — ezt a GLP-1
+  család ismert neveire (és rokon készítményekre) egy **beépített, nem-AI szabály** is
+  kikényszeríti, ami mindig ugyanúgy működik, nem az AI pillanatnyi döntésén múlik. Más szerekre
+  az AI-nak adott szigorú utasítás védi ugyanezt. (Az owner jelenleg nem szed gyógyszert — ez a
+  szabály minden jövőbeli esetre is érvényben marad.)
 - **Csak olvasni tud, cselekedni nem.** A companion eszközei kizárólag a saját adataid
   *olvasására* képesek: nem tud emailt küldeni, naptárba írni, vásárolni, külső rendszerbe írni —
   ilyen eszköze szerkezetileg nem létezik, és automata teszt őrzi, hogy ne is kerülhessen bele.

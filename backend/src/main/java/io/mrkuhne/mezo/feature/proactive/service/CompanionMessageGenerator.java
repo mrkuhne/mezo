@@ -61,7 +61,7 @@ public class CompanionMessageGenerator {
             + "külön üzenet szól majd, amint Daniel rögzítette őket; (2) fókusz: a mai terv "
             + "(edzés, kalóriakeret, gyógyszer) és a hét trendje; (3) zárd 2-3 konkrét, apró "
             + "fókuszponttal; (4) számot vagy adatot kitalálni tilos; (5) gyógyszer adagolására "
-            + "(pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
+            + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
@@ -122,7 +122,7 @@ public class CompanionMessageGenerator {
             + "déli (nudge) esetén a nap hátralévő részére adj egy konkrét, gyengéd fókuszt; esti "
             + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI KORÁBBI "
             + "ÜZENETEK blokk, annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
-            + "adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi "
+            + "adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi "
             + "döntés. Sima folyószöveggel válaszolj, markdown és felsorolás nélkül.";
 
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {

@@ -105,11 +105,11 @@ function buildProteinJump(slot: FuelSlot, consumedP: number, targetP: number): W
   return { addG, fromG, toG, pctOfTarget }
 }
 
-// bigview herosub: ablak-határ + edzés-kapcsolat + (csúcshéten) Reta-jegy.
-function buildSubtitle(slot: FuelSlot, nextTime: string, workoutTime: string | null, retaPeak: boolean): string {
+// bigview herosub: ablak-határ + edzés-kapcsolat + (csúcshéten) gyógyszer-jegy.
+function buildSubtitle(slot: FuelSlot, nextTime: string, workoutTime: string | null, medPeak: boolean): string {
   const parts: string[] = [`${slot.time}–${nextTime} ablak`]
   if (workoutTime) parts.push(`edzés ${workoutTime}`)
-  if (retaPeak) parts.push('Reta-csúcshéten megnőtt étvágy')
+  if (medPeak) parts.push('Csúcsfázisban megnőtt étvágy')
   return parts.join(' · ')
 }
 
@@ -119,14 +119,14 @@ export function buildWindowRiver(input: {
   hero: HeroResult
   stackVerdicts: MealMatchVerdict[]
   workoutTime: string | null
-  retaPeak: boolean
+  medPeak: boolean
   nowHHmm: string
   /** Today's logged meals — joined against each done slot's `mealId` to build `doneGroup.avgScore`
    *  (mezo-c9t5). Not otherwise threaded into the islands: a per-window logged-meal score is still
    *  P8 scope (facts.dayScore stays null below, unchanged). */
   meals: FuelMeal[]
 }): WindowRiverVM {
-  const { plan, budget, hero, stackVerdicts, workoutTime, retaPeak, meals } = input
+  const { plan, budget, hero, stackVerdicts, workoutTime, medPeak, meals } = input
 
   const mealSlots = plan.slots.filter(hasSlotKey).sort((a, z) => toMin(a.time) - toMin(z.time))
   const consumedProtein = mealSlots.filter(s => s.state === 'done').reduce((sum, s) => sum + (s.p ?? 0), 0)
@@ -156,7 +156,7 @@ export function buildWindowRiver(input: {
         time: slot.time,
         essence: buildEssence(slot),
         count: buildCount(slot, l1Count),
-        subtitle: buildSubtitle(slot, nextTime, workoutTime, retaPeak),
+        subtitle: buildSubtitle(slot, nextTime, workoutTime, medPeak),
         meal: buildMeal(slot),
         facts: {
           proteinJump: state === 'now' || state === 'future' ? buildProteinJump(slot, consumedProtein, budget.p) : null,

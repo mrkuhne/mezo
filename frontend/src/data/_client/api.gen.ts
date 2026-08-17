@@ -1600,6 +1600,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/pattern/pair/{pairKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Egy katalógus-pár teljes részletező nézete (mezo-tk88.3): pár-meta + élő kapu-állapot (a monitor matekja), a perzisztált minta (ha van), az append-only esemény-történet, az illesztett napok (élőben számolva — sosem tárolt), és a hatás-lista (tény + source_pattern_id hivatkozók). Sor nélküli párra is válaszol (pattern: null). */
+        get: operations["patternPairDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -4306,7 +4323,7 @@ export interface components {
             current: boolean;
         };
         MedicationCycleResponse: {
-            retaDay: number;
+            cycleDay: number;
             phaseKey: string;
             phaseLabel: string;
             /** Format: date-time */
@@ -4833,6 +4850,60 @@ export interface components {
             lastDayWithData?: string | null;
             /** @description Hány katalógus-pár hivatkozik erre a metrikára. */
             pairCount: number;
+        };
+        PatternPairDetailResponse: {
+            pair: components["schemas"]["PatternMonitorPair"];
+            /** @description A perzisztált minta-sor — null, amíg a pár nem ment át a kapun (még gyűlik). */
+            pattern?: components["schemas"]["PatternResponse"] | null;
+            /** @description Append-only történet, occurred_at szerint növekvő. */
+            events: components["schemas"]["PatternEventResponse"][];
+            /** @description Az AKTUÁLIS ablak illesztett napjai — élőben számolva, sosem tárolt. */
+            days: components["schemas"]["AlignedDayResponse"][];
+            impact: components["schemas"]["PatternImpactResponse"];
+        };
+        PatternEventResponse: {
+            kind: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: double */
+            r?: number | null;
+            n?: number | null;
+            /** Format: double */
+            p?: number | null;
+            reinforcementCount?: number | null;
+            /** Format: uuid */
+            factId?: string | null;
+        };
+        AlignedDayResponse: {
+            /**
+             * Format: date
+             * @description metric-a napja (metric-b lagDays-szel később olvasódik).
+             */
+            date: string;
+            /** Format: double */
+            a: number;
+            /** Format: double */
+            b: number;
+        };
+        PatternImpactResponse: {
+            fact?: components["schemas"]["PatternImpactFact"] | null;
+            predictions: components["schemas"]["PatternImpactRef"][];
+            experiments: components["schemas"]["PatternImpactRef"][];
+            challenges: components["schemas"]["PatternImpactRef"][];
+        };
+        PatternImpactFact: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+            reinforcementCount: number;
+            includeInPrompt: boolean;
+        };
+        PatternImpactRef: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @description A hivatkozó sor saját státusza (pending/validated/missed · proposed/active/completed/dismissed …). */
+            status: string;
         };
         MemoryOverviewResponse: {
             l0: components["schemas"]["MemoryOverviewL0"];
@@ -10783,6 +10854,46 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    patternPairDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pairKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A pár részletei */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternPairDetailResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown pair key (not in the catalog) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

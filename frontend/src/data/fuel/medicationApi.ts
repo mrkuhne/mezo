@@ -57,7 +57,7 @@ export function fromResponse(r: MedicationResponse): Medication {
 
 function fromCycleResponse(c: MedicationCycleResponse): MedicationCycle {
   return {
-    retaDay: c.retaDay,
+    cycleDay: c.cycleDay,
     phaseKey: c.phaseKey,
     phaseLabel: c.phaseLabel,
     lastDoseAt: c.lastDoseAt ?? null,

@@ -234,7 +234,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 580, p: 42, c: 78, f: 12 },
     novaDominant: 1,
-    mezoFit: { score: null, fitsFor: ['Pre Pull Day · T-10h', 'Reggel · Reta D3'] },
+    mezoFit: { score: null, fitsFor: ['Pre Pull Day · T-10h', 'Reggel · Gyógyszer D3'] },
     starred: true,
     // The one non-standard seed (mezo-uavr): carb-dominant breakfast, so mock mode exercises
     // the pre-workout rubric overlay and its chip.
@@ -292,7 +292,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 340, p: 42, c: 36, f: 4 },
     novaDominant: 4,
-    mezoFit: { score: null, fitsFor: ['Pre-workout · T-1h', 'Reta-aware snack'] },
+    mezoFit: { score: null, fitsFor: ['Pre-workout · T-1h', 'Ciklus-tudatos snack'] },
     starred: false,
     role: 'standard',
   },
@@ -519,13 +519,13 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
     confidence: 0.88,
     tagline: null,
     summary:
-      'Esti casein-bomba. 37g protein, slow-digest, alacsony-fat — pont az amit a 21:00 esti étkezésre vársz Reta-cycle alatt. Áfonya antocianin + méz minimális glikémia-bump.',
+      'Esti casein-bomba. 37g protein, slow-digest, alacsony-fat — pont az amit a 21:00 esti étkezésre vársz gyógyszer-ciklus alatt. Áfonya antocianin + méz minimális glikémia-bump.',
     dimensions: [
       {
         id: 'macro', label: 'Kcal & makró arány', weight: 0.22, score: 0.92,
         color: 'var(--coral)',
         detail:
-          'P/C/F 48/39/13%. Esti casein-súlyos snack. Kalória-density alacsony — Reta-cycle alatt pont a protein-target tartására.',
+          'P/C/F 48/39/13%. Esti casein-súlyos snack. Kalória-density alacsony — gyógyszer-ciklus alatt pont a protein-target tartására.',
         macroRatio: { p: 48, c: 39, f: 13 },
         macroTargets: { p: '30–55% snack', c: '30–50%', f: '10–25%' },
         kcalShareOfDay: 10.0,

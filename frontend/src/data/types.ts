@@ -233,7 +233,7 @@ export interface MedicationDose { id: string; administeredAt: string; dose: numb
 /** The derived weekly cycle (which day of the cycle we're on + the phase grid). */
 export interface MedicationCycleCell { day: number; phaseKey: string; label: string; current: boolean }
 export interface MedicationCycle {
-  retaDay: number; phaseKey: string; phaseLabel: string
+  cycleDay: number; phaseKey: string; phaseLabel: string
   lastDoseAt?: string | null
   week: MedicationCycleCell[]
 }
@@ -259,7 +259,7 @@ export interface MedicationInput {
 /** Editor input for logging an injection. */
 export interface MedicationDoseInput { administeredAt?: string | null; dose: number; note?: string | null }
 
-export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; retaDay: number; mesoPhase: string }
+export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; mesoPhase: string }
 /** The workout teaser's prediction line — demo copy in mock mode; real predictions are a later epic (null hides the row). */
 export interface WorkoutPrediction { confidence: number; label: string }
 /** One cell of the Today quick-stats row ("Most"). */
@@ -275,7 +275,7 @@ export interface UserMeta {
   streakDays: number
 }
 export interface TodayScenario {
-  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  dayState: DayState; medCycleDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
   /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
   ritual: 'waiting' | 'open' | 'done' | null
 }
@@ -581,8 +581,8 @@ export interface MentionLogInput {
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---
-export type RetaPhase = 'Peak' | 'Stable' | 'Trough'
-export interface RetaDayCell { d: number; label: RetaPhase; color: string }
+export type MedCyclePhase = 'Peak' | 'Stable' | 'Trough'
+export interface MedCycleDayCell { d: number; label: MedCyclePhase; color: string }
 // NOTE: prototype data.js gymSchedule.weeklyTimes uses null for inactive (Szo/Vas)
 // days and `today` is present on only one row → fields adapted to the real data.
 export interface GymScheduleDay {
@@ -771,6 +771,35 @@ export interface PatternMonitor {
   lastRunAt: string | null
   pairs: PatternMonitorPair[]
   metrics: PatternMetricCoverage[]
+}
+
+// --- Pattern pair detail (mezo-tk88.5) — /insights/patterns/:pairKey ---
+/** Az append-only pattern_event történet sor-fajtái (mirrors the backend CHECK constraint). */
+export type PatternEventKind = 'snapshot' | 'confirmed' | 'monitoring' | 'rejected' | 'reinforced' | 'promoted'
+export interface PatternEvent {
+  kind: PatternEventKind
+  occurredAt: string          // ISO datetime
+  r?: number; n?: number; p?: number
+  reinforcementCount?: number
+  factId?: string
+}
+/** Egy illesztett nap a szórásdiagramhoz — élőben számolva, sosem tárolt. */
+export interface AlignedDay { date: string; a: number; b: number }
+/** Egy hatás-hivatkozás (tény/előrejelzés/kísérlet/kihívás) — a saját felületére vezet. */
+export interface PatternImpactRef { id: string; title: string; status: string }
+export interface PatternImpact {
+  fact: { id: string; text: string; reinforcementCount: number; includeInPrompt: boolean } | null
+  predictions: PatternImpactRef[]
+  experiments: PatternImpactRef[]
+  challenges: PatternImpactRef[]
+}
+/** A pár-részletező nézet teljes payloadja — mirrors PatternPairDetailResponse. */
+export interface PatternPairDetail {
+  pair: PatternMonitorPair
+  pattern: Pattern | null
+  events: PatternEvent[]
+  days: AlignedDay[]
+  impact: PatternImpact
 }
 
 export interface MemoirAnchor { kind: string; label: string }
@@ -1291,7 +1320,7 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     description: 'A mai edzés kezdete előtt', showLeadChip: true, iconBg: '--wash-gym',
   },
   medication: {
-    label: 'Reta injekció', emoji: '💉', section: 'reminder',
+    label: 'Gyógyszer beadás', emoji: '💉', section: 'reminder',
     description: 'Injekciós napon, reggel', showLeadChip: false, iconBg: '--wash-amber',
   },
   ritual: {

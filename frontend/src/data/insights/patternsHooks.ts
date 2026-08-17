@@ -4,6 +4,7 @@ import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import { patternsApi } from '@/data/insights/patternsApi'
 import { patterns as mockPatterns, recentlyConfirmed as mockRecentlyConfirmed } from '@/data/insights/insights'
+import { PATTERN_PAIR_DETAIL_KEY, type PatternPairDetailBootstrap } from '@/data/insights/patternDetailHooks'
 import type { Pattern, PatternRowStatus, PatternStatus } from '@/data/types'
 
 const PATTERNS_KEY = ['patterns']
@@ -57,18 +58,25 @@ export function usePatterns() {
   return { ...data, isPending }
 }
 
-/** The L2 decision surface — persisted in real mode, cache-local in mock. */
+/** The L2 decision surface — persisted in real mode, cache-local in mock. Writes through TWO
+ *  caches, `['patterns']` (the dashboard) and `['pattern-pair-detail', pairKey]` (the detail page,
+ *  mezo-tk88.5) — a decision made from either surface must be visible on both without a reload. */
 export function usePatternActions() {
   const queryClient = useQueryClient()
   const mock = isMockMode()
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: PATTERNS_KEY })
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: PATTERNS_KEY })
+    // Prefix match — no `pairKey` known here, and none needed: this invalidates every cached
+    // detail query at once (there's normally at most one warm on screen).
+    queryClient.invalidateQueries({ queryKey: PATTERN_PAIR_DETAIL_KEY })
+  }
 
   const mutation = useMutation({
     mutationFn: async ({ id, decision }: { id: string; decision: PatternStatus }) => {
       if (mock) {
+        const status = DECISION_TO_STATUS[decision]
         queryClient.setQueryData<PatternsBootstrap>(PATTERNS_KEY, (current) => {
           if (!current) return current
-          const status = DECISION_TO_STATUS[decision]
           const patterns = current.patterns.map((p) => (p.id === id ? { ...p, status } : p))
           const confirmedTitle = patterns.find((p) => p.id === id && status === 'confirmed')?.title
           return {
@@ -78,6 +86,12 @@ export function usePatternActions() {
               ? [confirmedTitle, ...current.recentlyConfirmed.filter((t) => t !== confirmedTitle)]
               : current.recentlyConfirmed,
           }
+        })
+        // Same decision, mirrored onto any warm detail-page cache entry for this pattern — only
+        // `pattern.status` moves; the append-only event history/journal stays the static seed.
+        queryClient.setQueriesData<PatternPairDetailBootstrap>({ queryKey: PATTERN_PAIR_DETAIL_KEY }, (current) => {
+          if (!current?.detail?.pattern || current.detail.pattern.id !== id) return current
+          return { ...current, detail: { ...current.detail, pattern: { ...current.detail.pattern, status } } }
         })
         return
       }

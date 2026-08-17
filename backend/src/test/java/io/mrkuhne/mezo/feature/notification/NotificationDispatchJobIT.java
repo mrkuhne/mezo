@@ -162,7 +162,7 @@ class NotificationDispatchJobIT extends AbstractIntegrationTest {
      * An empty {@code phases} list: {@code MedicationCycleService.phaseOf} falls back to
      * {@code phases.get(phases.size() - 1)} when no range matches, which throws
      * {@code IndexOutOfBoundsException} on an empty list once a dose has been logged (so
-     * {@code retaDay} is positive, not the honest-zero no-dose case) — a deterministic, realistic
+     * {@code cycleDay} is positive, not the honest-zero no-dose case) — a deterministic, realistic
      * "this user's data is broken" scenario that reaches {@code AnchorResolver} through the
      * medication anchor, without needing any test double.
      */

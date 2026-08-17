@@ -57,7 +57,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
-  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, retaDay/phase, last
+  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, cycleDay/phase, last
   sleep + latest check-in), rendered as eight Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT
   (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the static
   voice and the history transcript**.
@@ -91,8 +91,10 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `get_protocol(scope, days)` adherence/intake/supplements since mezo-xixu, see the catalog below),
   `GoalTools` (`get_goal_progress` — merged into one scoped `get_goal(scope)`
   progress/recept/timeline/guards/feasibility since mezo-xixu, see the catalog below),
-  `MedicationTools` (`get_reta_cycle` — merged into one scoped `get_medication(scope)` reta/all
-  since mezo-xixu, see the catalog below). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
+  `MedicationTools` — one scoped `get_medication(scope)` tool since mezo-xixu (`scope ∈
+  {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in
+  `mezo-lwmq`), see the catalog below. All
+  ownership-scoped via `ToolContext` (`userId` from the JWT principal,
   NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
 - **9th tool — `get_training_plan` (forward plan, mezo-xixu)**, added onto `TrainTools`: the
   companion's first FORWARD-looking read (the other 8 are backward/aggregate). `scope ∈
@@ -108,10 +110,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   snapshot's `Ma:`/`Holnap:`. Only the **sport** part is actually shared code (both build it with
   `ToolText.sportLine`, so tool and prompt can never disagree about a day's sport) — the **gym**
   part is rendered separately in each (`TrainTools.dayContentLine` vs
-  `ContextSnapshotAssembler.dayLine`) and their formats differ: a template with zero exercises
-  renders `gym: pihenőnap` from the tool but `gym (<day label>)` from the snapshot, so the two CAN
-  disagree about a day's gym (an unlikely data shape — a planned day with no exercises added —
-  left as-is). `nincs adat` only when there is neither an active mesocycle, nor an active running
+  `ContextSnapshotAssembler.dayLine`), but **since mezo-650a they share the rest-day criterion**:
+  a present-but-empty template (zero exercises) renders as a rest day in BOTH (`gym: pihenőnap`
+  from the tool, `pihenőnap (gym)` from the snapshot). This was NOT an unlikely data shape — the
+  meso wizard stores all 7 weekdays as template rows, weekend rest days included (`type=Rest`,
+  zero exercises), so the snapshot's old `gym (<day label>)` rendering claimed a gym day every
+  weekend (the weekend-training hallucination). `nincs adat` only when there is neither an active mesocycle, nor an active running
   block, **nor a sport slot** at all — a volleyball evening is a plan in its own right; a real rest
   day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
@@ -259,9 +263,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   on the port): `CompanionAdvisorChain.review(...)` runs after every LLM answer —
   `ClinicalOutputCheck` first (deterministic accent-folded regex: Rx term + dose-change verb in
   one sentence; a hit skips the verdict that round), then `TurnVerdictCheck` (ONE cheap-tier
-  LLM call → strict-JSON `{redundantQuestion, ungroundedClaim, reason}`, defensively parsed,
-  **fail-open**). Violation → corrective re-prompt (`AdvisorRetry.block` appended to the system
-  prompt; same tools + same audit) up to `advisors.max-retries`; a still-violating answer ships
+  LLM call → strict-JSON `{redundantQuestion, unmarkedClaim, reason}` — the second key was
+  `ungroundedClaim` until it was renamed at mezo-q71s ([ADR
+  0028](../decisions/0028-marked-speculation-in-chat.md)) to allow marked speculation, defensively
+  parsed, **fail-open**). Violation → corrective re-prompt (`AdvisorRetry.block` appended to the
+  system prompt; same tools + same audit) up to `advisors.max-retries`; a still-violating answer ships
   with `ai_message.degraded = true`. Sync path retries before delivery; the streamed path
   reviews post-hoc between the last delta and `done` (the done row is authoritative — the FE
   swap silently carries a corrected answer).
@@ -299,7 +305,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
   deterministic, date-scoped Hungarian digest of one FINISHED day's L0 (train/sport/run, fuel-day
-  rollup, sleep, weight, Reta cycle-day + dose, check-ins — reusing the owning features' reads;
+  rollup, sleep, weight, medication cycle-day + dose, check-ins — reusing the owning features' reads;
   `nincs adat` semantics by omission; **since V3.4** also the qualitative fields: sleep/run
   notes, mention tone+excerpt, intention reflection — capped per `summary.note-max-chars`) → ONE cheap-tier `CompanionLlm` call (prompt behind
   `SUMMARY_MARKER`) → past-tense narrative row. Digest = pure code, narrative = pure LLM
@@ -351,7 +357,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   **upserts one row per `(user, kind, pair_key)`**: stats refresh while `proposed`/`monitoring`,
   a user-judged `confirmed`/`rejected` row is never auto-touched (V3.3 adds reinforcement).
 - **Series extraction** — `MetricSeriesService`: 12 `MetricKey`s v1 (sleep quality/duration,
-  training RPE, sport load, gym volume, late-meal hour, daily kcal, Reta cycle-day, water,
+  training RPE, sport load, gym volume, late-meal hour, daily kcal, medication cycle-day, water,
   morning weight-delta, check-in stress/energy) — **31 since V3.4** (the full list in the V3.4
   block below) — composed read-only from the owning features'
   EXISTING reads; deterministic multi-row aggregation, absence is absence (never bridged).
@@ -406,8 +412,8 @@ frozen `confirmed` rows) and `.reinforcePromotedFact` (`PatternDetectionService.
 one `reinforced` row per cooled-down recurrence); `PatternService.decide`
 (`PatternService.java:66-79`, helper at `PatternService.java:92-101`) appends a
 `confirmed`/`monitoring`/`rejected` row on **every** decision, plus — on the FIRST confirm only —
-a `promoted` row (payload = the new `factId`) written **after** the decision row. No reader yet —
-a future strength chart/journal will derive from this table.
+a `promoted` row (payload = the new `factId`) written **after** the decision row. **First reader
+(S1 close, `mezo-tk88.3`):** the pattern-pair-detail endpoint's `events[]` — see below.
 
 **V3.2 (`mezo-fnnq.13`) shipped the AI hypothesis loop — propose → critique → revise:**
 
@@ -464,7 +470,7 @@ COMPLETE (all 14 slices):**
     **bedtime before-noon hours shift +24**, 01:00 → 25.0, so "later" stays monotone) ·
     `sleep-awakenings` (max) · `daily-protein-g` (FuelDay rollup, meal-days only — the
     DAILY_KCAL pattern generalized into `fuelRollup`) · `meal-score` (avg of scored meals) ·
-    `reta-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
+    `medication-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
     pattern) · `habits-done` (count of `done` rows; a habit-row day with zero done is a REAL 0)
     · `ritual-closed` (0/1 from the first-ever closed day onward — pre-adoption days are absent,
     not 0) · `daily-xp` (activity + habit + completed-quest XP sum; zero-XP days absent) ·
@@ -483,7 +489,7 @@ COMPLETE (all 14 slices):**
   (`habits-done~checkin-mental`, `daily-xp~checkin-mental`, `social-mentions~checkin-mental`,
   `training-monotony~checkin-energy`, `bedtime-variability~checkin-mental`,
   `wakeup-hour~checkin-energy`), nutrition→energy (`daily-protein~next-day-checkin-energy`,
-  `meal-score~next-day-checkin-energy`, `reta-dose~daily-kcal`), and recovery
+  `meal-score~next-day-checkin-energy`, `medication-dose~daily-kcal`), and recovery
   (`sport-load~next-sleep-quality`, `sleep-quality~next-day-hr-recovery`,
   `checkin-body~gym-joint-pain`, `gym-workload~next-day-checkin-body`). The monitor page shows
   them automatically — zero FE work, contract unchanged.
@@ -505,7 +511,7 @@ COMPLETE (all 14 slices):**
   actionable hypotheses about MISSING data ("ha edzés után workload-ot pontoznál…"). `gather()`
   became package-private for `HypothesisGatherContextIT`.
 - **Spec deviations (as-built):** `sourceHu` was NOT added to `MetricKey` (the monitor shipped
-  without it and the contract has no such field — no consumer); `reta-dose-mg` derives from the
+  without it and the contract has no such field — no consumer); `medication-dose-mg` derives from the
   dose log (`MedicationDoseEntity.dose`), not the cycle JSON (which holds only phase labels, no
   dose ladder); the driving bd issue's "20 metrics / 32 total" text predates the collector-UI
   audit — the approved count is 19/31 (deep-min dropped: permanently empty without a wearable
@@ -567,7 +573,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
-| Advisor chain (never-ask-twice + self-check) | ✅ V1.3 | Clinical regex + LLM verdict, retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
+| Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
@@ -605,6 +611,44 @@ provider/port ADR
 raised the tool count 8→15, the per-turn budget 6→15, forward-resolved `[Edzés]`, added
 `[Növekedés]`/`[Napi gyakorlat]`, and shipped the `[Eszköz-útmutató]` routing hint +
 [`companion_tool_conventions.md`](../references/companion_tool_conventions.md) house rule.
+
+**Conversational tone (`mezo-q71s`, post-epic) — the port, the persona and the advisor all became
+multi-turn-aware; design of record:**
+[`docs/superpowers/specs/2026-08-16-companion-conversational-tone-design.md`](../superpowers/specs/2026-08-16-companion-conversational-tone-design.md),
+plan
+[`2026-08-16-companion-conversational-tone.md`](../superpowers/plans/2026-08-16-companion-conversational-tone.md),
+[ADR 0028](../decisions/0028-marked-speculation-in-chat.md):
+
+- **The `CompanionLlm` port carries the conversation as real prior messages, not a transcript
+  glued into the system prompt.** The port's `complete`/`stream` grew a `List<Turn> history`
+  parameter (`CompanionLlm.java` — `Role{USER,ASSISTANT}` + `record Turn(role, content)`) as the
+  now-ABSTRACT 5-arg method; the old 4-arg two-string shape became a `default` delegating with
+  `List.of()` — the 10+ one-shot pipeline callers (meal, recipe, pantry, sleep, habit-suggest,
+  scrape, transcription, extraction, summary, verdict) sit on that default, unchanged, and never
+  see history. `GeminiCompanionLlm.request` maps `Turn`s onto Spring AI `Message`s
+  (`.system(sp).messages(toMessages(history)).user(um)`), verified `[SYSTEM, USER, ASSISTANT,
+  USER]`-ordered by `GeminiCompanionLlmPromptOrderTest` (a `Prompt`-capturing `ChatModel` stub —
+  no IT can cover this, since the `companion-fake` profile the ITs run under never constructs a
+  `GeminiCompanionLlm` bean). `ChatHistory.render(List<Turn>)` (new,
+  `feature/companion/ChatHistory.java`) keeps the retired `renderHistory`'s "Daniel: … / Mezo: …"
+  text shape alive for the three NON-model consumers that still need a string: the advisor's judge
+  payload, the fake LLM's echo, and the llm-audit `conversation_history` column below.
+- **`ChatService.SYSTEM_PROMPT` is rebuilt into named blocks** — `[Ki vagy]` · `[Hogyan beszélsz]`
+  (new — behavioural tone rules, not adjectives) · `[Mit szabad állítani]` (new — the
+  marked-speculation policy, [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)) ·
+  `[Példa a hangnemre]` (new — one contrasting "data-terminal vs conversational" answer pair) ·
+  `[Tiltás]` · `[Eszközhasználat]` · `[Eszköz-útmutató]` — see §3 "Prompt assembly" below for the
+  exact current shape. `Válaszolj magyarul, tömören.` is gone (identified as the single line most
+  responsible for the terse, terminal-like tone); a new `ChatService.TONE_REMINDER` (public — the
+  advisor's retry re-prompt needs it too) is appended at the very END of the fully assembled
+  prompt, after the snapshot/facts/pattern-ack blocks, in both `sendMessage` and `prepareTurn` —
+  the recency-weighted counterweight to the persona sitting at the prompt's top.
+- **The advisor's `ungroundedClaim` criterion became `unmarkedClaim`** — see §3 "The advisor
+  chain" and [ADR 0028](../decisions/0028-marked-speculation-in-chat.md) for the full rationale:
+  a linguistically hedged guess ("tippelek", "lehet, hogy") is no longer a violation by itself; an
+  invented concrete number still is, hedged or not. `AdvisorViolation.check`'s `"grounding"`
+  literal became `"unmarked"`; `AdvisorRetry.block` gained a closing tone-preservation sentence so
+  a corrective retry no longer flattens the whole answer a second time.
 
 ## 2. User-facing behavior
 
@@ -658,17 +702,19 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
   → ChatStreamService.streamMessage            service/ChatStreamService.java:59
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
-         prompt = voice + snapshot + history, persist USER row, title-once + lastMessageAt
+         prompt = voice + snapshot + facts + pattern-ack + TONE_REMINDER (mezo-q71s: history is
+         NOT in here — loadWindow()'s Turns ride PreparedTurn.history separately), persist USER
+         row, title-once + lastMessageAt
       2. audit = toolRegistry.newTurnAudit()          ── V0.5: per-turn budget + call/ref collector
          toolSink = Sinks.many().unicast().onBackpressureBuffer(); audit.onCall(call ->
          toolSink.tryEmitNext(toolEvent(call)))       ── mezo-280: registered BEFORE step 3, because
          some CompanionLlm implementations run the tool loop while the Flux is being ASSEMBLED —
          i.e. before anything subscribes; the buffering sink replays those pre-subscription calls
          once merged in
-      3. companionLlm.stream(prompt, content,         ── NO TX: Spring AI runs the tool loop
-             toolRegistry.callbacks(audit),              internally — each RecordingToolCallback
-             toolRegistry.toolContext(userId, audit))     records {name,args} + tools add refs,
-                                                            firing audit's onCall listener → toolSink
+      3. companionLlm.stream(prompt, history, content, ── NO TX: Spring AI runs the tool loop
+             toolRegistry.callbacks(audit),                internally — each RecordingToolCallback
+             toolRegistry.toolContext(userId, audit))       records {name,args} + tools add refs,
+                                                              firing audit's onCall listener → toolSink
          each text chunk → event:delta, data: StreamDelta{text} (JSON); Flux.merge(toolSink.asFlux(),
          deltas) interleaves 0..n event:tool, data: StreamToolCall{type,name} (JSON — the SAME
          pre-baked "name(args)" label as the done row's chip, bare name when args are blank) with the
@@ -707,14 +753,17 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
       2. systemPrompt = SYSTEM_PROMPT (incl. the V0.5 tool-usage line)
                       + contextSnapshotAssembler.render(userId, LocalDate.now())    ── V0.3 ──
                       + knowledgeFactService.renderPromptBlock(userId)              ── V1.1 ──
-                      + renderHistory(loadWindow())  ("Daniel:"/"Mezo:" transcript)
+                      + knowledgeFactService.renderNewPatternFactsBlock(userId)     ── V3.3 ──
+                      + TONE_REMINDER                                              ── mezo-q71s ──
+         history = toTurns(loadWindow(userId, id))    ── mezo-q71s: List<Turn>, travels SEPARATELY
+                                                          from systemPrompt (not rendered into it)
       3. persist the USER row (saveAndFlush → distinct created_at)
       4. audit = toolRegistry.newTurnAudit(); answer = advisorChain.complete(...)   ── V1.3 ──
          when the advisors switch is on (ObjectProvider): attempt + review + retry inside the
          chain; falls back to the direct companionLlm.complete(...) call when off     ── PORT ──►
-         (real: GeminiCompanionLlm → Gemini tool loop · tests: FakeCompanionLlm echoes both
-          halves + executes [fake-tool:…] sentinels through the REAL callbacks + answers
-          verdict calls via the [fake-violate…] sentinels)
+         (real: GeminiCompanionLlm → Gemini tool loop · tests: FakeCompanionLlm echoes
+          system/history/user (mezo-q71s) + executes [fake-tool:…] sentinels through the REAL
+          callbacks + answers verdict calls via the [fake-violate…] sentinels)
       5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope() + degraded
          (null envelopes when no tool ran — the V0.2 steady state is unchanged)
       6. touchConversation → lastMessageAt = now; title = first user msg (once)
@@ -763,7 +812,9 @@ anchor, so both lines always render, falling back to the config ghost when no sl
 DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
 (mezo-xixu, the flagship fix)** — both render through ONE `dayLine` method (mezo-ajp): that day's
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
-`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)`, PLUS any
+`WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)` — since
+mezo-650a a present-but-EMPTY template (the meso wizard's explicit `Rest` rows, zero exercises)
+also renders `pihenőnap (gym)`, the same criterion as `TrainTools#dayContentLine` — PLUS any
 recurring sport-schedule slot on that weekday, PLUS the active running block's prescribed session
 for that weekday (best-effort — absent block/week renders nothing, never fabricated). They used to
 be two near-identical renderers that had drifted: `Ma:` resolved gym only, so today's sport and run
@@ -788,8 +839,9 @@ feature switch independent of `COMPANION_SWITCH`, so the assembler reaches all f
 `ObjectProvider<T>.getIfAvailable()` (the `TodayQuestSource` precedent) — switch off ⇒ that
 block's affected part renders `nincs adat` instead of failing Spring context startup. `[Mai üzemanyag]`
 (`FuelDayService.getDay` consumed/targets incl. water +
-active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
-phase; an active med with no dose renders `nincs rögzített dózis` — honest zero), and
+active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` cycleDay +
+phase; no active medication — since `mezo-lwmq` the standing state — renders `nincs adat`; an
+active med with no dose would render `nincs rögzített dózis` — honest zero either way), and
 `[Regeneráció]` (latest sleep + latest check-in, note truncated to
 `snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
@@ -825,41 +877,90 @@ port with the old docs' §4.5 semantics: `runChecks` = `ClinicalOutputCheck.chec
 (deterministic: accent-folded lowercase (NFD strip), sentence-split on `[.!?\n]`, violation when
 an `advisors.rx-terms` term AND a dose-change verb (`emeld|emeljük|csökkentsd|…hagyd el|állítsd
 át…` — imperative/we-forms only, written accent-folded) share a sentence) first; a clinical hit
-skips `TurnVerdictCheck` that round. The verdict is ONE cheap-tier call through the two-string
-port (`VERDICT_MARKER`-prefixed judge prompt; payload = the turn's full system prompt + the
-tool-call name list from `ToolCallAudit.callNames()` + the user message + the answer) parsed
-first-`{`-to-last-`}` into `{redundantQuestion, ungroundedClaim, reason}` — **fail-open** on any
-call/parse failure. Violations map to `redundancy`/`grounding`; retry = `systemPrompt +
+skips `TurnVerdictCheck` that round. The verdict is ONE cheap-tier call through the history-less
+two-string port (`VERDICT_MARKER`-prefixed judge prompt; payload = `"KONTEXTUS:\n" + turnSystemPrompt
++ ChatHistory.render(history)` + the tool-call name list from `ToolCallAudit.callNames()` + the
+user message + the answer, `TurnVerdictCheck.check`, `advisor/TurnVerdictCheck.java:52-60`) —
+**since mezo-q71s the history is no longer inside `turnSystemPrompt`** (§3 "Prompt assembly"), so
+the payload renders it explicitly with `ChatHistory.render`; without this the judge would go blind
+to the conversation and fire false `redundantQuestion`/`unmarkedClaim` verdicts. Parsed
+first-`{`-to-last-`}` into `{redundantQuestion, unmarkedClaim, reason}` — **fail-open** on any
+call/parse failure. **`unmarkedClaim`** (renamed from `ungroundedClaim`, mezo-q71s — [ADR
+0028](../decisions/0028-marked-speculation-in-chat.md)): the judge asks whether the answer states a
+concrete unsupported claim **confidently, without a linguistic hedge** — a marked hunch
+("tippelek", "gyanítom", "lehet, hogy", "ezt csak sejtem") is no longer itself a violation; an
+invented concrete number still is, hedged or not. Violations map to `redundancy`/`unmarked`
+(`AdvisorViolation.check` — was `"grounding"`); retry = `systemPrompt +
 AdvisorRetry.block(violations)` with the same tools and the SAME audit (chips reflect the whole
 turn), re-checked; after `advisors.max-retries` rounds a still-violating answer returns
-`AdvisedAnswer(answer, degraded=true)`. Both callers hold the chain as
-`ObjectProvider<CompanionAdvisorChain>` — advisors off ⇒ no chain bean ⇒ V1.2 behavior
-byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!" decision).
+`AdvisedAnswer(answer, degraded=true)`. `AdvisorRetry.block` gained a closing tone-preservation
+sentence (mezo-q71s, `advisor/AdvisorRetry.java:24-25`): *"A hangnem NE változzon — ugyanaz az élő,
+beszélgetős stílus; a javítás kizárólag a fent megjelölt problémára vonatkozzon."* — without it a
+corrective retry structurally flattened the whole answer, not just the flagged problem. Both
+callers hold the chain as `ObjectProvider<CompanionAdvisorChain>` — advisors off ⇒ no chain bean ⇒
+V1.2 behavior byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!"
+decision).
 
 **Prompt assembly (the load-bearing shape).** The window is loaded **before** persisting the new
-message, so the current turn travels as the `userMessage` param, never inside the rendered history
-block (`ChatService.java:54-58`). `renderHistory` (`ChatService.java:73`) prepends a
-`HISTORY_HEADER` (`"Eddigi beszélgetés (legrégebbitől a legújabbig):"`) then one line per prior
-message — `"Daniel: …"` for a user row, `"Mezo: …"` for an assistant row. `SYSTEM_PROMPT`
-(`ChatService.java:48`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
-clinical guard "Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az
-orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6, + the V0.5 tool-usage line
-"Múltbeli vagy összesítő kérdéshez … használd a kapott tool-okat" + (mezo-xixu) a terse
-`[Eszköz-útmutató]` block mapping question-type → tool name (PR → `get_exercise_records`, edzésterv
-→ `get_training_plan`, recept → `get_recipes`, … — one line per tool, kept in sync with the
-`@Tool` descriptions per
-[`companion_tool_conventions.md`](../references/companion_tool_conventions.md)). **Since mezo-280**
-one closing timing sentence follows the tool-usage line: *"Ha tool kell a válaszhoz, ELŐBB hívd
-meg, és csak a megkapott adatból válaszolj — ne írd le előre, hogy „megnézem" vagy „megpróbálom",
-és ne ígérj utólagos utánanézést."* The `[Eszköz-útmutató]` block says WHICH tool; this sentence
-says WHEN — it targets a live-observed failure mode where the model narrated an intent to look
-something up ("most megpróbálom megnézni…") and streamed that narration before the tool result
-came back, which read as answering before it had looked even though Spring AI's own streaming
-tool loop is correctly ordered (design spec §1, `2026-07-30-companion-stream-tool-events-design.md`
-§1.2). The `CompanionLlm` port keeps
-the two-string prompt shape and carries the tools alongside (`complete(system, user, tools,
-toolContext)`) — the message-list variant V0.2 Decision #4 predicted turned out unnecessary
-(Decision 16).
+message, so the current turn travels as the `userMessage` param — this was true before mezo-q71s
+and stays true after it. What changed (mezo-q71s): the history is **no longer rendered into the
+system prompt at all**. `loadWindow(userId, conversationId)` maps its `AiMessageEntity` rows onto
+`List<CompanionLlm.Turn>` (`toTurns`, `ChatService.java:236-242`) and that list travels to the port
+as its own parameter — `sendMessage` (`ChatService.java:193`) and `prepareTurn`
+(`ChatService.java:154`, riding `PreparedTurn.history`) both do this. `ChatHistory.render` (the
+retired `renderHistory`'s direct successor, now living in `feature/companion/ChatHistory.java`) is
+never called on the model-bound path — only by the three non-model consumers described below.
+
+`SYSTEM_PROMPT` (`ChatService.java:56-109`) is now **named blocks**, not one instruction stream:
+`[Ki vagy]` (IDENT-1 "társ, nem edző", T/1 plural, never classifies/moralizes) · `[Hogyan beszélsz]`
+(mezo-q71s, new — states BEHAVIOUR, not adjectives: converse rather than report, list only when
+asked or when there are 4+ peer items, length follows the question, has opinions, asks a real
+follow-up question but never a courtesy one, builds on what was already said) · `[Mit szabad
+állítani]` (mezo-q71s, new — the marked-speculation policy: a linguistically hedged hunch is
+allowed, a concrete number/date/past fact needs a source in the context/a tool call/Daniel's
+message, and inventing one is forbidden even hedged; see [ADR
+0028](../decisions/0028-marked-speculation-in-chat.md)) · `[Példa a hangnemre]` (mezo-q71s, new — one
+contrasting "data-terminal" vs "conversational" answer to the same question, calibrating what
+"marked" looks like) · `[Tiltás]` (the clinical guard — *"Gyógyszer adagolására vonatkozó
+változtatást SOHA ne javasolj — az orvosi döntés."*; the drug-name example was removed in
+`mezo-lwmq`, the prohibition itself is unchanged) · `[Eszközhasználat]` (the V0.5 tool-usage line, "Múltbeli vagy összesítő
+kérdéshez … használd a kapott tool-okat", plus the mezo-280 tool-timing sentence below) ·
+`[Eszköz-útmutató]` ((mezo-xixu) the terse question-type → tool name routing hint, PR →
+`get_exercise_records`, edzésterv → `get_training_plan`, recept → `get_recipes`, … — one line per
+tool, kept in sync with the `@Tool` descriptions per
+[`companion_tool_conventions.md`](../references/companion_tool_conventions.md)). `Válaszolj
+magyarul, tömören.` is GONE (mezo-q71s) — identified as the single line most responsible for the
+terse, terminal-like tone; `[Hogyan beszélsz]`'s length rule replaces it. **Since mezo-280** one
+closing timing sentence follows the tool-usage line: *"Ha tool kell a válaszhoz, ELŐBB hívd meg, és
+csak a megkapott adatból válaszolj — ne írd le előre, hogy „megnézem" vagy „megpróbálom", és ne
+ígérj utólagos utánanézést."* The `[Eszköz-útmutató]` block says WHICH tool; this sentence says
+WHEN — it targets a live-observed failure mode where the model narrated an intent to look something
+up ("most megpróbálom megnézni…") and streamed that narration before the tool result came back,
+which read as answering before it had looked even though Spring AI's own streaming tool loop is
+correctly ordered (design spec §1, `2026-07-30-companion-stream-tool-events-design.md` §1.2).
+
+`ChatService.TONE_REMINDER` (mezo-q71s, `public` — the advisor's retry re-prompt needs it too,
+`ChatService.java:116-119`) is appended at the very END of the FULLY assembled prompt — after
+`SYSTEM_PROMPT`, the context snapshot (V0.3), the top-N facts (V1.1) and the pattern-ack block
+(V3.3) — in BOTH `sendMessage` and `prepareTurn`. It is the recency-weighted counterweight to the
+persona sitting at the prompt's top: *"[Emlékeztető] Ez beszélgetés Daniellel, nem adatlekérdezés.
+A fenti adatblokk nyersanyag, nem a válasz formája."* — the runtime data blocks (snapshot/facts) sit
+between the persona and this reminder, so without it the last thing the model reads before
+answering would be raw data, not voice.
+
+The `CompanionLlm` port's `complete`/`stream` are now **5-arg and ABSTRACT**
+(`system, List<Turn> history, user, tools, toolContext` — `CompanionLlm.java:33-38`); the old 4-arg
+two-string-plus-tools shape became a `default` delegating with `List.of()`
+(`CompanionLlm.java:41-50`), so the port INVERTED (abstract ↔ default) rather than gaining a
+parallel overload — every one-shot pipeline caller outside the chat path (meal, recipe, pantry,
+sleep, habit-suggest, scrape, transcription, extraction, summary, verdict — §5) sits on the
+default and needed zero changes. `GeminiCompanionLlm.request` builds
+`.system(sp).messages(toMessages(history)).user(um)` (`GeminiCompanionLlm.java:296-310`) — Spring
+AI's actual outgoing message order (`[SYSTEM, history-in-order…, USER]`) is pinned by
+`GeminiCompanionLlmPromptOrderTest`, a hand-written `Prompt`-capturing `ChatModel` stub (no IT can
+prove this: every IT runs on the `companion-fake` profile, where `GeminiCompanionLlm` doesn't even
+exist as a bean — see §8). This supersedes V0.2 Decision #4 / V0.5 Decision 16 below, which
+predicted and then confirmed a two-string-only port; mezo-q71s is the port's second inversion.
 
 **Switch-gating (every bean conditional).** `CompanionController`, `ConversationService`,
 `ChatService`, `CompanionMapper` (via the services), and both LLM adapters are
@@ -957,7 +1058,7 @@ Migration `202607281200_mezo-2zyu_create_llm_log_history.sql` (in `1.0.0_master.
 owned by the **`feature/llmlog`** package, not by companion — it audits every LLM call in the app —
 but it is documented here because both recording adapters live in `feature/companion/llm/` (§5.3).
 
-- **`llm_log_history`** — 35 columns, `id uuid pk (gen_random_uuid())`, `created_by uuid`
+- **`llm_log_history`** — 36 columns, `id uuid pk (gen_random_uuid())`, `created_by uuid`
   (**nullable**, `on delete set null` — a cron thread has no principal, and deleting a user must not
   take the cost history), `created_at timestamptz`; **`call_kind`** (`CHAT|CHAT_STREAM|VISION|SMART|
   TOOL|EMBED_DOC|EMBED_QUERY`), attribution (`feature` **not null**, `operation`, `entity_kind`,
@@ -970,10 +1071,16 @@ but it is documented here because both recording adapters live in `feature/compa
   LAST round's response, so `GeminiRoundUsageAdvisor` + the `GeminiRoundUsage` tally sum each billed
   round's own native usage instead; single-round calls are byte-identical) (`prompt_/candidates_/thoughts_/
   cached_/total_tokens`), embedding counters (`embed_input_count`, `embed_dimensions`,
-  `embed_billable_chars`), payload (`system_prompt`, `user_message`, `response_text`, `truncated`,
-  `payload_bytes` = the TRUE pre-truncation UTF-8 size), image markers (`image_count`,
-  `image_bytes_total`, `image_mime` — never the bytes), and cost (`pricing_snapshot jsonb`,
-  `cost_usd numeric(12,6)`). Indexes: `created_at`, `(feature, created_at)`,
+  `embed_billable_chars`), payload (`system_prompt`, **`conversation_history`** — new nullable text
+  column, `mezo-q71s`, migration
+  `202608161200_mezo-q71s_llm_log_conversation_history.sql` — filled ONLY by the chat call kinds
+  (`CHAT`/`TOOL`/`CHAT_STREAM`) with `ChatHistory.render(history)`, null on every other kind; the
+  `system_prompt` column's meaning is UNCHANGED by this addition — it still holds exactly what the
+  model received as system prompt, nothing appended, `user_message`, `response_text`, `truncated`,
+  `payload_bytes` = the TRUE pre-truncation UTF-8 size — `conversation_history` participates in the
+  SAME cap/truncation/byte-count discipline as the other three payload columns, `LlmLogWriter.applyPayload`),
+  image markers (`image_count`, `image_bytes_total`, `image_mime` — never the bytes), and cost
+  (`pricing_snapshot jsonb`, `cost_usd numeric(12,6)`). Indexes: `created_at`, `(feature, created_at)`,
   `(served_model, created_at)` — the pruning axis + the two cost-report axes.
 - **`pricing_snapshot` keys are camelCase**, not snake_case like the rest of the schema — it is the
   `PricingSnapshot` record serialised verbatim, so query it as
@@ -1045,6 +1152,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 | `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). **mezo-18bx (additive):** pairs carry `mechanismHu` (the catalog's config `mechanism`) + `metricADomain`/`metricBDomain`, coverage rows carry `sourceHu` + `domain` — straight pass-through from `MetricKey`/`PatternPair`, no new computation. |
+| `GET /api/companion/pattern/pair/{pairKey}` | `PatternPairDetailResponse` | 200 · 401 · 404 | **S1 close (`mezo-tk88.3`):** the pattern detail page's one-stop read — `PatternPairDetailService.detail` reuses `PatternMonitorService.toPair` (package-widened) so the gate verdict can never disagree with the Motor dashboard. `pattern` is `null` until the pair goes live (no synthetic row); `events[]` is the `pattern_event` history (first reader, oldest-first); `days[]` are the CURRENT window's aligned points, computed live (never stored — frozen `confirmed`/`rejected` rows still show today's data); `impact` is the "what came of this" block (promoted fact + grounded predictions/experiments/challenges). Unknown `pairKey` (not in the `mezo.companion.patterns.pairs` catalog) → 404 `COMPANION_PATTERN_PAIR_NOT_FOUND`. **FE consumer since `mezo-tk88.5`:** `usePatternPairDetail(pairKey)` (`patternDetailHooks.ts`) → `PatternDetailPage.tsx` (`/insights/patterns/:pairKey`) — any 404 (unknown key OR the companion switch off) maps to one honest `notFound` state; see [`insights.md`](insights.md) §2.1b/§4. |
 | `GET /api/companion/memory/overview` | `MemoryOverviewResponse` | 200 · 401 · 404 | `mezo-al1i` — L0–L3 layer counts + the 3 job cron strings, one read-only aggregate (`MemoryObservatoryService.overview`). |
 | `GET /api/companion/memory/summary` | `MemorySummaryListResponse` | 200 · 401 · 404 | `mezo-al1i` — the L1 journal, date-desc, optional `from`/`to`; `embedded` flags a live `memory_embedding` row for that day. |
 | `GET /api/companion/memory/similar-days` | `SimilarDaysResponse` | 200 · 400 · 401 · 404 | `mezo-al1i` — reuses `MemoryRecallService` (V2.3) verbatim; `q` required (1..∞ chars), `k` 1..5 (default 3); below-floor matches never returned (the same honest empty-list rule as the tool). |
@@ -1082,6 +1190,19 @@ LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, c
 `costUsd` null means no priced row that day, never a fabricated 0). All four schemas are defined in
 `api/feature/companion/companion.yml`, alongside the existing `Companion` tag schemas.
 
+**`PatternPairDetailResponse` (S1 close, `mezo-tk88.3`):** `{pair: PatternMonitorPair,
+pattern: PatternResponse | null, events: PatternEventResponse[], days: AlignedDayResponse[],
+impact: PatternImpactResponse}` — `pair`/`days` are the SAME `PatternMonitorPair`/live-window
+shapes the monitor endpoint returns (§ above), so the two surfaces never disagree. `PatternEventResponse
+{kind, occurredAt, r?, n?, p?, reinforcementCount?, factId?}` mirrors one `pattern_event` row 1:1
+(`CompanionMapper.toPatternEventResponse`) — only the fields the `kind` actually uses are non-null.
+`PatternImpactResponse {fact: PatternImpactFact | null, predictions: PatternImpactRef[],
+experiments: PatternImpactRef[], challenges: PatternImpactRef[]}` — `fact` is the promoted knowledge
+fact (via `PatternEntity.promotedFactId`), the three ref lists are grounded rows found by each
+proactive repository's `findByCreatedByAndSourcePatternIdAndDeletedFalse` (S2, `mezo-tk88.2`);
+`PatternImpactRef {id, title, status}`. **Assembly crosses the companion↔proactive boundary** —
+see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-clean.
+
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
 | Tool (args) | Source (existing reads) | Ref |
@@ -1093,7 +1214,7 @@ LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, c
 | `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
-| `get_medication(scope)` (mezo-xixu, merged from `get_reta_cycle`) | scope=reta (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no reta-specific naming) | `Medication`/name |
+| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming) | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
@@ -1133,9 +1254,11 @@ LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, c
   (`COMPANION_ADVISORS_SWITCH`); off ⇒ the chain/check beans do not exist (V1.2 behavior).
 - `mezo.companion.advisors.max-retries` = **1** (`@Min(0) @Max(2)`) — corrective re-prompts
   before a violating answer ships `degraded` (0 = check-only flagging; old docs §4.5: 1).
-- `mezo.companion.advisors.rx-terms` = `[retatrutid, reta, tirzepatid, mounjaro, szemaglutid,
-  ozempic, wegovy]` (`@NotEmpty`) — the clinical check's guarded prescription-med terms
-  (accent-folded contains-match; only dose-CHANGE verbs trigger).
+- `mezo.companion.advisors.rx-terms` (`@NotEmpty`) — the clinical check's owner-curated
+  GLP-1-family drug-name dictionary (7 terms, `application.yml`) — the guard's vocabulary, not
+  user data, so it was deliberately left untouched by the medication-retirement pass ([ADR
+  0027](../decisions/0027-retire-retatrutide-generic-medication-domain.md)); accent-folded
+  contains-match, only dose-CHANGE verbs trigger.
 - `mezo.companion.transcription.max-audio-bytes` = **5 242 880** (`@Min(1)`) — the voice-note
   upload cap (`mezo-at8x.4`), kept under the 6 MB container multipart cap so the SERVICE check is
   the effective, message-bearing limit; ~2.5 minutes of the 16 kHz mono WAV the FE uploads.
@@ -1454,6 +1577,24 @@ repository read closes a slice cycle (`feature_slices_are_cycle_free` caught exa
 `TodayActivitySource.awardedXpByDay` + `TodayQuestSource.completedXpByDay` extend the existing
 inversion ports, consumed via `ObjectProvider` (absent bean = that source contributes nothing).
 
+**S1 close (`mezo-tk88.3`) added the FIRST port pointing the OTHER way.** Every port above lets
+companion pull data IN from a feature that itself depends on companion. The pattern-pair-detail
+endpoint needs the opposite: `PatternPairDetailService` (companion) needs predictions/experiments/
+challenges grounded on a pattern (`source_pattern_id`, S2 `mezo-tk88.2`) — but those live in
+`feature.proactive`, which ALREADY imports companion extensively (§ below), so a direct companion
+→ proactive import would open a brand-new 2-slice cycle (`feature_slices_are_cycle_free` is
+FROZEN — only the pre-existing biometrics↔goal/meal↔recipe cycles are tolerated; a NEW cycle
+fails outright). **`PatternImpactSource`** (`feature.companion.service`, plain interface, no
+`ObjectProvider` needed since its implementor is unconditioned relative to it — see below) inverts
+the dependency exactly like `TodayQuestSource` does, just mirrored: `PatternPairDetailService`
+depends only on its own package; the real assembly (`feature.proactive.service.PatternImpactService`)
+imports `feature.companion` (the already-existing direction) and implements the interface — Spring
+wires it in, no compile-time edge crosses the boundary in the new direction. `PatternImpactService`
+is `@ConditionalOnProperty(COMPANION_SWITCH)` — the SAME switch as `PatternPairDetailService`, not
+`PROACTIVE_SWITCH` — so the detail endpoint always resolves a bean when companion is on; with the
+proactive generators off it just lists nothing (the finder repositories are plain, unconditioned
+Spring Data beans). See [`proactive.md`](proactive.md) §5.1 for the mirror-image writeup.
+
 **V3.3 promotion seam (✅ wired — the loop closes).** Pattern-confirm →
 `knowledge_fact(source=pattern)` → the V1.1 top-N injection carries it into every prompt → the
 V3.1 nightly re-detection reinforces it → the reinforcement raises its injection rank. The next
@@ -1569,12 +1710,18 @@ tests is **always** `FakeCompanionLlm` — network never touched.
 
 **The `companion-fake` profile trick.** `@ActiveProfiles("companion-fake")` **merges** with the
 base test profiles (`AbstractIntegrationTest`/`ApiIntegrationTest` run `demodata`), so the fake
-adapter replaces Gemini while everything else stays real. `FakeCompanionLlm.complete` **echoes
-both prompt halves** (`"FAKE-LLM system=[…] user=[…]"`, `FakeCompanionLlm.java:24`), which makes
-**prompt assembly assertable** — `ChatServiceIT` asserts the persisted answer contains the
-companion voice (`"Te vagy a mezo"`, `"retatrutid"`), the windowed history block
-(`"Daniel: …"`/`"Mezo: …"`), and that the current message rides as the `user=[…]` param, not the
-history.
+adapter replaces Gemini while everything else stays real. `FakeCompanionLlm.complete/stream`
+**echo three parts, not two** (mezo-q71s — the fake widened alongside the port's inversion):
+`"FAKE-LLM system=[…] history=[…] user=[…]"`, where `history=[…]` is `ChatHistory.render(history)`
+(`FakeCompanionLlm.java:366-368`). This is what makes **prompt assembly assertable**: `ChatServiceIT`
+asserts the persisted answer's `system=[…]` segment contains the companion voice (`"Te vagy a
+mezo"`, the drug-name-free clinical guard `"Gyógyszer adagolására vonatkozó változtatást"`)
+and the `TONE_REMINDER` text but **NOT** any prior turn's content, the
+`history=[…]` segment contains the windowed `"Daniel: …"`/`"Mezo: …"` transcript, and the
+`user=[…]` segment is exactly the current message — never the history. Before mezo-q71s this was a
+two-part echo with the history rendered INSIDE `system=[…]`; the three-way split is the single
+test surface that would fail if the history were ever accidentally reglued into the system prompt
+(see also the dedicated history-separation IT below).
 
 **`ContextSnapshotAssemblerIT` (V0.3, 21 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
@@ -1585,12 +1732,15 @@ regression guard for the observed hallucination bug: tomorrow's meso-template gy
 the matching sport-schedule slot, the active running block's prescribed session for that weekday,
 and the honest rest-day fallback when no template matches today OR tomorrow's weekday)**, account
 level + top skill (`[Növekedés]`), quest count +
-creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, retaDay+phase
+creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, cycleDay+phase
 (`4. nap (Stabil)`), sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced
 from the sleep goal (derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep
 goal exists, and determinism (two renders are `equals`).
-`ChatServiceIT` gained `testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndHistory…` —
-the fake's echo proves voice → `AKTUÁLIS ÁLLAPOT` → history ordering in the real prompt.
+`ChatServiceIT` gained `testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndFacts_whenSending` —
+the fake's `system=[…]` echo proves voice → `AKTUÁLIS ÁLLAPOT` → facts ordering in the real prompt.
+(**Since mezo-q71s** this ordering ends at the facts/pattern-ack/`TONE_REMINDER` blocks — history
+is no longer part of it at all; see the `system=[…] history=[…] user=[…]` three-way echo split
+above.)
 
 The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
@@ -1643,7 +1793,7 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`CompanionToolsRenderIT`** (77 tests, `@Transactional` + fake profile) — every tool's rendered
   Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
   with a hand-built `ToolContext`): happy paths, `nincs adat`/`nincs aktív …` absences, window
-  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero reta.
+  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero medication cycle.
 - **`CompanionToolRegistryIT`** — exactly the 15-tool batch registered, every callback wrapped in
   `RecordingToolCallback`; the tool-context carries `userId` + audit.
 - **`ToolCallAuditTest` + `RecordingToolCallbackTest`** (pure units) — null envelopes when empty,
@@ -1716,16 +1866,30 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`ClinicalOutputCheckTest`** (5 tests, pure unit — no Spring) — verb+term same-sentence
   violation, accent-folded inflection (`Retát`), term-without-verb, verb-without-term,
   cross-sentence pass.
-- **`TurnVerdictCheckIT`** (3) — clean / scripted-redundancy mapping / fail-open on non-JSON.
-- **`CompanionAdvisorChainIT`** (5, via `ChatService.sendMessage`) — clean turn, retry-recover
+- **`TurnVerdictCheckIT`** (4) — clean / scripted-redundancy mapping / fail-open on non-JSON /
+  (**mezo-q71s**) the judge payload renders `history` via `ChatHistory.render` — a sentinel planted
+  in a `Turn`'s content reaches the payload ONLY through that render call, so this test fails first
+  if the history-into-judge-payload wiring is ever dropped.
+- **`CompanionAdvisorChainIT`** (6, via `ChatService.sendMessage`) — clean turn, retry-recover
   (`RETRY_MARKER` in the echo proves round 2), degraded persisted+on-wire, clinical-persists →
-  degraded, verdict-broken → fail-open without retry.
+  degraded, verdict-broken → fail-open without retry, (**mezo-q71s**) a linguistically marked
+  speculation does NOT trigger a retry — the policy's IT anchor ([ADR
+  0028](../decisions/0028-marked-speculation-in-chat.md)).
 - **`ChatStreamAdvisorIT`** (2, NOT `@Transactional`) — deltas carry attempt-1 (no marker),
   `done` carries the retried answer clean; violate-always → `done.degraded` + persisted flag.
 - **`CompanionAdvisorsSwitchOffIT`** (2) — no chain bean; violation sentinels change nothing.
 - **Extended:** `ChatServiceIT` (clean turn ⇒ `degraded=false` persisted + on-wire),
   `CompanionPropertiesIT` (advisors binding), `FactExtractionServiceIT` (+2: confirmed-dupe
   reinforces `reinforcement_count`/`last_reinforced_at`, pending-dupe does not).
+- **`ChatServiceIT` mezo-q71s additions** — `testSendMessage_shouldKeepHistoryOutOfSystemPrompt_whenPriorTurnsExist`
+  (the lynchpin test named in the design spec: the persisted system-prompt echo must NOT contain a
+  prior turn's content, the history-echo segment must; this is the one test that fails if the
+  history is ever reglued into the system prompt), `testSendMessage_shouldDropTerseInstructionAndCarryVoiceRules_whenAssemblingPrompt`
+  (`"Válaszolj magyarul, tömören."` is gone; the new `[Hogyan beszélsz]`/`[Mit szabad állítani]`
+  rules are present), `testSendMessage_shouldEndPromptWithToneReminder_whenAssemblingPrompt`
+  (`TONE_REMINDER` is the LAST thing in the fully assembled prompt, after the snapshot/facts/
+  pattern-ack blocks). `ChatStreamServiceIT` carries the streamed-path twin of the history-
+  separation test.
 - **FE:** `chatApi.test.ts` (degraded mapping: false → undefined, true → true),
   `ChatPage.test.tsx` (mock seed shows no badge; a degraded `done` renders `nem ellenőrzött`).
 
@@ -1745,9 +1909,11 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 3. **No `started_at` column.** `OwnedEntity.created_at` is the conversation start; the contract's
    `startedAt` maps from it (`CompanionMapper.toConversationResponse`). A duplicate column would
    only drift — the spec §3 field list is "essence", not DDL.
-4. **History windowing lives in the system prompt** (a rendered `Daniel:`/`Mezo:` transcript), so
-   the `CompanionLlm` port keeps the two-string prompt shape. (The predicted message-list variant
-   never materialized — V0.5 carries tools alongside the two strings instead; Decision 16.)
+4. **History windowing lived in the system prompt** (a rendered `Daniel:`/`Mezo:` transcript), so
+   the `CompanionLlm` port originally kept a two-string prompt shape. **Superseded by mezo-q71s**
+   (see the "Conversational tone" §1 entry and Decision 16 below): the history now rides the port
+   as real prior messages (`List<Turn>`), and the two-string shape survives only as the default
+   overload every history-less pipeline caller still uses.
 5. **Typed jsonb envelope shapes, always null in V0.2.** `ToolCallsEnvelope{calls:[{type,name}]}`,
    `RefsEnvelope{refs:[{kind,id}]}` — field names mirror the FE mock `Tool{type,name}` /
    `ChatRef{kind,id}` so V0.4/V0.5 wiring is mechanical (ADR 0006 / `ProvenanceEnvelope`
@@ -1798,11 +1964,17 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **V0.5 decisions (locked in the V0.5 plan §"Decisions locked"):**
 
-16. **Port keeps two strings + tools; NO message-list variant.** V0.2 Decision #4 predicted tool
-    calling would force a message-list port — it doesn't (Spring AI runs the tool-execution loop
-    inside the adapter). `complete/stream(system, user, List<ToolCallback>, Map toolContext)` with
-    `default` two-arg overloads. `ToolCallback`/`ToolContext` are spring-ai-core types shared by
-    every provider starter — not provider types, so ADR 0008's isolation holds.
+16. **Port kept two strings + tools at V0.5; NO message-list variant — until mezo-q71s.** V0.2
+    Decision #4 predicted tool calling would force a message-list port; it didn't (Spring AI runs
+    the tool-execution loop inside the adapter regardless of prompt shape).
+    `complete/stream(system, user, List<ToolCallback>, Map toolContext)` with `default` two-arg
+    overloads held from V0.5 through V3.4. **`mezo-q71s` (conversational tone) is what finally
+    added a message-list dimension** — not for tool calling, but so the chat HISTORY could travel
+    as real prior turns instead of a rendered transcript inside the system prompt: the port
+    INVERTED (the 5-arg `List<Turn> history` form became abstract, this 4-arg tool-carrying form
+    became a `default` delegating with `List.of()`). `ToolCallback`/`ToolContext` are still
+    spring-ai-core types shared by every provider starter — not provider types, so ADR 0008's
+    isolation holds unchanged.
 17. **Audit = decorator, refs = explicit, identity = context.** `RecordingToolCallback` records
     every call (unbypassable) + enforces the cap (soft-fail text in-band, attempt not recorded) +
     shields tool exceptions (honest error result); tools add their own refs via the audit in the
@@ -1834,8 +2006,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     exist and prove the injection before V1.2's extraction lands.
 23. **Injection = top-N by `reinforcement_count desc, created_at desc`,** config
     `mezo.companion.facts.top-n` (default 10); block renders Hungarian category labels; empty set
-    ⇒ `""` (no empty header). Position: snapshot → **facts** → history, shared by the sync and
-    streamed turn (both call the same prompt assembly).
+    ⇒ `""` (no empty header). Position: snapshot → **facts** → pattern-ack → `TONE_REMINDER`,
+    shared by the sync and streamed turn (both call the same prompt assembly). **Since mezo-q71s**
+    the history is no longer part of this ordering at all — it travels to the port as its own
+    parameter, not rendered into the prompt (§3 "Prompt assembly").
 24. **`learned_fact` is table-only in V1.1** with **loose UUID refs** (`derived_from_message_id`,
     `promoted_fact_id`, both `ON DELETE SET NULL`, no `@ManyToOne`) and a CHECK that passes NULL
     (undecided candidate) — the V1.2 flow gets a ready schema, no dead code today.
@@ -1874,9 +2048,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     surface.
 33. **Chain depth v1 = 2 checks** (the roadmap's latency question answered small): deterministic
     clinical regex (~0 ms, first; a hit skips the LLM that round) + ONE combined cheap-tier
-    verdict call for redundancy AND grounding-lite. Full per-claim EvidenceCheck +
-    numericGroundingCheck stay deferred (classifier-tier cost data first). Old ContinuityGate /
-    MultiHorizonLoader intent is covered by the snapshot injection — not carried.
+    verdict call for redundancy AND grounding-lite (**renamed `unmarkedClaim` at mezo-q71s** — see
+    the "Conversational tone" §1 entry and [ADR 0028](../decisions/0028-marked-speculation-in-chat.md);
+    the criterion itself changed, not just the name — a linguistically hedged guess is no longer a
+    violation, only an unmarked one). Full per-claim EvidenceCheck + numericGroundingCheck stay
+    deferred (classifier-tier cost data first). Old ContinuityGate / MultiHorizonLoader intent is
+    covered by the snapshot injection — not carried.
 34. **Retry semantics per old docs §4.5:** violation → ONE corrective re-prompt with the
     violation summary appended to the system prompt (same user message, same tools, SAME audit —
     chips honestly reflect all calls of the turn); still violating ⇒ ship WITH `degraded=true`
@@ -1989,7 +2166,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionVoiceController.java` + `service/TranscriptionService.java` — **`mezo-at8x.4`** the stateless voice-note → transcript surface (`implements CompanionVoiceApi`, switch-gated; size/mime validation + the transcription system prompt).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + snapshot/facts prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/ChatHistory.java` — **mezo-q71s** the `List<Turn>` → "Daniel: … / Mezo: …" text renderer, the sole source for the three non-model consumers (advisor judge payload, fake LLM echo, `llm_log_history.conversation_history`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/TodayQuestSource.java` — the companion-owned port for `[Napi gyakorlat]`'s quest count, implemented by `feature/quest/service/TodayQuestAdapter.java` (keeps the quest↔companion dependency one-directional; the `progression.QuestLedgerSource` precedent).
@@ -1998,18 +2176,20 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{ChatTurnCompleted,FactExtractionListener}.java` — the V1.2 AFTER_COMMIT async trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactCandidateService.java` — V1.2 pending inbox + accept/refine/reject decision.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/AsyncConfiguration.java` — `@EnableAsync` (born with V1.2).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3; + `toPatternEventResponse` since S1 close `mezo-tk88.3`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternPairDetailService.java` — **S1 close (`mezo-tk88.3`)** the pattern detail page's read; reuses `PatternMonitorService.toPair` (package-widened) + delegates the impact block to `PatternImpactSource`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternImpactSource.java` — the companion-owned inversion port `PatternPairDetailService` depends on; implemented in `feature.proactive.service.PatternImpactService` (see [`proactive.md`](proactive.md) §10) — keeps the companion↔proactive dependency graph cycle-free in the NEW direction, mirroring `TodayQuestSource`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MemoryObservatoryService.java` — **`mezo-al1i`** the memory-observatory read-only aggregate: `overview`/`summaries`/`similarDays`/`llmUsage`, companion-switch conditional.
 
 **Backend — advisor chain (V1.3)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/CompanionAdvisorChain.java` — the §4.5 retry/degrade orchestrator (`complete` sync / `review` streamed).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/ClinicalOutputCheck.java` — deterministic Rx dose-change regex (accent-folded, sentence-scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/{AdvisorRetry,AdvisorViolation,AdvisedAnswer}.java` — retry block + value records.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse; `unmarkedClaim` since mezo-q71s — [ADR 0028](../decisions/0028-marked-speculation-in-chat.md) — renders `history` via `ChatHistory.render` into its own payload).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/{AdvisorRetry,AdvisorViolation,AdvisedAnswer}.java` — retry block (mezo-q71s: gained a closing tone-preservation sentence) + value records (`AdvisorViolation.check` ∈ `clinical|redundancy|unmarked`, was `grounding`).
 
 **Backend — LLM port (ADR 0008)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port (`complete` + `stream`, tools variants since V0.5; the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu), including the new `conversationHistory` field on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
@@ -2024,7 +2204,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogWriter.java` — `@Async @EventListener` → `REQUIRES_NEW` insert: field mapping, payload capping, net-prompt cost derivation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmPricingService.java` — freezes the day's unit prices onto the row and computes `cost_usd` from THAT snapshot (unknown model ⇒ null).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/context/{LlmCallContext,LlmCallContextHolder}.java` — the thread-scoped caller tag (`runWith`); 32 call sites in 29 classes (`grep -rn "new LlmCallContext(" backend/src/main/java | grep -v LlmCallContext.java`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/entity/{LlmLogEntity,CallKind,CallStatus,PricingSnapshot}.java` — the INSERT-only entity (no `OwnedEntity`, no `is_deleted`) + the jsonb price snapshot.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/entity/{LlmLogEntity,CallKind,CallStatus,PricingSnapshot}.java` — the INSERT-only entity (no `OwnedEntity`, no `is_deleted`) + the jsonb price snapshot; `LlmLogEntity.conversationHistory` (nullable text) since mezo-q71s.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608161200_mezo-q71s_llm_log_conversation_history.sql` — the `conversation_history` column (nullable, no backfill needed — every existing row predates the chat's multi-turn port).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java` — **`mezo-al1i`** `LlmLogRepository` grew `aggregatePerDaySince` (native daily rollup, report-zone calendar days) alongside the existing `aggregateSince`; new `repository/LlmDailyAggregate.java` projection (day/calls/inputTokens/outputTokens/costUsd).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmUsageService.java` — **`mezo-al1i`** grew `perDay(days)` (a sibling of the existing `summary()` day/week/month rollup) + exposed `auditEnabled()` publicly for `MemoryObservatoryService`'s `enabled` short-circuit.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding.
@@ -2032,7 +2213,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/mapper/LlmLogMapper.java` — `LlmLogEntity → LlmCallDetailResponse` (hand-written default methods: the jsonb `PricingSnapshot`, `BigDecimal→Double` null-preserving cost, `Instant→OffsetDateTime`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/repository/{LlmStatusRow,LlmGroupRow,LlmCallRow,LlmUsageAggregate}.java` — the JPQL constructor-expression projections behind `aggregateByStatusSince`/`aggregateByFeatureSince`/`aggregateByModelSince`/`findCalls`/`aggregateSince` (`LlmLogRepository`); `findCalls` fetches `limit + 1` rows so the service can derive `hasMore` without a second `count(*)`.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`) + `feature/companion/llm/{GeminiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiEmbeddingAdapterRecordingTest}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths + the breakdown/list/detail endpoint ITs.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`; `service/LlmLogWriterIT.java` — the writer/DB round-trip, incl. `conversation_history` capping/truncation/null-on-non-chat since mezo-q71s) + `feature/companion/llm/{GeminiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiCompanionLlmPromptOrderTest,GeminiEmbeddingAdapterRecordingTest}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths (incl. `conversationHistory` on the audit record, mezo-q71s) + the outgoing Spring AI message ORDER (`GeminiCompanionLlmPromptOrderTest`, mezo-q71s — no IT can cover this, see §3) + the breakdown/list/detail endpoint ITs.
 
 **Backend — tools (V0.5, expanded to 15 tools at mezo-xixu)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).

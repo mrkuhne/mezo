@@ -29,7 +29,7 @@ const build = (opts: {
   slots: FuelSlot[]
   stackVerdicts?: MealMatchVerdict[]
   workoutTime?: string | null
-  retaPeak?: boolean
+  medPeak?: boolean
   nowHHmm?: string
   meals?: FuelMeal[]
   /** Override the hero's now-slot resolution — the 'closed no-now-but-missed-remains' scenario
@@ -44,7 +44,7 @@ const build = (opts: {
     hero: opts.hero ?? heroFor(nowSlot),
     stackVerdicts: opts.stackVerdicts ?? [],
     workoutTime: opts.workoutTime ?? null,
-    retaPeak: opts.retaPeak ?? false,
+    medPeak: opts.medPeak ?? false,
     nowHHmm: opts.nowHHmm ?? '12:00',
     meals: opts.meals ?? [],
   })
@@ -128,9 +128,9 @@ test('the protein jump projects the now window onto todays consumed protein', ()
   expect(island.facts.proteinJump).toEqual({ addG: 42, fromG: 62, toG: 104, pctOfTarget: 65 })
 })
 
-test('the now island subtitle names the workout time and, at Reta peak, the appetite note', () => {
+test('the now island subtitle names the workout time and, at med peak, the appetite note', () => {
   const now = slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: 'now' })
-  const vm = build({ slots: [now], workoutTime: '13:00', retaPeak: true })
+  const vm = build({ slots: [now], workoutTime: '13:00', medPeak: true })
   const island = vm.islands[0]
   expect(island.subtitle).toContain('edzés 13:00')
   expect(island.subtitle).toContain('étvágy')

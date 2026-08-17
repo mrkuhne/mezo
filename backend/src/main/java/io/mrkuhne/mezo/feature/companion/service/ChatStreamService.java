@@ -77,7 +77,7 @@ public class ChatStreamService {
         // the stream() call itself is enough — the deferred pipeline carries the closed-over context.
         Flux<ServerSentEvent<Object>> deltas = llmCallContextHolder.runWith(
                         new LlmCallContext("companion_chat", "stream", "conversation", conversationId),
-                        () -> companionLlm.stream(turn.systemPrompt(), turn.userContent(),
+                        () -> companionLlm.stream(turn.systemPrompt(), turn.history(), turn.userContent(),
                                 toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)))
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
@@ -95,8 +95,8 @@ public class ChatStreamService {
                     boolean degraded = false;
                     CompanionAdvisorChain chain = advisorChain.getIfAvailable();
                     if (chain != null) {
-                        AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.userContent(),
-                                finalAnswer, toolRegistry.callbacks(audit),
+                        AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.history(),
+                                turn.userContent(), finalAnswer, toolRegistry.callbacks(audit),
                                 toolRegistry.toolContext(userId, audit), audit);
                         finalAnswer = advised.answer();
                         degraded = advised.degraded();

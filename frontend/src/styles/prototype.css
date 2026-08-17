@@ -261,9 +261,9 @@
   --ph-rem:   var(--rose);
   --ph-awake: var(--faint);
 
-  /* Reta phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
-  --reta-d1: #7FA48A; --reta-d2: #8FAC7E; --reta-d3: #A3B272; --reta-d4: #BCB466;
-  --reta-d5: #D6B25B; --reta-d6: #EBB250; --reta-d7: #FFB347;   /* sage→amber ramp */
+  /* Medication cycle phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
+  --medcycle-d1: #7FA48A; --medcycle-d2: #8FAC7E; --medcycle-d3: #A3B272; --medcycle-d4: #BCB466;
+  --medcycle-d5: #D6B25B; --medcycle-d6: #EBB250; --medcycle-d7: #FFB347;   /* sage→amber ramp */
 
   /* AnchorMode (light, warmer) */
   --anchor-canvas:  #FBF4EC;
@@ -915,24 +915,24 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .text-error { color: var(--error); }
 .text-success { color: var(--success); }
 
-/* RetaPhaseBar */
-.reta-bar {
+/* MedicationCyclePhaseBar */
+.medcycle-bar {
   display: flex; gap: 3px;
   padding: 0 24px;
   margin-top: 8px;
   height: 6px;
 }
-.reta-seg {
+.medcycle-seg {
   flex: 1;
   background: var(--surface-2);
   opacity: 0.5;
   transition: all 0.3s ease;
 }
-.reta-seg.active {
+.medcycle-seg.active {
   opacity: 1;
   box-shadow: 0 0 10px currentColor;
 }
-.reta-seg.past { opacity: 0.4; }
+.medcycle-seg.past { opacity: 0.4; }
 
 /* Set dots */
 .set-dots { display: flex; gap: 6px; }
@@ -1478,8 +1478,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 .quicklog-sub { font-size: 14px; color: var(--text-secondary); font-weight: 400; margin-top: 2px; }
-.quicklog-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-4); }
+/* 8 tiles in a 3-wide rhythm; flex (not grid) so a short last row centres itself (mezo-967c) */
+.quicklog-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-3); }
 .quicklog-tile {
+  flex: 0 0 calc((100% - 2 * var(--sp-3)) / 3);
   border-radius: var(--r-2xl); padding: 16px 8px 14px; min-height: 104px; text-align: center;
   border: 1px solid var(--divider); background: var(--surface-page); cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit;
@@ -1487,6 +1489,20 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .quicklog-emoji { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-recess); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 6px; }
 .quicklog-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
 .quicklog-hint { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+/* The one non-logging entry, lifted out of the grid so the companion chat stops hiding (mezo-967c) */
+.quicklog-chat {
+  width: 100%; margin-top: var(--sp-4); padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  border: none; border-radius: var(--r-2xl); cursor: pointer; font-family: inherit;
+  background: var(--gradient-cta); color: #fff; box-shadow: var(--shadow-cta);
+}
+.quicklog-chat-emoji {
+  width: 44px; height: 44px; border-radius: 50%; flex: none; font-size: 19px;
+  background: rgba(255, 255, 255, 0.22); display: flex; align-items: center; justify-content: center;
+}
+.quicklog-chat-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.quicklog-chat-label { font-size: 15px; font-weight: 700; }
+.quicklog-chat-hint { font-size: 12px; font-weight: 500; opacity: 0.82; }
 .screen-content { padding-bottom: var(--screen-bottom-pad); }
 .icon-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; color: var(--sub); } /* DS Rule 6: 48dp tap target */
 
@@ -2972,7 +2988,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   display: flex; align-items: center; justify-content: center; background: var(--surface-glass); }
 
 /* ===== Napív Fuel Mai — guided recomposition (mezo-rrtj), RETIRED (mezo-jgh9, window-river Task 6) =====
-   .retamicro (Reta micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
+   .medcycle-micro (gyógyszer-ciklus micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
    .daybudget/.dayseg/.brk/.ebchip/.mac* (DayBudgetCard) were all deleted whole with their sole
    consumer — the ablak-folyam recomposition replaced this page outright with the .sky-islands/.isl*
    family (window-island hero + KeretBelt's kibontott view owns the energy-breakdown + macro bars

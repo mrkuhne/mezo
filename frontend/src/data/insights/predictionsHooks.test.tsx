@@ -9,7 +9,7 @@ import { makeHookWrapper } from '@/test/queryWrapper'
 const wireRow = {
   id: 'p1',
   title: 'Hét 27 testsúly csökken',
-  basis: 'Reta D3-D7 alacsonyabb intake.',
+  basis: 'Terhelt napok után alacsonyabb intake.',
   confidence: null,
   metricKey: 'weight_trend',
   expectedDirection: 'down',

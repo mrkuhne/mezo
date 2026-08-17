@@ -79,14 +79,14 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
         }
 
         @Override
-        public String complete(String systemPrompt, String userMessage,
+        public String complete(String systemPrompt, List<CompanionLlm.Turn> history, String userMessage,
             List<ToolCallback> tools, Map<String, Object> toolContext) {
             captured = contextHolder.get();
             return answer;
         }
 
         @Override
-        public Flux<String> stream(String systemPrompt, String userMessage,
+        public Flux<String> stream(String systemPrompt, List<CompanionLlm.Turn> history, String userMessage,
             List<ToolCallback> tools, Map<String, Object> toolContext) {
             captured = contextHolder.get();
             return Flux.just(answer);

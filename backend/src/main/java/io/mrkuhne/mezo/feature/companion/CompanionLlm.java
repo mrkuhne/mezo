@@ -19,13 +19,35 @@ import java.util.Map;
  */
 public interface CompanionLlm {
 
-    /** One-shot completion on the cheap chat tier, with the turn's tools registered. */
-    String complete(String systemPrompt, String userMessage,
+    /** Ki beszélt egy korábbi körben — a port provider-független szerepfogalma. */
+    enum Role { USER, ASSISTANT }
+
+    /** Egy lezárt korábbi üzenet. A history ezekből áll, legrégebbitől a legújabbig. */
+    record Turn(Role role, String content) {}
+
+    /**
+     * One-shot completion on the cheap chat tier, with the turn's tools registered and the
+     * conversation so far as REAL prior messages (mezo-q71s) — not a transcript inside the
+     * system prompt. The 4-arg overload below stays for the one-shot pipeline callers.
+     */
+    String complete(String systemPrompt, List<Turn> history, String userMessage,
                     List<ToolCallback> tools, Map<String, Object> toolContext);
 
-    /** Streamed completion (token/chunk deltas) on the cheap chat tier, with tools registered. */
-    Flux<String> stream(String systemPrompt, String userMessage,
+    /** Streamed twin of {@link #complete(String, List, String, List, Map)}. */
+    Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                         List<ToolCallback> tools, Map<String, Object> toolContext);
+
+    /** History-less completion — every one-shot pipeline (meal, recipe, pantry, sleep, …) rides this. */
+    default String complete(String systemPrompt, String userMessage,
+                            List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return complete(systemPrompt, List.of(), userMessage, tools, toolContext);
+    }
+
+    /** History-less stream. */
+    default Flux<String> stream(String systemPrompt, String userMessage,
+                                List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return stream(systemPrompt, List.of(), userMessage, tools, toolContext);
+    }
 
     default String complete(String systemPrompt, String userMessage) {
         return complete(systemPrompt, userMessage, List.of(), Map.of());
