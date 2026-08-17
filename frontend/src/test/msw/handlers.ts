@@ -136,7 +136,9 @@ const mesoReportFixture = {
   weeks: 8,
   selfEval: 'Stabil blokk.',
   aiEval: null,
-  aiEvalStatus: 'ready',
+  // Backend parity: an S2 report is always written `pending` (nothing generates the narrative
+  // yet) with the feature off — which must NOT start the FE's poll.
+  aiEvalStatus: 'pending',
   aiEvalGeneratedAt: null,
   aiEvalEnabled: false,
   adherence: {

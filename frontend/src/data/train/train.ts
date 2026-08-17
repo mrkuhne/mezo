@@ -526,10 +526,13 @@ export const mesoReportMock = {
   // MesoCloseSheet at close time.
   selfEval: '8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.',
   aiEval: null,
-  aiEvalStatus: 'ready',
+  // Backend parity (MesocycleReportEntity's default; regenerate resets to it): EVERY S2
+  // report is written `pending` and stays there — nothing generates the narrative yet.
+  aiEvalStatus: 'pending',
   aiEvalGeneratedAt: null,
-  // S2 ships the report WITHOUT the AI narrative — the page must hide the block entirely.
-  // S3 (mezo-meyc.3) flips this to true and fills `aiEval`.
+  // S2 ships the report WITHOUT the AI narrative — the page must hide the block entirely,
+  // and `pending` must NOT start the poll while the feature is off. S3 (mezo-meyc.3) flips
+  // this to true and fills `aiEval`.
   aiEvalEnabled: false,
   adherence: {
     plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
@@ -547,7 +550,7 @@ export const mesoReportMock = {
   },
   // Sorted the way the backend sorts: deltaPct (e1RM-based) descending, nulls last. The list
   // deliberately mixes every rendering case: a load+e1RM gain, a load-flat/reps-only e1RM gain,
-  // a regression, and a weightless lift that has no e1RM at all.
+  // a fully flat lift (both deltas 0), a regression, and a weightless lift with no e1RM at all.
   strength: [
     {
       exerciseName: 'Chest Supported Row', muscle: 'back-mid', firstWeek: 1, lastWeek: 8,
@@ -564,6 +567,13 @@ export const mesoReportMock = {
       exerciseName: 'Lateral Raise', muscle: 'shoulder-side', firstWeek: 2, lastWeek: 8,
       firstTopKg: 12, firstTopReps: 12, lastTopKg: 12, lastTopReps: 16,
       firstE1rm: 16.8, lastE1rm: 18.4, deltaKg: 0, deltaPct: 9.5,
+    },
+    {
+      // Genuinely flat — same load, same reps. Both deltas are 0, so NEITHER pill may show
+      // (a `0% e1RM` badge would read as a verdict where there is no movement at all).
+      exerciseName: 'Leg Press', muscle: 'quad', firstWeek: 1, lastWeek: 8,
+      firstTopKg: 120, firstTopReps: 12, lastTopKg: 120, lastTopReps: 12,
+      firstE1rm: 168, lastE1rm: 168, deltaKg: 0, deltaPct: 0,
     },
     {
       // The niggle-managed press — a deliberate regression (both pills go negative).

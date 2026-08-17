@@ -47,6 +47,14 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.getByText('MRV 20')).toBeInTheDocument()
   })
 
+  it('hides the AI section for a `pending` eval too, while the feature is off', () => {
+    renderAt('meso-rec-03')
+    // The fixture mirrors the backend (`pending`, feature off) — `pending` must not leak an
+    // "Az értékelés készül…" card into an S2 report.
+    expect(screen.queryByText(/AI értékelés/)).toBeNull()
+    expect(screen.queryByText(/értékelés készül/)).toBeNull()
+  })
+
   it('labels the top-set LOAD move and the e1RM percentage distinctly', () => {
     renderAt('meso-rec-03')
     const strength = screen.getByTestId('meso-report-strength')
@@ -62,6 +70,16 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     const row = within(strength).getByText('Lateral Raise').closest('[data-testid="strength-row"]')!
     expect(within(row as HTMLElement).getByText('+9,5% e1RM')).toBeInTheDocument()
     expect(within(row as HTMLElement).queryByText(/kg$/)).toBeNull() // 0 kg is not a gain
+  })
+
+  it('badges nothing at all on a genuinely flat lift (0 kg AND 0%)', () => {
+    renderAt('meso-rec-03')
+    const strength = screen.getByTestId('meso-report-strength')
+    const row = within(strength).getByText('Leg Press').closest('[data-testid="strength-row"]')!
+    expect(within(row as HTMLElement).getByText('120 → 120 kg · 12 → 12 rep')).toBeInTheDocument()
+    // a `0% e1RM` badge in a signal colour would invent a verdict where nothing moved
+    expect(within(row as HTMLElement).queryByText(/e1RM/)).toBeNull()
+    expect(within(row as HTMLElement).queryByText(/kg$/)).toBeNull()
   })
 
   it('falls back to reps movement on a weightless lift (no e1RM to quote)', () => {
@@ -155,5 +173,27 @@ describe('MesoReportPage (real mode · no report yet)', () => {
     expect(await screen.findByText('15/18')).toBeInTheDocument()
     // the originating template is reachable from the report header
     expect(screen.getByRole('button', { name: /Sablon megnyitása/ })).toBeInTheDocument()
+  })
+
+  it('renders a retryable error state on a non-404 read failure (never a blank page)', async () => {
+    let broken = true
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([archivedMeso])),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () =>
+        broken ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(report),
+      ),
+    )
+    const user = userEvent.setup()
+    renderAt(ID)
+
+    expect(await screen.findByText('Nem sikerült betölteni a riportot.')).toBeInTheDocument()
+    // the 404-shaped affordance must NOT appear — a 500 is not "no report yet"
+    expect(screen.queryByRole('button', { name: 'Riport generálása' })).toBeNull()
+
+    broken = false
+    await user.click(screen.getByRole('button', { name: 'Újrapróbálás' }))
+
+    expect(await screen.findByText('15/18')).toBeInTheDocument()
+    expect(screen.queryByText('Nem sikerült betölteni a riportot.')).toBeNull()
   })
 })

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { addDays, huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { evaluateMockSetMedals, type MockMedalContext } from '@/data/train/medalEvaluator'
@@ -12,6 +12,7 @@ import {
   type GymExerciseInput,
   type GymScheduleSlotInput,
   type GymScheduleSlotResponse,
+  type MesocycleReportResponse,
   type MesocycleResponse,
   type SetLogRequest,
   type SetUpdateRequest,
@@ -35,6 +36,7 @@ import {
   sport,
   exerciseLibrary,
 } from '@/data/train/train'
+import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
@@ -276,6 +278,53 @@ function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
   }
 }
 
+/**
+ * Mock-mode close (mezo-meyc.2) — emulates the backend's TWO effects in the client-owned
+ * cache (the sportEvents/mesoTemplateHooks idiom) so the offline demo stays self-consistent:
+ * the run flips to `archived` AND a report appears at its report key. Without this, the close
+ * sheet's navigation lands on a page that reports the run is still going.
+ *
+ * The seeded report is deliberately EMPTY of derived numbers (adherence zeros, no volume arc,
+ * no strength rows, no records): mock mode has no logged set history to freeze, and inventing
+ * plausible-looking totals for a run the user just closed would be a lie. The one thing it can
+ * carry honestly is the note the owner just typed. Dates are ISO (the report contract's format
+ * — the domain `Mesocycle` carries HU display strings, which the page's formatter would choke
+ * on), reconstructed as a `weeks`-long window ending today.
+ */
+function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void {
+  const today = localDateString()
+  qc.setQueryData<Mesocycle[]>(['train', 'mesocycles'], (prev) =>
+    (prev ?? mesocycles).map((m) =>
+      m.id === id ? { ...m, status: 'archived', closedAt: `${today}T00:00:00Z` } : m,
+    ),
+  )
+  const meso = (qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles).find((m) => m.id === id)
+  const weeks = meso?.weeks ?? 1
+  const report: MesocycleReportResponse = {
+    mesocycleId: id,
+    templateId: meso?.templateId ?? null,
+    title: meso?.title ?? 'Mesociklus',
+    startDate: addDays(today, -(weeks * 7 - 1)),
+    endDate: today,
+    closedAt: `${today}T00:00:00Z`,
+    weeks,
+    selfEval: selfEval?.trim() || null,
+    aiEval: null,
+    // Backend parity: a freshly written report is always `pending` with the feature off.
+    aiEvalStatus: 'pending',
+    aiEvalGeneratedAt: null,
+    aiEvalEnabled: false,
+    adherence: {
+      plannedSessions: 0, completedSessions: 0, plannedWeeks: weeks, completedWeeks: weeks, completionPct: 0,
+    },
+    volume: null,
+    strength: [],
+    records: { medalCount: 0, top: [] },
+    context: null,
+  }
+  qc.setQueryData(mesoReportQueryKey(id), report)
+}
+
 type MutateOpts = { onSuccess?: () => void; onError?: () => void }
 
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
@@ -430,15 +479,21 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   })
   // Closing writes the frozen run report server-side (mezo-meyc.2), so the run's report
   // query is invalidated alongside the list — a re-close that fills a still-null selfEval
-  // must not leave a stale report on screen.
+  // must not leave a stale report on screen. Mock mode emulates BOTH server effects in the
+  // client-owned cache (see mockClose) instead of no-oping: the close sheet navigates to the
+  // report, and a no-op close would land the offline demo on a page insisting the run is
+  // still active.
   const closeMutation = useMutation({
     mutationFn: mock
-      ? async (_args: { id: string; selfEval?: string | null }) => undefined
+      ? async (args: { id: string; selfEval?: string | null }) => {
+          mockClose(qc, args.id, args.selfEval)
+          return undefined
+        }
       : (args: { id: string; selfEval?: string | null }) =>
           trainApi.close(args.id, args.selfEval ? { selfEval: args.selfEval } : undefined),
     onSuccess: (_data, args) => {
       invalidate()
-      if (!mock) qc.invalidateQueries({ queryKey: ['train', 'mesoReport', args.id] })
+      if (!mock) qc.invalidateQueries({ queryKey: mesoReportQueryKey(args.id) })
     },
   })
   const replaceMutation = useMutation({

@@ -9,7 +9,8 @@ import type { Mesocycle } from '@/data/types'
 /** How often the report is re-read while something is still being generated server-side. */
 const POLL_MS = 3000
 
-const reportKey = (id: string | null) => ['train', 'mesoReport', id]
+/** The one report cache key — `trainHooks`' mock close writes into it too (mezo-meyc.2). */
+export const mesoReportQueryKey = (id: string | null) => ['train', 'mesoReport', id]
 
 /** Mock mode has exactly one closed run with a report — every other id has none (404 parity). */
 function mockReportFor(id: string | null): MesocycleReportResponse | null {
@@ -32,7 +33,7 @@ function mockRegenerate(qc: QueryClient, id: string | null): void {
     weeks: meso?.weeks ?? mesoReportMock.weeks,
     aiEvalGeneratedAt: new Date().toISOString(),
   }
-  qc.setQueryData(reportKey(id), generated)
+  qc.setQueryData(mesoReportQueryKey(id), generated)
 }
 
 /**
@@ -48,7 +49,7 @@ function mockRegenerate(qc: QueryClient, id: string | null): void {
 export function useMesoReport(id: string | null) {
   const mock = isMockMode()
   const qc = useQueryClient()
-  const key = reportKey(id)
+  const key = mesoReportQueryKey(id)
   // True between firing a regenerate and the report actually showing up — the window in which
   // the GET may still legitimately answer 404.
   const [regenerating, setRegenerating] = useState(false)
@@ -109,6 +110,13 @@ export function useMesoReport(id: string | null) {
     pending: !mock && q.isPending,
     /** The run exists but carries no report — the actionable "generate it" state. */
     notFound: !q.isPending && q.data === null,
+    /**
+     * A REAL failure (anything but the 404, which is `notFound` above) — mesoArcHooks' idiom.
+     * Without this the page would render a blank shell on a 500/offline read.
+     */
+    error: !mock && q.isError,
+    /** Retry a failed read (the error state's „Újrapróbálás"). */
+    refetch: () => { void q.refetch() },
     regenerating,
     regenerate,
   }

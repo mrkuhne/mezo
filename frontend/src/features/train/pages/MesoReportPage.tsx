@@ -66,7 +66,7 @@ export function MesoReportPage() {
   const navigate = useNavigate()
   const goBack = useBackNav('/train/mesocycles')
   const { mesocycles, workoutPending } = useTrain()
-  const { report, pending, notFound, regenerating, regenerate } = useMesoReport(id ?? null)
+  const { report, pending, notFound, error, refetch, regenerating, regenerate } = useMesoReport(id ?? null)
   const { rerun } = useMesoTemplates()
   // The rerun's resolved template — opens the one shared start sheet (mezo-meyc.1).
   const [startTemplate, setStartTemplate] = useState<{ id: string; title?: string } | null>(null)
@@ -137,6 +137,17 @@ export function MesoReportPage() {
       {pending ? (
         <div style={{ padding: '16px 24px' }}>
           <GhostState lines={3} message="Riport betöltése…" />
+        </div>
+      ) : error ? (
+        // A genuine read failure (the contract's 404 is `notFound` below, not this) —
+        // a terminal state with a retry, never a blank page (§7a).
+        <div style={{ padding: '16px 24px' }}>
+          <GhostState
+            lines={2}
+            message="Nem sikerült betölteni a riportot."
+            ctaLabel="Újrapróbálás"
+            onCta={refetch}
+          />
         </div>
       ) : notFound ? (
         <div style={{ padding: '16px 24px' }}>
@@ -216,8 +227,10 @@ export function MesoReportPage() {
                         {`${signed(s.deltaKg)} kg`}
                       </span>
                     )}
-                    {/* The e1RM delta — this is the one that credits extra reps at the same load. */}
-                    {s.deltaPct != null && (
+                    {/* The e1RM delta — this is the one that credits extra reps at the same load.
+                        Hidden at exactly 0 for the same reason the kg pill is: a flat lift has no
+                        verdict to badge, and `0% e1RM` in a signal colour would invent one. */}
+                    {s.deltaPct != null && s.deltaPct !== 0 && (
                       <span className="chip" style={{ color: s.deltaPct > 0 ? 'var(--sage-deep)' : 'var(--error)' }}>
                         {`${signed(s.deltaPct)}% e1RM`}
                       </span>

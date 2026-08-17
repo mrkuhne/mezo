@@ -1,9 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
+import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
+import { useTrain } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -87,4 +89,43 @@ test('a failed close keeps the sheet open and does not navigate (no false succes
   expect(onClose).not.toHaveBeenCalled()
   expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${MESO}`)
   expect(screen.getByTestId('loc')).not.toHaveTextContent('/report')
+})
+
+// --- offline (mock) demo parity: a no-op close would land on a page insisting the run is
+// still active, so mock mode emulates BOTH server effects in the client-owned cache.
+test('mock close archives the run and lands on a report carrying the submitted note', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const MOCK_MESO = 'meso-hyp-04' // the ACTIVE fixture run
+  function StatusProbe() {
+    const { mesocycles } = useTrain()
+    return <div data-testid="status">{mesocycles.find((m) => m.id === MOCK_MESO)?.status}</div>
+  }
+  const user = userEvent.setup()
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[`/train/mesocycles/${MOCK_MESO}`]}>
+        <Routes>
+          <Route
+            path="/train/mesocycles/:id"
+            element={
+              <MesoCloseSheet mesoId={MOCK_MESO} title="Hypertrophy 04 · Tavasz" onClose={vi.fn()} />
+            }
+          />
+          <Route path="/train/mesocycles/:id/report" element={<MesoReportPage />} />
+        </Routes>
+        <StatusProbe />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  expect(screen.getByTestId('status')).toHaveTextContent('active')
+
+  await user.type(screen.getByLabelText('Saját értékelés'), 'Offline demo zárás.')
+  await user.click(screen.getByRole('button', { name: /Lezárás/ }))
+
+  // the seeded report renders — including the note the owner just typed
+  expect(await screen.findByText('Offline demo zárás.')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' })).toBeInTheDocument()
+  // ...and the run really is archived, so nothing claims it is still running
+  await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('archived'))
+  expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()
 })
