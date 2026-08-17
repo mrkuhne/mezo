@@ -16,9 +16,9 @@ import org.springframework.test.context.TestPropertySource;
 class ProactiveApiCompanionOffIT extends ApiIntegrationTest {
 
     @Test
-    void testGetBriefing_shouldReturn404_whenCompanionSwitchedOff() {
+    void testGetFeed_shouldReturn404_whenCompanionSwitchedOff() {
         String body = getForBody(
-                "/api/proactive/briefing", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }

@@ -29,7 +29,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  useActivities, useCheckins, useCompanionNote, useDailyQuests, useFuelPreview, useGoal,
+  useActivities, useCheckins, useCompanionFeed, useDailyQuests, useFuelPreview, useGoal,
   useHabitActions, useHabitCatalog, useHabitDay, useIntentionActions, useIntentionDay,
   useQuestActions, useQuickStats, useRitualDay, useSleep, useSleepGoal, useToday,
   useTodayScenario, useWaterActions, useWeight, resolveBriefing,
@@ -111,7 +111,7 @@ const heroCardOf = (s: DaySession, onLog: () => void): DayHero => {
 export function TodayPage() {
   const date = localDateString()
   const scenario = useTodayScenario()
-  const { user, workout, volleyballSessions, workoutTime, prediction, briefing, briefingDemo } = useToday()
+  const { user, workout, volleyballSessions, workoutTime, prediction } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
   const { quests, levelUps: questLevelUps } = useDailyQuests(date)
@@ -131,7 +131,7 @@ export function TodayPage() {
   const { data: intention } = useIntentionDay(date)
   const { addFocus, reflect } = useIntentionActions(date)
   const stats = useQuickStats()
-  const companionNote = useCompanionNote()
+  const feed = useCompanionFeed()
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
@@ -344,14 +344,10 @@ export function TodayPage() {
 
   const growth = growthTodaySummary(quests, activities ?? [])
 
-  // A mezo hangja: a nap üzenet-szála a MÁR MEGLÉVŐ két hookból — nincs új adatforrás.
+  // A mezo hangja: a nap üzenet-szála a unified companion-feedből épül (mezo-gst9).
   // Az olvasatlan-jelzés a szál UTOLSÓ elemének id-jét hasonlítja a napra mentett
   // `localStorage` értékhez; a napváltás magától elavulttá teszi a kulcsot.
-  const messages = buildMezoMessages({
-    briefing: briefing ?? resolveBriefing(scenario.dayState),
-    note: companionNote,
-    briefingDemo,
-  })
+  const messages = buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) })
   const latestId = messages.length > 0 ? messages[messages.length - 1].id : null
   const msgsUnread = latestId != null && latestId !== seenId
   const openMessages = () => {

@@ -127,14 +127,36 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern REVISE_SENTINEL =
             Pattern.compile("\\[fake-revise:(\\{.*?\\})]", Pattern.DOTALL);
 
-    /** Mirror of BriefingGenerator.BRIEFING_MARKER (feature/proactive) — a LITERAL, not an
+    /** Mirror of CompanionMessageGenerator.MORNING_MARKER (feature/proactive) — a LITERAL, not an
      *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
-     *  Drift is caught loudly by BriefingGeneratorIT (echo answer -> parse fails -> null row). */
-    public static final String BRIEFING_MARKER_MIRROR = "REGGELI-BRIEFING-FELADAT";
+     *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String MORNING_MARKER_MIRROR = "REGGELI-ELIGAZITAS-FELADAT";
 
-    /** Scripted briefing (B1.1): {@code [fake-briefing:{…}]} planted via a check-in note. */
-    public static final Pattern BRIEFING_SENTINEL =
-            Pattern.compile("\\[fake-briefing:(\\{.*?\\})]", Pattern.DOTALL);
+    /** Scripted morning message (companion-feed): {@code [fake-feed-morning:{…}]} planted via a
+     *  check-in note (the snapshot renders check-in notes, so this is the established sentinel-
+     *  planting channel). */
+    public static final Pattern MORNING_SENTINEL =
+            Pattern.compile("\\[fake-feed-morning:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Mirror of CompanionMessageGenerator.SLEEP_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
+     *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String SLEEP_MARKER_MIRROR = "ALVAS-REAKCIO-FELADAT";
+
+    /** Scripted sleep-reaction message (companion-feed): {@code [fake-feed-sleep:{…}]} planted via
+     *  a check-in note (the snapshot renders check-in notes, so this is the established sentinel-
+     *  planting channel). */
+    public static final Pattern SLEEP_SENTINEL =
+            Pattern.compile("\\[fake-feed-sleep:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Mirror of CompanionMessageGenerator.WEIGHT_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #SLEEP_MARKER_MIRROR}. */
+    public static final String WEIGHT_MARKER_MIRROR = "SULY-REAKCIO-FELADAT";
+
+    /** Scripted weight-reaction message (companion-feed): {@code [fake-feed-weight:{…}]} planted
+     *  via a check-in note (same channel as {@link #SLEEP_SENTINEL}). */
+    public static final Pattern WEIGHT_SENTINEL =
+            Pattern.compile("\\[fake-feed-weight:(\\{.*?\\})]", Pattern.DOTALL);
 
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
@@ -151,7 +173,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEMOIR_SENTINEL =
             Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
 
-    /** Mirror of HeartbeatGenerator.HEARTBEAT_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
 
     /** Scripted heartbeat prose (H1): {@code [fake-heartbeat:…]} planted via a check-in note. */
@@ -255,11 +277,23 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
             return summaryAnswer(userMessage);
         }
-        if (systemPrompt.startsWith(BRIEFING_MARKER_MIRROR)) {
-            Matcher m = BRIEFING_SENTINEL.matcher(userMessage);
+        if (systemPrompt.startsWith(MORNING_MARKER_MIRROR)) {
+            Matcher m = MORNING_SENTINEL.matcher(userMessage);
             // default = valid minimal JSON so the un-scripted happy path still persists a row
             return m.find() ? m.group(1)
-                    : "{\"eyebrow\":\"Fake briefing\",\"body\":[\"FAKE-BRIEFING-NARRATÍVA\"],\"refIndexes\":[]}";
+                    : "{\"eyebrow\":\"Fake reggeli\",\"body\":[\"FAKE-REGGELI-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(SLEEP_MARKER_MIRROR)) {
+            Matcher m = SLEEP_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake alvás\",\"body\":[\"FAKE-ALVAS-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(WEIGHT_MARKER_MIRROR)) {
+            Matcher m = WEIGHT_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake súly\",\"body\":[\"FAKE-SULY-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);

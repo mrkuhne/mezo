@@ -13,17 +13,19 @@ export function resetMockPushState(): void {
 }
 
 // ── Notification prefs seed (N2/N3 settings list) — the code defaults, verbatim off the
-// backend's NotificationCategory enum (defaultEnabled/defaultLeadMinutes): 7 of 11 ON, only
+// backend's NotificationCategory enum (defaultEnabled/defaultLeadMinutes): 10 of 14 ON, only
 // `gym` carries a non-zero lead. Used both as the mock-mode `useDualQuery` seed AND as the
 // real-mode pre-resolve ghost (data/notification/notificationPrefHooks.ts) — the same "no
 // stored row = code default" honesty the backend itself guarantees. ─────────────────────────
 const DEFAULT_ENABLED: Record<NotificationCategoryKey, boolean> = {
   briefing: true, gym: true, medication: true, ritual: true, lights_out: true,
   weekly: true, memoir: true, wind_down: false, midday: false, checkin: false, fuel_slot: false,
+  evening: true, sleep_reaction: true, weight_reaction: true,
 }
 const DEFAULT_LEAD_MINUTES: Record<NotificationCategoryKey, number> = {
   briefing: 0, gym: 30, medication: 0, ritual: 0, lights_out: 0,
   weekly: 0, memoir: 0, wind_down: 0, midday: 0, checkin: 0, fuel_slot: 0,
+  evening: 0, sleep_reaction: 0, weight_reaction: 0,
 }
 
 export const notificationPrefSeed: NotificationPrefView[] = NOTIFICATION_CATEGORIES.map((category) => ({

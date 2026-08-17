@@ -5,7 +5,6 @@ import { useFuelTimeline } from '@/data/fuel/timelineHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useSleep } from '@/data/me/sleepHooks'
 import { useWeight } from '@/data/me/weightHooks'
-import { useBriefing } from '@/data/today/briefingHooks'
 import { huMonthDay, huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import {
   today,
@@ -54,10 +53,6 @@ export function resolveBriefing(dayState: DayState): Briefing {
 type TodayData = {
   today: TodayMeta
   user: UserMeta
-  /** The GENERATED briefing (real mode, proactive B1.2) — null in mock mode and whenever no server briefing exists; the page falls back to resolveBriefing + the „Demo tartalom" label. */
-  briefing: Briefing | null
-  /** True in real mode — the briefing prose is static demo copy until the proactive epic ships the generated one. */
-  briefingDemo: boolean
   /** Mock: Train's own Phase-1 static plan (`data/train/train.ts`'s `workout`, byte-identical
    * to the retired Today-local duplicate — deduped by `estimateSessionMinutes` needing the
    * recipe-shaped `LoggedWorkoutExercise[]`, `mezo-oyhy.3`). Real: today's planned Train
@@ -79,13 +74,10 @@ type TodayData = {
 export function useToday(): TodayData {
   const mock = isMockMode()
   const train = useTrain()
-  const serverBriefing = useBriefing()
   if (mock) {
     return {
       today,
       user,
-      briefing: null,
-      briefingDemo: false,
       workout: train.workout,
       workoutTime: today.workoutTime,
       prediction: workoutPrediction,
@@ -112,8 +104,6 @@ export function useToday(): TodayData {
       dayInWeek: ((now.getDay() + 6) % 7) + 1,
       mesoLabel: meso?.title ?? '',
     },
-    briefing: serverBriefing,
-    briefingDemo: serverBriefing == null,
     workout: train.workout,
     workoutTime: gymToday?.time ?? null,
     prediction: null,

@@ -18,4 +18,9 @@ public interface WeightLogRepository extends OwnedRepository<WeightLogEntity> {
      *  bound filtered in Java, the house ≥-then-filter idiom; sleep uses the same shape). */
     List<WeightLogEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
             UUID createdBy, LocalDate date);
+
+    /** The single latest weigh-in (by date, tie-broken by created_at) — the companion snapshot's
+     *  [Profil] "mérés:" fact, shown beside the EWMA trend (V2.2 follow-up, mezo-gst9). */
+    Optional<WeightLogEntity> findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(
+            UUID createdBy);
 }

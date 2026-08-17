@@ -1753,15 +1753,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/proactive/briefing": {
+    "/api/proactive/feed": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** The generated morning briefing for one day (lazily generated when the dawn cron has not produced it yet) */
-        get: operations["getBriefing"];
+        /**
+         * The unified companion-message feed for one day (companion-feed) — morning/sleep/weight/midday/evening
+         * @description Returns the day's persisted companion-feed messages in generation order. For TODAY the cron-kind miss-recovery lazily generates: morning always (its cron is dawn — by any read it has elapsed); midday/evening once their fire-time (derived from the SAME cron the job runs on) has passed. Event-triggered kinds (sleep/weight) are born from their events, never from this miss-recovery. Past dates never generate. An empty array is the honest empty state (never a 404 — this is a list endpoint, the P1 precedent).
+         */
+        get: operations["getFeed"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1796,26 +1799,6 @@ export interface paths {
         };
         /** The latest weekly memoir (lazily generated for the last completed week when none exists yet) */
         get: operations["getMemoir"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/proactive/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The day's latest heartbeat note (napközbeni jelenlét, H1)
-         * @description Returns the latest persisted heartbeat note for the given day (evening closing beats midday nudge by generation time). For TODAY the latest already-elapsed window lazy-generates when missing (the miss-recovery); past dates never generate. 404 = honest absence (no elapsed window yet, no narrative memory, or generation failed).
-         */
-        get: operations["getHeartbeat"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5101,20 +5084,19 @@ export interface components {
             tiedToLabel?: string;
             flagged: boolean;
         };
-        BriefingRef: {
+        FeedRef: {
             /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
             kind: string;
             label: string;
         };
-        BriefingResponse: {
+        FeedMessageResponse: {
             /** Format: date */
             date: string;
-            /** @description One-line header above the briefing prose */
+            /** @enum {string} */
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening";
             eyebrow: string;
-            /** @description Briefing paragraphs — the FE maps each to a BriefingPara */
             body: string[];
-            /** @description Code-collected, model-SELECTED source references (never model-invented) */
-            refs: components["schemas"]["BriefingRef"][];
+            refs: components["schemas"]["FeedRef"][];
             /** Format: date-time */
             generatedAt: string;
         };
@@ -5139,18 +5121,6 @@ export interface components {
             /** @description The memoir prose (single narrative paragraph block) */
             body: string;
             anchors: components["schemas"]["MemoirAnchor"][];
-            /** Format: date-time */
-            generatedAt: string;
-        };
-        HeartbeatNoteResponse: {
-            /** Format: date */
-            date: string;
-            /** @description Window key (midday | evening) — the config window the note was written for */
-            window: string;
-            /** @description nudge (midday) | closing (evening) */
-            kind: string;
-            /** @description The generated HU note (plain prose, cheap tier) */
-            content: string;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -11308,10 +11278,10 @@ export interface operations {
             };
         };
     };
-    getBriefing: {
+    getFeed: {
         parameters: {
             query?: {
-                /** @description The briefed day — the FE sends its LOCAL date (the check-in read precedent); defaults to the server's today. */
+                /** @description The fed day — the FE sends its LOCAL date (the briefing precedent); defaults to the server's today. */
                 date?: string;
             };
             header?: never;
@@ -11320,26 +11290,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The persisted (or just-generated) briefing */
+            /** @description The day's companion-feed messages (possibly empty), in generation order */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BriefingResponse"];
+                    "application/json": components["schemas"]["FeedMessageResponse"][];
                 };
             };
             /** @description Missing or invalid token */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No briefing possible — no narrative memory (daily_summary) in the configured past-days window. The FE renders its honest state (B1.2). */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11418,47 +11379,6 @@ export interface operations {
                 };
             };
             /** @description No memoir possible — no narrative memory in the last completed week. The FE renders its honest "készül" state. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
-    getHeartbeat: {
-        parameters: {
-            query?: {
-                /** @description The noted day — the FE sends its LOCAL date (the briefing precedent); defaults to the server's today. */
-                date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The day's latest heartbeat note */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HeartbeatNoteResponse"];
-                };
-            };
-            /** @description Missing or invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No note for the day (honest absence). The Today card simply stays absent. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13061,7 +12981,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All 11 categories, always complete — a category with no stored row reports its code default */
+            /** @description All 14 categories, always complete — a category with no stored row reports its code default */
             200: {
                 headers: {
                     [name: string]: unknown;

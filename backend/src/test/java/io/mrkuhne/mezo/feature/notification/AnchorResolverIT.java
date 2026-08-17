@@ -7,10 +7,9 @@ import io.mrkuhne.mezo.feature.notification.domain.AnchorSet;
 import io.mrkuhne.mezo.feature.notification.domain.AnchorSet.AnchoredEvent;
 import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
 import io.mrkuhne.mezo.feature.notification.service.AnchorResolver;
-import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.BriefingPopulator;
-import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
+import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
@@ -20,14 +19,17 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeeklySuggestionPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Anchor resolution across the 11 categories (bd mezo-h4wp.6.2), focused on the traps that would
+ * Anchor resolution across the 14 categories (bd mezo-h4wp.6.2, mezo-gst9), focused on the traps that would
  * silently misfire a notification: the gym/sport weekday's 0-based-vs-ISO conversion, prose
  * anchors existing only when their content row exists, medication's honest {@code cycleDay == 0},
  * the FE-written schedule's {@code weekday = null} "every day" semantics, the prose-generation
@@ -48,22 +50,30 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     private static final int WEEKLY_GRACED_MINUTE = 6 * 60 + 15;
     /** mezo.proactive.memoir.cron `0 0 19 * * SUN` + 15. */
     private static final int MEMOIR_GRACED_MINUTE = 19 * 60 + 15;
-    /** mezo.proactive.heartbeat.midday-cron `0 30 12 * * *` + 15. */
+    /** mezo.proactive.feed.midday-cron `0 30 12 * * *` + 15. */
     private static final int MIDDAY_GRACED_MINUTE = 12 * 60 + 45;
+    /** mezo.proactive.feed.evening-cron `0 30 20 * * *` + 15. */
+    private static final int EVENING_GRACED_MINUTE = 20 * 60 + 45;
     /** Comfortably after the weekly generator's 06:00 — no grace applies. */
     private static final String LATE_WAKE = "08:20";
 
     @Autowired private AnchorResolver anchorResolver;
     @Autowired private UserPopulator userPopulator;
     @Autowired private TrainPopulator trainPopulator;
-    @Autowired private BriefingPopulator briefingPopulator;
+    @Autowired private CompanionMessagePopulator companionMessagePopulator;
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
     @Autowired private NotificationPopulator notificationPopulator;
     @Autowired private WeeklySuggestionPopulator weeklySuggestionPopulator;
     @Autowired private MemoirPopulator memoirPopulator;
-    @Autowired private HeartbeatNotePopulator heartbeatNotePopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
+
+    /** A day+time this class controls explicitly for the two event-kind anchors
+     *  (sleep_reaction/weight_reaction), whose anchor is the row's OWN generation minute —
+     *  {@link Instant#now()} would make the assertion flaky at the top of a minute. */
+    private static Instant generatedAt(LocalDate date, int hour, int minute) {
+        return date.atTime(LocalTime.of(hour, minute)).atZone(ZoneId.systemDefault()).toInstant();
+    }
 
     /**
      * A fresh, self-created owner per test rather than the demodata-seeded one: this class's
@@ -104,9 +114,10 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testResolve_shouldYieldABriefingAnchor_whenABriefingRowExistsForTheDay() {
+    void testResolve_shouldYieldABriefingAnchor_whenAMorningCompanionMessageExistsForTheDay() {
         UUID owner = ownerId();
-        briefingPopulator.briefing(owner, WEDNESDAY);
+        companionMessagePopulator.createMessage(owner, WEDNESDAY, CompanionMessageEntity.KIND_MORNING,
+                "Reggeli", List.of("Jó reggelt, Daniel!"));
 
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
 
@@ -222,9 +233,10 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testResolve_shouldAnchorMiddayAfterItsGenerator_whenTheMiddayHeartbeatNoteExists() {
+    void testResolve_shouldAnchorMiddayAfterItsGenerator_whenTheMiddayCompanionMessageExists() {
         UUID owner = ownerId();
-        heartbeatNotePopulator.note(owner, WEDNESDAY, HeartbeatNoteEntity.WINDOW_MIDDAY);
+        companionMessagePopulator.createMessage(owner, WEDNESDAY, CompanionMessageEntity.KIND_MIDDAY,
+                "Dél", List.of("Teszt napközbeni jegyzet."));
 
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
 
@@ -235,14 +247,57 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testResolve_shouldLeaveTheBriefingAnchorOnWake_whenItsGeneratorAlreadyRunsBeforeWake() {
+    void testResolve_shouldAnchorEveningAfterItsGenerator_whenTheEveningCompanionMessageExists() {
         UUID owner = ownerId();
-        briefingPopulator.briefing(owner, WEDNESDAY);
+        companionMessagePopulator.createMessage(owner, WEDNESDAY, CompanionMessageEntity.KIND_EVENING,
+                "Napzárás", List.of("Ez volt a mai nap."));
 
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
 
-        // briefing is the SAFE pattern the other three now copy: generated 05:45, anchored at the
-        // 06:00 ghost wake, so the same guard is a deliberate no-op here.
+        AnchoredEvent evening = proseEvent(anchors, NotificationCategory.EVENING);
+        assertThat(evening.minuteOfDay()).as("20:30 evening cron + the 15-minute generation grace")
+                .isEqualTo(EVENING_GRACED_MINUTE);
+        assertThat(evening.dedupSuffix()).isEqualTo("20:45");
+    }
+
+    @Test
+    void testResolve_shouldAnchorSleepReactionOnItsOwnGenerationMinute_whenTheSleepCompanionMessageExists() {
+        UUID owner = ownerId();
+        companionMessagePopulator.createMessage(owner, WEDNESDAY, CompanionMessageEntity.KIND_SLEEP,
+                "Alvás", List.of("7 óra 40 percet aludtál."), generatedAt(WEDNESDAY, 21, 7));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        AnchoredEvent sleep = proseEvent(anchors, NotificationCategory.SLEEP_REACTION);
+        assertThat(sleep.minuteOfDay()).as("the row's own generation minute, not a fixed constant")
+                .isEqualTo(21 * 60 + 7);
+        assertThat(sleep.dedupSuffix()).isEqualTo("21:07");
+    }
+
+    @Test
+    void testResolve_shouldAnchorWeightReactionOnItsOwnGenerationMinute_whenTheWeightCompanionMessageExists() {
+        UUID owner = ownerId();
+        companionMessagePopulator.createMessage(owner, WEDNESDAY, CompanionMessageEntity.KIND_WEIGHT,
+                "Testsúly", List.of("77.4 kg, stabil trend."), generatedAt(WEDNESDAY, 7, 15));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        AnchoredEvent weight = proseEvent(anchors, NotificationCategory.WEIGHT_REACTION);
+        assertThat(weight.minuteOfDay()).as("the row's own generation minute, not a fixed constant")
+                .isEqualTo(7 * 60 + 15);
+        assertThat(weight.dedupSuffix()).isEqualTo("07:15");
+    }
+
+    @Test
+    void testResolve_shouldLeaveTheBriefingAnchorOnWake_whenItsGeneratorAlreadyRunsBeforeWake() {
+        UUID owner = ownerId();
+        companionMessagePopulator.createMessage(owner, WEDNESDAY, CompanionMessageEntity.KIND_MORNING,
+                "Reggeli", List.of("Jó reggelt, Daniel!"));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        // morning is the SAFE pattern the other prose anchors copy: generated 05:45, anchored at
+        // the 06:00 ghost wake, so the same guard is a deliberate no-op here.
         assertThat(proseEvent(anchors, NotificationCategory.BRIEFING).minuteOfDay()).isEqualTo(6 * 60);
     }
 
