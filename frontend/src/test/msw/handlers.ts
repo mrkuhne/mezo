@@ -543,9 +543,91 @@ export const handlers = [
   ),
   // T1 write endpoints — minimal happy-path defaults; tests override with spies when
   // they need to capture the payload.
-  http.post(`${API_BASE}/api/train/mesocycles`, () =>
-    HttpResponse.json({ id: 'b6f3a0e2-0000-4000-8000-00000000beef' }, { status: 201 }),
+  http.post(`${API_BASE}/api/train/mesocycles/:id/rerun`, ({ params }) =>
+    HttpResponse.json({ templateId: String(params.id) }),
   ),
+  // Meso templates (mezo-meyc): the wizard now saves a template, then starts a run from it.
+  // GET/POST list+create, PUT/DELETE by id, POST .../start returns a MesocycleResponse.
+  http.get(`${API_BASE}/api/train/meso-templates`, () =>
+    HttpResponse.json([
+      {
+        id: 'a10e0000-0000-4000-8000-000000000000',
+        title: 'Hypertrophy 04 · Tavasz',
+        shortTitle: 'Hypertrophy 04',
+        goal: 'Felsőtest hypertrophy · izomtömeg építés',
+        weeks: 6,
+        split: 'Pull / Push / Legs · 5×/hét',
+        style: 'RP · 6 hét',
+        phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+        runCount: 1,
+        days: [
+          {
+            day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1,
+            exercises: [
+              {
+                id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
+                muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound',
+              },
+            ],
+          },
+          { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+        ],
+      },
+    ]),
+  ),
+  http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(
+      {
+        id: 'e1f3a0e2-0000-4000-8000-000000000001',
+        title: String(body.title ?? ''),
+        shortTitle: body.shortTitle ?? null,
+        goal: body.goal ?? null,
+        weeks: Number(body.weeks ?? 0),
+        split: body.split ?? null,
+        style: body.style ?? null,
+        phaseCurve: body.phaseCurve ?? [],
+        notes: body.notes ?? null,
+        days: body.days ?? [],
+        runCount: 0,
+      },
+      { status: 201 },
+    )
+  }),
+  http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: String(params.id),
+      title: String(body.title ?? ''),
+      shortTitle: body.shortTitle ?? null,
+      goal: body.goal ?? null,
+      weeks: Number(body.weeks ?? 0),
+      split: body.split ?? null,
+      style: body.style ?? null,
+      phaseCurve: body.phaseCurve ?? [],
+      notes: body.notes ?? null,
+      days: body.days ?? [],
+      runCount: 1,
+    })
+  }),
+  http.delete(`${API_BASE}/api/train/meso-templates/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/train/meso-templates/:id/start`, async ({ params, request }) => {
+    const body = (await request.json()) as { startDate: string; status: 'active' | 'planned' }
+    return HttpResponse.json({
+      id: 'f1f3a0e2-0000-4000-8000-000000000001',
+      templateId: String(params.id),
+      title: 'Hypertrophy 04 · Tavasz',
+      shortTitle: 'Hypertrophy 04',
+      status: body.status,
+      startDate: body.startDate,
+      endDate: body.startDate,
+      weeks: 6,
+      currentWeek: body.status === 'active' ? 1 : 0,
+      split: 'Pull / Push / Legs · 5×/hét',
+      style: 'RP · 6 hét',
+      phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    })
+  }),
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
     HttpResponse.json({ id: params.id }),
   ),

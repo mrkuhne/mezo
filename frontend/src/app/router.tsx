@@ -15,6 +15,7 @@ import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
 import { MesoOverviewPage } from '@/features/train/pages/MesoOverviewPage'
+import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelSection } from '@/features/fuel/pages/FuelSection'
@@ -78,6 +79,9 @@ export const routes: RouteObject[] = [
       { path: 'train/session', element: <ActiveWorkoutPage /> },
       { path: 'train/review/:workoutId', element: <WorkoutReviewPage /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },
+      // Template day-plan editor (mezo-meyc.1) — full-screen sibling, no Train sub-nav.
+      // Listed before `:id` for clarity (React Router ranks static over dynamic anyway).
+      { path: 'train/mesocycles/templates/:id', element: <MesoTemplateEditorPage /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
       { path: 'train/mesocycles/:id/overview', element: <MesoOverviewPage /> },
       { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },

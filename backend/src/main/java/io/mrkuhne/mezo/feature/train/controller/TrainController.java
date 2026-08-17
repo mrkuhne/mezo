@@ -15,7 +15,10 @@ import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
-import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
+import io.mrkuhne.mezo.api.dto.MesoRerunResponse;
+import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
+import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
 import io.mrkuhne.mezo.api.dto.RunSessionLogRequest;
@@ -41,6 +44,7 @@ import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
+import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -59,6 +63,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainController implements TrainApi {
 
     private final TrainService service;
+    private final MesoTemplateService mesoTemplateService;
     private final WorkoutService workoutService;
     private final SportService sportService;
     private final GymScheduleService gymScheduleService;
@@ -121,8 +126,33 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public MesocycleResponse createMesocycle(MesocycleCreateRequest mesocycleCreateRequest) {
-        return service.createMesocycle(currentUserId.get(), mesocycleCreateRequest);
+    public List<MesoTemplateResponse> listMesoTemplates() {
+        return mesoTemplateService.list(currentUserId.get());
+    }
+
+    @Override
+    public MesoTemplateResponse createMesoTemplate(MesoTemplateUpsertRequest mesoTemplateUpsertRequest) {
+        return mesoTemplateService.create(currentUserId.get(), mesoTemplateUpsertRequest);
+    }
+
+    @Override
+    public MesoTemplateResponse updateMesoTemplate(UUID id, MesoTemplateUpsertRequest mesoTemplateUpsertRequest) {
+        return mesoTemplateService.update(currentUserId.get(), id, mesoTemplateUpsertRequest);
+    }
+
+    @Override
+    public void deleteMesoTemplate(UUID id) {
+        mesoTemplateService.delete(currentUserId.get(), id);
+    }
+
+    @Override
+    public MesocycleResponse startMesoTemplate(UUID id, MesoTemplateStartRequest mesoTemplateStartRequest) {
+        return mesoTemplateService.start(currentUserId.get(), id, mesoTemplateStartRequest);
+    }
+
+    @Override
+    public MesoRerunResponse rerunMesocycle(UUID id) {
+        return mesoTemplateService.rerun(currentUserId.get(), id);
     }
 
     @Override

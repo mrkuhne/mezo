@@ -12,7 +12,6 @@ import {
   type GymExerciseInput,
   type GymScheduleSlotInput,
   type GymScheduleSlotResponse,
-  type MesocycleCreateRequest,
   type MesocycleResponse,
   type SetLogRequest,
   type SetUpdateRequest,
@@ -126,7 +125,9 @@ export function deriveGymSchedule(meso: Mesocycle | null, slots: GymScheduleSlot
 // The generated MesocycleResponse is structurally close to the domain Mesocycle
 // (goal is optional in the contract, delta keys are a looser string map) — the
 // boundary cast mirrors the Slice A biometrics-api idiom.
-function toMesocycle(r: MesocycleResponse): Mesocycle {
+// Exported so mesoTemplateHooks.ts (startTemplate's response mapping) reuses the same
+// ISO->HU boundary cast instead of duplicating it.
+export function toMesocycle(r: MesocycleResponse): Mesocycle {
   return {
     ...r,
     startDate: huMonthDay(r.startDate),
@@ -305,7 +306,6 @@ type TrainData = {
   sportPending: boolean
   /** True while the exercise catalog/records queries are still loading (real mode) — drives the Exercises skeleton. */
   exercisesPending: boolean
-  createMesocycle: (req: MesocycleCreateRequest, opts?: MutateOpts) => void
   activateMesocycle: (id: string, opts?: MutateOpts) => void
   closeMesocycle: (id: string, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
@@ -423,10 +423,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const invalidate = () => {
     if (!mock) qc.invalidateQueries({ queryKey: ['train', 'mesocycles'] })
   }
-  const createMutation = useMutation({
-    mutationFn: mock ? async (_req: MesocycleCreateRequest) => undefined : (req: MesocycleCreateRequest) => trainApi.create(req),
-    onSuccess: invalidate,
-  })
   const activateMutation = useMutation({
     mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.activate(id),
     onSuccess: invalidate,
@@ -655,10 +651,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     onSuccess: invalidateCatalog,
   })
 
-  const createMesocycle = useCallback(
-    (req: MesocycleCreateRequest, opts?: MutateOpts) => createMutation.mutate(req, opts),
-    [createMutation],
-  )
   const activateMesocycle = useCallback(
     (id: string, opts?: MutateOpts) => activateMutation.mutate(id, opts),
     [activateMutation],
@@ -791,7 +783,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     sportEvents: eventsData ?? [],
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     exerciseRecords: recordsData ?? [],
-    createMesocycle,
     activateMesocycle,
     closeMesocycle,
     saveDayExercises,
@@ -812,6 +803,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     updateCatalogExercise,
     deleteCatalogExercise,
     setExerciseVideo,
-    mesoMutationPending: createMutation.isPending || activateMutation.isPending || closeMutation.isPending,
+    mesoMutationPending: activateMutation.isPending || closeMutation.isPending,
   }
 }

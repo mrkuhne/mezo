@@ -137,6 +137,18 @@ public class TrainPopulator {
         return volumeLogRepository.saveAndFlush(v);
     }
 
+    /**
+     * Volume log whose provenance envelope carries NO baseline — the pre-provenance shape a legacy
+     * run can still have on disk (the rerun materialization must not turn that into a null
+     * {@code VolumeBaseline.name}).
+     */
+    public MuscleGroupVolumeLogEntity createVolumeLogWithoutBaseline(
+        UUID createdBy, UUID mesocycleId, String muscle) {
+        MuscleGroupVolumeLogEntity v = createVolumeLog(createdBy, mesocycleId, muscle);
+        v.setSource(new ProvenanceEnvelope(null, List.of(), 0.5, null, null));
+        return volumeLogRepository.saveAndFlush(v);
+    }
+
     public WorkoutSessionEntity createWorkoutSession(UUID createdBy, UUID mesocycleId,
         String dayLabel, String type, int orderIndex, String status) {
         return createWorkoutSession(createdBy, mesocycleId, dayLabel, type, orderIndex, status, false);

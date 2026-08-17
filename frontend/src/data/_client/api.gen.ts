@@ -102,8 +102,7 @@ export interface paths {
         /** All mesocycles of the current user with volume provenance and template days, start date ascending */
         get: operations["listMesocycles"];
         put?: never;
-        /** Create a mesocycle (wizard) with nested template days and exercises */
-        post: operations["createMesocycle"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -172,6 +171,76 @@ export interface paths {
         /** Replace the exercise list of one template day (full-list, order = array order) */
         put: operations["replaceDayExercises"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new run from a closed mesocycle's originating template */
+        post: operations["rerunMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All mesocycle templates of the current user, with run counts, created date ascending */
+        get: operations["listMesoTemplates"];
+        put?: never;
+        /** Create a mesocycle template (wizard) with nested days and exercises */
+        post: operations["createMesoTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a mesocycle template's fields, days and exercises (full replace) */
+        put: operations["updateMesoTemplate"];
+        post?: never;
+        /** Soft-delete a mesocycle template (past runs survive) */
+        delete: operations["deleteMesoTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-templates/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a mesocycle run from a template on the given date */
+        post: operations["startMesoTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2792,6 +2861,11 @@ export interface components {
         MesocycleResponse: {
             /** Format: uuid */
             id: string;
+            /**
+             * Format: uuid
+             * @description The originating template this run was started from (null for legacy/direct runs)
+             */
+            templateId?: string | null;
             title: string;
             shortTitle: string;
             /** @enum {string} */
@@ -2801,6 +2875,11 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            /**
+             * Format: date-time
+             * @description When this run was closed (archived); null while active/planned
+             */
+            closedAt?: string | null;
             weeks: number;
             currentWeek: number;
             split: string;
@@ -2814,6 +2893,25 @@ export interface components {
                 [key: string]: components["schemas"]["VolumeProfile"];
             };
             days?: components["schemas"]["MesoDay"][];
+        };
+        MesoTemplateResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            shortTitle?: string | null;
+            goal?: string | null;
+            weeks: number;
+            split?: string | null;
+            style?: string | null;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            notes?: string | null;
+            /** @description Per-muscle volume baseline keyed by muscle id (chest, back, ...) */
+            volumePerMuscle?: {
+                [key: string]: components["schemas"]["VolumeBaseline"];
+            } | null;
+            days: components["schemas"]["MesoDay"][];
+            /** @description Number of mesocycle runs started from this template */
+            runCount: number;
         };
         VolumeRecompute: {
             lastRun: string;
@@ -2935,20 +3033,30 @@ export interface components {
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
         };
-        MesocycleCreateRequest: {
+        MesoTemplateUpsertRequest: {
             title: string;
-            shortTitle?: string;
-            /** @enum {string} */
-            status: "active" | "planned";
-            goal?: string;
+            shortTitle?: string | null;
+            goal?: string | null;
+            weeks: number;
+            split?: string | null;
+            style?: string | null;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            notes?: string | null;
+            /** @description Per-muscle volume baseline keyed by muscle id (chest, back, ...) */
+            volumePerMuscle?: {
+                [key: string]: components["schemas"]["VolumeBaseline"];
+            } | null;
+            days: components["schemas"]["MesoDayInput"][];
+        };
+        MesoTemplateStartRequest: {
             /** Format: date */
             startDate: string;
-            weeks: number;
-            split: string;
-            style: string;
-            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
-            notes?: string;
-            days?: components["schemas"]["MesoDayInput"][];
+            /** @enum {string} */
+            status: "active" | "planned";
+        };
+        MesoRerunResponse: {
+            /** Format: uuid */
+            templateId: string;
         };
         MesoDayInput: {
             /** @description 'Hét'..'Vas' */
@@ -6155,48 +6263,6 @@ export interface operations {
             };
         };
     };
-    createMesocycle: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MesocycleCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Created mesocycle */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MesocycleResponse"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description Missing/invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
     activateMesocycle: {
         parameters: {
             query?: never;
@@ -6361,6 +6427,261 @@ export interface operations {
                 };
             };
             /** @description Mesocycle/day not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    rerunMesocycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The originating template id, for starting a fresh run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoRerunResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listMesoTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Meso templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoTemplateResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoTemplateUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Created template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoTemplateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoTemplateUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoTemplateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    startMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoTemplateStartRequest"];
+            };
+        };
+        responses: {
+            /** @description The started mesocycle run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template not found or not owned */
             404: {
                 headers: {
                     [name: string]: unknown;

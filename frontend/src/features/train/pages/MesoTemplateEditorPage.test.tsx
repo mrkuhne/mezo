@@ -1,0 +1,88 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes, RouterProvider, createMemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { routes } from '@/app/router'
+import { ThemeProvider } from '@/app/ThemeProvider'
+import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
+import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+
+// mesoTemplatesMock[1] — the never-run "Upper/Lower Power" blueprint.
+const MOCK_TPL = 'b20f0000-0000-4000-8000-000000000000'
+// The MSW meso-template fixture (real mode): one Pull day with a single exercise.
+const REAL_TPL = 'a10e0000-0000-4000-8000-000000000000'
+
+afterEach(() => vi.unstubAllEnvs())
+
+// Standalone render (real mode) — no AppLayout chrome, just the route.
+function setupPage(id: string) {
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[`/train/mesocycles/templates/${id}`]}>
+        <Routes>
+          <Route path="/train/mesocycles/templates/:id" element={<MesoTemplateEditorPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+describe('MesoTemplateEditorPage (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+
+  it('is a full-screen sibling route rendering the template on the shared MesoEditor', async () => {
+    // through the real route table so the registration is covered too
+    const router = createMemoryRouter(routes, { initialEntries: [`/train/mesocycles/templates/${MOCK_TPL}`] })
+    render(
+      <QueryWrapper>
+        <ThemeProvider>
+          <RouterProvider router={router} />
+        </ThemeProvider>
+      </QueryWrapper>,
+    )
+    expect(await screen.findByRole('heading', { level: 1, name: 'Upper/Lower Power' })).toBeInTheDocument()
+    // the shared editor: day tabs + its weekly set-budget card
+    expect(screen.getByRole('button', { name: /Hét/ })).toBeInTheDocument()
+    expect(screen.getByText('Upper A')).toBeInTheDocument()
+    expect(screen.getByText(/Heti szet-büdzsé/)).toBeInTheDocument()
+  })
+
+  it('shows an honest not-found line for an unknown template', () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    setupPage('b20f0000-0000-4000-8000-0000000000ff')
+    expect(screen.getByText(/nem található/i)).toBeInTheDocument()
+  })
+})
+
+describe('MesoTemplateEditorPage (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('persists an exercise change through updateTemplate (background PUT of the whole template)', async () => {
+    let putId: string | null = null
+    let putBody: { title?: string; weeks?: number; days?: { exercises?: { workingSets?: number }[] }[] } | null = null
+    server.use(
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        putId = String(params.id)
+        putBody = (await request.json()) as typeof putBody
+        return HttpResponse.json({ id: putId, runCount: 1, phaseCurve: [], days: [], ...putBody })
+      }),
+    )
+    const user = userEvent.setup()
+    setupPage(REAL_TPL)
+
+    // wait for the template to land, then expand its single exercise row
+    await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' })
+    await user.click(screen.getAllByRole('button', { name: /· szerkesztés$/ })[0])
+    await user.click(screen.getAllByRole('button', { name: /· Munkaszett növelése$/ })[0])
+
+    await waitFor(() => expect(putBody).not.toBeNull())
+    expect(putId).toBe(REAL_TPL)
+    // the whole template travels (title/weeks kept), with the bumped working-set count
+    expect(putBody!.title).toBe('Hypertrophy 04 · Tavasz')
+    expect(putBody!.weeks).toBe(6)
+    expect(putBody!.days![0].exercises![0].workingSets).toBe(5) // fixture 4 -> +1
+  })
+})

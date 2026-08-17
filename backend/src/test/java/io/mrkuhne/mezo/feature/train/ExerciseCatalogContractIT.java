@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
-import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
+import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.time.LocalDate;
@@ -126,15 +128,22 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
             .stream().filter(i -> slug.equals(i.getSlug())).findFirst().orElseThrow().getId();
     }
 
+    /** A one-day run, stamped the only way runs are born now: save a template, then start it. */
     private MesocycleResponse createMesoWithOneDay(HttpHeaders auth) {
-        MesocycleCreateRequest req = MesocycleCreateRequest.builder()
-            .title("Catalog IT meso").status(MesocycleCreateRequest.StatusEnum.PLANNED)
-            .startDate(LocalDate.of(2026, 6, 15)).weeks(4)
+        MesoTemplateUpsertRequest template = MesoTemplateUpsertRequest.builder()
+            .title("Catalog IT meso").weeks(4)
             .split("Upper / Lower · 4×/hét").style("Linear · 4 hét")
-            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV,
-                MesocycleCreateRequest.PhaseCurveEnum.MAV))
+            .phaseCurve(List.of(MesoTemplateUpsertRequest.PhaseCurveEnum.MEV,
+                MesoTemplateUpsertRequest.PhaseCurveEnum.MAV))
             .days(List.of(MesoDayInput.builder().day("Hét").type("Upper").muscle("back").build()))
             .build();
-        return postForBody("/api/train/mesocycles", req, auth, HttpStatus.CREATED, MesocycleResponse.class);
+        MesoTemplateResponse saved = postForBody(
+            "/api/train/meso-templates", template, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesoTemplateStartRequest start = MesoTemplateStartRequest.builder()
+            .startDate(LocalDate.of(2026, 6, 15))
+            .status(MesoTemplateStartRequest.StatusEnum.PLANNED)
+            .build();
+        return postForBody("/api/train/meso-templates/" + saved.getId() + "/start",
+            start, auth, HttpStatus.OK, MesocycleResponse.class);
     }
 }

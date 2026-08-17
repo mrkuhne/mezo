@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -93,4 +94,12 @@ public class MesocycleEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "volume_recompute", columnDefinition = "jsonb")
     private VolumeRecomputeJson volumeRecompute;
+
+    /** The {@link MesoTemplateEntity} this mesocycle was started from; null for hand-built ones. */
+    @Column(name = "template_id")
+    private UUID templateId;
+
+    /** When this mesocycle actually closed (archived/finished) — null while active or planned. */
+    @Column(name = "closed_at")
+    private Instant closedAt;
 }

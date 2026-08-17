@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
-import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
+import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -21,14 +23,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Baseline seeding of {@code muscle_group_volume_log} on the mesocycle create/activate path
- * (mezo-xlmp): a wizard-created ACTIVE meso gets one row per trained coarse muscle group from the
- * fixed {@code mezo.volume.baselines} RP table ({@code currentSets = MEV}), a planned create gets
- * none, activation seeds/backfills idempotently (existing rows are never overwritten), and groups
+ * Baseline seeding of {@code muscle_group_volume_log} on the mesocycle start/activate path
+ * (mezo-xlmp; template-started since mezo-meyc.1): a run STARTED as ACTIVE from a template that
+ * carries no explicit landmarks gets one row per trained coarse muscle group from the fixed
+ * {@code mezo.volume.baselines} RP table ({@code currentSets = MEV}), a planned start gets none,
+ * activation seeds/backfills idempotently (existing rows are never overwritten), and groups
  * absent from the config table (core, sport rows) never get a row (DA5 — skip, don't fabricate).
  */
 class VolumeBaselineSeedIT extends AbstractIntegrationTest {
 
+    @Autowired MesoTemplateService mesoTemplateService;
     @Autowired TrainService trainService;
     @Autowired WorkoutService workoutService;
     @Autowired TrainPopulator train;
@@ -36,11 +40,10 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
     @Autowired DatabasePopulator databasePopulator;
 
     @Test
-    void testCreateMesocycle_shouldSeedBaselinesForTrainedGroupsOnly_whenCreatedAsActive() {
+    void testStartTemplate_shouldSeedBaselinesForTrainedGroupsOnly_whenStartedAsActive() {
         UUID user = databasePopulator.populateUser("seed-a@test.local");
 
-        MesocycleResponse created = trainService.createMesocycle(
-            user, wizardRequest(MesocycleCreateRequest.StatusEnum.ACTIVE));
+        MesocycleResponse created = startWizardTemplate(user, MesoTemplateStartRequest.StatusEnum.ACTIVE);
 
         List<MuscleGroupVolumeLogEntity> rows = rows(user, created.getId());
         // chest (Bench Press) + back (Chest Supported Row, back-mid collapsed) — core (Plank) has
@@ -65,11 +68,10 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testCreateMesocycle_shouldSeedNothing_whenPlanned() {
+    void testStartTemplate_shouldSeedNothing_whenPlanned() {
         UUID user = databasePopulator.populateUser("seed-b@test.local");
 
-        MesocycleResponse created = trainService.createMesocycle(
-            user, wizardRequest(MesocycleCreateRequest.StatusEnum.PLANNED));
+        MesocycleResponse created = startWizardTemplate(user, MesoTemplateStartRequest.StatusEnum.PLANNED);
 
         assertThat(rows(user, created.getId())).isEmpty();
         // The generated DTO materializes the map as {} rather than null — either is "no profile".
@@ -79,8 +81,7 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
     @Test
     void testActivateMesocycle_shouldSeedBaselines_whenPlannedMesoActivated() {
         UUID user = databasePopulator.populateUser("seed-c@test.local");
-        MesocycleResponse created = trainService.createMesocycle(
-            user, wizardRequest(MesocycleCreateRequest.StatusEnum.PLANNED));
+        MesocycleResponse created = startWizardTemplate(user, MesoTemplateStartRequest.StatusEnum.PLANNED);
 
         trainService.activateMesocycle(user, created.getId());
 
@@ -112,8 +113,7 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
     @Test
     void testGetToday_shouldDistributeMevAcrossChestExercises_whenFreshWizardMesoInWeekOne() {
         UUID user = databasePopulator.populateUser("seed-e@test.local");
-        MesocycleResponse created = trainService.createMesocycle(
-            user, wizardRequest(MesocycleCreateRequest.StatusEnum.ACTIVE));
+        MesocycleResponse created = startWizardTemplate(user, MesoTemplateStartRequest.StatusEnum.ACTIVE);
         UUID templateDayId = created.getDays().get(0).getId();
 
         // Full chain: seeded chest row (MEV 8) → W1 rollover (START, stays 8) → DA6 distribution
@@ -128,19 +128,28 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
         assertThat(chestSets).isEqualTo(8);
     }
 
-    private MesocycleCreateRequest wizardRequest(MesocycleCreateRequest.StatusEnum status) {
-        return MesocycleCreateRequest.builder()
+    /**
+     * The wizard plan document (no explicit {@code volumePerMuscle}) saved as a template and
+     * started — the only way a run is born since mezo-meyc.1, so this is what used to be the
+     * "create-as-active/planned" path.
+     */
+    private MesocycleResponse startWizardTemplate(UUID user, MesoTemplateStartRequest.StatusEnum status) {
+        UUID templateId = mesoTemplateService.create(user, wizardTemplate()).getId();
+        return mesoTemplateService.start(user, templateId, MesoTemplateStartRequest.builder()
+            .startDate(LocalDate.now()).status(status).build());
+    }
+
+    private MesoTemplateUpsertRequest wizardTemplate() {
+        return MesoTemplateUpsertRequest.builder()
             .title("Seed teszt")
-            .status(status)
             .goal("Hipertrófia")
-            .startDate(LocalDate.now())
             .weeks(6)
             .split("Upper / Lower · 4×/hét")
             .style("RP · 6 hét")
             .phaseCurve(List.of(
-                MesocycleCreateRequest.PhaseCurveEnum.MEV,
-                MesocycleCreateRequest.PhaseCurveEnum.MAV,
-                MesocycleCreateRequest.PhaseCurveEnum.DELOAD))
+                MesoTemplateUpsertRequest.PhaseCurveEnum.MEV,
+                MesoTemplateUpsertRequest.PhaseCurveEnum.MAV,
+                MesoTemplateUpsertRequest.PhaseCurveEnum.DELOAD))
             .days(List.of(
                 MesoDayInput.builder().day("Hét").type("Upper").muscle("chest+back")
                     .exercises(List.of(

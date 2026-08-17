@@ -650,3 +650,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
+  - changeSet:
+      id: "1.0.0:202608161200_mezo-meyc.1_create_meso_template"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161200_mezo-meyc.1_create_meso_template.sql
+  - changeSet:
+      id: "1.0.0:202608161210_mezo-meyc.1_mesocycle_template_link"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161210_mezo-meyc.1_mesocycle_template_link.sql
