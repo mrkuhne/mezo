@@ -1,7 +1,10 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { useMesoReport } from '@/data/train/mesoReportHooks'
+import { useMesoReport, mesoReportQueryKey } from '@/data/train/mesoReportHooks'
+import { mesoReportMock } from '@/data/train/train'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -202,6 +205,45 @@ describe('useMesoReport (mock mode)', () => {
     const { result } = renderHook(() => useMesoReport('meso-hyp-04'), { wrapper: makeHookWrapper() })
     expect(result.current.report).toBeNull()
     expect(result.current.notFound).toBe(true)
+  })
+
+  it('resolves a SEEDED cache entry first, so a re-resolve cannot regress it to notFound', async () => {
+    // This is the invariant behind mockClose (trainHooks): it seeds a report for a run that is
+    // NOT the rec-03 fixture, so a fixture-only queryFn would answer `null` for that id and
+    // overwrite the seed — the report page would flip back to „nincs riport" (CI #198).
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    const key = mesoReportQueryKey('meso-hyp-04')
+    client.setQueryData(key, {
+      ...mesoReportMock,
+      mesocycleId: 'meso-hyp-04',
+      title: 'Hypertrophy 04 · Tavasz',
+      selfEval: 'Seeded.',
+    })
+
+    const { result } = renderHook(() => useMesoReport('meso-hyp-04'), { wrapper })
+    expect(result.current.report?.selfEval).toBe('Seeded.')
+    expect(result.current.notFound).toBe(false)
+
+    // Force the queryFn to actually RUN, and await it, so the assertion below cannot pass
+    // vacuously. `invalidateQueries` (not `refetchQueries`) is what does it: it marks the entry
+    // invalidated, which defeats `staleTime: Infinity` and re-runs the queryFn on the active
+    // observer — the one path that can regress a seeded entry.
+    await act(async () => {
+      await client.invalidateQueries({ queryKey: key })
+    })
+    // Non-vacuous: prove the queryFn actually re-ran before asserting what it produced.
+    expect(client.getQueryState(key)?.dataUpdateCount).toBeGreaterThan(1)
+
+    // Assert the CACHE, not just the rendered result: the observer's re-render can lag the
+    // fetch, so a hook-only assertion can read a stale frame and pass while the cache has
+    // already been regressed to null (which is exactly what a cache-blind queryFn does).
+    expect(client.getQueryData(key)).not.toBeNull()
+    await waitFor(() => expect(result.current.report?.selfEval).toBe('Seeded.'))
+    expect(result.current.report?.title).toBe('Hypertrophy 04 · Tavasz')
+    expect(result.current.notFound).toBe(false)
   })
 
   it('regenerate fills the cache so the offline demo can generate a report', async () => {

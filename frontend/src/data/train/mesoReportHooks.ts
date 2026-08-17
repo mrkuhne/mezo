@@ -12,9 +12,27 @@ const POLL_MS = 3000
 /** The one report cache key — `trainHooks`' mock close writes into it too (mezo-meyc.2). */
 export const mesoReportQueryKey = (id: string | null) => ['train', 'mesoReport', id]
 
-/** Mock mode has exactly one closed run with a report — every other id has none (404 parity). */
+/** Mock mode has exactly one closed run with a FIXTURE report — every other id has none (404 parity). */
 function mockReportFor(id: string | null): MesocycleReportResponse | null {
   return id === mesoReportMock.mesocycleId ? mesoReportMock : null
+}
+
+/**
+ * Mock-mode resolution order — **seeded cache first**, then the fixture run, then "no report".
+ *
+ * This ordering is the whole point: in mock mode the cache is the source of truth, because
+ * `mockClose` (trainHooks) and `mockRegenerate` below WRITE reports into it for runs that are
+ * not the `meso-rec-03` fixture. A queryFn that answered from the fixture table alone would
+ * resolve `null` for exactly those ids and overwrite the seeded report — turning a
+ * just-closed run's report back into the „nincs riport" state (CI #198, mock-mode job).
+ *
+ * `staleTime: Infinity` already stops the *routine* mount refetch, but that only removes the
+ * triggers we know about; resolving cache-first makes the regression impossible regardless of
+ * what causes a re-resolve (an explicit `refetch()`, an invalidate, a fresh observer after gc).
+ * Belt AND braces, because the failure is silent and only shows up one screen later.
+ */
+function mockResolve(qc: QueryClient, id: string | null): MesocycleReportResponse | null {
+  return qc.getQueryData<MesocycleReportResponse | null>(mesoReportQueryKey(id)) ?? mockReportFor(id)
 }
 
 /**
@@ -57,16 +75,16 @@ export function useMesoReport(id: string | null) {
   const q = useQuery<MesocycleReportResponse | null>({
     queryKey: key,
     queryFn: mock
-      ? async () => mockReportFor(id)
+      ? async () => mockResolve(qc, id)
       : () =>
           trainApi.getMesoReport(id as string).catch((e: unknown) => {
             if (e instanceof ApiError && e.status === 404) return null
             throw e
           }),
     enabled: mock || !!id,
-    initialData: mock ? mockReportFor(id) : undefined,
-    // Mock is a client-owned cache (mockRegenerate writes into it) — a stale refetch would
-    // re-run the queryFn and clobber the generated report back to null.
+    initialData: mock ? mockResolve(qc, id) : undefined,
+    // Mock is a client-owned cache (mockClose/mockRegenerate write into it) — a stale refetch
+    // would re-run the queryFn, and `mockResolve` above is what keeps that harmless.
     staleTime: mock ? Infinity : undefined,
     retry: false,
     refetchInterval: mock

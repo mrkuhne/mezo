@@ -410,7 +410,14 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const workoutDay = opts?.workoutDay ?? null
   const { data: mesoData, isPending: mesoPending } = useQuery({
     queryKey: ['train', 'mesocycles'],
-    queryFn: mock ? async () => mesocycles : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
+    // Mock resolves SEEDED CACHE first, static fixture second (mesoReportHooks' mockResolve
+    // idiom): mockStart/mockRerun (mezo-meyc.1) and mockClose (mezo-meyc.2) all edit this list
+    // via setQueryData, and a queryFn that returned the frozen array unconditionally regresses
+    // every one of those edits the moment anything re-resolves the query. `staleTime` below
+    // removes the routine trigger; this removes the failure mode itself.
+    queryFn: mock
+      ? async () => qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles
+      : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
     // Mock mode seeds synchronously so the first render matches the Phase-1
     // static return exactly (the visual baselines + component tests). Real mode loads.
     initialData: mock ? mesocycles : undefined,
