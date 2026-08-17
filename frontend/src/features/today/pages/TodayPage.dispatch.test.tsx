@@ -89,6 +89,10 @@ const baseToday = {
   workoutDone: false, workoutDoneSets: null as number | null,
   workoutInProgress: false, workoutOpenSets: null as number | null,
   loggedSportKinds: [] as string[],
+  // mezo-k496 — the done block's identity + facts.
+  workoutDoneId: null as string | null,
+  workoutDoneExercises: null as number | null,
+  workoutDoneVolumeKg: null as number | null,
 }
 
 function LocationProbe() {
@@ -453,13 +457,47 @@ describe('TodayPage — the day daypart hero', () => {
   // mezo-v84m — the bug this describe block was missing: the gym session was authored with a
   // hardcoded `logged: false`, so a workout already finished today still read „Indítsuk" on Ma
   // while the Train tab read „Kész · N szett". The done-state is one flag from `useToday` now.
-  test('a finished workout retires the start CTA for the done footnote', () => {
-    mocks.useToday.mockReturnValue({ ...baseToday, workoutDone: true, workoutDoneSets: 18 })
+  test('a finished workout retires the start CTA for the done block and its facts', () => {
+    mocks.useToday.mockReturnValue({
+      ...baseToday, workoutDone: true, workoutDoneSets: 32, workoutDoneExercises: 6,
+      workoutDoneVolumeKg: 4320, workoutDoneId: 'w-1',
+    })
     const { container } = renderToday('/today?dp=nap')
     expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
-    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+    // Hand-written thousands separator (NBSP) — NOT toLocaleString, whose grouping depends on the
+    // runtime's ICU data and would differ between this box and a CI container.
+    expect([...container.querySelectorAll('.td-dcard-cell')].map((e) => e.textContent)).toEqual([
+      '32SZETT', '6GYAKORLAT', '4 320KG',
+    ])
     // The hero itself survives — the day still had a session, it is simply over.
     expect(container.querySelector('.td-hero-u')?.textContent).toContain('Pull Day')
+  })
+
+  test('the done block opens the completed instance’s review', async () => {
+    mocks.useToday.mockReturnValue({
+      ...baseToday, workoutDone: true, workoutDoneSets: 32, workoutDoneId: 'w-42',
+    })
+    renderToday('/today?dp=nap')
+    fireEvent.click(screen.getByRole('button', { name: 'Befejezett edzés áttekintése' }))
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/train/review/w-42'))
+  })
+
+  // No id (an older payload, or a shape we did not anticipate) → no tap target, rather than a
+  // button that routes to `/train/review/undefined`.
+  test('a finished workout with no instance id renders an inert done block', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutDone: true, workoutDoneSets: 32 })
+    const { container } = renderToday('/today?dp=nap')
+    expect(container.querySelector('.td-dcard')?.tagName).toBe('DIV')
+    expect(screen.queryByRole('button', { name: 'Befejezett edzés áttekintése' })).toBeNull()
+  })
+
+  // Today's strip rule, applied to the cells: no source → no cell, never a fabricated 0.
+  test('zero-valued facts drop out instead of reading 0', () => {
+    mocks.useToday.mockReturnValue({
+      ...baseToday, workoutDone: true, workoutDoneSets: 12, workoutDoneExercises: 3, workoutDoneVolumeKg: 0,
+    })
+    const { container } = renderToday('/today?dp=nap')
+    expect([...container.querySelectorAll('.td-dcard-l')].map((e) => e.textContent)).toEqual(['SZETT', 'GYAKORLAT'])
   })
 
   test('an unfinished workout keeps the start CTA', () => {
@@ -489,7 +527,7 @@ describe('TodayPage — the day daypart hero', () => {
     })
     const { container } = renderToday('/today?dp=nap')
     expect(screen.queryByRole('button', { name: /Folytassuk/ })).toBeNull()
-    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+    expect(container.querySelector('.td-dcard')?.textContent).toContain('Kész')
   })
 })
 
@@ -523,7 +561,10 @@ describe('TodayPage — the sport hero done-state', () => {
     mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['volleyball'] }))
     const { container } = renderToday('/today?dp=nap')
     expect(heroCta(container)).toBeNull()
-    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész')
+    // The sport hero's one fact is its duration — and it has no review to open, so the block
+    // stays an inert div, not a button that would go nowhere.
+    expect(container.querySelector('.td-dcard')?.tagName).toBe('DIV')
+    expect([...container.querySelectorAll('.td-dcard-cell')].map((e) => e.textContent)).toEqual(['90PERC'])
   })
 
   test('a different logged kind leaves this hero alone — a mixed day flips each independently', () => {

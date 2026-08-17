@@ -10,6 +10,7 @@ import type { ItemTone } from '@/shared/ui/ItemCard'
 import type { ChainCelebrationInput } from '@/features/today/components/ChainCelebrations'
 import { ChainCelebrations } from '@/features/today/components/ChainCelebrations'
 import { DayGroups } from '@/features/today/components/DayGroups'
+import { DoneCard, type DoneFact } from '@/features/today/components/DoneCard'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { TodayStats } from '@/features/today/components/TodayStats'
@@ -29,6 +30,13 @@ export interface DayHero {
   loggedSummary?: string
   ctaLabel?: string
   onLog?: () => void
+  /** The done block's number cells (mezo-k496) — already formatted and already stripped of
+   *  empty ones by the caller. Only read when `logged`. */
+  doneFacts?: DoneFact[]
+  /** The done block's quiet second line; only meaningful together with `onDone`. */
+  doneDetail?: string | null
+  /** Where the done block goes when tapped (the gym hero's review). Absent ⇒ inert block. */
+  onDone?: () => void
 }
 
 export interface DaypartDayProps {
@@ -68,7 +76,12 @@ export function DaypartDay({
         // Today contradicted the Train tab. `logged` gates BEFORE `ctaLabel`, so no caller can
         // reintroduce the dead control by authoring a label.
         hero.logged ? (
-          <div className="td-foot is-done">✓ {hero.loggedSummary ?? 'Kész'}</div>
+          <DoneCard
+            facts={hero.doneFacts ?? []}
+            detail={hero.doneDetail}
+            onOpen={hero.onDone}
+            ariaLabel="Befejezett edzés áttekintése"
+          />
         ) : (
           <button type="button" className="td-cta np-press" onClick={() => hero.onLog?.()}>
             {hero.ctaLabel ?? 'Indítsuk'}

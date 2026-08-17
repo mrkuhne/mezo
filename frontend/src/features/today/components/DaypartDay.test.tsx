@@ -49,22 +49,37 @@ describe('DaypartDay', () => {
   })
 
   // mezo-v84m — a finished session must not keep offering its start CTA. The hero stays
-  // (the day still happened at 13:00), the button is replaced by the done footnote.
-  test('a logged session drops the CTA for a done footnote', () => {
+  // (the day still happened at 13:00), the button is replaced by the done block (mezo-k496).
+  test('a logged session drops the CTA for the done block and its facts', () => {
     const onLog = vi.fn()
     const { container } = renderDay({
-      hero: { ...hero, logged: true, loggedSummary: 'Kész · 18 szett', onLog },
+      hero: {
+        ...hero, logged: true, onLog,
+        doneFacts: [{ value: '18', label: 'SZETT' }, { value: '5', label: 'GYAKORLAT' }],
+      },
     })
     expect(screen.getByText('13:00')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
-    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+    expect(container.querySelector('.td-dcard')).toBeInTheDocument()
+    expect([...container.querySelectorAll('.td-dcard-v')].map((e) => e.textContent)).toEqual(['18', '5'])
     expect(onLog).not.toHaveBeenCalled()
   })
 
-  test('a logged session with no summary still reads Kész', () => {
+  test('a logged session with no facts still shows the done block', () => {
     const { container } = renderDay({ hero: { ...hero, logged: true } })
     expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
-    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész')
+    expect(container.querySelector('.td-dcard')?.textContent).toContain('Kész')
+  })
+
+  // The hero's done block is the ONLY thing that may carry the review tap — the retired
+  // footnote had none, so this is new reachable surface and must be wired end to end.
+  test('the done block opens the review when the hero has one', async () => {
+    const onDone = vi.fn()
+    renderDay({
+      hero: { ...hero, logged: true, doneFacts: [], doneDetail: 'Megnézem az összegzést', onDone },
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Befejezett edzés áttekintése' }))
+    expect(onDone).toHaveBeenCalledOnce()
   })
 
   test('a rest day reads Pihenő and offers Saját edzés', async () => {

@@ -38,6 +38,7 @@ import { AppHero } from '@/features/progression/components/AppHero'
 import { buildHabitRewardToast, buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { AnchorIsland } from '@/features/today/components/AnchorIsland'
 import { DaypartDay, type DayHero } from '@/features/today/components/DaypartDay'
+import type { DoneFact } from '@/features/today/components/DoneCard'
 import { DaypartEvening } from '@/features/today/components/DaypartEvening'
 import { DaypartMorning } from '@/features/today/components/DaypartMorning'
 import { DaypartPanel } from '@/features/today/components/DaypartPanel'
@@ -100,13 +101,27 @@ function servableAction(item: TodayItem, hasFillableCheckin: boolean): boolean {
  * `SessionItemInput` (the row) and the day view's `DayHero` (the hero), keyed by the id the
  * item carries. Authored once (`sessions` below) and never re-derived.
  */
-type DaySession = SessionItemInput & { ctaLabel: string }
-
-/** A session's hero: the same object, minus the item identity, plus the CTA's handler. */
-const heroCardOf = (s: DaySession, onLog: () => void): DayHero => {
-  const { id: _itemId, ...card } = s
-  return { ...card, onLog }
+type DaySession = SessionItemInput & {
+  ctaLabel: string
+  /** The done block's cells (mezo-k496) — hero-only, the row ignores them. */
+  doneFacts: DoneFact[]
+  doneDetail?: string
 }
+
+/** A session's hero: the same object, minus the item identity, plus its two handlers. */
+const heroCardOf = (s: DaySession, onLog: () => void, onDone?: () => void): DayHero => {
+  const { id: _itemId, ...card } = s
+  return { ...card, onLog, onDone }
+}
+
+/** `4320` → `4 320` (NBSP groups). Hand-rolled rather than `toLocaleString`: grouping there
+ *  depends on the runtime's ICU data, which differs between a dev box and a CI container — and
+ *  this string is asserted verbatim. */
+const huThousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+
+/** Today's strip rule for the done cells: no source ⇒ no cell, never a fabricated `0`. */
+const doneFactsOf = (pairs: [number | null | undefined, string][]): DoneFact[] =>
+  pairs.filter(([v]) => Boolean(v)).map(([v, label]) => ({ value: huThousands(v as number), label }))
 
 export function TodayPage() {
   const date = localDateString()
@@ -114,6 +129,7 @@ export function TodayPage() {
   const {
     user, workout, volleyballSessions, workoutTime, prediction,
     workoutDone, workoutDoneSets, workoutInProgress, workoutOpenSets, loggedSportKinds,
+    workoutDoneId, workoutDoneExercises, workoutDoneVolumeKg,
   } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
@@ -185,6 +201,10 @@ export function TodayPage() {
     : 'Indítsuk'
   // The sport hero's own done-state: a session logged TODAY of THIS hero's kind (mezo-6kap).
   const sportDone = sportToday ? loggedSportKinds.includes(sportOf(sportToday)) : false
+  const gymDoneFacts = doneFactsOf([
+    [workoutDoneSets, 'SZETT'], [workoutDoneExercises, 'GYAKORLAT'], [workoutDoneVolumeKg, 'KG'],
+  ])
+  const sportDoneFacts = doneFactsOf([[sportToday?.duration, 'PERC']])
   const sessions = useMemo<DaySession[]>(() => [
     ...(workout ? [{
       id: 'gym', tone: 'gym' as const, emoji: '🏋️',
@@ -192,21 +212,28 @@ export function TodayPage() {
       time: workoutTime ?? null,
       facts: [`${workout.exercises.length} gyakorlat`, gymMinutes > 0 ? `~${gymMinutes} perc` : null, prediction?.label],
       // The done-state is server truth, not a Today-local guess (mezo-v84m): the hero drops its
-      // start CTA for the „Kész" footnote and the row moves into the done fold, exactly like the
+      // start CTA for the done block and the row moves into the done fold, exactly like the
       // Train tab's hero. The set count is a detail — a finish with none still reads Kész.
       logged: workoutDone,
       loggedSummary: workoutDone
         ? `Kész${workoutDoneSets ? ` · ${workoutDoneSets} szett` : ''}`
         : undefined,
+      doneFacts: gymDoneFacts,
+      // The detail line is the tap affordance's copy — only honest when there IS somewhere to go.
+      doneDetail: workoutDoneId ? 'Megnézem az összegzést' : undefined,
       ctaLabel: gymCta,
     }] : []),
     ...(sportToday ? [{
       id: 'sport', tone: SPORT_TONE[sportOf(sportToday)], emoji: SPORT_EMOJI[sportOf(sportToday)],
       tag: SPORT_TAGS[sportOf(sportToday)], title: SPORT_TITLES[sportOf(sportToday)],
       time: sportToday.time, facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
-      logged: sportDone, loggedSummary: sportDone ? 'Kész' : undefined, ctaLabel: 'Logold',
+      logged: sportDone, loggedSummary: sportDone ? 'Kész' : undefined,
+      doneFacts: sportDoneFacts, ctaLabel: 'Logold',
     }] : []),
-  ], [workout, workoutTime, prediction, sportToday, gymMinutes, workoutDone, workoutDoneSets, gymCta, sportDone])
+  ], [
+    workout, workoutTime, prediction, sportToday, gymMinutes, workoutDone, workoutDoneSets,
+    gymCta, sportDone, gymDoneFacts, sportDoneFacts, workoutDoneId,
+  ])
   const heroSession = sessions[0] ?? null
   const heroItemId = heroSession ? `session:${heroSession.id}` : null
 
@@ -385,7 +412,14 @@ export function TodayPage() {
   const mHero = morningHero(lastNight, sleepLog, sleepGoal)
     ?? fallbackHero(itemsForFace(items, 'reggel').open.length)
 
-  const dayHero: DayHero | null = heroSession ? heroCardOf(heroSession, () => navigate('/train')) : null
+  // The done block's tap target is the gym hero's alone (mezo-k496): only a completed gym
+  // instance has a review page. No id ⇒ no handler ⇒ `DoneCard` renders an inert block.
+  const onDone = heroSession?.id === 'gym' && workoutDoneId
+    ? () => navigate(`/train/review/${workoutDoneId}`)
+    : undefined
+  const dayHero: DayHero | null = heroSession
+    ? heroCardOf(heroSession, () => navigate('/train'), onDone)
+    : null
 
   return (
     <>
