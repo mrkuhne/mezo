@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.Medal;
 import io.mrkuhne.mezo.api.dto.MesocycleReportResponse;
+import io.mrkuhne.mezo.feature.train.MesoReviewGate;
+import io.mrkuhne.mezo.feature.train.MesocycleClosed;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -36,6 +38,8 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,21 +65,18 @@ import org.springframework.transaction.annotation.Transactional;
  *       {@link MedalService} evaluator (never stored medal rows — there are none).</li>
  * </ol>
  *
- * <p>The AI narrative half of the report (S3, {@code mezo-meyc.3}) is deliberately absent here:
- * {@code aiEvalStatus} is left {@code pending} for the future async generator and
- * {@link #AI_EVAL_ENABLED} reports the switch as OFF, which is the FE's signal to hide the AI
- * section rather than poll forever.
+ * <p>The AI narrative half of the report is computed asynchronously by the companion's generator
+ * (S3, {@code mezo-meyc.3}, task 15): {@code aiEvalStatus} is left {@code pending} by
+ * {@link #computeAndStore} and {@link #getReport}'s {@code aiEvalEnabled} reports the presence of
+ * the {@link MesoReviewGate} marker bean — the FE's signal to show the AI section and poll
+ * {@code pending}, or hide it entirely when the switch is off. The two entry points that ever
+ * reach {@link #computeAndStore} — {@code TrainService.closeMesocycle}'s REAL-close branch and
+ * {@link #regenerate} — each publish {@link MesocycleClosed} right after the report row is
+ * persisted, the companion generator's AFTER_COMMIT trigger.
  */
 @Service
 @RequiredArgsConstructor
 public class MesocycleReportService {
-
-    /**
-     * S2 has no AI evaluation at all — S3 replaces this constant with the real
-     * {@code mezo.feature.meso-review.enabled} switch bean. Reported on every response so the FE
-     * hides the AI section instead of waiting on a {@code pending} that will never resolve.
-     */
-    private static final boolean AI_EVAL_ENABLED = false;
 
     /** Top strength/record entries the report carries (the FE shows the biggest jumps). */
     private static final int TOP_HIGHLIGHTS = 5;
@@ -96,6 +97,8 @@ public class MesocycleReportService {
     private final VolumeArcService volumeArcService;
     private final MedalService medalService;
     private final MesoReportMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ObjectProvider<MesoReviewGate> reviewGate;
 
     /**
      * Computes the deterministic report for {@code run} and UPSERTS it onto the run's single
@@ -155,10 +158,11 @@ public class MesocycleReportService {
 
     /**
      * Recomputes the deterministic report of an ARCHIVED run and resets the AI half to
-     * {@code pending} (S3 then regenerates the narrative asynchronously). Also the LEGACY BACKFILL
-     * path: an archived run that predates the report feature has no {@code closedAt}, so the window
-     * falls back to {@code endDate} (see {@link #closeWindowEnd}). An open/planned run has nothing
-     * to freeze yet — 409.
+     * {@code pending}, then publishes {@link MesocycleClosed} — the companion generator's
+     * re-generation trigger for the narrative it regenerates asynchronously. Also the LEGACY
+     * BACKFILL path: an archived run that predates the report feature has no {@code closedAt}, so
+     * the window falls back to {@code endDate} (see {@link #closeWindowEnd}). An open/planned run
+     * has nothing to freeze yet — 409 (never reaches the publish).
      */
     @Transactional
     public void regenerate(UUID createdBy, UUID mesoId) {
@@ -168,6 +172,9 @@ public class MesocycleReportService {
                 SystemMessage.error("TRAIN_MESO_NOT_CLOSED").build(), HttpStatus.CONFLICT);
         }
         computeAndStore(run);
+        // Every accepted regenerate is a fresh re-generation trigger for the companion AI-review
+        // generator (mezo-meyc.3) — the report row is already persisted at this point.
+        eventPublisher.publishEvent(new MesocycleClosed(createdBy, mesoId));
     }
 
     // ── computation ─────────────────────────────────────────────────────────────
@@ -394,7 +401,7 @@ public class MesocycleReportService {
             .aiEvalStatus(MesocycleReportResponse.AiEvalStatusEnum.fromValue(row.getAiEvalStatus()))
             .aiEvalGeneratedAt(row.getAiEvalGeneratedAt() == null
                 ? null : row.getAiEvalGeneratedAt().atOffset(ZoneOffset.UTC))
-            .aiEvalEnabled(AI_EVAL_ENABLED)
+            .aiEvalEnabled(reviewGate.getIfAvailable() != null)
             .adherence(mapper.toAdherence(report.adherence()))
             .volume(report.volume() == null ? null : mapper.toArc(report.volume()))
             .strength(mapper.toStrength(report.strength()))
