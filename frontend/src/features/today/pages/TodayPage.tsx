@@ -44,6 +44,7 @@ import { DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { DaypartTabs } from '@/features/today/components/DaypartTabs'
 import { MezoChip } from '@/features/today/components/MezoChip'
 import { MezoMessagesSheet } from '@/features/today/components/MezoMessagesSheet'
+import { NeedsRow } from '@/features/today/components/NeedsRow'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
@@ -56,6 +57,9 @@ import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { questAction } from '@/features/today/logic/questAction'
 import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { growthTodaySummary } from '@/features/today/logic/growthToday'
+import type { NeedKey } from '@/features/today/logic/needs'
+import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
+import { useNeeds } from '@/features/today/logic/useNeeds'
 import {
   dayBalance, fallbackHero, hrvFact, kcalFact, morningHero, proteinFact, sleepOutlook, weightFact,
   type IslandFact,
@@ -146,6 +150,16 @@ export function TodayPage() {
   const [reflectOpen, setReflectOpen] = useState(false)
   const [msgsOpen, setMsgsOpen] = useState(false)
   const [seenId, setSeenId] = useState<string | null>(() => lastSeenMessage(date))
+  // The six "Életjel-ringek" (mezo-dhzk): a live `now` (re-rendering once a minute, not on
+  // every clock tick) walked through the pure decay/refill sim. `needSheet` is kept here
+  // already so the wiring lands in one commit — Task 4 mounts the detail sheet on it.
+  const tick = useMinuteTick()
+  const needs = useNeeds(tick)
+  const [needSheet, setNeedSheet] = useState<NeedKey | null>(null)
+  // Task 4 mounts the detail sheet on `needSheet`; until then it is write-only
+  // (`onOpen={setNeedSheet}` below) — this keeps `noUnusedLocals` quiet without inventing a
+  // fake read. Drop this line the moment the sheet host reads `needSheet`.
+  void needSheet
 
   // Consume-once reward toasts: quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
@@ -393,6 +407,7 @@ export function TodayPage() {
       {scenario.vulnerable && <VulnerabilityCard />}
       <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
       <MezoChip messages={messages} unread={msgsUnread} onOpen={openMessages} />
+      <NeedsRow states={needs.states} onOpen={setNeedSheet} />
       {selected === 'reggel' && (
         <DaypartMorning
           hero={mHero} facts={morningFacts}
