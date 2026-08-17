@@ -60,6 +60,14 @@ type TodayData = {
   workout: WorkoutPlan | null
   /** The teaser eyebrow time — the real gym slot for today, or null (eyebrow renders without a time). */
   workoutTime: string | null
+  /** Today's gym session is already finished (mezo-v84m). The SAME server truth the Train tab's
+   * „Kész · N szett" hero reads — `/today`'s `completedWorkout` — so the two tabs can never
+   * disagree about whether the day is over. Mock mode persists no instances → always false. */
+  workoutDone: boolean
+  /** The finished instance's logged set count (skip markers excluded, exactly as Train counts
+   * them), or null while nothing is finished. `workoutDone` is the gate — a 0-set finish is
+   * still a finish. */
+  workoutDoneSets: number | null
   /** Demo prediction line in mock mode; null in real mode (predictions are a later epic). */
   prediction: WorkoutPrediction | null
   volleyballSessions: VolleyballSession[]
@@ -80,6 +88,10 @@ export function useToday(): TodayData {
       user,
       workout: train.workout,
       workoutTime: today.workoutTime,
+      // Mock keeps no persisted instances (`useTrain`'s completedTodayWorkout is null in mock),
+      // so the mock day hero stays byte-identical to Phase 1: always the „Indítsuk" CTA.
+      workoutDone: false,
+      workoutDoneSets: null,
       prediction: workoutPrediction,
       volleyballSessions,
       volleyballNote,
@@ -88,6 +100,9 @@ export function useToday(): TodayData {
   const now = new Date()
   const meso = train.activeMeso
   const gymToday = train.gymSchedule?.weeklyTimes.find((d) => d.active && d.today)
+  // The day's done-state (mezo-v84m) — read from the same `completedTodayWorkout` the Train
+  // tab's hero gates on, counted the same way (skip markers are not logged sets).
+  const doneWorkout = train.completedTodayWorkout
   return {
     today: {
       dayLabel: huWeekdayFull(now),
@@ -106,6 +121,8 @@ export function useToday(): TodayData {
     },
     workout: train.workout,
     workoutTime: gymToday?.time ?? null,
+    workoutDone: Boolean(doneWorkout),
+    workoutDoneSets: doneWorkout ? doneWorkout.sets.filter((s) => !s.skipped).length : null,
     prediction: null,
     volleyballSessions: train.sport.schedule?.volleyball.sessions ?? [],
     volleyballNote: null,

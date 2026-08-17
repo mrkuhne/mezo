@@ -83,6 +83,9 @@ const baseToday = {
   today, user,
   workout, workoutTime: today.workoutTime, prediction: workoutPrediction,
   volleyballSessions: [] as VolleyballSession[], volleyballNote,
+  // mezo-v84m — the gym hero's done-state, server truth in real mode (mock never persists
+  // an instance, so the default here is the mock branch's own answer).
+  workoutDone: false, workoutDoneSets: null as number | null,
 }
 
 function LocationProbe() {
@@ -442,6 +445,24 @@ describe('TodayPage — the day daypart hero', () => {
     expect(container.querySelector('.td-hero-u')?.textContent).not.toMatch(/perc/)
     fireEvent.click(screen.getByRole('button', { name: 'Saját edzés' }))
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+  })
+
+  // mezo-v84m — the bug this describe block was missing: the gym session was authored with a
+  // hardcoded `logged: false`, so a workout already finished today still read „Indítsuk" on Ma
+  // while the Train tab read „Kész · N szett". The done-state is one flag from `useToday` now.
+  test('a finished workout retires the start CTA for the done footnote', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutDone: true, workoutDoneSets: 18 })
+    const { container } = renderToday('/today?dp=nap')
+    expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+    // The hero itself survives — the day still had a session, it is simply over.
+    expect(container.querySelector('.td-hero-u')?.textContent).toContain('Pull Day')
+  })
+
+  test('an unfinished workout keeps the start CTA', () => {
+    mocks.useToday.mockReturnValue(baseToday)
+    renderToday('/today?dp=nap')
+    expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
   })
 })
 
