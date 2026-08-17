@@ -42,6 +42,10 @@ export type WorkoutDetailExercise = components['schemas']['WorkoutDetailExercise
 export type CustomWorkoutResponse = components['schemas']['CustomWorkoutResponse']
 export type CustomWorkoutUpsertRequest = components['schemas']['CustomWorkoutUpsertRequest']
 export type MesocycleVolumeArcResponse = components['schemas']['MesocycleVolumeArcResponse']
+export type MesocycleCloseRequest = components['schemas']['MesocycleCloseRequest']
+export type MesocycleReportResponse = components['schemas']['MesocycleReportResponse']
+export type MesoStrengthDelta = components['schemas']['MesoStrengthDelta']
+export type MesoRecordHighlight = components['schemas']['MesoRecordHighlight']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
@@ -63,8 +67,18 @@ export const trainApi = {
     }),
   activate: (id: string): Promise<MesocycleResponse> =>
     apiFetch<MesocycleResponse>(`/api/train/mesocycles/${id}/activate`, { method: 'POST' }),
-  close: (id: string): Promise<MesocycleResponse> =>
-    apiFetch<MesocycleResponse>(`/api/train/mesocycles/${id}/close`, { method: 'POST' }),
+  // The close body is OPTIONAL by contract (mezo-meyc.2): only a non-blank self-eval note
+  // travels, so a plain close stays a bodyless POST exactly as before.
+  close: (id: string, body?: MesocycleCloseRequest): Promise<MesocycleResponse> =>
+    apiFetch<MesocycleResponse>(`/api/train/mesocycles/${id}/close`, {
+      method: 'POST',
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    }),
+  getMesoReport: (id: string): Promise<MesocycleReportResponse> =>
+    apiFetch<MesocycleReportResponse>(`/api/train/mesocycles/${id}/report`),
+  // 202 Accepted, no body — the report is (re)written server-side; the caller refetches.
+  regenerateMesoReport: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/train/mesocycles/${id}/report/regenerate`, { method: 'POST' }),
   replaceDayExercises: (mesoId: string, dayId: string, body: GymExerciseInput[]): Promise<MesoDayResponse> =>
     apiFetch<MesoDayResponse>(`/api/train/mesocycles/${mesoId}/days/${dayId}/exercises`, {
       method: 'PUT',

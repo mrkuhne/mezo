@@ -1,7 +1,8 @@
 // ============================================================
 // Mezo · ArchivedMesoCard — dimmed (opacity 0.7) card for a finished
 // mesocycle: Archív + end date eyebrow, Display title, summary line.
-// The body navigates to the builder; the footer's „Újrafuttatás" action
+// The body opens the run's FROZEN report (mezo-meyc.2 — a closed run has no
+// builder); the footer's „Újrafuttatás" action
 // (mezo-meyc.1) reruns the closed block — the parent resolves its template
 // (materializing one for a legacy run) and opens MesoStartSheet on it.
 // Ported from prototype mesocycles.jsx ArchivedMesoCard.

@@ -307,7 +307,8 @@ type TrainData = {
   /** True while the exercise catalog/records queries are still loading (real mode) — drives the Exercises skeleton. */
   exercisesPending: boolean
   activateMesocycle: (id: string, opts?: MutateOpts) => void
-  closeMesocycle: (id: string, opts?: MutateOpts) => void
+  /** Closes (archives) a run. `selfEval` is the owner's optional close-time note (mezo-meyc.2). */
+  closeMesocycle: (id: string, selfEval?: string | null, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
@@ -427,9 +428,18 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.activate(id),
     onSuccess: invalidate,
   })
+  // Closing writes the frozen run report server-side (mezo-meyc.2), so the run's report
+  // query is invalidated alongside the list — a re-close that fills a still-null selfEval
+  // must not leave a stale report on screen.
   const closeMutation = useMutation({
-    mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.close(id),
-    onSuccess: invalidate,
+    mutationFn: mock
+      ? async (_args: { id: string; selfEval?: string | null }) => undefined
+      : (args: { id: string; selfEval?: string | null }) =>
+          trainApi.close(args.id, args.selfEval ? { selfEval: args.selfEval } : undefined),
+    onSuccess: (_data, args) => {
+      invalidate()
+      if (!mock) qc.invalidateQueries({ queryKey: ['train', 'mesoReport', args.id] })
+    },
   })
   const replaceMutation = useMutation({
     mutationFn: mock
@@ -656,7 +666,8 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     [activateMutation],
   )
   const closeMesocycle = useCallback(
-    (id: string, opts?: MutateOpts) => closeMutation.mutate(id, opts),
+    (id: string, selfEval?: string | null, opts?: MutateOpts) =>
+      closeMutation.mutate({ id, selfEval }, opts),
     [closeMutation],
   )
   const saveDayExercises = useCallback(

@@ -15,6 +15,7 @@ import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
 import { MesoOverviewPage } from '@/features/train/pages/MesoOverviewPage'
+import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
 import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
@@ -82,6 +83,10 @@ export const routes: RouteObject[] = [
       // Template day-plan editor (mezo-meyc.1) — full-screen sibling, no Train sub-nav.
       // Listed before `:id` for clarity (React Router ranks static over dynamic anyway).
       { path: 'train/mesocycles/templates/:id', element: <MesoTemplateEditorPage /> },
+      // The frozen run report (mezo-meyc.2) — listed BEFORE the `:id` builder so the deeper
+      // path is unmistakable at a glance (React Router ranks by specificity anyway). An
+      // archived run's builder visit redirects here: a closed run has no builder.
+      { path: 'train/mesocycles/:id/report', element: <MesoReportPage /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
       { path: 'train/mesocycles/:id/overview', element: <MesoOverviewPage /> },
       { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },
