@@ -83,9 +83,12 @@ const baseToday = {
   today, user,
   workout, workoutTime: today.workoutTime, prediction: workoutPrediction,
   volleyballSessions: [] as VolleyballSession[], volleyballNote,
-  // mezo-v84m — the gym hero's done-state, server truth in real mode (mock never persists
-  // an instance, so the default here is the mock branch's own answer).
+  // mezo-v84m / mezo-6kap — the gym hero's done + in-progress state and the sport hero's
+  // done-state, all server truth in real mode (mock persists no instance and logs no session,
+  // so the defaults here are the mock branch's own answers).
   workoutDone: false, workoutDoneSets: null as number | null,
+  workoutInProgress: false, workoutOpenSets: null as number | null,
+  loggedSportKinds: [] as string[],
 }
 
 function LocationProbe() {
@@ -463,6 +466,70 @@ describe('TodayPage — the day daypart hero', () => {
     mocks.useToday.mockReturnValue(baseToday)
     renderToday('/today?dp=nap')
     expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
+  })
+
+  // mezo-6kap — a half-finished session is not a fresh one: the CTA resumes (and says how far
+  // in), it never invites a restart. Same `/train` target, honest label.
+  test('an open instance turns the CTA into Folytassuk with the logged set count', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutInProgress: true, workoutOpenSets: 6 })
+    renderToday('/today?dp=nap')
+    expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Folytassuk · 6 szett kész' })).toBeInTheDocument()
+  })
+
+  test('an open instance with nothing logged yet reads a bare Folytassuk', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutInProgress: true, workoutOpenSets: 0 })
+    renderToday('/today?dp=nap')
+    expect(screen.getByRole('button', { name: 'Folytassuk' })).toBeInTheDocument()
+  })
+
+  test('a finished workout beats an open one — done wins over resume', () => {
+    mocks.useToday.mockReturnValue({
+      ...baseToday, workoutDone: true, workoutDoneSets: 18, workoutInProgress: true, workoutOpenSets: 6,
+    })
+    const { container } = renderToday('/today?dp=nap')
+    expect(screen.queryByRole('button', { name: /Folytassuk/ })).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+  })
+})
+
+// mezo-6kap — the sport hero carried the same hardcoded `logged: false` the gym hero did.
+describe('TodayPage — the sport hero done-state', () => {
+  // 17:00 lands in the nap window (11:45–19:15), and with no gym workout the sport session
+  // is `sessions[0]` — the day daypart's hero.
+  const sportOnly = (over: Record<string, unknown> = {}) => ({
+    ...baseToday,
+    workout: null,
+    workoutTime: null,
+    volleyballSessions: [{
+      day: 'Csü', time: '17:00', duration: 90, court: 'BVSC csarnok',
+      intensity: 'közepes', role: 'ütő', today: true,
+    }] as VolleyballSession[],
+    ...over,
+  })
+
+  // Scoped to the promoted hero button (`.td-cta`): a fuel ROW carries its own „Logold" pill
+  // (`.td-act`), so an unscoped role query matches two buttons and proves nothing about the hero.
+  const heroCta = (container: HTMLElement) => container.querySelector('.td-cta')
+
+  test('an unlogged sport session keeps its Logold CTA', () => {
+    mocks.useToday.mockReturnValue(sportOnly())
+    const { container } = renderToday('/today?dp=nap')
+    expect(heroCta(container)?.textContent).toBe('Logold')
+  })
+
+  test('a logged sport session drops the CTA for the done footnote', () => {
+    // No `sport` discriminator ⇒ `sportOf` resolves volleyball (the Phase-1 default).
+    mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['volleyball'] }))
+    const { container } = renderToday('/today?dp=nap')
+    expect(heroCta(container)).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész')
+  })
+
+  test('a different logged kind leaves this hero alone — a mixed day flips each independently', () => {
+    mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['trx'] }))
+    const { container } = renderToday('/today?dp=nap')
+    expect(heroCta(container)?.textContent).toBe('Logold')
   })
 })
 

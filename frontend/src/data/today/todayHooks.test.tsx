@@ -10,6 +10,7 @@ import { workout as trainWorkoutMock } from '@/data/train/train'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { localDateString } from '@/shared/lib/dates'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -43,9 +44,12 @@ test('useToday (real) composes Train + the real date; demo copy is null', async 
   expect(result.current.user.mesoLabel).toBe('Hypertrophy 04 · Tavasz')
   expect(result.current.today.mesoPhase).toBe('MAV') // phaseCurve[currentWeek-1]
   await waitFor(() => expect(result.current.volleyballSessions).toHaveLength(5)) // sport-schedule fixture
-  // Nothing finished on the default fixture → the day hero keeps its start CTA.
+  // Nothing finished or started on the default fixture → the day hero keeps its start CTA.
   expect(result.current.workoutDone).toBe(false)
   expect(result.current.workoutDoneSets).toBeNull()
+  expect(result.current.workoutInProgress).toBe(false)
+  expect(result.current.workoutOpenSets).toBeNull()
+  expect(result.current.loggedSportKinds).toEqual([])
 })
 
 // mezo-v84m — the Ma tab used to hardcode `logged: false` for the gym hero, so a workout
@@ -87,4 +91,73 @@ test('useToday (mock) never claims the day is done — mock persists no instance
   const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
   expect(result.current.workoutDone).toBe(false)
   expect(result.current.workoutDoneSets).toBeNull()
+  expect(result.current.workoutInProgress).toBe(false)
+  expect(result.current.workoutOpenSets).toBeNull()
+  expect(result.current.loggedSportKinds).toEqual([])
+})
+
+// mezo-6kap — the second half of the same contradiction: an OPEN instance made the Ma hero
+// read „Indítsuk" while the Train tab read „● Folyamatban · Folytassuk". Same source of truth
+// (`/today`'s `openWorkout`), same precedence: a completed instance always wins over an open one.
+const todayWith = (over: Record<string, unknown>) =>
+  http.get(`${API_BASE}/api/train/workouts/today`, () =>
+    HttpResponse.json({
+      templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+      dayLabel: 'Csü', title: 'Pull Day', durationEst: 78, exercises: [],
+      openWorkout: null, ...over,
+    }),
+  )
+
+const instance = (status: 'active' | 'completed', sets: { skipped: boolean }[]) => ({
+  id: 'e1f3a0e2-0000-4000-8000-000000000020',
+  templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+  date: '2026-06-12',
+  status,
+  sets: sets.map((s, i) => ({ id: `s${i}`, exerciseId: 'x', setIndex: i, skipped: s.skipped })),
+})
+
+test('useToday (real) reports the day in progress while an open instance exists', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(todayWith({
+    openWorkout: instance('active', [{ skipped: false }, { skipped: false }, { skipped: true }]),
+  }))
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.workoutInProgress).toBe(true))
+  expect(result.current.workoutOpenSets).toBe(2)
+  // In progress is NOT done — the two states are mutually exclusive on the hero.
+  expect(result.current.workoutDone).toBe(false)
+})
+
+test('useToday (real) lets a completed instance win over a lingering open one', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(todayWith({
+    openWorkout: instance('active', [{ skipped: false }]),
+    completedWorkout: instance('completed', [{ skipped: false }, { skipped: false }]),
+  }))
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.workoutDone).toBe(true))
+  expect(result.current.workoutInProgress).toBe(false)
+  expect(result.current.workoutDoneSets).toBe(2)
+})
+
+// mezo-6kap — the sport hero had the same hardcoded `logged: false`. Its done-state is a logged
+// SportSession on TODAY's date, matched by kind (a mixed day flips each hero independently).
+test('useToday (real) reports today\'s logged sport kinds', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIso = localDateString(new Date())
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        // Today, two kinds — a mixed day.
+        { id: 'a', sport: 'volleyball', date: todayIso, time: '18:00', duration: 90, rpe: 6.8 },
+        { id: 'b', sport: 'trx', date: todayIso, time: '12:00', duration: 40, rpe: 5 },
+        // Yesterday — must NOT leak into today's hero.
+        { id: 'c', sport: 'cross', date: '2026-05-18', time: '10:00', duration: 60, rpe: 7 },
+      ]),
+    ),
+  )
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.loggedSportKinds).toHaveLength(2))
+  expect(result.current.loggedSportKinds).toEqual(expect.arrayContaining(['volleyball', 'trx']))
+  expect(result.current.loggedSportKinds).not.toContain('cross')
 })
