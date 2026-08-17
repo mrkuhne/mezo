@@ -71,7 +71,7 @@ function forecastText(state: NeedState): string | null {
   if (state.zeroAt) {
     const hint = REFILL_HINT[state.key]
     const tail = hint
-      ? ` ${hint.label} (+${hint.amount}%) ~${Math.round(hint.amount / state.ratePerHour)} órát ad hozzá.`
+      ? ` ${hint.label} (+${hint.amount}%) ~${Math.round(hint.amount / NEEDS_TUNING.rings[state.key].awakeRate)} órát ad hozzá.`
       : ''
     return `Így ${hhmm(state.zeroAt)} körül nullázódik.${tail}`
   }

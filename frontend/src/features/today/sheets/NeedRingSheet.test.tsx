@@ -6,7 +6,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { NeedRingSheet } from '@/features/today/sheets/NeedRingSheet'
-import type { NeedState } from '@/features/today/logic/needs'
+import { NEEDS_TUNING, type NeedState } from '@/features/today/logic/needs'
 
 const WAKE = '06:00'
 const BED = '22:00'
@@ -64,6 +64,28 @@ describe('NeedRingSheet', () => {
     )
     expect(screen.getByText(/Így 18:00 körül nullázódik\./)).toBeInTheDocument()
     expect(screen.getByText(/Egy pohár víz \(\+12%\) ~2 órát ad hozzá\./)).toBeInTheDocument()
+  })
+
+  test('a night-paused ring (ratePerHour 0) with a forecast divides by its fixed awakeRate, not 0', () => {
+    // lelek has nightRate: 0, so ratePerHour is 0 overnight, but forecastZeroAt can still
+    // return a non-null zeroAt (the projection crosses into the next awake segment) —
+    // the hint must divide by NEEDS_TUNING.rings.lelek.awakeRate (5), never ratePerHour (0),
+    // or it renders "~Infinity órát ad hozzá." (regression for mezo-dhzk review finding).
+    render(
+      <NeedRingSheet
+        state={state({
+          key: 'lelek', label: 'Lélek', emoji: '💗',
+          ratePerHour: 0,
+          zeroAt: new Date('2026-08-17T18:00:00'),
+        })}
+        wakeTime={WAKE} bedTime={BED} onClose={() => {}} onCta={() => {}}
+      />,
+    )
+    const expectedHours = Math.round(NEEDS_TUNING.refill.checkin / NEEDS_TUNING.rings.lelek.awakeRate)
+    expect(expectedHours).toBe(4)
+    expect(screen.getByText(/Így 18:00 körül nullázódik\./)).toBeInTheDocument()
+    expect(screen.getByText(/Egy check-in \(\+20%\) ~4 órát ad hozzá\./)).toBeInTheDocument()
+    expect(screen.queryByText(/Infinity/)).toBeNull()
   })
 
   test('pct === 0 with no forecast shows the "lemerült" copy', () => {
