@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív" → Mezo Edition DS)
 type: feature-platform
 status: in-progress
-updated: 2026-08-16
+updated: 2026-08-17
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -667,7 +667,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `CountUp.tsx` — shared rAF ease-out count-up primitive (`mezo-ilsj`, generalized out of `LevelUpScreen`'s inline count-up hook for the ritual Harvest act's XP total); skips to the final value under reduced motion or jsdom. See [ritual.md](ritual.md).
 
 **App shell** (`frontend/src/app/`)
-- `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.
+- `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell. `ScreenContent` owns `.screen-content`, the single app scroller, and resets it to the top on every **route** change; the reset itself is `scrollToTop()` from **`shared/lib/screenScroll.ts`** (`mezo-vad0`), which also exports the `screenScroller()` lookup so a page that swaps its whole tree WITHOUT navigating can ask for the same reset (the active workout's phase flips — see [train.md §2](train.md)). Both go through an **instant** `scrollTo` on purpose: `.screen-content` carries `scroll-behavior: smooth`, so a bare `scrollTop =` starts an animated scroll that keeps running into the next frames and overrides whatever the landing screen does (it ate the chat's scroll-to-newest, `mezo-at8x.2`).
 - `TabBar.tsx` / `AppLayout.tsx` — 4-tab nav + center quick-log FAB + layout (anchor-mode wiring). `TabBar` owns the `quickOpen` state and conditionally mounts `QuickInputSheet` (Napív, `mezo-8141`). `AppLayout` also mounts **`CircadianTheme`** (`mezo-d71m`) and hides `TabBar` on `/train/session`, **`/me/sleep/night`** (the night page's light would defeat the sub-30-lux point, `mezo-d71m`), **and `/ritual`** (the full-screen Napzárás flow, `mezo-ilsj` — see [ritual.md](ritual.md)) via `hideTabBar`; its `LiveActivityProvider` mount was deleted in `mezo-xt65` — the rest timer is Train-local now.
 - `CircadianTheme.tsx` — the circadian auto-theme resolver (`mezo-d71m`): while `useTheme().mode === 'auto'`, a 60 s tick flips `setAutoTheme` to dark exactly inside `isDarkWindow(now, useSleepGoal().goal)` (`features/today/logic/windDown.ts` — the winddown window the Today evening island also runs on), light otherwise. Renders `null`; mounted once in `AppLayout` under the data providers.
 - `router.tsx` — route tree (section/subnav/page structure) plus full-screen builder/wizard siblings registered outside the tab tree (e.g. `train/mesocycles/new`, `me/goals/new` → `GoalPlannerPage`, **`me/routines/edit` → `RoutineEditorPage`**, the routine editor, `mezo-n5e9.2` — see [habit.md §2](habit.md)). **`me/ertesitesek` → `NotificationsPage`** (push-notification opt-in, `mezo-h4wp.6.1`) joined the `MeSection` children array as an ordinary `<Outlet>` leaf — not a full-screen sibling like the two above. **`me/ai-usage` → `AiUsagePage`** and **`me/ai-usage/:id` → `AiCallDetailPage`** (the AI-napló over the LLM audit log, `mezo-uakh`) are full-screen **siblings** in the `me/routines/edit` idiom — outside `MeSection`, so they carry no Me sub-nav chrome; the detail route is deep-linkable (its `:id` comes from the list response). See [`me.md`](me.md) §2/§10.
