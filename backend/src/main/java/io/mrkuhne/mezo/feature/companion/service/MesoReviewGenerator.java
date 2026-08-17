@@ -70,6 +70,10 @@ public class MesoReviewGenerator {
         + "ahol az adat hiányzik (null), ott mondd ki, hogy nincs róla adat, és ne pótold "
         + "becsléssel. Diagnózist, gyógyszeres vagy klinikai javaslatot SOHA ne adj, és ne "
         + "minősítsd Danielt — a hangvétel ítélkezésmentes és mintázat-fókuszú.\n\n"
+        + "A felhasználói üzenet JELMAGYARÁZAT blokkja megadja, mit mér PONTOSAN az egyes mező. "
+        + "Kötelező eszerint értelmezni őket: ha egy mező kevesebbet mér, mint amit a neve sugall, "
+        + "akkor a szövegben is szűkebben, minősítve fogalmazz róla — sose állíts többet, mint amit "
+        + "az adat alátámaszt.\n\n"
         + "Négy szakaszban, ebben a sorrendben, sima folyó szövegként (nincs JSON, nincs "
         + "felsorolás-jelölő, nincs markdown címsor), összesen 4–8 bekezdésben:\n"
         + "1. Mit sikerült — mit vitt végig a futamban, konkrét számmal alátámasztva.\n"
@@ -132,14 +136,33 @@ public class MesoReviewGenerator {
                 markFailed(mesocycleId, userId);
                 return;
             }
-            stored.setAiEval(answer.strip());
-            stored.setAiEvalStatus(MesocycleReportEntity.AI_EVAL_STATUS_READY);
-            stored.setAiEvalGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
-            reportRepository.save(stored);
+            markReady(mesocycleId, userId, answer.strip());
         } catch (Exception e) {
             log.warn("Meso review generation failed for run {}", mesocycleId, e);
             markFailed(mesocycleId, userId);
         }
+    }
+
+    /**
+     * Persists the narrative on a FRESHLY RE-READ row — the {@link #markFailed} idiom, and the reason
+     * the in-flight {@code stored} entity is deliberately NOT merged here: seconds pass during the LLM
+     * round trip, and a {@code regenerate} landing inside that window has already written a new
+     * {@code report} jsonb. Merging the pre-call snapshot would silently revert it (and the owner's
+     * {@code selfEval} with it). Only the three AI fields are touched, so whatever else moved
+     * meanwhile survives.
+     *
+     * <p>Package-crossing visibility on purpose: {@code MesoReviewGeneratorIT} drives this directly to
+     * pin the re-read behaviour, which no end-to-end test can observe (the fake LLM returns before any
+     * concurrent write could be orchestrated).
+     */
+    public void markReady(UUID mesocycleId, UUID userId, String narrative) {
+        reportRepository.findByMesocycleIdAndCreatedByAndDeletedFalse(mesocycleId, userId)
+            .ifPresent(fresh -> {
+                fresh.setAiEval(narrative);
+                fresh.setAiEvalStatus(MesocycleReportEntity.AI_EVAL_STATUS_READY);
+                fresh.setAiEvalGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+                reportRepository.save(fresh);
+            });
     }
 
     /**
@@ -159,9 +182,30 @@ public class MesoReviewGenerator {
     }
 
     /**
-     * PURE-CODE payload: the run's identity + window, the owner's own close-time note, and the two
-     * frozen jsonb blocks verbatim. Nulls are serialized as {@code null} on purpose — they ARE the
-     * "no data" signal the prompt tells the model to name rather than fill in.
+     * What the context's field NAMES do not say. Several of them measure less than they promise, and a
+     * model handed the raw jsonb would confidently overstate all three: {@code gymRpeAvg} is
+     * {@code TRAINING_RPE}, which reads sport + run RPE and NO gym data at all; the weight fields are
+     * sums of consecutive-MEASURED-day deltas, so weekly weigh-ins yield null and partial coverage
+     * would read as the whole run's change; and every average is over the days that have a datapoint,
+     * with no denominator attached (2 of 7 nights looks identical to 7 of 7). Shipping the legend beside
+     * the data is what turns those into qualified statements instead of confident wrong ones.
+     */
+    private static final String LEGEND = "JELMAGYARÁZAT (a mezők PONTOS jelentése — kötelező eszerint "
+        + "értelmezni és minősítve fogalmazni):\n"
+        + "- gymRpeAvg = a SPORT- és FUTÁS-edzések RPE-átlaga, NEM a gym-edzésekéé (gym-RPE-adat "
+        + "egyáltalán nincs benne);\n"
+        + "- weightDeltaKg / weightChangeKg = az egymást KÖVETŐ MÉRT napok változásainak összege — heti "
+        + "(nem napi) mérlegelésnél hiányos vagy null, tehát NEM a futam teljes súlyváltozása;\n"
+        + "- minden átlag KIZÁRÓLAG az adattal rendelkező napokra vonatkozik, a nap-számot nem "
+        + "tartalmazza (2 mért éjszaka átlaga ugyanúgy néz ki, mint 7-é) — a mealCoverageDays / "
+        + "sportSessions / runSessions darabszámok az egyetlen lefedettség-jelzők;\n"
+        + "- a null azt jelenti: nincs adat. Ne pótold becsléssel, és ne olvasd nullának;\n"
+        + "- késői zárásnál az utolsó heti vödör 7 napnál HOSSZABB időszakot is fedhet.";
+
+    /**
+     * PURE-CODE payload: the metric legend above, then the run's identity + window, the owner's own
+     * close-time note, and the two frozen jsonb blocks verbatim. Nulls are serialized as {@code null}
+     * on purpose — they ARE the "no data" signal the prompt tells the model to name rather than fill in.
      *
      * <p>The title is part of the payload because the review is about a specific named run (and it
      * is the channel {@code MesoReviewGeneratorIT} plants its fake-LLM sentinels through).
@@ -169,7 +213,8 @@ public class MesoReviewGenerator {
     private String payload(MesocycleEntity run, LocalDate windowEnd, MesocycleReportEntity row) {
         String selfEval = row.getSelfEval() == null || row.getSelfEval().isBlank()
             ? "nincs" : row.getSelfEval();
-        return "FUTAM: " + run.getTitle()
+        return LEGEND + "\n\n"
+            + "FUTAM: " + run.getTitle()
             + " (" + run.getStartDate() + " – " + windowEnd + ", " + run.getWeeks() + " hét)\n"
             + "ÖNÉRTÉKELÉS: " + selfEval + "\n\n"
             + "EREDMÉNYEK (JSON):\n" + json(row.getReport()) + "\n\n"

@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.MesoContextJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleReportRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
@@ -294,6 +295,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         row.setAiEval("Korábbi AI értékelés");
         row.setAiEvalStatus(MesocycleReportEntity.AI_EVAL_STATUS_READY);
         row.setAiEvalGeneratedAt(Instant.now());
+        row.setContext(new MesoContextJson(List.of(), null)); // …plus its lifestyle context
         reportRepository.saveAndFlush(row);
         // …and that the underlying data moved after the close (a corrected set).
         ExerciseSetEntity corrected = setWeighing(owner, "70");
@@ -310,10 +312,16 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         MesocycleReportResponse report = reportService.getReport(owner, run.getId());
         // (b) the close-time note is not collateral damage of a recompute
         assertThat(report.getSelfEval()).isEqualTo("Zárás jegyzet");
-        // (c) the AI half is back to pending for S3 to regenerate
+        // (c) the WHOLE AI half is back to pending for the companion generator to redo — narrative AND
+        //     context, both of which described the OLD numbers. A stale context surviving beside fresh
+        //     numbers would be permanent with the meso-review switch off (mezo-meyc.3, fix round 1).
         assertThat(report.getAiEval()).isNull();
         assertThat(report.getAiEvalGeneratedAt()).isNull();
         assertThat(report.getAiEvalStatus()).isEqualTo(MesocycleReportResponse.AiEvalStatusEnum.PENDING);
+        assertThat(report.getContext()).isNull();
+        assertThat(reportRepository
+            .findByMesocycleIdAndCreatedByAndDeletedFalse(run.getId(), owner).orElseThrow()
+            .getContext()).isNull();
         // (d) the deterministic half genuinely recomputed against the corrected set
         assertThat(report.getStrength().get(0).getExerciseName()).isEqualTo(BENCH);
         assertThat(report.getStrength().get(0).getLastTopKg()).isEqualByComparingTo("100");

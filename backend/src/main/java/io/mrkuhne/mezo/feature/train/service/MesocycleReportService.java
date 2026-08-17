@@ -139,7 +139,13 @@ public class MesocycleReportService {
                 return fresh;
             });
         row.setReport(report);
-        // A recompute invalidates the narrative written against the OLD numbers (S3 regenerates it).
+        // A recompute invalidates the WHOLE AI half — narrative AND the lifestyle context, both of
+        // which were computed against the OLD numbers/window (mezo-meyc.3). Leaving a stale context
+        // beside fresh numbers is the worse failure: with the meso-review switch off nothing would
+        // ever overwrite it, so the report page would show last-window buckets next to this-window
+        // results. The companion's AFTER_COMMIT generator re-populates both (or, switch off, just the
+        // context) from the `pending` status below.
+        row.setContext(null);
         row.setAiEval(null);
         row.setAiEvalGeneratedAt(null);
         row.setAiEvalStatus(MesocycleReportEntity.AI_EVAL_STATUS_PENDING);

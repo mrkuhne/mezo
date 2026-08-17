@@ -272,6 +272,13 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MESO_REVIEW_SENTINEL =
             Pattern.compile("\\[fake-meso-review:([^\\]]*)]", Pattern.DOTALL);
 
+    /** Planted in the run TITLE, returns the ASSEMBLED USER PAYLOAD verbatim — the only way an IT can
+     *  assert what the generator actually sent (e.g. that the metric legend is present and precedes the
+     *  data blocks). The default-branch echo idiom (§ "prompt assembly is assertable"), applied to a
+     *  marker branch that otherwise answers canned text; the fake stays STATELESS — no prompt recorder.
+     *  Checked BEFORE {@link #MESO_REVIEW_SENTINEL}, which needs a colon and so cannot match this. */
+    public static final String MESO_REVIEW_ECHO = "[fake-meso-review-echo]";
+
     /** Compact companion to {@link #SUGGEST_SENTINEL}: {@code [fake-habit-suggest-count:N]}
      *  generates N valid suggestions server-side (fixed skillKey/chainKey/xp) instead of the
      *  caller spelling out N JSON objects — the only way to stay under {@code hint}'s 200-char cap
@@ -384,6 +391,9 @@ public class FakeCompanionLlm implements CompanionLlm {
                             + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
         }
         if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
+            if (userMessage.contains(MESO_REVIEW_ECHO)) {
+                return userMessage;
+            }
             Matcher m = MESO_REVIEW_SENTINEL.matcher(userMessage);
             // default = the canned narrative, so the un-scripted happy path still persists 'ready'
             return m.find() ? m.group(1) : MESO_REVIEW_ANSWER;

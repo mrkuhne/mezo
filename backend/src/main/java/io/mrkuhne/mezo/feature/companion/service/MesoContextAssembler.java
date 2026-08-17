@@ -39,6 +39,13 @@ import org.springframework.transaction.annotation.Transactional;
  * COUNTS ({@code sportSessions}, {@code runSessions}, {@code mealCoverageDays}) are the exception:
  * their denominator (the bucket's calendar days) is known, so a 0 there is a fact, and it is what
  * makes the neighbouring averages readable ("7.5 h average — over 2 of 7 days").
+ *
+ * <p><b>Two field names promise more than they measure</b> — the contract shape is train-owned and not
+ * ours to rename, so the caveats travel with the data instead, in {@code MesoReviewGenerator}'s
+ * {@code LEGEND} block: {@code gymRpeAvg} is {@link MetricKey#TRAINING_RPE}, i.e. the SPORT + RUN RPE
+ * average with no gym data in it at all; {@code weightDeltaKg} sums {@link MetricKey#WEIGHT_DELTA_KG},
+ * which only produces a point when TWO CONSECUTIVE days were weighed, so weekly weigh-ins yield null
+ * rather than a run-long change. Keep the legend in sync if either mapping changes.
  */
 @Service
 @RequiredArgsConstructor

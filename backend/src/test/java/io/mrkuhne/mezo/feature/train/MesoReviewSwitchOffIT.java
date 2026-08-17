@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.train;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.mrkuhne.mezo.api.dto.MesocycleReportResponse;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
@@ -46,6 +48,13 @@ class MesoReviewSwitchOffIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogs;
     @Autowired private DatabasePopulator databasePopulator;
 
+    /**
+     * Closing here genuinely COMMITS (the class is non-transactional), so the companion's AFTER_COMMIT
+     * `@Async` listener really fires. The test therefore has to see that async work through to its write
+     * before it ends: an unawaited listener thread would otherwise land its context UPDATE during the
+     * NEXT class's `ResetDatabase` TRUNCATE, which is the documented way to deadlock Postgres mid-suite
+     * (`src/test/resources/application.properties`, the notification-cron note).
+     */
     @Test
     void testGetReport_shouldReportAiEvalDisabled_whenSwitchOff() {
         UUID owner = databasePopulator.populateUser("meso-review-off-a@test.local");
@@ -55,6 +64,15 @@ class MesoReviewSwitchOffIT extends AbstractIntegrationTest {
 
         MesocycleReportResponse report = reportService.getReport(owner, run.getId());
         assertThat(report.getAiEvalEnabled()).isFalse();
+
+        // the listener's one and only write with the switch off — provably finished inside the test
+        await().atMost(15, SECONDS).untilAsserted(() -> {
+            MesocycleReportEntity row = reportRepository
+                .findByMesocycleIdAndCreatedByAndDeletedFalse(run.getId(), owner).orElseThrow();
+            assertThat(row.getContext()).isNotNull();
+            assertThat(row.getAiEvalStatus()).isEqualTo(MesocycleReportEntity.AI_EVAL_STATUS_PENDING);
+            assertThat(row.getAiEval()).isNull();
+        });
     }
 
     /**

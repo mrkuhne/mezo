@@ -135,6 +135,68 @@ class MesoReviewGeneratorIT extends AbstractIntegrationTest {
         assertThat(response.getContext().getWeeks().get(1).getSportMinutes()).isNull();
     }
 
+    /**
+     * The metric legend must travel WITH the data (fix round 1): three context fields measure less than
+     * their names promise, so the payload spells the caveats out before the JSON blocks and the system
+     * prompt tells the model to qualify accordingly. Asserted on the real prompt, echoed back verbatim
+     * by the fake.
+     */
+    @Test
+    void testGenerate_shouldPrependMetricLegend_whenAssemblingThePayload() {
+        UUID owner = databasePopulator.populateUser("meso-review-f@test.local");
+        MesocycleEntity run = titled(twoWeekRunWithLifestyleData(owner),
+            "Legenda-futam " + FakeCompanionLlm.MESO_REVIEW_ECHO);
+        reportService.computeAndStore(run);
+
+        generator.generate(owner, run.getId());
+
+        // the echo channel returns the assembled USER PAYLOAD, so ai_eval IS the prompt the model saw
+        String prompt = reportRow(owner, run.getId()).getAiEval();
+        assertThat(prompt).contains("JELMAGYARÁZAT");
+        // (a) gymRpeAvg is sport+run RPE and carries NO gym data
+        assertThat(prompt).contains("gymRpeAvg").contains("NEM a gym-edzésekéé");
+        // (b) the weight fields are sums of consecutive-MEASURED-day deltas, not a run-long change
+        assertThat(prompt).contains("weightDeltaKg / weightChangeKg")
+            .contains("KÖVETŐ MÉRT napok")
+            .contains("NEM a futam teljes súlyváltozása");
+        // (c) averages carry no coverage denominator — the row counts are the only coverage signal
+        assertThat(prompt).contains("KIZÁRÓLAG az adattal rendelkező napokra")
+            .contains("mealCoverageDays");
+        // (d) the late-close bucket caveat
+        assertThat(prompt).contains("HOSSZABB időszakot is fedhet");
+        // and it PRECEDES the data it qualifies — a legend after the JSON is a legend the model skipped
+        assertThat(prompt.indexOf("JELMAGYARÁZAT"))
+            .isLessThan(prompt.indexOf("ÉLETMÓD-KONTEXTUS"));
+    }
+
+    /**
+     * The narrative is written onto a FRESHLY RE-READ row, not the pre-call snapshot: seconds pass
+     * during a real LLM round trip, and a {@code regenerate} landing in that window has already stored
+     * a new {@code report} jsonb (and possibly a {@code selfEval}). Merging the snapshot would silently
+     * revert both. Driven directly — the fake answers before any concurrent write could be orchestrated
+     * end-to-end, so this is the only place the behaviour is observable.
+     */
+    @Test
+    void testMarkReady_shouldWriteOnlyAiFieldsOnAFreshRow_whenTheRowMovedMeanwhile() {
+        UUID owner = databasePopulator.populateUser("meso-review-g@test.local");
+        MesocycleEntity run = twoWeekRunWithLifestyleData(owner);
+        reportService.computeAndStore(run);
+        // whatever else the row gained while the model was thinking
+        MesocycleReportEntity concurrent = reportRow(owner, run.getId());
+        concurrent.setSelfEval("közben mentett önértékelés");
+        reportRepository.saveAndFlush(concurrent);
+
+        generator.markReady(run.getId(), owner, "AI-értékelés szövege");
+
+        MesocycleReportEntity after = reportRow(owner, run.getId());
+        assertThat(after.getAiEval()).isEqualTo("AI-értékelés szövege");
+        assertThat(after.getAiEvalStatus()).isEqualTo(MesocycleReportEntity.AI_EVAL_STATUS_READY);
+        assertThat(after.getAiEvalGeneratedAt()).isNotNull();
+        // the concurrent write survives — only the three AI fields were touched
+        assertThat(after.getSelfEval()).isEqualTo("közben mentett önértékelés");
+        assertThat(after.getReport()).isNotNull();
+    }
+
     /** The run TITLE reaches the prompt — the sentinel-planting channel the failure test rides too. */
     @Test
     void testGenerate_shouldUseScriptedAnswer_whenSentinelPlantedInTitle() {

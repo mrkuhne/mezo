@@ -1623,8 +1623,20 @@ another feature's domain event rather than by a chat turn or a cron.
   the three ROW COUNTS (`sportSessions`/`runSessions`/`mealCoverageDays`) are the exception — their
   denominator (the bucket's calendar days) is known, so a 0 there is a fact, and it is what makes the
   neighbouring averages readable.
+- **The metric legend (fix round 1) — the part that keeps the narrative honest.** Two context field names
+  promise more than they measure, and the contract shape is train-owned so renaming them is not an option:
+  `gymRpeAvg` is `TRAINING_RPE`, i.e. the **sport + run** RPE average with **no gym data in it at all**;
+  `weightDeltaKg`/`weightChangeKg` sum `WEIGHT_DELTA_KG`, which only yields a point when **two consecutive
+  days** were weighed, so weekly weigh-ins produce null rather than a run-long change. On top of that, no
+  average carries its coverage denominator (2 of 7 nights reads identically to 7 of 7). So
+  `MesoReviewGenerator.LEGEND` is prepended to the user payload, **before** the JSON blocks, spelling all
+  of it out in Hungarian (plus "null = no data, don't estimate" and "a late close can make the last weekly
+  bucket span more than 7 days"), and the system prompt instructs the model to interpret the fields by that
+  legend and qualify accordingly. Keep `MesoContextAssembler`'s metric→field mapping and the legend in
+  sync — the class javadoc says so on both sides, and `MesoReviewGeneratorIT` asserts the legend's presence
+  and that it PRECEDES the data (a legend after the JSON is a legend the model skipped).
 - **Narrative.** `MesoReviewGenerator` (`service/MesoReviewGenerator.java`) is a one-shot SMART-tier
-  generator in the `MemoirGenerator` shape: PURE-CODE gather (run title + window + the owner's self-eval +
+  generator in the `MemoirGenerator` shape: PURE-CODE gather (the legend + run title + window + the owner's self-eval +
   the frozen `report` jsonb + the fresh `context` jsonb, serialized verbatim — nulls kept, because they
   ARE the "no data" signal the prompt tells the model to name instead of fill in) → ONE
   `companionLlm.completeSmart` inside `llmCallContextHolder.runWith(new LlmCallContext("meso_review",
@@ -1639,10 +1651,18 @@ another feature's domain event rather than by a chat turn or a cron.
   across the round trip). Any failure — provider error, or an empty answer, which is treated as a degrade
   rather than an exception (the `MemoirGenerator` precedent) — is swallowed into a persisted `failed`
   status; nothing ever escapes to the `@Async` executor's default handler.
+- **Both terminal writes go to a freshly RE-READ row** (`markReady` / `markFailed`), never to the pre-call
+  snapshot: seconds pass during a real round trip, and a `regenerate` landing in that window has already
+  written a new `report` jsonb (and possibly a `selfEval`). Merging the snapshot would silently revert them,
+  so only the three AI fields are set on the fresh entity. `markReady` is public purely so
+  `MesoReviewGeneratorIT` can pin that behaviour — no end-to-end test can observe it, because the fake LLM
+  returns long before any concurrent write could be orchestrated.
 - **Idempotency.** Work happens ONLY while `ai_eval_status = 'pending'`, the state `computeAndStore`
-  leaves behind on every close and regenerate. A `ready`/`failed` row is left completely untouched
-  including its context, so the listener firing twice can never burn a second smart-tier call or
-  overwrite a narrative the user is reading. Re-generation is requested by resetting the status.
+  leaves behind on every close and regenerate — where it now also **nulls `context`**, since a context
+  computed against the old numbers/window must not survive beside fresh ones (with the switch off nothing
+  would ever overwrite it). A `ready`/`failed` row is left completely untouched including its context, so
+  the listener firing twice can never burn a second smart-tier call or overwrite a narrative the user is
+  reading. Re-generation is requested by resetting the status.
 - **Switch off.** With `mezo.feature.meso-review.enabled=false` the **train-owned** `MesoReviewGate`
   marker bean is absent and `generate` returns right after the context write; the row stays `pending`,
   which is harmless because `getReport` reports `aiEvalEnabled: false` and the FE hides the AI section
@@ -2255,7 +2275,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu), including the new `conversationHistory` field on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE — failure injection there rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.
@@ -2313,7 +2333,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/MesoReviewGeneratorIT.java` — the `mezo-meyc.3` §5.6 batch (5 tests, `companion-fake`, deliberately NOT `@Transactional`): per-week/totals context numbers incl. the honest-absence nulls of a data-less W2, the title-planted sentinel proving the assembled payload reached the port, pending-only idempotency (a `ready` row's narrative AND null context both survive), `[fake-fail]` → `failed` **with the context still persisted**, and the real `closeMesocycle` → AFTER_COMMIT → `@Async` path awaited with Awaitility. The switch-off half lives in `feature/train/MesoReviewSwitchOffIT.java` (own `@TestPropertySource` context: `aiEvalEnabled` false + context written/status left `pending`). Note `feature/train/MesocycleCloseReportIT.java` runs with `mezo.feature.companion.enabled=false` so the deterministic close report is asserted without this listener racing it from another thread.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/MesoReviewGeneratorIT.java` — the `mezo-meyc.3` §5.6 batch (7 tests, `companion-fake`, deliberately NOT `@Transactional`): per-week/totals context numbers incl. the honest-absence nulls of a data-less W2 **plus the contract round-trip through `getReport`**, the metric **legend** asserted on the real prompt via the `[fake-meso-review-echo]` channel (content + ordering before the JSON), `markReady`'s **fresh-row** write (a concurrent `selfEval` survives), the title-planted sentinel proving the assembled payload reached the port, pending-only idempotency (a `ready` row's narrative AND null context both survive), `[fake-fail]` → `failed` **with the context still persisted**, and the real `closeMesocycle` → AFTER_COMMIT → `@Async` path awaited with Awaitility. The switch-off half lives in `feature/train/MesoReviewSwitchOffIT.java` (own `@TestPropertySource` context: `aiEvalEnabled` false + context written/status left `pending`, and it now **awaits** the listener's write so the async thread cannot collide with the next class's `ResetDatabase` TRUNCATE). Note `feature/train/MesocycleCloseReportIT.java` runs with `mezo.feature.companion.enabled=false` so the deterministic close report is asserted without this listener racing it from another thread; its regenerate test also pins that `computeAndStore` clears `context`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionMemoryOverviewApiIT,CompanionMemorySummaryApiIT,CompanionMemorySimilarDaysApiIT,CompanionMemoryLlmUsageApiIT,CompanionMemoryLlmUsageDisabledIT,CompanionMemorySwitchOffIT}.java` — the `mezo-al1i` memory-observatory batch: populated + empty overview, range-filtered summaries, the deterministic fake-embedding similar-days path, the LLM-usage rollup + its `enabled:false` disabled-audit branch, and the switch-off 404 across all 4 endpoints; `CompanionApiSwitchOffIT` extended to assert the memory/overview route (one of the four), with `CompanionMemorySwitchOffIT` proving bean absence covers all four.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator,KnowledgeFactPopulator,LearnedFactPopulator}.java` + `support/ResetDatabase.java` (companion tables in the TRUNCATE list).
 - `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception) + the V0.5 `companion_tools_are_internal_sphere_only` rule.
