@@ -120,6 +120,7 @@ export interface NeedState {
   zeroAt: Date | null      // forecast within next 24h at current rates, else null
   band: NeedBand
   lastFill: { at: Date; label: string } | null   // latest event ≤ now
+  todayFills: { at: Date; label: string }[]      // today's events (at ≥ today wake, ≤ now) — the sheet's "MA" timeline
 }
 
 export const NEEDS_TUNING: {
