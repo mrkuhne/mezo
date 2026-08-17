@@ -45,7 +45,8 @@ public enum NotificationCategory {
      */
     WIND_DOWN("wind_down", false, 0, false),
 
-    /** Anchor: 12:30; source {@code heartbeat_note} midday row. */
+    /** Anchor: 12:30, generation-graced; source {@code companion_message} midday row
+     *  (companion-feed, mezo-gst9). */
     MIDDAY("midday", false, 0, false),
 
     /** Anchor: 4x daily; FE-written — source FE snapshot ({@code data/today/checkins.ts}). */
