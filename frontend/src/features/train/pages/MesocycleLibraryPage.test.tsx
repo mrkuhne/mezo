@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http } from 'msw'
@@ -30,7 +31,9 @@ test('own header: pghead-np over + h1', () => {
 
 test('renders the active mesocycle hero card', () => {
   setup()
-  expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
+  // The title is shared with the template it was started from (Sablonok section),
+  // so match the tappable hero card itself — the template card is a plain div.
+  expect(screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ })).toBeInTheDocument()
 })
 
 test('renders a planned mesocycle', () => {
@@ -48,6 +51,46 @@ test('renders the new-mesocycle chip trigger in the header', () => {
   // The header `+ Új` chip (exact name) — distinct from the dashed
   // "+ Új mesociklus tervezése" CTA further down the page.
   expect(screen.getByRole('button', { name: 'Új' })).toBeInTheDocument()
+})
+
+// --- Sablonok section (mezo-meyc.1): templates are the reusable blueprints; runs live below ---
+
+test('renders the Sablonok section with the fixture templates and their run-count badges', () => {
+  setup()
+  expect(screen.getByText(/Sablonok · 2/)).toBeInTheDocument()
+  // the never-run template's title is unique to the template list (the other one
+  // shares its title with the active run below)
+  expect(screen.getByText('Upper/Lower Power')).toBeInTheDocument()
+  expect(screen.getByText('1× futtatva')).toBeInTheDocument()
+  expect(screen.getByText('0× futtatva')).toBeInTheDocument()
+})
+
+test('a template card offers Szerkesztés + Indítás', () => {
+  setup()
+  expect(screen.getAllByRole('button', { name: /Szerkesztés/ })).toHaveLength(2)
+  expect(screen.getAllByRole('button', { name: /Indítás/ })).toHaveLength(2)
+})
+
+test('Indítás on a template opens the start sheet', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getAllByRole('button', { name: /Indítás/ })[0])
+  expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
+})
+
+// --- Történet (was Archív) + rerun ---
+
+test('the closed-run section head reads Történet, not Archív', () => {
+  setup()
+  expect(screen.getByText(/Történet · 1/)).toBeInTheDocument()
+  expect(screen.queryByText('Archív · 1')).toBeNull() // the old section head is gone
+})
+
+test('Újrafuttatás on a closed run reruns it and opens the start sheet', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getAllByRole('button', { name: /Újrafuttatás/ })[0])
+  expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the MesocycleSkeleton (role="status")

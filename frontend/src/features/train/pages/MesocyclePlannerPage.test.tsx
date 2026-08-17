@@ -39,34 +39,9 @@ test('selecting Hypertrophy then Tovább advances to step 1', async () => {
   expect(screen.getByText('Mennyi időnk van?')).toBeInTheDocument()
 })
 
-test('the wizard persists the mesocycle in real mode and lands on the library', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  let postedTemplate: { title?: string; weeks?: number; days?: unknown[] } | null = null
-  let postedStart: { startDate?: string; status?: string } | null = null
-  server.use(
-    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
-    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
-    // Two-step save (mezo-meyc.1): the wizard now creates a template, then starts a run from it.
-    http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
-      postedTemplate = (await request.json()) as typeof postedTemplate
-      return HttpResponse.json(
-        { id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...postedTemplate, runCount: 0 },
-        { status: 201 },
-      )
-    }),
-    http.post(`${API_BASE}/api/train/meso-templates/:id/start`, async ({ request }) => {
-      postedStart = (await request.json()) as typeof postedStart
-      return HttpResponse.json({
-        id: 'b6f3a0e2-0000-4000-8000-00000000d00d',
-        templateId: 'e1f3a0e2-0000-4000-8000-00000000d00d',
-        title: 'Teszt', shortTitle: 'Teszt', status: postedStart!.status,
-        startDate: postedStart!.startDate, endDate: postedStart!.startDate,
-        weeks: 4, currentWeek: 0, split: '', style: '', phaseCurve: ['MEV'],
-      })
-    }),
-  )
-  const user = userEvent.setup()
-  const putSpy = vi.spyOn(trainApi, 'replaceGymSchedule')
+// Walks the wizard to its terminal step in real mode and returns the router (so the
+// landing route can be asserted) — shared by the three save-path tests below.
+async function runWizardToTerminalStep(user: ReturnType<typeof userEvent.setup>) {
   const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/new'] })
   render(
     <QueryWrapper>
@@ -75,34 +50,113 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
       </ThemeProvider>
     </QueryWrapper>,
   )
-
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   // step 1: set a real start date through the date picker
   const dateInput = screen.getByLabelText('Kezdés dátuma')
   await user.clear(dateInput)
-  // fireEvent-style direct change is the reliable way to set <input type="date">
   await user.type(dateInput, '2026-06-16')
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   // step 2 -> step 3 (Program — terminal step, save buttons live here)
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   // step 3: wait out the 600ms generate delay
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
-  await user.click(screen.getByRole('button', { name: /Hozzáad mint tervezett/i }))
+  return router
+}
 
-  await waitFor(() => expect(postedStart).not.toBeNull())
+test('„Mentés sablonként" creates the template only and lands on the library', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let postedTemplate: { title?: string; weeks?: number; days?: unknown[] } | null = null
+  let startCalls = 0
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+      postedTemplate = (await request.json()) as typeof postedTemplate
+      return HttpResponse.json(
+        { id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...postedTemplate, runCount: 0 },
+        { status: 201 },
+      )
+    }),
+    http.post(`${API_BASE}/api/train/meso-templates/:id/start`, () => {
+      startCalls += 1
+      return new HttpResponse(null, { status: 500 })
+    }),
+  )
+  const user = userEvent.setup()
+  const putSpy = vi.spyOn(trainApi, 'replaceGymSchedule')
+  const router = await runWizardToTerminalStep(user)
+
+  await user.click(screen.getByRole('button', { name: /Mentés sablonként/i }))
+
+  await waitFor(() => expect(postedTemplate).not.toBeNull())
   expect(postedTemplate!.weeks).toBeGreaterThan(0)
   expect(postedTemplate!.days).toHaveLength(7) // all template days travel, rest days included
-  expect(postedStart!.status).toBe('planned')
-  expect(postedStart!.startDate).toBe('2026-06-16')
+  expect(startCalls).toBe(0) // a template save never stamps a run
   // the planner also persists the standing gym schedule (mezo-4t43): one slot per selected day
   await waitFor(() => expect(putSpy).toHaveBeenCalled())
   const savedSlots = putSpy.mock.calls[0][0]
   expect(savedSlots).toHaveLength(5) // Hypertrophy: 5 selected days, each carries a time
   expect(savedSlots.every((s) => /^\d{2}:\d{2}$/.test(s.time))).toBe(true)
   putSpy.mockRestore()
-  // navigation: back on the (empty) library
-  await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
+  await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles'))
+})
+
+test('„Mentés + indítás" creates the template, starts it active on the wizard date, lands on Gym', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let postedTemplate: { title?: string } | null = null
+  let startedId: string | null = null
+  let postedStart: { startDate?: string; status?: string } | null = null
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+      postedTemplate = (await request.json()) as typeof postedTemplate
+      return HttpResponse.json(
+        { id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...postedTemplate, runCount: 0 },
+        { status: 201 },
+      )
+    }),
+    http.post(`${API_BASE}/api/train/meso-templates/:id/start`, async ({ params, request }) => {
+      startedId = String(params.id)
+      postedStart = (await request.json()) as typeof postedStart
+      return HttpResponse.json({
+        id: 'b6f3a0e2-0000-4000-8000-00000000d00d',
+        templateId: startedId,
+        title: 'Teszt', shortTitle: 'Teszt', status: postedStart!.status,
+        startDate: postedStart!.startDate, endDate: postedStart!.startDate,
+        weeks: 4, currentWeek: 1, split: '', style: '', phaseCurve: ['MEV'],
+      })
+    }),
+  )
+  const user = userEvent.setup()
+  const router = await runWizardToTerminalStep(user)
+
+  await user.click(screen.getByRole('button', { name: /Mentés \+ indítás/i }))
+
+  await waitFor(() => expect(postedStart).not.toBeNull())
+  expect(postedTemplate).not.toBeNull()
+  expect(startedId).toBe('e1f3a0e2-0000-4000-8000-00000000d00d') // started from the just-created template
+  expect(postedStart!.status).toBe('active')
+  expect(postedStart!.startDate).toBe('2026-06-16')
+  await waitFor(() => expect(router.state.location.pathname).toBe('/train/gym'))
+})
+
+test('a failed template create keeps the wizard on the terminal step', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/train/meso-templates`, () => new HttpResponse(null, { status: 500 })),
+  )
+  const user = userEvent.setup()
+  const router = await runWizardToTerminalStep(user)
+
+  await user.click(screen.getByRole('button', { name: /Mentés sablonként/i }))
+
+  // the save buttons come back (no spinner lock) and the route never moved
+  await waitFor(() => expect(screen.getByRole('button', { name: /Mentés sablonként/i })).toBeEnabled())
+  expect(router.state.location.pathname).toBe('/train/mesocycles/new')
 })
 
 test('step 2 weekday picker: defaults match the split, Tovább gates on exact count', async () => {
@@ -287,7 +341,8 @@ test('Program step: budget card + accordion recipe editing, edits survive the 3�
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   expect(screen.getByText('A programod · gyakorlatok + set & rep')).toBeInTheDocument()
   // save buttons live here immediately — no extra Tovább needed
-  expect(screen.getByRole('button', { name: /Hozzáad mint tervezett/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mentés sablonként/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mentés \+ indítás/i })).toBeInTheDocument()
   // the unified editor's weekly set-budget card renders on this step
   expect(screen.getByText(/Heti szet-büdzsé/)).toBeInTheDocument()
   // a day tab is preselected; expand the first exercise row to reach its

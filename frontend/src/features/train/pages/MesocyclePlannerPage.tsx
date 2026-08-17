@@ -31,6 +31,7 @@ import type { PlannerDay } from '@/features/train/logic/planner'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { toDayInputs } from '@/features/train/logic/mesoDays'
 import { MiniStat } from '@/features/train/components/MiniStat'
 
 const STEP_COUNT = 4
@@ -187,10 +188,11 @@ export function MesocyclePlannerPage() {
   }
 
   // Wizard state -> contract payload. All 7 template days travel (rest days too) so the
-  // backend mirrors the seed/template shape; mock mode no-ops and just navigates (Phase 1).
-  // Two-step save (mezo-meyc.1): create the template, then start a run from it — replaces
-  // the old single createMesocycle POST now that the backend saves templates first.
-  const saveMesocycle = (status: 'planned' | 'active') => {
+  // backend mirrors the seed/template shape.
+  // The wizard saves a TEMPLATE (mezo-meyc.1) — a timeless blueprint. „Mentés sablonként"
+  // stops there and lands on the library; „Mentés + indítás" chains the one shared start
+  // call to stamp an active run from it and jumps into the gym week.
+  const saveTemplate = (alsoStart: boolean) => {
     const request: MesoTemplateUpsertRequest = {
       title: name || `${goal?.label ?? 'Mesociklus'} · ${getSeason(startDate)}`,
       shortTitle: goal?.label,
@@ -199,19 +201,7 @@ export function MesocyclePlannerPage() {
       split: split ? `${split.label} · ${days}×/hét` : `${days}×/hét`,
       style: goal?.style ?? `${weeks} hét`,
       phaseCurve,
-      days: (program ?? []).map((d) => ({
-        day: d.day,
-        type: d.type,
-        muscle: d.muscle,
-        muscleAccent: d.muscleAccent || undefined,
-        note: d.note,
-        exercises: d.exercises.map((e) => ({
-          name: e.name, muscle: e.muscle,
-          warmupSets: e.warmupSets, workingSets: e.workingSets,
-          repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
-          anchorWeightKg: e.anchorWeightKg, type: e.type, warning: e.warning, catalogId: e.catalogId,
-        })),
-      })),
+      days: toDayInputs(program ?? []),
     }
     // Persist the standing weekly gym schedule from the planner picks (mezo-4t43): one slot
     // per selected training day (all carry a time — default 18:00), replace-all. Mock no-ops.
@@ -222,10 +212,17 @@ export function MesocyclePlannerPage() {
     )
     setSaving(true)
     createTemplate(request)
-      .then((tpl) => startTemplate(tpl.id, { startDate: startDateIso, status }))
-      .then(backToLibrary)
-      // The QueryClient mutation cache already toasts every failed mutation (§7a) — swallow
-      // here only to stop the spinner + avoid an unhandled rejection; no UI logic is skipped.
+      .then((tpl) => {
+        if (!alsoStart) return backToLibrary()
+        return startTemplate(tpl.id, { startDate: startDateIso, status: 'active' })
+          .then(() => navigate('/train/gym'))
+          // The template IS saved even though the run never started — land on the library
+          // where it now lives (never on Gym, which would fake a running block). The
+          // mutation cache has already toasted the failure (§7a).
+          .catch(backToLibrary)
+      })
+      // A failed create leaves nothing behind: stay on the wizard so the work isn't lost
+      // and the save is retryable. The failure toast comes from the mutation cache (§7a).
       .catch(() => {})
       .finally(() => setSaving(false))
   }
@@ -367,21 +364,21 @@ export function MesocyclePlannerPage() {
             <button
               type="button"
               className="cta-primary"
-              onClick={() => saveMesocycle('planned')}
+              onClick={() => saveTemplate(true)}
               disabled={saving || !program}
               style={{ padding: 14, opacity: saving || !program ? 0.5 : 1 }}
             >
               <Icon name="check" size={16} />
-              <span>Hozzáad mint tervezett</span>
+              <span>Mentés + indítás · {startDate}</span>
             </button>
             <button
               type="button"
               className="cta-ghost"
               style={{ padding: 12, opacity: saving || !program ? 0.5 : 1 }}
-              onClick={() => saveMesocycle('active')}
+              onClick={() => saveTemplate(false)}
               disabled={saving || !program}
             >
-              Aktiválás most · {startDate}
+              Mentés sablonként
             </button>
           </div>
         )}
