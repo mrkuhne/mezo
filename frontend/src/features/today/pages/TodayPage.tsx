@@ -50,6 +50,7 @@ import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
+import { NeedRingSheet } from '@/features/today/sheets/NeedRingSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
@@ -156,10 +157,18 @@ export function TodayPage() {
   const tick = useMinuteTick()
   const needs = useNeeds(tick)
   const [needSheet, setNeedSheet] = useState<NeedKey | null>(null)
-  // Task 4 mounts the detail sheet on `needSheet`; until then it is write-only
-  // (`onOpen={setNeedSheet}` below) — this keeps `noUnusedLocals` quiet without inventing a
-  // fake read. Drop this line the moment the sheet host reads `needSheet`.
-  void needSheet
+  // The sheet's quick-log CTA reuses the SAME sheet states / mutations every other row on
+  // this screen already dispatches through — no new sheet, no new mutation (mezo-dhzk Task 4).
+  const onNeedCta = (key: NeedKey) => {
+    if (key === 'energia') setMealOpen({})
+    else if (key === 'hidratacio') logWater(250)
+    else if (key === 'pihenes') setSleepOpen(true)
+    else if (key === 'mozgas') navigate('/train')
+    else if (key === 'lelek') {
+      const idx = checkins.findIndex(isFillableSlot)
+      if (idx >= 0) setCheckInIdx(idx)
+    }
+  }
 
   // Consume-once reward toasts: quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
@@ -449,6 +458,13 @@ export function TodayPage() {
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
       {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} />}
+      {needSheet && (
+        <NeedRingSheet
+          state={needs.states.find((s) => s.key === needSheet)!}
+          wakeTime={sleepGoal.wakeTime} bedTime={sleepGoal.bedTime}
+          onClose={() => setNeedSheet(null)} onCta={onNeedCta}
+        />
+      )}
     </>
   )
 }
