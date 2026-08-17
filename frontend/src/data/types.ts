@@ -1070,7 +1070,9 @@ export interface SportSchedule {
   volleyball: { team: string; sessions: VolleyballSession[]; season: string; weeklyHours: number }
 }
 export interface SportSession {
-  id: string; sport: string; date: string; time: string; duration: number
+  id: string; sport: string; date: string
+  isoDate: string // ISO day — the raw wire date; `date` is the HU display string
+  time: string; duration: number
   setsPlayed: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
   jumpCount: number | null; notes: string | null
 }

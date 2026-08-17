@@ -140,7 +140,7 @@ export function toMesocycle(r: MesocycleResponse): Mesocycle {
 
 function toSportSession(r: SportSessionResponse): SportSession {
   return {
-    id: r.id, sport: r.sport, date: huMonthDayDow(r.date), time: r.time,
+    id: r.id, sport: r.sport, date: huMonthDayDow(r.date), isoDate: r.date, time: r.time,
     duration: r.duration, setsPlayed: r.setsPlayed ?? null, intensity: r.intensity ?? null,
     rpe: r.rpe, shoulderStrain: r.shoulderStrain ?? null, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
@@ -645,7 +645,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
             (prev) => {
               const logged: SportSession = {
                 id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
-                date: huMonthDayDow(iso), time: hhmm,
+                date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
                 duration: req.duration, setsPlayed: req.setsPlayed ?? null, intensity: null,
                 rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: null,
               }
