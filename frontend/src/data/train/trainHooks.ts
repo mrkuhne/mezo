@@ -298,7 +298,11 @@ function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void 
       m.id === id ? { ...m, status: 'archived', closedAt: `${today}T00:00:00Z` } : m,
     ),
   )
-  const meso = (qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles).find((m) => m.id === id)
+  // Cache first, STATIC FIXTURE as the last resort (the mockRerun/mockStart idiom): the
+  // seeded report's identity must not depend on what happens to be in the cache at close
+  // time, or a cache in an unexpected shape silently titles the report 'Mesociklus'.
+  const cached = qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles
+  const meso = cached.find((m) => m.id === id) ?? mesocycles.find((m) => m.id === id)
   const weeks = meso?.weeks ?? 1
   const report: MesocycleReportResponse = {
     mesocycleId: id,
@@ -410,6 +414,13 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // Mock mode seeds synchronously so the first render matches the Phase-1
     // static return exactly (the visual baselines + component tests). Real mode loads.
     initialData: mock ? mesocycles : undefined,
+    // Mock is a CLIENT-OWNED cache — mockStart/mockRerun (mezo-meyc.1) and mockClose
+    // (mezo-meyc.2) all edit this list via setQueryData. Without pinning staleTime, the
+    // seed is stale on arrival and the mount refetch resolves the FROZEN static array back
+    // over those edits (a race: it clobbered a just-closed run back to `active`). Same
+    // guard the sibling mock caches below already carry (gymSchedule, sportEvents) — the
+    // pantry/useDualQuery pattern. Real mode keeps the TanStack default.
+    staleTime: mock ? Infinity : undefined,
   })
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
   // HU display dates), so the derivation happens inside the queryFn.

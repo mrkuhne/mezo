@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -75,52 +75,58 @@ test('Meso lezárása opens the close sheet instead of closing straight away', a
   expect(calls).toEqual([]) // nothing closed until the sheet is confirmed
 })
 
-test('the close sheet POSTs the close endpoint and lands on the run report (real mode)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  const calls: string[] = []
-  server.use(
-    http.get(`${API_BASE}/api/train/mesocycles`, () =>
-      HttpResponse.json([realMeso('active')]),
-    ),
-    http.post(`${API_BASE}/api/train/mesocycles/:id/close`, ({ params }) => {
-      calls.push(`close:${params.id}`)
-      return HttpResponse.json({ id: params.id, status: 'archived' })
-    }),
-  )
-  setup(REAL_MESO_ID)
-  await userEvent.click(await screen.findByRole('button', { name: 'Meso lezárása' }))
-  await userEvent.click(await screen.findByRole('button', { name: /Lezárás/ }))
-  await waitFor(() => expect(calls).toEqual([`close:${REAL_MESO_ID}`]))
-  await waitFor(() =>
-    expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${REAL_MESO_ID}/report`),
-  )
-})
+// The MSW-driven cases pin real mode through a NESTED describe's beforeEach (the
+// PatternsPage/ChatPage house idiom) rather than an inline stub inside each test — this
+// file's own beforeEach pins MOCK mode, and an inline per-test override of the opposite
+// mode is what made the sibling close-sheet test flaky under the real-mode suite (CI #198).
+describe('MesocycleBuilderPage (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
 
-test('an archived run has no builder — it lands on its report (real mode)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  server.use(
-    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('archived')])),
-  )
-  setup(REAL_MESO_ID)
-  await waitFor(() =>
-    expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${REAL_MESO_ID}/report`),
-  )
-})
+  test('the close sheet POSTs the close endpoint and lands on the run report', async () => {
+    const calls: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([realMeso('active')]),
+      ),
+      http.post(`${API_BASE}/api/train/mesocycles/:id/close`, ({ params }) => {
+        calls.push(`close:${params.id}`)
+        return HttpResponse.json({ id: params.id, status: 'archived' })
+      }),
+    )
+    setup(REAL_MESO_ID)
+    await userEvent.click(await screen.findByRole('button', { name: 'Meso lezárása' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Lezárás/ }))
+    await waitFor(() => expect(calls).toEqual([`close:${REAL_MESO_ID}`]))
+    await waitFor(() =>
+      expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${REAL_MESO_ID}/report`),
+    )
+  })
 
-test('Aktiválás POSTs the activate endpoint in real mode', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  const calls: string[] = []
-  server.use(
-    http.get(`${API_BASE}/api/train/mesocycles`, () =>
-      HttpResponse.json([realMeso('planned')]),
-    ),
-    http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) => {
-      calls.push(`activate:${params.id}`)
-      return HttpResponse.json({ id: params.id })
-    }),
-  )
-  setup(REAL_MESO_ID)
-  await screen.findByRole('button', { name: /Aktiválás/ })
-  await userEvent.click(screen.getByRole('button', { name: /Aktiválás/ }))
-  await waitFor(() => expect(calls).toEqual([`activate:${REAL_MESO_ID}`]))
+  test('an archived run has no builder — it lands on its report', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('archived')])),
+    )
+    setup(REAL_MESO_ID)
+    await waitFor(() =>
+      expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${REAL_MESO_ID}/report`),
+    )
+  })
+
+  test('Aktiválás POSTs the activate endpoint', async () => {
+    const calls: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([realMeso('planned')]),
+      ),
+      http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) => {
+        calls.push(`activate:${params.id}`)
+        return HttpResponse.json({ id: params.id })
+      }),
+    )
+    setup(REAL_MESO_ID)
+    await screen.findByRole('button', { name: /Aktiválás/ })
+    await userEvent.click(screen.getByRole('button', { name: /Aktiválás/ }))
+    await waitFor(() => expect(calls).toEqual([`activate:${REAL_MESO_ID}`]))
+  })
 })

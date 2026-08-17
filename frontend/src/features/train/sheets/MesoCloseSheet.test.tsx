@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
@@ -93,39 +93,60 @@ test('a failed close keeps the sheet open and does not navigate (no false succes
 
 // --- offline (mock) demo parity: a no-op close would land on a page insisting the run is
 // still active, so mock mode emulates BOTH server effects in the client-owned cache.
-test('mock close archives the run and lands on a report carrying the submitted note', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
+// The mode is pinned by a NESTED describe's beforeEach (the PatternsPage/ChatPage house
+// idiom), NOT by an inline stub inside the test: this file's own beforeEach pins real mode
+// for every other case, and an inline override made this mock-only assertion flaky under
+// the real-mode suite (CI PR #198).
+describe('MesoCloseSheet (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
   const MOCK_MESO = 'meso-hyp-04' // the ACTIVE fixture run
+
   function StatusProbe() {
     const { mesocycles } = useTrain()
     return <div data-testid="status">{mesocycles.find((m) => m.id === MOCK_MESO)?.status}</div>
   }
-  const user = userEvent.setup()
-  render(
-    <QueryWrapper>
-      <MemoryRouter initialEntries={[`/train/mesocycles/${MOCK_MESO}`]}>
-        <Routes>
-          <Route
-            path="/train/mesocycles/:id"
-            element={
-              <MesoCloseSheet mesoId={MOCK_MESO} title="Hypertrophy 04 · Tavasz" onClose={vi.fn()} />
-            }
-          />
-          <Route path="/train/mesocycles/:id/report" element={<MesoReportPage />} />
-        </Routes>
-        <StatusProbe />
-      </MemoryRouter>
-    </QueryWrapper>,
-  )
-  expect(screen.getByTestId('status')).toHaveTextContent('active')
 
-  await user.type(screen.getByLabelText('Saját értékelés'), 'Offline demo zárás.')
-  await user.click(screen.getByRole('button', { name: /Lezárás/ }))
+  test('close archives the run and lands on a report carrying the submitted note', async () => {
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={[`/train/mesocycles/${MOCK_MESO}`]}>
+          <Routes>
+            <Route
+              path="/train/mesocycles/:id"
+              element={
+                <MesoCloseSheet mesoId={MOCK_MESO} title="Hypertrophy 04 · Tavasz" onClose={vi.fn()} />
+              }
+            />
+            <Route path="/train/mesocycles/:id/report" element={<MesoReportPage />} />
+          </Routes>
+          <StatusProbe />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    expect(screen.getByTestId('status')).toHaveTextContent('active')
 
-  // the seeded report renders — including the note the owner just typed
-  expect(await screen.findByText('Offline demo zárás.')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' })).toBeInTheDocument()
-  // ...and the run really is archived, so nothing claims it is still running
-  await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('archived'))
-  expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()
+    // `fireEvent.change`, not `user.type`: typing the note is 19 separate async keystrokes,
+    // and under full-suite CPU contention the click could read a half-committed `selfEval`
+    // (the flake behind CI #198). One synchronous change exercises the same controlled
+    // textarea -> closeMesocycle(selfEval) path without racing React's commits.
+    fireEvent.change(screen.getByLabelText('Saját értékelés'), {
+      target: { value: 'Offline demo zárás.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /Lezárás/ }))
+
+    // EVERY post-click assertion is awaited — a synchronous getBy here can lose the race
+    // against the navigation + the report render.
+    // The run really is archived (the cache write under test)...
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('archived'))
+    // ...the seeded report renders, carrying the note the owner just submitted...
+    expect(await screen.findByText('Offline demo zárás.')).toBeInTheDocument()
+    // ...titled from the run itself, not from mockClose's last-resort literal...
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }),
+    ).toBeInTheDocument()
+    // ...and nothing claims the run is still going.
+    expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()
+  })
 })
