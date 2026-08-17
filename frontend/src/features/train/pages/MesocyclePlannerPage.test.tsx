@@ -142,6 +142,35 @@ test('„Mentés + indítás" creates the template, starts it active on the wiza
   await waitFor(() => expect(router.state.location.pathname).toBe('/train/gym'))
 })
 
+test('a created template whose start fails lands on the library, never on Gym', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let createCalls = 0
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+      createCalls += 1
+      const body = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json(
+        { id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...body, runCount: 0 },
+        { status: 201 },
+      )
+    }),
+    // The template IS saved; only the run stamping dies.
+    http.post(`${API_BASE}/api/train/meso-templates/:id/start`, () => new HttpResponse(null, { status: 500 })),
+  )
+  const user = userEvent.setup()
+  const router = await runWizardToTerminalStep(user)
+
+  await user.click(screen.getByRole('button', { name: /Mentés \+ indítás/i }))
+
+  // no fake success: the library is where the just-created template lives; Gym would
+  // pretend a block is running
+  await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles'))
+  expect(router.state.location.pathname).not.toBe('/train/gym')
+  expect(createCalls).toBe(1) // the failed start never re-creates the template
+})
+
 test('a failed template create keeps the wizard on the terminal step', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
