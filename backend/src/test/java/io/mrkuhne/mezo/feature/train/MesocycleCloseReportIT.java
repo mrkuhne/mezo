@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
@@ -49,8 +50,20 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  *   <li>3 completed meso instances — 2 in week 1, 1 in week 2</li>
  *   <li>Fekvenyomás 60 kg × 8 in W1 → 70 kg × 8 in W2 (the worked strength-delta example)</li>
  * </ul>
+ *
+ * <p><b>Companion switch OFF on purpose (mezo-meyc.3).</b> This class is non-transactional, so its
+ * closes/regenerates genuinely commit and the {@code MesocycleClosed} AFTER_COMMIT listener would
+ * fire — i.e. the companion's {@code MesoReviewListener} would race these assertions from another
+ * thread and fill in {@code context} / flip {@code aiEvalStatus} while they run (and, with no
+ * {@code companion-fake} profile here, would attempt a REAL smart-tier call). With the companion
+ * switch off that listener bean does not exist at all, so the deterministic half is asserted in
+ * isolation: {@code context} null, {@code ai_eval} null, status {@code pending}. The
+ * {@code MesoReviewGate} lives in {@code feature.train} and is gated on its OWN switch, so
+ * {@code aiEvalEnabled} still reports true here. The generator's own behaviour is covered by
+ * {@code MesoReviewGeneratorIT}, the event WIRING by the {@code MesocycleClosed} tests below.
  */
 @RecordApplicationEvents
+@TestPropertySource(properties = "mezo.feature.companion.enabled=false")
 class MesocycleCloseReportIT extends AbstractIntegrationTest {
 
     private static final String BENCH = "Fekvenyomás";

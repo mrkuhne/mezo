@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
+import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -255,6 +256,22 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUGGEST_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Canned meso end-of-run review (mezo-meyc.3) — plain Hungarian prose, exactly the shape the
+     *  real generator persists into {@code mesocycle_report.ai_eval}. A CONSTANT (not an echo) so
+     *  {@code MesoReviewGeneratorIT} can assert the narrative landed verbatim. Error injection rides
+     *  the shared {@link #FAIL_COMPLETE} sentinel, planted via the run TITLE. */
+    public static final String MESO_REVIEW_ANSWER =
+            "Ez a futam következetes volt: a heti volumen emelkedett, az alvás pedig stabil maradt. "
+                    + "A stressz a futam vége felé megugrott, és ugyanott esett vissza az "
+                    + "étkezés-lefedettség is. A következő futamban érdemes lehet a deload-hetet "
+                    + "előbb betervezni.";
+
+    /** Scripted meso review (mezo-meyc.3): {@code [fake-meso-review:…]} planted in the run TITLE
+     *  (the payload's first line), so an IT can both script the answer AND prove the assembled
+     *  prompt genuinely reached the port. */
+    public static final Pattern MESO_REVIEW_SENTINEL =
+            Pattern.compile("\\[fake-meso-review:([^\\]]*)]", Pattern.DOTALL);
+
     /** Compact companion to {@link #SUGGEST_SENTINEL}: {@code [fake-habit-suggest-count:N]}
      *  generates N valid suggestions server-side (fixed skillKey/chainKey/xp) instead of the
      *  caller spelling out N JSON objects — the only way to stay under {@code hint}'s 200-char cap
@@ -365,6 +382,11 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1)
                     : "[{\"title\":\"Fake szokás\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
                             + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
+        }
+        if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
+            Matcher m = MESO_REVIEW_SENTINEL.matcher(userMessage);
+            // default = the canned narrative, so the un-scripted happy path still persists 'ready'
+            return m.find() ? m.group(1) : MESO_REVIEW_ANSWER;
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
