@@ -55,6 +55,7 @@ public interface LlmLogMapper {
             .responseText(e.getResponseText())
             .truncated(e.isTruncated())
             .payloadBytes(e.getPayloadBytes())
+            .payloadScrubbedAt(toOffset(e.getPayloadScrubbedAt()))
             .costUsd(toDouble(e.getCostUsd()))
             .pricingSnapshot(toSnapshot(e.getPricingSnapshot()))
             .build();

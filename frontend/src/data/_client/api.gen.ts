@@ -6095,6 +6095,11 @@ export interface components {
              * @description TRUE pre-truncation payload size in bytes
              */
             payloadBytes: number;
+            /**
+             * Format: date-time
+             * @description when the mezo-1y3p retention job hard-removed the payload columns; null = payload intact or never present (embed rows)
+             */
+            payloadScrubbedAt?: string | null;
             /** Format: double */
             costUsd?: number | null;
             pricingSnapshot?: components["schemas"]["LlmPricingSnapshot"];
