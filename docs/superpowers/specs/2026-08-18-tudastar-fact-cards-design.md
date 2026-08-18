@@ -194,3 +194,50 @@ Fentről lefelé:
 - **A backend `PatternService.promote()` szövegének átírása** — a promptba így továbbra is a nyers
   minta-cím megy; ha ez zavaró lesz, külön bd issue viszi (backend + IT-tesztek).
 - **A top-N érték API-n való kiadása** — kézzel szinkronban tartott FE konstans, kommentelve.
+
+## Addendum — a záró egész-branch code review javító hulláma (`mezo-9ryh`, 2026-08-18)
+
+A fenti terv a `main`-en (`git log -p`) végig visszakereshető marad; ez az addendum a review 9
+találatából a ténylegesen szállított, a tervhez képesti eltéréseket rögzíti — a friss állapotot
+`docs/features/insights.md` §2.4 írja le, ez csak a delta:
+
+- **A `useKnowledge()` most `isPending`/`isError`/`refetch`-et is forwardol** (`useDualQuery`
+  már úgyis visszaadta őket) — a fejléc és a szakaszok `isPending` alatt `GhostState`-et adnak
+  („A tudástár betöltése…"), `isError`-nál egy retry `GhostState`-et, **mielőtt** bármelyik
+  ágon kiírnánk a fabrikált „0 tény / 0 megy a chatbe" számot. A tervben ez nem szerepelt —
+  a review a `PatternsPage.tsx`-ben már bevezetett mintát kérte számon.
+- **`bucketFacts` a backend MÁSODIK injektálási csatornáját is modellezi.** A terv §2 csak a
+  top-N rangsoros blokkot vette figyelembe; a backend `renderNewPatternFactsBlock()`-ja emellett
+  minden `PATTERN_ACK_DAYS` (= 3, `mezo.companion.facts.pattern-ack-days` tükre) napon belül
+  létrejött, bekapcsolt `source: 'pattern'` tényt is beinjektál, rangsortól függetlenül.
+  `bucketFacts(facts, topN?, now?)` ezt figyelembe véve sorolja az ilyen tényt az `inPrompt`
+  vödörbe, `waiting` helyett. Az 1. szakasz fejléce emiatt elvesztette a `· N/{PROMPT_TOP_N}`
+  utótagot (mert az hazudna, ha egy friss minta-tény a sapkán felül kerül be) — helyette a cím
+  a SZŰRT darabszámot mutatja (l. lent), a `PROMPT_TOP_N` + a kivétel szövegesen a lábjegyzetben
+  és a `KnowledgeExplainer` „Miért marad ki néhány?" bekezdésében él.
+- **Az 1. szakasz darabszáma a szűrt listát mutatja**, konzisztensen a másik két szakasszal — a
+  globális fejléc (`N megy a chatbe`) marad a szűretlen igazság.
+- **A `LifecycleSection` kapott egy opcionális, visszafelé kompatibilis `forceOpen` propot** —
+  a Tudástár lista aktív szűrő alatt mindkét (`Bekapcsolva, de most kimarad` / `Kikapcsolva`)
+  szekciónak átadja, hogy egy csak az egyik vödörre illeszkedő keresés (pl. egy kikapcsolt
+  tényre) ne mutasson hazug „Nincs találat"-ot egy csukott szakasz mögött.
+- **A „Mind" chip a tervezettől eltérően CSAK a kategóriát törli**, a keresőmezőt nem — az eredeti
+  terv nem szólt a kettő viszonyáról, a review ezt tisztázta. A „Szűrők törlése" gomb (amit a
+  terv szintén nem részletezett) a nulla-találat kártyán jelenik meg, és mindkettőt törli.
+- **A keresés (`matchesQuery`) a `patternTitle`-re is illeszkedik** — a terv §1 csak a humanizált
+  szöveget + kategória-címkét említette; az eredet-mondatba fűzött minta-cím (l. `originSentence`)
+  szövege korábban nem volt kereshető.
+- **`humanizeFactText` három konkrét hibáját javította a review** (nem szerepeltek a tervben):
+  a csupa-nagybetűs rövidítés-felismerés mostantól a szó ELSŐ KÉT karakterén dönt (a toldalékolt
+  „HRV-alapú" korábban hibásan kisbetűsödött volna); mindkét oldalról levágja a záró mondatvégi
+  írásjelet (elkerülve a duplázott pontot); és rövidítésnél a névelőt a magyar betűnév kiejtése
+  (nem az írott alak) alapján választja — innen az „az RPE", nem „a RPE".
+- **Egy genuinely üres tudásbázis** (`facts.length === 0`, real mode, nem pending/error/degraded)
+  most egy őszinte sort ad a kereső/kategória-chip sor helyett — a tervben ez az eset nem volt
+  külön kezelve, a lista + kereső korábban kiürült felület fölött jelent meg.
+- **A `KnowledgeExplainer` `localStorage` hívásai try/catch-csomagolva** (`morningWindow.ts` /
+  `nightTrace.ts` idiómája) — letiltott site-storage-nál a natív hívás korábban az egész route-ot
+  elvitte volna egy `SecurityError`-ral.
+
+A §7 tesztelési lista értelemszerűen bővült ezekkel az esetekkel — a friss lista a tesztfájlokban
+él (`factCopy.test.ts`, `KnowledgeListPage.test.tsx`, `KnowledgeExplainer.test.tsx`), nem itt.
