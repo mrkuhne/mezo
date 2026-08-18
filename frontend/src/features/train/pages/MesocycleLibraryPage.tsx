@@ -17,6 +17,7 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
+import { CtaGhost } from '@/shared/ui/Cta'
 import { ActiveMesoCard } from '@/features/train/components/ActiveMesoCard'
 import { PlannedMesoCard } from '@/features/train/components/PlannedMesoCard'
 import { ArchivedMesoCard } from '@/features/train/components/ArchivedMesoCard'
@@ -31,6 +32,11 @@ export function MesocycleLibraryPage() {
   // The template the start sheet is open on (null = closed). A rerun resolves its
   // template id first, then lands here — one start surface for both entries.
   const [startTemplate, setStartTemplate] = useState<{ id: string; title?: string } | null>(null)
+  // „Összevetés" mode over the Történet section (mezo-meyc.4): while it is on, a history card
+  // tap SELECTS the run instead of opening its report. Two ids max — the compare view is
+  // strictly pairwise — kept in TAP ORDER, which is what makes the tap the `a`/`b` choice.
+  const [compareMode, setCompareMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   // Real-mode loading: show the layout-aware skeleton until the meso + template lists
   // resolve. `mesocycles` comes from the meso query that drives workoutPending, so branch
@@ -47,6 +53,18 @@ export function MesocycleLibraryPage() {
   const openReport = (id: string) => navigate(`/train/mesocycles/${id}/report`)
   const openPlanner = () => navigate('/train/mesocycles/new')
   const openTemplateEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
+  // Leaving the mode clears the pick: a selection surviving an invisible mode would fire the
+  // next time the user turns it on, out of nowhere.
+  const toggleCompareMode = () => {
+    setCompareMode((on) => !on)
+    setSelectedIds([])
+  }
+  const toggleSelected = (id: string) =>
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= 2 ? prev : [...prev, id],
+    )
+  const openCompare = () =>
+    navigate(`/train/mesocycles/compare?a=${selectedIds[0]}&b=${selectedIds[1]}`)
   const rerunMeso = (id: string, title: string) => {
     rerun(id)
       .then(({ templateId }) => setStartTemplate({ id: templateId, title }))
@@ -125,18 +143,43 @@ export function MesocycleLibraryPage() {
 
       {/* History — the closed runs */}
       <div style={{ padding: '8px 24px 24px' }}>
-        <div style={{ marginBottom: 12 }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Eyebrow>Történet · {archived.length}</Eyebrow>
+          {/* Nothing to compare with fewer than two closed runs — the toggle stays away. */}
+          {archived.length >= 2 && (
+            <button
+              type="button"
+              className="chip tapchip"
+              aria-pressed={compareMode}
+              onClick={toggleCompareMode}
+            >
+              Összevetés
+            </button>
+          )}
         </div>
         <div className="col gap-sm">
           {archived.map((m) => (
             <ArchivedMesoCard
               key={m.id}
               meso={m}
-              onOpen={() => openReport(m.id)}
+              // One card, two meanings — the mode decides which (mezo-meyc.4).
+              onOpen={() => (compareMode ? toggleSelected(m.id) : openReport(m.id))}
               onRerun={() => rerunMeso(m.id, m.title)}
+              selectMode={compareMode}
+              selected={selectedIds.includes(m.id)}
             />
           ))}
+          {compareMode && (
+            selectedIds.length < 2 ? (
+              <span className="text-secondary" style={{ fontSize: 13, padding: '0 2px' }}>
+                {`Válassz két lezárt futamot (${selectedIds.length}/2).`}
+              </span>
+            ) : (
+              <CtaGhost style={{ padding: 12 }} onClick={openCompare}>
+                <Icon name="chevron-right" size={12} /> Összevetés megnyitása
+              </CtaGhost>
+            )
+          )}
         </div>
       </div>
 

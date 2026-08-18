@@ -46,6 +46,9 @@ export type MesocycleCloseRequest = components['schemas']['MesocycleCloseRequest
 export type MesocycleReportResponse = components['schemas']['MesocycleReportResponse']
 export type MesoStrengthDelta = components['schemas']['MesoStrengthDelta']
 export type MesoRecordHighlight = components['schemas']['MesoRecordHighlight']
+export type MesoContext = components['schemas']['MesoContext']
+export type MesoContextWeek = components['schemas']['MesoContextWeek']
+export type MesoContextTotals = components['schemas']['MesoContextTotals']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),

@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.MesoContextJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleReportRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
@@ -30,6 +31,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
  * The close-time FROZEN run report (mezo-meyc.2, spec §2): closing an active run archives it,
@@ -47,7 +51,20 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *   <li>3 completed meso instances — 2 in week 1, 1 in week 2</li>
  *   <li>Fekvenyomás 60 kg × 8 in W1 → 70 kg × 8 in W2 (the worked strength-delta example)</li>
  * </ul>
+ *
+ * <p><b>Companion switch OFF on purpose (mezo-meyc.3).</b> This class is non-transactional, so its
+ * closes/regenerates genuinely commit and the {@code MesocycleClosed} AFTER_COMMIT listener would
+ * fire — i.e. the companion's {@code MesoReviewListener} would race these assertions from another
+ * thread and fill in {@code context} / flip {@code aiEvalStatus} while they run (and, with no
+ * {@code companion-fake} profile here, would attempt a REAL smart-tier call). With the companion
+ * switch off that listener bean does not exist at all, so the deterministic half is asserted in
+ * isolation: {@code context} null, {@code ai_eval} null, status {@code pending}. The
+ * {@code MesoReviewGate} lives in {@code feature.train} and is gated on its OWN switch, so
+ * {@code aiEvalEnabled} still reports true here. The generator's own behaviour is covered by
+ * {@code MesoReviewGeneratorIT}, the event WIRING by the {@code MesocycleClosed} tests below.
  */
+@RecordApplicationEvents
+@TestPropertySource(properties = "mezo.feature.companion.enabled=false")
 class MesocycleCloseReportIT extends AbstractIntegrationTest {
 
     private static final String BENCH = "Fekvenyomás";
@@ -62,6 +79,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
     @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private ApplicationEvents events;
 
     // ── close → frozen report ────────────────────────────────────────────────────
 
@@ -88,8 +106,9 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         assertThat(report.getSelfEval()).isEqualTo("Jó blokk volt.");
         assertThat(report.getAiEval()).isNull();
         assertThat(report.getAiEvalStatus()).isEqualTo(MesocycleReportResponse.AiEvalStatusEnum.PENDING);
-        // S2 hardcodes the AI switch OFF — the FE hides the AI section instead of polling forever.
-        assertThat(report.getAiEvalEnabled()).isFalse();
+        // S3: the meso-review switch defaults ON (application.yml) — the MesoReviewGate bean is
+        // present in this default test context, so the FE is told to show + poll the AI section.
+        assertThat(report.getAiEvalEnabled()).isTrue();
         assertThat(report.getContext()).isNull();
 
         // adherence: 2 NON-EMPTY template days × 2 elapsed weeks = 4 planned; 3 completed; 2 weeks touched
@@ -276,6 +295,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         row.setAiEval("Korábbi AI értékelés");
         row.setAiEvalStatus(MesocycleReportEntity.AI_EVAL_STATUS_READY);
         row.setAiEvalGeneratedAt(Instant.now());
+        row.setContext(new MesoContextJson(List.of(), null)); // …plus its lifestyle context
         reportRepository.saveAndFlush(row);
         // …and that the underlying data moved after the close (a corrected set).
         ExerciseSetEntity corrected = setWeighing(owner, "70");
@@ -292,10 +312,16 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         MesocycleReportResponse report = reportService.getReport(owner, run.getId());
         // (b) the close-time note is not collateral damage of a recompute
         assertThat(report.getSelfEval()).isEqualTo("Zárás jegyzet");
-        // (c) the AI half is back to pending for S3 to regenerate
+        // (c) the WHOLE AI half is back to pending for the companion generator to redo — narrative AND
+        //     context, both of which described the OLD numbers. A stale context surviving beside fresh
+        //     numbers would be permanent with the meso-review switch off (mezo-meyc.3, fix round 1).
         assertThat(report.getAiEval()).isNull();
         assertThat(report.getAiEvalGeneratedAt()).isNull();
         assertThat(report.getAiEvalStatus()).isEqualTo(MesocycleReportResponse.AiEvalStatusEnum.PENDING);
+        assertThat(report.getContext()).isNull();
+        assertThat(reportRepository
+            .findByMesocycleIdAndCreatedByAndDeletedFalse(run.getId(), owner).orElseThrow()
+            .getContext()).isNull();
         // (d) the deterministic half genuinely recomputed against the corrected set
         assertThat(report.getStrength().get(0).getExerciseName()).isEqualTo(BENCH);
         assertThat(report.getStrength().get(0).getLastTopKg()).isEqualByComparingTo("100");
@@ -310,6 +336,62 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> reportService.regenerate(owner, run.getId()))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasMessageContaining("TRAIN_MESO_NOT_CLOSED");
+    }
+
+    // ── MesocycleClosed event (mezo-meyc.3) ────────────────────────────────────
+
+    @Test
+    void testCloseMesocycle_shouldPublishMesocycleClosed_whenActiveRunCloses() {
+        UUID owner = databasePopulator.populateUser("meso-close-j@test.local");
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner);
+
+        trainService.closeMesocycle(owner, run.getId(), "Jó blokk volt.");
+
+        assertThat(events.stream(MesocycleClosed.class)).singleElement().satisfies(e -> {
+            assertThat(e.userId()).isEqualTo(owner);
+            assertThat(e.mesocycleId()).isEqualTo(run.getId());
+        });
+    }
+
+    @Test
+    void testCloseMesocycle_shouldPublishNoEvent_whenAlreadyArchived() {
+        UUID owner = databasePopulator.populateUser("meso-close-k@test.local");
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner);
+        trainService.closeMesocycle(owner, run.getId(), "első"); // real close — publishes 1
+        long publishedByFirstClose = events.stream(MesocycleClosed.class).count();
+
+        // Idempotent re-close: already archived, note already present (filtered by the fill branch).
+        trainService.closeMesocycle(owner, run.getId(), "második");
+
+        assertThat(events.stream(MesocycleClosed.class)).hasSize((int) publishedByFirstClose);
+    }
+
+    @Test
+    void testCloseMesocycle_shouldPublishNoEvent_whenFillingSelfEvalOnArchivedReport() {
+        UUID owner = databasePopulator.populateUser("meso-close-l@test.local");
+        MesocycleEntity run = train.legacyArchivedMesoStartedWeeksAgo(
+            owner, 1, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+        reportService.regenerate(owner, run.getId()); // backfill — publishes its own event
+        long publishedByRegenerate = events.stream(MesocycleClosed.class).count();
+
+        // Fill-if-null branch: already archived, self-eval was empty — must publish nothing.
+        trainService.closeMesocycle(owner, run.getId(), "Utólagos önértékelés");
+
+        assertThat(events.stream(MesocycleClosed.class)).hasSize((int) publishedByRegenerate);
+    }
+
+    @Test
+    void testRegenerate_shouldPublishMesocycleClosed_whenAccepted() {
+        UUID owner = databasePopulator.populateUser("meso-close-m@test.local");
+        MesocycleEntity run = train.legacyArchivedMesoStartedWeeksAgo(
+            owner, 1, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+
+        reportService.regenerate(owner, run.getId());
+
+        assertThat(events.stream(MesocycleClosed.class)).singleElement().satisfies(e -> {
+            assertThat(e.userId()).isEqualTo(owner);
+            assertThat(e.mesocycleId()).isEqualTo(run.getId());
+        });
     }
 
     // ── fixtures ────────────────────────────────────────────────────────────────

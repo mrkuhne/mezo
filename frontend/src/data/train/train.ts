@@ -282,6 +282,53 @@ export const mesocycles: Mesocycle[] = [
     style: 'RP · 8 hét',
     phaseCurve: ['MEV', 'MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
     summary: '8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.',
+    closedAt: '2026-04-23T19:40:00Z',
+    hasReport: true,
+  },
+  // The SECOND closed run with a report (mezo-meyc.4) — mock mode needs two of them or the
+  // compare view (/train/mesocycles/compare?a=&b=) has nothing to line up. Deliberately
+  // UNLIKE `meso-rec-03`: a shorter (6 vs 8 weeks), higher-volume block with worse adherence
+  // and worse lifestyle numbers, so every compare row shows a real difference — and its
+  // report's strength list shares only PART of rec-03's exercises (see mesoReportHyp03Mock).
+  {
+    id: 'meso-hyp-03',
+    // A legacy/direct run like meso-rec-03 — it predates the template split, so a rerun
+    // materializes a template for it (mezo-meyc.1) instead of resolving one.
+    templateId: null,
+    title: 'Hypertrophy 03 · Ősz',
+    shortTitle: 'Hypertrophy 03',
+    status: 'archived',
+    goal: 'Felsőtest hypertrophy · magas volumen',
+    startDate: 'Okt 2',
+    endDate: 'Nov 13',
+    weeks: 6,
+    currentWeek: 6,
+    split: 'Push / Pull / Legs · 4×/hét',
+    style: 'RP · 6 hét',
+    phaseCurve: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
+    summary: '7/10 — nagy volumen, de az alvás 6,8h-ra esett és +1,4 kg jött vissza.',
+    closedAt: '2025-11-13T20:10:00Z',
+    hasReport: true,
+  },
+  // A THIRD closed run (mezo-meyc.4 fix wave) — deliberately minimal and with NO report:
+  // exists only so `MesocycleLibraryPage`'s selection mode has a third card to prove it
+  // refuses a third pick (the compare view is strictly pairwise). No report fixture needed —
+  // `hasReport: false` keeps this run out of every compare-page test.
+  {
+    id: 'meso-cut-02',
+    title: 'Cut prep · Nyár',
+    shortTitle: 'Cut 02',
+    status: 'archived',
+    goal: 'Zsírvesztés · fenntartó erő',
+    startDate: 'Jún 4',
+    endDate: 'Júl 16',
+    weeks: 6,
+    currentWeek: 6,
+    split: 'Full body · 4×/hét',
+    style: 'Maintenance · 6 hét',
+    phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MAV', 'Deload'],
+    closedAt: '2026-07-16T18:00:00Z',
+    hasReport: false,
   },
 ]
 
@@ -525,15 +572,19 @@ export const mesoReportMock = {
   // The archived fixture's own summary line — on the backend this is the note captured by
   // MesoCloseSheet at close time.
   selfEval: '8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.',
-  aiEval: null,
-  // Backend parity (MesocycleReportEntity's default; regenerate resets to it): EVERY S2
-  // report is written `pending` and stays there — nothing generates the narrative yet.
-  aiEvalStatus: 'pending',
-  aiEvalGeneratedAt: null,
-  // S2 ships the report WITHOUT the AI narrative — the page must hide the block entirely,
-  // and `pending` must NOT start the poll while the feature is off. S3 (mezo-meyc.3) flips
-  // this to true and fills `aiEval`.
-  aiEvalEnabled: false,
+  // S3 (mezo-meyc.3): the generated Hungarian narrative — paragraphs are split on a blank
+  // line by the page (no markdown lib), so keep the `\n\n` separators literal.
+  aiEval:
+    'A Recovery rebuild blokk összességében stabil, kontrollált progressziót hozott: a 8 hét alatt az edzések 88%-át teljesítetted, ami kifejezetten jó arány egy olyan blokkban, ami eleve a regenerációra és a jobb vállad niggle-jének kezelésére épült.\n\n' +
+    'Az alvásod átlagosan 7,4 óra volt, ami a cél fölött van, és jól látszik, hogy a jobban alvó heteken (4. és 8. hét) az energiaszinted és a stresszed is kedvezőbben alakult. A 3. héten hiányzó alvásadat, illetve az 5. héten megszakadt kcal-naplózás rontja kicsit a kép élességét — érdemes ezt elkerülni a következő blokkban.\n\n' +
+    'Az erő oldalán a Chest Supported Row +12,5 kg-os, 17,2%-os e1RM-javulása kiemelkedő, és a Lateral Raise-en is valós progressziót értél el változatlan súly mellett. Az Overhead Pressen látott visszalépés a tudatos váll-menedzsment ára volt, nem visszaesés.\n\n' +
+    'Összességében a testsúlyod 1,1 kg-mal csökkent a mért napokon, a stressz-szint a deload hétre látványosan mérséklődött, a sport-terhelés pedig végig stabil maradt. Jó alapot ad ez a blokk a következő, magasabb volumenű ciklushoz.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2026-04-23T19:45:00Z',
+  // S3 (mezo-meyc.3): the feature is on and the narrative above is generated — the page
+  // renders the ready card. `mockClose` (trainHooks) keeps its OWN seeded report at
+  // pending/false on purpose (a freshly closed run has nothing to evaluate yet).
+  aiEvalEnabled: true,
   adherence: {
     plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
   },
@@ -595,8 +646,150 @@ export const mesoReportMock = {
       { exerciseName: 'Leg Curl', kind: 'REPS_AT_WEIGHT', date: '2026-03-26', value: 16 },
     ],
   },
-  // Lifestyle context lands in S3 (mezo-meyc.3) — the page renders nothing while it is null.
-  context: null,
+  // Lifestyle context (S3, mezo-meyc.3): weekly buckets + totals correlated to the run's
+  // window. A couple of deliberate holes (week 3's sleep, week 5's kcal, week 8's runs —
+  // deload week, no runs logged) exercise the report page's "–" null-cell rendering.
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.1, sleepQualityAvg: 7, kcalAvg: 2380, kcalTargetAvg: 2450, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 6.2, stressAvg: 4.8, weightDeltaKg: -0.2, sportMinutes: 90, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.0 },
+      { week: 2, sleepAvgH: 7.4, sleepQualityAvg: 7.5, kcalAvg: 2410, kcalTargetAvg: 2450, mealCoverageDays: 7, waterAvgMl: 2500, energyAvg: 6.6, stressAvg: 4.5, weightDeltaKg: -0.1, sportMinutes: 120, sportSessions: 3, runSessions: 1, gymRpeAvg: 7.2 },
+      // Sleep data missing this week (device sync gap) — sleepAvgH/sleepQualityAvg render "–".
+      { week: 3, sleepAvgH: null, sleepQualityAvg: null, kcalAvg: 2390, kcalTargetAvg: 2450, mealCoverageDays: 5, waterAvgMl: 2350, energyAvg: 6.0, stressAvg: 5.2, weightDeltaKg: -0.3, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.4 },
+      { week: 4, sleepAvgH: 7.6, sleepQualityAvg: 8, kcalAvg: 2420, kcalTargetAvg: 2500, mealCoverageDays: 7, waterAvgMl: 2600, energyAvg: 7.0, stressAvg: 4.1, weightDeltaKg: -0.2, sportMinutes: 110, sportSessions: 2, runSessions: 2, gymRpeAvg: 7.1 },
+      // Fuel logging lapsed this week — kcalAvg/kcalTargetAvg render "–".
+      { week: 5, sleepAvgH: 7.2, sleepQualityAvg: 7, kcalAvg: null, kcalTargetAvg: null, mealCoverageDays: 3, waterAvgMl: 2300, energyAvg: 6.4, stressAvg: 5.5, weightDeltaKg: 0.1, sportMinutes: 80, sportSessions: 1, runSessions: 1, gymRpeAvg: 7.6 },
+      { week: 6, sleepAvgH: 7.0, sleepQualityAvg: 6.5, kcalAvg: 2460, kcalTargetAvg: 2500, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 5.8, stressAvg: 6.0, weightDeltaKg: -0.1, sportMinutes: 95, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.8 },
+      { week: 7, sleepAvgH: 7.5, sleepQualityAvg: 7.5, kcalAvg: 2440, kcalTargetAvg: 2500, mealCoverageDays: 7, waterAvgMl: 2550, energyAvg: 6.8, stressAvg: 4.6, weightDeltaKg: -0.2, sportMinutes: 105, sportSessions: 2, runSessions: 2, gymRpeAvg: 7.3 },
+      // Deload week — no runs logged; runSessions renders "–" (not 0: absence, not a zero count).
+      { week: 8, sleepAvgH: 7.9, sleepQualityAvg: 8.5, kcalAvg: 2500, kcalTargetAvg: 2550, mealCoverageDays: 7, waterAvgMl: 2600, energyAvg: 7.4, stressAvg: 3.8, weightDeltaKg: -0.1, sportMinutes: 60, sportSessions: 1, runSessions: null, gymRpeAvg: 5.5 },
+    ],
+    totals: {
+      daysTotal: 56,
+      sleepAvgH: 7.4,
+      kcalAvg: 2429,
+      energyAvg: 6.5,
+      stressAvg: 4.8,
+      // Sum of the measured, consecutive-day deltas across the window — NOT "start minus end".
+      weightChangeKg: -1.1,
+      sportMinutes: 760,
+      sportSessions: 15,
+      runSessions: 9,
+      mealCoverageDays: 48,
+    },
+  },
+} satisfies import('@/data/train/trainApi').MesocycleReportResponse
+
+// The SECOND frozen report (mezo-meyc.4) — the compare view's other column. Same shape,
+// deliberately different numbers everywhere so `/train/mesocycles/compare?a=meso-rec-03&
+// b=meso-hyp-03` renders a comparison with actual contrast: 6 weeks against 8, worse
+// adherence, a higher-volume arc, worse lifestyle averages.
+//
+// The strength list is the load-bearing part: it shares exactly THREE exercise identities
+// with rec-03 (Chest Supported Row, Lateral Raise, Leg Press) and adds two of its own
+// (Barbell Bench Press, Romanian Deadlift), while rec-03 keeps three it does not have
+// (Lat Pulldown, Overhead Press, Chin-up). So `sharedStrengthDeltas` has a real overlap
+// AND real non-overlap on both sides — the two states the compare list must handle.
+const HYP03_PHASES: MesoPhase[] = ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload']
+// Higher landmarks than rec-03's rebuild block, plus `triceps` (which rec-03 has no arc for)
+// and no `biceps`/`ham` (which it does) — so the compare grid's muscle union is genuinely
+// wider than either side.
+const HYP03_LANDMARKS: [string, { mev: number; mrv: number; current: number }][] = [
+  ['chest', { mev: 8, mrv: 20, current: 10 }],
+  ['back', { mev: 10, mrv: 22, current: 11 }],
+  ['shoulder', { mev: 8, mrv: 18, current: 9 }],
+  ['quad', { mev: 10, mrv: 20, current: 10 }],
+  ['triceps', { mev: 6, mrv: 16, current: 8 }],
+]
+
+export const mesoReportHyp03Mock = {
+  mesocycleId: 'meso-hyp-03',
+  templateId: null,
+  title: 'Hypertrophy 03 · Ősz',
+  startDate: '2025-10-02',
+  endDate: '2025-11-13',
+  closedAt: '2025-11-13T20:10:00Z',
+  weeks: 6,
+  selfEval: '7/10 — a volumen ment, az életmód nem.',
+  aiEval:
+    'A Hypertrophy 03 blokk volumenben az eddigi legmagasabb volt, és a vállon, combon és háton valós erő-progressziót hozott — a Lateral Raise +14,5%-os és a Leg Press +12,5%-os e1RM-javulása a blokk két legerősebb eredménye.\n\n' +
+    'Az árát viszont az életmód fizette meg: az alvás 6,8 órára esett, a stressz 5,4-re emelkedett, és a mért napokon +1,4 kg jött vissza. Az edzések 79%-a teljesült — a kihagyott öt edzés túlnyomó része a 4. és 5. hétre esett, épp a legmagasabb volumenű szakaszra.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2025-11-13T20:15:00Z',
+  aiEvalEnabled: true,
+  adherence: {
+    plannedSessions: 24, completedSessions: 19, plannedWeeks: 6, completedWeeks: 6, completionPct: 79,
+  },
+  volume: {
+    mesocycleId: 'meso-hyp-03',
+    title: 'Hypertrophy 03 · Ősz',
+    currentWeek: 6,
+    weeks: 6,
+    startDate: '2025-10-02',
+    endDate: '2025-11-13',
+    status: 'archived',
+    phaseCurve: HYP03_PHASES,
+    muscles: HYP03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, HYP03_PHASES, 6, 6)),
+  },
+  // Backend order: deltaPct (e1RM) descending, nulls last.
+  strength: [
+    {
+      exerciseName: 'Lateral Raise', muscle: 'shoulder-side', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 10, firstTopReps: 14, lastTopKg: 12, lastTopReps: 12,
+      firstE1rm: 14.67, lastE1rm: 16.8, deltaKg: 2, deltaPct: 14.5,
+    },
+    {
+      exerciseName: 'Leg Press', muscle: 'quad', firstWeek: 2, lastWeek: 6,
+      firstTopKg: 140, firstTopReps: 10, lastTopKg: 150, lastTopReps: 12,
+      firstE1rm: 186.67, lastE1rm: 210, deltaKg: 10, deltaPct: 12.5,
+    },
+    {
+      exerciseName: 'Chest Supported Row', muscle: 'back-mid', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 65, firstTopReps: 8, lastTopKg: 72.5, lastTopReps: 8,
+      firstE1rm: 82.33, lastE1rm: 91.83, deltaKg: 7.5, deltaPct: 11.5,
+    },
+    {
+      exerciseName: 'Romanian Deadlift', muscle: 'ham', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 90, firstTopReps: 8, lastTopKg: 100, lastTopReps: 8,
+      firstE1rm: 114, lastE1rm: 126.67, deltaKg: 10, deltaPct: 11.1,
+    },
+    {
+      exerciseName: 'Barbell Bench Press', muscle: 'chest-mid', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 80, firstTopReps: 6, lastTopKg: 87.5, lastTopReps: 6,
+      firstE1rm: 96, lastE1rm: 105, deltaKg: 7.5, deltaPct: 9.4,
+    },
+  ],
+  records: {
+    medalCount: 4,
+    top: [
+      { exerciseName: 'Barbell Bench Press', kind: 'WEIGHT', date: '2025-11-06', value: 87.5 },
+      { exerciseName: 'Leg Press', kind: 'E1RM', date: '2025-10-30', value: 210 },
+    ],
+  },
+  // `energyAvg` is deliberately null in the totals: the compare view's context table must
+  // render "–" for a metric only ONE of the two runs measured (never a fabricated 0).
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.0, sleepQualityAvg: 6.5, kcalAvg: 2650, kcalTargetAvg: 2600, mealCoverageDays: 6, waterAvgMl: 2300, energyAvg: null, stressAvg: 4.9, weightDeltaKg: 0.3, sportMinutes: 120, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.6 },
+      { week: 2, sleepAvgH: 6.9, sleepQualityAvg: 6.5, kcalAvg: 2700, kcalTargetAvg: 2600, mealCoverageDays: 6, waterAvgMl: 2250, energyAvg: null, stressAvg: 5.1, weightDeltaKg: 0.4, sportMinutes: 110, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.9 },
+      { week: 3, sleepAvgH: 6.7, sleepQualityAvg: 6, kcalAvg: 2720, kcalTargetAvg: 2650, mealCoverageDays: 5, waterAvgMl: 2200, energyAvg: null, stressAvg: 5.6, weightDeltaKg: 0.3, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 8.1 },
+      { week: 4, sleepAvgH: 6.5, sleepQualityAvg: 5.5, kcalAvg: 2690, kcalTargetAvg: 2650, mealCoverageDays: 5, waterAvgMl: 2150, energyAvg: null, stressAvg: 6.0, weightDeltaKg: 0.2, sportMinutes: 90, sportSessions: 2, runSessions: null, gymRpeAvg: 8.4 },
+      { week: 5, sleepAvgH: 6.6, sleepQualityAvg: 6, kcalAvg: 2660, kcalTargetAvg: 2650, mealCoverageDays: 4, waterAvgMl: 2100, energyAvg: null, stressAvg: 5.8, weightDeltaKg: 0.1, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 8.2 },
+      { week: 6, sleepAvgH: 7.1, sleepQualityAvg: 7, kcalAvg: 2640, kcalTargetAvg: 2600, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: null, stressAvg: 5.0, weightDeltaKg: 0.1, sportMinutes: 100, sportSessions: 2, runSessions: null, gymRpeAvg: 6.4 },
+    ],
+    totals: {
+      daysTotal: 42,
+      sleepAvgH: 6.8,
+      kcalAvg: 2680,
+      // Never aggregated for this (older) run — the compare table shows "–" on this side.
+      energyAvg: null,
+      stressAvg: 5.4,
+      weightChangeKg: 1.4,
+      sportMinutes: 620,
+      sportSessions: 12,
+      runSessions: 4,
+      mealCoverageDays: 32,
+    },
+  },
 } satisfies import('@/data/train/trainApi').MesocycleReportResponse
 
 // --- active workout (data.js:626-701; challenges 642-700) ---

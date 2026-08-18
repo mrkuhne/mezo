@@ -47,12 +47,23 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.getByText('MRV 20')).toBeInTheDocument()
   })
 
-  it('hides the AI section for a `pending` eval too, while the feature is off', () => {
+  it('renders the lifestyle context block — totals pills, weekly rows, "–" for missing data', () => {
     renderAt('meso-rec-03')
-    // The fixture mirrors the backend (`pending`, feature off) — `pending` must not leak an
-    // "Az értékelés készül…" card into an S2 report.
-    expect(screen.queryByText(/AI értékelés/)).toBeNull()
-    expect(screen.queryByText(/értékelés készül/)).toBeNull()
+    const ctx = screen.getByTestId('meso-report-context')
+    expect(within(ctx).getByText('Életmód-kontextus')).toBeInTheDocument()
+    // totals pills — one per present metric, no invented zeros
+    expect(within(ctx).getByText('😴 7,4 h alvás')).toBeInTheDocument()
+    expect(within(ctx).getByText('🍽 2429 kcal / 2486 cél')).toBeInTheDocument()
+    expect(within(ctx).getByText('⚖️ -1,1 kg')).toBeInTheDocument()
+    expect(within(ctx).getByText('🏐 760 perc · 15×')).toBeInTheDocument()
+    expect(within(ctx).getByText('🏃 9× futás')).toBeInTheDocument()
+    // 8 weekly rows, one per week of the run
+    const rows = within(ctx).getAllByTestId('context-week-row')
+    expect(rows).toHaveLength(8)
+    // The fixture's deliberate null holes — never a fabricated 0 in these cells
+    expect(within(rows[2]).getByText('–')).toBeInTheDocument() // W3: no sleep data
+    expect(within(rows[4]).getByText('–')).toBeInTheDocument() // W5: fuel logging lapsed
+    expect(within(rows[7]).getByText('–')).toBeInTheDocument() // W8: deload, no runs
   })
 
   it('labels the top-set LOAD move and the e1RM percentage distinctly', () => {
@@ -106,9 +117,15 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 
-  it('hides the AI section entirely while aiEvalEnabled is false (S2)', () => {
+  it('renders the AI ready state — prose paragraphs, generatedAt caption, Újragenerálás', () => {
     renderAt('meso-rec-03')
-    expect(screen.queryByText(/AI értékelés/)).toBeNull()
+    const ai = screen.getByTestId('meso-report-ai')
+    expect(within(ai).getByText('AI értékelés')).toBeInTheDocument()
+    // Split on the blank-line separators (no markdown lib) — the fixture's aiEval has 4.
+    expect(ai.querySelectorAll('p')).toHaveLength(4)
+    expect(within(ai).getByText(/Recovery rebuild blokk összességében/)).toBeInTheDocument()
+    expect(within(ai).getByText(/Generálva · Ápr 23/)).toBeInTheDocument()
+    expect(within(ai).getByRole('button', { name: 'Újragenerálás' })).toBeInTheDocument()
   })
 
   it('says the report is not written yet for a run that is still going', () => {
@@ -173,6 +190,9 @@ describe('MesoReportPage (real mode · no report yet)', () => {
     expect(await screen.findByText('15/18')).toBeInTheDocument()
     // the originating template is reachable from the report header
     expect(screen.getByRole('button', { name: /Sablon megnyitása/ })).toBeInTheDocument()
+    // this fixture carries neither — both blocks must be ABSENT, not empty
+    expect(screen.queryByTestId('meso-report-context')).toBeNull()
+    expect(screen.queryByTestId('meso-report-ai')).toBeNull()
   })
 
   it('renders a retryable error state on a non-404 read failure (never a blank page)', async () => {
@@ -195,5 +215,98 @@ describe('MesoReportPage (real mode · no report yet)', () => {
 
     expect(await screen.findByText('15/18')).toBeInTheDocument()
     expect(screen.queryByText('Nem sikerült betölteni a riportot.')).toBeNull()
+  })
+})
+
+// The AI block's three live states (mezo-meyc.3) — each posts through the SAME
+// `regenerate` mutation the page's bottom "Riport újragenerálása" button uses
+// (mesoReportHooks), so a real POST is the meaningful assertion here, not a mock-mode
+// cache write.
+describe('MesoReportPage (real mode · AI states)', () => {
+  const ID = 'b6f3a0e2-0000-4000-8000-0000000000dd'
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const baseReport = (over: Record<string, unknown> = {}) => ({
+    mesocycleId: ID, templateId: null, title: 'AI blokk',
+    startDate: '2026-05-01', endDate: '2026-06-26', closedAt: '2026-06-26T18:00:00Z', weeks: 8,
+    selfEval: null,
+    aiEval: null, aiEvalStatus: 'pending', aiEvalGeneratedAt: null, aiEvalEnabled: true,
+    adherence: { plannedSessions: 16, completedSessions: 14, plannedWeeks: 8, completedWeeks: 8, completionPct: 87 },
+    volume: null, strength: [], records: { medalCount: 0, top: [] }, context: null,
+    ...over,
+  })
+
+  it('renders the ready state and POSTs regenerate via Újragenerálás', async () => {
+    let posted = 0
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () =>
+        HttpResponse.json(baseReport({
+          aiEvalStatus: 'ready',
+          aiEval: 'Első bekezdés.\n\nMásodik bekezdés.',
+          aiEvalGeneratedAt: '2026-06-26T19:00:00Z',
+        })),
+      ),
+      http.post(`${API_BASE}/api/train/mesocycles/:id/report/regenerate`, () => {
+        posted += 1
+        return new HttpResponse(null, { status: 202 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderAt(ID)
+
+    const ai = await screen.findByTestId('meso-report-ai')
+    expect(within(ai).getByText('Első bekezdés.')).toBeInTheDocument()
+    expect(within(ai).getByText('Második bekezdés.')).toBeInTheDocument()
+    expect(within(ai).getByText(/Generálva · Jún 26/)).toBeInTheDocument()
+
+    await user.click(within(ai).getByRole('button', { name: 'Újragenerálás' }))
+    await waitFor(() => expect(posted).toBe(1))
+  })
+
+  it('renders the failed state and POSTs regenerate via Újrapróbálás', async () => {
+    let posted = 0
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () =>
+        HttpResponse.json(baseReport({ aiEvalStatus: 'failed' })),
+      ),
+      http.post(`${API_BASE}/api/train/mesocycles/:id/report/regenerate`, () => {
+        posted += 1
+        return new HttpResponse(null, { status: 202 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderAt(ID)
+
+    const ai = await screen.findByTestId('meso-report-ai')
+    expect(within(ai).getByText('Nem sikerült az AI-kiértékelés.')).toBeInTheDocument()
+
+    await user.click(within(ai).getByRole('button', { name: 'Újrapróbálás' }))
+    await waitFor(() => expect(posted).toBe(1))
+  })
+
+  it('treats a `ready` status with a null aiEval as the failed state (defensive guard)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () =>
+        HttpResponse.json(baseReport({ aiEvalStatus: 'ready', aiEval: null })),
+      ),
+    )
+    renderAt(ID)
+
+    const ai = await screen.findByTestId('meso-report-ai')
+    expect(within(ai).getByText('Nem sikerült az AI-kiértékelés.')).toBeInTheDocument()
+    expect(within(ai).getByRole('button', { name: 'Újrapróbálás' })).toBeInTheDocument()
+  })
+
+  it('hides the AI block entirely while aiEvalEnabled is false, even with a ready eval', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () =>
+        HttpResponse.json(baseReport({ aiEvalEnabled: false, aiEvalStatus: 'ready', aiEval: 'x' })),
+      ),
+    )
+    renderAt(ID)
+
+    await screen.findByText('14/16') // wait for the report itself to render
+    expect(screen.queryByTestId('meso-report-ai')).toBeNull()
   })
 })

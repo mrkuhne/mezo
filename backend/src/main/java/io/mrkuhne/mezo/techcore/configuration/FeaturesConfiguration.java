@@ -159,6 +159,12 @@ public class FeaturesConfiguration {
     public static final String NOTIFICATION_DISPATCH_JOB_SWITCH =
             "mezo.techcore.cron.notification-dispatch-job.enabled";
 
+    /** Meso end-of-run AI evaluation (mezo-meyc.3) — gates {@code MesoReviewGate}, the marker
+     *  {@code MesocycleReportService.getReport} reads for {@code aiEvalEnabled}; off ⇒ the FE hides
+     *  the AI section and never polls a {@code pending} that will never resolve. The real generator
+     *  (companion, task 15) additionally needs COMPANION_SWITCH (it calls the CompanionLlm port). */
+    public static final String MESO_REVIEW_SWITCH = "mezo.feature.meso-review.enabled";
+
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 }
