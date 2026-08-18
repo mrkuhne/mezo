@@ -8,6 +8,7 @@ import java.util.List;
  * for that category, never a fabricated one.
  *
  * @param backendAnchors  gym, ritual, lights_out, wind_down, medication
+ *                        + the feed-anchored categories (app_notification rows, mezo-gzhp.3)
  * @param proseAnchors    briefing, midday, evening, sleep_reaction, weight_reaction, weekly,
  *                        memoir — only when the content row EXISTS
  * @param scheduleAnchors checkin, fuel_slot — from {@code notification_schedule}
