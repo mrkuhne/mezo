@@ -13,19 +13,49 @@ describe('KnowledgeListPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('shows the fact count and the active-in-prompt count', () => {
+  test('a fejléc a tényszámot és a ténylegesen promptba kerülő darabszámot mutatja', () => {
     renderPage()
-    expect(screen.getByText('Tudás · 15 fact')).toBeInTheDocument()
-    // 14 of the 15 seeded facts start active (f9 is inactive)
-    expect(screen.getByText('14 aktív promptban')).toBeInTheDocument()
+    // 15 seed, ebből 14 bekapcsolt → a top 10 megy a chatbe
+    expect(screen.getByText('Tudástár · 15 tény')).toBeInTheDocument()
+    expect(screen.getByText('10 megy a chatbe')).toBeInTheDocument()
+  })
+
+  test('a három prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
+    renderPage()
+    expect(screen.getByText(/Most ezeket kapja meg a társ · 10\/10/)).toBeInTheDocument()
+    expect(screen.getByText(/Bekapcsolva, de most kimarad · 4/)).toBeInTheDocument()
+    expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
+  })
+
+  test('a kapcsoló átmozgatja a tényt a kikapcsolt szakaszba', async () => {
+    renderPage()
+    // az első switch a legerősebb aktív tényé (f2, ×23) — kikapcsolva 13 aktív marad, így a
+    // top-10 továbbra is tele van, de a várakozók száma 4→3, a kikapcsoltaké 1→2 lesz
+    await userEvent.click(screen.getAllByRole('switch')[0])
+    expect(await screen.findByText(/Kikapcsolva · 2/)).toBeInTheDocument()
+    expect(screen.getByText(/Bekapcsolva, de most kimarad · 3/)).toBeInTheDocument()
+    expect(screen.getByText('10 megy a chatbe')).toBeInTheDocument()
+  })
+
+  test('a keresés a látható szövegre szűr', async () => {
+    renderPage()
+    await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'caffeine')
+    expect(screen.getByText('Caffeine cutoff: 14:00 hard limit')).toBeInTheDocument()
+    expect(screen.queryByText('Volleyball: kedd + csütörtök + szombat')).not.toBeInTheDocument()
+  })
+
+  test('a kategória-chip szűr, és a törlés visszaadja a teljes listát', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'Élet' }))
+    expect(screen.queryByText('Caffeine cutoff: 14:00 hard limit')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Mind' }))
     expect(screen.getByText('Caffeine cutoff: 14:00 hard limit')).toBeInTheDocument()
   })
 
-  test('toggling a fact updates the active count', async () => {
+  test('a találat nélküli keresés őszinte üres állapotot ad', async () => {
     renderPage()
-    const toggles = screen.getAllByRole('switch')
-    await userEvent.click(toggles[0]) // f1 active → inactive
-    expect(await screen.findByText('13 aktív promptban')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'zzzz')
+    expect(screen.getByText('Nincs találat a keresésre.')).toBeInTheDocument()
   })
 
   test('renders the pending candidates with the L2 actions', () => {
@@ -38,7 +68,7 @@ describe('KnowledgeListPage (mock mode)', () => {
   test('accepting a candidate promotes it into the fact list', async () => {
     renderPage()
     await userEvent.click(screen.getAllByRole('button', { name: 'Elfogad' })[0])
-    expect(await screen.findByText('Tudás · 16 fact')).toBeInTheDocument()
+    expect(await screen.findByText('Tudástár · 16 tény')).toBeInTheDocument()
     expect(screen.getByText('Jóváhagyásra vár · 1')).toBeInTheDocument()
   })
 
@@ -50,14 +80,14 @@ describe('KnowledgeListPage (mock mode)', () => {
     await userEvent.type(input, 'Pontosított tudás')
     await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(await screen.findByText('Pontosított tudás')).toBeInTheDocument()
-    expect(screen.getByText('Tudás · 16 fact')).toBeInTheDocument()
+    expect(screen.getByText('Tudástár · 16 tény')).toBeInTheDocument()
   })
 
   test('rejecting a candidate removes it without promoting', async () => {
     renderPage()
     await userEvent.click(screen.getAllByRole('button', { name: 'Elvet' })[0])
     expect(await screen.findByText('Jóváhagyásra vár · 1')).toBeInTheDocument()
-    expect(screen.getByText('Tudás · 15 fact')).toBeInTheDocument()
+    expect(screen.getByText('Tudástár · 15 tény')).toBeInTheDocument()
   })
 })
 
@@ -87,7 +117,7 @@ describe('KnowledgeListPage (V3.3 evidence link, real mode)', () => {
     renderPage()
 
     expect(await screen.findByText('Stressz rontja az alvást')).toBeInTheDocument()
-    expect(screen.getByText('minta: Stressz-szint ↔ aznapi alvásminőség')).toBeInTheDocument()
+    expect(screen.getByText(/A minta: „Stressz-szint ↔ aznapi alvásminőség"/)).toBeInTheDocument()
   })
 })
 
@@ -97,7 +127,7 @@ describe('KnowledgeListPage (real mode)', () => {
 
   test('renders the fetched facts + pending candidates from the API', async () => {
     renderPage()
-    expect(await screen.findByText('Tudás · 15 fact')).toBeInTheDocument()
+    expect(await screen.findByText('Tudástár · 15 tény')).toBeInTheDocument()
     expect(screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length}`)).toBeInTheDocument()
     expect(screen.getByText(candidateSeed[1].text)).toBeInTheDocument()
   })
