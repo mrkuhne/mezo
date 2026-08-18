@@ -35,7 +35,12 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const body = (await res.json().catch(() => [])) as SystemMessage[]
     throw new ApiError(Array.isArray(body) && body.length ? body : [{ code: 'INTERNAL_ERROR', message: `HTTP ${res.status}` }], res.status)
   }
-  return res.status === 204 ? (undefined as T) : ((await res.json()) as T)
+  if (res.status === 204) return undefined as T
+  // Not every success carries a body: 202 Accepted (report regeneration) answers with none,
+  // and `res.json()` on an empty body throws a SyntaxError. Read the text first and only
+  // parse when there is something to parse — a no-content success resolves to `undefined`.
+  const text = await res.text()
+  return (text ? (JSON.parse(text) as T) : (undefined as T))
 }
 
 /**

@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRep
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -91,6 +92,7 @@ public class ContextSnapshotAssembler {
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
+    private final WeightLogRepository weightLogRepository;
     private final GoalRepository goalRepository;
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleService gymScheduleService;
@@ -120,43 +122,69 @@ public class ContextSnapshotAssembler {
 
     public String render(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"
-                + profileBlock(userId, today) + '\n'
+                + profileBlock(userId, today, true) + '\n'
                 + goalBlock(userId, today) + '\n'
                 + trainBlock(userId, today) + '\n'
                 + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
-                + recoveryBlock(userId);
+                + recoveryBlock(userId, true);
     }
 
-    private String profileBlock(UUID userId, LocalDate today) {
+    /**
+     * The morning-message variant (companion-feed, spec §3): same block composition as
+     * {@link #render}, but strips weight/sleep entirely at the source — the morning message is
+     * generated BEFORE those get logged for the day, and a prompt prohibition alone is not
+     * enough (the model would still see and could still leak the numbers).
+     */
+    public String renderWithoutBiometrics(UUID userId, LocalDate today) {
+        return HEADER + today + "):\n"
+                + profileBlock(userId, today, false) + '\n'
+                + goalBlock(userId, today) + '\n'
+                + trainBlock(userId, today) + '\n'
+                + growthBlock(userId, today) + '\n'
+                + practiceBlock(userId, today) + '\n'
+                + fuelBlock(userId, today) + '\n'
+                + medicationBlock(userId, today) + '\n'
+                + recoveryBlock(userId, false);
+    }
+
+    private String profileBlock(UUID userId, LocalDate today, boolean withWeight) {
         BiometricProfileEntity profile =
                 biometricProfileRepository.findByCreatedByAndDeletedFalse(userId).orElse(null);
-        WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         StringBuilder b = new StringBuilder("[Profil] ");
         if (profile == null) {
             b.append(NO_DATA);
         } else {
-            b.append(num(profile.getHeightCm())).append(" cm");
+            b.append(ToolText.num(profile.getHeightCm())).append(" cm");
             if (profile.getBirthDate() != null) {
                 b.append(", ").append(ChronoUnit.YEARS.between(profile.getBirthDate(), today)).append(" év");
             }
             b.append(", ").append("M".equals(profile.getSex()) ? "férfi" : "nő");
         }
+        if (!withWeight) {
+            return b.toString();
+        }
+        b.append("; mérés: ");
+        weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
+                .ifPresentOrElse(
+                        w -> b.append(ToolText.num(w.getWeightKg())).append(" kg (").append(w.getDate()).append(')'),
+                        () -> b.append(NO_DATA));
         b.append("; súlytrend: ");
+        WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         // empty series = no weigh-ins at all — the service's zeros would read as fabricated numbers
         if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
             b.append(NO_DATA);
         } else {
-            b.append(num(trend.getLatestTrendKg())).append(" kg");
+            b.append(ToolText.num(trend.getLatestTrendKg())).append(" kg");
             // rates are only defined from 2+ distinct days (NONE = no slope yet)
             if (trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE) {
                 if (trend.getWeeklyRateKgPerWeek() != null) {
-                    b.append(", heti ").append(num(trend.getWeeklyRateKgPerWeek())).append(" kg");
+                    b.append(", heti ").append(ToolText.num(trend.getWeeklyRateKgPerWeek())).append(" kg");
                 }
                 if (trend.getWeeklyRatePctPerWeek() != null) {
-                    b.append(" (").append(num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
+                    b.append(" (").append(ToolText.num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
                 }
             }
         }
@@ -171,8 +199,8 @@ public class ContextSnapshotAssembler {
         }
         StringBuilder b = new StringBuilder("[Cél] ");
         b.append(goal.getTitle()).append(" (").append(goal.getTrajectory()).append("): ")
-                .append(num(goal.getStartWeightKg())).append(" → ")
-                .append(goal.getTargetWeightKg() != null ? num(goal.getTargetWeightKg()) : "?")
+                .append(ToolText.num(goal.getStartWeightKg())).append(" → ")
+                .append(goal.getTargetWeightKg() != null ? ToolText.num(goal.getTargetWeightKg()) : "?")
                 .append(" kg, ").append(goal.getStartDate()).append(" → ").append(goal.getTargetDate());
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), today) / 7 + 1;
         b.append(", ").append(week).append(". hét");
@@ -181,7 +209,7 @@ public class ContextSnapshotAssembler {
             b.append("; e heti recept: ").append(seg.kcal()).append(" kcal, ")
                     .append(seg.proteinG()).append(" g fehérje");
             if (seg.sleepTargetH() != null) {
-                b.append(", alvás ").append(num(seg.sleepTargetH())).append(" h");
+                b.append(", alvás ").append(ToolText.num(seg.sleepTargetH())).append(" h");
             }
             if (seg.restDays() != null && !seg.restDays().isEmpty()) {
                 b.append(", pihenőnap: ").append(seg.restDays().stream()
@@ -430,11 +458,11 @@ public class ContextSnapshotAssembler {
         MacroSet c = day.getConsumed();
         MacroSet t = day.getTargets();
         StringBuilder b = new StringBuilder("[Mai üzemanyag] ");
-        b.append(num(c.getKcal())).append('/').append(num(t.getKcal())).append(" kcal, fehérje ")
-                .append(num(c.getP())).append('/').append(num(t.getP())).append(" g, szénhidrát ")
-                .append(num(c.getC())).append('/').append(num(t.getC())).append(" g, zsír ")
-                .append(num(c.getF())).append('/').append(num(t.getF())).append(" g, víz ")
-                .append(num(c.getWater())).append('/').append(num(t.getWater())).append(" ml");
+        b.append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal())).append(" kcal, fehérje ")
+                .append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP())).append(" g, szénhidrát ")
+                .append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC())).append(" g, zsír ")
+                .append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g, víz ")
+                .append(ToolText.num(c.getWater())).append('/').append(ToolText.num(t.getWater())).append(" ml");
         ProtocolResponse active = protocolService.getView(userId).getActive();
         b.append("; protokoll: ").append(active == null ? NO_DATA : "v" + active.getVersion() + " aktív");
         b.append(", mai bevitel: ").append(intakeService.listForDay(userId, today).getIntakes().size());
@@ -448,27 +476,31 @@ public class ContextSnapshotAssembler {
             return "[Gyógyszer] " + NO_DATA;
         }
         MedicationCycle cycle = medicationCycleService.derive(userId, med, today);
-        if (cycle.retaDay() == 0) {
+        if (cycle.cycleDay() == 0) {
             // honest zero — active med but no recorded dose to anchor the cycle
             return "[Gyógyszer] " + med.getName() + ": nincs rögzített dózis";
         }
-        return "[Gyógyszer] " + med.getName() + ": ciklus " + cycle.retaDay() + ". nap ("
+        return "[Gyógyszer] " + med.getName() + ": ciklus " + cycle.cycleDay() + ". nap ("
                 + cycle.phaseLabel() + ")";
     }
 
-    private String recoveryBlock(UUID userId) {
-        StringBuilder b = new StringBuilder("[Regeneráció] alvás");
-        SleepLogEntity sleep =
-                sleepLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDesc(userId).orElse(null);
-        if (sleep == null) {
-            b.append(": ").append(NO_DATA);
-        } else {
-            b.append(" (").append(sleep.getDate()).append("): ").append(num(sleep.getDurationH())).append(" h");
-            if (sleep.getQuality() != null) {
-                b.append(", minőség ").append(sleep.getQuality()).append("/5");
+    private String recoveryBlock(UUID userId, boolean withSleep) {
+        StringBuilder b = new StringBuilder("[Regeneráció]");
+        if (withSleep) {
+            b.append(" alvás");
+            SleepLogEntity sleep =
+                    sleepLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDesc(userId).orElse(null);
+            if (sleep == null) {
+                b.append(": ").append(NO_DATA);
+            } else {
+                b.append(" (").append(sleep.getDate()).append("): ").append(ToolText.num(sleep.getDurationH())).append(" h");
+                if (sleep.getQuality() != null) {
+                    b.append(", minőség ").append(sleep.getQuality()).append("/5");
+                }
             }
+            b.append(";");
         }
-        b.append("; check-in");
+        b.append(" check-in");
         CheckInEntity checkIn = checkInRepository
                 .findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc(userId).orElse(null);
         if (checkIn == null) {
@@ -485,11 +517,6 @@ public class ContextSnapshotAssembler {
             }
         }
         return b.toString();
-    }
-
-    /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string. */
-    private static String num(BigDecimal v) {
-        return v == null ? "?" : v.stripTrailingZeros().toPlainString();
     }
 
     private static String huDay(Integer dayOfWeek) {

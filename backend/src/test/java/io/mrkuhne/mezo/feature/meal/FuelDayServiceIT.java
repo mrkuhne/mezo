@@ -190,6 +190,33 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetDay_shouldUseGoalSegmentKcalAndProtein_whenActiveGoalHasCurrentSegment() {
+        UUID goalOwner = databasePopulator.populateUser("goal-owner@test.local");
+        LocalDate today = LocalDate.now();
+        // week 1 segment: 2600 kcal / 190 g protein — deliberately != the 3100/220 config
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+            List.of(new GoalPrescriptionJson.Segment(1, 12, "week1-12", 2600, 190,
+                null, null, null, null, null)),
+            null, null);
+        goalPopulator.createGoalFull(goalOwner, today.minusDays(3), today.plusWeeks(11),
+            prescription, 4, "06:00", "22:00");
+
+        FuelDayResponse day = fuelDayService.getDay(goalOwner, today);
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(2600));
+        assertThat(day.getTargets().getP()).isEqualByComparingTo(BigDecimal.valueOf(190));
+        // c/f/water stay config-driven
+        assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(380));
+    }
+
+    @Test
+    void testGetDay_shouldFallBackToConfigTargets_whenNoActiveGoal() {
+        FuelDayResponse day = fuelDayService.getDay(owner, LocalDate.now());
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(3100));
+        assertThat(day.getTargets().getP()).isEqualByComparingTo(BigDecimal.valueOf(220));
+    }
+
+    @Test
     void testGetDay_shouldScopeToDayAndOwner_whenOtherDaysExist() {
         PantryItemEntity p = food("Csirkemell");
         service.create(owner, mealAt(13, p.getId().toString(), "100")); // 2026-06-24

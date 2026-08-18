@@ -23,25 +23,28 @@ function stubReduced(matches = true) {
   }))
 }
 
-// HarvestStep composes useGamificationDay + useProgressionProfile directly — stub both
-// (the LoopsStep.test.tsx precedent) so assertions are data-driven and identical
-// regardless of VITE_USE_MOCK (both-modes gate trivially satisfied).
+// HarvestStep composes useGamificationDay + useProgressionProfile + useNeedsSummary directly
+// — stub all three (the LoopsStep.test.tsx precedent) so assertions are data-driven and
+// identical regardless of VITE_USE_MOCK (both-modes gate trivially satisfied).
 const mocks = vi.hoisted(() => ({
   useGamificationDay: vi.fn(),
   useProgressionProfile: vi.fn(),
+  useNeedsSummary: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useGamificationDay: mocks.useGamificationDay,
   useProgressionProfile: mocks.useProgressionProfile,
+  useNeedsSummary: mocks.useNeedsSummary,
 }))
 
 // The approved Harvest seed (mezo-huzd R3): QUEST 45 / HABIT 35 / ACTIVITY 15 / GYM 20 ->
 // 115 XP; coins +10/+20; a 12-day alive streak.
-function setup(overrides: Partial<GamificationDay> = {}) {
+function setup(overrides: Partial<GamificationDay> = {}, needsStreakDays = 0) {
   const day: GamificationDay = { ...mockGamificationDay(localDateString()), ...overrides }
   mocks.useGamificationDay.mockReturnValue({ data: day, isPending: false })
   mocks.useProgressionProfile.mockReturnValue({ data: progressionProfileMock, isPending: false })
+  mocks.useNeedsSummary.mockReturnValue({ data: { streakDays: needsStreakDays }, isPending: false })
   return { day }
 }
 
@@ -107,6 +110,20 @@ describe('HarvestStep', () => {
     render(<HarvestStep onNext={vi.fn()} />)
     expect(screen.getByText('📜 Küldetések +45')).toBeInTheDocument()
     expect(screen.queryByText(/\+5\b/)).not.toBeInTheDocument()
+  })
+
+  test('a positive needs streak renders the "napja életben" line', () => {
+    stubReduced()
+    setup({}, 4)
+    render(<HarvestStep onNext={vi.fn()} />)
+    expect(screen.getByText('🛟 4 napja életben')).toBeInTheDocument()
+  })
+
+  test('a zero needs streak renders no "napja életben" line', () => {
+    stubReduced()
+    setup({}, 0)
+    render(<HarvestStep onNext={vi.fn()} />)
+    expect(screen.queryByText(/napja életben/)).not.toBeInTheDocument()
   })
 
   test('Tovább fires onNext', async () => {

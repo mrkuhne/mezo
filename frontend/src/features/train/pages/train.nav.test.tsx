@@ -40,7 +40,9 @@ test('Train opens on Mai and the sub-nav switches between sub-tabs', async () =>
   // Open dropdown and click Mesociklusok
   await userEvent.click(screen.getByRole('button', { name: 'Medálok' }))
   await userEvent.click(screen.getByRole('menuitem', { name: 'Mesociklusok' }))
-  expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
+  // The active run's hero card — its title is shared with the template it was started
+  // from (the library's Sablonok section, mezo-meyc.1), so match the tappable card.
+  expect(screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ })).toBeInTheDocument()
 
   // Open dropdown and click Gym
   await userEvent.click(screen.getByRole('button', { name: 'Mesociklusok' }))

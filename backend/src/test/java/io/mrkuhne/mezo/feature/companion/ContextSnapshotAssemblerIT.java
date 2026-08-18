@@ -139,6 +139,46 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRender_shouldShowLatestMeasurementBesideTrend_whenWeighInsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        weightLogPopulator.createWeightLog(owner, today.minusDays(3), new BigDecimal("97.5"));
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("96.4"));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: 96.4 kg (" + today + ")");
+        assertThat(snapshot).contains("súlytrend:");
+    }
+
+    @Test
+    void testRender_shouldShowTheLastLoggedMeasurement_whenTwoWeighInsShareTheDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        // A same-day correction: identical date, so only created_at orders them. The finder's
+        // tie-break must surface the LATER entry, not whichever the DB happens to return first.
+        weightLogPopulator.createWeightLogAt(owner, today, new BigDecimal("96.4"),
+            Instant.now().minusSeconds(3600));
+        weightLogPopulator.createWeightLogAt(owner, today, new BigDecimal("95.8"),
+            Instant.now().minusSeconds(60));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: 95.8 kg (" + today + ")");
+        assertThat(snapshot).doesNotContain("mérés: 96.4 kg");
+    }
+
+    @Test
+    void testRender_shouldShowNoDataMeasurement_whenNoWeighIns() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mérés: nincs adat");
+    }
+
+    @Test
     void testRender_shouldPickCurrentWeekSegmentAndPlanner_whenActiveGoalWithPrescription() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
@@ -405,16 +445,16 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRender_shouldRenderRetaDayAndPhase_whenActiveMedicationWithDose() {
+    void testRender_shouldRenderCycleDayAndPhase_whenActiveMedicationWithDose() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
-        var med = medicationPopulator.createReta(owner);
+        var med = medicationPopulator.createMedication(owner);
         medicationDosePopulator.createDose(owner, med.getId(), today.minusDays(3), new BigDecimal("6"));
 
         String snapshot = assembler.render(owner, today);
 
-        // dose 3 days ago → retaDay 4 → "Stabil" phase (3-5) of the populator's 7-day cycle
-        assertThat(snapshot).contains("[Gyógyszer] Retatrutide: ciklus 4. nap (Stabil)");
+        // dose 3 days ago → cycleDay 4 → "Stabil" phase (3-5) of the populator's 7-day cycle
+        assertThat(snapshot).contains("[Gyógyszer] Teszt gyógyszer: ciklus 4. nap (Stabil)");
     }
 
     @Test
@@ -449,5 +489,23 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
 
         assertThat(assembler.render(owner, today)).isEqualTo(assembler.render(owner, today));
+    }
+
+    @Test
+    void testRenderWithoutBiometrics_shouldOmitWeightAndSleep_whenDataExists() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        biometricProfilePopulator.create(owner);
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("85.0"));
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.2"), 4);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, "fáradtan ébredtem");
+
+        String snapshot = assembler.renderWithoutBiometrics(owner, today);
+
+        assertThat(snapshot)
+            .doesNotContain("súlytrend")
+            .doesNotContain("mérés:")
+            .doesNotContain("alvás (");
+        assertThat(snapshot).contains("[Cél]").contains("[Edzés]").contains("check-in");
     }
 }

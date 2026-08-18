@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useGamificationDay, useProgressionProfile } from '@/data/hooks'
+import { useGamificationDay, useNeedsSummary, useProgressionProfile } from '@/data/hooks'
 import { CHIP_ICON_BY_SOURCE, skillDisplay } from '@/features/progression/logic/levelUpMeta'
 import { harvestStages } from '@/features/ritual/logic/harvestStages'
 import { CountUp } from '@/shared/ui/CountUp'
@@ -55,6 +55,7 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
   const date = localDateString()
   const { data: day } = useGamificationDay(date)
   const { data: progression } = useProgressionProfile()
+  const { data: needsSummary } = useNeedsSummary()
 
   const visibleSources = day.xpBySource.filter(
     (e): e is { source: KnownSource; xp: number } => isKnownSource(e.source),
@@ -150,6 +151,12 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
       >
         🔥 {day.streakDays} napos sorozat{day.streakAlive ? ' él' : ' — megszakadt'}
       </div>
+
+      {needsSummary.streakDays > 0 && (
+        <div className="rz-streak np-anim" style={{ animationDelay: `${streakStage.delayMs + 200}ms` }}>
+          🛟 {needsSummary.streakDays} napja életben
+        </div>
+      )}
       </div>
 
       <button className="rz-cta" onClick={onNext}>Tovább</button>

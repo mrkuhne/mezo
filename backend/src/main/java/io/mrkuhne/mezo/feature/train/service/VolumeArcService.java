@@ -57,9 +57,27 @@ public class VolumeArcService {
 
     @Transactional(readOnly = true)
     public MesocycleVolumeArcResponse arc(UUID createdBy, UUID mesoId) {
+        return arc(createdBy, mesoId, null);
+    }
+
+    /**
+     * Report-freeze overload (mezo-meyc.2): same arc, but the "how far has this run got" cutoff that
+     * masks future weeks' {@code actual} to null comes from the caller instead of the stored
+     * {@code currentWeek}.
+     *
+     * <p>Why it exists: {@code currentWeek} only advances on the weekly volume rollover, so a run
+     * closed while that value is stale would freeze an internally CONTRADICTORY report — adherence
+     * counting a week-2 session while the arc shows week 2 as "not reached yet" ({@code actual =
+     * null}). {@code MesocycleReportService} passes {@code max(currentWeek, weeksElapsed)}; the
+     * public {@link #arc(UUID, UUID)} passes {@code null} and behaves exactly as before.
+     */
+    @Transactional(readOnly = true)
+    MesocycleVolumeArcResponse arc(UUID createdBy, UUID mesoId, Integer effectiveCurrentWeek) {
         MesocycleEntity meso = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(mesoId), createdBy);
-        int currentWeek = meso.getCurrentWeek();
         int weeks = meso.getWeeks();
+        int currentWeek = effectiveCurrentWeek == null
+            ? meso.getCurrentWeek()
+            : Math.min(weeks, effectiveCurrentWeek);
         LocalDate startDate = meso.getStartDate();
         List<String> phaseCurve = meso.getPhaseCurve();
 

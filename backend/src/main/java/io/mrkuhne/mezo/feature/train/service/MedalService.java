@@ -13,12 +13,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -61,11 +63,37 @@ public class MedalService {
      */
     public List<Medal> list(UUID createdBy) {
         return replay(createdBy).stream()
-            .sorted(Comparator.comparing((Earned e) -> e.medal().getDate()).reversed()
-                .thenComparing((Earned e) -> e.medal().getExerciseName())
-                .thenComparing((Earned e) -> e.medal().getType()))
             .map(Earned::medal)
+            .sorted(newestFirst())
             .toList();
+    }
+
+    /**
+     * Every medal earned inside a GROUP of workout instances, newest first — the frozen record
+     * block of the end-of-mesocycle close report (mezo-meyc.2). One replay for the whole group
+     * (never {@link #forSession} in a loop), because a replay costs the owner's full set history.
+     */
+    public List<Medal> forSessions(UUID createdBy, Collection<UUID> workoutSessionIds) {
+        if (workoutSessionIds.isEmpty()) {
+            return List.of();
+        }
+        Set<UUID> wanted = Set.copyOf(workoutSessionIds);
+        return replay(createdBy).stream()
+            .map(Earned::medal)
+            .filter(m -> m.getWorkoutSessionId() != null && wanted.contains(m.getWorkoutSessionId()))
+            .sorted(newestFirst())
+            .toList();
+    }
+
+    /**
+     * The cabinet's presentation order, shared by every read: newest first, then exercise, then
+     * type. The underlying set query has no ORDER BY, so without explicit keys two reads could
+     * shuffle. What remains tied falls back to {@link #replay}'s own deterministic chronology.
+     */
+    private static Comparator<Medal> newestFirst() {
+        return Comparator.comparing(Medal::getDate).reversed()
+            .thenComparing(Medal::getExerciseName)
+            .thenComparing(Medal::getType);
     }
 
     /**

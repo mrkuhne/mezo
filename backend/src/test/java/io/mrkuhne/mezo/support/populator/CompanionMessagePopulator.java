@@ -1,0 +1,38 @@
+package io.mrkuhne.mezo.support.populator;
+
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.test.context.TestComponent;
+
+/** Test data factory for {@code companion_message} rows (companion-feed). */
+@TestComponent
+@RequiredArgsConstructor
+public class CompanionMessagePopulator {
+
+    private final CompanionMessageRepository companionMessageRepository;
+
+    public CompanionMessageEntity createMessage(
+            UUID owner, LocalDate date, String kind, String eyebrow, List<String> body) {
+        return createMessage(owner, date, kind, eyebrow, body, Instant.now());
+    }
+
+    /** Explicit {@code generatedAt} — needed by callers (e.g. AnchorResolverIT's event-kind
+     *  anchor tests) that assert on the row's OWN generation minute and so cannot tolerate
+     *  {@link Instant#now()}'s wall-clock nondeterminism. */
+    public CompanionMessageEntity createMessage(
+            UUID owner, LocalDate date, String kind, String eyebrow, List<String> body, Instant generatedAt) {
+        CompanionMessageEntity entity = new CompanionMessageEntity();
+        entity.setCreatedBy(owner);
+        entity.setMessageDate(date);
+        entity.setKind(kind);
+        entity.setContent(new CompanionMessageEnvelope(eyebrow, body, List.of()));
+        entity.setGeneratedAt(generatedAt);
+        return companionMessageRepository.saveAndFlush(entity);
+    }
+}

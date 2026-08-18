@@ -1,11 +1,13 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
+import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,6 +49,27 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String VIOLATE_ALWAYS = "[fake-violate-always]";
     /** Scripted verdicts (V1.3): answer with non-JSON — exercises the fail-open path. */
     public static final String VERDICT_BROKEN = "[fake-verdict-broken]";
+
+    /** Scripted verdicts (mezo-q71s): proves the judge's payload carries the RENDERED history, not
+     *  just the checked answer/userMessage — planted in a history {@code Turn}'s content, this
+     *  string reaches the verdict payload ONLY through {@code ChatHistory.render(history)} inside
+     *  {@code TurnVerdictCheck.check(...)}. If that render call is ever dropped, the sentinel
+     *  disappears from the payload and this scripted verdict goes back to clean. */
+    public static final String HISTORY_SEEN_SENTINEL = "[fake-verdict-saw-history]";
+
+    /** Scripted verdicts (mezo-q71s): a MARKED speculation is clean — the policy's IT anchor.
+     *  Proves the fake keeps the "jelölt sejtés" clean-verdict rule in sync with the real judge's
+     *  VERDICT_PROMPT criterion #2, so the retry chain never fires on a linguistically hedged hunch. */
+    public static final String MARKED_SPECULATION = "[fake-marked-spec]";
+
+    /** Scripted verdicts (mezo-q71s): pins the renamed {@code unmarkedClaim} JSON key / {@code
+     *  TurnVerdict} record component against the {@code "unmarked"} {@code AdvisorViolation} check
+     *  name — the whole point of the {@code ungroundedClaim} -> {@code unmarkedClaim} / {@code
+     *  "grounding"} -> {@code "unmarked"} rename. If the VERDICT_PROMPT's JSON key and the
+     *  TurnVerdict record component ever diverge (a prompt reword, a partial revert), Jackson
+     *  silently defaults the field to false — no violation, no retry, no degrade — and this
+     *  scripted verdict goes back to clean. */
+    public static final String UNMARKED_CLAIM_SENTINEL = "[fake-unmarked-claim]";
 
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
@@ -105,14 +128,36 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern REVISE_SENTINEL =
             Pattern.compile("\\[fake-revise:(\\{.*?\\})]", Pattern.DOTALL);
 
-    /** Mirror of BriefingGenerator.BRIEFING_MARKER (feature/proactive) — a LITERAL, not an
+    /** Mirror of CompanionMessageGenerator.MORNING_MARKER (feature/proactive) — a LITERAL, not an
      *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
-     *  Drift is caught loudly by BriefingGeneratorIT (echo answer -> parse fails -> null row). */
-    public static final String BRIEFING_MARKER_MIRROR = "REGGELI-BRIEFING-FELADAT";
+     *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String MORNING_MARKER_MIRROR = "REGGELI-ELIGAZITAS-FELADAT";
 
-    /** Scripted briefing (B1.1): {@code [fake-briefing:{…}]} planted via a check-in note. */
-    public static final Pattern BRIEFING_SENTINEL =
-            Pattern.compile("\\[fake-briefing:(\\{.*?\\})]", Pattern.DOTALL);
+    /** Scripted morning message (companion-feed): {@code [fake-feed-morning:{…}]} planted via a
+     *  check-in note (the snapshot renders check-in notes, so this is the established sentinel-
+     *  planting channel). */
+    public static final Pattern MORNING_SENTINEL =
+            Pattern.compile("\\[fake-feed-morning:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Mirror of CompanionMessageGenerator.SLEEP_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
+     *  Drift is caught loudly by CompanionMessageGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String SLEEP_MARKER_MIRROR = "ALVAS-REAKCIO-FELADAT";
+
+    /** Scripted sleep-reaction message (companion-feed): {@code [fake-feed-sleep:{…}]} planted via
+     *  a check-in note (the snapshot renders check-in notes, so this is the established sentinel-
+     *  planting channel). */
+    public static final Pattern SLEEP_SENTINEL =
+            Pattern.compile("\\[fake-feed-sleep:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Mirror of CompanionMessageGenerator.WEIGHT_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #SLEEP_MARKER_MIRROR}. */
+    public static final String WEIGHT_MARKER_MIRROR = "SULY-REAKCIO-FELADAT";
+
+    /** Scripted weight-reaction message (companion-feed): {@code [fake-feed-weight:{…}]} planted
+     *  via a check-in note (same channel as {@link #SLEEP_SENTINEL}). */
+    public static final Pattern WEIGHT_SENTINEL =
+            Pattern.compile("\\[fake-feed-weight:(\\{.*?\\})]", Pattern.DOTALL);
 
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
@@ -129,7 +174,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEMOIR_SENTINEL =
             Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
 
-    /** Mirror of HeartbeatGenerator.HEARTBEAT_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
 
     /** Scripted heartbeat prose (H1): {@code [fake-heartbeat:…]} planted via a check-in note. */
@@ -211,6 +256,29 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUGGEST_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Canned meso end-of-run review (mezo-meyc.3) — plain Hungarian prose, exactly the shape the
+     *  real generator persists into {@code mesocycle_report.ai_eval}. A CONSTANT (not an echo) so
+     *  {@code MesoReviewGeneratorIT} can assert the narrative landed verbatim. Error injection rides
+     *  the shared {@link #FAIL_COMPLETE} sentinel, planted via the run TITLE. */
+    public static final String MESO_REVIEW_ANSWER =
+            "Ez a futam következetes volt: a heti volumen emelkedett, az alvás pedig stabil maradt. "
+                    + "A stressz a futam vége felé megugrott, és ugyanott esett vissza az "
+                    + "étkezés-lefedettség is. A következő futamban érdemes lehet a deload-hetet "
+                    + "előbb betervezni.";
+
+    /** Scripted meso review (mezo-meyc.3): {@code [fake-meso-review:…]} planted in the run TITLE
+     *  (the payload's first line), so an IT can both script the answer AND prove the assembled
+     *  prompt genuinely reached the port. */
+    public static final Pattern MESO_REVIEW_SENTINEL =
+            Pattern.compile("\\[fake-meso-review:([^\\]]*)]", Pattern.DOTALL);
+
+    /** Planted in the run TITLE, returns the ASSEMBLED USER PAYLOAD verbatim — the only way an IT can
+     *  assert what the generator actually sent (e.g. that the metric legend is present and precedes the
+     *  data blocks). The default-branch echo idiom (§ "prompt assembly is assertable"), applied to a
+     *  marker branch that otherwise answers canned text; the fake stays STATELESS — no prompt recorder.
+     *  Checked BEFORE {@link #MESO_REVIEW_SENTINEL}, which needs a colon and so cannot match this. */
+    public static final String MESO_REVIEW_ECHO = "[fake-meso-review-echo]";
+
     /** Compact companion to {@link #SUGGEST_SENTINEL}: {@code [fake-habit-suggest-count:N]}
      *  generates N valid suggestions server-side (fixed skillKey/chainKey/xp) instead of the
      *  caller spelling out N JSON objects — the only way to stay under {@code hint}'s 200-char cap
@@ -219,7 +287,7 @@ public class FakeCompanionLlm implements CompanionLlm {
             Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
     @Override
-    public String complete(String systemPrompt, String userMessage,
+    public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
@@ -233,11 +301,23 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
             return summaryAnswer(userMessage);
         }
-        if (systemPrompt.startsWith(BRIEFING_MARKER_MIRROR)) {
-            Matcher m = BRIEFING_SENTINEL.matcher(userMessage);
+        if (systemPrompt.startsWith(MORNING_MARKER_MIRROR)) {
+            Matcher m = MORNING_SENTINEL.matcher(userMessage);
             // default = valid minimal JSON so the un-scripted happy path still persists a row
             return m.find() ? m.group(1)
-                    : "{\"eyebrow\":\"Fake briefing\",\"body\":[\"FAKE-BRIEFING-NARRATÍVA\"],\"refIndexes\":[]}";
+                    : "{\"eyebrow\":\"Fake reggeli\",\"body\":[\"FAKE-REGGELI-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(SLEEP_MARKER_MIRROR)) {
+            Matcher m = SLEEP_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake alvás\",\"body\":[\"FAKE-ALVAS-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(WEIGHT_MARKER_MIRROR)) {
+            Matcher m = WEIGHT_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake súly\",\"body\":[\"FAKE-SULY-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);
@@ -310,6 +390,14 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "[{\"title\":\"Fake szokás\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
                             + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
         }
+        if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
+            if (userMessage.contains(MESO_REVIEW_ECHO)) {
+                return userMessage;
+            }
+            Matcher m = MESO_REVIEW_SENTINEL.matcher(userMessage);
+            // default = the canned narrative, so the un-scripted happy path still persists 'ready'
+            return m.find() ? m.group(1) : MESO_REVIEW_ANSWER;
+        }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "[]";
@@ -350,7 +438,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (mealCoach.find()) {
             return mealCoach.group(1);
         }
-        return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
+        return PREFIX + " system=[" + systemPrompt + "]"
+                + " history=[" + ChatHistory.render(history) + "]"
+                + " user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
     }
 
@@ -423,11 +513,22 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (userMessage.contains(VERDICT_BROKEN)) {
             return "ez nem json";
         }
+        if (userMessage.contains(HISTORY_SEEN_SENTINEL)) {
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"history-seen\"}";
+        }
+        // mezo-q71s: a jelölt sejtés kifejezetten TISZTA ítéletet kap — ez rögzíti a politikát
+        // a fake oldalán is, nem csak a valódi bíráló promptjában.
+        if (userMessage.contains(MARKED_SPECULATION)) {
+            return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"jelölt sejtés\"}";
+        }
+        if (userMessage.contains(UNMARKED_CLAIM_SENTINEL)) {
+            return "{\"redundantQuestion\":false,\"unmarkedClaim\":true,\"reason\":\"jelöletlen állítás\"}";
+        }
         boolean retryRound = userMessage.contains(AdvisorRetry.RETRY_MARKER);
         if (userMessage.contains(VIOLATE_ALWAYS) || (userMessage.contains(VIOLATE_ONCE) && !retryRound)) {
-            return "{\"redundantQuestion\":true,\"ungroundedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
         }
-        return "{\"redundantQuestion\":false,\"ungroundedClaim\":false,\"reason\":\"\"}";
+        return "{\"redundantQuestion\":false,\"unmarkedClaim\":false,\"reason\":\"\"}";
     }
 
     /**
@@ -452,7 +553,7 @@ public class FakeCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public Flux<String> stream(String systemPrompt, String userMessage,
+    public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_STREAM)) {
             return Flux.concat(
@@ -462,6 +563,7 @@ public class FakeCompanionLlm implements CompanionLlm {
         List<String> chunks = new ArrayList<>(List.of(
             PREFIX,
             " system=[" + systemPrompt + "]",
+            " history=[" + ChatHistory.render(history) + "]",
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);

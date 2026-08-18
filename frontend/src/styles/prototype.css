@@ -261,9 +261,9 @@
   --ph-rem:   var(--rose);
   --ph-awake: var(--faint);
 
-  /* Reta phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
-  --reta-d1: #7FA48A; --reta-d2: #8FAC7E; --reta-d3: #A3B272; --reta-d4: #BCB466;
-  --reta-d5: #D6B25B; --reta-d6: #EBB250; --reta-d7: #FFB347;   /* sage→amber ramp */
+  /* Medication cycle phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
+  --medcycle-d1: #7FA48A; --medcycle-d2: #8FAC7E; --medcycle-d3: #A3B272; --medcycle-d4: #BCB466;
+  --medcycle-d5: #D6B25B; --medcycle-d6: #EBB250; --medcycle-d7: #FFB347;   /* sage→amber ramp */
 
   /* AnchorMode (light, warmer) */
   --anchor-canvas:  #FBF4EC;
@@ -649,6 +649,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border-color: var(--error-soft);
   background: var(--error-bg);
 }
+/* A toggle chip's pressed state (e.g. the Mesociklusok library's „Összevetés" mode switch)
+   — same DS treatment as .segtab[aria-pressed='true'] below, for a plain chip that carries
+   no domain-accent override of its own. A chip with its own inline pressed styling (several
+   sheet mode-toggles) simply overrides this via specificity/inline style. */
+.chip[aria-pressed='true'] {
+  background: var(--primary-bg);
+  border-color: var(--primary-base);
+  color: var(--primary-deep);
+  font-weight: 700;
+}
 
 /* Tool chip (transparency) */
 .toolchip {
@@ -915,24 +925,24 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .text-error { color: var(--error); }
 .text-success { color: var(--success); }
 
-/* RetaPhaseBar */
-.reta-bar {
+/* MedicationCyclePhaseBar */
+.medcycle-bar {
   display: flex; gap: 3px;
   padding: 0 24px;
   margin-top: 8px;
   height: 6px;
 }
-.reta-seg {
+.medcycle-seg {
   flex: 1;
   background: var(--surface-2);
   opacity: 0.5;
   transition: all 0.3s ease;
 }
-.reta-seg.active {
+.medcycle-seg.active {
   opacity: 1;
   box-shadow: 0 0 10px currentColor;
 }
-.reta-seg.past { opacity: 0.4; }
+.medcycle-seg.past { opacity: 0.4; }
 
 /* Set dots */
 .set-dots { display: flex; gap: 6px; }
@@ -2987,7 +2997,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   display: flex; align-items: center; justify-content: center; background: var(--surface-glass); }
 
 /* ===== Napív Fuel Mai — guided recomposition (mezo-rrtj), RETIRED (mezo-jgh9, window-river Task 6) =====
-   .retamicro (Reta micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
+   .medcycle-micro (gyógyszer-ciklus micro-strip), .nowcard* (NowWindowCard hero), .missedstrip (MissedStrip) and
    .daybudget/.dayseg/.brk/.ebchip/.mac* (DayBudgetCard) were all deleted whole with their sole
    consumer — the ablak-folyam recomposition replaced this page outright with the .sky-islands/.isl*
    family (window-island hero + KeretBelt's kibontott view owns the energy-breakdown + macro bars
@@ -3735,6 +3745,9 @@ ol.md-list { list-style: decimal; }
 .td-foot { padding: 7px var(--sp-4) 0; font-family: var(--ff-body); font-size: 12px;
            line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
 .td-foot.is-warn { color: var(--warning-hover); }
+/* A CTA helyén álló kész-felirat (mezo-v84m) — a `.is-warn` testvére, ugyanaz a lábjegyzet-sor,
+   csak a siker-tokennel; nem új szín, és nem lesz belőle gomb (a kész edzés nem indítható újra). */
+.td-foot.is-done { color: var(--success-hover); font-weight: 600; }
 
 /* ── kész-hajtás ── */
 .td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--sp-4));
@@ -3784,6 +3797,55 @@ ol.md-list { list-style: decimal; }
 /* a betöltő váz elrendezése — inline style helyett, hogy a lap CSS-e egy helyen éljen */
 .td-skel { padding: 0 var(--sp-4); }
 .td-skel-chip  { padding-bottom: 18px; }
+.td-skel-needs { padding-bottom: 18px; }
 .td-skel-hero  { padding-top: 2px; }
 .td-skel-stats { padding-top: 14px; }
 .td-skel-list  { padding-top: 26px; }
+
+/* ── Életjel-ringek (mezo-dhzk) ── */
+.td-needs { display: flex; justify-content: space-between; padding: 0 var(--sp-4); margin: 0 0 16px; }
+.td-need { display: grid; place-items: center; flex: 0 0 auto; min-width: 44px; min-height: 44px;
+           border-radius: var(--r-full); }
+:where(.td-need) .td-need-halo { animation: td-need-pulse 2s var(--ease-in-out) infinite; }
+@keyframes td-need-pulse { 0%, 100% { opacity: .25; } 50% { opacity: .7; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .td-need-halo { animation: none; opacity: .45; }
+}
+
+/* ── NeedRingSheet (mezo-dhzk, Task 4) ── */
+.td-need-head { display: flex; align-items: center; gap: 12px; padding: 6px var(--sp-4) 4px; }
+.td-need-head-info { flex: 1; min-width: 0; }
+.td-need-head-name { font-family: var(--ff-body); font-size: 16px; font-weight: 700;
+                      color: var(--text-primary); letter-spacing: -.01em; }
+.td-need-head-last { font-family: var(--ff-body); font-size: 12px; color: var(--text-muted);
+                      margin-top: 2px; }
+.td-need-head-pct { text-align: right; font-variant-numeric: tabular-nums; }
+.td-need-head-pct b { display: block; font-family: var(--ff-body); font-size: 20px; font-weight: 800;
+                       color: var(--text-primary); }
+.td-need-head-pct.is-warn b { color: var(--error-base); }
+.td-need-head-pct span { display: block; font-family: var(--ff-body); font-size: 11px;
+                          color: var(--text-muted); margin-top: 1px; }
+.td-need-cast { margin: 12px var(--sp-4) 0; padding: 12px 14px; border-radius: var(--r-lg);
+                background: var(--surface-recess); font-family: var(--ff-body); font-size: 13px;
+                line-height: 1.45; color: var(--text-secondary); }
+.td-need-fills { margin: 2px var(--sp-4) 0; border-radius: var(--r-lg);
+                  background: var(--surface-recess); overflow: hidden; }
+.td-need-fills div { padding: 11px 14px; font-family: var(--ff-body); font-size: 13px;
+                      color: var(--text-secondary); }
+.td-need-fills div + div { border-top: .5px solid var(--divider); }
+.td-need-tl { position: relative; height: 56px; margin: 2px var(--sp-4) 0;
+              border-top: .5px solid var(--divider); }
+.td-need-tl-dot { position: absolute; top: 14px; display: flex; flex-direction: column;
+                   align-items: center; transform: translateX(-50%); }
+.td-need-tl-dot i { display: block; width: 8px; height: 8px; border-radius: var(--r-full);
+                     background: var(--text-muted); }
+.td-need-tl-dot span { margin-top: 5px; font-family: var(--ff-body); font-size: 10px;
+                        font-variant-numeric: tabular-nums; color: var(--text-muted);
+                        white-space: nowrap; }
+.td-need-tl-now { position: absolute; top: 0; bottom: 8px; width: 1px; background: var(--divider); }
+.td-need-tl-now span { position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+                        font-family: var(--ff-body); font-size: 9.5px; font-weight: 700;
+                        letter-spacing: .03em; color: var(--text-disabled); white-space: nowrap; }
+.td-need-tl-empty { margin: 2px var(--sp-4) 0; padding: 14px; text-align: center;
+                     font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted); }

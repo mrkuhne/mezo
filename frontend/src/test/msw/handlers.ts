@@ -21,7 +21,7 @@ const recipeFixture = {
   // Same template as the mock seed's rec-1 → same role (mezo-uavr), so both modes agree.
   role: 'pre_workout',
   createdDate: 'Máj 14', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
-  mezoFit: { score: null, fitsFor: ['Reggel · Reta D3'] },
+  mezoFit: { score: null, fitsFor: ['Reggel · Gyógyszer D3'] },
   timesLogged: 0, avgScore: 0, lastLogged: '—',
   ingredients: [
     { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9, c: 42, f: 5 } },
@@ -89,39 +89,16 @@ const recipeBreakdownFixture = {
   fitsFor: ['Post-workout · este'],
 }
 
-// Medication day fixture (mezo-d94) mirroring MedicationDayResponse + the medicationSeed:
-// the owner's single active Retatrutide on a 7-day cycle, derived cycle on retaDay 3 (stable),
-// three most-recent weekly doses.
+// Medication day fixture (mezo-lwmq): the owner tracks NO medication — the honest no-medication
+// ghost. Tests that need the populated branch override this handler with `medicationFixture`.
 const medicationDayFixture = {
   medication: {
-    id: 'med-reta', name: 'Retatrutide', activeIngredient: 'retatrutide', route: 'subQ',
-    cadence: 'weekly-monday', defaultDose: 6, doseUnit: 'mg', active: true,
-    cycle: {
-      cycleLengthDays: 7,
-      phases: [
-        { key: 'peak', fromDay: 1, toDay: 2, label: 'Peak · étvágy ↓' },
-        { key: 'stable', fromDay: 3, toDay: 5, label: 'Stabil · plató' },
-        { key: 'trough', fromDay: 6, toDay: 7, label: 'Trough · étvágy ↑' },
-      ],
-    },
+    id: '', name: '', activeIngredient: '', route: '', cadence: '',
+    defaultDose: 0, doseUnit: '', active: false,
+    cycle: { cycleLengthDays: 0, phases: [] },
   },
-  cycle: {
-    retaDay: 3, phaseKey: 'stable', phaseLabel: 'Stabil · plató', lastDoseAt: '2026-06-22T07:00:00',
-    week: [
-      { day: 1, phaseKey: 'peak', label: 'Peak', current: false },
-      { day: 2, phaseKey: 'peak', label: 'Peak', current: false },
-      { day: 3, phaseKey: 'stable', label: 'Stabil', current: true },
-      { day: 4, phaseKey: 'stable', label: 'Stabil', current: false },
-      { day: 5, phaseKey: 'stable', label: 'Stabil', current: false },
-      { day: 6, phaseKey: 'trough', label: 'Trough', current: false },
-      { day: 7, phaseKey: 'trough', label: 'Trough', current: false },
-    ],
-  },
-  recentDoses: [
-    { id: 'dose-3', administeredAt: '2026-06-22T07:00:00', dose: 6, note: 'Hétfő reggel · subQ has' },
-    { id: 'dose-2', administeredAt: '2026-06-15T07:10:00', dose: 6, note: null },
-    { id: 'dose-1', administeredAt: '2026-06-08T07:05:00', dose: 6, note: null },
-  ],
+  cycle: { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] },
+  recentDoses: [],
 }
 
 // Proactive challenge (P7) wire factory — a minimal ChallengeResponse; tests override fields.
@@ -143,6 +120,56 @@ const challengeWire = (overrides: Record<string, unknown> = {}) => ({
   generatedAt: '2026-07-07T06:45:00Z',
   ...overrides,
 })
+
+/** The one seeded run that HAS a frozen report (mezo-meyc.2) — every other id 404s. */
+export const REPORT_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
+
+// Minimal MesocycleReportResponse: enough shape for the report page to render end-to-end
+// (adherence + one strength row + one record), no volume arc (the contract allows null).
+// aiEval/context are deliberately SHORT literals here (not imported from mesoReportMock,
+// data/train/train.ts is a big module — pulling it into handlers.ts would tax every test
+// file's setup, since nearly all of them import this file for MSW) but mirror its S3
+// shape: a `ready` eval with a populated context (mezo-meyc.3).
+const mesoReportFixture = {
+  mesocycleId: REPORT_MESO_ID,
+  templateId: null,
+  title: 'Recovery rebuild · Tél',
+  startDate: '2026-02-12',
+  endDate: '2026-04-23',
+  closedAt: '2026-04-23T19:40:00Z',
+  weeks: 8,
+  selfEval: 'Stabil blokk.',
+  aiEval: 'Stabil, kontrollált blokk volt — jó alvással és fokozatos erő-progresszióval.\n\nA következő ciklusban érdemes a volument tovább emelni.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2026-04-23T19:45:00Z',
+  aiEvalEnabled: true,
+  adherence: {
+    plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
+  },
+  volume: null,
+  strength: [
+    {
+      exerciseName: 'Chest Supported Row', muscle: 'back-mid', firstWeek: 1, lastWeek: 8,
+      firstTopKg: 72.5, firstTopReps: 8, lastTopKg: 85, lastTopReps: 8,
+      firstE1rm: 91.83, lastE1rm: 107.67, deltaKg: 12.5, deltaPct: 17.2,
+    },
+  ],
+  records: {
+    medalCount: 3,
+    top: [{ exerciseName: 'Chest Supported Row', kind: 'WEIGHT', date: '2026-04-09', value: 85 }],
+  },
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.2, sleepQualityAvg: 7, kcalAvg: 2400, kcalTargetAvg: 2450, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 6.5, stressAvg: 4.5, weightDeltaKg: -0.2, sportMinutes: 90, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.0 },
+      // A deliberate null hole — no sleep data this week — exercises the "–" cell.
+      { week: 2, sleepAvgH: null, sleepQualityAvg: null, kcalAvg: 2420, kcalTargetAvg: 2450, mealCoverageDays: 7, waterAvgMl: 2500, energyAvg: 6.8, stressAvg: 4.2, weightDeltaKg: -0.1, sportMinutes: 100, sportSessions: 2, runSessions: null, gymRpeAvg: 7.1 },
+    ],
+    totals: {
+      daysTotal: 14, sleepAvgH: 7.2, kcalAvg: 2410, energyAvg: 6.7, stressAvg: 4.4,
+      weightChangeKg: -0.3, sportMinutes: 190, sportSessions: 4, runSessions: 1, mealCoverageDays: 13,
+    },
+  },
+}
 
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
@@ -316,10 +343,9 @@ export const handlers = [
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
 
-  // Proactive briefing (B1.2) — default: honest 404 "no generated briefing yet", so Today
-  // tests keep rendering the labelled static fallback. Tests with a real briefing override
-  // with server.use(http.get(..., () => HttpResponse.json(fixture))).
-  http.get(`${API_BASE}/api/proactive/briefing`, () => new HttpResponse(null, { status: 404 })),
+  // Unified companion-message feed (companion-feed, mezo-gst9) — default: honest empty array
+  // (never a 404 — a list endpoint, the P1 precedent). Tests override with server.use(...).
+  http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json([])),
 
   // Proactive weekly suggestion (W1) — default: honest 404, the Weekly card keeps its placeholder.
   http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => new HttpResponse(null, { status: 404 })),
@@ -338,9 +364,6 @@ export const handlers = [
 
   // Proactive memoir (W2) — default: honest 404, MemoirPage renders its "készül" state.
   http.get(`${API_BASE}/api/proactive/memoir`, () => new HttpResponse(null, { status: 404 })),
-
-  // Proactive heartbeat (H1) — default: honest 404, the Today CompanionNoteCard stays absent.
-  http.get(`${API_BASE}/api/proactive/heartbeat`, () => new HttpResponse(null, { status: 404 })),
 
   // Proactive prediction (P1) — default: honest empty ARRAY (list endpoint, never 404); the
   // PredictionsPage renders its "still learning" null-state.
@@ -570,14 +593,112 @@ export const handlers = [
   ),
   // T1 write endpoints — minimal happy-path defaults; tests override with spies when
   // they need to capture the payload.
-  http.post(`${API_BASE}/api/train/mesocycles`, () =>
-    HttpResponse.json({ id: 'b6f3a0e2-0000-4000-8000-00000000beef' }, { status: 201 }),
+  http.post(`${API_BASE}/api/train/mesocycles/:id/rerun`, ({ params }) =>
+    HttpResponse.json({ templateId: String(params.id) }),
   ),
+  // Meso templates (mezo-meyc): the wizard now saves a template, then starts a run from it.
+  // GET/POST list+create, PUT/DELETE by id, POST .../start returns a MesocycleResponse.
+  http.get(`${API_BASE}/api/train/meso-templates`, () =>
+    HttpResponse.json([
+      {
+        id: 'a10e0000-0000-4000-8000-000000000000',
+        title: 'Hypertrophy 04 · Tavasz',
+        shortTitle: 'Hypertrophy 04',
+        goal: 'Felsőtest hypertrophy · izomtömeg építés',
+        weeks: 6,
+        split: 'Pull / Push / Legs · 5×/hét',
+        style: 'RP · 6 hét',
+        phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+        runCount: 1,
+        days: [
+          {
+            day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1,
+            exercises: [
+              {
+                id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
+                muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound',
+              },
+            ],
+          },
+          { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+        ],
+      },
+    ]),
+  ),
+  http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(
+      {
+        id: 'e1f3a0e2-0000-4000-8000-000000000001',
+        title: String(body.title ?? ''),
+        shortTitle: body.shortTitle ?? null,
+        goal: body.goal ?? null,
+        weeks: Number(body.weeks ?? 0),
+        split: body.split ?? null,
+        style: body.style ?? null,
+        phaseCurve: body.phaseCurve ?? [],
+        notes: body.notes ?? null,
+        days: body.days ?? [],
+        runCount: 0,
+      },
+      { status: 201 },
+    )
+  }),
+  http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: String(params.id),
+      title: String(body.title ?? ''),
+      shortTitle: body.shortTitle ?? null,
+      goal: body.goal ?? null,
+      weeks: Number(body.weeks ?? 0),
+      split: body.split ?? null,
+      style: body.style ?? null,
+      phaseCurve: body.phaseCurve ?? [],
+      notes: body.notes ?? null,
+      days: body.days ?? [],
+      runCount: 1,
+    })
+  }),
+  http.delete(`${API_BASE}/api/train/meso-templates/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/train/meso-templates/:id/start`, async ({ params, request }) => {
+    const body = (await request.json()) as { startDate: string; status: 'active' | 'planned' }
+    return HttpResponse.json({
+      id: 'f1f3a0e2-0000-4000-8000-000000000001',
+      templateId: String(params.id),
+      title: 'Hypertrophy 04 · Tavasz',
+      shortTitle: 'Hypertrophy 04',
+      status: body.status,
+      startDate: body.startDate,
+      endDate: body.startDate,
+      weeks: 6,
+      currentWeek: body.status === 'active' ? 1 : 0,
+      split: 'Pull / Push / Legs · 5×/hét',
+      style: 'RP · 6 hét',
+      phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    })
+  }),
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
     HttpResponse.json({ id: params.id }),
   ),
-  http.post(`${API_BASE}/api/train/mesocycles/:id/close`, ({ params }) =>
-    HttpResponse.json({ id: params.id }),
+  // Close accepts an OPTIONAL `{ selfEval }` body (mezo-meyc.2) — read and ignore it here so
+  // the default stays a happy path; tests that assert the payload override with a spy.
+  http.post(`${API_BASE}/api/train/mesocycles/:id/close`, async ({ params, request }) => {
+    await request.text()
+    return HttpResponse.json({ id: params.id, status: 'archived', hasReport: true })
+  }),
+  // Run report (mezo-meyc.2). Exactly one seeded run has one; every other id answers the
+  // contract's 404 so the FE's notFound → „Riport generálása" path is the default.
+  http.get(`${API_BASE}/api/train/mesocycles/:id/report`, ({ params }) =>
+    String(params.id) === REPORT_MESO_ID
+      ? HttpResponse.json(mesoReportFixture)
+      : HttpResponse.json(
+          [{ code: 'TRAIN_MESO_REPORT_NOT_FOUND', message: 'Ehhez a futamhoz még nincs riport.' }],
+          { status: 404 },
+        ),
+  ),
+  http.post(`${API_BASE}/api/train/mesocycles/:id/report/regenerate`, () =>
+    new HttpResponse(null, { status: 202 }),
   ),
   http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, () =>
     HttpResponse.json({ day: 'Hét', type: 'Pull', muscle: '', exerciseCount: 0, exercises: [] }),

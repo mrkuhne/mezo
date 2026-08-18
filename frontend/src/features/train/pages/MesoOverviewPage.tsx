@@ -4,17 +4,17 @@
 // Gym/Mai entry chips (B6, not built here). Sticky breadcrumb (smart back
 // via useBackNav, falls back to Gym), a status-aware progress header
 // (statusEyebrow + title + goal + PhaseCurveBars lg + start/remaining/end
-// meta), then the per-muscle VolumeArcChart behind a muscle switch. No
+// meta), then the per-muscle VolumeArcChart behind a muscle switch — the switch
+// itself is the shared MuscleArcSwitch (also used by MesoReportPage's frozen
+// arc, mezo-meyc.2), so the two arc surfaces cannot drift. No
 // actions/mutations — the builder (MesocycleBuilderPage) owns those.
 // Mirrors MesocycleBuilderPage's shell + MesoVolume's planned/archived guard.
 // ============================================================
-import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTrain, useMesocycleVolumeArc } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { MUSCLE_LABELS } from '@/data/train/train'
 import { PhaseCurveBars } from '@/features/train/components/PhaseCurveBars'
-import { VolumeArcChart } from '@/features/train/components/VolumeArcChart'
+import { MuscleArcSwitch } from '@/features/train/components/MuscleArcSwitch'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { CtaGhost } from '@/shared/ui/Cta'
 
@@ -24,7 +24,6 @@ export function MesoOverviewPage() {
   const { mesocycles } = useTrain()
   const { arc, pending } = useMesocycleVolumeArc(id ?? null)
   const meso = mesocycles.find((m) => m.id === id)
-  const [selected, setSelected] = useState<string | null>(null)
 
   if (!meso) {
     return (
@@ -48,7 +47,6 @@ export function MesoOverviewPage() {
 
   const weeksRemaining = Math.max(0, meso.weeks - meso.currentWeek)
   const muscles = arc?.muscles ?? []
-  const activeMuscle = muscles.find((m) => m.muscle === selected) ?? muscles[0]
 
   return (
     // Inside AppLayout's .screen-content scroller — no nested wrapper (mirrors MesocycleBuilderPage).
@@ -99,38 +97,7 @@ export function MesoOverviewPage() {
               <Eyebrow>Volumen-ív csak aktív mesocikluson érhető el.</Eyebrow>
             </div>
           ))
-        : (
-          <div className="col gap-md" style={{ padding: '12px 24px' }}>
-            <div className="row gap-xs" style={{ overflowX: 'auto' }}>
-              {muscles.map((m) => {
-                const active = m.muscle === activeMuscle?.muscle
-                return (
-                  <button
-                    key={m.muscle}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setSelected(m.muscle)}
-                    className="rad-12"
-                    style={{
-                      padding: '10px 14px',
-                      flexShrink: 0,
-                      background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
-                      border: `1px solid ${active ? 'var(--line)' : 'var(--border-subtle)'}`,
-                      color: active ? 'var(--coral)' : 'var(--text-secondary)',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: '0.14em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {MUSCLE_LABELS[m.muscle] ?? m.muscle}
-                  </button>
-                )
-              })}
-            </div>
-            {activeMuscle && <VolumeArcChart arc={activeMuscle} />}
-          </div>
-        )}
+        : <MuscleArcSwitch muscles={muscles} />}
     </div>
   )
 }

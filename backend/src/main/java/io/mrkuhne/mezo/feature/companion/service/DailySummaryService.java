@@ -28,6 +28,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -159,8 +160,8 @@ public class DailySummaryService {
         }
         String titles = day.getMeals().stream().map(MealResponse::getTitle).limit(3)
                 .collect(Collectors.joining(", "));
-        blocks.add("Étkezés: " + num(day.getConsumed().getKcal()) + "/" + num(day.getTargets().getKcal())
-                + " kcal, fehérje " + num(day.getConsumed().getP()) + "/" + num(day.getTargets().getP())
+        blocks.add("Étkezés: " + ToolText.num(day.getConsumed().getKcal()) + "/" + ToolText.num(day.getTargets().getKcal())
+                + " kcal, fehérje " + ToolText.num(day.getConsumed().getP()) + "/" + ToolText.num(day.getTargets().getP())
                 + " g, " + day.getMeals().size() + " étkezés (" + titles
                 + (day.getMeals().size() > 3 ? ", …" : "") + ")");
     }
@@ -170,7 +171,7 @@ public class DailySummaryService {
                 .stream().filter(s -> date.equals(s.getDate())).findFirst()
                 .ifPresent(s -> {
                     String notes = cap(s.getNotes());
-                    blocks.add("Alvás: " + num(s.getDurationH()) + " óra"
+                    blocks.add("Alvás: " + ToolText.num(s.getDurationH()) + " óra"
                             + (s.getQuality() != null ? ", minőség " + s.getQuality() + "/5" : "")
                             + (s.getAwakenings() != null && s.getAwakenings() > 0
                                     ? ", " + s.getAwakenings() + " ébredés" : "")
@@ -180,7 +181,7 @@ public class DailySummaryService {
 
     private void addWeight(List<String> blocks, UUID userId, LocalDate date) {
         weightLogRepository.findFirstByCreatedByAndDeletedFalseAndDateOrderByCreatedAtDesc(userId, date)
-                .ifPresent(w -> blocks.add("Súly: " + num(w.getWeightKg()) + " kg"));
+                .ifPresent(w -> blocks.add("Súly: " + ToolText.num(w.getWeightKg()) + " kg"));
     }
 
     private void addMedication(List<String> blocks, UUID userId, LocalDate date) {
@@ -190,7 +191,7 @@ public class DailySummaryService {
             return;
         }
         MedicationCycle cycle = medicationCycleService.derive(userId, med, date);
-        if (cycle.retaDay() == 0) {
+        if (cycle.cycleDay() == 0) {
             return; // active med but no dose anchor — nothing day-specific to remember
         }
         MedicationDoseEntity lastOnOrBefore = medicationDoseRepository
@@ -198,9 +199,9 @@ public class DailySummaryService {
                         userId, med.getId(), date)
                 .orElse(null);
         boolean dosedThatDay = lastOnOrBefore != null && date.equals(lastOnOrBefore.getAdministeredDate());
-        blocks.add("Gyógyszer: " + med.getName() + " " + cycle.retaDay() + ". ciklusnap ("
+        blocks.add("Gyógyszer: " + med.getName() + " " + cycle.cycleDay() + ". ciklusnap ("
                 + cycle.phaseLabel() + ")"
-                + (dosedThatDay ? ", dózis beadva: " + num(lastOnOrBefore.getDose()) + " " + med.getDoseUnit() : ""));
+                + (dosedThatDay ? ", dózis beadva: " + ToolText.num(lastOnOrBefore.getDose()) + " " + med.getDoseUnit() : ""));
     }
 
     private void addCheckIns(List<String> blocks, UUID userId, LocalDate date) {
@@ -240,13 +241,5 @@ public class DailySummaryService {
         String trimmed = text.strip();
         int max = properties.summary().noteMaxChars();
         return trimmed.length() > max ? trimmed.substring(0, max) : trimmed;
-    }
-
-    /** Trimmed decimal rendering (the ToolText.num idea — that helper is tools-package-private). */
-    private static String num(BigDecimal value) {
-        if (value == null) {
-            return "?";
-        }
-        return value.stripTrailingZeros().toPlainString();
     }
 }

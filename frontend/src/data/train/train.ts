@@ -1,6 +1,7 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
   GoalPreset, SplitOption, MesoPhase, CustomWorkout, MesoVolumeArc, MuscleVolumeArc, VolumeArcWeek,
+  MesoTemplate,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
 
@@ -53,6 +54,10 @@ export function phaseBarHeight(p: MesoPhase): number {
 export const mesocycles: Mesocycle[] = [
   {
     id: 'meso-hyp-04',
+    // Links to the template derived from this same run's days (mesoTemplatesMock below) —
+    // mirrors backend reality (every run started from a template carries its id) and lets
+    // mock-mode rerun resolve without materializing a throwaway template (mezo-meyc.1 fix).
+    templateId: 'a10e0000-0000-4000-8000-000000000000',
     title: 'Hypertrophy 04 · Tavasz',
     shortTitle: 'Hypertrophy 04',
     status: 'active',
@@ -84,7 +89,7 @@ export const mesocycles: Mesocycle[] = [
             { kind: 'recovery', label: '7.2h alvás átlag · stabil', delta: { mav: +2 } },
           ],
           confidence: 0.78,
-          note: 'Daniel-personalizált MRV. Bench Press + Incline DB + Cable Fly historikusan jól tolerál — 22-re is felmehetnénk, de Reta cycle alatt 20 a felső limit.',
+          note: 'Daniel-personalizált MRV. Bench Press + Incline DB + Cable Fly historikusan jól tolerál — 22-re is felmehetnénk, de mély deficitben 20 a felső limit.',
         },
       },
       back: {
@@ -246,7 +251,7 @@ export const mesocycles: Mesocycle[] = [
     split: 'Upper / Lower · 4×/hét',
     style: 'Linear · 7 hét',
     phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
-    notes: "Daniel: 'Idő egy erő-blokkra is.' Reta cycle befejezésével szinkronban indul.",
+    notes: "Daniel: 'Idő egy erő-blokkra is.' A deficit-szakasz lezárásával szinkronban indul.",
   },
   {
     id: 'meso-maint-01',
@@ -261,7 +266,7 @@ export const mesocycles: Mesocycle[] = [
     split: 'Full body · 4×/hét',
     style: 'Maintenance · 3 hét',
     phaseCurve: ['MAV', 'MAV', 'MAV'],
-    notes: 'Reta cycle vége — kalória deficit nélkül erő- és izom-tartás.',
+    notes: 'Deficit-szakasz vége — kalória deficit nélkül erő- és izom-tartás.',
   },
   {
     id: 'meso-rec-03',
@@ -277,10 +282,192 @@ export const mesocycles: Mesocycle[] = [
     style: 'RP · 8 hét',
     phaseCurve: ['MEV', 'MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
     summary: '8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.',
+    closedAt: '2026-04-23T19:40:00Z',
+    hasReport: true,
+  },
+  // The SECOND closed run with a report (mezo-meyc.4) — mock mode needs two of them or the
+  // compare view (/train/mesocycles/compare?a=&b=) has nothing to line up. Deliberately
+  // UNLIKE `meso-rec-03`: a shorter (6 vs 8 weeks), higher-volume block with worse adherence
+  // and worse lifestyle numbers, so every compare row shows a real difference — and its
+  // report's strength list shares only PART of rec-03's exercises (see mesoReportHyp03Mock).
+  {
+    id: 'meso-hyp-03',
+    // A legacy/direct run like meso-rec-03 — it predates the template split, so a rerun
+    // materializes a template for it (mezo-meyc.1) instead of resolving one.
+    templateId: null,
+    title: 'Hypertrophy 03 · Ősz',
+    shortTitle: 'Hypertrophy 03',
+    status: 'archived',
+    goal: 'Felsőtest hypertrophy · magas volumen',
+    startDate: 'Okt 2',
+    endDate: 'Nov 13',
+    weeks: 6,
+    currentWeek: 6,
+    split: 'Push / Pull / Legs · 4×/hét',
+    style: 'RP · 6 hét',
+    phaseCurve: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
+    summary: '7/10 — nagy volumen, de az alvás 6,8h-ra esett és +1,4 kg jött vissza.',
+    closedAt: '2025-11-13T20:10:00Z',
+    hasReport: true,
+  },
+  // A THIRD closed run (mezo-meyc.4 fix wave) — deliberately minimal and with NO report:
+  // exists only so `MesocycleLibraryPage`'s selection mode has a third card to prove it
+  // refuses a third pick (the compare view is strictly pairwise). No report fixture needed —
+  // `hasReport: false` keeps this run out of every compare-page test.
+  {
+    id: 'meso-cut-02',
+    title: 'Cut prep · Nyár',
+    shortTitle: 'Cut 02',
+    status: 'archived',
+    goal: 'Zsírvesztés · fenntartó erő',
+    startDate: 'Jún 4',
+    endDate: 'Júl 16',
+    weeks: 6,
+    currentWeek: 6,
+    split: 'Full body · 4×/hét',
+    style: 'Maintenance · 6 hét',
+    phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MAV', 'Deload'],
+    closedAt: '2026-07-16T18:00:00Z',
+    hasReport: false,
   },
 ]
 
 export const activeMeso: Mesocycle = mesocycles.find((m) => m.status === 'active')!
+
+// --- meso templates (mezo-meyc): reusable blueprints the wizard saves before starting a
+// run. Mirrors the backend's per-write invariants so mock parity holds: every exercise
+// carries a non-null id (fixed literal uuids here — the backend regenerates them on every
+// full update), every day's `muscle` is a string (never undefined; '' on rest days), and
+// `exercises` is always an array (never null), even on a day with none.
+export const mesoTemplatesMock: MesoTemplate[] = [
+  // Derived from the active `meso-hyp-04` fixture's days — the same PPL block, already run once.
+  {
+    id: 'a10e0000-0000-4000-8000-000000000000',
+    title: 'Hypertrophy 04 · Tavasz',
+    shortTitle: 'Hypertrophy 04',
+    goal: 'Felsőtest hypertrophy · izomtömeg építés',
+    weeks: 6,
+    split: 'Pull / Push / Legs · 5×/hét',
+    style: 'RP · 6 hét',
+    phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    notes: null,
+    volumePerMuscle: null,
+    runCount: 1,
+    days: [
+      {
+        day: 'Hét', type: 'Push', muscle: 'chest+shoulder+tricep',
+        exerciseCount: 5,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000002', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound', warning: 'Niggle-kíméletes verzió · cable variánssal helyettesítve' },
+          { id: 'a10e0000-0000-4000-8000-000000000004', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000005', name: 'Tricep Pushdown', muscle: 'triceps-medial', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Kedd', type: 'Legs A', muscle: 'quad+ham+glute',
+        exerciseCount: 4,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000006', name: 'Front Squat', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000007', name: 'Leg Curl', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000008', name: 'Walking Lunge', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 12, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000009', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 0, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Sze', type: 'Legs', muscle: 'quad+ham+glute',
+        exerciseCount: 6,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000010', name: 'Barbell Squat', muscle: 'quad', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000011', name: 'Romanian Deadlift', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000012', name: 'Leg Press', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000013', name: 'Leg Curl', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000014', name: 'Hip Thrust', muscle: 'glute', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000015', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 0, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Csü', type: 'Pull', muscle: 'back+bicep', muscleAccent: true,
+        exerciseCount: 5,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000016', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000017', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', warning: 'Pronated grif · csukló-kíméletes' },
+          { id: 'a10e0000-0000-4000-8000-000000000018', name: 'Cable Pull-Around', muscle: 'back-mid', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000019', name: 'Hammer Curl', muscle: 'biceps-brachialis', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000020', name: 'Face Pull', muscle: 'shoulder-rear', warmupSets: 2, workingSets: 3, repMin: 15, repMax: 20, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Pén', type: 'Push · light', muscle: 'chest+shoulder',
+        exerciseCount: 4,
+        exercises: [
+          { id: 'a10e0000-0000-4000-8000-000000000021', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound' },
+          { id: 'a10e0000-0000-4000-8000-000000000022', name: 'Cable Fly', muscle: 'chest-mid', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000023', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'a10e0000-0000-4000-8000-000000000024', name: 'Overhead Tricep Ext', muscle: 'triceps-long', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      { day: 'Szo', type: 'Volleyball · meccs', muscle: 'sport', exerciseCount: 0, exercises: [] },
+      { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+    ],
+  },
+  // A fresh, never-started template — no run yet.
+  {
+    id: 'b20f0000-0000-4000-8000-000000000000',
+    title: 'Upper/Lower Power',
+    shortTitle: 'Power Block',
+    goal: 'Erő + hypertrophy kombinált blokk',
+    weeks: 5,
+    split: 'Upper / Lower · 4×/hét',
+    style: 'Linear · 5 hét',
+    phaseCurve: ['MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    notes: null,
+    volumePerMuscle: null,
+    runCount: 0,
+    days: [
+      {
+        day: 'Hét', type: 'Upper A', muscle: 'chest+back',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound' },
+        ],
+      },
+      {
+        day: 'Kedd', type: 'Lower A', muscle: 'quad+ham',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000004', name: 'Barbell Squat', muscle: 'quad', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000005', name: 'Romanian Deadlift', muscle: 'ham', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000006', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      { day: 'Sze', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+      {
+        day: 'Csü', type: 'Upper B', muscle: 'shoulder+bicep+tricep',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000007', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000008', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000009', name: 'Hammer Curl', muscle: 'biceps-brachialis', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+        ],
+      },
+      {
+        day: 'Pén', type: 'Lower B', muscle: 'glute+calf',
+        exerciseCount: 3,
+        exercises: [
+          { id: 'b20f0000-0000-4000-8000-000000000010', name: 'Hip Thrust', muscle: 'glute', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000011', name: 'Leg Press', muscle: 'quad', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
+          { id: 'b20f0000-0000-4000-8000-000000000012', name: 'Standing Calf Raise', muscle: 'calf', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 0, type: 'isolation' },
+        ],
+      },
+      { day: 'Szo', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+      { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+    ],
+  },
+]
 
 // --- volume arc mock derivation (Phase B, Task B3) ---
 // Same planned-scaffold algorithm as the backend (VolumeArcService, spec DA7): week 1 starts
@@ -302,31 +489,46 @@ const MOCK_REGION_BY_MUSCLE: Record<string, string> = {
 // the planned target, the current week shows `vp.current`, future weeks are null (undrawn).
 // A mesocycle with no `volumePerMuscle` (planned/archived fixtures carry none) yields null,
 // matching the backend's "absent muscle -> absent from response" rule (DA5).
+/**
+ * One muscle's week-by-week scaffold + actuals. Extracted from `mesoVolumeArcMock` so the
+ * FROZEN arc baked into `mesoReportMock` (mezo-meyc.2) is generated by the very same math
+ * as the live one — a report arc that drifted from the overview arc would be a lie.
+ */
+function mockMuscleArc(
+  muscle: string,
+  vp: { mev: number; mrv: number; current: number },
+  phaseCurve: MesoPhase[],
+  weeks: number,
+  currentWeek: number,
+): MuscleVolumeArc {
+  const weekList: VolumeArcWeek[] = []
+  let ramp = vp.mev
+  for (let w = 1; w <= weeks; w++) {
+    const phase = phaseCurve[w - 1] ?? 'MEV'
+    let planned: number
+    if (w === 1) {
+      planned = vp.mev
+      ramp = vp.mev
+    } else if (phase === 'Deload') {
+      planned = Math.round(vp.mrv * MOCK_DELOAD_FRACTION)
+    } else {
+      ramp = Math.min(ramp + MOCK_STEP, vp.mrv)
+      planned = ramp
+    }
+    const actual = w < currentWeek ? planned : w === currentWeek ? vp.current : null
+    weekList.push({ week: w, phase, planned, actual, isCurrent: w === currentWeek })
+  }
+  return { muscle, region: MOCK_REGION_BY_MUSCLE[muscle] ?? 'neutral', mrv: vp.mrv, weeks: weekList }
+}
+
 export function mesoVolumeArcMock(id: string | null): MesoVolumeArc | null {
   const meso = mesocycles.find((m) => m.id === id)
   if (!meso || !meso.volumePerMuscle) return null
   const { volumePerMuscle, phaseCurve, currentWeek, weeks } = meso
 
-  const muscles: MuscleVolumeArc[] = Object.entries(volumePerMuscle).map(([muscle, vp]) => {
-    const weekList: VolumeArcWeek[] = []
-    let ramp = vp.mev
-    for (let w = 1; w <= weeks; w++) {
-      const phase = phaseCurve[w - 1] ?? 'MEV'
-      let planned: number
-      if (w === 1) {
-        planned = vp.mev
-        ramp = vp.mev
-      } else if (phase === 'Deload') {
-        planned = Math.round(vp.mrv * MOCK_DELOAD_FRACTION)
-      } else {
-        ramp = Math.min(ramp + MOCK_STEP, vp.mrv)
-        planned = ramp
-      }
-      const actual = w < currentWeek ? planned : w === currentWeek ? vp.current : null
-      weekList.push({ week: w, phase, planned, actual, isCurrent: w === currentWeek })
-    }
-    return { muscle, region: MOCK_REGION_BY_MUSCLE[muscle] ?? 'neutral', mrv: vp.mrv, weeks: weekList }
-  })
+  const muscles: MuscleVolumeArc[] = Object.entries(volumePerMuscle).map(([muscle, vp]) =>
+    mockMuscleArc(muscle, vp, phaseCurve, weeks, currentWeek),
+  )
 
   return {
     mesocycleId: meso.id,
@@ -340,6 +542,255 @@ export function mesoVolumeArcMock(id: string | null): MesoVolumeArc | null {
     muscles,
   }
 }
+
+// --- run report (mezo-meyc.2) ---
+// The offline report for the ONE archived fixture run (`meso-rec-03`), shaped exactly like
+// the backend's frozen `MesocycleReportResponse` so /train/mesocycles/meso-rec-03/report
+// renders end-to-end without a backend. Frozen means literal: the numbers below are the
+// close-time snapshot, never recomputed from the live fixtures.
+const REC03_PHASES: MesoPhase[] = ['MEV', 'MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload']
+// mev/mrv/current per muscle — `current` is the week-8 (Deload) actual, so the frozen arc
+// reads "hit the plan to the last week" rather than trailing off.
+const REC03_LANDMARKS: [string, { mev: number; mrv: number; current: number }][] = [
+  ['chest', { mev: 6, mrv: 16, current: 8 }],
+  ['back', { mev: 8, mrv: 20, current: 10 }],
+  ['shoulder', { mev: 6, mrv: 14, current: 7 }],
+  ['biceps', { mev: 6, mrv: 14, current: 7 }],
+  ['quad', { mev: 8, mrv: 18, current: 9 }],
+  ['ham', { mev: 6, mrv: 14, current: 7 }],
+]
+
+export const mesoReportMock = {
+  mesocycleId: 'meso-rec-03',
+  // A legacy/direct run — it was never stamped from a template (mirrors the fixture).
+  templateId: null,
+  title: 'Recovery rebuild · Tél',
+  startDate: '2026-02-12',
+  endDate: '2026-04-23',
+  closedAt: '2026-04-23T19:40:00Z',
+  weeks: 8,
+  // The archived fixture's own summary line — on the backend this is the note captured by
+  // MesoCloseSheet at close time.
+  selfEval: '8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.',
+  // S3 (mezo-meyc.3): the generated Hungarian narrative — paragraphs are split on a blank
+  // line by the page (no markdown lib), so keep the `\n\n` separators literal.
+  aiEval:
+    'A Recovery rebuild blokk összességében stabil, kontrollált progressziót hozott: a 8 hét alatt az edzések 88%-át teljesítetted, ami kifejezetten jó arány egy olyan blokkban, ami eleve a regenerációra és a jobb vállad niggle-jének kezelésére épült.\n\n' +
+    'Az alvásod átlagosan 7,4 óra volt, ami a cél fölött van, és jól látszik, hogy a jobban alvó heteken (4. és 8. hét) az energiaszinted és a stresszed is kedvezőbben alakult. A 3. héten hiányzó alvásadat, illetve az 5. héten megszakadt kcal-naplózás rontja kicsit a kép élességét — érdemes ezt elkerülni a következő blokkban.\n\n' +
+    'Az erő oldalán a Chest Supported Row +12,5 kg-os, 17,2%-os e1RM-javulása kiemelkedő, és a Lateral Raise-en is valós progressziót értél el változatlan súly mellett. Az Overhead Pressen látott visszalépés a tudatos váll-menedzsment ára volt, nem visszaesés.\n\n' +
+    'Összességében a testsúlyod 1,1 kg-mal csökkent a mért napokon, a stressz-szint a deload hétre látványosan mérséklődött, a sport-terhelés pedig végig stabil maradt. Jó alapot ad ez a blokk a következő, magasabb volumenű ciklushoz.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2026-04-23T19:45:00Z',
+  // S3 (mezo-meyc.3): the feature is on and the narrative above is generated — the page
+  // renders the ready card. `mockClose` (trainHooks) keeps its OWN seeded report at
+  // pending/false on purpose (a freshly closed run has nothing to evaluate yet).
+  aiEvalEnabled: true,
+  adherence: {
+    plannedSessions: 24, completedSessions: 21, plannedWeeks: 8, completedWeeks: 8, completionPct: 88,
+  },
+  volume: {
+    mesocycleId: 'meso-rec-03',
+    title: 'Recovery rebuild · Tél',
+    currentWeek: 8,
+    weeks: 8,
+    startDate: '2026-02-12',
+    endDate: '2026-04-23',
+    status: 'archived',
+    phaseCurve: REC03_PHASES,
+    muscles: REC03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, REC03_PHASES, 8, 8)),
+  },
+  // Sorted the way the backend sorts: deltaPct (e1RM-based) descending, nulls last. The list
+  // deliberately mixes every rendering case: a load+e1RM gain, a load-flat/reps-only e1RM gain,
+  // a fully flat lift (both deltas 0), a regression, and a weightless lift with no e1RM at all.
+  strength: [
+    {
+      exerciseName: 'Chest Supported Row', muscle: 'back-mid', firstWeek: 1, lastWeek: 8,
+      firstTopKg: 72.5, firstTopReps: 8, lastTopKg: 85, lastTopReps: 8,
+      firstE1rm: 91.83, lastE1rm: 107.67, deltaKg: 12.5, deltaPct: 17.2,
+    },
+    {
+      exerciseName: 'Lat Pulldown · Pronated', muscle: 'back-wide', firstWeek: 1, lastWeek: 8,
+      firstTopKg: 60, firstTopReps: 10, lastTopKg: 70, lastTopReps: 10,
+      firstE1rm: 80, lastE1rm: 93.33, deltaKg: 10, deltaPct: 16.7,
+    },
+    {
+      // Same load, more reps — 0 kg but a real e1RM gain, so only the % pill may show.
+      exerciseName: 'Lateral Raise', muscle: 'shoulder-side', firstWeek: 2, lastWeek: 8,
+      firstTopKg: 12, firstTopReps: 12, lastTopKg: 12, lastTopReps: 16,
+      firstE1rm: 16.8, lastE1rm: 18.4, deltaKg: 0, deltaPct: 9.5,
+    },
+    {
+      // Genuinely flat — same load, same reps. Both deltas are 0, so NEITHER pill may show
+      // (a `0% e1RM` badge would read as a verdict where there is no movement at all).
+      exerciseName: 'Leg Press', muscle: 'quad', firstWeek: 1, lastWeek: 8,
+      firstTopKg: 120, firstTopReps: 12, lastTopKg: 120, lastTopReps: 12,
+      firstE1rm: 168, lastE1rm: 168, deltaKg: 0, deltaPct: 0,
+    },
+    {
+      // The niggle-managed press — a deliberate regression (both pills go negative).
+      exerciseName: 'Overhead Press', muscle: 'shoulder-front', firstWeek: 1, lastWeek: 5,
+      firstTopKg: 45, firstTopReps: 8, lastTopKg: 42.5, lastTopReps: 8,
+      firstE1rm: 57, lastE1rm: 53.83, deltaKg: -2.5, deltaPct: -5.6,
+    },
+    {
+      // Weightless: no load to diff and no e1RM to quote — reps movement is the whole story.
+      exerciseName: 'Chin-up', muscle: 'back-wide', firstWeek: 1, lastWeek: 7,
+      firstTopReps: 6, lastTopReps: 10,
+    },
+  ],
+  records: {
+    medalCount: 7,
+    top: [
+      { exerciseName: 'Hammer Curl', kind: 'WEIGHT', date: '2026-04-09', value: 22.5 },
+      { exerciseName: 'Face Pull', kind: 'E1RM', date: '2026-04-02', value: 41.3 },
+      { exerciseName: 'Leg Curl', kind: 'REPS_AT_WEIGHT', date: '2026-03-26', value: 16 },
+    ],
+  },
+  // Lifestyle context (S3, mezo-meyc.3): weekly buckets + totals correlated to the run's
+  // window. A couple of deliberate holes (week 3's sleep, week 5's kcal, week 8's runs —
+  // deload week, no runs logged) exercise the report page's "–" null-cell rendering.
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.1, sleepQualityAvg: 7, kcalAvg: 2380, kcalTargetAvg: 2450, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 6.2, stressAvg: 4.8, weightDeltaKg: -0.2, sportMinutes: 90, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.0 },
+      { week: 2, sleepAvgH: 7.4, sleepQualityAvg: 7.5, kcalAvg: 2410, kcalTargetAvg: 2450, mealCoverageDays: 7, waterAvgMl: 2500, energyAvg: 6.6, stressAvg: 4.5, weightDeltaKg: -0.1, sportMinutes: 120, sportSessions: 3, runSessions: 1, gymRpeAvg: 7.2 },
+      // Sleep data missing this week (device sync gap) — sleepAvgH/sleepQualityAvg render "–".
+      { week: 3, sleepAvgH: null, sleepQualityAvg: null, kcalAvg: 2390, kcalTargetAvg: 2450, mealCoverageDays: 5, waterAvgMl: 2350, energyAvg: 6.0, stressAvg: 5.2, weightDeltaKg: -0.3, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.4 },
+      { week: 4, sleepAvgH: 7.6, sleepQualityAvg: 8, kcalAvg: 2420, kcalTargetAvg: 2500, mealCoverageDays: 7, waterAvgMl: 2600, energyAvg: 7.0, stressAvg: 4.1, weightDeltaKg: -0.2, sportMinutes: 110, sportSessions: 2, runSessions: 2, gymRpeAvg: 7.1 },
+      // Fuel logging lapsed this week — kcalAvg/kcalTargetAvg render "–".
+      { week: 5, sleepAvgH: 7.2, sleepQualityAvg: 7, kcalAvg: null, kcalTargetAvg: null, mealCoverageDays: 3, waterAvgMl: 2300, energyAvg: 6.4, stressAvg: 5.5, weightDeltaKg: 0.1, sportMinutes: 80, sportSessions: 1, runSessions: 1, gymRpeAvg: 7.6 },
+      { week: 6, sleepAvgH: 7.0, sleepQualityAvg: 6.5, kcalAvg: 2460, kcalTargetAvg: 2500, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: 5.8, stressAvg: 6.0, weightDeltaKg: -0.1, sportMinutes: 95, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.8 },
+      { week: 7, sleepAvgH: 7.5, sleepQualityAvg: 7.5, kcalAvg: 2440, kcalTargetAvg: 2500, mealCoverageDays: 7, waterAvgMl: 2550, energyAvg: 6.8, stressAvg: 4.6, weightDeltaKg: -0.2, sportMinutes: 105, sportSessions: 2, runSessions: 2, gymRpeAvg: 7.3 },
+      // Deload week — no runs logged; runSessions renders "–" (not 0: absence, not a zero count).
+      { week: 8, sleepAvgH: 7.9, sleepQualityAvg: 8.5, kcalAvg: 2500, kcalTargetAvg: 2550, mealCoverageDays: 7, waterAvgMl: 2600, energyAvg: 7.4, stressAvg: 3.8, weightDeltaKg: -0.1, sportMinutes: 60, sportSessions: 1, runSessions: null, gymRpeAvg: 5.5 },
+    ],
+    totals: {
+      daysTotal: 56,
+      sleepAvgH: 7.4,
+      kcalAvg: 2429,
+      energyAvg: 6.5,
+      stressAvg: 4.8,
+      // Sum of the measured, consecutive-day deltas across the window — NOT "start minus end".
+      weightChangeKg: -1.1,
+      sportMinutes: 760,
+      sportSessions: 15,
+      runSessions: 9,
+      mealCoverageDays: 48,
+    },
+  },
+} satisfies import('@/data/train/trainApi').MesocycleReportResponse
+
+// The SECOND frozen report (mezo-meyc.4) — the compare view's other column. Same shape,
+// deliberately different numbers everywhere so `/train/mesocycles/compare?a=meso-rec-03&
+// b=meso-hyp-03` renders a comparison with actual contrast: 6 weeks against 8, worse
+// adherence, a higher-volume arc, worse lifestyle averages.
+//
+// The strength list is the load-bearing part: it shares exactly THREE exercise identities
+// with rec-03 (Chest Supported Row, Lateral Raise, Leg Press) and adds two of its own
+// (Barbell Bench Press, Romanian Deadlift), while rec-03 keeps three it does not have
+// (Lat Pulldown, Overhead Press, Chin-up). So `sharedStrengthDeltas` has a real overlap
+// AND real non-overlap on both sides — the two states the compare list must handle.
+const HYP03_PHASES: MesoPhase[] = ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload']
+// Higher landmarks than rec-03's rebuild block, plus `triceps` (which rec-03 has no arc for)
+// and no `biceps`/`ham` (which it does) — so the compare grid's muscle union is genuinely
+// wider than either side.
+const HYP03_LANDMARKS: [string, { mev: number; mrv: number; current: number }][] = [
+  ['chest', { mev: 8, mrv: 20, current: 10 }],
+  ['back', { mev: 10, mrv: 22, current: 11 }],
+  ['shoulder', { mev: 8, mrv: 18, current: 9 }],
+  ['quad', { mev: 10, mrv: 20, current: 10 }],
+  ['triceps', { mev: 6, mrv: 16, current: 8 }],
+]
+
+export const mesoReportHyp03Mock = {
+  mesocycleId: 'meso-hyp-03',
+  templateId: null,
+  title: 'Hypertrophy 03 · Ősz',
+  startDate: '2025-10-02',
+  endDate: '2025-11-13',
+  closedAt: '2025-11-13T20:10:00Z',
+  weeks: 6,
+  selfEval: '7/10 — a volumen ment, az életmód nem.',
+  aiEval:
+    'A Hypertrophy 03 blokk volumenben az eddigi legmagasabb volt, és a vállon, combon és háton valós erő-progressziót hozott — a Lateral Raise +14,5%-os és a Leg Press +12,5%-os e1RM-javulása a blokk két legerősebb eredménye.\n\n' +
+    'Az árát viszont az életmód fizette meg: az alvás 6,8 órára esett, a stressz 5,4-re emelkedett, és a mért napokon +1,4 kg jött vissza. Az edzések 79%-a teljesült — a kihagyott öt edzés túlnyomó része a 4. és 5. hétre esett, épp a legmagasabb volumenű szakaszra.',
+  aiEvalStatus: 'ready',
+  aiEvalGeneratedAt: '2025-11-13T20:15:00Z',
+  aiEvalEnabled: true,
+  adherence: {
+    plannedSessions: 24, completedSessions: 19, plannedWeeks: 6, completedWeeks: 6, completionPct: 79,
+  },
+  volume: {
+    mesocycleId: 'meso-hyp-03',
+    title: 'Hypertrophy 03 · Ősz',
+    currentWeek: 6,
+    weeks: 6,
+    startDate: '2025-10-02',
+    endDate: '2025-11-13',
+    status: 'archived',
+    phaseCurve: HYP03_PHASES,
+    muscles: HYP03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, HYP03_PHASES, 6, 6)),
+  },
+  // Backend order: deltaPct (e1RM) descending, nulls last.
+  strength: [
+    {
+      exerciseName: 'Lateral Raise', muscle: 'shoulder-side', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 10, firstTopReps: 14, lastTopKg: 12, lastTopReps: 12,
+      firstE1rm: 14.67, lastE1rm: 16.8, deltaKg: 2, deltaPct: 14.5,
+    },
+    {
+      exerciseName: 'Leg Press', muscle: 'quad', firstWeek: 2, lastWeek: 6,
+      firstTopKg: 140, firstTopReps: 10, lastTopKg: 150, lastTopReps: 12,
+      firstE1rm: 186.67, lastE1rm: 210, deltaKg: 10, deltaPct: 12.5,
+    },
+    {
+      exerciseName: 'Chest Supported Row', muscle: 'back-mid', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 65, firstTopReps: 8, lastTopKg: 72.5, lastTopReps: 8,
+      firstE1rm: 82.33, lastE1rm: 91.83, deltaKg: 7.5, deltaPct: 11.5,
+    },
+    {
+      exerciseName: 'Romanian Deadlift', muscle: 'ham', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 90, firstTopReps: 8, lastTopKg: 100, lastTopReps: 8,
+      firstE1rm: 114, lastE1rm: 126.67, deltaKg: 10, deltaPct: 11.1,
+    },
+    {
+      exerciseName: 'Barbell Bench Press', muscle: 'chest-mid', firstWeek: 1, lastWeek: 6,
+      firstTopKg: 80, firstTopReps: 6, lastTopKg: 87.5, lastTopReps: 6,
+      firstE1rm: 96, lastE1rm: 105, deltaKg: 7.5, deltaPct: 9.4,
+    },
+  ],
+  records: {
+    medalCount: 4,
+    top: [
+      { exerciseName: 'Barbell Bench Press', kind: 'WEIGHT', date: '2025-11-06', value: 87.5 },
+      { exerciseName: 'Leg Press', kind: 'E1RM', date: '2025-10-30', value: 210 },
+    ],
+  },
+  // `energyAvg` is deliberately null in the totals: the compare view's context table must
+  // render "–" for a metric only ONE of the two runs measured (never a fabricated 0).
+  context: {
+    weeks: [
+      { week: 1, sleepAvgH: 7.0, sleepQualityAvg: 6.5, kcalAvg: 2650, kcalTargetAvg: 2600, mealCoverageDays: 6, waterAvgMl: 2300, energyAvg: null, stressAvg: 4.9, weightDeltaKg: 0.3, sportMinutes: 120, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.6 },
+      { week: 2, sleepAvgH: 6.9, sleepQualityAvg: 6.5, kcalAvg: 2700, kcalTargetAvg: 2600, mealCoverageDays: 6, waterAvgMl: 2250, energyAvg: null, stressAvg: 5.1, weightDeltaKg: 0.4, sportMinutes: 110, sportSessions: 2, runSessions: 1, gymRpeAvg: 7.9 },
+      { week: 3, sleepAvgH: 6.7, sleepQualityAvg: 6, kcalAvg: 2720, kcalTargetAvg: 2650, mealCoverageDays: 5, waterAvgMl: 2200, energyAvg: null, stressAvg: 5.6, weightDeltaKg: 0.3, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 8.1 },
+      { week: 4, sleepAvgH: 6.5, sleepQualityAvg: 5.5, kcalAvg: 2690, kcalTargetAvg: 2650, mealCoverageDays: 5, waterAvgMl: 2150, energyAvg: null, stressAvg: 6.0, weightDeltaKg: 0.2, sportMinutes: 90, sportSessions: 2, runSessions: null, gymRpeAvg: 8.4 },
+      { week: 5, sleepAvgH: 6.6, sleepQualityAvg: 6, kcalAvg: 2660, kcalTargetAvg: 2650, mealCoverageDays: 4, waterAvgMl: 2100, energyAvg: null, stressAvg: 5.8, weightDeltaKg: 0.1, sportMinutes: 100, sportSessions: 2, runSessions: 1, gymRpeAvg: 8.2 },
+      { week: 6, sleepAvgH: 7.1, sleepQualityAvg: 7, kcalAvg: 2640, kcalTargetAvg: 2600, mealCoverageDays: 6, waterAvgMl: 2400, energyAvg: null, stressAvg: 5.0, weightDeltaKg: 0.1, sportMinutes: 100, sportSessions: 2, runSessions: null, gymRpeAvg: 6.4 },
+    ],
+    totals: {
+      daysTotal: 42,
+      sleepAvgH: 6.8,
+      kcalAvg: 2680,
+      // Never aggregated for this (older) run — the compare table shows "–" on this side.
+      energyAvg: null,
+      stressAvg: 5.4,
+      weightChangeKg: 1.4,
+      sportMinutes: 620,
+      sportSessions: 12,
+      runSessions: 4,
+      mealCoverageDays: 32,
+    },
+  },
+} satisfies import('@/data/train/trainApi').MesocycleReportResponse
 
 // --- active workout (data.js:626-701; challenges 642-700) ---
 export const workout: WorkoutPlan = {
@@ -438,10 +889,10 @@ export const workout: WorkoutPlan = {
       target: '107.5 kg × 8',
       confidence: 0.72,
       risk: 'low',
-      why: 'Március 4 óta 102.5 a stabil ablak. Múlt heti RIR 2 + Reta D3 alacsony étvágy + 7.2h alvás — historikusan ezek a kombináció 3/4-szer +5kg-os emelést támogatott.',
+      why: 'Március 4 óta 102.5 a stabil ablak. Múlt heti RIR 2 + alacsony étvágy + 7.2h alvás — historikusan ezek a kombináció 3/4-szer +5kg-os emelést támogatott.',
       refs: [
         { kind: 'PR', label: 'Chest Row 105.8 · Márc 4' },
-        { kind: 'Pattern', label: 'Reta-D3 + 7h+ alvás → PR window' },
+        { kind: 'Pattern', label: 'Alacsony étvágy + 7h+ alvás → PR window' },
       ],
       tools: [
         { type: 'read', name: 'get_pr_history(ex=chest_row)' },
@@ -554,11 +1005,11 @@ export const sport: Sport = {
     },
   },
   sessions: [
-    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
-    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
-    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', time: '19:30', duration: 90, setsPlayed: 4, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
-    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
-    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
+    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
+    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
+    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
+    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
+    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
   ],
   week: {
     label: 'Hét 21 · Máj 18-24',

@@ -12,10 +12,9 @@ import io.mrkuhne.mezo.feature.notification.domain.AnchorSet.AnchoredEvent;
 import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
 import io.mrkuhne.mezo.feature.notification.domain.ScheduleEntry;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
-import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
-import io.mrkuhne.mezo.feature.proactive.repository.BriefingRepository;
-import io.mrkuhne.mezo.feature.proactive.repository.HeartbeatNoteRepository;
+import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.WeeklySuggestionRepository;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
@@ -31,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The impure half of the dispatcher (bd mezo-h4wp.6.2): reads every one of the 11 categories'
+ * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 14 categories'
  * anchors for one owner+day into an {@link AnchorSet}, the pure {@link DueEvaluator}'s input.
  * A wrong read here produces a notification at the wrong minute or, worse, a per-minute write
  * storm — see the class-by-class notes below, each pinned to a verified trap.
@@ -70,15 +70,19 @@ import org.springframework.transaction.annotation.Transactional;
  * returns empty (it falls back to config when no {@code sleep_goal} row exists) — the retired
  * {@code goal.wake_time}/{@code goal.bed_time} columns are never read.
  *
- * <p><b>{@code medication}'s {@code retaDay == 0}</b> is {@link MedicationCycleService}'s honest
+ * <p><b>{@code medication}'s {@code cycleDay == 0}</b> is {@link MedicationCycleService}'s honest
  * "no dose logged yet" state and is treated as "no anchor today", never as cycle day zero.
  *
- * <p>Prose anchors ({@code briefing}, {@code midday}, {@code weekly}, {@code memoir}) exist only
+ * <p>Prose anchors ({@code briefing}/{@code morning}, {@code midday}, {@code evening},
+ * {@code sleep_reaction}, {@code weight_reaction}, {@code weekly}, {@code memoir}) exist only
  * when their content row exists for the day — a missing row is an honest absence, never a
- * placeholder. Their body is an excerpt of the already-generated text (never a new LLM call),
- * cut at a word boundary via {@link #excerptProse(String)}, which reuses {@link
- * PushSender#truncateBody(String, int)}'s surrogate-safe cut (same package) rather than a second
- * raw {@code substring}.
+ * placeholder. Five of the seven ({@code morning}/{@code midday}/{@code evening}/
+ * {@code sleep_reaction}/{@code weight_reaction}) read the unified {@code companion_message}
+ * table (companion-feed, mezo-gst9) instead of the retired {@code briefing}/{@code
+ * heartbeat_note} tables; {@code weekly}/{@code memoir} are unaffected. Their body is an excerpt
+ * of the already-generated text (never a new LLM call), cut at a word boundary via {@link
+ * #excerptProse(String)}, which reuses {@link PushSender#truncateBody(String, int)}'s
+ * surrogate-safe cut (same package) rather than a second raw {@code substring}.
  *
  * <p><b>Trap #6 — a prose anchor must never land on its own generator's minute</b>
  * (see {@link #anchorAfterGeneration}): every prose anchor goes through that method, which pushes
@@ -103,6 +107,7 @@ public class AnchorResolver {
      *  go through {@link #anchorAfterGeneration}, so the minute actually used is derived from the
      *  generator cron + the grace — these are the "not earlier than" preference, not the answer. */
     private static final int MIDDAY_PREFERRED_MINUTE = 12 * 60 + 30;
+    private static final int EVENING_PREFERRED_MINUTE = 20 * 60 + 30;
     private static final int MEMOIR_PREFERRED_MINUTE = 19 * 60;
 
     private static final int LAST_MINUTE_OF_DAY = 23 * 60 + 59;
@@ -114,8 +119,7 @@ public class AnchorResolver {
     private final ObjectProvider<RitualService> ritualServiceProvider;
     private final MedicationRepository medicationRepository;
     private final MedicationCycleService medicationCycleService;
-    private final BriefingRepository briefingRepository;
-    private final HeartbeatNoteRepository heartbeatNoteRepository;
+    private final CompanionMessageRepository companionMessageRepository;
     private final WeeklySuggestionRepository weeklySuggestionRepository;
     private final MemoirRepository memoirRepository;
     private final NotificationScheduleService notificationScheduleService;
@@ -129,8 +133,11 @@ public class AnchorResolver {
         ritualFamilyAnchors(owner, date, backendAnchors);
 
         List<AnchoredEvent> proseAnchors = new ArrayList<>();
-        briefingAnchor(owner, date).ifPresent(proseAnchors::add);
+        morningAnchor(owner, date).ifPresent(proseAnchors::add);
         middayAnchor(owner, date).ifPresent(proseAnchors::add);
+        eveningAnchor(owner, date).ifPresent(proseAnchors::add);
+        sleepReactionAnchor(owner, date).ifPresent(proseAnchors::add);
+        weightReactionAnchor(owner, date).ifPresent(proseAnchors::add);
         weeklyAnchor(owner, date).ifPresent(proseAnchors::add);
         memoirAnchor(owner, date).ifPresent(proseAnchors::add);
 
@@ -208,13 +215,13 @@ public class AnchorResolver {
         }
         MedicationEntity med = medication.get();
         MedicationCycle cycle = medicationCycleService.derive(owner, med, date);
-        if (cycle.retaDay() == 0) {
-            // Trap #5: retaDay == 0 is the honest "no dose logged yet" state — not a dose day.
+        if (cycle.cycleDay() == 0) {
+            // Trap #5: cycleDay == 0 is the honest "no dose logged yet" state — not a dose day.
             return Optional.empty();
         }
         String time = notificationProperties.medicationTime();
         String title = med.getName() + " emlékeztető";
-        String body = "A ciklus " + cycle.retaDay() + ". napja"
+        String body = "A ciklus " + cycle.cycleDay() + ". napja"
                 + (cycle.phaseLabel() == null ? "" : " — " + cycle.phaseLabel()) + "."
                 + doseSuffix(med);
         return Optional.of(new AnchoredEvent(NotificationCategory.MEDICATION, minuteOfDay(time), time,
@@ -255,29 +262,75 @@ public class AnchorResolver {
                 "Lecsendesítés", prepMinutes + " perc a villanyoltásig. Képernyő le, magnézium.", URL_TODAY));
     }
 
-    // ---- prose anchors: briefing / midday / weekly / memoir --------------------------------------
+    // ---- prose anchors: morning / midday / evening / sleep_reaction / weight_reaction / weekly / memoir ----
+    // The first five read the unified companion_message table (companion-feed, mezo-gst9),
+    // replacing the retired briefing/heartbeat_note reads those tables die in a later task.
 
-    private Optional<AnchoredEvent> briefingAnchor(UUID owner, LocalDate date) {
-        return briefingRepository.findByCreatedByAndBriefingDate(owner, date).map(briefing -> {
-            // No-op in practice (generates 05:45, anchors at wake ~06:00) — briefing IS the safe
-            // pattern the other three now copy. Routed through the same guard anyway so a future
-            // change to briefing.cron can never silently starve it either.
-            int minute = anchorAfterGeneration(minuteOfDay(sleepAnchorPort.resolve(owner).wake()),
-                    proactiveProperties.briefing().cron(), date);
-            String body = excerptProse(String.join(" ", briefing.getContent().body()));
-            return new AnchoredEvent(NotificationCategory.BRIEFING, minute, hhmm(minute),
-                    "Mezo · reggeli briefing", body, URL_TODAY);
-        });
+    private Optional<AnchoredEvent> morningAnchor(UUID owner, LocalDate date) {
+        return companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(owner, date, CompanionMessageEntity.KIND_MORNING)
+                .map(msg -> {
+                    // No-op in practice (generates 05:45, anchors at wake ~06:00) — morning IS the
+                    // safe pattern the other prose anchors copy. Routed through the same guard
+                    // anyway so a future change to feed.morningCron can never silently starve it.
+                    int minute = anchorAfterGeneration(minuteOfDay(sleepAnchorPort.resolve(owner).wake()),
+                            proactiveProperties.feed().morningCron(), date);
+                    String body = excerptProse(String.join(" ", msg.getContent().body()));
+                    return new AnchoredEvent(NotificationCategory.BRIEFING, minute, hhmm(minute),
+                            "Mezo · reggeli eligazítás", body, URL_TODAY);
+                });
     }
 
     private Optional<AnchoredEvent> middayAnchor(UUID owner, LocalDate date) {
-        return heartbeatNoteRepository
-                .findByCreatedByAndNoteDateAndWindowKey(owner, date, HeartbeatNoteEntity.WINDOW_MIDDAY)
-                .map(note -> {
+        return companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(owner, date, CompanionMessageEntity.KIND_MIDDAY)
+                .map(msg -> {
                     int minute = anchorAfterGeneration(MIDDAY_PREFERRED_MINUTE,
-                            proactiveProperties.heartbeat().middayCron(), date);
+                            proactiveProperties.feed().middayCron(), date);
+                    String body = excerptProse(String.join(" ", msg.getContent().body()));
                     return new AnchoredEvent(NotificationCategory.MIDDAY, minute, hhmm(minute),
-                            "Mezo", excerptProse(note.getContent()), URL_TODAY);
+                            "Mezo", body, URL_TODAY);
+                });
+    }
+
+    private Optional<AnchoredEvent> eveningAnchor(UUID owner, LocalDate date) {
+        return companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(owner, date, CompanionMessageEntity.KIND_EVENING)
+                .map(msg -> {
+                    int minute = anchorAfterGeneration(EVENING_PREFERRED_MINUTE,
+                            proactiveProperties.feed().eveningCron(), date);
+                    String body = excerptProse(String.join(" ", msg.getContent().body()));
+                    return new AnchoredEvent(NotificationCategory.EVENING, minute, hhmm(minute),
+                            "Mezo · napzárás", body, URL_TODAY);
+                });
+    }
+
+    /** Unlike the cron-anchored categories above, an event-kind message has no fixed daily
+     *  slot — it fires off a user action (a sleep/weight log), so its own generation minute IS
+     *  the honest anchor, never a preferred constant pushed past a generator cron. */
+    private Optional<AnchoredEvent> sleepReactionAnchor(UUID owner, LocalDate date) {
+        return companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(owner, date, CompanionMessageEntity.KIND_SLEEP)
+                .map(msg -> {
+                    int minute = minuteOfDay(
+                            LocalDateTime.ofInstant(msg.getGeneratedAt(), ZoneId.systemDefault()).toLocalTime());
+                    String body = excerptProse(String.join(" ", msg.getContent().body()));
+                    return new AnchoredEvent(NotificationCategory.SLEEP_REACTION, minute, hhmm(minute),
+                            "Mezo · alvás", body, URL_TODAY);
+                });
+    }
+
+    /** Same event-kind rule as {@link #sleepReactionAnchor} — the row's own generation minute
+     *  is the anchor. */
+    private Optional<AnchoredEvent> weightReactionAnchor(UUID owner, LocalDate date) {
+        return companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(owner, date, CompanionMessageEntity.KIND_WEIGHT)
+                .map(msg -> {
+                    int minute = minuteOfDay(
+                            LocalDateTime.ofInstant(msg.getGeneratedAt(), ZoneId.systemDefault()).toLocalTime());
+                    String body = excerptProse(String.join(" ", msg.getContent().body()));
+                    return new AnchoredEvent(NotificationCategory.WEIGHT_REACTION, minute, hhmm(minute),
+                            "Mezo · testsúly", body, URL_TODAY);
                 });
     }
 
@@ -324,7 +377,7 @@ public class AnchorResolver {
      * instead. The offset is <b>config</b> ({@code mezo.notification.prose-generation-grace-min}),
      * never a magic number — <b>do not "tidy" it away</b>, and do not hardcode 06:00/12:30/19:00
      * here: the generator's minute is read from the generator's OWN cron
-     * ({@code mezo.proactive.*}) via {@link CronExpression}, the {@code ProactiveHeartbeatService}
+     * ({@code mezo.proactive.*}) via {@link CronExpression}, the {@code CompanionMessageGenerator}
      * precedent, so the schedule keeps living in exactly one place.
      *
      * @param preferredMinute the anchor this category would use if there were no collision

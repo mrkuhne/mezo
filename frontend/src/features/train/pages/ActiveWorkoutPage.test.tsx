@@ -705,6 +705,52 @@ test('reordering remaining exercises changes which exercise comes next', async (
   expect(dots[2]).toHaveClass('cur') // Cable Pull-Around: now current
 })
 
+// mezo-vad0: the CURRENT exercise is reorderable too — the common gym case is
+// "the machine is taken, push the one I'm on back" — and moving it off the head of
+// the list hands the screen to whatever is up next.
+test('the current exercise can be moved back, and the view follows to the new next one', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/)) // active, current = Chest Supported Row (ex1)
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Áthelyezés')) // reorder sub-view (ex1..ex5, ex1 = current)
+  await user.click(screen.getByRole('button', { name: 'Chest Supported Row lejjebb' }))
+  await user.keyboard('{Escape}')
+  // Lat Pulldown (ex2) took over the head of the order → it is now the logged exercise.
+  expect(await screen.findByRole('heading', { name: /^Lat Pulldown/ })).toBeInTheDocument()
+})
+
+test('reordering only the exercises BEHIND the current one leaves the view put', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Áthelyezés'))
+  await user.click(screen.getByRole('button', { name: 'Cable Pull-Around feljebb' })) // ex3 over ex2
+  await user.keyboard('{Escape}')
+  expect(screen.getByRole('heading', { name: 'Chest Supported Row' })).toBeInTheDocument()
+})
+
+// mezo-vad0: the prep CTA sits at the BOTTOM of a long briefing — starting the workout
+// swaps the whole tree without a route change, so the page must reset the app scroller
+// itself (ScreenContent only does it on navigation).
+test('starting the workout jumps the app scroller back to the top', async () => {
+  const user = userEvent.setup()
+  const scroller = document.createElement('div')
+  scroller.className = 'screen-content'
+  const scrollTo = vi.fn()
+  Object.assign(scroller, { scrollTo })
+  document.body.appendChild(scroller)
+  try {
+    setup()
+    scrollTo.mockClear() // ignore the mount-time reset; the phase flip is what matters
+    await user.click(screen.getByText(/Kezdjük el/))
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+  } finally {
+    scroller.remove()
+  }
+})
+
 // The Szett stat-cell's value (e.g. "0/3") — helper so callers don't hand-roll the
 // wkx-statcell/wkx-statlabel traversal.
 function szettCellValue(container: HTMLElement): string | null {

@@ -23,7 +23,7 @@ export const GOAL_HINTS: Record<string, string> = {
   hypertrophy:
     '6 hét a klasszikus RP block: 2 MEV ramp-up → 2 MAV progresszió → 1 MRV csúcs → 1 deload. A korábbi Hypertrophy 03-ban ez 8/10-re értékeltük.',
   strength:
-    '7 hét linear: lassabb a felfutás, de a Reta-cycle vége után az erő-blokkokra szükséged van több MAV hétre.',
+    '7 hét linear: lassabb a felfutás, de a deficit-szakasz vége után az erő-blokkokra szükséged van több MAV hétre.',
   'cut-prep':
     '3 hét maintenance: tartani a MAV szintet, semmi MRV-bele-erőltetés. Deficit indul utána.',
   recovery:

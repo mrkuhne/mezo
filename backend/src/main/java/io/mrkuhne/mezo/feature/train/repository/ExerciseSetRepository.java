@@ -52,6 +52,24 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
     /** Working sets only (record aggregation input — warmups excluded). */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNullAndKind(UUID createdBy, String kind);
 
+    /**
+     * The countable WORKING sets logged inside a given set of workout instances (mezo-meyc.2) —
+     * the close report's strength-delta input. Same eligibility rule the records/medal replay
+     * uses: working, non-skipped, reps present. Instance status is filtered by the CALLER (it
+     * hands in the run's completed instances), so this stays a plain set-scoped read.
+     */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT s FROM ExerciseSetEntity s
+        WHERE s.createdBy = :createdBy
+          AND s.workoutSessionId IN :sessionIds
+          AND s.kind = 'working'
+          AND s.skipped = false
+          AND s.reps IS NOT NULL
+        """)
+    List<ExerciseSetEntity> findWorkingSetsInSessions(
+        @org.springframework.data.repository.query.Param("createdBy") UUID createdBy,
+        @org.springframework.data.repository.query.Param("sessionIds") List<UUID> sessionIds);
+
     /** One row per (21-zone muscle, instance date) — the volume-arc aggregation projection. */
     interface MuscleWeekSetCount {
         String getMuscle();

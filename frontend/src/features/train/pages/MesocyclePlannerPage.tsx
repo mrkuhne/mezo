@@ -16,11 +16,11 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useTrain, useMesoTemplates } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, SplitOption } from '@/data/types'
-import type { MesocycleCreateRequest } from '@/data/train/trainApi'
+import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { huMonthDay } from '@/shared/lib/dates'
 import { DAY_ORDER, GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
 import { Icon } from '@/shared/ui/Icon'
@@ -31,6 +31,7 @@ import type { PlannerDay } from '@/features/train/logic/planner'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { toDayInputs } from '@/features/train/logic/mesoDays'
 import { MiniStat } from '@/features/train/components/MiniStat'
 
 const STEP_COUNT = 4
@@ -46,7 +47,12 @@ const PAGE_TITLES = [
 
 export function MesocyclePlannerPage() {
   const navigate = useNavigate()
-  const { createMesocycle, mesoMutationPending, gymSlots, saveGymSchedule } = useTrain()
+  const { gymSlots, saveGymSchedule } = useTrain()
+  const { createTemplate, startTemplate } = useMesoTemplates()
+  // Minimal Task 5 rewire (mezo-meyc.1): the wizard now saves a template, then starts a run
+  // from it (two calls instead of one createMesocycle POST) — `saving` covers the whole
+  // two-step flow since neither mutation alone reflects it. Task 6 owns the real planner UX.
+  const [saving, setSaving] = useState(false)
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState<GoalPreset | null>(null)
   const [name, setName] = useState('')
@@ -182,31 +188,20 @@ export function MesocyclePlannerPage() {
   }
 
   // Wizard state -> contract payload. All 7 template days travel (rest days too) so the
-  // backend mirrors the seed/template shape; mock mode no-ops and just navigates (Phase 1).
-  const saveMesocycle = (status: 'planned' | 'active') => {
-    const request: MesocycleCreateRequest = {
+  // backend mirrors the seed/template shape.
+  // The wizard saves a TEMPLATE (mezo-meyc.1) — a timeless blueprint. „Mentés sablonként"
+  // stops there and lands on the library; „Mentés + indítás" chains the one shared start
+  // call to stamp an active run from it and jumps into the gym week.
+  const saveTemplate = (alsoStart: boolean) => {
+    const request: MesoTemplateUpsertRequest = {
       title: name || `${goal?.label ?? 'Mesociklus'} · ${getSeason(startDate)}`,
       shortTitle: goal?.label,
-      status,
       goal: goal?.description,
-      startDate: startDateIso,
       weeks,
       split: split ? `${split.label} · ${days}×/hét` : `${days}×/hét`,
       style: goal?.style ?? `${weeks} hét`,
       phaseCurve,
-      days: (program ?? []).map((d) => ({
-        day: d.day,
-        type: d.type,
-        muscle: d.muscle,
-        muscleAccent: d.muscleAccent || undefined,
-        note: d.note,
-        exercises: d.exercises.map((e) => ({
-          name: e.name, muscle: e.muscle,
-          warmupSets: e.warmupSets, workingSets: e.workingSets,
-          repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
-          anchorWeightKg: e.anchorWeightKg, type: e.type, warning: e.warning, catalogId: e.catalogId,
-        })),
-      })),
+      days: toDayInputs(program ?? []),
     }
     // Persist the standing weekly gym schedule from the planner picks (mezo-4t43): one slot
     // per selected training day (all carry a time — default 18:00), replace-all. Mock no-ops.
@@ -215,7 +210,21 @@ export function MesocyclePlannerPage() {
         .map((d) => ({ dayOfWeek: DAY_ORDER.indexOf(d as (typeof DAY_ORDER)[number]), time: timeForDay(d) }))
         .filter((s) => s.dayOfWeek >= 0),
     )
-    createMesocycle(request, { onSuccess: backToLibrary })
+    setSaving(true)
+    createTemplate(request)
+      .then((tpl) => {
+        if (!alsoStart) return backToLibrary()
+        return startTemplate(tpl.id, { startDate: startDateIso, status: 'active' })
+          .then(() => navigate('/train/gym'))
+          // The template IS saved even though the run never started — land on the library
+          // where it now lives (never on Gym, which would fake a running block). The
+          // mutation cache has already toasted the failure (§7a).
+          .catch(backToLibrary)
+      })
+      // A failed create leaves nothing behind: stay on the wizard so the work isn't lost
+      // and the save is retryable. The failure toast comes from the mutation cache (§7a).
+      .catch(() => {})
+      .finally(() => setSaving(false))
   }
 
   const canNext =
@@ -355,21 +364,21 @@ export function MesocyclePlannerPage() {
             <button
               type="button"
               className="cta-primary"
-              onClick={() => saveMesocycle('planned')}
-              disabled={mesoMutationPending || !program}
-              style={{ padding: 14, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
+              onClick={() => saveTemplate(true)}
+              disabled={saving || !program}
+              style={{ padding: 14, opacity: saving || !program ? 0.5 : 1 }}
             >
               <Icon name="check" size={16} />
-              <span>Hozzáad mint tervezett</span>
+              <span>Mentés + indítás · {startDate}</span>
             </button>
             <button
               type="button"
               className="cta-ghost"
-              style={{ padding: 12, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
-              onClick={() => saveMesocycle('active')}
-              disabled={mesoMutationPending || !program}
+              style={{ padding: 12, opacity: saving || !program ? 0.5 : 1 }}
+              onClick={() => saveTemplate(false)}
+              disabled={saving || !program}
             >
-              Aktiválás most · {startDate}
+              Mentés sablonként
             </button>
           </div>
         )}

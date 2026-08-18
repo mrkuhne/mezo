@@ -29,7 +29,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  useActivities, useCheckins, useCompanionNote, useDailyQuests, useFuelPreview, useGoal,
+  useActivities, useCheckins, useCompanionFeed, useDailyQuests, useFuelPreview, useGoal,
   useHabitActions, useHabitCatalog, useHabitDay, useIntentionActions, useIntentionDay,
   useQuestActions, useQuickStats, useRitualDay, useSleep, useSleepGoal, useToday,
   useTodayScenario, useWaterActions, useWeight, resolveBriefing,
@@ -44,11 +44,14 @@ import { DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { DaypartTabs } from '@/features/today/components/DaypartTabs'
 import { MezoChip } from '@/features/today/components/MezoChip'
 import { MezoMessagesSheet } from '@/features/today/components/MezoMessagesSheet'
+import { NeedsRow } from '@/features/today/components/NeedsRow'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
+import { NeedRingSheet } from '@/features/today/sheets/NeedRingSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
@@ -56,12 +59,16 @@ import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { questAction } from '@/features/today/logic/questAction'
 import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { growthTodaySummary } from '@/features/today/logic/growthToday'
+import type { NeedKey } from '@/features/today/logic/needs'
+import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
+import { useNeeds } from '@/features/today/logic/useNeeds'
 import {
   dayBalance, fallbackHero, hrvFact, kcalFact, morningHero, proteinFact, sleepOutlook, weightFact,
   type IslandFact,
 } from '@/features/today/logic/islandFacts'
 import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
+import { deriveNudges, toNudgeMessage } from '@/features/today/logic/needsNudges'
 import {
   buildTodayItems, isFillableSlot, itemsForFace,
   type SessionItemInput, type TodayItem,
@@ -70,6 +77,7 @@ import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/fe
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { localDateString } from '@/shared/lib/dates'
 import { lastSeenMessage, markMessagesSeen } from '@/shared/lib/seenMessages'
+import { markNudgeShown, shownNudges, type NudgeSeenEntry } from '@/shared/lib/nudgeSeen'
 import { emitToast } from '@/shared/lib/toastBus'
 import { Icon } from '@/shared/ui/Icon'
 import type { DailyQuest, HabitChainInfo, HabitDaypart, MealSlot } from '@/data/types'
@@ -111,7 +119,10 @@ const heroCardOf = (s: DaySession, onLog: () => void): DayHero => {
 export function TodayPage() {
   const date = localDateString()
   const scenario = useTodayScenario()
-  const { user, workout, volleyballSessions, workoutTime, prediction, briefing, briefingDemo } = useToday()
+  const {
+    user, workout, volleyballSessions, workoutTime, prediction,
+    workoutDone, workoutDoneSets, workoutInProgress, workoutOpenSets, loggedSportKinds,
+  } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
   const { quests, levelUps: questLevelUps } = useDailyQuests(date)
@@ -131,7 +142,7 @@ export function TodayPage() {
   const { data: intention } = useIntentionDay(date)
   const { addFocus, reflect } = useIntentionActions(date)
   const stats = useQuickStats()
-  const companionNote = useCompanionNote()
+  const feed = useCompanionFeed()
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
@@ -143,6 +154,49 @@ export function TodayPage() {
   const [reflectOpen, setReflectOpen] = useState(false)
   const [msgsOpen, setMsgsOpen] = useState(false)
   const [seenId, setSeenId] = useState<string | null>(() => lastSeenMessage(date))
+  // The six "Életjel-ringek" (mezo-dhzk): a live `now` (re-rendering once a minute, not on
+  // every clock tick) walked through the pure decay/refill sim. `needSheet` is kept here
+  // already so the wiring lands in one commit — Task 4 mounts the detail sheet on it.
+  const tick = useMinuteTick()
+  const needs = useNeeds(tick)
+  const [needSheet, setNeedSheet] = useState<NeedKey | null>(null)
+  // Küszöb-nudge-ok a mezo-szálban (mezo-dhzk Task 5): a nap eddig megjelent nudge-jai
+  // localStorage-ból (`shownNudges`), `deriveNudges` ebből + a friss ring-állapotokból adja
+  // vissza a TELJES mai listát. Consume-once, a quest/habit level-up dance idiómája: csak
+  // amikor VAN friss elem, mentjük el (`markNudgeShown`) és bővítjük a shown-halmazt — így a
+  // hatás nem fut újra ugyanarra a nudge-ra, és nem kerülhet loopba.
+  // `needs.isPending` gate (review finding, post-Task-5): while the day's data is still
+  // loading, EVERY ring simulates from empty events, i.e. every band reads `critical` — an
+  // ungated derivation would burn the day's whole nudge budget on the first real-mode render,
+  // before any real data arrives. Mock mode never showed this because `initialData` resolves
+  // synchronously. Both the derivation and the marking effect stay empty/no-op until pending
+  // clears.
+  const [shownEntries, setShownEntries] = useState<NudgeSeenEntry[]>(() => shownNudges(date))
+  const nudgeEntries = useMemo(
+    () => (needs.isPending
+      ? []
+      : deriveNudges(needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownEntries)),
+    [needs.isPending, needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownEntries],
+  )
+  useEffect(() => {
+    if (needs.isPending) return
+    const fresh = nudgeEntries.filter((n) => n.fresh)
+    if (fresh.length === 0) return
+    fresh.forEach((n) => markNudgeShown(date, n.key, n.at))
+    setShownEntries((prev) => [...prev, ...fresh.map(({ key, at }) => ({ key, at }))])
+  }, [needs.isPending, nudgeEntries])
+  // The sheet's quick-log CTA reuses the SAME sheet states / mutations every other row on
+  // this screen already dispatches through — no new sheet, no new mutation (mezo-dhzk Task 4).
+  const onNeedCta = (key: NeedKey) => {
+    if (key === 'energia') setMealOpen({})
+    else if (key === 'hidratacio') logWater(250)
+    else if (key === 'pihenes') setSleepOpen(true)
+    else if (key === 'mozgas') navigate('/train')
+    else if (key === 'lelek') {
+      const idx = checkins.findIndex(isFillableSlot)
+      if (idx >= 0) setCheckInIdx(idx)
+    }
+  }
 
   // Consume-once reward toasts: quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
@@ -174,21 +228,36 @@ export function TodayPage() {
   // object, so tag/facts/CTA drift is structurally impossible.
   // Array order IS hero precedence: the gym session wins, a sport session heroes on a rest day.
   const gymMinutes = workout ? estimateSessionMinutes(workout.exercises) : 0
+  // A started-but-unfinished session resumes, it does not restart (mezo-6kap) — the same
+  // `/train` target, an honest label. `workoutDone` gates ahead of this, so a finished day
+  // never offers a resume; 0 logged sets drops the count rather than reading „0 szett kész".
+  const gymCta = workoutInProgress
+    ? `Folytassuk${workoutOpenSets ? ` · ${workoutOpenSets} szett kész` : ''}`
+    : 'Indítsuk'
+  // The sport hero's own done-state: a session logged TODAY of THIS hero's kind (mezo-6kap).
+  const sportDone = sportToday ? loggedSportKinds.includes(sportOf(sportToday)) : false
   const sessions = useMemo<DaySession[]>(() => [
     ...(workout ? [{
       id: 'gym', tone: 'gym' as const, emoji: '🏋️',
       tag: `GYM${workout.tag ? ` · ${workout.tag}` : ''}`, title: workout.title,
       time: workoutTime ?? null,
       facts: [`${workout.exercises.length} gyakorlat`, gymMinutes > 0 ? `~${gymMinutes} perc` : null, prediction?.label],
-      logged: false, ctaLabel: 'Indítsuk',
+      // The done-state is server truth, not a Today-local guess (mezo-v84m): the hero drops its
+      // start CTA for the „Kész" footnote and the row moves into the done fold, exactly like the
+      // Train tab's hero. The set count is a detail — a finish with none still reads Kész.
+      logged: workoutDone,
+      loggedSummary: workoutDone
+        ? `Kész${workoutDoneSets ? ` · ${workoutDoneSets} szett` : ''}`
+        : undefined,
+      ctaLabel: gymCta,
     }] : []),
     ...(sportToday ? [{
       id: 'sport', tone: SPORT_TONE[sportOf(sportToday)], emoji: SPORT_EMOJI[sportOf(sportToday)],
       tag: SPORT_TAGS[sportOf(sportToday)], title: SPORT_TITLES[sportOf(sportToday)],
       time: sportToday.time, facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
-      logged: false, ctaLabel: 'Logold',
+      logged: sportDone, loggedSummary: sportDone ? 'Kész' : undefined, ctaLabel: 'Logold',
     }] : []),
-  ], [workout, workoutTime, prediction, sportToday, gymMinutes])
+  ], [workout, workoutTime, prediction, sportToday, gymMinutes, workoutDone, workoutDoneSets, gymCta, sportDone])
   const heroSession = sessions[0] ?? null
   const heroItemId = heroSession ? `session:${heroSession.id}` : null
 
@@ -344,13 +413,12 @@ export function TodayPage() {
 
   const growth = growthTodaySummary(quests, activities ?? [])
 
-  // A mezo hangja: a nap üzenet-szála a MÁR MEGLÉVŐ két hookból — nincs új adatforrás.
+  // A mezo hangja: a nap üzenet-szála a unified companion-feedből épül (mezo-gst9).
   // Az olvasatlan-jelzés a szál UTOLSÓ elemének id-jét hasonlítja a napra mentett
   // `localStorage` értékhez; a napváltás magától elavulttá teszi a kulcsot.
   const messages = buildMezoMessages({
-    briefing: briefing ?? resolveBriefing(scenario.dayState),
-    note: companionNote,
-    briefingDemo,
+    feed, demoBriefing: resolveBriefing(scenario.dayState),
+    nudges: nudgeEntries.map(toNudgeMessage),
   })
   const latestId = messages.length > 0 ? messages[messages.length - 1].id : null
   const msgsUnread = latestId != null && latestId !== seenId
@@ -379,6 +447,13 @@ export function TodayPage() {
       {scenario.vulnerable && <VulnerabilityCard />}
       <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
       <MezoChip messages={messages} unread={msgsUnread} onOpen={openMessages} />
+      {needs.isPending
+        // sleepGoal has already resolved here (the page-level skeleton above gates it), but
+        // useNeeds' own composite isPending can still be true for a beat — six rings simulated
+        // off empty events would all read `critical` and pulse red (fix-wave review finding).
+        // Same `.td-skel-needs` placeholder TodaySkeleton uses, so the layout doesn't shift.
+        ? <div className="td-skel td-skel-needs"><Skeleton height={46} /></div>
+        : <NeedsRow states={needs.states} onOpen={setNeedSheet} />}
       {selected === 'reggel' && (
         <DaypartMorning
           hero={mHero} facts={morningFacts}
@@ -420,6 +495,13 @@ export function TodayPage() {
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
       {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} />}
+      {needSheet && (
+        <NeedRingSheet
+          state={needs.states.find((s) => s.key === needSheet)!}
+          wakeTime={sleepGoal.wakeTime} bedTime={sleepGoal.bedTime}
+          onClose={() => setNeedSheet(null)} onCta={onNeedCta}
+        />
+      )}
     </>
   )
 }

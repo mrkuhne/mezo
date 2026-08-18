@@ -17,6 +17,7 @@ import { Navigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useProgressionProfile, useTrain, useWeekMuscleLog } from '@/data/hooks'
 import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
+import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
@@ -309,6 +310,15 @@ function ActiveWorkoutSession({
     const t = setTimeout(() => setToastMedal(null), MEDAL_TOAST_MS)
     return () => clearTimeout(t)
   }, [toastMedal])
+
+  // A phase flip swaps the WHOLE screen without a route change (mezo-vad0): the prep
+  // briefing is long and its "Kezdjük el" CTA sits at the very bottom, so the app
+  // scroller would carry that offset into the execution card (and, likewise, into the
+  // closing summary). ScreenContent only resets on navigation — an in-page phase change
+  // has to ask for it itself.
+  useEffect(() => {
+    scrollToTop(screenScroller())
+  }, [phase])
 
   // A rest must not survive into the summary/recap phase. (No unmount cleanup
   // needed anymore — the timer state is page-local and dies with the page.)
@@ -950,24 +960,36 @@ function ActiveWorkoutSession({
     (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
   )
 
-  // Reorderable segment for the ⋯ action sheet: the exercises up to and including
-  // the VIEWED one stay FIXED; only the ones after it in session.order can be
-  // reordered. Reorder is client-only / ephemeral — it just replaces session.order,
-  // never persists.
-  const remaining = (() => {
+  // Reorderable segment for the ⋯ action sheet: the VIEWED exercise ITSELF plus
+  // everything after it in session.order (mezo-vad0 — the busy-machine case is
+  // exactly "push the one I'm on back", so excluding it was the wrong cut); only
+  // the exercises BEFORE it stay fixed. Reorder is client-only / ephemeral — it
+  // just replaces session.order, never persists.
+  const reorderable = (() => {
     const ci = session.order.indexOf(current.id)
-    return session.order.slice(ci + 1).map((id) => {
+    return session.order.slice(ci).map((id) => {
       const e = W.exercises.find((x) => x.id === id)!
-      return { id, label: e.name }
+      return { id, label: e.name, ...(id === current.id ? { current: true } : {}) }
     })
   })()
-  const handleReorder = (newRemaining: string[]) =>
+  const handleReorder = (newSegment: string[]) => {
     setSession((s) => {
       // Fixed segment anchors on the viewed exercise (from the render closure).
       const ci = s.order.indexOf(current.id)
-      const fixed = s.order.slice(0, ci + 1)
-      return { ...s, order: [...fixed, ...newRemaining] }
+      const fixed = s.order.slice(0, ci)
+      return { ...s, order: [...fixed, ...newSegment] }
     })
+    // Moving the viewed exercise off the head of the segment MEANS "later" — so the
+    // session hands over to whatever is up now: the first unresolved exercise of the
+    // new segment (a done/skipped one at the head would be a dead end), falling back
+    // to its head. No feedbackEx guard needed — the sheet is unmounted while a
+    // debrief is open (mount condition: actionSheetOpen && !feedbackEx).
+    if (newSegment[0] === current.id) return
+    const nextId = newSegment.find(
+      (id) => !session.skipped.includes(id) && (session.logged[id]?.length ?? 0) < effectiveSetCount(session, id),
+    )
+    setViewedId(nextId ?? newSegment[0])
+  }
   // Two-way pager (spec 2026-07-15, mockup "B · pager-sáv"): plain order-neighbours
   // of the viewed exercise — browsing is free, so it does NOT skip done ones; the
   // list edges disable the ends. (Replaces the old one-way `remaining[0]` next row.)
@@ -1026,7 +1048,7 @@ function ActiveWorkoutSession({
       {actionSheetOpen && !feedbackEx && (
         <ExerciseActionSheet
           exerciseName={current.name}
-          remaining={remaining}
+          reorderable={reorderable}
           onReorder={handleReorder}
           onSkip={handleSkip}
           onAddSet={() => {

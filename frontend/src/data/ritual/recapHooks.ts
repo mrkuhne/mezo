@@ -5,7 +5,7 @@ import { useIntentionDay } from '@/data/intention/intentionHooks'
 import { useSleep } from '@/data/me/sleepHooks'
 import { useWeight } from '@/data/me/weightHooks'
 import { useCheckins } from '@/data/today/checkinHooks'
-import { useCompanionNote } from '@/data/today/heartbeatHooks'
+import { useCompanionFeed } from '@/data/today/feedHooks'
 import { useTrain } from '@/data/train/trainHooks'
 
 export interface RecapEvent { icon: string; label: string; meta: string; done: boolean }
@@ -26,7 +26,7 @@ const JOURNAL_TRUNCATE = 40
  * the data layer.
  *
  * `date` only reaches the date-SCOPED reads (activities/intention/fuel). The other hooks
- * (checkins/train/sleep/weight/companion-note) are date-less by design — they always read
+ * (checkins/train/sleep/weight/companion-feed) are date-less by design — they always read
  * "today" internally — which is fine here because the ritual only ever runs for today.
  */
 export function useDayRecap(date: string): DayRecap {
@@ -38,7 +38,10 @@ export function useDayRecap(date: string): DayRecap {
   const train = useTrain()
   const { lastNight } = useSleep()
   const { weightLog } = useWeight()
-  const companionNote = useCompanionNote()
+  // The evening companion-feed message replaces the retired heartbeat's "closing" note (companion-
+  // feed, mezo-gst9) — same honest-absence contract: mock mode's feed is always [], real mode is
+  // absent until the evening cron (or its miss-recovery) has produced today's row.
+  const eveningMessage = useCompanionFeed().find((m) => m.kind === 'evening')
 
   const events: RecapEvent[] = []
 
@@ -108,7 +111,7 @@ export function useDayRecap(date: string): DayRecap {
 
   const checkinsDone = checkins.filter((c) => c.state === 'done').length
   const thinDay = events.filter((e) => e.done).length < 2 && checkinsDone < 2
-  const closingNote = companionNote?.kind === 'closing' ? companionNote.text : null
+  const closingNote = eveningMessage ? eveningMessage.body.map((p) => p.text).join(' ') : null
 
   return { events, checkinsDone, thinDay, closingNote }
 }

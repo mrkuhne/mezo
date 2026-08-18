@@ -14,7 +14,7 @@ describe('isStrongSignal', () => {
   test('needs BOTH |r| >= 0.3 AND p <= 0.15', () => {
     expect(isStrongSignal(-0.37, 0.14)).toBe(true)
     expect(isStrongSignal(-0.37, 0.188)).toBe(false) // a screenshot Hétvége-sora — nem inbox
-    expect(isStrongSignal(0.0, 1.0)).toBe(false)     // a Reta-sor — nem inbox
+    expect(isStrongSignal(0.0, 1.0)).toBe(false)     // a Gyógyszer-sor — nem inbox
     expect(isStrongSignal(0.29, 0.01)).toBe(false)
     expect(isStrongSignal(null, 0.05)).toBe(false)
   })

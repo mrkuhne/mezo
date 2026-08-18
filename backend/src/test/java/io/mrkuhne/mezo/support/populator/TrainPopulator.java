@@ -137,6 +137,18 @@ public class TrainPopulator {
         return volumeLogRepository.saveAndFlush(v);
     }
 
+    /**
+     * Volume log whose provenance envelope carries NO baseline — the pre-provenance shape a legacy
+     * run can still have on disk (the rerun materialization must not turn that into a null
+     * {@code VolumeBaseline.name}).
+     */
+    public MuscleGroupVolumeLogEntity createVolumeLogWithoutBaseline(
+        UUID createdBy, UUID mesocycleId, String muscle) {
+        MuscleGroupVolumeLogEntity v = createVolumeLog(createdBy, mesocycleId, muscle);
+        v.setSource(new ProvenanceEnvelope(null, List.of(), 0.5, null, null));
+        return volumeLogRepository.saveAndFlush(v);
+    }
+
     public WorkoutSessionEntity createWorkoutSession(UUID createdBy, UUID mesocycleId,
         String dayLabel, String type, int orderIndex, String status) {
         return createWorkoutSession(createdBy, mesocycleId, dayLabel, type, orderIndex, status, false);
@@ -182,6 +194,35 @@ public class TrainPopulator {
         m.setStyle("RP · " + weeks + " hét");
         m.setPhaseCurve(phaseCurve);
         m.setVolumeRecompute(null);
+        return mesocycleRepository.saveAndFlush(m);
+    }
+
+    /**
+     * {@link #activeMesoStartedWeeksAgo} with an explicit {@code currentWeek}, which on a real run
+     * only advances on the weekly volume rollover and can therefore lag the calendar. Lets a test
+     * pin the run's stored progress INDEPENDENTLY of its dates — both the up-to-date case and the
+     * deliberately STALE one (the close report must freeze an arc consistent with adherence either
+     * way, mezo-meyc.2).
+     */
+    public MesocycleEntity activeMesoStartedWeeksAgo(
+        UUID createdBy, int weeksAgo, int weeks, int currentWeek, List<String> phaseCurve) {
+        MesocycleEntity m = activeMesoStartedWeeksAgo(createdBy, weeksAgo, weeks, phaseCurve);
+        m.setCurrentWeek(currentWeek);
+        return mesocycleRepository.saveAndFlush(m);
+    }
+
+    /**
+     * An ARCHIVED run with NO {@code closedAt} — the legacy backfill fixture (mezo-meyc.2): the
+     * shape every run archived before the close-report feature (or auto-archived by starting the
+     * next one) has on disk. {@code endDate} deliberately stays AHEAD of today, so a report window
+     * that fell back to "now" instead of {@code endDate} would produce different numbers.
+     */
+    public MesocycleEntity legacyArchivedMesoStartedWeeksAgo(
+        UUID createdBy, int weeksAgo, int weeks, List<String> phaseCurve) {
+        MesocycleEntity m = activeMesoStartedWeeksAgo(createdBy, weeksAgo, weeks, phaseCurve);
+        m.setStatus("archived");
+        m.setCurrentWeek(weeks);
+        m.setClosedAt(null);
         return mesocycleRepository.saveAndFlush(m);
     }
 

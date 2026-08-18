@@ -7,6 +7,8 @@ import { LoopsStep } from '@/features/ritual/components/LoopsStep'
 import { ReleaseStep } from '@/features/ritual/components/ReleaseStep'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
+import { useNeeds } from '@/features/today/logic/useNeeds'
+import { ringsOf } from '@/features/today/logic/needsInputs'
 import { localDateString } from '@/shared/lib/dates'
 import { useTheme } from '@/app/ThemeProvider'
 import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
@@ -36,6 +38,11 @@ export function RitualPage() {
   const { checkins, saveCheckIn } = useCheckins()
   const { close } = useRitualActions(date)
   const { consumeLevelUps } = useHabitActions(date)
+  // mezo-dhzk (Task 9): a stable `now` for the whole flow — the needs snapshot sent to
+  // close() is a single instant, not a value that should shift mid-ritual as the ring sim
+  // decays in real time.
+  const [tickNow] = useState(() => new Date())
+  const { states, isPending: needsPending } = useNeeds(tickNow)
   // mezo-ywz1: mount an active observer on ['habitDay', date] — with none, close()'s
   // invalidateQueries(['habitDay', date]) only marks the key stale and never actually
   // refetches, so the server-derived evening_ritual completion (+10 XP + level_up_event,
@@ -66,7 +73,12 @@ export function RitualPage() {
   useEffect(() => {
     if (act === 4 && !closedRef.current) {
       closedRef.current = true
-      close().then(() => {
+      // Fix-wave review finding: if useNeeds' composite read is still pending at act 4 (an
+      // unlucky timing window — every other act gives the reads time to resolve, but nothing
+      // guarantees it), `states` would be the empty-events zero snapshot. The close endpoint
+      // is idempotent PER DATE, so persisting that snapshot would silently freeze the day's
+      // ring readout — never send an under-reported one; skip the rings payload entirely.
+      close(needsPending ? undefined : ringsOf(states)).then(() => {
         // mezo-ywz1: in real mode close() now awaits the ['habitDay', date] refetch (see
         // useRitualActions), so by the time this runs the ritual's own +10/level_up_event is
         // already sitting in the habitDay cache — not just an earlier-in-the-day one. The
@@ -77,7 +89,7 @@ export function RitualPage() {
         consumeLevelUps()
       })
     }
-  }, [act, close, consumeLevelUps])
+  }, [act, close, consumeLevelUps, needsPending, states])
 
   return (
     <div className="rz-screen">

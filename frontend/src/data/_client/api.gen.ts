@@ -102,8 +102,7 @@ export interface paths {
         /** All mesocycles of the current user with volume provenance and template days, start date ascending */
         get: operations["listMesocycles"];
         put?: never;
-        /** Create a mesocycle (wizard) with nested template days and exercises */
-        post: operations["createMesocycle"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -136,8 +135,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Close (archive) a mesocycle (idempotent) */
+        /** Close (archive) a mesocycle (idempotent); optional self-eval note is captured on close */
         post: operations["closeMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The generated end-of-mesocycle report — adherence, volume arc, strength deltas, records and optional AI narrative */
+        get: operations["getMesocycleReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/report/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute the report for an archived mesocycle */
+        post: operations["regenerateMesocycleReport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -172,6 +205,76 @@ export interface paths {
         /** Replace the exercise list of one template day (full-list, order = array order) */
         put: operations["replaceDayExercises"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new run from a closed mesocycle's originating template */
+        post: operations["rerunMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All mesocycle templates of the current user, with run counts, created date ascending */
+        get: operations["listMesoTemplates"];
+        put?: never;
+        /** Create a mesocycle template (wizard) with nested days and exercises */
+        post: operations["createMesoTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a mesocycle template's fields, days and exercises (full replace) */
+        put: operations["updateMesoTemplate"];
+        post?: never;
+        /** Soft-delete a mesocycle template (past runs survive) */
+        delete: operations["deleteMesoTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-templates/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a mesocycle run from a template on the given date */
+        post: operations["startMesoTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1753,15 +1856,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/proactive/briefing": {
+    "/api/proactive/feed": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** The generated morning briefing for one day (lazily generated when the dawn cron has not produced it yet) */
-        get: operations["getBriefing"];
+        /**
+         * The unified companion-message feed for one day (companion-feed) — morning/sleep/weight/midday/evening
+         * @description Returns the day's persisted companion-feed messages in generation order. For TODAY the cron-kind miss-recovery lazily generates: morning always (its cron is dawn — by any read it has elapsed); midday/evening once their fire-time (derived from the SAME cron the job runs on) has passed. Event-triggered kinds (sleep/weight) are born from their events, never from this miss-recovery. Past dates never generate. An empty array is the honest empty state (never a 404 — this is a list endpoint, the P1 precedent).
+         */
+        get: operations["getFeed"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1796,26 +1902,6 @@ export interface paths {
         };
         /** The latest weekly memoir (lazily generated for the last completed week when none exists yet) */
         get: operations["getMemoir"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/proactive/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The day's latest heartbeat note (napközbeni jelenlét, H1)
-         * @description Returns the latest persisted heartbeat note for the given day (evening closing beats midday nudge by generation time). For TODAY the latest already-elapsed window lazy-generates when missing (the miss-recovery); past dates never generate. 404 = honest absence (no elapsed window yet, no narrative memory, or generation failed).
-         */
-        get: operations["getHeartbeat"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2634,6 +2720,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/needs/day-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Store the day's ring snapshot, award bonus XP, advance the streak (Needs). Idempotent per date — repeat calls return the stored result. */
+        post: operations["closeNeedsDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/needs/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest needs close — streak + last close date (Needs) */
+        get: operations["getNeedsSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2809,6 +2929,11 @@ export interface components {
         MesocycleResponse: {
             /** Format: uuid */
             id: string;
+            /**
+             * Format: uuid
+             * @description The originating template this run was started from (null for legacy/direct runs)
+             */
+            templateId?: string | null;
             title: string;
             shortTitle: string;
             /** @enum {string} */
@@ -2818,6 +2943,16 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            /**
+             * Format: date-time
+             * @description When this run was closed (archived); null while active/planned
+             */
+            closedAt?: string | null;
+            /**
+             * @description True once an end-of-mesocycle report has been generated for this run
+             * @default false
+             */
+            hasReport: boolean;
             weeks: number;
             currentWeek: number;
             split: string;
@@ -2831,6 +2966,25 @@ export interface components {
                 [key: string]: components["schemas"]["VolumeProfile"];
             };
             days?: components["schemas"]["MesoDay"][];
+        };
+        MesoTemplateResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            shortTitle?: string | null;
+            goal?: string | null;
+            weeks: number;
+            split?: string | null;
+            style?: string | null;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            notes?: string | null;
+            /** @description Per-muscle volume baseline keyed by muscle id (chest, back, ...) */
+            volumePerMuscle?: {
+                [key: string]: components["schemas"]["VolumeBaseline"];
+            } | null;
+            days: components["schemas"]["MesoDay"][];
+            /** @description Number of mesocycle runs started from this template */
+            runCount: number;
         };
         VolumeRecompute: {
             lastRun: string;
@@ -2952,20 +3106,134 @@ export interface components {
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
         };
-        MesocycleCreateRequest: {
+        MesoTemplateUpsertRequest: {
             title: string;
-            shortTitle?: string;
-            /** @enum {string} */
-            status: "active" | "planned";
-            goal?: string;
+            shortTitle?: string | null;
+            goal?: string | null;
+            weeks: number;
+            split?: string | null;
+            style?: string | null;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            notes?: string | null;
+            /** @description Per-muscle volume baseline keyed by muscle id (chest, back, ...) */
+            volumePerMuscle?: {
+                [key: string]: components["schemas"]["VolumeBaseline"];
+            } | null;
+            days: components["schemas"]["MesoDayInput"][];
+        };
+        MesoTemplateStartRequest: {
             /** Format: date */
             startDate: string;
+            /** @enum {string} */
+            status: "active" | "planned";
+        };
+        MesoRerunResponse: {
+            /** Format: uuid */
+            templateId: string;
+        };
+        /** @description Optional self-eval note captured when closing a mesocycle */
+        MesocycleCloseRequest: {
+            selfEval?: string;
+        };
+        /** @description The generated end-of-mesocycle report — adherence, volume arc, per-exercise strength deltas, PR/medal highlights, and an optional AI narrative eval. context is declared for forward-compat (populated in a later slice) so this contract does not change shape then. */
+        MesocycleReportResponse: {
+            /** Format: uuid */
+            mesocycleId: string;
+            /**
+             * Format: uuid
+             * @description The originating template this run was started from (null for legacy/direct runs)
+             */
+            templateId?: string | null;
+            title: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate?: string | null;
+            /** Format: date-time */
+            closedAt?: string | null;
             weeks: number;
-            split: string;
-            style: string;
-            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
-            notes?: string;
-            days?: components["schemas"]["MesoDayInput"][];
+            /** @description The owner's free-text self-eval note captured on close */
+            selfEval?: string | null;
+            /** @description The AI-generated narrative eval (null until generated / when the feature is off) */
+            aiEval?: string | null;
+            /** @enum {string} */
+            aiEvalStatus: "pending" | "ready" | "failed";
+            /** Format: date-time */
+            aiEvalGeneratedAt?: string | null;
+            aiEvalEnabled: boolean;
+            adherence: components["schemas"]["MesoReportAdherence"];
+            volume?: components["schemas"]["MesocycleVolumeArcResponse"] | null;
+            strength: components["schemas"]["MesoStrengthDelta"][];
+            records: components["schemas"]["MesoReportRecords"];
+            /** @description Lifestyle/wellbeing context correlated to the mesocycle window (populated in a later slice) */
+            context?: components["schemas"]["MesoContext"] | null;
+        };
+        MesoReportAdherence: {
+            plannedSessions: number;
+            completedSessions: number;
+            plannedWeeks: number;
+            completedWeeks: number;
+            completionPct: number;
+        };
+        MesoStrengthDelta: {
+            exerciseName: string;
+            /** Format: uuid */
+            catalogId?: string;
+            muscle: string;
+            firstWeek: number;
+            lastWeek: number;
+            firstTopKg?: number;
+            firstTopReps: number;
+            lastTopKg?: number;
+            lastTopReps: number;
+            firstE1rm?: number;
+            lastE1rm?: number;
+            deltaKg?: number;
+            deltaPct?: number;
+        };
+        MesoReportRecords: {
+            medalCount: number;
+            top: components["schemas"]["MesoRecordHighlight"][];
+        };
+        MesoRecordHighlight: {
+            exerciseName: string;
+            kind: string;
+            /** Format: date */
+            date: string;
+            value?: number;
+        };
+        /** @description Lifestyle/wellbeing context for the mesocycle window (populated in a later slice) */
+        MesoContext: {
+            weeks: components["schemas"]["MesoContextWeek"][];
+            totals: components["schemas"]["MesoContextTotals"];
+        };
+        MesoContextWeek: {
+            week: number;
+            sleepAvgH?: number | null;
+            sleepQualityAvg?: number | null;
+            kcalAvg?: number | null;
+            kcalTargetAvg?: number | null;
+            mealCoverageDays?: number | null;
+            waterAvgMl?: number | null;
+            energyAvg?: number | null;
+            stressAvg?: number | null;
+            weightDeltaKg?: number | null;
+            sportMinutes?: number | null;
+            sportSessions?: number | null;
+            runSessions?: number | null;
+            gymRpeAvg?: number | null;
+        };
+        MesoContextTotals: {
+            daysTotal: number;
+            sleepAvgH?: number | null;
+            kcalAvg?: number | null;
+            energyAvg?: number | null;
+            stressAvg?: number | null;
+            weightChangeKg?: number | null;
+            sportMinutes?: number | null;
+            sportSessions?: number | null;
+            runSessions?: number | null;
+            mealCoverageDays?: number | null;
         };
         MesoDayInput: {
             /** @description 'Hét'..'Vas' */
@@ -4340,7 +4608,7 @@ export interface components {
             current: boolean;
         };
         MedicationCycleResponse: {
-            retaDay: number;
+            cycleDay: number;
             phaseKey: string;
             phaseLabel: string;
             /** Format: date-time */
@@ -5101,20 +5369,19 @@ export interface components {
             tiedToLabel?: string;
             flagged: boolean;
         };
-        BriefingRef: {
+        FeedRef: {
             /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
             kind: string;
             label: string;
         };
-        BriefingResponse: {
+        FeedMessageResponse: {
             /** Format: date */
             date: string;
-            /** @description One-line header above the briefing prose */
+            /** @enum {string} */
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening";
             eyebrow: string;
-            /** @description Briefing paragraphs — the FE maps each to a BriefingPara */
             body: string[];
-            /** @description Code-collected, model-SELECTED source references (never model-invented) */
-            refs: components["schemas"]["BriefingRef"][];
+            refs: components["schemas"]["FeedRef"][];
             /** Format: date-time */
             generatedAt: string;
         };
@@ -5139,18 +5406,6 @@ export interface components {
             /** @description The memoir prose (single narrative paragraph block) */
             body: string;
             anchors: components["schemas"]["MemoirAnchor"][];
-            /** Format: date-time */
-            generatedAt: string;
-        };
-        HeartbeatNoteResponse: {
-            /** Format: date */
-            date: string;
-            /** @description Window key (midday | evening) — the config window the note was written for */
-            window: string;
-            /** @description nudge (midday) | closing (evening) */
-            kind: string;
-            /** @description The generated HU note (plain prose, cheap tier) */
-            content: string;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -5861,6 +6116,33 @@ export interface components {
             /** Format: date */
             pricedOn?: string | null;
         } | null;
+        NeedsRings: {
+            energia: number;
+            hidratacio: number;
+            pihenes: number;
+            mozgas: number;
+            lelek: number;
+            rend: number;
+        };
+        NeedsCloseRequest: {
+            /** Format: date */
+            date: string;
+            rings: components["schemas"]["NeedsRings"];
+        };
+        NeedsCloseResponse: {
+            /** Format: date */
+            date: string;
+            xpAwarded: number;
+            greenCount: number;
+            allGreen: boolean;
+            streakDays: number;
+        };
+        NeedsSummaryResponse: {
+            streakDays: number;
+            /** Format: date */
+            lastCloseDate?: string;
+            lastAllGreen?: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -6185,48 +6467,6 @@ export interface operations {
             };
         };
     };
-    createMesocycle: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MesocycleCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Created mesocycle */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MesocycleResponse"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description Missing/invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
     activateMesocycle: {
         parameters: {
             query?: never;
@@ -6276,7 +6516,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MesocycleCloseRequest"];
+            };
+        };
         responses: {
             /** @description Archived mesocycle */
             200: {
@@ -6298,6 +6542,93 @@ export interface operations {
             };
             /** @description Mesocycle not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMesocycleReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mesocycle report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleReportResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No report exists yet, or the mesocycle is not found/not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    regenerateMesocycleReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Regeneration accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The mesocycle run is not archived */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6391,6 +6722,261 @@ export interface operations {
                 };
             };
             /** @description Mesocycle/day not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    rerunMesocycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The originating template id, for starting a fresh run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoRerunResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listMesoTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Meso templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoTemplateResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoTemplateUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Created template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoTemplateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoTemplateUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoTemplateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    startMesoTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoTemplateStartRequest"];
+            };
+        };
+        responses: {
+            /** @description The started mesocycle run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template not found or not owned */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11308,10 +11894,10 @@ export interface operations {
             };
         };
     };
-    getBriefing: {
+    getFeed: {
         parameters: {
             query?: {
-                /** @description The briefed day — the FE sends its LOCAL date (the check-in read precedent); defaults to the server's today. */
+                /** @description The fed day — the FE sends its LOCAL date (the briefing precedent); defaults to the server's today. */
                 date?: string;
             };
             header?: never;
@@ -11320,26 +11906,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The persisted (or just-generated) briefing */
+            /** @description The day's companion-feed messages (possibly empty), in generation order */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BriefingResponse"];
+                    "application/json": components["schemas"]["FeedMessageResponse"][];
                 };
             };
             /** @description Missing or invalid token */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No briefing possible — no narrative memory (daily_summary) in the configured past-days window. The FE renders its honest state (B1.2). */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11418,47 +11995,6 @@ export interface operations {
                 };
             };
             /** @description No memoir possible — no narrative memory in the last completed week. The FE renders its honest "készül" state. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
-    getHeartbeat: {
-        parameters: {
-            query?: {
-                /** @description The noted day — the FE sends its LOCAL date (the briefing precedent); defaults to the server's today. */
-                date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The day's latest heartbeat note */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HeartbeatNoteResponse"];
-                };
-            };
-            /** @description Missing or invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No note for the day (honest absence). The Today card simply stays absent. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13061,7 +13597,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All 11 categories, always complete — a category with no stored row reports its code default */
+            /** @description All 14 categories, always complete — a category with no stored row reports its code default */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -13277,6 +13813,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    closeNeedsDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NeedsCloseRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored (idempotent — 200 on repeat, no double award) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeedsCloseResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not today (NEEDS_NOT_TODAY) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getNeedsSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary (zeros when no close exists yet) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeedsSummaryResponse"];
                 };
             };
         };

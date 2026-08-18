@@ -4,7 +4,7 @@ import type { KnowledgeFact, FactCandidate, KnowledgeEdge, FactCategory } from '
 export const facts: KnowledgeFact[] = [
   { id: 'f1', text: 'Pull Day-en a Chest Supported Row a key compound', category: 'train', active: true, reinforced: 12, source: 'chat', lastReinforcedAt: '2026-08-05T19:20:00Z' },
   { id: 'f2', text: 'Caffeine cutoff: 14:00 hard limit', category: 'fuel', active: true, reinforced: 23, source: 'chat', lastReinforcedAt: '2026-08-11T21:05:00Z' },
-  { id: 'f3', text: 'Reta beadás: hétfő reggel · 7-day kinetic cycle', category: 'health', active: true, reinforced: 11, source: 'chat', lastReinforcedAt: '2026-08-04T08:10:00Z' },
+  { id: 'f3', text: 'Gyógyszer-beadás: hétfő reggel · 7-day kinetic cycle', category: 'health', active: true, reinforced: 11, source: 'chat', lastReinforcedAt: '2026-08-04T08:10:00Z' },
   { id: 'f4', text: 'Volleyball: kedd + csütörtök + szombat', category: 'train', active: true, reinforced: 18, source: 'chat', lastReinforcedAt: '2026-08-09T18:00:00Z' },
   { id: 'f5', text: 'Sleep target: 7.5h, evening kitchen close 21:30', category: 'health', active: true, reinforced: 21, source: 'chat', lastReinforcedAt: '2026-08-10T20:40:00Z' },
   { id: 'f6', text: 'Right shoulder niggle, márc 18 óta intermittent', category: 'health', active: true, reinforced: 9, source: 'chat', lastReinforcedAt: '2026-07-22T09:15:00Z' },

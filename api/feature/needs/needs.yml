@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info: { title: mezo needs fragment, version: 1.0.0 }
+tags:
+  - name: Needs
+    description: Életjel-ringek — day-close snapshot, bonus XP, "Életben tartva" streak
+paths:
+  /api/needs/day-close:
+    post:
+      tags: [Needs]
+      operationId: closeNeedsDay
+      summary: Store the day's ring snapshot, award bonus XP, advance the streak (Needs). Idempotent per date — repeat calls return the stored result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NeedsCloseRequest' }
+      responses:
+        '200':
+          description: Stored (idempotent — 200 on repeat, no double award)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NeedsCloseResponse' }
+        '400':
+          description: Validation error
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '409':
+          description: Not today (NEEDS_NOT_TODAY)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+  /api/needs/summary:
+    get:
+      tags: [Needs]
+      operationId: getNeedsSummary
+      summary: Latest needs close — streak + last close date (Needs)
+      responses:
+        '200':
+          description: Summary (zeros when no close exists yet)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NeedsSummaryResponse' }
+components:
+  schemas:
+    NeedsRings:
+      type: object
+      required: [energia, hidratacio, pihenes, mozgas, lelek, rend]
+      properties:
+        energia:    { type: integer, minimum: 0, maximum: 100 }
+        hidratacio: { type: integer, minimum: 0, maximum: 100 }
+        pihenes:    { type: integer, minimum: 0, maximum: 100 }
+        mozgas:     { type: integer, minimum: 0, maximum: 100 }
+        lelek:      { type: integer, minimum: 0, maximum: 100 }
+        rend:       { type: integer, minimum: 0, maximum: 100 }
+    NeedsCloseRequest:
+      type: object
+      required: [date, rings]
+      properties:
+        date:  { type: string, format: date }
+        rings: { $ref: '#/components/schemas/NeedsRings' }
+    NeedsCloseResponse:
+      type: object
+      required: [date, xpAwarded, greenCount, allGreen, streakDays]
+      properties:
+        date:       { type: string, format: date }
+        xpAwarded:  { type: integer }
+        greenCount: { type: integer }
+        allGreen:   { type: boolean }
+        streakDays: { type: integer }
+    NeedsSummaryResponse:
+      type: object
+      required: [streakDays]
+      properties:
+        streakDays:    { type: integer }
+        lastCloseDate: { type: string, format: date }
+        lastAllGreen:  { type: boolean }

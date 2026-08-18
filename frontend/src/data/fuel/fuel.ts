@@ -122,10 +122,10 @@ const m1Dimensions: MealDimension[] = [
     score: 0.96,
     color: 'var(--cat-preference)',
     detail:
-      '07:15 reggeli · Pull Day T-10h · Reta D3 reggel az étvágy még magas. Lassú szénhidrát + komplett protein együtt délig stabilan tart — a 11:00-s pacing-alert így csendben marad.',
+      '07:15 reggeli · Pull Day T-10h · reggel az étvágy még magas. Lassú szénhidrát + komplett protein együtt délig stabilan tart — a 11:00-s pacing-alert így csendben marad.',
     context: [
       { label: 'Időzítés', value: 'Pre-Pull Day · T-10h' },
-      { label: 'Reta fázis', value: 'D3 reggel · étvágy ↑' },
+      { label: 'Étvágy', value: 'Reggel magas' },
       { label: 'Sport', value: 'Csü volleyball T-12h' },
       { label: 'Glikémia', value: 'Slow-release' },
     ],
@@ -242,7 +242,7 @@ const m2Dimensions: MealDimension[] = [
       '13:30 · pre-workout T-3.5h — ablakon belül van, de a határán. Sweet spot 2–3h, és a Pull Day PR-attempt-en egy gyorsabb-emésztésű C-snack 16:00 körül így kötelező (whey+banán már be van időzítve).',
     context: [
       { label: 'Időzítés', value: 'Pre-workout · T-3.5h' },
-      { label: 'Reta fázis', value: 'D3 nappal · étvágy magas' },
+      { label: 'Étvágy', value: 'Nappal magas' },
       { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
       { label: 'Glikémia', value: 'Mixed-release' },
     ],
@@ -317,7 +317,7 @@ export const fuelDay: FuelDay = {
         confidence: 0.81,
         tagline: null,
         summary:
-          'Whole-foods ebéd, T-3.5h-val a Pull Day előtt. A makró-arány protein-felé húz — Reta D3-on védő, mert biztosítjuk a 220g/nap protein-target tartását, ha a PM étvágy leesik.',
+          'Whole-foods ebéd, T-3.5h-val a Pull Day előtt. A makró-arány protein-felé húz — védő, mert biztosítjuk a 220g/nap protein-target tartását, ha a PM étvágy leesik.',
         dimensions: m2Dimensions,
         improve: [
           { text: '+30–40g rizs vagy +1 banán → C 41% → 50% pre-workout ablakra.', impact: '+0.04 score' },
@@ -334,7 +334,7 @@ export const fuelDay: FuelDay = {
     },
   ],
   pacing: {
-    msg: '59%-on vagyunk a napi kcal célból, és a tegnapi átlag ebben az időben 53% volt. Reta D3 miatt az étvágy ma még felül van — érdemes a vacsorát egy órával előrébb hozni.',
+    msg: '59%-on vagyunk a napi kcal célból, és a tegnapi átlag ebben az időben 53% volt. Az étvágy ma még felül van — érdemes a vacsorát egy órával előrébb hozni.',
   },
   micronutrients: [
     { name: 'Mg', pct: 64, target: '400mg' },
@@ -468,24 +468,24 @@ export const supplementsStash: SupplementStashItem[] = [
     caffeine: true,
   },
   {
-    id: 'reta',
-    name: 'Retatrutide',
-    brand: 'Eli Lilly · klinikai',
-    type: 'medication',
-    category: 'metabolic',
-    dose: '6mg',
-    form: 'injekció · subQ',
-    stock: 7,
-    stockUnit: 'adag',
-    protocol: 'Hétfő reggel · 7-day kinetic cycle · D1 peak → D7 trough',
-    timing: 'weekly-monday',
-    taken: true,
+    id: 'cink',
+    name: 'Cink-biszglicinát',
+    brand: 'Now Foods',
+    type: 'supplement',
+    category: 'mineral',
+    dose: '15mg',
+    form: 'kapszula',
+    stock: 90,
+    stockUnit: 'db',
+    protocol: 'Este · vacsora után',
+    timing: 'evening',
+    taken: false,
   },
 ]
 
 // --- Fuel · Stack occurrences (living protocol, mezo-vx9v) ---
-// One occurrence per non-medication stash item (reta excluded — the protocol only ever holds
-// supplements/stimulants). Mirrors PlacementRules.RULES (backend/.../feature/fuel/service/
+// One occurrence per placed stash item (cink excluded — not placed in the protocol yet). Mirrors
+// PlacementRules.RULES (backend/.../feature/fuel/service/
 // PlacementRules.java) — the FULL rule-table + timing-hint pass the backend ran once to seed
 // these placements; `mockPlaceOccurrence` below only mirrors the timing-hint stage (the mock's
 // runtime placement path for newly-added items has no name-rule table or LLM).
@@ -557,9 +557,9 @@ export const protocol: Protocol = {
   confidence: 0.86,
   lastReplanReason: null,
   history: [
-    { v: 3, when: 'ma 06:00', reason: 'Reggeli újraszámolás · Reta D3 stack-poll' },
+    { v: 3, when: 'ma 06:00', reason: 'Reggeli újraszámolás · stack-poll' },
     { v: 2, when: 'tegnap 19:30', reason: 'Vb-load alapján vacsora-idő tolva 21:15 → 21:00' },
-    { v: 1, when: 'Máj 19 · 09:00', reason: 'Hét eleji baseline · Reta D1' },
+    { v: 1, when: 'Máj 19 · 09:00', reason: 'Hét eleji baseline' },
   ],
 }
 

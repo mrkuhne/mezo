@@ -5,9 +5,9 @@ import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
-import io.mrkuhne.mezo.support.populator.BriefingPopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
@@ -21,13 +21,14 @@ import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MealSlotTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
-import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
+import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
+import io.mrkuhne.mezo.support.populator.NeedsPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryImportPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
@@ -74,12 +75,14 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
-    DailySummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class, BriefingPopulator.class,
-    WeeklySuggestionPopulator.class, MemoirPopulator.class, HeartbeatNotePopulator.class,
+    DailySummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
+    CompanionMessagePopulator.class,
+    WeeklySuggestionPopulator.class, MemoirPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
-    IntentionPopulator.class, RitualPopulator.class,
-    TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
+    IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class,
+    TrainPopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
+    GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     SleepGoalPopulator.class,
     CheckInPopulator.class,

@@ -13,6 +13,7 @@
 // composition file deliberately runs against the real ones.
 // ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { TodayPage } from '@/features/today/pages/TodayPage'
@@ -35,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   useQuestActions: vi.fn(),
   useToday: vi.fn(),
   useCheckins: vi.fn(),
+  useWaterActions: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const orig = await importOriginal<typeof import('@/data/hooks')>()
@@ -47,6 +49,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useQuestActions: mocks.useQuestActions,
     useToday: mocks.useToday,
     useCheckins: mocks.useCheckins,
+    useWaterActions: mocks.useWaterActions,
   }
 })
 
@@ -80,9 +83,15 @@ const ALL_KINDS: HabitItem[] = KIND_FIXTURES.map((f, i) =>
   habit({ key: f.key, title: f.title, mode: f.mode, position: i + 1 }))
 
 const baseToday = {
-  today, user, briefing: null, briefingDemo: false,
+  today, user,
   workout, workoutTime: today.workoutTime, prediction: workoutPrediction,
   volleyballSessions: [] as VolleyballSession[], volleyballNote,
+  // mezo-v84m / mezo-6kap — the gym hero's done + in-progress state and the sport hero's
+  // done-state, all server truth in real mode (mock persists no instance and logs no session,
+  // so the defaults here are the mock branch's own answers).
+  workoutDone: false, workoutDoneSets: null as number | null,
+  workoutInProgress: false, workoutOpenSets: null as number | null,
+  loggedSportKinds: [] as string[],
 }
 
 function LocationProbe() {
@@ -120,6 +129,7 @@ const rowOf = (title: string) => screen.getByText(title).closest('.td-row') as H
 let check: ReturnType<typeof vi.fn>
 let consumeHabitLevelUps: ReturnType<typeof vi.fn>
 let consumeQuestLevelUps: ReturnType<typeof vi.fn>
+let logWater: ReturnType<typeof vi.fn>
 
 const DEFAULT_CHECKINS: CheckinSlot[] = [{ time: '14:00', state: 'now', values: null, note: null }]
 
@@ -149,6 +159,8 @@ function setup({
     reroll: vi.fn(), pending: false, consumeLevelUps: consumeQuestLevelUps,
   })
   mocks.useToday.mockReturnValue(baseToday)
+  logWater = vi.fn()
+  mocks.useWaterActions.mockReturnValue({ logWater })
 }
 
 beforeEach(() => {
@@ -443,6 +455,88 @@ describe('TodayPage — the day daypart hero', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Saját edzés' }))
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
   })
+
+  // mezo-v84m — the bug this describe block was missing: the gym session was authored with a
+  // hardcoded `logged: false`, so a workout already finished today still read „Indítsuk" on Ma
+  // while the Train tab read „Kész · N szett". The done-state is one flag from `useToday` now.
+  test('a finished workout retires the start CTA for the done footnote', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutDone: true, workoutDoneSets: 18 })
+    const { container } = renderToday('/today?dp=nap')
+    expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+    // The hero itself survives — the day still had a session, it is simply over.
+    expect(container.querySelector('.td-hero-u')?.textContent).toContain('Pull Day')
+  })
+
+  test('an unfinished workout keeps the start CTA', () => {
+    mocks.useToday.mockReturnValue(baseToday)
+    renderToday('/today?dp=nap')
+    expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
+  })
+
+  // mezo-6kap — a half-finished session is not a fresh one: the CTA resumes (and says how far
+  // in), it never invites a restart. Same `/train` target, honest label.
+  test('an open instance turns the CTA into Folytassuk with the logged set count', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutInProgress: true, workoutOpenSets: 6 })
+    renderToday('/today?dp=nap')
+    expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Folytassuk · 6 szett kész' })).toBeInTheDocument()
+  })
+
+  test('an open instance with nothing logged yet reads a bare Folytassuk', () => {
+    mocks.useToday.mockReturnValue({ ...baseToday, workoutInProgress: true, workoutOpenSets: 0 })
+    renderToday('/today?dp=nap')
+    expect(screen.getByRole('button', { name: 'Folytassuk' })).toBeInTheDocument()
+  })
+
+  test('a finished workout beats an open one — done wins over resume', () => {
+    mocks.useToday.mockReturnValue({
+      ...baseToday, workoutDone: true, workoutDoneSets: 18, workoutInProgress: true, workoutOpenSets: 6,
+    })
+    const { container } = renderToday('/today?dp=nap')
+    expect(screen.queryByRole('button', { name: /Folytassuk/ })).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
+  })
+})
+
+// mezo-6kap — the sport hero carried the same hardcoded `logged: false` the gym hero did.
+describe('TodayPage — the sport hero done-state', () => {
+  // 17:00 lands in the nap window (11:45–19:15), and with no gym workout the sport session
+  // is `sessions[0]` — the day daypart's hero.
+  const sportOnly = (over: Record<string, unknown> = {}) => ({
+    ...baseToday,
+    workout: null,
+    workoutTime: null,
+    volleyballSessions: [{
+      day: 'Csü', time: '17:00', duration: 90, court: 'BVSC csarnok',
+      intensity: 'közepes', role: 'ütő', today: true,
+    }] as VolleyballSession[],
+    ...over,
+  })
+
+  // Scoped to the promoted hero button (`.td-cta`): a fuel ROW carries its own „Logold" pill
+  // (`.td-act`), so an unscoped role query matches two buttons and proves nothing about the hero.
+  const heroCta = (container: HTMLElement) => container.querySelector('.td-cta')
+
+  test('an unlogged sport session keeps its Logold CTA', () => {
+    mocks.useToday.mockReturnValue(sportOnly())
+    const { container } = renderToday('/today?dp=nap')
+    expect(heroCta(container)?.textContent).toBe('Logold')
+  })
+
+  test('a logged sport session drops the CTA for the done footnote', () => {
+    // No `sport` discriminator ⇒ `sportOf` resolves volleyball (the Phase-1 default).
+    mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['volleyball'] }))
+    const { container } = renderToday('/today?dp=nap')
+    expect(heroCta(container)).toBeNull()
+    expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész')
+  })
+
+  test('a different logged kind leaves this hero alone — a mixed day flips each independently', () => {
+    mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['trx'] }))
+    const { container } = renderToday('/today?dp=nap')
+    expect(heroCta(container)?.textContent).toBe('Logold')
+  })
 })
 
 /**
@@ -553,5 +647,29 @@ describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', 
 
     expect(screen.getByText('MANUAL lánc')).toBeInTheDocument()
     expect(within(rowOf('MANUAL lánc')).getByRole('button')).toHaveTextContent('✓')
+  })
+})
+
+/**
+ * The Életjel-ring detail sheet + its quick-log CTA (mezo-dhzk Task 4): a ring tap opens
+ * `NeedRingSheet` on `needSheet`, and the sheet's own CTA dispatches through `onNeedCta` —
+ * the SAME sheet states / mutations every other row on this screen already reaches for. Only
+ * the hidratáció ring is covered here (an immediate mutation, no sheet-in-sheet to route
+ * through); the other four CTAs reuse `onAct`'s already-covered branches one-for-one.
+ */
+describe('TodayPage — the Életjel-ring detail sheet and its quick-log CTA (mezo-dhzk)', () => {
+  test('tapping the hidratáció ring opens its detail sheet', () => {
+    renderToday()
+    fireEvent.click(screen.getByRole('button', { name: /Hidratáció/ }))
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Hidratáció')
+  })
+
+  test("the sheet's CTA logs 250 ml and closes the sheet", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderToday()
+    fireEvent.click(screen.getByRole('button', { name: /Hidratáció/ }))
+    await user.click(screen.getByRole('button', { name: '💧 +250 ml — Logolás' }))
+    expect(logWater).toHaveBeenCalledWith(250)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })

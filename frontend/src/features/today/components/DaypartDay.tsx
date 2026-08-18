@@ -63,9 +63,17 @@ export function DaypartDay({
       />
       <TodayStats facts={facts} />
       {hero ? (
-        <button type="button" className="td-cta np-press" onClick={() => hero.onLog?.()}>
-          {hero.ctaLabel ?? 'Indítsuk'}
-        </button>
+        // A finished session keeps its hero (the day still had one) but loses its CTA
+        // (mezo-v84m) — a „Indítsuk" button over an already-logged workout was the one place
+        // Today contradicted the Train tab. `logged` gates BEFORE `ctaLabel`, so no caller can
+        // reintroduce the dead control by authoring a label.
+        hero.logged ? (
+          <div className="td-foot is-done">✓ {hero.loggedSummary ?? 'Kész'}</div>
+        ) : (
+          <button type="button" className="td-cta np-press" onClick={() => hero.onLog?.()}>
+            {hero.ctaLabel ?? 'Indítsuk'}
+          </button>
+        )
       ) : (
         <button type="button" className="td-cta np-press" onClick={onCustom}>
           Saját edzés

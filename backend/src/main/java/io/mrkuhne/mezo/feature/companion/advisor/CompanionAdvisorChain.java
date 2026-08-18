@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.advisor;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -38,17 +39,17 @@ public class CompanionAdvisorChain {
     private final LlmCallContextHolder llmCallContextHolder;
 
     /** Sync path: first attempt + review in one call. */
-    public AdvisedAnswer complete(String systemPrompt, String userMessage,
+    public AdvisedAnswer complete(String systemPrompt, List<Turn> history, String userMessage,
             List<ToolCallback> tools, Map<String, Object> toolContext, ToolCallAudit audit) {
-        String answer = companionLlm.complete(systemPrompt, userMessage, tools, toolContext);
-        return review(systemPrompt, userMessage, answer, tools, toolContext, audit);
+        String answer = companionLlm.complete(systemPrompt, history, userMessage, tools, toolContext);
+        return review(systemPrompt, history, userMessage, answer, tools, toolContext, audit);
     }
 
     /** Streamed path: attempt-1 already delivered as deltas — review it, retry non-streamed if needed. */
-    public AdvisedAnswer review(String systemPrompt, String userMessage, String answer,
-            List<ToolCallback> tools, Map<String, Object> toolContext, ToolCallAudit audit) {
+    public AdvisedAnswer review(String systemPrompt, List<Turn> history, String userMessage,
+            String answer, List<ToolCallback> tools, Map<String, Object> toolContext, ToolCallAudit audit) {
         long startedAt = System.currentTimeMillis();
-        List<AdvisorViolation> violations = runChecks(systemPrompt, userMessage, answer, audit);
+        List<AdvisorViolation> violations = runChecks(systemPrompt, history, userMessage, answer, audit);
         int retries = 0;
         while (!violations.isEmpty() && retries < properties.advisors().maxRetries()) {
             retries++;
@@ -57,8 +58,9 @@ public class CompanionAdvisorChain {
             String retryPrompt = systemPrompt + AdvisorRetry.block(violations);
             answer = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_advisor", "retry", null, null),
-                    () -> companionLlm.complete(retryPrompt, userMessage, tools, toolContext));
-            violations = runChecks(systemPrompt, userMessage, answer, audit);
+                    // a korrekciós kör ugyanazt a beszélgetést látja, mint az eredeti
+                    () -> companionLlm.complete(retryPrompt, history, userMessage, tools, toolContext));
+            violations = runChecks(systemPrompt, history, userMessage, answer, audit);
         }
         boolean degraded = !violations.isEmpty();
         if (degraded) {
@@ -71,11 +73,11 @@ public class CompanionAdvisorChain {
 
     /** Clinical first; a clinical hit skips the verdict LLM call this round (the retry re-checks all). */
     private List<AdvisorViolation> runChecks(
-            String systemPrompt, String userMessage, String answer, ToolCallAudit audit) {
+            String systemPrompt, List<Turn> history, String userMessage, String answer, ToolCallAudit audit) {
         Optional<AdvisorViolation> clinical = clinicalOutputCheck.check(answer);
         if (clinical.isPresent()) {
             return List.of(clinical.get());
         }
-        return turnVerdictCheck.check(systemPrompt, userMessage, answer, audit.callNames());
+        return turnVerdictCheck.check(systemPrompt, history, userMessage, answer, audit.callNames());
     }
 }

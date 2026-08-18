@@ -66,6 +66,9 @@ export function useWeight() {
         // re-evaluated only on the next read — nudge both so the ✓ appears without a remount.
         qc.invalidateQueries({ queryKey: ['habitDay'] })
         qc.invalidateQueries({ queryKey: ['dailyQuests', entry.date] })
+        // A weigh-in fires the companion feed's weight_reaction kind (mezo-gst9) — nudge the
+        // thread so the reaction lands without a manual reload.
+        qc.invalidateQueries({ queryKey: ['companionFeed'] })
       }
     },
   })

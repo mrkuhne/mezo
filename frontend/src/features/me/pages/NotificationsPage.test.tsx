@@ -180,13 +180,13 @@ describe('NotificationsPage', () => {
   })
 
   // ── N2/N3: settings category list + preview header (mezo-h4wp.6.2/.3) ──────────────────────
-  it('renders all 11 categories grouped into the two mockup sections, plus the master toggle', async () => {
+  it('renders all 14 categories grouped into the two mockup sections, plus the master toggle', async () => {
     hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
     renderPage()
     expect(await screen.findByText('Mezo megszólal')).toBeInTheDocument()
     expect(screen.getByText('Emlékeztetők')).toBeInTheDocument()
-    // 1 master toggle + 11 category rows (4 prose + 7 reminder).
-    await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(12))
+    // 1 master toggle + 14 category rows (7 prose + 7 reminder).
+    await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(15))
   })
 
   it('toggling a category row calls setPref, flipping just that row', async () => {

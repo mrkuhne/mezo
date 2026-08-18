@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.feature.progression.quest.QuestSignal;
 import io.mrkuhne.mezo.feature.progression.entity.SkillProgressEntity;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.progression.habit.HabitSignal;
+import io.mrkuhne.mezo.feature.progression.needs.NeedsSignal;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
@@ -55,6 +56,7 @@ public class ProgressionService {
     private static final String SOURCE_QUEST = "QUEST";
     private static final String SOURCE_ACTIVITY = "ACTIVITY";
     public static final String SOURCE_HABIT = "HABIT";
+    private static final String SOURCE_NEEDS = "NEEDS";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -197,6 +199,19 @@ public class ProgressionService {
             kinds.put(signal.skillKey(), "LIFE");
         }
         return award(createdBy, SOURCE_HABIT, signal.habitDayId(), deltas, kinds,
+            signal.label(), null, null, signal.occurredOn());
+    }
+
+    /** Needs day-close bonus → LIFE XP on the recovery skill through the shared idempotent tail (source NEEDS). */
+    @Transactional
+    public LevelUpResult applyNeeds(UUID createdBy, NeedsSignal signal) {
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+        if (signal.xp() > 0) {
+            deltas.put("recovery", (long) signal.xp());
+            kinds.put("recovery", "LIFE");
+        }
+        return award(createdBy, SOURCE_NEEDS, signal.needsDayId(), deltas, kinds,
             signal.label(), null, null, signal.occurredOn());
     }
 

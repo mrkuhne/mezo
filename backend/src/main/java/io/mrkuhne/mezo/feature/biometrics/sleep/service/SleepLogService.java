@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ public class SleepLogService {
 
     private final SleepLogRepository repository;
     private final SleepLogMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<SleepLogResponse> list(UUID createdBy) {
         return repository.findAllOwned(createdBy).stream().map(mapper::toResponse).toList();
@@ -45,6 +47,9 @@ public class SleepLogService {
         if (req.getSource() != null) {
             e.setSource(req.getSource()); // entity default stays "manual" when omitted
         }
-        return mapper.toResponse(repository.save(e));
+        SleepLogResponse resp = mapper.toResponse(repository.save(e));
+        // AFTER_COMMIT listener (CompanionMessageEventListener) reacts once this row is durable.
+        eventPublisher.publishEvent(new SleepLogSavedEvent(createdBy, req.getDate()));
+        return resp;
     }
 }

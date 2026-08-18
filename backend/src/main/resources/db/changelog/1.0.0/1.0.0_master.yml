@@ -615,3 +615,73 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608141120_mezo-tk88.2_challenge_source_pattern.sql
+  - changeSet:
+      id: "1.0.0:202608151200_mezo-lwmq_rename_medication_pattern_keys"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151200_mezo-lwmq_rename_medication_pattern_keys.sql
+  - changeSet:
+      id: "1.0.0:202608151210_mezo-lwmq_delete_medication_rows"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151210_mezo-lwmq_delete_medication_rows.sql
+  - changeSet:
+      id: "1.0.0:202608161200_mezo-q71s_llm_log_conversation_history"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161200_mezo-q71s_llm_log_conversation_history.sql
+  - changeSet:
+      id: "1.0.0:202608151200_mezo-gst9_create_companion_message"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151200_mezo-gst9_create_companion_message.sql
+  - changeSet:
+      id: "1.0.0:202608151230_mezo-gst9_drop_briefing_heartbeat_note"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
+  - changeSet:
+      id: "1.0.0:202608161200_mezo-meyc.1_create_meso_template"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161200_mezo-meyc.1_create_meso_template.sql
+  - changeSet:
+      id: "1.0.0:202608161210_mezo-meyc.1_mesocycle_template_link"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161210_mezo-meyc.1_mesocycle_template_link.sql
+  - changeSet:
+      id: "1.0.0:202608161600_mezo-meyc.2_create_mesocycle_report"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608161600_mezo-meyc.2_create_mesocycle_report.sql
+  - changeSet:
+      id: "1.0.0:202608171200_mezo-dhzk_create_needs_day"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608171200_mezo-dhzk_create_needs_day.sql
+  - changeSet:
+      id: "1.0.0:202608180300_mezo-dhzk_needs_source_type"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608180300_mezo-dhzk_needs_source_type.sql

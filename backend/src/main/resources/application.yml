@@ -16,6 +16,17 @@ spring:
       # SSE chat turns (companion V0.4): Gemini streams can exceed the container's ~30s
       # async default; only the streaming endpoint is async, everything else is unaffected.
       request-timeout: 120s
+  task:
+    scheduling:
+      pool:
+        # Every @Scheduled method shares this pool. At the Boot default of 1, a generation cron
+        # (companion-feed / memoir / weekly — minutes of LLM calls, per user) BLOCKS the
+        # per-minute NotificationDispatchJob tick, and a tick that arrives more than
+        # mezo.notification.catch-up-minutes late drops that minute's pushes for good. 4 keeps
+        # the dispatcher prompt while the clustered dawn crons run. Spring never re-enters a
+        # single @Scheduled method concurrently, so only DIFFERENT (already per-user idempotent)
+        # jobs overlap.
+        size: 4
   datasource:
     url: jdbc:postgresql://localhost:${DB_PORT:15432}/mezo
     username: ${DB_USER:mezo}
@@ -149,6 +160,12 @@ mezo:
     # template gym day of the active meso on GET /workouts/today (idempotent; mezo.closing-block).
     closing-block:
       enabled: true
+    # Meso end-of-run AI evaluation (mezo-meyc.3) — gates the MesoReviewGate marker bean that
+    # MesocycleReportService.getReport reads for aiEvalEnabled; off -> the FE hides the AI section
+    # instead of polling a pending that never resolves. The real generator (companion, S3 task 15)
+    # additionally needs the companion switch (CompanionLlm port).
+    meso-review:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
@@ -177,7 +194,7 @@ mezo:
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
     companion:
       enabled: true
-    # Proactive layer (mezo-h4wp) — generated briefing (B1.1+). Presupposes the companion
+    # Proactive layer (mezo-h4wp) — companion-feed generation (mezo-gst9). Presupposes the companion
     # switch: proactive beans condition on BOTH (they call the CompanionLlm port).
     proactive:
       enabled: true
@@ -236,6 +253,9 @@ mezo:
     # rollout lands; off ⇒ the no-op recorder is injected, so nothing is ever published or written.
     llm-log:
       enabled: false
+    # Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist.
+    needs:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -250,9 +270,9 @@ mezo:
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
         enabled: true
-      # B1.2 dawn briefing pre-generation (schedule: mezo.proactive.briefing.cron);
-      # off = the BriefingJob bean does not exist
-      briefing-job:
+      # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
+      # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
+      feed-job:
         enabled: true
       # W1 Monday weekly-suggestion pre-generation (schedule: mezo.proactive.weekly.cron);
       # off = the WeeklySuggestionJob bean does not exist
@@ -261,10 +281,6 @@ mezo:
       # W2 Sunday memoir generation (schedule: mezo.proactive.memoir.cron);
       # off = the MemoirJob bean does not exist
       memoir-job:
-        enabled: true
-      # H1 heartbeat window crons (schedules: mezo.proactive.heartbeat.*);
-      # off = the HeartbeatJob bean does not exist (the lazy GET still serves)
-      heartbeat-job:
         enabled: true
       # P1 weekly generation + daily validation (schedules: mezo.proactive.prediction.*);
       # off = the PredictionJob bean does not exist (the lazy GET still serves)
@@ -440,16 +456,16 @@ mezo:
           metric-a: late-meal-hour
           metric-b: sleep-quality
           lag-days: 1
-        - key: reta-cycle-day~daily-kcal
+        - key: medication-cycle-day~daily-kcal
           category: physiology
           label: Fiziológia
-          title: "Reta-ciklusnap ↔ napi kalória"
+          title: "Gyógyszer-ciklusnap ↔ napi kalória"
           mechanism: "A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt."
           question: "A ciklus vége felé nő az étvágyad?"
           expected-direction: positive
           when-positive-hu: "a ciklus későbbi napjain {erősség} többet ettél"
           when-negative-hu: "a ciklus későbbi napjain {erősség} kevesebbet ettél"
-          metric-a: reta-cycle-day
+          metric-a: medication-cycle-day
           metric-b: daily-kcal
           lag-days: 0
         - key: sport-load~next-day-gym-volume
@@ -645,16 +661,16 @@ mezo:
           metric-a: meal-score
           metric-b: checkin-energy
           lag-days: 1
-        - key: reta-dose~daily-kcal
+        - key: medication-dose~daily-kcal
           category: physiology
           label: Fiziológia
-          title: "Reta-dózis ↔ napi kalória"
+          title: "Gyógyszer-dózis ↔ napi kalória"
           mechanism: "Az étvágy-elnyomás dózisfüggő lehet — magasabb dózis, kevesebb kalória."
-          question: "Kevesebbet eszel magasabb Reta-dózison?"
+          question: "Kevesebbet eszel magasabb dózison?"
           expected-direction: negative
           when-positive-hu: "a magasabb dózisú napokon {erősség} többet ettél"
           when-negative-hu: "a magasabb dózisú napokon {erősség} kevesebbet ettél"
-          metric-a: reta-dose-mg
+          metric-a: medication-dose-mg
           metric-b: daily-kcal
           lag-days: 0
         - key: sport-load~next-sleep-quality
@@ -783,25 +799,12 @@ mezo:
         - audio/mpeg
         - audio/aac
   proactive:
-    briefing:
-      # How many finished days of narrative memory (daily_summary) the briefing gather reads;
-      # doubles as the emptiness gate: zero summaries in the window -> no briefing (honest 404)
-      past-days: 7
-      # Dawn pre-generation schedule (server zone) — before the typical wake (B1.2)
-      cron: "0 45 5 * * *"
-      # Max staleness regenerations per user+day (a late sleep-log triggers at most this many)
-      regen-cap-per-day: 2
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
       cron: "0 0 6 * * MON"
     memoir:
       # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
       cron: "0 0 19 * * SUN"
-    heartbeat:
-      # H1 window crons (server zone) — the lazy GET derives window fire-times from these
-      # SAME expressions (CronExpression), so the schedule lives in exactly one place
-      midday-cron: "0 30 12 * * *"
-      evening-cron: "0 30 20 * * *"
     prediction:
       # P1 Monday-morning generation (after the weekly suggestion) + daily window-close validation
       cron: "0 30 6 * * MON"
@@ -821,6 +824,15 @@ mezo:
       # Daily outcome backstop (after the experiment outcome run)
       outcome-cron: "0 25 6 * * *"
       max-per-workout: 3
+    feed:
+      # Companion-feed (mezo-gst9) cron kinds — the lazy GET derives midday/evening fire-times
+      # from these SAME expressions (CronExpression)
+      morning-cron: "0 45 5 * * *"
+      midday-cron: "0 30 12 * * *"
+      evening-cron: "0 30 20 * * *"
+      # How many finished days of narrative memory (daily_summary) the feed gather reads;
+      # doubles as the emptiness gate: zero summaries in the window -> no message
+      past-days: 7
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
@@ -994,6 +1006,11 @@ mezo:
   ritual:
     lead-min: 75        # the window opens bed − 75'
     prep-lead-min: 45   # sleep-prep display anchor: bed − 45'
+  # Binds feature/needs/config/NeedsProperties — Életjel day-close award rule (mezo-dhzk)
+  needs:
+    green-threshold: 60
+    per-ring-xp: 5
+    all-green-bonus-xp: 30
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
   # The dummy default keeps the context bootable with the notification feature switched off.
@@ -1014,7 +1031,7 @@ mezo:
     # Medication has no per-day time column (MedicationCycleService only derives which cycle
     # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
     medication-time: "08:00"
-    # How much of an already-generated prose row (briefing/heartbeat/weekly/memoir) AnchorResolver
+    # How much of an already-generated prose row (companion_message/weekly/memoir) AnchorResolver
     # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
     prose-excerpt-chars: 160
     # N2 per-minute dispatch job (NotificationDispatchJob) schedule — every minute, on the minute.
@@ -1026,11 +1043,11 @@ mezo:
     catch-up-minutes: 2
     # Grace (minutes) applied to a prose category's anchor when it would otherwise land AT or
     # BEFORE the minute its own content generator cron runs: memoir (mezo.proactive.memoir.cron,
-    # 19:00), midday (proactive.heartbeat.midday-cron, 12:30) and weekly whenever the user's wake
+    # 19:00), midday (proactive.feed.midday-cron, 12:30) and weekly whenever the user's wake
     # time is <= proactive.weekly.cron (06:00). Both jobs queue on the SAME size-1 scheduler thread
     # and each generator makes an LLM call, so at the anchor minute the row provably does not exist
     # yet and the (default-ON) category would never fire at all. AnchorResolver reads the generator
-    # crons themselves via CronExpression — those minutes are NOT duplicated here. briefing needs
+    # crons themselves via CronExpression — those minutes are NOT duplicated here. morning needs
     # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
     prose-generation-grace-min: 15
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the

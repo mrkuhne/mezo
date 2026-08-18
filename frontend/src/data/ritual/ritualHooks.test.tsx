@@ -8,6 +8,8 @@ import type { HabitDay } from '@/data/habit/habitApi'
 import { useHabitDay } from '@/data/habit/habitHooks'
 import { API_BASE } from '@/data/_client/api'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
+import { NEEDS_SUMMARY_KEY } from '@/data/needs/needsHooks'
+import type { NeedsRingsWire } from '@/data/needs/needsApi'
 import type { RitualDay } from '@/data/types'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -69,6 +71,31 @@ describe('useRitualDay (mock mode)', () => {
     expect(awardMock).toHaveBeenCalledTimes(1)
   })
 
+  test('close(rings) applies the needs award ON TOP OF the ritual award', async () => {
+    const wrapper = seededWrapper(dayWith(false))
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper })
+
+    const rings: NeedsRingsWire = { energia: 80, hidratacio: 75, pihenes: 90, mozgas: 60, lelek: 100, rend: 65 }
+    await act(() => actions.result.current.close(rings))
+
+    expect(awardMock).toHaveBeenCalledWith(expect.anything(), { type: 'HABIT', xpOverride: 10 })
+    expect(awardMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ type: 'NEEDS_CLOSE', date: DATE, xpOverride: 60 }),
+    )
+  })
+
+  test('close() with no rings still closes the day (no needs award attempted)', async () => {
+    const wrapper = seededWrapper(dayWith(false))
+    const day = renderHook(() => useRitualDay(DATE), { wrapper })
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper })
+
+    await act(() => actions.result.current.close())
+    await waitFor(() => expect(day.result.current.data.closed).toBe(true))
+    expect(awardMock).toHaveBeenCalledTimes(1) // the HABIT award only — no NEEDS_CLOSE call
+    expect(awardMock).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ type: 'NEEDS_CLOSE' }))
+  })
+
   test('close completes the DERIVED evening_ritual habit row in the habitDay cache', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     client.setQueryData(['ritualDay', DATE], dayWith(false))
@@ -107,7 +134,7 @@ describe('useRitualDay (real mode)', () => {
     expect(result.current.data.closed).toBe(false)
   })
 
-  test('close POSTs and invalidates all 6 ritual-adjacent keys', async () => {
+  test('close POSTs and invalidates all 6 ritual-adjacent keys, plus needsSummary', async () => {
     server.use(http.post(`${API_BASE}/api/ritual/close`, () =>
       HttpResponse.json({
         date: DATE,
@@ -133,9 +160,44 @@ describe('useRitualDay (real mode)', () => {
       ['gamificationDay', DATE],
       ['gamification'],
       ['progressionProfile'],
+      [...NEEDS_SUMMARY_KEY],
     ]) {
       expect(invalidatedKeys).toContainEqual(key)
     }
+  })
+
+  test('close(rings) POSTs the needs day-close too', async () => {
+    server.use(http.post(`${API_BASE}/api/ritual/close`, () =>
+      HttpResponse.json({
+        date: DATE, closed: true, closedAt: '2026-07-25T20:24:00Z',
+        window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+      })))
+    let needsCloseBody: unknown = null
+    server.use(http.post(`${API_BASE}/api/needs/day-close`, async ({ request }) => {
+      needsCloseBody = await request.json()
+      return HttpResponse.json({ date: DATE, xpAwarded: 60, greenCount: 6, allGreen: true, streakDays: 1 })
+    }))
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper: makeHookWrapper() })
+
+    const rings: NeedsRingsWire = { energia: 80, hidratacio: 75, pihenes: 90, mozgas: 60, lelek: 100, rend: 65 }
+    const result = await act(() => actions.result.current.close(rings))
+
+    expect(result.closed).toBe(true)
+    expect(needsCloseBody).toEqual({ date: DATE, rings })
+  })
+
+  test('close(rings) still closes the ritual even when the needs day-close call fails', async () => {
+    server.use(http.post(`${API_BASE}/api/ritual/close`, () =>
+      HttpResponse.json({
+        date: DATE, closed: true, closedAt: '2026-07-25T20:24:00Z',
+        window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+      })))
+    server.use(http.post(`${API_BASE}/api/needs/day-close`, () => HttpResponse.json([], { status: 500 })))
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper: makeHookWrapper() })
+
+    const rings: NeedsRingsWire = { energia: 80, hidratacio: 75, pihenes: 90, mozgas: 60, lelek: 100, rend: 65 }
+    const result = await act(() => actions.result.current.close(rings))
+    expect(result.closed).toBe(true) // the ritual close is unaffected by the needs-award failure
   })
 
   // mezo-ywz1: the derived evening_ritual completion (+10 XP + level_up_event) is persisted

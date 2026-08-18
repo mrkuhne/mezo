@@ -2,7 +2,7 @@
 // Mezo · LogDoseSheet (the dose-capture sheet — mezo-d94)
 // Tapping "＋ Beadás" in FuelMedicationPage opens this. You log only the ACTUAL
 // injection; the cycle day + phase are DERIVED from the newest dose (the mock
-// hook / backend recompute retaDay = days-since-newest + 1, so a dose dated today
+// hook / backend recompute cycleDay = days-since-newest + 1, so a dose dated today
 // re-anchors the cycle to day 1). Mirrors the AddPantryItemSheet shell (shared
 // <Sheet> portal + chamfer Field cards). Fields: Dátum (default today) · Időpont
 // (optional) · Dózis (prefilled from the last dose) · Jegyzet (optional) → on save

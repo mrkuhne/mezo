@@ -48,7 +48,8 @@ describe('PatternsPage (mock mode)', () => {
     renderPage()
     fireEvent.click(screen.getByText('Adat-egészség'))
     const labels = screen.getAllByTestId('coverage-label').map((el) => el.textContent)
-    expect(labels[0]).toBe('sportterhelés') // 0 covered days — thinnest
+    // thinnest first, tied at 0/60: Gyógyszer-ciklusnap (comes first in the seed array) then sportterhelés
+    expect(labels[0]).toBe('Gyógyszer-ciklusnap')
     expect(labels).toHaveLength(12)
   })
 
@@ -83,9 +84,9 @@ describe('PatternsPage (mock mode)', () => {
 
   test('a confirmed lifecycle row with no monitor pair renders as a plain row, no dead detail link (review fix, mezo-tk88.5)', () => {
     renderPage()
-    // p1 (status: confirmed, pairKey "reta-dose~daily-kcal") has no matching monitor pair either —
-    // the confirmed bucket's mini-row falls back to the pattern's own title and must not link out.
-    const title = screen.getByText('Reta beadás + 36h ablakban étvágy lefulladás')
+    // p1 (status: confirmed, pairKey "sport-load~next-sleep-quality") has no matching monitor pair
+    // either — the confirmed bucket's mini-row falls back to the pattern's own title and must not link out.
+    const title = screen.getByText('Magas sportterhelés → rákövetkező éjjel mélyebb alvás')
     expect(title.closest('a')).toBeNull()
   })
 

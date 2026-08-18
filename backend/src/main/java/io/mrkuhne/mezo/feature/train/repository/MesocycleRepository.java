@@ -20,4 +20,7 @@ public interface MesocycleRepository extends JpaRepository<MesocycleEntity, UUID
 
     /** All owned mesocycles in one status — the activate flow archives the previous active ones. */
     List<MesocycleEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);
+
+    /** How many runs were started from a template — the template library's {@code runCount}. */
+    long countByTemplateIdAndCreatedByAndDeletedFalse(UUID templateId, UUID createdBy);
 }

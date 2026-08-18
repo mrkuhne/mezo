@@ -17,8 +17,11 @@ public final class AdvisorRetry {
             block.append("- ").append(violation.check()).append(": ").append(violation.reason()).append('\n');
         }
         return block.append("""
-                Szabályok: ne kérdezz rá már megerősített tényre; csak a kontextus, az eszközhívások \
-                vagy Daniel üzenete által alátámasztott adatot állíts; Rx gyógyszer adagolásának \
-                módosítását soha ne javasold.""").toString();
+                Szabályok: ne kérdezz rá már megerősített tényre; konkrét adatot csak a kontextusból, \
+                az eszközhívásokból vagy Daniel üzenetéből állíts — jelöletlen, magabiztos állítás \
+                kitalált adatról nem megy (jelölt sejtés viszont igen); Rx gyógyszer adagolásának \
+                módosítását soha ne javasold.
+                A hangnem NE változzon — ugyanaz az élő, beszélgetős stílus; a javítás kizárólag a \
+                fent megjelölt problémára vonatkozzon.""").toString();
     }
 }

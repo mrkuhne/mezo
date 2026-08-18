@@ -106,8 +106,8 @@ public class MetricSeriesService {
             case DAILY_KCAL -> fuelRollup(userId, from, to, MacroSet::getKcal);
             case DAILY_PROTEIN_G -> fuelRollup(userId, from, to, MacroSet::getP);
             case MEAL_SCORE -> mealScore(userId, from, to);
-            case RETA_DOSE_MG -> retaDose(userId, from, to);
-            case RETA_CYCLE_DAY -> retaCycleDay(userId, from, to);
+            case MEDICATION_DOSE_MG -> medicationDose(userId, from, to);
+            case MEDICATION_CYCLE_DAY -> medicationCycleDay(userId, from, to);
             case DAILY_WATER_ML -> dailyWater(userId, from, to);
             case WEIGHT_DELTA_KG -> weightDelta(userId, from, to);
             case CHECKIN_STRESS -> checkIn(userId, from, to, CheckInEntity::getStress);
@@ -277,7 +277,7 @@ public class MetricSeriesService {
      * Aktuális dózis-szint naponta: az adott napon-vagy-előtte utolsó beadott dózis (a ciklusnap-
      * deriválás horgony-mintája). Az első beadás előtti napokra nincs adat — honest absence.
      */
-    private Map<LocalDate, Double> retaDose(UUID userId, LocalDate from, LocalDate to) {
+    private Map<LocalDate, Double> medicationDose(UUID userId, LocalDate from, LocalDate to) {
         MedicationEntity med = medicationRepository
                 .findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
         if (med == null) {
@@ -298,8 +298,8 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** The derived Reta cycle day per date (honest-zero days skipped — no dose anchor yet). */
-    private Map<LocalDate, Double> retaCycleDay(UUID userId, LocalDate from, LocalDate to) {
+    /** The derived medication cycle day per date (honest-zero days skipped — no dose anchor yet). */
+    private Map<LocalDate, Double> medicationCycleDay(UUID userId, LocalDate from, LocalDate to) {
         MedicationEntity med = medicationRepository
                 .findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
         if (med == null) {
@@ -307,9 +307,9 @@ public class MetricSeriesService {
         }
         Map<LocalDate, Double> series = new HashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-            int retaDay = medicationCycleService.derive(userId, med, day).retaDay();
-            if (retaDay > 0) {
-                series.put(day, (double) retaDay);
+            int cycleDay = medicationCycleService.derive(userId, med, day).cycleDay();
+            if (cycleDay > 0) {
+                series.put(day, (double) cycleDay);
             }
         }
         return series;

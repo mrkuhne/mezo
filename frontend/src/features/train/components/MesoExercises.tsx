@@ -15,13 +15,8 @@ import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { seedDays } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
-
-// Deep-ish clone of the meso days so local edits never mutate the data-layer
-// module const (each day + its exercises array gets its own copy).
-function seedDays(days: MesoDay[]): MesoDay[] {
-  return days.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) }))
-}
 
 export function MesoExercises({ meso }: { meso: Mesocycle }) {
   const { saveDayExercises } = useTrain()

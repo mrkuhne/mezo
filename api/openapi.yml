@@ -48,7 +48,7 @@ tags:
   - name: Medication
     description: >-
       Medication (Gyógyszer) — owned medication definition + a dose event-log;
-      the 7-day cycle (retaDay + phase) is derived from the logged doses. GET
+      the 7-day cycle (cycleDay + phase) is derived from the logged doses. GET
       /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
   - name: Progression
   - name: Fuel
@@ -104,6 +104,8 @@ tags:
     description: >-
       Read-only rollups of the llm_log_history audit table (mezo-2zyu) — LLM
       call count + cost per calendar period
+  - name: Needs
+    description: 'Életjel-ringek — day-close snapshot, bonus XP, "Életben tartva" streak'
 paths:
   /api/auth/login:
     post:
@@ -339,36 +341,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-    post:
-      tags:
-        - Train
-      operationId: createMesocycle
-      summary: Create a mesocycle (wizard) with nested template days and exercises
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MesocycleCreateRequest'
-      responses:
-        '201':
-          description: Created mesocycle
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MesocycleResponse'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '401':
-          description: Missing/invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/activate':
     post:
       tags:
@@ -406,7 +378,9 @@ paths:
       tags:
         - Train
       operationId: closeMesocycle
-      summary: Close (archive) a mesocycle (idempotent)
+      summary: >-
+        Close (archive) a mesocycle (idempotent); optional self-eval note is
+        captured on close
       parameters:
         - name: id
           in: path
@@ -414,6 +388,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleCloseRequest'
       responses:
         '200':
           description: Archived mesocycle
@@ -429,6 +409,74 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/report':
+    get:
+      tags:
+        - Train
+      operationId: getMesocycleReport
+      summary: >-
+        The generated end-of-mesocycle report — adherence, volume arc, strength
+        deltas, records and optional AI narrative
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The mesocycle report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleReportResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No report exists yet, or the mesocycle is not found/not owned'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/report/regenerate':
+    post:
+      tags:
+        - Train
+      operationId: regenerateMesocycleReport
+      summary: Recompute the report for an archived mesocycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Regeneration accepted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The mesocycle run is not archived
           content:
             application/json:
               schema:
@@ -517,6 +565,206 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle/day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/rerun':
+    post:
+      tags:
+        - Train
+      operationId: rerunMesocycle
+      summary: Start a new run from a closed mesocycle's originating template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 'The originating template id, for starting a fresh run'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoRerunResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-templates:
+    get:
+      tags:
+        - Train
+      operationId: listMesoTemplates
+      summary: >-
+        All mesocycle templates of the current user, with run counts, created
+        date ascending
+      responses:
+        '200':
+          description: Meso templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MesoTemplateResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Train
+      operationId: createMesoTemplate
+      summary: Create a mesocycle template (wizard) with nested days and exercises
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+      responses:
+        '200':
+          description: Created template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoTemplateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/meso-templates/{id}':
+    put:
+      tags:
+        - Train
+      operationId: updateMesoTemplate
+      summary: 'Update a mesocycle template''s fields, days and exercises (full replace)'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+      responses:
+        '200':
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoTemplateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Train
+      operationId: deleteMesoTemplate
+      summary: Soft-delete a mesocycle template (past runs survive)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/meso-templates/{id}/start':
+    post:
+      tags:
+        - Train
+      operationId: startMesoTemplate
+      summary: Start a mesocycle run from a template on the given date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoTemplateStartRequest'
+      responses:
+        '200':
+          description: The started mesocycle run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template not found or not owned
           content:
             application/json:
               schema:
@@ -4483,41 +4731,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  /api/proactive/briefing:
+  /api/proactive/feed:
     get:
       tags:
         - Proactive
-      operationId: getBriefing
+      operationId: getFeed
       summary: >-
-        The generated morning briefing for one day (lazily generated when the
-        dawn cron has not produced it yet)
+        The unified companion-message feed for one day (companion-feed) —
+        morning/sleep/weight/midday/evening
+      description: >-
+        Returns the day's persisted companion-feed messages in generation order.
+        For TODAY the cron-kind miss-recovery lazily generates: morning always
+        (its cron is dawn — by any read it has elapsed); midday/evening once
+        their fire-time (derived from the SAME cron the job runs on) has passed.
+        Event-triggered kinds (sleep/weight) are born from their events, never
+        from this miss-recovery. Past dates never generate. An empty array is
+        the honest empty state (never a 404 — this is a list endpoint, the P1
+        precedent).
       parameters:
         - name: date
           in: query
           required: false
           description: >-
-            The briefed day — the FE sends its LOCAL date (the check-in read
-            precedent); defaults to the server's today.
+            The fed day — the FE sends its LOCAL date (the briefing precedent);
+            defaults to the server's today.
           schema:
             type: string
             format: date
       responses:
         '200':
-          description: The persisted (or just-generated) briefing
+          description: >-
+            The day's companion-feed messages (possibly empty), in generation
+            order
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BriefingResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedMessageResponse'
         '401':
           description: Missing or invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: >-
-            No briefing possible — no narrative memory (daily_summary) in the
-            configured past-days window. The FE renders its honest state (B1.2).
           content:
             application/json:
               schema:
@@ -4587,49 +4840,6 @@ paths:
           description: >-
             No memoir possible — no narrative memory in the last completed week.
             The FE renders its honest "készül" state.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-  /api/proactive/heartbeat:
-    get:
-      tags:
-        - Proactive
-      operationId: getHeartbeat
-      summary: 'The day''s latest heartbeat note (napközbeni jelenlét, H1)'
-      description: >-
-        Returns the latest persisted heartbeat note for the given day (evening
-        closing beats midday nudge by generation time). For TODAY the latest
-        already-elapsed window lazy-generates when missing (the miss-recovery);
-        past dates never generate. 404 = honest absence (no elapsed window yet,
-        no narrative memory, or generation failed).
-      parameters:
-        - name: date
-          in: query
-          required: false
-          description: >-
-            The noted day — the FE sends its LOCAL date (the briefing
-            precedent); defaults to the server's today.
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: The day's latest heartbeat note
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HeartbeatNoteResponse'
-        '401':
-          description: Missing or invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: >-
-            No note for the day (honest absence). The Today card simply stays
-            absent.
           content:
             application/json:
               schema:
@@ -5963,7 +6173,7 @@ paths:
       responses:
         '200':
           description: >-
-            All 11 categories, always complete — a category with no stored row
+            All 14 categories, always complete — a category with no stored row
             reports its code default
           content:
             application/json:
@@ -6162,6 +6372,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/needs/day-close:
+    post:
+      tags:
+        - Needs
+      operationId: closeNeedsDay
+      summary: >-
+        Store the day's ring snapshot, award bonus XP, advance the streak
+        (Needs). Idempotent per date — repeat calls return the stored result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NeedsCloseRequest'
+      responses:
+        '200':
+          description: 'Stored (idempotent — 200 on repeat, no double award)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NeedsCloseResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Not today (NEEDS_NOT_TODAY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/needs/summary:
+    get:
+      tags:
+        - Needs
+      operationId: getNeedsSummary
+      summary: Latest needs close — streak + last close date (Needs)
+      responses:
+        '200':
+          description: Summary (zeros when no close exists yet)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NeedsSummaryResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -6542,10 +6798,18 @@ components:
         - split
         - style
         - phaseCurve
+        - hasReport
       properties:
         id:
           type: string
           format: uuid
+        templateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The originating template this run was started from (null for
+            legacy/direct runs)
         title:
           type: string
         shortTitle:
@@ -6564,6 +6828,15 @@ components:
         endDate:
           type: string
           format: date
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When this run was closed (archived); null while active/planned
+        hasReport:
+          type: boolean
+          default: false
+          description: True once an end-of-mesocycle report has been generated for this run
         weeks:
           type: integer
         currentWeek:
@@ -6596,6 +6869,62 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MesoDay'
+    MesoTemplateResponse:
+      type: object
+      required:
+        - id
+        - title
+        - weeks
+        - phaseCurve
+        - days
+        - runCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        shortTitle:
+          type: string
+          nullable: true
+        goal:
+          type: string
+          nullable: true
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 16
+        split:
+          type: string
+          nullable: true
+        style:
+          type: string
+          nullable: true
+        phaseCurve:
+          type: array
+          items:
+            type: string
+            enum:
+              - MEV
+              - MAV
+              - MRV
+              - Deload
+        notes:
+          type: string
+          nullable: true
+        volumePerMuscle:
+          type: object
+          nullable: true
+          description: 'Per-muscle volume baseline keyed by muscle id (chest, back, ...)'
+          additionalProperties:
+            $ref: '#/components/schemas/VolumeBaseline'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoDay'
+        runCount:
+          type: integer
+          description: Number of mesocycle runs started from this template
     VolumeRecompute:
       type: object
       required:
@@ -6910,42 +7239,33 @@ components:
           description: >-
             Demo still (end position); alternated with imageStartUrl to convey
             the movement
-    MesocycleCreateRequest:
+    MesoTemplateUpsertRequest:
       type: object
       required:
         - title
-        - status
-        - startDate
         - weeks
-        - split
-        - style
         - phaseCurve
+        - days
       properties:
         title:
           type: string
           minLength: 1
         shortTitle:
           type: string
-        status:
-          type: string
-          enum:
-            - active
-            - planned
+          nullable: true
         goal:
           type: string
-        startDate:
-          type: string
-          format: date
+          nullable: true
         weeks:
           type: integer
           minimum: 1
           maximum: 16
         split:
           type: string
-          minLength: 1
+          nullable: true
         style:
           type: string
-          minLength: 1
+          nullable: true
         phaseCurve:
           type: array
           minItems: 1
@@ -6958,10 +7278,309 @@ components:
               - Deload
         notes:
           type: string
+          nullable: true
+        volumePerMuscle:
+          type: object
+          nullable: true
+          description: 'Per-muscle volume baseline keyed by muscle id (chest, back, ...)'
+          additionalProperties:
+            $ref: '#/components/schemas/VolumeBaseline'
         days:
           type: array
           items:
             $ref: '#/components/schemas/MesoDayInput'
+    MesoTemplateStartRequest:
+      type: object
+      required:
+        - startDate
+        - status
+      properties:
+        startDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+    MesoRerunResponse:
+      type: object
+      required:
+        - templateId
+      properties:
+        templateId:
+          type: string
+          format: uuid
+    MesocycleCloseRequest:
+      type: object
+      description: Optional self-eval note captured when closing a mesocycle
+      properties:
+        selfEval:
+          type: string
+          maxLength: 2000
+    MesocycleReportResponse:
+      type: object
+      description: >-
+        The generated end-of-mesocycle report — adherence, volume arc,
+        per-exercise strength deltas, PR/medal highlights, and an optional AI
+        narrative eval. context is declared for forward-compat (populated in a
+        later slice) so this contract does not change shape then.
+      required:
+        - mesocycleId
+        - title
+        - startDate
+        - weeks
+        - aiEvalStatus
+        - aiEvalEnabled
+        - adherence
+        - strength
+        - records
+      properties:
+        mesocycleId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The originating template this run was started from (null for
+            legacy/direct runs)
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        weeks:
+          type: integer
+        selfEval:
+          type: string
+          nullable: true
+          description: The owner's free-text self-eval note captured on close
+        aiEval:
+          type: string
+          nullable: true
+          description: >-
+            The AI-generated narrative eval (null until generated / when the
+            feature is off)
+        aiEvalStatus:
+          type: string
+          enum:
+            - pending
+            - ready
+            - failed
+        aiEvalGeneratedAt:
+          type: string
+          format: date-time
+          nullable: true
+        aiEvalEnabled:
+          type: boolean
+        adherence:
+          $ref: '#/components/schemas/MesoReportAdherence'
+        volume:
+          allOf:
+            - $ref: '#/components/schemas/MesocycleVolumeArcResponse'
+          nullable: true
+        strength:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoStrengthDelta'
+        records:
+          $ref: '#/components/schemas/MesoReportRecords'
+        context:
+          allOf:
+            - $ref: '#/components/schemas/MesoContext'
+          nullable: true
+          description: >-
+            Lifestyle/wellbeing context correlated to the mesocycle window
+            (populated in a later slice)
+    MesoReportAdherence:
+      type: object
+      required:
+        - plannedSessions
+        - completedSessions
+        - plannedWeeks
+        - completedWeeks
+        - completionPct
+      properties:
+        plannedSessions:
+          type: integer
+        completedSessions:
+          type: integer
+        plannedWeeks:
+          type: integer
+        completedWeeks:
+          type: integer
+        completionPct:
+          type: integer
+    MesoStrengthDelta:
+      type: object
+      required:
+        - exerciseName
+        - muscle
+        - firstWeek
+        - lastWeek
+        - firstTopReps
+        - lastTopReps
+      properties:
+        exerciseName:
+          type: string
+        catalogId:
+          type: string
+          format: uuid
+        muscle:
+          type: string
+        firstWeek:
+          type: integer
+        lastWeek:
+          type: integer
+        firstTopKg:
+          type: number
+        firstTopReps:
+          type: integer
+        lastTopKg:
+          type: number
+        lastTopReps:
+          type: integer
+        firstE1rm:
+          type: number
+        lastE1rm:
+          type: number
+        deltaKg:
+          type: number
+        deltaPct:
+          type: number
+    MesoReportRecords:
+      type: object
+      required:
+        - medalCount
+        - top
+      properties:
+        medalCount:
+          type: integer
+        top:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoRecordHighlight'
+    MesoRecordHighlight:
+      type: object
+      required:
+        - exerciseName
+        - kind
+        - date
+      properties:
+        exerciseName:
+          type: string
+        kind:
+          type: string
+        date:
+          type: string
+          format: date
+        value:
+          type: number
+    MesoContext:
+      type: object
+      description: >-
+        Lifestyle/wellbeing context for the mesocycle window (populated in a
+        later slice)
+      required:
+        - weeks
+        - totals
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoContextWeek'
+        totals:
+          $ref: '#/components/schemas/MesoContextTotals'
+    MesoContextWeek:
+      type: object
+      required:
+        - week
+      properties:
+        week:
+          type: integer
+        sleepAvgH:
+          type: number
+          nullable: true
+        sleepQualityAvg:
+          type: number
+          nullable: true
+        kcalAvg:
+          type: number
+          nullable: true
+        kcalTargetAvg:
+          type: number
+          nullable: true
+        mealCoverageDays:
+          type: number
+          nullable: true
+        waterAvgMl:
+          type: number
+          nullable: true
+        energyAvg:
+          type: number
+          nullable: true
+        stressAvg:
+          type: number
+          nullable: true
+        weightDeltaKg:
+          type: number
+          nullable: true
+        sportMinutes:
+          type: number
+          nullable: true
+        sportSessions:
+          type: number
+          nullable: true
+        runSessions:
+          type: number
+          nullable: true
+        gymRpeAvg:
+          type: number
+          nullable: true
+    MesoContextTotals:
+      type: object
+      required:
+        - daysTotal
+      properties:
+        daysTotal:
+          type: integer
+        sleepAvgH:
+          type: number
+          nullable: true
+        kcalAvg:
+          type: number
+          nullable: true
+        energyAvg:
+          type: number
+          nullable: true
+        stressAvg:
+          type: number
+          nullable: true
+        weightChangeKg:
+          type: number
+          nullable: true
+        sportMinutes:
+          type: number
+          nullable: true
+        sportSessions:
+          type: number
+          nullable: true
+        runSessions:
+          type: number
+          nullable: true
+        mealCoverageDays:
+          type: number
+          nullable: true
     MesoDayInput:
       type: object
       required:
@@ -10764,12 +11383,12 @@ components:
     MedicationCycleResponse:
       type: object
       required:
-        - retaDay
+        - cycleDay
         - phaseKey
         - phaseLabel
         - week
       properties:
-        retaDay:
+        cycleDay:
           type: integer
         phaseKey:
           type: string
@@ -12530,7 +13149,7 @@ components:
           type: string
         flagged:
           type: boolean
-    BriefingRef:
+    FeedRef:
       type: object
       required:
         - kind
@@ -12543,10 +13162,11 @@ components:
             (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
         label:
           type: string
-    BriefingResponse:
+    FeedMessageResponse:
       type: object
       required:
         - date
+        - kind
         - eyebrow
         - body
         - refs
@@ -12555,21 +13175,24 @@ components:
         date:
           type: string
           format: date
+        kind:
+          type: string
+          enum:
+            - morning
+            - sleep
+            - weight
+            - midday
+            - evening
         eyebrow:
           type: string
-          description: One-line header above the briefing prose
         body:
           type: array
           items:
             type: string
-          description: Briefing paragraphs — the FE maps each to a BriefingPara
         refs:
           type: array
           items:
-            $ref: '#/components/schemas/BriefingRef'
-          description: >-
-            Code-collected, model-SELECTED source references (never
-            model-invented)
+            $ref: '#/components/schemas/FeedRef'
         generatedAt:
           type: string
           format: date-time
@@ -12626,32 +13249,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MemoirAnchor'
-        generatedAt:
-          type: string
-          format: date-time
-    HeartbeatNoteResponse:
-      type: object
-      required:
-        - date
-        - window
-        - kind
-        - content
-        - generatedAt
-      properties:
-        date:
-          type: string
-          format: date
-        window:
-          type: string
-          description: >-
-            Window key (midday | evening) — the config window the note was
-            written for
-        kind:
-          type: string
-          description: nudge (midday) | closing (evening)
-        content:
-          type: string
-          description: 'The generated HU note (plain prose, cheap tier)'
         generatedAt:
           type: string
           format: date-time
@@ -14300,3 +14897,80 @@ components:
           type: string
           format: date
           nullable: true
+    NeedsRings:
+      type: object
+      required:
+        - energia
+        - hidratacio
+        - pihenes
+        - mozgas
+        - lelek
+        - rend
+      properties:
+        energia:
+          type: integer
+          minimum: 0
+          maximum: 100
+        hidratacio:
+          type: integer
+          minimum: 0
+          maximum: 100
+        pihenes:
+          type: integer
+          minimum: 0
+          maximum: 100
+        mozgas:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lelek:
+          type: integer
+          minimum: 0
+          maximum: 100
+        rend:
+          type: integer
+          minimum: 0
+          maximum: 100
+    NeedsCloseRequest:
+      type: object
+      required:
+        - date
+        - rings
+      properties:
+        date:
+          type: string
+          format: date
+        rings:
+          $ref: '#/components/schemas/NeedsRings'
+    NeedsCloseResponse:
+      type: object
+      required:
+        - date
+        - xpAwarded
+        - greenCount
+        - allGreen
+        - streakDays
+      properties:
+        date:
+          type: string
+          format: date
+        xpAwarded:
+          type: integer
+        greenCount:
+          type: integer
+        allGreen:
+          type: boolean
+        streakDays:
+          type: integer
+    NeedsSummaryResponse:
+      type: object
+      required:
+        - streakDays
+      properties:
+        streakDays:
+          type: integer
+        lastCloseDate:
+          type: string
+          format: date
+        lastAllGreen:
+          type: boolean

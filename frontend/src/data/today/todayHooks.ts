@@ -5,8 +5,7 @@ import { useFuelTimeline } from '@/data/fuel/timelineHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useSleep } from '@/data/me/sleepHooks'
 import { useWeight } from '@/data/me/weightHooks'
-import { useBriefing } from '@/data/today/briefingHooks'
-import { huMonthDay, huWeekdayFull, localDateString } from '@/shared/lib/dates'
+import { huMonthDay, huMonthDayDow, huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import {
   today,
   user,
@@ -32,20 +31,18 @@ export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
   const day = params.get('day')
   const dayState: DayState = day === 'good' || day === 'rough' ? day : 'medium'
-  // The retaDay base is the real medication cycle in real mode (the single FE source every
-  // Reta surface reads), the mock default in mock mode. cycle.retaDay is 0 when there is no
-  // medication / no dose (the ghost, or the cold-load window) → fall back to today.retaDay so
-  // nothing ever shows a 0 day. The ?retaDay= URL override stays TOP priority in BOTH modes.
+  // The medCycleDay base is the derived medication cycle in BOTH modes. It is 0 when there is no
+  // medication / no dose (mezo-lwmq: the owner tracks no medication, so this is the normal state) —
+  // the honest zero. The ?medCycleDay= URL override stays TOP priority, as a dev switch.
   const { cycle } = useMedication()
-  const base = isMockMode() ? today.retaDay : cycle.retaDay || today.retaDay
-  const retaRaw = parseInt(params.get('retaDay') ?? '', 10)
-  const retaDay = Number.isFinite(retaRaw) ? Math.min(7, Math.max(1, retaRaw)) : base
+  const rawDay = parseInt(params.get('medCycleDay') ?? '', 10)
+  const medCycleDay = Number.isFinite(rawDay) ? Math.min(7, Math.max(1, rawDay)) : cycle.cycleDay
   const niggle = params.get('niggle') !== 'off'
   const vulnerable = params.get('vulnerable') === 'on'
   const ritualRaw = params.get('ritual')
   const ritual: TodayScenario['ritual'] =
     ritualRaw === 'waiting' || ritualRaw === 'open' || ritualRaw === 'done' ? ritualRaw : null
-  return { dayState, retaDay, niggle, vulnerable, anchorMode: dayState === 'rough', ritual }
+  return { dayState, medCycleDay, niggle, vulnerable, anchorMode: dayState === 'rough', ritual }
 }
 
 export function resolveBriefing(dayState: DayState): Briefing {
@@ -56,10 +53,6 @@ export function resolveBriefing(dayState: DayState): Briefing {
 type TodayData = {
   today: TodayMeta
   user: UserMeta
-  /** The GENERATED briefing (real mode, proactive B1.2) — null in mock mode and whenever no server briefing exists; the page falls back to resolveBriefing + the „Demo tartalom" label. */
-  briefing: Briefing | null
-  /** True in real mode — the briefing prose is static demo copy until the proactive epic ships the generated one. */
-  briefingDemo: boolean
   /** Mock: Train's own Phase-1 static plan (`data/train/train.ts`'s `workout`, byte-identical
    * to the retired Today-local duplicate — deduped by `estimateSessionMinutes` needing the
    * recipe-shaped `LoggedWorkoutExercise[]`, `mezo-oyhy.3`). Real: today's planned Train
@@ -67,6 +60,25 @@ type TodayData = {
   workout: WorkoutPlan | null
   /** The teaser eyebrow time — the real gym slot for today, or null (eyebrow renders without a time). */
   workoutTime: string | null
+  /** Today's gym session is already finished (mezo-v84m). The SAME server truth the Train tab's
+   * „Kész · N szett" hero reads — `/today`'s `completedWorkout` — so the two tabs can never
+   * disagree about whether the day is over. Mock mode persists no instances → always false. */
+  workoutDone: boolean
+  /** The finished instance's logged set count (skip markers excluded, exactly as Train counts
+   * them), or null while nothing is finished. `workoutDone` is the gate — a 0-set finish is
+   * still a finish. */
+  workoutDoneSets: number | null
+  /** Today's gym session is started but NOT finished (mezo-6kap) — Train's `● Folyamatban`
+   * state, from `/today`'s `openWorkout`. Mutually exclusive with `workoutDone`: a completed
+   * instance always wins, so the hero can never offer a resume for a day that is over. */
+  workoutInProgress: boolean
+  /** The open instance's logged set count so far (skip markers excluded), or null when nothing
+   * is in progress. Zero is a real answer — started, nothing logged yet. */
+  workoutOpenSets: number | null
+  /** The sport kinds logged TODAY (`volleyball`/`cross`/`trx`), matched by date (mezo-6kap).
+   * A mixed day (TRX at noon, röpi in the evening) must flip each sport hero independently, so
+   * this is a list, not a flag. Empty in mock mode — it persists no sessions. */
+  loggedSportKinds: string[]
   /** Demo prediction line in mock mode; null in real mode (predictions are a later epic). */
   prediction: WorkoutPrediction | null
   volleyballSessions: VolleyballSession[]
@@ -81,15 +93,20 @@ type TodayData = {
 export function useToday(): TodayData {
   const mock = isMockMode()
   const train = useTrain()
-  const serverBriefing = useBriefing()
   if (mock) {
     return {
       today,
       user,
-      briefing: null,
-      briefingDemo: false,
       workout: train.workout,
       workoutTime: today.workoutTime,
+      // Mock keeps no persisted instances (`useTrain`'s completedTodayWorkout/todaySession are
+      // null in mock) and logs no sport sessions, so the mock day hero stays byte-identical to
+      // Phase 1: always the „Indítsuk" / „Logold" CTA.
+      workoutDone: false,
+      workoutDoneSets: null,
+      workoutInProgress: false,
+      workoutOpenSets: null,
+      loggedSportKinds: [],
       prediction: workoutPrediction,
       volleyballSessions,
       volleyballNote,
@@ -98,13 +115,22 @@ export function useToday(): TodayData {
   const now = new Date()
   const meso = train.activeMeso
   const gymToday = train.gymSchedule?.weeklyTimes.find((d) => d.active && d.today)
+  // The day's done-state (mezo-v84m) — read from the same `completedTodayWorkout` the Train
+  // tab's hero gates on, counted the same way (skip markers are not logged sets).
+  const doneWorkout = train.completedTodayWorkout
+  // …and its in-progress state (mezo-6kap), with Train's own precedence: a completed instance
+  // wins, so a stale open instance can never turn a finished day back into a resume.
+  const openWorkout = doneWorkout ? null : train.todaySession?.openWorkout ?? null
+  // Sport done-state (mezo-6kap): `toSportSession` maps the API's ISO date to the HU display
+  // date, so today's key is built the same way. Kind-keyed, not a flag — a mixed day flips
+  // each sport hero on its own.
+  const todayDisplayDate = huMonthDayDow(localDateString(now))
   return {
     today: {
       dayLabel: huWeekdayFull(now),
       dateLabel: huMonthDay(localDateString(now)),
       workoutType: train.workout?.title ?? '',
       workoutTime: gymToday?.time ?? '',
-      retaDay: today.retaDay, // unused in real mode — the scenario derives retaDay from useMedication
       mesoPhase: meso?.phaseCurve?.[meso.currentWeek - 1] ?? '',
     },
     // Only the meso-derived fields go real here; the identity statics (name/handle/...) are
@@ -115,10 +141,13 @@ export function useToday(): TodayData {
       dayInWeek: ((now.getDay() + 6) % 7) + 1,
       mesoLabel: meso?.title ?? '',
     },
-    briefing: serverBriefing,
-    briefingDemo: serverBriefing == null,
     workout: train.workout,
     workoutTime: gymToday?.time ?? null,
+    workoutDone: Boolean(doneWorkout),
+    workoutDoneSets: doneWorkout ? doneWorkout.sets.filter((s) => !s.skipped).length : null,
+    workoutInProgress: Boolean(openWorkout),
+    workoutOpenSets: openWorkout ? openWorkout.sets.filter((s) => !s.skipped).length : null,
+    loggedSportKinds: train.sport.sessions.filter((s) => s.date === todayDisplayDate).map((s) => s.sport),
     prediction: null,
     volleyballSessions: train.sport.schedule?.volleyball.sessions ?? [],
     volleyballNote: null,

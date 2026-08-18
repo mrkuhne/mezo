@@ -10,8 +10,16 @@ export interface CheckinSlot { time: string; state: CheckinState; values: Checki
 export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
-/** Proactive H1 in-day note — the CompanionNoteCard's data (mock mode has none; honest absence). */
-export interface CompanionNote { window: string; kind: 'nudge' | 'closing'; text: string }
+/** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per generation. */
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
+/** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
+export interface FeedMessage {
+  kind: FeedMessageKind
+  eyebrow: string
+  body: BriefingPara[]
+  refs: BriefingRef[]
+  generatedAt: string // ISO date-time
+}
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
 /** `date`+`oneOff` mark a dated one-off event merged into the weekly rhythm (mezo-e1sp) — recurring slots carry neither. */
 export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; sport?: 'volleyball' | 'cross' | 'trx'; today?: boolean; flex?: boolean; date?: string; oneOff?: boolean }
@@ -225,7 +233,7 @@ export interface MedicationDose { id: string; administeredAt: string; dose: numb
 /** The derived weekly cycle (which day of the cycle we're on + the phase grid). */
 export interface MedicationCycleCell { day: number; phaseKey: string; label: string; current: boolean }
 export interface MedicationCycle {
-  retaDay: number; phaseKey: string; phaseLabel: string
+  cycleDay: number; phaseKey: string; phaseLabel: string
   lastDoseAt?: string | null
   week: MedicationCycleCell[]
 }
@@ -251,7 +259,7 @@ export interface MedicationInput {
 /** Editor input for logging an injection. */
 export interface MedicationDoseInput { administeredAt?: string | null; dose: number; note?: string | null }
 
-export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; retaDay: number; mesoPhase: string }
+export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; mesoPhase: string }
 /** The workout teaser's prediction line — demo copy in mock mode; real predictions are a later epic (null hides the row). */
 export interface WorkoutPrediction { confidence: number; label: string }
 /** One cell of the Today quick-stats row ("Most"). */
@@ -267,7 +275,7 @@ export interface UserMeta {
   streakDays: number
 }
 export interface TodayScenario {
-  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  dayState: DayState; medCycleDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
   /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
   ritual: 'waiting' | 'open' | 'done' | null
 }
@@ -573,8 +581,8 @@ export interface MentionLogInput {
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---
-export type RetaPhase = 'Peak' | 'Stable' | 'Trough'
-export interface RetaDayCell { d: number; label: RetaPhase; color: string }
+export type MedCyclePhase = 'Peak' | 'Stable' | 'Trough'
+export interface MedCycleDayCell { d: number; label: MedCyclePhase; color: string }
 // NOTE: prototype data.js gymSchedule.weeklyTimes uses null for inactive (Szo/Vas)
 // days and `today` is present on only one row → fields adapted to the real data.
 export interface GymScheduleDay {
@@ -966,6 +974,28 @@ export interface Mesocycle {
   volumeRecompute?: VolumeRecompute
   volumePerMuscle?: Record<string, VolumeProfile>
   days?: MesoDay[]
+  templateId?: string | null // the originating template this run was started from (null for legacy/direct runs)
+  closedAt?: string | null   // when this run was closed (archived); null while active/planned
+  hasReport?: boolean        // true once an end-of-mesocycle report exists (mezo-meyc.4 — drives the Történet card's „riport" / „nincs riport" chip; absent on a live run)
+}
+
+// A reusable mesocycle blueprint (mezo-meyc): the wizard now saves a template first, then
+// starts a run from it (POST .../start) — the run carries the template's `id` as its
+// `templateId` and a closed run can `rerun` from the same template. `runCount` is the number
+// of runs ever started from this template (server-computed, read-only).
+export interface MesoTemplate {
+  id: string
+  title: string
+  shortTitle: string | null
+  goal: string | null
+  weeks: number
+  split: string | null
+  style: string | null
+  phaseCurve: MesoPhase[]
+  notes: string | null
+  volumePerMuscle: Record<string, VolumeBaseline> | null
+  days: MesoDay[]
+  runCount: number
 }
 
 export interface LastWeekSet { weight: number; reps: number; rir: number }
@@ -1041,7 +1071,9 @@ export interface SportSchedule {
   volleyball: { team: string; sessions: VolleyballSession[]; season: string; weeklyHours: number }
 }
 export interface SportSession {
-  id: string; sport: string; date: string; time: string; duration: number
+  id: string; sport: string; date: string
+  isoDate: string // ISO day — the raw wire date; `date` is the HU display string
+  time: string; duration: number
   setsPlayed: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
   jumpCount: number | null; notes: string | null
 }
@@ -1247,19 +1279,22 @@ export interface PushSubscriptionState {
   sendTest: () => Promise<{ attempted: number; sent: number }>
 }
 
-// ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3) ─────
-// The 11 keys/sections/defaults mirror the backend's authoritative enum
+// ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
+// evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
+// The 14 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
 export type NotificationCategoryKey =
   | 'briefing' | 'gym' | 'medication' | 'ritual' | 'lights_out'
   | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
+  | 'evening' | 'sleep_reaction' | 'weight_reaction'
 
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'briefing', 'gym', 'medication', 'ritual', 'lights_out',
   'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
+  'evening', 'sleep_reaction', 'weight_reaction',
 ]
 
 export interface NotificationPrefView {
@@ -1309,7 +1344,7 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     description: 'A mai edzés kezdete előtt', showLeadChip: true, iconBg: '--wash-gym',
   },
   medication: {
-    label: 'Reta injekció', emoji: '💉', section: 'reminder',
+    label: 'Gyógyszer beadás', emoji: '💉', section: 'reminder',
     description: 'Injekciós napon, reggel', showLeadChip: false, iconBg: '--wash-amber',
   },
   ritual: {
@@ -1331,5 +1366,17 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
   fuel_slot: {
     label: 'Fuel & stack', emoji: '💊', section: 'reminder',
     description: 'Minden fuel/stack slotnál', showLeadChip: false, iconBg: '--wash-sage',
+  },
+  evening: {
+    label: 'Napzárás', emoji: '🌇', section: 'prose',
+    description: 'Esti záró üzenet a naptól.', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  sleep_reaction: {
+    label: 'Alvás-reakció', emoji: '💤', section: 'prose',
+    description: 'Üzenet az alvás rögzítése után.', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  weight_reaction: {
+    label: 'Súly-reakció', emoji: '⚖️', section: 'prose',
+    description: 'Üzenet a reggeli mérés után.', showLeadChip: false, iconBg: '--wash-sport',
   },
 }

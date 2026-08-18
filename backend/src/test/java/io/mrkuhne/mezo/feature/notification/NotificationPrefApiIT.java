@@ -44,11 +44,11 @@ class NotificationPrefApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testGetNotificationPrefs_shouldReturnAllElevenWithSpecDefaults_whenFreshUser() {
+    void testGetNotificationPrefs_shouldReturnAllFourteenWithSpecDefaults_whenFreshUser() {
         NotificationPrefListResponse response = getForBody("/api/notification/pref",
                 ownerAuthHeaders(), HttpStatus.OK, NotificationPrefListResponse.class);
 
-        assertThat(response.getPrefs()).hasSize(11);
+        assertThat(response.getPrefs()).hasSize(14);
         assertThat(response.getPrefs())
                 .filteredOn(p -> p.getCategory().equals("gym"))
                 .singleElement()
@@ -63,7 +63,16 @@ class NotificationPrefApiIT extends ApiIntegrationTest {
                     assertThat(p.getEnabled()).isFalse();
                     assertThat(p.getLeadMinutes()).isEqualTo(0);
                 });
-        assertThat(response.getPrefs().stream().filter(NotificationPref::getEnabled).count()).isEqualTo(7);
+        assertThat(response.getPrefs())
+                .filteredOn(p -> p.getCategory().equals("evening"))
+                .singleElement()
+                .satisfies(p -> {
+                    assertThat(p.getEnabled()).isTrue();
+                    assertThat(p.getLeadMinutes()).isEqualTo(0);
+                });
+        // 7 pre-existing ON categories + the 3 new companion-feed categories (evening/
+        // sleep_reaction/weight_reaction), all default ON (mezo-gst9).
+        assertThat(response.getPrefs().stream().filter(NotificationPref::getEnabled).count()).isEqualTo(10);
     }
 
     @Test

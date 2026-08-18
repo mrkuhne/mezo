@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { addDays, huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { evaluateMockSetMedals, type MockMedalContext } from '@/data/train/medalEvaluator'
@@ -12,7 +12,7 @@ import {
   type GymExerciseInput,
   type GymScheduleSlotInput,
   type GymScheduleSlotResponse,
-  type MesocycleCreateRequest,
+  type MesocycleReportResponse,
   type MesocycleResponse,
   type SetLogRequest,
   type SetUpdateRequest,
@@ -36,6 +36,7 @@ import {
   sport,
   exerciseLibrary,
 } from '@/data/train/train'
+import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
@@ -126,7 +127,9 @@ export function deriveGymSchedule(meso: Mesocycle | null, slots: GymScheduleSlot
 // The generated MesocycleResponse is structurally close to the domain Mesocycle
 // (goal is optional in the contract, delta keys are a looser string map) — the
 // boundary cast mirrors the Slice A biometrics-api idiom.
-function toMesocycle(r: MesocycleResponse): Mesocycle {
+// Exported so mesoTemplateHooks.ts (startTemplate's response mapping) reuses the same
+// ISO->HU boundary cast instead of duplicating it.
+export function toMesocycle(r: MesocycleResponse): Mesocycle {
   return {
     ...r,
     startDate: huMonthDay(r.startDate),
@@ -137,7 +140,7 @@ function toMesocycle(r: MesocycleResponse): Mesocycle {
 
 function toSportSession(r: SportSessionResponse): SportSession {
   return {
-    id: r.id, sport: r.sport, date: huMonthDayDow(r.date), time: r.time,
+    id: r.id, sport: r.sport, date: huMonthDayDow(r.date), isoDate: r.date, time: r.time,
     duration: r.duration, setsPlayed: r.setsPlayed ?? null, intensity: r.intensity ?? null,
     rpe: r.rpe, shoulderStrain: r.shoulderStrain ?? null, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
@@ -275,6 +278,59 @@ function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
   }
 }
 
+/**
+ * Mock-mode close (mezo-meyc.2) — emulates the backend's TWO effects in the client-owned
+ * cache (the sportEvents/mesoTemplateHooks idiom) so the offline demo stays self-consistent:
+ * the run flips to `archived` AND a report appears at its report key. Without this, the close
+ * sheet's navigation lands on a page that reports the run is still going.
+ *
+ * The seeded report is deliberately EMPTY of derived numbers (adherence zeros, no volume arc,
+ * no strength rows, no records): mock mode has no logged set history to freeze, and inventing
+ * plausible-looking totals for a run the user just closed would be a lie. The one thing it can
+ * carry honestly is the note the owner just typed. Dates are ISO (the report contract's format
+ * — the domain `Mesocycle` carries HU display strings, which the page's formatter would choke
+ * on), reconstructed as a `weeks`-long window ending today.
+ */
+function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void {
+  const today = localDateString()
+  qc.setQueryData<Mesocycle[]>(['train', 'mesocycles'], (prev) =>
+    (prev ?? mesocycles).map((m) =>
+      // `hasReport` flips with the status because a report is seeded below in the same
+      // breath (mezo-meyc.4) — the Történet card's „riport" chip must not lie.
+      m.id === id ? { ...m, status: 'archived', closedAt: `${today}T00:00:00Z`, hasReport: true } : m,
+    ),
+  )
+  // Cache first, STATIC FIXTURE as the last resort (the mockRerun/mockStart idiom): the
+  // seeded report's identity must not depend on what happens to be in the cache at close
+  // time, or a cache in an unexpected shape silently titles the report 'Mesociklus'.
+  const cached = qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles
+  const meso = cached.find((m) => m.id === id) ?? mesocycles.find((m) => m.id === id)
+  const weeks = meso?.weeks ?? 1
+  const report: MesocycleReportResponse = {
+    mesocycleId: id,
+    templateId: meso?.templateId ?? null,
+    title: meso?.title ?? 'Mesociklus',
+    startDate: addDays(today, -(weeks * 7 - 1)),
+    endDate: today,
+    closedAt: `${today}T00:00:00Z`,
+    weeks,
+    selfEval: selfEval?.trim() || null,
+    aiEval: null,
+    // Backend parity: a freshly written report is always `pending` with the feature off.
+    aiEvalStatus: 'pending',
+    aiEvalGeneratedAt: null,
+    aiEvalEnabled: false,
+    adherence: {
+      plannedSessions: 0, completedSessions: 0, plannedWeeks: weeks, completedWeeks: weeks, completionPct: 0,
+    },
+    volume: null,
+    strength: [],
+    records: { medalCount: 0, top: [] },
+    context: null,
+  }
+  qc.setQueryData(mesoReportQueryKey(id), report)
+}
+
 type MutateOpts = { onSuccess?: () => void; onError?: () => void }
 
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
@@ -305,9 +361,9 @@ type TrainData = {
   sportPending: boolean
   /** True while the exercise catalog/records queries are still loading (real mode) — drives the Exercises skeleton. */
   exercisesPending: boolean
-  createMesocycle: (req: MesocycleCreateRequest, opts?: MutateOpts) => void
   activateMesocycle: (id: string, opts?: MutateOpts) => void
-  closeMesocycle: (id: string, opts?: MutateOpts) => void
+  /** Closes (archives) a run. `selfEval` is the owner's optional close-time note (mezo-meyc.2). */
+  closeMesocycle: (id: string, selfEval?: string | null, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
@@ -356,10 +412,24 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const workoutDay = opts?.workoutDay ?? null
   const { data: mesoData, isPending: mesoPending } = useQuery({
     queryKey: ['train', 'mesocycles'],
-    queryFn: mock ? async () => mesocycles : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
+    // Mock resolves SEEDED CACHE first, static fixture second (mesoReportHooks' mockResolve
+    // idiom): mockStart/mockRerun (mezo-meyc.1) and mockClose (mezo-meyc.2) all edit this list
+    // via setQueryData, and a queryFn that returned the frozen array unconditionally regresses
+    // every one of those edits the moment anything re-resolves the query. `staleTime` below
+    // removes the routine trigger; this removes the failure mode itself.
+    queryFn: mock
+      ? async () => qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles
+      : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
     // Mock mode seeds synchronously so the first render matches the Phase-1
     // static return exactly (the visual baselines + component tests). Real mode loads.
     initialData: mock ? mesocycles : undefined,
+    // Mock is a CLIENT-OWNED cache — mockStart/mockRerun (mezo-meyc.1) and mockClose
+    // (mezo-meyc.2) all edit this list via setQueryData. Without pinning staleTime, the
+    // seed is stale on arrival and the mount refetch resolves the FROZEN static array back
+    // over those edits (a race: it clobbered a just-closed run back to `active`). Same
+    // guard the sibling mock caches below already carry (gymSchedule, sportEvents) — the
+    // pantry/useDualQuery pattern. Real mode keeps the TanStack default.
+    staleTime: mock ? Infinity : undefined,
   })
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
   // HU display dates), so the derivation happens inside the queryFn.
@@ -423,17 +493,28 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const invalidate = () => {
     if (!mock) qc.invalidateQueries({ queryKey: ['train', 'mesocycles'] })
   }
-  const createMutation = useMutation({
-    mutationFn: mock ? async (_req: MesocycleCreateRequest) => undefined : (req: MesocycleCreateRequest) => trainApi.create(req),
-    onSuccess: invalidate,
-  })
   const activateMutation = useMutation({
     mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.activate(id),
     onSuccess: invalidate,
   })
+  // Closing writes the frozen run report server-side (mezo-meyc.2), so the run's report
+  // query is invalidated alongside the list — a re-close that fills a still-null selfEval
+  // must not leave a stale report on screen. Mock mode emulates BOTH server effects in the
+  // client-owned cache (see mockClose) instead of no-oping: the close sheet navigates to the
+  // report, and a no-op close would land the offline demo on a page insisting the run is
+  // still active.
   const closeMutation = useMutation({
-    mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.close(id),
-    onSuccess: invalidate,
+    mutationFn: mock
+      ? async (args: { id: string; selfEval?: string | null }) => {
+          mockClose(qc, args.id, args.selfEval)
+          return undefined
+        }
+      : (args: { id: string; selfEval?: string | null }) =>
+          trainApi.close(args.id, args.selfEval ? { selfEval: args.selfEval } : undefined),
+    onSuccess: (_data, args) => {
+      invalidate()
+      if (!mock) qc.invalidateQueries({ queryKey: mesoReportQueryKey(args.id) })
+    },
   })
   const replaceMutation = useMutation({
     mutationFn: mock
@@ -566,7 +647,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
             (prev) => {
               const logged: SportSession = {
                 id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
-                date: huMonthDayDow(iso), time: hhmm,
+                date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
                 duration: req.duration, setsPlayed: req.setsPlayed ?? null, intensity: null,
                 rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: null,
               }
@@ -655,16 +736,13 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     onSuccess: invalidateCatalog,
   })
 
-  const createMesocycle = useCallback(
-    (req: MesocycleCreateRequest, opts?: MutateOpts) => createMutation.mutate(req, opts),
-    [createMutation],
-  )
   const activateMesocycle = useCallback(
     (id: string, opts?: MutateOpts) => activateMutation.mutate(id, opts),
     [activateMutation],
   )
   const closeMesocycle = useCallback(
-    (id: string, opts?: MutateOpts) => closeMutation.mutate(id, opts),
+    (id: string, selfEval?: string | null, opts?: MutateOpts) =>
+      closeMutation.mutate({ id, selfEval }, opts),
     [closeMutation],
   )
   const saveDayExercises = useCallback(
@@ -791,7 +869,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     sportEvents: eventsData ?? [],
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     exerciseRecords: recordsData ?? [],
-    createMesocycle,
     activateMesocycle,
     closeMesocycle,
     saveDayExercises,
@@ -812,6 +889,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     updateCatalogExercise,
     deleteCatalogExercise,
     setExerciseVideo,
-    mesoMutationPending: createMutation.isPending || activateMutation.isPending || closeMutation.isPending,
+    mesoMutationPending: activateMutation.isPending || closeMutation.isPending,
   }
 }
