@@ -111,6 +111,14 @@ function backendAnchorMinute(
       // cannot know ahead of generation — an honest "no resolvable anchor today", never a
       // fabricated clock time (mirrors gym/medication/ritual's null-when-absent contract).
       return null
+    case 'pattern':
+    case 'knowledge':
+    case 'prediction':
+    case 'experiment':
+    case 'challenge':
+    case 'memory':
+      // feed-anchored categories (mezo-gzhp.3): backend events, not FE-forecastable — no preview anchors
+      return null
   }
 }
 
