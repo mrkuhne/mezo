@@ -16,9 +16,13 @@ import { cn } from '@/shared/lib/cn'
 import { Sheet } from '@/shared/ui/Sheet'
 import { NEEDS_TUNING, type NeedKey, type NeedState } from '@/features/today/logic/needs'
 
-const SIZE = 64
+// Ugyanaz a rajzterület-padding, mint a NeedsRow-nál (mezo-1bu2): a gyűrű látható
+// átmérője `RING`, a viewBox `PAD`-dal nagyobb, hogy a stroke külső éle ne a határra essen.
+const RING = 64
 const STROKE = 6
-const R = (SIZE - STROKE) / 2
+const PAD = 3
+const SIZE = RING + 2 * PAD
+const R = (RING - STROKE) / 2
 const C = 2 * Math.PI * R
 const CENTER = SIZE / 2
 
@@ -126,7 +130,7 @@ export function NeedRingSheet({ state, wakeTime, bedTime, onClose, onCta }: {
                 strokeDashoffset={offset}
                 transform={`rotate(-90 ${CENTER} ${CENTER})`}
               />
-              <text x={CENTER} y="37" textAnchor="middle" fontSize="20">{state.emoji}</text>
+              <text x={CENTER} y={CENTER + 5} textAnchor="middle" fontSize="20">{state.emoji}</text>
             </svg>
             <div className="td-need-head-info">
               <div className="td-need-head-name">{state.label}</div>

@@ -43,7 +43,10 @@ server-evaluated push nudges (§9).
 ## 2. User-facing behavior
 
 - **`NeedsRow`** (`frontend/src/features/today/components/NeedsRow.tsx`) — a frameless row of
-  six 46px SVG ring buttons directly under `MezoChip`, wired at
+  six ring buttons directly under `MezoChip` — the ring's visible outer diameter is 46px, drawn
+  into a `PAD`-larger SVG box (`RING`/`PAD` in the component) so neither the stroke's outer edge
+  nor the critical halo lands on the viewBox boundary, where antialiasing clipped them flat
+  (mezo-1bu2). Wired at
   `frontend/src/features/today/pages/TodayPage.tsx:449`. Renders on **every** daypart, unaffected
   by which daypart is selected — the ring state is daypart-independent, like the message thread.
   No numeric labels on the row itself; each ring's arc = `pct`, color = the ring's own token

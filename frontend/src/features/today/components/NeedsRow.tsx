@@ -10,9 +10,17 @@
 // ============================================================
 import type { NeedKey, NeedState } from '@/features/today/logic/needs'
 
-const SIZE = 46
+// A gyűrű LÁTHATÓ külső átmérője `RING`; a rajzterület ennél `PAD`-dal nagyobb minden
+// irányban, mert a kör külső éle (és kritikus sávban a haló) különben pont a viewBox
+// határára esne, és az antialiasing levágná a tetejét/oldalát — nyolcszögűnek látszott
+// (mezo-1bu2). A ring mérete változatlan, csak a körülötte lévő levegő nőtt.
+const RING = 46
 const STROKE = 4.5
-const R = (SIZE - STROKE) / 2
+const HALO_GAP = 3.5
+const HALO_STROKE = 2
+const PAD = 3
+const SIZE = RING + 2 * PAD
+const R = (RING - STROKE) / 2
 const C = 2 * Math.PI * R
 const CENTER = SIZE / 2
 
@@ -49,11 +57,11 @@ export function NeedsRow({ states, onOpen }: {
               {critical && (
                 <circle
                   className="td-need-halo"
-                  cx={CENTER} cy={CENTER} r={R + 3.5}
-                  fill="none" stroke="var(--error-base)" strokeWidth={2}
+                  cx={CENTER} cy={CENTER} r={R + HALO_GAP}
+                  fill="none" stroke="var(--error-base)" strokeWidth={HALO_STROKE}
                 />
               )}
-              <text x={CENTER} y="29" textAnchor="middle" fontSize="15">{s.emoji}</text>
+              <text x={CENTER} y={CENTER + 6} textAnchor="middle" fontSize="15">{s.emoji}</text>
             </svg>
           </button>
         )
