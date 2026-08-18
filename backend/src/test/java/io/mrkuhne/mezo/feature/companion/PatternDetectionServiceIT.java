@@ -17,7 +17,6 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,7 +29,6 @@ import java.util.UUID;
  * anti-correlated 10-day seed must surface a proposed negative pattern; re-runs refresh (never
  * duplicate); below-min-n stays silent; user-judged rows are frozen.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class PatternDetectionServiceIT extends AbstractIntegrationTest {
 
