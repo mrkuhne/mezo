@@ -301,17 +301,15 @@ public class ContextSnapshotAssembler {
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
                 .orElse(List.of());
-        // A present-but-EMPTY template day is a rest day, not a gym day: the meso wizard stores
-        // all 7 weekdays as template rows, weekend rest days included (type "Rest", zero
-        // exercises) — rendering those as "gym (Szo)" was the weekend training hallucination
-        // (mezo-650a). Same criterion as TrainTools#dayContentLine, so tool and snapshot agree.
-        if (exercises.isEmpty()) {
-            parts.add("pihenőnap (gym)");
-        } else {
-            parts.add("gym (" + template.orElseThrow().getDayLabel() + "): " + exercises.stream()
-                    .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
-                    .collect(Collectors.joining(", ")));
-        }
+        // mezo-4qu: the gym half comes from the SHARED ToolText.gymLine, the same way the sport half
+        // comes from ToolText.sportLine — the criterion that a present-but-EMPTY meso template day
+        // is a REST day (the mezo-650a weekend-training hallucination) now lives in ONE place, so
+        // this renderer and TrainTools#dayContentLine cannot drift apart again.
+        parts.add(ToolText.gymLine(
+                template.map(WorkoutSessionEntity::getDayLabel).orElse(null),
+                exercises.stream()
+                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .toList()));
         sport.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
                 .forEach(s -> parts.add(ToolText.sportLine(s.getSport(), s.getTime(),
