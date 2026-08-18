@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -74,6 +76,7 @@ public class PredictionGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     public record PredictionGather(String payload, List<PatternEntity> candidates) {
     }
@@ -128,6 +131,12 @@ public class PredictionGenerator {
             e.setStatus(PredictionEntity.STATUS_PENDING);
             e.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
             saved.add(predictionRepository.saveAndFlush(e));
+            PredictionEntity savedRow = saved.get(saved.size() - 1);
+            appNotificationEmitter.emit(userId, AppNotificationKind.PREDICTION_NEW,
+                    "Új előrejelzés készült",
+                    savedRow.getTitle(),
+                    AppNotificationKind.PREDICTION_NEW.deeplink(), savedRow.getId(),
+                    "prediction_new:" + savedRow.getId());
         }
         return saved;
     }

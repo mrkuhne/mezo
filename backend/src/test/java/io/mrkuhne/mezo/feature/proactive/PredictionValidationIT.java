@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.feature.proactive.service.PredictionValidationService;
@@ -14,13 +15,16 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Deterministic window-close validation over a FIXED past week so "today" is always after the
  * window (a closed window), and the weight logs sit in known windows.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 class PredictionValidationIT extends AbstractIntegrationTest {
 
     // week Mon 2026-06-22 .. Sun 2026-06-28; baseline = 2026-06-15 .. 2026-06-21
@@ -32,6 +36,9 @@ class PredictionValidationIT extends AbstractIntegrationTest {
 
     @Autowired
     private PredictionRepository repository;
+
+    @Autowired
+    private AppNotificationRepository appNotificationRepository;
 
     @Autowired
     private UserPopulator userPopulator;
@@ -58,6 +65,12 @@ class PredictionValidationIT extends AbstractIntegrationTest {
                 .satisfies(p -> {
                     assertThat(p.getStatus()).isEqualTo(PredictionEntity.STATUS_VALIDATED);
                     assertThat(p.getActual()).contains("kg");
+                });
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("prediction_outcome");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights/predictions");
+                    assertThat(n.getTitle()).isEqualTo("Bejött egy előrejelzés");
                 });
     }
 
