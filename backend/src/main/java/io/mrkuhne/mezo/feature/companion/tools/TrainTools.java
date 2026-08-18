@@ -282,7 +282,7 @@ public class TrainTools {
     }
 
     /**
-     * "gym: {day-label}: {exercises}" (or "gym: pihenőnap"), then an optional "; sport: …" per
+     * "gym ({day-label}): {exercises}" (or "pihenőnap (gym)"), then an optional "; sport: …" per
      * schedule slot falling on this date's weekday, then an optional "; futás: {label}" tail —
      * the same three parts, in the same order, as {@code ContextSnapshotAssembler}'s Ma:/Holnap:.
      */
@@ -292,16 +292,14 @@ public class TrainTools {
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
                 .orElse(List.of());
-        StringBuilder line = new StringBuilder("gym: ");
-        if (template.isEmpty() || exercises.isEmpty()) {
-            line.append("pihenőnap");
-        } else {
-            WorkoutSessionEntity t = template.get();
-            line.append(t.getDayLabel() != null ? t.getDayLabel() : "gym").append(": ")
-                    .append(exercises.stream()
-                            .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
-                            .collect(Collectors.joining(", ")));
-        }
+        // mezo-4qu: the gym half is rendered by the SHARED ToolText.gymLine, exactly like the sport
+        // half (ToolText.sportLine) — the tool and the chat snapshot can no longer disagree about a
+        // day. An absent template yields no exercises, which the helper reads as a rest day.
+        StringBuilder line = new StringBuilder(ToolText.gymLine(
+                template.map(WorkoutSessionEntity::getDayLabel).orElse(null),
+                exercises.stream()
+                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .toList()));
         sportSlotsOn(sportSlots, date).forEach(s -> line.append("; ").append(ToolText.sportLine(
                 s.getSport(), s.getTime(), s.getKind() == null ? null : s.getKind().getValue(),
                 s.getDurationMin())));

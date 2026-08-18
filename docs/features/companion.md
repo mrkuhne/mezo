@@ -106,16 +106,18 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `currentWeek`), plus **any recurring sport-schedule slot falling on that weekday**
   (`SportService.getSchedule`, slot convention `0=Hét..6=Vas`, mezo-ajp); `scope=meso` renders the
   full active mesocycle (`TrainService.listMesocycles`) — weeks/phases/day-templates. One day
-  renders as `gym: … ; sport: … ; futás: …`, the same three parts in the same order as the
-  snapshot's `Ma:`/`Holnap:`. Only the **sport** part is actually shared code (both build it with
-  `ToolText.sportLine`, so tool and prompt can never disagree about a day's sport) — the **gym**
-  part is rendered separately in each (`TrainTools.dayContentLine` vs
-  `ContextSnapshotAssembler.dayLine`), but **since mezo-650a they share the rest-day criterion**:
-  a present-but-empty template (zero exercises) renders as a rest day in BOTH (`gym: pihenőnap`
-  from the tool, `pihenőnap (gym)` from the snapshot). This was NOT an unlikely data shape — the
-  meso wizard stores all 7 weekdays as template rows, weekend rest days included (`type=Rest`,
-  zero exercises), so the snapshot's old `gym (<day label>)` rendering claimed a gym day every
-  weekend (the weekend-training hallucination). `nincs adat` only when there is neither an active mesocycle, nor an active running
+  renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
+  snapshot's `Ma:`/`Holnap:`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
+  and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
+  The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
+  is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
+  `gym (<day label>): <exercises>`. Sharing it is what the drift cost: the criterion used to be
+  duplicated in `TrainTools.dayContentLine` and `ContextSnapshotAssembler.dayLine`, the snapshot's
+  copy was missing it, and — since the meso wizard stores all 7 weekdays as template rows, weekend
+  rest days included (`type=Rest`, zero exercises) — it claimed a gym day every weekend (the
+  weekend-training hallucination, mezo-650a); the tool's copy then still said `gym: pihenőnap` for
+  the same day (mezo-4qu). `CompanionToolsRenderIT` pins both renderers on the same day, empty and
+  populated, so a third divergence cannot land silently. `nincs adat` only when there is neither an active mesocycle, nor an active running
   block, **nor a sport slot** at all — a volleyball evening is a plan in its own right; a real rest
   day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
@@ -814,7 +816,8 @@ DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:`
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
 `WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)` — since
 mezo-650a a present-but-EMPTY template (the meso wizard's explicit `Rest` rows, zero exercises)
-also renders `pihenőnap (gym)`, the same criterion as `TrainTools#dayContentLine` — PLUS any
+also renders `pihenőnap (gym)`, and since mezo-4qu that criterion is not merely "the same as"
+`TrainTools#dayContentLine` but literally the same code (`ToolText.gymLine`) — PLUS any
 recurring sport-schedule slot on that weekday, PLUS the active running block's prescribed session
 for that weekday (best-effort — absent block/week renders nothing, never fabricated). They used to
 be two near-identical renderers that had drifted: `Ma:` resolved gym only, so today's sport and run
