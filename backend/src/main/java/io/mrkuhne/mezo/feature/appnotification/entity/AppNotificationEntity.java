@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.notification.entity;
+package io.mrkuhne.mezo.feature.appnotification.entity;
 
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.Column;

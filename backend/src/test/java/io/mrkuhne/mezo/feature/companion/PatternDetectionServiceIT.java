@@ -21,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -256,7 +257,10 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         seedAntiCorrelatedDays(owner, 10);
         PatternEntity confirmed = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
         BigDecimal frozenR = confirmed.getR();
-        Instant frozenDetectedAt = confirmed.getLastDetectedAt();
+        // Since the class-level @Transactional removal, `after` is re-read from Postgres
+        // (timestamptz, microsecond precision) rather than served from the first-level cache —
+        // truncate the in-memory (nanosecond) value to match before comparing.
+        Instant frozenDetectedAt = confirmed.getLastDetectedAt().truncatedTo(ChronoUnit.MICROS);
 
         patternDetectionService.detect(owner);
 

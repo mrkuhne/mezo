@@ -1,10 +1,10 @@
-package io.mrkuhne.mezo.feature.notification.controller;
+package io.mrkuhne.mezo.feature.appnotification.controller;
 
 import io.mrkuhne.mezo.api.controller.NotificationFeedApi;
 import io.mrkuhne.mezo.api.dto.NotificationFeedItem;
 import io.mrkuhne.mezo.api.dto.NotificationFeedResponse;
-import io.mrkuhne.mezo.feature.notification.entity.AppNotificationEntity;
-import io.mrkuhne.mezo.feature.notification.service.AppNotificationService;
+import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.OffsetDateTime;

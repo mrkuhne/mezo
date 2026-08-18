@@ -1,10 +1,11 @@
-package io.mrkuhne.mezo.feature.notification.service;
+package io.mrkuhne.mezo.feature.appnotification.service;
 
-import io.mrkuhne.mezo.feature.notification.config.NotificationFeedProperties;
-import io.mrkuhne.mezo.feature.notification.domain.AppNotificationKind;
-import io.mrkuhne.mezo.feature.notification.entity.AppNotificationEntity;
-import io.mrkuhne.mezo.feature.notification.repository.AppNotificationRepository;
+import io.mrkuhne.mezo.feature.appnotification.config.NotificationFeedProperties;
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -48,8 +49,8 @@ public class AppNotificationService {
         AppNotificationEntity e = new AppNotificationEntity();
         e.setCreatedBy(owner);
         e.setKind(kind.key());
-        e.setTitle(PushSender.truncateBody(title, 120));
-        e.setBody(PushSender.truncateBody(body, 300));
+        e.setTitle(SafeTruncate.truncate(title, 120));
+        e.setBody(SafeTruncate.truncate(body, 300));
         e.setDeeplink(deeplink);
         e.setRefId(refId);
         e.setDedupKey(dedupKey);

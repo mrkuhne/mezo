@@ -1,9 +1,9 @@
-package io.mrkuhne.mezo.feature.notification;
+package io.mrkuhne.mezo.feature.appnotification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
-import io.mrkuhne.mezo.feature.notification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;

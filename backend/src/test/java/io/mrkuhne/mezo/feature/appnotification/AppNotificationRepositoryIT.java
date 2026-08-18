@@ -1,13 +1,12 @@
-package io.mrkuhne.mezo.feature.notification;
+package io.mrkuhne.mezo.feature.appnotification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
-import io.mrkuhne.mezo.feature.notification.repository.AppNotificationRepository;
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.AppNotificationPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -19,11 +18,10 @@ class AppNotificationRepositoryIT extends AbstractIntegrationTest {
 
     @Autowired private AppNotificationRepository repository;
     @Autowired private AppNotificationPopulator populator;
-    @Autowired private AppUserRepository appUserRepository;
-    @Autowired private OwnerProperties ownerProperties;
+    @Autowired private UserPopulator userPopulator;
 
     private UUID ownerId() {
-        return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+        return userPopulator.createUser().getId();
     }
 
     @Test

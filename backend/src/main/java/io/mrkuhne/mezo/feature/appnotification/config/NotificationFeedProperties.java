@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.notification.config;
+package io.mrkuhne.mezo.feature.appnotification.config;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

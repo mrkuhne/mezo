@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.notification.domain;
+package io.mrkuhne.mezo.feature.appnotification.domain;
 
 import java.util.Arrays;
 import java.util.Optional;

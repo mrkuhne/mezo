@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.notification;
+package io.mrkuhne.mezo.feature.appnotification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

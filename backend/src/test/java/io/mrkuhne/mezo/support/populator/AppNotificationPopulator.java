@@ -1,7 +1,7 @@
 package io.mrkuhne.mezo.support.populator;
 
-import io.mrkuhne.mezo.feature.notification.entity.AppNotificationEntity;
-import io.mrkuhne.mezo.feature.notification.repository.AppNotificationRepository;
+import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

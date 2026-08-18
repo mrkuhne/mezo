@@ -1,6 +1,6 @@
-package io.mrkuhne.mezo.feature.notification.repository;
+package io.mrkuhne.mezo.feature.appnotification.repository;
 
-import io.mrkuhne.mezo.feature.notification.entity.AppNotificationEntity;
+import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

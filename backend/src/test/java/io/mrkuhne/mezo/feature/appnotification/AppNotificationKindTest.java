@@ -1,8 +1,8 @@
-package io.mrkuhne.mezo.feature.notification;
+package io.mrkuhne.mezo.feature.appnotification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.notification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import org.junit.jupiter.api.Test;
 
 class AppNotificationKindTest {

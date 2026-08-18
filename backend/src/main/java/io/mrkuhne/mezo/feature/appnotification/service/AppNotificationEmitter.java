@@ -1,6 +1,6 @@
-package io.mrkuhne.mezo.feature.notification.service;
+package io.mrkuhne.mezo.feature.appnotification.service;
 
-import io.mrkuhne.mezo.feature.notification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
