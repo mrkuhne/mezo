@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-08-16
+updated: 2026-08-18
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -504,6 +504,7 @@ Multiple features narrate an off-screen **"pattern engine"** that Insights surfa
 - **Sleep** (`data/me/sleep.ts:25-33`): insight rows cite `"P2 pattern"` (`evidence: '8/10 nap megerősítve · P2 pattern'`) and `"Pattern P3 megerősítve"` — the **same IDs** as `insights.ts` patterns `p2`/`p3` (Mg-stack→quality, caffeine→onset).
 - **Fuel/Week** (`data/fuel/fuelWeek.ts:55,151,156`): `"Pattern P2 megerősítve"`, `"Pattern P2 megfigyelve"`, and a reasoning tool `get_pattern_correlation(P2)`.
 - **Goals** (`data/me/goals.ts:50`): a warning insight cites `"Pattern P2 alapján …"`.
+- **In-app notification feed** ([`_platform-notifications.md`](_platform-notifications.md), bd `mezo-gzhp`) — **real, not mock:** the backend `PatternDetectionService` now emits pattern lifecycle events into the platform's in-app notification feed — a new strong pattern crossing the decision-inbox strength gate, a band crossing (|r| moving between the "promising"/"strong" bands) on a still-undecided pattern, and a reinforcement of an already-confirmed pattern — as bell/panel notifications, deep-linking back into `/insights/patterns/{pairKey}`.
 
 **Takeaway:** Insights/Patterns is the *read surface* of a **cross-domain inference layer** that today exists only as coordinated mock copy referencing shared `P2`/`P3` identifiers. Phase 3 makes the engine real; the patterns/IDs must then be **stable, shared identifiers** across Train/Sleep/Fuel/Goals/Insights — build the pattern engine as a shared service, not an Insights-local feature.
 
