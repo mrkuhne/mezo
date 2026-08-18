@@ -677,6 +677,8 @@ export interface KnowledgeFact {
   source: FactSource
   /** Az utolsó megerősítés időpontja (ISO), null ha még sosem erősítették meg újra. */
   lastReinforcedAt: string | null
+  /** A tény létrejötte (ISO instant) — a prompt-rangsor másodlagos kulcsa (reinforced DESC, createdAt DESC). */
+  createdAt: string
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
 export interface FactCandidate { id: string; text: string; category: FactCategory }
