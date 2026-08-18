@@ -63,6 +63,10 @@ A `source` (+ `patternTitle`) szerinti eredet-mondat:
 
 A `minta: {title}` chip **megszűnik** — önismétlő volt.
 
+A minta címe **evidenciaként megmarad**, de csak akkor íródik ki (az eredet-mondat végén,
+`(A minta: „{title}".)` alakban), ha eltér a tény szövegétől — pontosan az az eset, amikor
+hordoz is információt.
+
 ### `reinforcementSentence(reinforced, lastReinforcedAt): string`
 - `0` → „Még nem jött vissza megerősítés."
 - `N > 0`, van dátum → `"{N}× visszaigazolva · utoljára {huMonthDay}"`
@@ -119,8 +123,10 @@ Fentről lefelé:
 5. **Három szakasz**:
    - **„Most ezeket kapja meg a társ · {n}/{PROMPT_TOP_N}"** — mindig nyitva, lábjegyzet: „Minden
      beszélgetés elején ezek a mondatok mennek elé."
-   - **„Bekapcsolva, de most kimarad · {n}"** — összecsukható, alap: csukva. Lábjegyzet: „Ha
-     megerősödnek vagy egy erősebb tény kiesik, bekerülnek."
+   - **„Bekapcsolva, de most kimarad · {n}"** — összecsukható, alap: **nyitva** (`defaultOpen`) —
+     egy frissen elfogadott tény-jelölt `reinforced: 0`-val ide sorolódik, csukott alapállapot
+     mellett a jóváhagyás pillanatában tűnne el a DOM-ból. Lábjegyzet: „Ha megerősödnek vagy egy
+     erősebb tény kiesik, bekerülnek."
    - **„Kikapcsolva · {n}"** — összecsukható, alap: csukva. Lábjegyzet: „Megőrzöm őket, de a társ
      nem használja."
 
