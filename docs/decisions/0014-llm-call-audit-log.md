@@ -130,9 +130,7 @@ cost was derived from.
   **placeholders to be reconciled with current Gemini pricing**; until then `cost_usd` is only as
   right as that block. The frozen-snapshot design means correcting them fixes the future without
   corrupting the past (and old rows keep showing the price they were billed at).
-- **The table only grows.** Nothing prunes it yet, and prompts/responses are stored (capped at
-  `mezo.llm-log.max-payload-chars`, with the true pre-truncation byte size kept in `payload_bytes`
-  so the cut is visible). Retention is the first follow-up.
+- **Retention (mezo-1y3p, 2026-08-18): payload ages out, cost never does.** The nightly `LlmLogRetentionJob` NULLs the four payload columns of rows older than `mezo.llm-log.retention.payload-days` (90) and stamps `payload_scrubbed_at`; token counters, `cost_usd` and `pricing_snapshot` are kept forever. The scrub is a hard UPDATE — this ADR's soft-delete exception stands; no row is deleted, so `created_by on delete set null` semantics are untouched. Design: [`2026-08-18-llm-log-retention-design.md`](../superpowers/specs/2026-08-18-llm-log-retention-design.md).
 - **Known limitations, filed rather than papered over:**
   - **bd mezo-58ig** — on a tool-round turn Spring AI's `UsageCalculator.getCumulativeUsage` returns
     a plain `DefaultUsage` with `nativeUsage = null`, so `thoughts`/`cached` are unrecoverable at the
