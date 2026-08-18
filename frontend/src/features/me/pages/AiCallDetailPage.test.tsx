@@ -197,4 +197,20 @@ describe('AiCallDetailPage (real mode edge cases)', () => {
     )
     expect(screen.queryByText(/NaN/)).not.toBeInTheDocument()
   })
+
+  it('shows the retention notice instead of silent empty payload when scrubbed', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/calls/${LLM_CALL_DETAIL_MOCK.id}`, () =>
+        HttpResponse.json({
+          ...LLM_CALL_DETAIL_MOCK,
+          systemPrompt: null,
+          userMessage: null,
+          responseText: null,
+          payloadScrubbedAt: '2026-08-18T02:40:00Z',
+        }),
+      ),
+    )
+    renderDetail()
+    expect(await screen.findByText(/retention törölte/)).toBeInTheDocument()
+  })
 })

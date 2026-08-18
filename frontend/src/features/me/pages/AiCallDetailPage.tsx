@@ -105,6 +105,12 @@ export function AiCallDetailPage() {
             A payload csonkolva lett — az eredeti mérete {data.payloadBytes} bájt.
           </p>
         )}
+        {data.payloadScrubbedAt && (
+          <p className="text-tertiary" style={{ fontSize: 10, fontWeight: 700, marginTop: 8 }}>
+            A prompt/válasz szövegét a retention törölte — {formatDateTime(data.payloadScrubbedAt)}.
+            A költség- és token-adatok megmaradtak.
+          </p>
+        )}
       </div>
     </div>
   )
