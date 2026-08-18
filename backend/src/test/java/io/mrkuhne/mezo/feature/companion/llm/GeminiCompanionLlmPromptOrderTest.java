@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Extraction;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Facts;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.HabitSuggest;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Hypotheses;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Journal;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Llm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Patterns;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.PatternPair;
@@ -100,7 +101,8 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Patterns("0 40 2 * * *", 60, 8, 7, 100, List.of(minimalPatternPair())),
                 new Hypotheses("0 0 3 * * SUN", 3, 0.75, 0.50),
                 new HabitSuggest(5),
-                new Transcription(5_242_880, List.of("audio/wav")));
+                new Transcription(5_242_880, List.of("audio/wav")),
+                new Journal(30));
     }
 
     private static PatternPair minimalPatternPair() {

@@ -813,6 +813,9 @@ mezo:
         - audio/mp4
         - audio/mpeg
         - audio/aac
+    # Phase 5 W1 journal (mezo-b3pp.1) — decision review-due offset in days (used by W1.4's decision journal).
+    journal:
+      decision-review-days: 30
   proactive:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week

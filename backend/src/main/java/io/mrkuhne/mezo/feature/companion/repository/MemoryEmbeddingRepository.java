@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,6 +44,9 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
 
     /** The embed pipeline's idempotence probe (V2.2) — one live embedding per source unit. */
     boolean existsByKindAndRefId(String kind, UUID refId);
+
+    /** The journal embed pipeline's update-in-place lookup (W1.1) — the live row for a source unit. */
+    Optional<MemoryEmbeddingEntity> findByKindAndRefId(String kind, UUID refId);
 
     /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
     List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
