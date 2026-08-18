@@ -307,6 +307,11 @@ mezo:
       # does not exist.
       notification-dispatch-job:
         enabled: true
+      # mezo-1y3p LLM-log payload retention (schedule: mezo.llm-log.retention.cron);
+      # off = the LlmLogRetentionJob bean does not exist. Deliberately independent of
+      # mezo.feature.llm-log.enabled: already-written payload keeps aging while recording is off.
+      llm-log-retention-job:
+        enabled: true
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
@@ -319,6 +324,12 @@ mezo:
       core-size: 1
       max-size: 2
       queue-capacity: 500
+    # mezo-1y3p payload retention — the 4 payload columns are NULLed after this many days;
+    # cost/token metadata is kept forever (cost attribution, ADR 0014). 03:40 is a verified-free
+    # slot: the dawn cron cluster sits at 02:20/02:40/03:00(SUN), the proactive block starts 05:45.
+    retention:
+      payload-days: 90
+      cron: "0 40 3 * * *"
     # Unit prices keyed by SERVED model id: USD per 1M tokens (generation) / per 1M chars (embedding).
     # Rates drift — verify the current Gemini rates when touching this block. Changing them does NOT
     # rewrite history: every logged call freezes its own pricing snapshot at write time.

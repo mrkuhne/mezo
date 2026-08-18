@@ -685,3 +685,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608180300_mezo-dhzk_needs_source_type.sql
+  - changeSet:
+      id: "1.0.0:202608181100_mezo-1y3p_llm_log_payload_scrubbed_at"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608181100_mezo-1y3p_llm_log_payload_scrubbed_at.sql

@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-17
+updated: 2026-08-18
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1088,8 +1088,15 @@ but it is documented here because both recording adapters live in `feature/compa
   `thinkingPerMillion`, `cachedPerMillion`, `embedPerMillionChars`, `pricedOn`).
 - **INSERT-only — the one table with NO `is_deleted`** ([ADR 0014](../decisions/0014-llm-call-audit-log.md)):
   `LlmLogEntity` deliberately does **not** extend `OwnedEntity` (that superclass mandates the
-  soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable; they leave
-  only via retention pruning (a hard `DELETE`, not built yet).
+  soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable and never
+  deleted — no row ever leaves the table; the only thing that changes is its payload, NULLed in
+  place by the retention job below (`mezo-1y3p`, shipped).
+- **Retention (`mezo-1y3p`):** the nightly `LlmLogRetentionJob` (`mezo.techcore.cron.llm-log-retention-job.enabled`,
+  independent of the write switch) NULLs the four payload columns (`system_prompt`,
+  `conversation_history`, `user_message`, `response_text`) of rows older than
+  `mezo.llm-log.retention.payload-days` (90) and stamps `payload_scrubbed_at`; token counters,
+  `cost_usd` and `pricing_snapshot` are kept forever. The detail view (`/me/ai-usage/:id`) renders
+  the honest scrubbed state instead of a silently empty payload.
 - **Reading it:** usage/cost aggregates **must exclude `status = 'ERROR'`** — an ERROR row carries no
   provider-reported usage or cost, but its request-side counters (image counts, embedding batch size
   + dimensions) do survive. A **`CANCELLED`** row (`mezo-1rz9` — the SSE client disconnected
@@ -2218,8 +2225,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Deferred (with bd ids):**
 - **LLM audit-log follow-ups (mezo-2zyu; read API + `/me/ai-usage` browsing UI shipped `mezo-uakh`):**
-  still open — retention pruning (nothing prunes the table yet), budget alerting, and reconciling
-  the placeholder `mezo.llm-log.pricing` rates with current Gemini pricing. (`mezo-58ig` per-round usage and
+  still open — budget alerting and reconciling the placeholder `mezo.llm-log.pricing` rates with
+  current Gemini pricing (payload retention itself shipped, `mezo-1y3p` — see the retention bullet
+  above). (`mezo-58ig` per-round usage and
   `mezo-1rz9` CANCELLED streams are FIXED — see the audit-log section above.)
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
   `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review
@@ -2293,7 +2301,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608161200_mezo-q71s_llm_log_conversation_history.sql` — the `conversation_history` column (nullable, no backfill needed — every existing row predates the chat's multi-turn port).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java` — **`mezo-al1i`** `LlmLogRepository` grew `aggregatePerDaySince` (native daily rollup, report-zone calendar days) alongside the existing `aggregateSince`; new `repository/LlmDailyAggregate.java` projection (day/calls/inputTokens/outputTokens/costUsd).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmUsageService.java` — **`mezo-al1i`** grew `perDay(days)` (a sibling of the existing `summary()` day/week/month rollup) + exposed `auditEnabled()` publicly for `MemoryObservatoryService`'s `enabled` short-circuit.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding, incl. `LlmLogProperties.Retention` (`payloadDays`/`cron`, `mezo-1y3p`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogRetentionJob.java` — **`mezo-1y3p`** the nightly scrub (`@Scheduled(cron = "${mezo.llm-log.retention.cron}")`, switch `mezo.techcore.cron.llm-log-retention-job.enabled`, deliberately independent of `mezo.feature.llm-log.enabled`): calls `LlmLogRepository.scrubPayloadsOlderThan` once per run.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608181100_mezo-1y3p_llm_log_payload_scrubbed_at.sql` — the `payload_scrubbed_at` column backing the scrub.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/controller/LlmUsageController.java` + `service/LlmUsageService.java` — the read side (`mezo-uakh`): `implements LlmUsageApi` (ungated, no `CurrentUserId`); `summary`/`breakdown`/`listCalls`/`call`, all `@Transactional(readOnly = true)` so the period aggregates share one DB snapshot.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/mapper/LlmLogMapper.java` — `LlmLogEntity → LlmCallDetailResponse` (hand-written default methods: the jsonb `PricingSnapshot`, `BigDecimal→Double` null-preserving cost, `Instant→OffsetDateTime`).

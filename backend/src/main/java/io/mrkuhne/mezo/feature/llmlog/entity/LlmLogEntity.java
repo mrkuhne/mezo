@@ -179,6 +179,14 @@ public class LlmLogEntity {
     @Column(name = "payload_bytes", nullable = false)
     private int payloadBytes;
 
+    /**
+     * mezo-1y3p retention stamp: when the nightly job hard-removed the four payload columns.
+     * Null = payload intact, or never present (embed rows) — the honest distinction the
+     * detail view renders. Never set vacuously: only rows that actually lost text get stamped.
+     */
+    @Column(name = "payload_scrubbed_at")
+    private Instant payloadScrubbedAt;
+
     // ── usage: vision ────────────────────────────────────────────────────────────
 
     @Column(name = "image_count")

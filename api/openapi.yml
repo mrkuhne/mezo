@@ -14854,6 +14854,13 @@ components:
           type: integer
           format: int32
           description: TRUE pre-truncation payload size in bytes
+        payloadScrubbedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            when the mezo-1y3p retention job hard-removed the payload columns;
+            null = payload intact or never present (embed rows)
         costUsd:
           type: number
           format: double
