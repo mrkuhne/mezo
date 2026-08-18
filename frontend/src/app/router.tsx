@@ -10,6 +10,7 @@ import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
+import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
@@ -76,6 +77,9 @@ export const routes: RouteObject[] = [
           { path: 'exercises', element: <ExercisesPage /> },
           { path: 'medals', element: <MedalsPage /> },
           { path: 'mesocycles', element: <MesocycleLibraryPage /> },
+          // The `Sablonok` tab (mezo-tlwa) — a Train tab like the ones above (keeps the
+          // sub-nav), NOT a full-screen sibling; the template EDITOR below still is one.
+          { path: 'templates', element: <MesoTemplatesPage /> },
         ],
       },
       { path: 'train/session', element: <ActiveWorkoutPage /> },
