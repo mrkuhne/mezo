@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-17
+updated: 2026-08-18
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -1297,6 +1297,22 @@ The FE `Challenge` type gained a **nullable `confidence`**, a `status`, the stru
 and `outcome`/`outcomeGood`.
 The proactive→train coupling is strictly one-way (the backend evaluator reads Train repositories; Train
 never imports proactive — challenges are NOT in `WorkoutPlan`, sourced separately by the page).
+
+### 5.11 Proactive → Platform notifications, in-app feed (✅ F2 wired — one-way, fire-and-forget)
+
+Every generator/evaluator in this feature that produces user-facing content now also emits an
+in-app notification into the platform's `app_notification` outbox at the moment that content
+persists (bd `mezo-gzhp.2`): `MemoirGenerator` (`memoir_ready`), `PredictionGenerator` /
+`PredictionValidationService` (`prediction_new` / `prediction_outcome`),
+`ExperimentProposalGenerator` / `ExperimentOutcomeService` (`experiment_proposed` /
+`experiment_closed`), and `ChallengeGenerator` / `ChallengeOutcomeEvaluator` (`challenge_event`, both
+the proposed and the closed moment) — each a one-line `AppNotificationEmitter.emit(...)` call. The
+call is synchronous but fire-and-forget: the emitter absorbs every failure, so a broken notification
+can never break the generator's own persistence. See
+[`_platform-notifications.md`](_platform-notifications.md) §3a/§4/§9 for the full producer→kind map,
+the dedup-key shapes, and the load-bearing rule that any emit-reachable IT test must drop its
+class-level `@Transactional` (the emitter's `REQUIRES_NEW` transaction otherwise FK-deadlocks against
+the test's own uncommitted fixtures).
 
 ## 6. How to use it (consume)
 
