@@ -14,7 +14,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Verifies the pattern-family feed emits (bd mezo-gzhp.1) end to end against Postgres. Reuses the
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
  * entry the nightly job calls) — inventing a fresh seeding recipe would be less reliable than the
  * proven one.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class PatternEmitIT extends AbstractIntegrationTest {
 
