@@ -95,6 +95,16 @@ The **`update-visual-baselines.yml`** workflow (`workflow_dispatch`) regenerates
 the dispatched ref on a clean `ubuntu-latest`, then pushes them back as a bot commit — so you never
 hand-generate linux PNGs on a non-linux box.
 
+Two traps this workflow sets, both observed in practice (mezo-1bu2):
+
+- **Dispatch it only AFTER your commit is on the dispatched ref.** It checks out `github.ref_name`
+  as it stands at dispatch time; run it against a branch that doesn't yet carry your pixel-moving
+  commit and it reports `no golden changes` — a green run that proves nothing.
+- **Its bot commit does not trigger `ci`.** GitHub suppresses workflow runs for pushes made with
+  `GITHUB_TOKEN`, and `ci.yml` has no `workflow_dispatch` trigger, so the commit carrying the fresh
+  linux goldens gets no CI run of its own. On a feature branch the PR's own run covers it; if the
+  goldens land straight on `main`, the next push (or a PR) is what finally proves the suite green.
+
 **When to re-baseline:** whenever a change **intentionally moves pixels** (a redesign, a token tweak, a
 new/changed screen). Update **both** platforms in the same change — `pnpm test:visual:update` locally
 for darwin, then `gh workflow run update-visual-baselines.yml -r <branch>` for linux (or let CI's red
