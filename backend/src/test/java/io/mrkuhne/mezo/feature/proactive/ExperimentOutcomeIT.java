@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
@@ -16,14 +17,17 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Deterministic outcome evaluation over a FIXED past window so "today" is always after the
  * experiment's end. The active window is [start, start+total-1]; the baseline is the equal-length
  * span before start.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 class ExperimentOutcomeIT extends AbstractIntegrationTest {
 
     // experiment ran 2026-06-15 .. 2026-06-21 (7 days); baseline 2026-06-08 .. 2026-06-14
@@ -35,6 +39,9 @@ class ExperimentOutcomeIT extends AbstractIntegrationTest {
 
     @Autowired
     private ExperimentRepository repository;
+
+    @Autowired
+    private AppNotificationRepository appNotificationRepository;
 
     @Autowired
     private UserPopulator userPopulator;
@@ -65,6 +72,11 @@ class ExperimentOutcomeIT extends AbstractIntegrationTest {
         assertThat(e.getStatus()).isEqualTo(ExperimentEntity.STATUS_COMPLETED);
         assertThat(e.getOutcomeGood()).isTrue();
         assertThat(e.getOutcome()).startsWith("Beigazolódott");
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("experiment_closed");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights/experiments");
+                });
     }
 
     @Test

@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -81,6 +83,7 @@ public class ChallengeGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     record ExerciseCandidate(ExerciseEntity exercise, int maxWeightPr, int loggedSetCount) {
     }
@@ -129,6 +132,12 @@ public class ChallengeGenerator {
             ChallengeEntity e = build(userId, templateSessionId, date, p, gather);
             if (e != null) {
                 saved.add(challengeRepository.saveAndFlush(e));
+                ChallengeEntity savedRow = saved.get(saved.size() - 1);
+                appNotificationEmitter.emit(userId, AppNotificationKind.CHALLENGE_EVENT,
+                        "Új kihívás a mai edzéshez",
+                        savedRow.getTitle(),
+                        AppNotificationKind.CHALLENGE_EVENT.deeplink(), savedRow.getId(),
+                        "challenge_proposed:" + savedRow.getId());
             }
         }
         return saved;

@@ -7,6 +7,7 @@ tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
   - backend/src/main/java/io/mrkuhne/mezo/feature/notification
+  - backend/src/main/java/io/mrkuhne/mezo/feature/appnotification
   - api/feature/notification/notification.yml
   - frontend/public/push-sw.js
   - frontend/src/data/notification
@@ -33,16 +34,21 @@ related: [proactive, today, ritual, me, fuel, insights, _platform-api-backend]
 > slice that completes the `mezo-h4wp` proactive epic's long-deferred **H2** item — see
 > [`proactive.md`](proactive.md) and [`roadmap.md`](../milestones/roadmap.md).
 >
-> **In-app feed (F1/F2/F3, bd `mezo-gzhp`): F1 DONE, F2/F3 NOT YET SHIPPED.** A second, sibling
+> **In-app feed (F1/F2/F3, bd `mezo-gzhp`): F1 + F2 DONE, F3 NOT YET SHIPPED.** A second, sibling
 > delivery layer sits alongside push: an `app_notification` outbox table + a bell/panel FE surface
-> in `AppHero`, fed by the AI-brain "pattern engine"/companion/insights domains rather than by
-> `AnchorResolver`'s anchors. F1 (this doc's new content, 2026-08-18) shipped the outbox, the feed
-> API, the bell+panel UI, and exactly **3 pattern-family emit sites**
-> (`pattern_inbox`/`pattern_signal`/`fact_reinforced` — see [`insights.md`](insights.md) §5). **F2**
-> (the remaining 9 emit sites across hypothesis/knowledge/memoir/prediction/experiment/challenge/
-> memory) and **F3** (mapping the 6 remaining `AppNotificationKind`s onto push categories via
-> `familyKey` + wiring `AnchorResolver` to the feed as a push source, with wake-deferral) are
-> **explicitly not built yet** — see §2/§3/§4/§9 below for what F1 alone covers.
+> in `AppHero`, fed by the AI-brain "pattern engine"/companion/proactive/insights domains rather
+> than by `AnchorResolver`'s anchors — the whole in-app-feed backend now lives in its own
+> **`feature/appnotification`** package (moved out of `feature/notification` during F2 to break a
+> `companion`↔`notification`↔`proactive` package cycle, bd `mezo-gzhp.1`/`mezo-gzhp.2`). F1
+> (2026-08-18) shipped the outbox, the feed API, the bell+panel UI, and the first **3 pattern-family
+> emit sites** (`pattern_inbox`/`pattern_signal`/`fact_reinforced` — see [`insights.md`](insights.md)
+> §5). **F2** (2026-08-18, bd `mezo-gzhp.2`) wired the remaining **9 emit sites** across
+> `FactExtractionService`, `HypothesisPipelineService`, `MemoirGenerator`, `PredictionGenerator`,
+> `PredictionValidationService`, `ExperimentProposalGenerator`, `ExperimentOutcomeService`,
+> `ChallengeGenerator`, `ChallengeOutcomeEvaluator` and `DailySummaryService` — **all 12
+> `AppNotificationKind`s now emit** (§3a/§4/§5). **F3** (mapping the `familyKey`s onto push
+> categories + wiring `AnchorResolver` to the feed as a push source, with wake-deferral) is the only
+> piece **explicitly not built yet** — see §2/§3/§4/§9 below.
 
 ## 1. Summary
 
@@ -65,8 +71,8 @@ N3 `mezo-h4wp.6.3` — all three slices shipped.
 [`docs/superpowers/specs/2026-08-18-notification-center-design.md`](../superpowers/specs/2026-08-18-notification-center-design.md)
 (approved 2026-08-18, A-variant mockup approved) / plan
 [`docs/superpowers/plans/2026-08-18-notification-center.md`](../superpowers/plans/2026-08-18-notification-center.md).
-**Driver:** `mezo-gzhp` — F1 `mezo-gzhp.1` shipped (this update); F2 (9 more emit sites) and F3 (push
-mapping) are separate, not-yet-started slices of the same epic.
+**Driver:** `mezo-gzhp` — F1 `mezo-gzhp.1` and F2 `mezo-gzhp.2` (this update) shipped; F3 (push
+mapping) is the one remaining, not-yet-started slice of the same epic.
 
 **Status per layer:**
 - **Backend `techcore/webpush`:** done (unchanged since N1) — VAPID ES256 signing, RFC 8291
@@ -89,12 +95,15 @@ mapping) are separate, not-yet-started slices of the same epic.
   iPhone from the k3s backend on 2026-07-29 (N1's exit criterion; bd `mezo-h4wp.6.1` notes "confirmed
   by Daniel"). N2/N3 build the dispatcher and the last two categories' feed on top of that proven
   path.
-- **In-app feed `feature/notification` (F1, bd `mezo-gzhp.1`, new table, new switch):** **done** —
-  `app_notification` outbox (§4), the 12-kind `AppNotificationKind` catalog (§4), `AppNotificationService`
-  (emit/feed/markAllRead, gated on `NOTIFICATION_FEED_SWITCH`), and the always-on
-  `AppNotificationEmitter` facade every producer injects (§9). Only the **pattern family** of emit
-  sites is wired in F1 (§3/§5); the other 9 kinds (F2) and the push-category mapping (F3) are **not
-  built**.
+- **In-app feed `feature/appnotification` (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`, new package,
+  new table, new switch):** **done** — `app_notification` outbox (§4), the 12-kind
+  `AppNotificationKind` catalog (§4), `AppNotificationService` (emit/feed/markAllRead, gated on
+  `NOTIFICATION_FEED_SWITCH`), and the always-on `AppNotificationEmitter` facade every producer
+  injects (§9). **All 12 kinds now emit** — F1 wired the 3 pattern-family sites (§3a/§5), F2 wired
+  the remaining 9 across the proactive/companion generators (§3a/§5). The package was moved out of
+  `feature/notification` into its own `feature/appnotification` during F2, to break a
+  `companion`↔`notification`↔`proactive` dependency cycle the new producers would otherwise have
+  created. Only the push-category mapping (F3) is **not built**.
 - **Frontend in-app feed (F1):** done — `useNotificationFeed()`/`useNotificationFeedActions()`
   (`useDualQuery`, §6) feed a new `features/notification/` bell + dropdown panel, wired as the 4th
   `AppHero` counter chip (§2).
@@ -207,13 +216,15 @@ parallel for now (both switches stay on) and are retired in a later task.
 **The scheduler-pool-of-1 + async handoff is the load-bearing shape of this whole slice** — see §9
 for why `PushDispatchExecutor` must be a separate `@Component`, not a private method.
 
-### 3a. In-app feed emit flow (F1, bd `mezo-gzhp.1`) — a separate, simpler pipeline
+### 3a. In-app feed emit flow (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`) — a separate, simpler pipeline
 
 No cron, no scheduler-pool concern — a producer emits **synchronously, inline**, at the moment the
-event happens:
+event happens. F1 wired one producer (`PatternDetectionService`); F2 wired the other nine
+`feature/companion`/`feature/proactive` generators, so all 12 `AppNotificationKind`s now have a live
+emit site:
 
 ```
-[Producer — F1 has exactly ONE: PatternDetectionService, feature/companion/service/]
+[Producer — F1: PatternDetectionService, feature/companion/service/]
     upsert(...)             → new/re-detected pattern passes the strength gate
         → AppNotificationEmitter.emit(owner, PATTERN_INBOX, title, body, deeplink, refId,
                                        "pattern_inbox:{pairKey}")
@@ -223,7 +234,35 @@ event happens:
     reinforcePromotedFact(...) → a CONFIRMED pattern re-detected in the same direction
         → AppNotificationEmitter.emit(owner, FACT_REINFORCED, ..., "fact_reinforced:{factId}:{count}")
 
-[AppNotificationEmitter — the ALWAYS-ON facade, every producer injects this, never the service]
+[Producers — F2, feature/companion/service/ + feature/proactive/service/]
+    FactExtractionService         → a new learned-fact candidate persists
+        → emit(FACT_CANDIDATE, ..., "fact_candidate:{candidateId}")
+    FactExtractionService         → the chat re-confirms an already-CONFIRMED fact (a SECOND,
+                                     independent FACT_REINFORCED source alongside
+                                     PatternDetectionService.reinforcePromotedFact above)
+        → emit(FACT_REINFORCED, ..., "fact_reinforced:{factId}:{reinforcementCount}")
+    HypothesisPipelineService     → a new AI hypothesis persists
+        → emit(HYPOTHESIS_NEW, ..., "hypothesis_new:{pairKey}")
+    MemoirGenerator                → the weekly memoir persists
+        → emit(MEMOIR_READY, ..., "memoir_ready:{weekStart}")
+    PredictionGenerator            → each new prediction persists
+        → emit(PREDICTION_NEW, ..., "prediction_new:{predictionId}")
+    PredictionValidationService    → a prediction closes (validated or missed)
+        → emit(PREDICTION_OUTCOME, ..., "prediction_outcome:{predictionId}")
+    ExperimentProposalGenerator    → each new experiment proposal persists
+        → emit(EXPERIMENT_PROPOSED, ..., "experiment_proposed:{experimentId}")
+    ExperimentOutcomeService       → an experiment closes
+        → emit(EXPERIMENT_CLOSED, ..., "experiment_closed:{experimentId}")
+    ChallengeGenerator             → a workout micro-challenge is proposed
+        → emit(CHALLENGE_EVENT, ..., "challenge_proposed:{challengeId}")
+    ChallengeOutcomeEvaluator      → a challenge resolves (both the inconclusive-timeout path and
+                                     the hit/miss path)
+        → emit(CHALLENGE_EVENT, ..., "challenge_closed:{challengeId}")
+    DailySummaryService            → the daily narrative persists and is embedded
+        → emit(MEMORY_NOTE, ..., "memory_note:{date}")
+
+[AppNotificationEmitter — the ALWAYS-ON facade, every producer injects this, never the service —
+ feature/appnotification/service/ (moved out of feature/notification in F2, §9)]
     catches EVERYTHING (including the service bean not existing when the switch is off)
     → AppNotificationService.emit(...)   [@Transactional(REQUIRES_NEW)]
          exists-check on (created_by, dedup_key) → true: no-op, return
@@ -236,6 +275,15 @@ event happens:
                               focus / app open (TanStack default, no polling)
     NotificationBell open   → POST /api/notification/feed/read-all  (markAllRead, optimistic)
 ```
+
+**`CHALLENGE_EVENT` is the one kind with two independent producers for two different lifecycle
+moments** — `ChallengeGenerator` fires it when a challenge is *proposed*, `ChallengeOutcomeEvaluator`
+fires the same kind when it is *closed*, distinguished only by the `challenge_proposed:`/
+`challenge_closed:` dedup-key prefix (not a separate kind — both moments deeplink to the same
+`/train`). **`FACT_REINFORCED` similarly now has two independent producers**
+(`PatternDetectionService.reinforcePromotedFact` and `FactExtractionService`'s chat-side
+reinforcement branch) sharing one dedup-key shape (`"fact_reinforced:{factId}:{count}"`), so the two
+sources can never double-notify the same reinforcement count.
 
 **Copy is composed once, at emit time, in the producer** (Hungarian, following the same §6 copy
 rules as push) — never re-derived on read. This is deliberate: slice **F3** will have the push
@@ -336,10 +384,18 @@ a second source of truth for the same minute (class javadoc, `NotificationCatego
 | `NotificationScheduleService` | `replace` (per-category full replace, `feWritten`-gated) + `liveFor` (the dispatcher's read) |
 | `NotificationController` | implements `NotificationApi` — all six push operations, thin delegation |
 | `PushSubscriptionService` / `PushSender` | N1, unchanged |
-| `AppNotificationKind` (F1) | the 12-kind in-app catalog (below) |
-| `AppNotificationService` (F1) | `emit` (`REQUIRES_NEW`, dedup-idempotent), `feed(limit)`, `markAllRead` — gated on `NOTIFICATION_FEED_SWITCH` |
-| `AppNotificationEmitter` (F1) | the always-on facade every producer injects — absorbs every exception (§9) |
-| `NotificationFeedController` (F1) | implements `NotificationFeedApi` — the two feed operations, thin delegation |
+
+### `feature/appnotification` classes (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`)
+
+Moved out of `feature/notification` in F2 to break a `companion`↔`notification`↔`proactive` package
+cycle once both domains needed to inject the emitter (§9).
+
+| Class | Responsibility |
+|---|---|
+| `AppNotificationKind` | the 12-kind in-app catalog (§4) — all 12 wired to a producer as of F2 |
+| `AppNotificationService` | `emit` (`REQUIRES_NEW`, dedup-idempotent), `feed(limit)`, `markAllRead` — gated on `NOTIFICATION_FEED_SWITCH` |
+| `AppNotificationEmitter` | the always-on facade every producer injects — absorbs every exception (§9) |
+| `NotificationFeedController` | implements `NotificationFeedApi` — the two feed operations, thin delegation |
 
 ### `app_notification` (F1, bd `mezo-gzhp.1`)
 
@@ -361,24 +417,26 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 12-kind catalog (`feature/notification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 12-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its slice-F3 push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **Only the first 3 rows are wired to a producer
-in F1** (§3a/§5); the rest are catalog entries F2 will wire up one emit site at a time.
+deeplink base — pinned by `AppNotificationKindTest`. **All 12 rows are wired to a producer as of F2**
+(bd `mezo-gzhp.2`) — only the `familyKey`→push-category mapping (F3) remains unbuilt.
 
-| Key | familyKey (F3) | Deeplink base | Wired in F1? |
+| Key | familyKey (F3) | Deeplink base | Producer |
 |---|---|---|---|
-| `pattern_inbox` | `pattern` | `/insights/patterns/{pairKey}` | **yes** — `PatternDetectionService.upsert` |
-| `pattern_signal` | `pattern` | `/insights/patterns/{pairKey}` | **yes** — `PatternDetectionService.recordSnapshot` |
-| `hypothesis_new` | `pattern` | `/insights` | no (F2) |
-| `fact_candidate` | `knowledge` | `/insights/knowledge` | no (F2) |
-| `fact_reinforced` | `knowledge` | `/insights/knowledge` | **yes** — `PatternDetectionService.reinforcePromotedFact` |
-| `memoir_ready` | **null** | `/insights/memoir` | no (F2) — familyKey is null *by design*: the existing `memoir` push category already covers this event, so a second push category would double-notify |
-| `prediction_new` / `prediction_outcome` | `prediction` | `/insights/predictions` | no (F2) |
-| `experiment_proposed` / `experiment_closed` | `experiment` | `/insights/experiments` | no (F2) |
-| `challenge_event` | `challenge` | `/train` | no (F2) |
-| `memory_note` | `memory` | `/insights/memoria` | no (F2) |
+| `pattern_inbox` | `pattern` | `/insights/patterns/{pairKey}` | F1 — `PatternDetectionService.upsert` |
+| `pattern_signal` | `pattern` | `/insights/patterns/{pairKey}` | F1 — `PatternDetectionService.recordSnapshot` |
+| `hypothesis_new` | `pattern` | `/insights` | F2 — `HypothesisPipelineService` |
+| `fact_candidate` | `knowledge` | `/insights/knowledge` | F2 — `FactExtractionService` |
+| `fact_reinforced` | `knowledge` | `/insights/knowledge` | F1 — `PatternDetectionService.reinforcePromotedFact`; **also F2** — `FactExtractionService`'s chat-side reinforcement branch (two independent producers, one dedup-key shape, §3a) |
+| `memoir_ready` | **null** | `/insights/memoir` | F2 — `MemoirGenerator` — familyKey is null *by design*: the existing `memoir` push category already covers this event, so a second push category would double-notify |
+| `prediction_new` | `prediction` | `/insights/predictions` | F2 — `PredictionGenerator` |
+| `prediction_outcome` | `prediction` | `/insights/predictions` | F2 — `PredictionValidationService` |
+| `experiment_proposed` | `experiment` | `/insights/experiments` | F2 — `ExperimentProposalGenerator` |
+| `experiment_closed` | `experiment` | `/insights/experiments` | F2 — `ExperimentOutcomeService` |
+| `challenge_event` | `challenge` | `/train` | F2 — `ChallengeGenerator` (proposed) **and** `ChallengeOutcomeEvaluator` (closed) — one kind, two lifecycle moments, distinguished only by dedup-key prefix (§3a) |
+| `memory_note` | `memory` | `/insights/memoria` | F2 — `DailySummaryService` |
 
 ### API contract (`api/feature/notification/notification.yml`)
 
@@ -436,16 +494,25 @@ the OpenAPI schema itself (1..100).
   the pure `notificationForecast.ts` + `projectStackDay`'s zoned slots.
 - **`_platform-api-backend.md`** — same contract-first pipeline + platform conventions as every
   other feature; the notification endpoint table now lists all six push operations (§5c there).
-- **Insights / pattern engine** ([`insights.md`](insights.md) §5) — **F1's one producer.**
-  `PatternDetectionService` (`feature/companion/service/`, NOT `feature/notification`) is the ONLY
-  emit site wired so far: a new strong pattern → `pattern_inbox`, a band crossing on an undecided
-  pattern → `pattern_signal`, a re-detected `CONFIRMED` pattern → `fact_reinforced` (§3a/§4).
-  `NotificationFeedProperties`' `inboxMinAbsR`/`inboxMaxP`/`bandPromising`/`bandStrong` MUST mirror
-  Insights' own `STRONG_SIGNAL` constant and `strengthWord` bands (`data/insights/insights.ts`,
-  `features/insights/logic/findings.ts`) — pinned by tests on **both** sides, so the bell can never
-  disagree with what the Insights dashboard itself calls "strong". The other 6 Insights-adjacent
-  kinds (`hypothesis_new`, `fact_candidate`, `memoir_ready`, `prediction_*`, `experiment_*`,
-  `memory_note`) are cataloged (§4) but **not yet wired** — that is slice F2.
+- **Insights / pattern engine** ([`insights.md`](insights.md) §5) — **F1's producer, unchanged.**
+  `PatternDetectionService` (`feature/companion/service/`) emits: a new strong pattern →
+  `pattern_inbox`, a band crossing on an undecided pattern → `pattern_signal`, a re-detected
+  `CONFIRMED` pattern → `fact_reinforced` (§3a/§4). `NotificationFeedProperties`'
+  `inboxMinAbsR`/`inboxMaxP`/`bandPromising`/`bandStrong` MUST mirror Insights' own `STRONG_SIGNAL`
+  constant and `strengthWord` bands (`data/insights/insights.ts`, `features/insights/logic/findings.ts`)
+  — pinned by tests on **both** sides, so the bell can never disagree with what the Insights dashboard
+  itself calls "strong".
+- **Companion (knowledge/hypothesis) + Proactive (memoir/prediction/experiment/challenge/daily
+  summary)** — **new in F2 (bd `mezo-gzhp.2`).** Nine more `feature/companion`/`feature/proactive`
+  generators each gained a one-line `AppNotificationEmitter.emit(...)` at the point their own content
+  persists — `FactExtractionService` (`fact_candidate`, plus a second `fact_reinforced` source
+  alongside `PatternDetectionService`), `HypothesisPipelineService` (`hypothesis_new`),
+  `MemoirGenerator` (`memoir_ready`), `PredictionGenerator`/`PredictionValidationService`
+  (`prediction_new`/`prediction_outcome`), `ExperimentProposalGenerator`/`ExperimentOutcomeService`
+  (`experiment_proposed`/`experiment_closed`), `ChallengeGenerator`/`ChallengeOutcomeEvaluator`
+  (`challenge_event`, both lifecycle moments), `DailySummaryService` (`memory_note`) — see §3a for the
+  full per-producer dedup-key shapes. **All 12 `AppNotificationKind`s now emit; only the F3
+  push-category mapping remains.**
 
 ## 6. How to use it (consume)
 
@@ -492,11 +559,14 @@ value is the **honest empty list**, never the mock seed — a badge must never f
 at a live user before the first real fetch lands. `useNotificationFeedActions().markAllRead()` is
 optimistic (`onMutate` flips every row's `readAt` in the cache immediately, `onError` rolls back).
 
-**Backend (adding a new emit site, F2):** inject `AppNotificationEmitter` (never
+**Backend (adding a new emit site):** inject `AppNotificationEmitter` (never
 `AppNotificationService` directly — the emitter is the only thing that survives the feed switch being
 off) and call `.emit(owner, kind, title, body, deeplink, refId, dedupKey)` at the point the event
 happens; compose the Hungarian copy inline, following the §6 copy rules verbatim, and pick a
-`dedupKey` that is stable across a retry of the same logical event (§3a/§4).
+`dedupKey` that is stable across a retry of the same logical event (§3a/§4). **If the producer's own
+IT test carries a class-level `@Transactional`, remove it** — `emit`'s `REQUIRES_NEW` transaction
+will FK-deadlock against the test's own not-yet-committed rows otherwise (§9's F1/F2 gotcha; every
+one of the 12 current producer IT classes had to have this annotation dropped).
 
 ## 7. How to extend it (adding a 15th category)
 
@@ -589,7 +659,7 @@ happens; compose the Hungarian copy inline, following the §6 copy rules verbati
 - Commands: `cd frontend && pnpm test` and `VITE_USE_MOCK=true pnpm test` (both must stay green) +
   `pnpm build`.
 
-**In-app feed (F1, bd `mezo-gzhp.1`) — backend:**
+**In-app feed (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`) — backend:**
 - `AppNotificationRepositoryIT` (2) — the dedup partial-unique + the ordered feed query.
 - `AppNotificationServiceIT` (5) — same-dedup-key double-emit persists one row
   (`testEmit_shouldPersistOneRow_whenCalledTwiceWithSameDedupKey`), title/body truncation to the
@@ -600,15 +670,25 @@ happens; compose the Hungarian copy inline, following the §6 copy rules verbati
 - `NotificationFeedApiIT` (3) — own-rows-only newest-first, `read-all` stamps every row, `401` when
   unauthenticated.
 - `AppNotificationKindTest` — pins the 12-key catalog (keys, familyKey, deeplink) against the spec.
-- `PatternEmitIT` (2) — `PatternDetectionService.upsert` emits exactly one `pattern_inbox` row for a
-  new strong pattern, and running detection twice emits only one row (dedup holds across a
-  re-detection). **Honest note:** this test could not be run on this machine (the local
-  `PatternDetectionService` IT suite needs the full Testcontainers backend stack, which OOM-dies
-  under swap thrash here per `docs/infrastructure/local-dev-testing.md`) — it executes for the first
-  time in CI.
+- `PatternEmitIT` (2, F1) — `PatternDetectionService.upsert` emits exactly one `pattern_inbox` row for
+  a new strong pattern, and running detection twice emits only one row (dedup holds across a
+  re-detection).
+- **F2 — no new IT classes; the existing producer IT suites gained `AppNotificationRepository`-backed
+  emit assertions directly** (each producer's own IT is the natural place to assert its emit, rather
+  than a parallel `*EmitIT` per producer): `FactExtractionServiceIT` (`fact_candidate` +
+  `fact_reinforced` from the chat-reinforcement branch), `HypothesisPipelineServiceIT`
+  (`hypothesis_new`), `MemoirGeneratorIT` (`memoir_ready`, plus a double-generate-stays-single-row
+  dedup case), `PredictionGeneratorIT`/`PredictionValidationIT` (`prediction_new`/
+  `prediction_outcome`), `ExperimentProposalGeneratorIT`/`ExperimentOutcomeIT`
+  (`experiment_proposed`/`experiment_closed`), `ChallengeGeneratorIT`/`ChallengeOutcomeIT`
+  (`challenge_event`, both lifecycle moments), `DailySummaryServiceIT` (`memory_note`). **All ten of
+  these IT classes lost their class-level `@Transactional`** — see §9's F1/F2 gotcha.
+- **Honest note:** none of the above emit-reachable IT suites could be run on this machine (they need
+  the full Testcontainers backend stack, which OOM-dies under swap thrash here per
+  `docs/infrastructure/local-dev-testing.md`) — they execute for the first time in CI.
 - Data via `support/populator/AppNotificationPopulator.java`; `app_notification` joined the
   `ResetDatabase` TRUNCATE list alongside the N-slice tables.
-- Commands: `cd backend && ./mvnw clean test -Dtest='AppNotification*,NotificationFeedApiIT,PatternEmitIT'`.
+- Commands: `cd backend && ./mvnw clean test -Dtest='AppNotification*,NotificationFeedApiIT,PatternEmitIT,FactExtractionServiceIT,HypothesisPipelineServiceIT,MemoirGeneratorIT,PredictionGeneratorIT,PredictionValidationIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ChallengeGeneratorIT,ChallengeOutcomeIT,DailySummaryServiceIT'`.
 
 **In-app feed (F1) — frontend:**
 - `data/notification/feedHooks.test.tsx` (4, both mock/real modes) — the honest-empty real
@@ -788,7 +868,26 @@ happens; compose the Hungarian copy inline, following the §6 copy rules verbati
   (expiring quests, at-risk streaks, level-ups), multi-device fan-out tuning. None of these are
   "N2/N3 unfinished" — they were explicitly scoped out of v1 in the design brainstorm.
 
-**In-app feed (F1, bd `mezo-gzhp.1`) gotchas:**
+**In-app feed (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`) gotchas:**
+- **An emit-reachable service's IT class must never carry class-level `@Transactional` — this is a
+  standing rule now, not a one-off fix.** `AppNotificationEmitter.emit(...)` always opens its own
+  `REQUIRES_NEW` transaction (§3a). When the calling IT method itself runs inside a class-level
+  `@Transactional` (the common integration-test shape: seed data in the same rollback-only
+  transaction as the assertions), that seed data — e.g. the test user row `emit`'s FK points at — is
+  **uncommitted** from any other transaction's point of view. `REQUIRES_NEW` suspends the outer
+  transaction and opens a genuinely separate one on a second connection, so its `INSERT` blocks
+  waiting to see a row the outer, still-open transaction will never commit — a real Postgres **FK-wait
+  deadlock**, not a flaky timing issue, and it reproduces on every run. F1 hit this first
+  (`PatternDetectionServiceIT`, `PatternEmitIT`); F2 turned nine more services emit-reachable and
+  dropped the same class-level annotation from their IT classes too — ten in total across both
+  slices: `FactExtractionServiceIT`, `HypothesisPipelineServiceIT`, `MemoirGeneratorIT`,
+  `PredictionGeneratorIT`, `PredictionValidationIT`, `ExperimentProposalGeneratorIT`,
+  `ExperimentOutcomeIT`, `ChallengeGeneratorIT`, `ChallengeOutcomeIT`, `DailySummaryServiceIT`. **The
+  rule for the next emit site:** if the producer's own IT test has a class-level `@Transactional`,
+  remove it and let the test commit its fixtures for real (`saveAndFlush` + `ResetDatabase` between
+  tests, the house pattern) before asserting against `AppNotificationRepository` — do not add a
+  `REQUIRES_NEW`-avoiding workaround inside `emit` itself, the isolation the outbox needs from its
+  caller's transaction is the point, not the bug.
 - **`AppNotificationEmitter` is the ALWAYS-ON facade every producer injects — never
   `AppNotificationService` directly.** It absorbs every exception, including the feed switch being
   off entirely (the service bean then does not exist — `ObjectProvider.getIfAvailable()` returns
@@ -819,9 +918,19 @@ happens; compose the Hungarian copy inline, following the §6 copy rules verbati
 - **`NotificationFeedProperties`' inbox/band thresholds are a cross-stack pinned mirror, same shape
   as the N-slice `bandPromising`/`bandStrong` mirroring `strengthWord` (§5).** They must never drift
   from Insights' own `STRONG_SIGNAL`/`strengthWord` constants without updating both sides' tests.
-- **F2 (9 more emit sites) and F3 (push-category mapping + `AnchorResolver` feed source with
-  wake-deferral) are explicitly NOT built** — not a gap in F1, a deliberate slice boundary (see the
-  top-of-doc note and §1).
+- **The `feature/appnotification` package split (F2) exists to break a real dependency cycle, not for
+  tidiness.** Once `feature/companion` and `feature/proactive` producers both needed
+  `AppNotificationEmitter`/`AppNotificationKind`, keeping those classes inside `feature/notification`
+  (which itself has no reason to depend on `companion`/`proactive`) would have created a
+  `companion`↔`notification`↔`proactive` package cycle. The in-app-feed classes (`AppNotificationKind`,
+  `AppNotificationEntity`, `AppNotificationRepository`, `AppNotificationService`,
+  `AppNotificationEmitter`, `NotificationFeedController`, `NotificationFeedProperties`) moved to their
+  own `feature/appnotification` package so both `companion` and `proactive` can depend on it without
+  either depending on `notification` (the push slice) at all — the two delivery layers (push vs.
+  in-app feed) no longer share a package, only the design intent (§1).
+- **F3 (push-category mapping + `AnchorResolver` feed source with wake-deferral) is the only piece
+  explicitly NOT built** — not a gap in F1/F2, a deliberate slice boundary (see the top-of-doc note
+  and §1).
 
 ### The §6 copy rules (verbatim from the design spec — the guardrail a later slice must not regress)
 
@@ -857,17 +966,22 @@ These rules are enforced by convention + this doc, not by a runtime check — a 
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_SWITCH`, `NOTIFICATION_DISPATCH_JOB_SWITCH`
 - Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{AnchorResolverIT,AnchorResolverRitualSwitchOffIT,DueEvaluatorTest,NotificationApiIT,NotificationCategoryTest,NotificationDispatchJobIT,NotificationPrefApiIT,NotificationPrefRepositoryIT,NotificationScheduleApiIT,PushSenderIT,PushSubscriptionRepositoryIT,PushSubscriptionServiceIT}.java`, `feature/notification/service/{AnchorResolverExcerptTest,PushSenderTruncationTest}.java`; `support/populator/NotificationPopulator.java`; `support/ResetDatabase.java` (`notification_pref`/`push_log`/`notification_schedule` in the TRUNCATE list)
 
-**Backend — `feature/notification` in-app feed (F1, bd `mezo-gzhp.1`)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/AppNotificationKind.java` — the 12-kind catalog (§4)
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/entity/AppNotificationEntity.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/repository/AppNotificationRepository.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/service/{AppNotificationService,AppNotificationEmitter}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/controller/NotificationFeedController.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/config/NotificationFeedProperties.java` — `mezo.notification.feed.{limit,inbox-min-abs-r,inbox-max-p,band-promising,band-strong}` (the last four MUST mirror the FE Insights constants, §5/§9)
+**Backend — `feature/appnotification` in-app feed (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`; moved
+out of `feature/notification` in F2 to break a `companion`↔`notification`↔`proactive` package
+cycle, §9)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/domain/AppNotificationKind.java` — the 12-kind catalog (§4)
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/entity/AppNotificationEntity.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/repository/AppNotificationRepository.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/service/{AppNotificationService,AppNotificationEmitter}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/controller/NotificationFeedController.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/config/NotificationFeedProperties.java` — `mezo.notification.feed.{limit,inbox-min-abs-r,inbox-max-p,band-promising,band-strong}` (the last four MUST mirror the FE Insights constants, §5/§9)
 - Migration: `202608181400_mezo-gzhp.1_create_app_notification.sql` (`db/changelog/1.0.0/script/`, registered in `1.0.0/1.0.0_master.yml`)
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_FEED_SWITCH` (`mezo.feature.notification-feed.enabled`)
-- The one F1 producer (lives outside `feature/notification`): `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternDetectionService.java` — `upsert`/`recordSnapshot`/`reinforcePromotedFact` (§3a/§5)
-- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{AppNotificationRepositoryIT,AppNotificationServiceIT,NotificationFeedApiIT,AppNotificationKindTest,PatternEmitIT}.java`; `support/populator/AppNotificationPopulator.java`; `support/ResetDatabase.java` (`app_notification` in the TRUNCATE list)
+- The 11 producers (all live outside `feature/appnotification`, injecting `AppNotificationEmitter`, §3a/§5):
+  - F1: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternDetectionService.java` — `upsert`/`recordSnapshot`/`reinforcePromotedFact`
+  - F2, `feature/companion/service/`: `FactExtractionService.java` (`fact_candidate` + a second `fact_reinforced` source), `HypothesisPipelineService.java` (`hypothesis_new`), `DailySummaryService.java` (`memory_note`)
+  - F2, `feature/proactive/service/`: `MemoirGenerator.java` (`memoir_ready`), `PredictionGenerator.java` (`prediction_new`), `PredictionValidationService.java` (`prediction_outcome`), `ExperimentProposalGenerator.java` (`experiment_proposed`), `ExperimentOutcomeService.java` (`experiment_closed`), `ChallengeGenerator.java` (`challenge_event`, proposed), `ChallengeOutcomeEvaluator.java` (`challenge_event`, closed)
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/appnotification/{AppNotificationRepositoryIT,AppNotificationServiceIT,NotificationFeedApiIT,AppNotificationKindTest,PatternEmitIT}.java`; per-producer emit assertions added directly to `feature/companion/{FactExtractionServiceIT,HypothesisPipelineServiceIT,DailySummaryServiceIT}.java` and `feature/proactive/{MemoirGeneratorIT,PredictionGeneratorIT,PredictionValidationIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ChallengeGeneratorIT,ChallengeOutcomeIT}.java` (all ten dropped class-level `@Transactional`, §9); `support/populator/AppNotificationPopulator.java`; `support/ResetDatabase.java` (`app_notification` in the TRUNCATE list)
 
 **API contract**
 - `api/feature/notification/notification.yml` → merged `api/openapi.yml` → `frontend/src/data/_client/api.gen.ts` + generated `io.mrkuhne.mezo.api.controller.{NotificationApi,NotificationFeedApi}` / `io.mrkuhne.mezo.api.dto.{PushSubscriptionRequest,PushTestResponse,NotificationPref,NotificationPrefListRequest,NotificationPrefListResponse,NotificationScheduleEntry,NotificationScheduleRequest,NotificationFeedItem,NotificationFeedResponse}` (the last two DTOs are F1's `NotificationFeed` tag, §4)

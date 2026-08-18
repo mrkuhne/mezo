@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -58,6 +60,7 @@ public class MemoirGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final GrowthDigestBlock growthDigestBlock;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     public record MemoirGather(String payload, List<MemoirAnchorsEnvelope.Anchor> candidates) {
     }
@@ -94,7 +97,13 @@ public class MemoirGenerator {
         memoir.setAnchors(new MemoirAnchorsEnvelope(
                 resolveAnchors(parsed.anchorIndexes(), gather.candidates())));
         memoir.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
-        return memoirRepository.saveAndFlush(memoir);
+        MemoirEntity saved = memoirRepository.saveAndFlush(memoir);
+        appNotificationEmitter.emit(userId, AppNotificationKind.MEMOIR_READY,
+                "Elkészült a heti memoár",
+                saved.getTitle(),
+                AppNotificationKind.MEMOIR_READY.deeplink(), saved.getId(),
+                "memoir_ready:" + weekStart);
+        return saved;
     }
 
     /** PURE-CODE payload; null when the week [weekStart, weekStart+6] has no summaries. */

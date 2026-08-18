@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -31,6 +33,7 @@ public class ChallengeOutcomeEvaluator {
     private final ChallengeRepository challengeRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     /** Backstop over all accepted challenges of the user. Returns the count resolved. */
     @Transactional
@@ -70,6 +73,11 @@ public class ChallengeOutcomeEvaluator {
             c.setOutcome("Nem értékelhető — nem lett logolva.");
             c.setOutcomeGood(null);
             challengeRepository.saveAndFlush(c);
+            appNotificationEmitter.emit(c.getCreatedBy(), AppNotificationKind.CHALLENGE_EVENT,
+                    "Kihívás lezárult",
+                    c.getOutcome(),
+                    AppNotificationKind.CHALLENGE_EVENT.deeplink(), c.getId(),
+                    "challenge_closed:" + c.getId());
             return true;
         }
         boolean hit = switch (c.getType()) {
@@ -92,6 +100,11 @@ public class ChallengeOutcomeEvaluator {
         c.setOutcomeGood(hit);
         c.setOutcome((hit ? "Sikerült · " : "Nem sikerült most · ") + describe(c, logged));
         challengeRepository.saveAndFlush(c);
+        appNotificationEmitter.emit(c.getCreatedBy(), AppNotificationKind.CHALLENGE_EVENT,
+                "Kihívás lezárult",
+                c.getOutcome(),
+                AppNotificationKind.CHALLENGE_EVENT.deeplink(), c.getId(),
+                "challenge_closed:" + c.getId());
         return true;
     }
 

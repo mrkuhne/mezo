@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -16,7 +17,6 @@ import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,14 +27,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The V1.2 post-turn extractor against the fake LLM — the fake answers extraction calls
  * (system prompt keyed on EXTRACTION_MARKER) with the [fake-facts:<json>] sentinel found
  * in the turn content, so parse/dedupe/cap logic is fully deterministic and LLM-free.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class FactExtractionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private FactExtractionService factExtractionService;
     @Autowired private LearnedFactRepository learnedFactRepository;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
     @Autowired private AiConversationPopulator conversationPopulator;
@@ -68,6 +73,10 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
             assertThat(c.getDerivedFromMessageId()).isEqualTo(messageId);
             assertThat(c.getUserDecision()).isNull();
         });
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(userId))
+                .filteredOn(n -> n.getKind().equals("fact_candidate"))
+                .hasSize(2)
+                .allSatisfy(n -> assertThat(n.getDeeplink()).isEqualTo("/insights/knowledge"));
     }
 
     @Test
@@ -98,6 +107,11 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
         KnowledgeFactEntity reloaded = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
         assertThat(reloaded.getReinforcementCount()).isEqualTo(1);
         assertThat(reloaded.getLastReinforcedAt()).isNotNull();
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(userId))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("fact_reinforced");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights/knowledge");
+                });
     }
 
     @Test
