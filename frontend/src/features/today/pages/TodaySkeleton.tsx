@@ -16,6 +16,7 @@ export default function TodaySkeleton() {
     <div role="status" aria-busy="true" aria-label="Betöltés">
       <div className="daytabs td-segwrap"><Skeleton height={44} /></div>
       <div className="td-skel td-skel-chip"><Skeleton height={44} /></div>
+      <div className="td-skel td-skel-needs"><Skeleton height={46} /></div>
       <div className="td-skel td-skel-hero"><Skeleton height={44} width="60%" /></div>
       <div className="td-skel td-skel-stats"><Skeleton height={78} /></div>
       <div className="td-skel td-skel-list"><Skeleton height={168} /></div>

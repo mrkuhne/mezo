@@ -24,14 +24,23 @@ function stubReduced(matches = true) {
 // useRitualActions/useHabitActions are mocked so the close-on-enter tests can spy on
 // `close`/`consumeLevelUps` call counts — every OTHER hook stays real (importOriginal),
 // so the 4 pre-existing tests above (which never reach act 4) are unaffected.
+// useNeeds is ALSO module-mocked (TodayPage.nudges.test.tsx idiom) so the fix-wave
+// readiness-gate test below can force `isPending: true` at act 4 independent of the real
+// composed hook's timing — the default `isPending: false` keeps every other test's
+// `close(ringsOf(states))` call shape unchanged from before this mock existed.
 const mocks = vi.hoisted(() => ({
   useRitualActions: vi.fn(),
   useHabitActions: vi.fn(),
+  useNeeds: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useRitualActions: mocks.useRitualActions,
   useHabitActions: mocks.useHabitActions,
+}))
+vi.mock('@/features/today/logic/useNeeds', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/today/logic/useNeeds')>()),
+  useNeeds: mocks.useNeeds,
 }))
 
 function setupCloseSpies() {
@@ -44,7 +53,10 @@ function setupCloseSpies() {
 
 // Default spies for every test — the 4 pre-existing tests below never reach act 4, so
 // they never invoke close/consumeLevelUps; this only guards against destructuring undefined.
-beforeEach(() => setupCloseSpies())
+beforeEach(() => {
+  setupCloseSpies()
+  mocks.useNeeds.mockReturnValue({ states: [], isPending: false })
+})
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.clearAllMocks()
@@ -108,12 +120,34 @@ test('entering act 4 (Harvest) fires close() exactly once, then silently consume
 
   expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
   expect(close).toHaveBeenCalledTimes(1)
+  // useNeeds resolves (the beforeEach default: isPending false) — the real rings payload
+  // goes out, not the pending gate's `undefined` (covered separately below).
+  expect(close).toHaveBeenCalledWith(expect.any(Object))
   await waitFor(() => expect(consumeLevelUps).toHaveBeenCalledTimes(1))
 
   // Re-rendering (e.g. a parent state change) must not re-fire close — the ref guard is
   // act-4-only-once, not a per-render effect.
   await user.click(screen.getByText('Tovább')) // act 4 -> act 5
   expect(close).toHaveBeenCalledTimes(1)
+})
+
+test('entering act 4 while useNeeds is still pending calls close(undefined) — never an under-reported snapshot', async () => {
+  // Fix-wave review finding: close() is idempotent PER DATE, so a ring snapshot persisted
+  // while useNeeds' composite read is still in flight (all-empty-events zero states) would
+  // freeze the day's readout on a bad value with no way to re-report it. Passing `undefined`
+  // tells the endpoint "no rings this close" instead of a fabricated all-zero one.
+  stubReduced()
+  mocks.useNeeds.mockReturnValue({ states: [], isPending: true })
+  const { close } = setupCloseSpies()
+  const user = userEvent.setup()
+  renderApp()
+  await user.click(screen.getByText(/Kezdjük/)) // act 1 -> act 2
+  await user.click(screen.getByText('Tovább')) // act 2 -> act 3
+  await user.click(screen.getByText('Tovább')) // act 3 -> act 4 (HarvestStep)
+
+  expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
+  expect(close).toHaveBeenCalledTimes(1)
+  expect(close).toHaveBeenCalledWith(undefined)
 })
 
 test('the ✕ exit before act 4 never calls close (consequence-free up to the Harvest act)', async () => {

@@ -90,15 +90,18 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: 'Tovább' }).click()       // act 2 → 3
       await page.getByRole('button', { name: 'Tovább' }).click()       // act 3 → 4
       await page.locator('.rz-harvest .rz-xp-num').waitFor()           // Harvest XP total rendered
-      // Entering Harvest fires the mock close() award, which pops a transient streak-milestone
-      // toast (a mock-only side effect — real mode derives account XP, never emits this). It
-      // overlaps the XP total, so wait it out: let it appear (grace), then auto-dismiss
-      // (ToastProvider AUTO_HIDE_MS), capturing a clean Harvest. `setFixedTime` keeps timers
-      // running, so the auto-hide fires in wall-clock time. The `.toast` is position:fixed, so
-      // its removal causes no layout shift.
-      const toast = page.locator('.toast')
-      await toast.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
-      await toast.waitFor({ state: 'detached' })
+      // Entering Harvest fires the mock close() award(s) — the ritual's own HABIT award plus
+      // the needs-close award (mezo-dhzk), which pop as TWO stacked `.toast` entries in
+      // `.toast-stack` (mock-only side effects — real mode derives account XP, never emits
+      // these). They overlap the XP total, so wait them out: let at least one appear (grace),
+      // then wait for the whole stack to auto-dismiss (ToastProvider AUTO_HIDE_MS), capturing a
+      // clean Harvest. `setFixedTime` keeps timers running, so the auto-hide fires in
+      // wall-clock time. `.toast` is count-agnostic here (not `.first()`/a single locator) so it
+      // stays correct whether one or several toasts stack; each is position:fixed, so their
+      // removal causes no layout shift.
+      const toasts = page.locator('.toast')
+      await toasts.first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
+      await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
       await expect(page).toHaveScreenshot(`ritual-harvest-${theme}.png`)
     })

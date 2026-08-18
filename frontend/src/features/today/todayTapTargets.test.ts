@@ -92,4 +92,10 @@ describe('Today tap targets are >= 44px (mezo-e26w code review fix)', () => {
     expect(body).toMatch(/margin-block:\s*-9px/)
     expect(body).toMatch(/padding-block:\s*9px/)
   })
+
+  test('needs rings are 44px tap targets', () => {
+    const body = ruleBody(rawCss, '.td-need')
+    expect(pxDeclaration(body, 'min-width')).toBeGreaterThanOrEqual(44)
+    expect(pxDeclaration(body, 'min-height')).toBeGreaterThanOrEqual(44)
+  })
 })

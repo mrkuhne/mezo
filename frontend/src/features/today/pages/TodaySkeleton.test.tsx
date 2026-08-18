@@ -9,6 +9,7 @@ describe('TodaySkeleton', () => {
     expect(container.querySelectorAll('.segtab')).toHaveLength(0)   // inert: no buttons
     expect(container.querySelector('.daytabs')).toBeInTheDocument()
     expect(container.querySelector('.td-skel-chip')).toBeInTheDocument()
+    expect(container.querySelector('.td-skel-needs')).toBeInTheDocument()
     expect(container.querySelector('.td-skel-hero')).toBeInTheDocument()
     expect(container.querySelector('.td-skel-stats')).toBeInTheDocument()
     expect(container.querySelector('.td-skel-list')).toBeInTheDocument()

@@ -164,4 +164,7 @@ public class FeaturesConfiguration {
      *  the AI section and never polls a {@code pending} that will never resolve. The real generator
      *  (companion, task 15) additionally needs COMPANION_SWITCH (it calls the CompanionLlm port). */
     public static final String MESO_REVIEW_SWITCH = "mezo.feature.meso-review.enabled";
+
+    /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
+    public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 }

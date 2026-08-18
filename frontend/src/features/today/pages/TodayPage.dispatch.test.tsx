@@ -13,6 +13,7 @@
 // composition file deliberately runs against the real ones.
 // ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { TodayPage } from '@/features/today/pages/TodayPage'
@@ -35,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   useQuestActions: vi.fn(),
   useToday: vi.fn(),
   useCheckins: vi.fn(),
+  useWaterActions: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const orig = await importOriginal<typeof import('@/data/hooks')>()
@@ -47,6 +49,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useQuestActions: mocks.useQuestActions,
     useToday: mocks.useToday,
     useCheckins: mocks.useCheckins,
+    useWaterActions: mocks.useWaterActions,
   }
 })
 
@@ -126,6 +129,7 @@ const rowOf = (title: string) => screen.getByText(title).closest('.td-row') as H
 let check: ReturnType<typeof vi.fn>
 let consumeHabitLevelUps: ReturnType<typeof vi.fn>
 let consumeQuestLevelUps: ReturnType<typeof vi.fn>
+let logWater: ReturnType<typeof vi.fn>
 
 const DEFAULT_CHECKINS: CheckinSlot[] = [{ time: '14:00', state: 'now', values: null, note: null }]
 
@@ -155,6 +159,8 @@ function setup({
     reroll: vi.fn(), pending: false, consumeLevelUps: consumeQuestLevelUps,
   })
   mocks.useToday.mockReturnValue(baseToday)
+  logWater = vi.fn()
+  mocks.useWaterActions.mockReturnValue({ logWater })
 }
 
 beforeEach(() => {
@@ -641,5 +647,29 @@ describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', 
 
     expect(screen.getByText('MANUAL lánc')).toBeInTheDocument()
     expect(within(rowOf('MANUAL lánc')).getByRole('button')).toHaveTextContent('✓')
+  })
+})
+
+/**
+ * The Életjel-ring detail sheet + its quick-log CTA (mezo-dhzk Task 4): a ring tap opens
+ * `NeedRingSheet` on `needSheet`, and the sheet's own CTA dispatches through `onNeedCta` —
+ * the SAME sheet states / mutations every other row on this screen already reaches for. Only
+ * the hidratáció ring is covered here (an immediate mutation, no sheet-in-sheet to route
+ * through); the other four CTAs reuse `onAct`'s already-covered branches one-for-one.
+ */
+describe('TodayPage — the Életjel-ring detail sheet and its quick-log CTA (mezo-dhzk)', () => {
+  test('tapping the hidratáció ring opens its detail sheet', () => {
+    renderToday()
+    fireEvent.click(screen.getByRole('button', { name: /Hidratáció/ }))
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Hidratáció')
+  })
+
+  test("the sheet's CTA logs 250 ml and closes the sheet", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderToday()
+    fireEvent.click(screen.getByRole('button', { name: /Hidratáció/ }))
+    await user.click(screen.getByRole('button', { name: '💧 +250 ml — Logolás' }))
+    expect(logWater).toHaveBeenCalledWith(250)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })

@@ -2720,6 +2720,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/needs/day-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Store the day's ring snapshot, award bonus XP, advance the streak (Needs). Idempotent per date — repeat calls return the stored result. */
+        post: operations["closeNeedsDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/needs/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest needs close — streak + last close date (Needs) */
+        get: operations["getNeedsSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6082,6 +6116,33 @@ export interface components {
             /** Format: date */
             pricedOn?: string | null;
         } | null;
+        NeedsRings: {
+            energia: number;
+            hidratacio: number;
+            pihenes: number;
+            mozgas: number;
+            lelek: number;
+            rend: number;
+        };
+        NeedsCloseRequest: {
+            /** Format: date */
+            date: string;
+            rings: components["schemas"]["NeedsRings"];
+        };
+        NeedsCloseResponse: {
+            /** Format: date */
+            date: string;
+            xpAwarded: number;
+            greenCount: number;
+            allGreen: boolean;
+            streakDays: number;
+        };
+        NeedsSummaryResponse: {
+            streakDays: number;
+            /** Format: date */
+            lastCloseDate?: string;
+            lastAllGreen?: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -13752,6 +13813,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    closeNeedsDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NeedsCloseRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored (idempotent — 200 on repeat, no double award) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeedsCloseResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not today (NEEDS_NOT_TODAY) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getNeedsSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary (zeros when no close exists yet) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeedsSummaryResponse"];
                 };
             };
         };

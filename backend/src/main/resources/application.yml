@@ -253,6 +253,9 @@ mezo:
     # rollout lands; off ⇒ the no-op recorder is injected, so nothing is ever published or written.
     llm-log:
       enabled: false
+    # Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist.
+    needs:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -1003,6 +1006,11 @@ mezo:
   ritual:
     lead-min: 75        # the window opens bed − 75'
     prep-lead-min: 45   # sleep-prep display anchor: bed − 45'
+  # Binds feature/needs/config/NeedsProperties — Életjel day-close award rule (mezo-dhzk)
+  needs:
+    green-threshold: 60
+    per-ring-xp: 5
+    all-green-bonus-xp: 30
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
   # The dummy default keeps the context bootable with the notification feature switched off.
