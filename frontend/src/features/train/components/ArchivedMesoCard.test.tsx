@@ -13,14 +13,14 @@ const meso = (over: Partial<Mesocycle> = {}): Mesocycle => ({
 })
 
 test('advertises the frozen report when the run has one — a plain state stamp, no arrow', () => {
-  render(<ArchivedMesoCard meso={meso()} onOpen={() => {}} onRerun={() => {}} />)
+  render(<ArchivedMesoCard meso={meso()} onOpen={() => {}} onRerun={() => {}} onSaveAsTemplate={() => {}} />)
   expect(screen.getByText('riport')).toBeInTheDocument()
   expect(screen.queryByText('riport →')).toBeNull()
   expect(screen.queryByText('nincs riport')).toBeNull()
 })
 
 test('says so honestly when the closed run carries NO report', () => {
-  render(<ArchivedMesoCard meso={meso({ hasReport: false })} onOpen={() => {}} onRerun={() => {}} />)
+  render(<ArchivedMesoCard meso={meso({ hasReport: false })} onOpen={() => {}} onRerun={() => {}} onSaveAsTemplate={() => {}} />)
   expect(screen.getByText('nincs riport')).toBeInTheDocument()
   expect(screen.queryByText('riport')).toBeNull()
 })
@@ -32,7 +32,7 @@ test('the eyebrow shows the actual closedAt, not the plan endDate, when the two 
     <ArchivedMesoCard
       meso={meso({ endDate: 'Márc 30', closedAt: '2026-04-23T19:40:00Z' })}
       onOpen={() => {}}
-      onRerun={() => {}}
+      onRerun={() => {}} onSaveAsTemplate={() => {}}
     />,
   )
   expect(screen.getByText('Archív · Ápr 23')).toBeInTheDocument()
@@ -41,13 +41,13 @@ test('the eyebrow shows the actual closedAt, not the plan endDate, when the two 
 
 test('falls back to endDate for a legacy run with no closedAt at all', () => {
   const { closedAt: _drop, ...legacy } = meso({ endDate: 'Márc 30' })
-  render(<ArchivedMesoCard meso={legacy as Mesocycle} onOpen={() => {}} onRerun={() => {}} />)
+  render(<ArchivedMesoCard meso={legacy as Mesocycle} onOpen={() => {}} onRerun={() => {}} onSaveAsTemplate={() => {}} />)
   expect(screen.getByText('Archív · Márc 30')).toBeInTheDocument()
 })
 
 test('a legacy run with no hasReport flag at all reads as "no report"', () => {
   const { hasReport: _drop, ...legacy } = meso()
-  render(<ArchivedMesoCard meso={legacy as Mesocycle} onOpen={() => {}} onRerun={() => {}} />)
+  render(<ArchivedMesoCard meso={legacy as Mesocycle} onOpen={() => {}} onRerun={() => {}} onSaveAsTemplate={() => {}} />)
   expect(screen.getByText('nincs riport')).toBeInTheDocument()
 })
 
@@ -55,7 +55,7 @@ test('outside selection mode the body opens the report and the rerun action is o
   const user = userEvent.setup()
   const onOpen = vi.fn()
   const onRerun = vi.fn()
-  render(<ArchivedMesoCard meso={meso()} onOpen={onOpen} onRerun={onRerun} />)
+  render(<ArchivedMesoCard meso={meso()} onOpen={onOpen} onRerun={onRerun} onSaveAsTemplate={() => {}} />)
 
   const body = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
   expect(body).not.toHaveAttribute('aria-pressed')
@@ -66,15 +66,26 @@ test('outside selection mode the body opens the report and the rerun action is o
   expect(onRerun).toHaveBeenCalledTimes(1)
 })
 
-test('in selection mode the body is a pressed-state toggle and the rerun action steps aside', async () => {
+test('in selection mode the body is a pressed-state toggle and BOTH actions step aside', async () => {
   const user = userEvent.setup()
   const onOpen = vi.fn()
-  render(<ArchivedMesoCard meso={meso()} onOpen={onOpen} onRerun={() => {}} selectMode selected />)
+  render(<ArchivedMesoCard meso={meso()} onOpen={onOpen} onRerun={() => {}} onSaveAsTemplate={() => {}} selectMode selected />)
 
   const body = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
   expect(body).toHaveAttribute('aria-pressed', 'true')
   expect(screen.queryByRole('button', { name: /Újrafuttatás/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Sablonná/ })).toBeNull()
 
   await user.click(body)
   expect(onOpen).toHaveBeenCalledTimes(1)
+})
+
+test('the Sablonná action hands the closed run back to the parent (mezo-tlwa)', async () => {
+  const user = userEvent.setup()
+  const onSaveAsTemplate = vi.fn()
+  render(
+    <ArchivedMesoCard meso={meso()} onOpen={() => {}} onRerun={() => {}} onSaveAsTemplate={onSaveAsTemplate} />,
+  )
+  await user.click(screen.getByRole('button', { name: /Sablonná/ }))
+  expect(onSaveAsTemplate).toHaveBeenCalledTimes(1)
 })

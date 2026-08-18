@@ -1,12 +1,17 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+
+function LocationProbe() {
+  const { pathname } = useLocation()
+  return <div data-testid="loc">{pathname}</div>
+}
 
 const renderAt = (id: string) =>
   render(
@@ -15,6 +20,7 @@ const renderAt = (id: string) =>
         <Routes>
           <Route path="train/mesocycles/:id/report" element={<MesoReportPage />} />
         </Routes>
+        <LocationProbe />
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -144,6 +150,15 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     renderAt('meso-rec-03')
     await user.click(screen.getByRole('button', { name: /Újrafuttatás/ }))
     expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
+  })
+
+  it('saves the run as a template and lands in the new template editor (mezo-tlwa)', async () => {
+    const user = userEvent.setup()
+    renderAt('meso-rec-03')
+    await user.click(screen.getByRole('button', { name: /Sablon mentése ebből a futamból/ }))
+    await waitFor(() =>
+      expect(screen.getByTestId('loc').textContent).toMatch(/^\/train\/mesocycles\/templates\/.+/),
+    )
   })
 })
 

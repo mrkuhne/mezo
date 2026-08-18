@@ -35,6 +35,7 @@ import type { MuscleVolumeArc } from '@/data/types'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { MuscleArcSwitch } from '@/features/train/components/MuscleArcSwitch'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
+import { runToTemplate } from '@/features/train/logic/runToTemplate'
 import { StatStrip } from '@/shared/ui/StatStrip'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -155,7 +156,7 @@ export function MesoReportPage() {
   const goBack = useBackNav('/train/mesocycles')
   const { mesocycles, workoutPending } = useTrain()
   const { report, pending, notFound, error, refetch, regenerating, regenerate } = useMesoReport(id ?? null)
-  const { rerun } = useMesoTemplates()
+  const { rerun, createTemplate } = useMesoTemplates()
   // The rerun's resolved template — opens the one shared start sheet (mezo-meyc.1).
   const [startTemplate, setStartTemplate] = useState<{ id: string; title?: string } | null>(null)
 
@@ -171,6 +172,16 @@ export function MesoReportPage() {
   }
   const fireRegenerate = () => {
     regenerate().catch(() => {})
+  }
+  // „Sablon mentése ebből a futamból" (mezo-tlwa) — forks this run's plan into a NEW
+  // template and lands in its editor. Needs the RUN (the report DTO carries no day plan),
+  // so it renders only once the meso list has resolved it; `Újrafuttatás` above is the
+  // other direction — it reuses the run's originating template instead of forking.
+  const saveAsTemplate = () => {
+    if (!meso) return
+    createTemplate(runToTemplate(meso))
+      .then((created) => navigate(`/train/mesocycles/templates/${created.id}`))
+      .catch(() => {})
   }
 
   const arcs = toMuscleArcs(report?.volume)
@@ -479,6 +490,13 @@ export function MesoReportPage() {
             <CtaGhost style={{ padding: 12 }} onClick={rerunMeso}>
               <Icon name="sparkle" size={14} /> Újrafuttatás
             </CtaGhost>
+            {/* Only offered once the run itself resolved — the fork copies its DAY PLAN,
+                which lives on the run, not in the frozen report. */}
+            {meso && (
+              <CtaGhost style={{ padding: 12 }} onClick={saveAsTemplate}>
+                <Icon name="bookmark" size={14} /> Sablon mentése ebből a futamból
+              </CtaGhost>
+            )}
             <button
               type="button"
               className="chip tapchip"
