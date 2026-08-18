@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -32,21 +34,33 @@ public class NeedsDayEntity extends OwnedEntity {
     @Column(name = "needs_date", nullable = false)
     private LocalDate needsDate;
 
+    @Min(0)
+    @Max(100)
     @Column(nullable = false)
     private int energia;
 
+    @Min(0)
+    @Max(100)
     @Column(nullable = false)
     private int hidratacio;
 
+    @Min(0)
+    @Max(100)
     @Column(nullable = false)
     private int pihenes;
 
+    @Min(0)
+    @Max(100)
     @Column(nullable = false)
     private int mozgas;
 
+    @Min(0)
+    @Max(100)
     @Column(nullable = false)
     private int lelek;
 
+    @Min(0)
+    @Max(100)
     @Column(nullable = false)
     private int rend;
 
