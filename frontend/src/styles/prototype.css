@@ -3746,9 +3746,28 @@ ol.md-list { list-style: decimal; }
 .td-foot { padding: 7px var(--sp-4) 0; font-family: var(--ff-body); font-size: 12px;
            line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
 .td-foot.is-warn { color: var(--warning-hover); }
-/* A CTA helyén álló kész-felirat (mezo-v84m) — a `.is-warn` testvére, ugyanaz a lábjegyzet-sor,
-   csak a siker-tokennel; nem új szín, és nem lesz belőle gomb (a kész edzés nem indítható újra). */
-.td-foot.is-done { color: var(--success-hover); font-weight: 600; }
+/* ── kész-blokk (DoneCard, mezo-k496) — a CTA helyén áll, amikor a nap hőse már kész.
+   A mezo-v84m halk `.td-foot.is-done` lábjegyzetét váltja: siker-rámpás blokk, pipa-kör +
+   „Kész" + opcionális részletsor, alatta hajszálvonal és a szám-cellák. A tappable változat
+   <button> (a gym-hős összegzését nyitja), a sport-hősé sima <div> — nincs halott kontroll. */
+.td-dcard { display: block; width: calc(100% - 2 * var(--sp-4)); margin: 8px var(--sp-4) 0;
+            padding: 11px 13px 12px; border-radius: var(--r-lg);
+            background: var(--success-bg); border: 1px solid var(--success-soft);
+            font-family: var(--ff-body); text-align: left; }
+button.td-dcard { cursor: pointer; }
+.td-dcard-head { display: flex; align-items: center; gap: 10px; }
+.td-dcard-check { flex: none; width: 30px; height: 30px; border-radius: 50%;
+                  background: var(--success-base); color: var(--text-inverse);
+                  display: inline-flex; align-items: center; justify-content: center; }
+.td-dcard-txt { font-size: 13px; font-weight: 700; color: var(--success-hover); letter-spacing: -.005em; }
+.td-dcard-sub { display: block; margin-top: 1px; font-size: 12px; font-weight: 500;
+                color: var(--text-secondary); letter-spacing: 0; }
+.td-dcard-chev { margin-left: auto; display: inline-flex; }
+.td-dcard-cells { display: flex; margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--success-soft); }
+.td-dcard-cell { flex: 1; min-width: 0; }
+.td-dcard-v { font-family: var(--ff-display); font-size: 20px; line-height: 1.1; color: var(--success-deep); }
+.td-dcard-l { margin-top: 2px; font-size: 11px; font-weight: 700; letter-spacing: .05em;
+              color: var(--success-base); }
 
 /* ── kész-hajtás ── */
 .td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--sp-4));

@@ -75,6 +75,17 @@ type TodayData = {
   /** The open instance's logged set count so far (skip markers excluded), or null when nothing
    * is in progress. Zero is a real answer — started, nothing logged yet. */
   workoutOpenSets: number | null
+  /** The completed instance's id (mezo-k496) — the day hero's done block opens its review at
+   * `/train/review/<id>`. Null when nothing is finished; a done block WITHOUT an id stays inert
+   * rather than routing to `/train/review/undefined`. */
+  workoutDoneId: string | null
+  /** How many DISTINCT exercises were actually logged (skip markers excluded) — never the
+   * planned exercise count, so a workout finished half-way cannot claim the whole plan. */
+  workoutDoneExercises: number | null
+  /** Total logged volume in kg (Σ weight × reps over the non-skipped sets). Bodyweight/blank
+   * sets contribute 0 rather than NaN-ing the sum. Available on this read because the sets carry
+   * `weightKg`/`reps` — unlike `medals`, which only the finish response populates. */
+  workoutDoneVolumeKg: number | null
   /** The sport kinds logged TODAY (`volleyball`/`cross`/`trx`), matched by date (mezo-6kap).
    * A mixed day (TRX at noon, röpi in the evening) must flip each sport hero independently, so
    * this is a list, not a flag. Empty in mock mode — it persists no sessions. */
@@ -106,6 +117,9 @@ export function useToday(): TodayData {
       workoutDoneSets: null,
       workoutInProgress: false,
       workoutOpenSets: null,
+      workoutDoneId: null,
+      workoutDoneExercises: null,
+      workoutDoneVolumeKg: null,
       loggedSportKinds: [],
       prediction: workoutPrediction,
       volleyballSessions,
@@ -121,6 +135,9 @@ export function useToday(): TodayData {
   // …and its in-progress state (mezo-6kap), with Train's own precedence: a completed instance
   // wins, so a stale open instance can never turn a finished day back into a resume.
   const openWorkout = doneWorkout ? null : train.todaySession?.openWorkout ?? null
+  // The done block's facts (mezo-k496), all derived from the sets already on this read. A skip
+  // marker is a whole-exercise placeholder with no perf data — it counts toward nothing.
+  const doneSets = doneWorkout?.sets.filter((s) => !s.skipped) ?? []
   // Sport done-state (mezo-6kap): `toSportSession` maps the API's ISO date to the HU display
   // date, so today's key is built the same way. Kind-keyed, not a flag — a mixed day flips
   // each sport hero on its own.
@@ -144,7 +161,12 @@ export function useToday(): TodayData {
     workout: train.workout,
     workoutTime: gymToday?.time ?? null,
     workoutDone: Boolean(doneWorkout),
-    workoutDoneSets: doneWorkout ? doneWorkout.sets.filter((s) => !s.skipped).length : null,
+    workoutDoneSets: doneWorkout ? doneSets.length : null,
+    workoutDoneId: doneWorkout?.id ?? null,
+    workoutDoneExercises: doneWorkout ? new Set(doneSets.map((s) => s.exerciseId)).size : null,
+    workoutDoneVolumeKg: doneWorkout
+      ? Math.round(doneSets.reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0))
+      : null,
     workoutInProgress: Boolean(openWorkout),
     workoutOpenSets: openWorkout ? openWorkout.sets.filter((s) => !s.skipped).length : null,
     loggedSportKinds: train.sport.sessions.filter((s) => s.date === todayDisplayDate).map((s) => s.sport),

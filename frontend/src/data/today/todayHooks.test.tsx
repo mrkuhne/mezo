@@ -84,6 +84,40 @@ test('useToday (real) reports the day done once a completed instance exists', as
   const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.workoutDone).toBe(true))
   expect(result.current.workoutDoneSets).toBe(2)
+  // The done block's identity + facts (mezo-k496). Both logged sets are the SAME exercise, so
+  // the exercise count is 1, not 2 — it counts distinct exercises actually logged, never the
+  // planned list (a workout finished half-way must not claim the whole plan).
+  expect(result.current.workoutDoneId).toBe('e1f3a0e2-0000-4000-8000-000000000020')
+  expect(result.current.workoutDoneExercises).toBe(1)
+})
+
+test('useToday (real) totals the logged volume, skip markers and blank sets excluded', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+        dayLabel: 'Cs\u00fc', title: 'Pull Day', durationEst: 78, exercises: [], openWorkout: null,
+        completedWorkout: {
+          id: 'e1f3a0e2-0000-4000-8000-000000000020',
+          templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+          date: '2026-06-12', status: 'completed',
+          sets: [
+            { id: 's1', exerciseId: 'x', setIndex: 0, skipped: false, weightKg: 100, reps: 10 },  // 1000
+            { id: 's2', exerciseId: 'y', setIndex: 1, skipped: false, weightKg: 62.5, reps: 8 },  // 500
+            // A skip marker carries no perf data and must not reach the total.
+            { id: 's3', exerciseId: 'z', setIndex: 0, skipped: true, weightKg: 999, reps: 9 },
+            // A bodyweight/blank set has no weight — it contributes 0, it does not NaN the sum.
+            { id: 's4', exerciseId: 'x', setIndex: 2, skipped: false, reps: 12 },
+          ],
+        },
+      }),
+    ),
+  )
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.workoutDone).toBe(true))
+  expect(result.current.workoutDoneVolumeKg).toBe(1500)
+  expect(result.current.workoutDoneExercises).toBe(2)  // x and y; the skipped z does not count
 })
 
 test('useToday (mock) never claims the day is done — mock persists no instances', () => {
@@ -94,6 +128,9 @@ test('useToday (mock) never claims the day is done — mock persists no instance
   expect(result.current.workoutInProgress).toBe(false)
   expect(result.current.workoutOpenSets).toBeNull()
   expect(result.current.loggedSportKinds).toEqual([])
+  expect(result.current.workoutDoneId).toBeNull()
+  expect(result.current.workoutDoneExercises).toBeNull()
+  expect(result.current.workoutDoneVolumeKg).toBeNull()
 })
 
 // mezo-6kap — the second half of the same contradiction: an OPEN instance made the Ma hero
