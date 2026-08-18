@@ -31,4 +31,5 @@ inputs:
   - inputFile: ../feature/notification/notification.yml
   - inputFile: ../feature/llm-usage/llm-usage.yml
   - inputFile: ../feature/needs/needs.yml
+  - inputFile: ../feature/journal/journal.yml
 output: ../openapi.yml
