@@ -206,6 +206,7 @@ export function NotificationsPage() {
 
   const proseCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'prose')
   const reminderCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'reminder')
+  const brainCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'brain')
 
   return (
     <div style={{ padding: '8px 24px 24px' }}>
@@ -260,6 +261,20 @@ export function NotificationsPage() {
           <Eyebrow>Mezo megszólal</Eyebrow>
           <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
             {proseCategories.map((pref) => (
+              <NotificationCategoryRow
+                key={pref.category}
+                pref={pref}
+                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
+                onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Eyebrow>Az agy eseményei</Eyebrow>
+          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
+            {brainCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
                 pref={pref}

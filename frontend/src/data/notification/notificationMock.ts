@@ -21,11 +21,13 @@ const DEFAULT_ENABLED: Record<NotificationCategoryKey, boolean> = {
   briefing: true, gym: true, medication: true, ritual: true, lights_out: true,
   weekly: true, memoir: true, wind_down: false, midday: false, checkin: false, fuel_slot: false,
   evening: true, sleep_reaction: true, weight_reaction: true,
+  pattern: true, knowledge: true, prediction: true, experiment: true, challenge: true, memory: true,
 }
 const DEFAULT_LEAD_MINUTES: Record<NotificationCategoryKey, number> = {
   briefing: 0, gym: 30, medication: 0, ritual: 0, lights_out: 0,
   weekly: 0, memoir: 0, wind_down: 0, midday: 0, checkin: 0, fuel_slot: 0,
   evening: 0, sleep_reaction: 0, weight_reaction: 0,
+  pattern: 0, knowledge: 0, prediction: 0, experiment: 0, challenge: 0, memory: 0,
 }
 
 export const notificationPrefSeed: NotificationPrefView[] = NOTIFICATION_CATEGORIES.map((category) => ({
