@@ -2,7 +2,7 @@
  *  TanStack cache; real mode is derived/ghost until the backend slice (mezo-huzd). */
 export type XpEventType =
   | 'MEAL' | 'WEIGHT' | 'SLEEP' | 'CHECKIN' | 'MEDICATION'
-  | 'GYM' | 'RUN' | 'SPORT' | 'QUEST' | 'ACTIVITY' | 'HABIT'
+  | 'GYM' | 'RUN' | 'SPORT' | 'QUEST' | 'ACTIVITY' | 'HABIT' | 'NEEDS_CLOSE'
 
 export type GamificationProfile = {
   level: number

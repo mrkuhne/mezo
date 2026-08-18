@@ -52,6 +52,7 @@ export { useIntentionDay, useIntentionActions } from '@/data/intention/intention
 export { useActivities, useActivityActions, useActivityHistory } from '@/data/activity/activityHooks'
 export { useGamification, useTitles, useGamificationActions, useGamificationDay } from '@/data/gamification/gamificationHooks'
 export { useRitualDay, useRitualActions } from '@/data/ritual/ritualHooks'
+export { useNeedsSummary } from '@/data/needs/needsHooks'
 export { useDayRecap } from '@/data/ritual/recapHooks'
 export { usePushSubscription } from '@/data/notification/notificationHooks'
 export { useNotificationPrefs } from '@/data/notification/notificationPrefHooks'

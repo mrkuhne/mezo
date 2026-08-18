@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { completeMockDerivedHabit } from '@/data/habit/habitHooks'
+import { applyMockNeedsClose, NEEDS_SUMMARY_KEY } from '@/data/needs/needsHooks'
+import { needsApi, type NeedsRingsWire } from '@/data/needs/needsApi'
 import { EMPTY_RITUAL_DAY, mockRitualDay } from '@/data/ritual/ritualMock'
 import { ritualApi } from '@/data/ritual/ritualApi'
 import type { RitualDay } from '@/data/types'
@@ -16,11 +18,13 @@ export function useRitualDay(date: string): { data: RitualDay; isPending: boolea
   })
 }
 
-export function useRitualActions(date: string): { close: () => Promise<RitualDay>; pending: boolean } {
+export function useRitualActions(
+  date: string,
+): { close: (rings?: NeedsRingsWire) => Promise<RitualDay>; pending: boolean } {
   const qc = useQueryClient()
   const mock = isMockMode()
   const mutation = useMutation({
-    mutationFn: async (): Promise<RitualDay> => {
+    mutationFn: async (rings?: NeedsRingsWire): Promise<RitualDay> => {
       if (mock) {
         const prev = qc.getQueryData<RitualDay>(['ritualDay', date]) ?? mockRitualDay(date)
         if (prev.closed) return prev // idempotent: no second award
@@ -30,9 +34,23 @@ export function useRitualActions(date: string): { close: () => Promise<RitualDay
         // habitDay below): the close also ticks the DERIVED evening_ritual chain row.
         completeMockDerivedHabit(qc, date, 'evening_ritual')
         awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10 }) // the evening_ritual catalog XP
+        // Placed AFTER the ritual award, inside the not-yet-closed path only — the early
+        // return above already makes a re-close idempotent for the ritual itself, so putting
+        // the needs award here means it too can never double-fire on re-close (it also
+        // carries its own lastCloseDate guard, applyMockNeedsClose, belt-and-braces).
+        if (rings) applyMockNeedsClose(qc, date, rings)
         return next
       }
       const day = await ritualApi.close(date)
+      // needs award must never block the napzárás — best-effort, real close still proceeds
+      // even if this fails (network hiccup, backend down, etc).
+      if (rings) {
+        try {
+          await needsApi.close(date, rings)
+        } catch {
+          // swallow — see comment above
+        }
+      }
       // mezo-ywz1: the derived evening_ritual completion (+10 XP + level_up) is persisted ONLY by
       // the GET /api/habit/day the server gates it on. RitualPage mounts useHabitDay so this
       // invalidation refetches; await it so the +10 lands in level_up_event BEFORE the harvest reads.
@@ -46,8 +64,9 @@ export function useRitualActions(date: string): { close: () => Promise<RitualDay
       ])
       qc.invalidateQueries({ queryKey: ['dailyQuests', date] }) // not harvest-critical — fire-and-forget
       qc.invalidateQueries({ queryKey: ['ritualDay', date] })
+      qc.invalidateQueries({ queryKey: NEEDS_SUMMARY_KEY }) // not harvest-critical — fire-and-forget
       return day
     },
   })
-  return { close: () => mutation.mutateAsync(), pending: mutation.isPending }
+  return { close: (rings?: NeedsRingsWire) => mutation.mutateAsync(rings), pending: mutation.isPending }
 }

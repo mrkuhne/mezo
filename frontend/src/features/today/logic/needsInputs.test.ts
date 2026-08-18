@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { buildNeedsEvents, type RawNeedsData } from '@/features/today/logic/needsInputs'
+import { buildNeedsEvents, ringsOf, type RawNeedsData } from '@/features/today/logic/needsInputs'
+import type { NeedState } from '@/features/today/logic/needs'
 import type { FuelDay, FuelMeal, HabitItem, IntentionDay, RitualDay } from '@/data/types'
 
 const TODAY = '2026-08-17'
@@ -297,6 +298,34 @@ describe('buildNeedsEvents — ⚡ rend (habit ticks)', () => {
 
   test('no habits on either day → []', () => {
     expect(buildNeedsEvents(baseRaw()).rend).toEqual([])
+  })
+})
+
+const needState = (key: NeedState['key'], pct: number): NeedState => ({
+  key, emoji: '', label: '', color: '', pct, ratePerHour: 0, zeroAt: null, band: 'green',
+  lastFill: null, todayFills: [],
+})
+
+describe('ringsOf — NeedState[] → NeedsRings wire shape', () => {
+  test('maps each ring\'s (already-rounded) pct into the wire object, keyed by NeedKey', () => {
+    const states: NeedState[] = [
+      needState('energia', 80), needState('hidratacio', 75), needState('pihenes', 90),
+      needState('mozgas', 60), needState('lelek', 100), needState('rend', 65),
+    ]
+    expect(ringsOf(states)).toEqual({ energia: 80, hidratacio: 75, pihenes: 90, mozgas: 60, lelek: 100, rend: 65 })
+  })
+
+  test('rounds a fractional pct (defensive — NeedState.pct is already an integer)', () => {
+    const states: NeedState[] = [
+      needState('energia', 80.4), needState('hidratacio', 75.6), needState('pihenes', 90),
+      needState('mozgas', 60), needState('lelek', 100), needState('rend', 65),
+    ]
+    expect(ringsOf(states)).toEqual({ energia: 80, hidratacio: 76, pihenes: 90, mozgas: 60, lelek: 100, rend: 65 })
+  })
+
+  test('a missing ring key defaults to 0', () => {
+    const states: NeedState[] = [needState('energia', 80)]
+    expect(ringsOf(states)).toEqual({ energia: 80, hidratacio: 0, pihenes: 0, mozgas: 0, lelek: 0, rend: 0 })
   })
 })
 

@@ -7,8 +7,9 @@
 // this with all-but-sleepGoal treated as "pending → empty" rather than blocking the render).
 // Spec: .superpowers/sdd/2026-08-17-needs-rings/task-2-brief.md
 // ============================================================
+import type { NeedsRingsWire } from '@/data/needs/needsApi'
 import type { ActivityEntry, CheckinSlot, FuelDay, FuelMeal, HabitItem, IntentionDay, RitualDay, SleepEntry } from '@/data/types'
-import { NEEDS_TUNING, type NeedEvent, type NeedKey } from '@/features/today/logic/needs'
+import { NEEDS_TUNING, type NeedEvent, type NeedKey, type NeedState } from '@/features/today/logic/needs'
 
 export interface RawNeedsData {
   /** The instant this snapshot was built — anchors "today" event synthesis (the water ring's
@@ -197,4 +198,18 @@ export function buildNeedsEvents(raw: RawNeedsData): Record<NeedKey, NeedEvent[]
   events.lelek = lelekEvents(raw)
   events.rend = rendEvents(raw)
   return events
+}
+
+/** Maps live `NeedState[]` (as returned by `useNeeds`) into the wire `NeedsRings` shape the
+ *  napzárás close call (Task 9, mezo-dhzk) sends — one integer pct per ring, keyed by NeedKey. */
+export function ringsOf(states: NeedState[]): NeedsRingsWire {
+  const byKey = new Map(states.map((s) => [s.key, Math.round(s.pct)]))
+  return {
+    energia: byKey.get('energia') ?? 0,
+    hidratacio: byKey.get('hidratacio') ?? 0,
+    pihenes: byKey.get('pihenes') ?? 0,
+    mozgas: byKey.get('mozgas') ?? 0,
+    lelek: byKey.get('lelek') ?? 0,
+    rend: byKey.get('rend') ?? 0,
+  }
 }
