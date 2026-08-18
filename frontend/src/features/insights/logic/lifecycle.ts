@@ -26,6 +26,11 @@ function bucketFor(pattern: Pattern, pair: PatternMonitorPair | null): Lifecycle
       if (pattern.kind === 'ai_hypothesis') {
         return pattern.confidence != null && pattern.confidence >= MIN_PATTERN_CONFIDENCE ? 'decide' : 'noRelationship'
       }
+      // mezo-mqdj: a monitor VAN, de a pár ma nem él (few_days/no_data/degenerate). Az éjszakai
+      // job a kapu-bukáskor nem nyúl a korábban perzisztált sorhoz, így az elavult statisztikával
+      // itt maradt — vissza a gyűjtésbe. Döntést kérni rá hazugság volna: a „Megerősítem" tartós
+      // tudássá tenné (Tudástár + prompt + előrejelzés) azt, amit a mai adat ki sem tud számolni.
+      if (pair != null && pair.verdict !== 'live') return 'gathering'
       // statistical: a monitor élő r/p-je dönt; monitor híján (degraded) a szerver-kapu már átengedte → kérdezzünk
       if (pair == null || pair.r == null || pair.p == null) return 'decide'
       return isStrongSignal(pair.r, pair.p) ? 'decide' : 'noRelationship'

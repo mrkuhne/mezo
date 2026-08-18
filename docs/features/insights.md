@@ -90,6 +90,22 @@ n-gate that decides whether a pair even reaches the monitor at all). A pair with
 pattern row always lands in `gathering`, whatever its own verdict/status — the nightly job hasn't
 produced a row for it yet.
 
+**Stale rows never reach the inbox (`mezo-mqdj`).** The nightly job's gate-fail path is an early
+return: when a pair stops passing (data deleted, window slid), `PatternDetectionService` neither
+refreshes nor removes the row already persisted from the last live night, so it survives with
+frozen stats — while the monitor, recomputing live, reports `few_days`/`no_data`/`degenerate` for
+the same pair. The row is kept on purpose (it preserves the `pattern_event` history, the user's own
+`monitoring` decision, and a *timestamped* historical truth); the presentation layer is what must
+not lie about the present, and it holds both sides already:
+- `bucketFor` routes a `proposed` statistical row whose pair exists but is **not `live`** to
+  `gathering`, never `decide` — confirming there would promote into permanent knowledge (Tudástár +
+  prompt + predictions) a correlation today's window cannot even compute;
+- `PatternDecisionCard` and the `monitoring` mini-row replace the row's frozen `mechanism` sentence
+  ("Erős pozitív együttjárás … az elmúlt N napban") with the gate's own `verdictSentence`;
+- a `monitoring` row **stays** in its section — the user asked to watch it; only its finding line
+  becomes honest.
+A pair that goes live again returns to `decide` on its own, with no state to unwind.
+
 **Top to bottom:**
 1. **`MotorStateHero`** (`components/MotorStateHero.tsx`) — the engine-state card: „N kérdést"
    figyelek + the confirmed/decide counts in prose, six bucket-count tiles (`BUCKET_ORDER` order),

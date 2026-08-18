@@ -231,8 +231,12 @@ export const patternMonitor: PatternMonitor = {
       whenPositiveHu: 'a későbbi vacsorák után {erősség} jobban aludtál',
       whenNegativeHu: 'a későbbi vacsorák után {erősség} rosszabbul aludtál',
       metricADomain: 'fuel', metricBDomain: 'sleep',
-      verdict: 'few_days', alignedDays: 7, missingDays: 1, bottleneckMetricKey: 'late-meal-hour',
-      r: null, n: null, p: null, status: null,
+      // mezo-mqdj: ez a pár a `p2` sor gazdája, ezért ÉLŐNEK kell lennie. Egy few_days pár mellett
+      // perzisztált sor pontosan az a hibás állapot, amit a lifecycle-kosarazás azóta kiszűr (a
+      // döntés-inbox nem kérdezhet olyan összefüggésre, amit a mai ablak ki sem tud számolni) —
+      // így a mock ezt a jelenetet nem is állíthatja elő.
+      verdict: 'live', alignedDays: 14, missingDays: null, bottleneckMetricKey: null,
+      r: -0.52, n: 14, p: 0.03, status: null,
     },
     {
       key: 'daily-kcal~next-morning-weight-delta',

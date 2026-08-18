@@ -59,6 +59,30 @@ describe('bucketize', () => {
     expect(buckets.get('decide')).toHaveLength(1)
   })
 
+  // mezo-mqdj: a job a kapu-bukáskor nem nyúl a már perzisztált proposed sorhoz, így az
+  // elavult statisztikával életben marad. A monitor ilyenkor few_days/no_data/degenerate
+  // verdiktet ad r/p NÉLKÜL — ez NEM ugyanaz, mint a monitor hiánya: nem kérdezhetünk rá egy
+  // olyan összefüggésre, amit a mai adat ki sem tud számolni.
+  test.each(['few_days', 'no_data', 'degenerate'] as const)(
+    'stale proposed row whose pair is %s → gathering, never the decision inbox', (verdict) => {
+      const monitor: PatternMonitor = { ...patternMonitor, pairs: [
+        pair({ key: 'k1', verdict, r: null, n: null, p: null }),
+      ] }
+      const buckets = bucketize([pattern({ pairKey: 'k1' })], monitor)
+      expect(buckets.get('decide')).toHaveLength(0)
+      expect(buckets.get('gathering')!.map((e) => e.key)).toEqual(['k1'])
+      // a sor megmarad az entryn: a szekció így tudja kiírni, mi hiányzik hozzá
+      expect(buckets.get('gathering')![0].pattern).not.toBeNull()
+    })
+
+  test('a pair that goes live again returns to decide', () => {
+    const monitor: PatternMonitor = { ...patternMonitor, pairs: [
+      pair({ key: 'k1', verdict: 'live', r: -0.55, n: 20, p: 0.01 }),
+    ] }
+    const buckets = bucketize([pattern({ pairKey: 'k1' })], monitor)
+    expect(buckets.get('decide')!.map((e) => e.key)).toEqual(['k1'])
+  })
+
   test('decide sorts by |r| desc (strongest asks first)', () => {
     const monitor: PatternMonitor = { ...patternMonitor, pairs: [
       pair({ key: 'k1', verdict: 'live', r: -0.35, n: 20, p: 0.05 }),
