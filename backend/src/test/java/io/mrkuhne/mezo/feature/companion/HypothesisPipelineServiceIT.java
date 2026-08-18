@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
@@ -12,7 +13,6 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,8 +23,12 @@ import java.util.UUID;
  * populator-seeded daily-summary narrative into the weekly context; per-hypothesis
  * {@code [fake-critique:…]}/{@code [fake-revise:…]} markers (planted in the scripted titles)
  * steer keep / discard / revise — all LLM/network-free.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
 
@@ -32,6 +36,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
 
     @Autowired private HypothesisPipelineService pipeline;
     @Autowired private PatternRepository patternRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private UserPopulator userPopulator;
 
@@ -63,6 +68,11 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
         assertThat(row.getPairKey()).startsWith("hyp-");
         assertThat(row.getR()).isNull();
         assertThat(row.getN()).isNull();
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("hypothesis_new");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights");
+                });
     }
 
     @Test
