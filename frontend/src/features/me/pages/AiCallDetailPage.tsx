@@ -100,9 +100,15 @@ export function AiCallDetailPage() {
         <AiPayloadBlock label="Rendszerprompt" text={data.systemPrompt} />
         <AiPayloadBlock label="User üzenet" text={data.userMessage} />
         <AiPayloadBlock label="Válasz" text={data.responseText} />
-        {data.truncated && (
+        {data.truncated && !data.payloadScrubbedAt && (
           <p style={{ fontSize: 10, fontWeight: 700, marginTop: 8, color: 'var(--error-deep)' }}>
             A payload csonkolva lett — az eredeti mérete {data.payloadBytes} bájt.
+          </p>
+        )}
+        {data.payloadScrubbedAt && (
+          <p className="text-tertiary" style={{ fontSize: 10, fontWeight: 700, marginTop: 8 }}>
+            A prompt/válasz szövegét a retention törölte — {formatDateTime(data.payloadScrubbedAt)}.
+            A költség- és token-adatok megmaradtak.
           </p>
         )}
       </div>

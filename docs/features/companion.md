@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-17
+updated: 2026-08-18
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -106,16 +106,18 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `currentWeek`), plus **any recurring sport-schedule slot falling on that weekday**
   (`SportService.getSchedule`, slot convention `0=Hét..6=Vas`, mezo-ajp); `scope=meso` renders the
   full active mesocycle (`TrainService.listMesocycles`) — weeks/phases/day-templates. One day
-  renders as `gym: … ; sport: … ; futás: …`, the same three parts in the same order as the
-  snapshot's `Ma:`/`Holnap:`. Only the **sport** part is actually shared code (both build it with
-  `ToolText.sportLine`, so tool and prompt can never disagree about a day's sport) — the **gym**
-  part is rendered separately in each (`TrainTools.dayContentLine` vs
-  `ContextSnapshotAssembler.dayLine`), but **since mezo-650a they share the rest-day criterion**:
-  a present-but-empty template (zero exercises) renders as a rest day in BOTH (`gym: pihenőnap`
-  from the tool, `pihenőnap (gym)` from the snapshot). This was NOT an unlikely data shape — the
-  meso wizard stores all 7 weekdays as template rows, weekend rest days included (`type=Rest`,
-  zero exercises), so the snapshot's old `gym (<day label>)` rendering claimed a gym day every
-  weekend (the weekend-training hallucination). `nincs adat` only when there is neither an active mesocycle, nor an active running
+  renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
+  snapshot's `Ma:`/`Holnap:`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
+  and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
+  The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
+  is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
+  `gym (<day label>): <exercises>`. Sharing it is what the drift cost: the criterion used to be
+  duplicated in `TrainTools.dayContentLine` and `ContextSnapshotAssembler.dayLine`, the snapshot's
+  copy was missing it, and — since the meso wizard stores all 7 weekdays as template rows, weekend
+  rest days included (`type=Rest`, zero exercises) — it claimed a gym day every weekend (the
+  weekend-training hallucination, mezo-650a); the tool's copy then still said `gym: pihenőnap` for
+  the same day (mezo-4qu). `CompanionToolsRenderIT` pins both renderers on the same day, empty and
+  populated, so a third divergence cannot land silently. `nincs adat` only when there is neither an active mesocycle, nor an active running
   block, **nor a sport slot** at all — a volleyball evening is a plan in its own right; a real rest
   day within an active plan renders `pihenőnap`.
 - **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
@@ -814,7 +816,8 @@ DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:`
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
 `WorkoutService.getToday`, which is write-transactional) or an honest `pihenőnap (gym)` — since
 mezo-650a a present-but-EMPTY template (the meso wizard's explicit `Rest` rows, zero exercises)
-also renders `pihenőnap (gym)`, the same criterion as `TrainTools#dayContentLine` — PLUS any
+also renders `pihenőnap (gym)`, and since mezo-4qu that criterion is not merely "the same as"
+`TrainTools#dayContentLine` but literally the same code (`ToolText.gymLine`) — PLUS any
 recurring sport-schedule slot on that weekday, PLUS the active running block's prescribed session
 for that weekday (best-effort — absent block/week renders nothing, never fabricated). They used to
 be two near-identical renderers that had drifted: `Ma:` resolved gym only, so today's sport and run
@@ -1088,8 +1091,15 @@ but it is documented here because both recording adapters live in `feature/compa
   `thinkingPerMillion`, `cachedPerMillion`, `embedPerMillionChars`, `pricedOn`).
 - **INSERT-only — the one table with NO `is_deleted`** ([ADR 0014](../decisions/0014-llm-call-audit-log.md)):
   `LlmLogEntity` deliberately does **not** extend `OwnedEntity` (that superclass mandates the
-  soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable; they leave
-  only via retention pruning (a hard `DELETE`, not built yet).
+  soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable and never
+  deleted — no row ever leaves the table; the only thing that changes is its payload, NULLed in
+  place by the retention job below (`mezo-1y3p`, shipped).
+- **Retention (`mezo-1y3p`):** the nightly `LlmLogRetentionJob` (`mezo.techcore.cron.llm-log-retention-job.enabled`,
+  independent of the write switch) NULLs the four payload columns (`system_prompt`,
+  `conversation_history`, `user_message`, `response_text`) of rows older than
+  `mezo.llm-log.retention.payload-days` (90) and stamps `payload_scrubbed_at`; token counters,
+  `cost_usd` and `pricing_snapshot` are kept forever. The detail view (`/me/ai-usage/:id`) renders
+  the honest scrubbed state instead of a silently empty payload.
 - **Reading it:** usage/cost aggregates **must exclude `status = 'ERROR'`** — an ERROR row carries no
   provider-reported usage or cost, but its request-side counters (image counts, embedding batch size
   + dimensions) do survive. A **`CANCELLED`** row (`mezo-1rz9` — the SSE client disconnected
@@ -2218,8 +2228,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Deferred (with bd ids):**
 - **LLM audit-log follow-ups (mezo-2zyu; read API + `/me/ai-usage` browsing UI shipped `mezo-uakh`):**
-  still open — retention pruning (nothing prunes the table yet), budget alerting, and reconciling
-  the placeholder `mezo.llm-log.pricing` rates with current Gemini pricing. (`mezo-58ig` per-round usage and
+  still open — budget alerting and reconciling the placeholder `mezo.llm-log.pricing` rates with
+  current Gemini pricing (payload retention itself shipped, `mezo-1y3p` — see the retention bullet
+  above). (`mezo-58ig` per-round usage and
   `mezo-1rz9` CANCELLED streams are FIXED — see the audit-log section above.)
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
   `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review
@@ -2293,7 +2304,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608161200_mezo-q71s_llm_log_conversation_history.sql` — the `conversation_history` column (nullable, no backfill needed — every existing row predates the chat's multi-turn port).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java` — **`mezo-al1i`** `LlmLogRepository` grew `aggregatePerDaySince` (native daily rollup, report-zone calendar days) alongside the existing `aggregateSince`; new `repository/LlmDailyAggregate.java` projection (day/calls/inputTokens/outputTokens/costUsd).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmUsageService.java` — **`mezo-al1i`** grew `perDay(days)` (a sibling of the existing `summary()` day/week/month rollup) + exposed `auditEnabled()` publicly for `MemoryObservatoryService`'s `enabled` short-circuit.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding, incl. `LlmLogProperties.Retention` (`payloadDays`/`cron`, `mezo-1y3p`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogRetentionJob.java` — **`mezo-1y3p`** the nightly scrub (`@Scheduled(cron = "${mezo.llm-log.retention.cron}")`, switch `mezo.techcore.cron.llm-log-retention-job.enabled`, deliberately independent of `mezo.feature.llm-log.enabled`): calls `LlmLogRepository.scrubPayloadsOlderThan` once per run.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608181100_mezo-1y3p_llm_log_payload_scrubbed_at.sql` — the `payload_scrubbed_at` column backing the scrub.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/controller/LlmUsageController.java` + `service/LlmUsageService.java` — the read side (`mezo-uakh`): `implements LlmUsageApi` (ungated, no `CurrentUserId`); `summary`/`breakdown`/`listCalls`/`call`, all `@Transactional(readOnly = true)` so the period aggregates share one DB snapshot.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/mapper/LlmLogMapper.java` — `LlmLogEntity → LlmCallDetailResponse` (hand-written default methods: the jsonb `PricingSnapshot`, `BigDecimal→Double` null-preserving cost, `Instant→OffsetDateTime`).

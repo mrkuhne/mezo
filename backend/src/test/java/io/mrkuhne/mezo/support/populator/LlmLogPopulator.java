@@ -80,6 +80,35 @@ public class LlmLogPopulator {
     }
 
     /**
+     * Payload-carrying, back-dated row for the retention tests (mezo-1y3p) — the scrub target:
+     * all four payload columns filled, cost metadata present, created_at rewritten into the past.
+     */
+    public LlmLogEntity logPayloadAt(Instant createdAt, UUID createdBy, String feature,
+            String systemPrompt, String userMessage, String responseText) {
+        LlmLogEntity entity = new LlmLogEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setCallKind(CallKind.CHAT);
+        entity.setFeature(feature);
+        entity.setRequestedModel("gemini-2.5-flash");
+        entity.setServedModel("gemini-2.5-flash");
+        entity.setStatus(CallStatus.SUCCESS);
+        entity.setLatencyMs(100);
+        entity.setPromptTokens(10);
+        entity.setCandidatesTokens(5);
+        entity.setTotalTokens(15);
+        entity.setCostUsd(new BigDecimal("0.000123"));
+        entity.setSystemPrompt(systemPrompt);
+        entity.setConversationHistory("korábbi körök");
+        entity.setUserMessage(userMessage);
+        entity.setResponseText(responseText);
+        entity.setPayloadBytes(64);
+        LlmLogEntity saved = llmLogRepository.saveAndFlush(entity);
+        jdbcTemplate.update("update llm_log_history set created_at = ? where id = ?",
+            Timestamp.from(createdAt), saved.getId());
+        return saved;
+    }
+
+    /**
      * Full-shape row for the list/filter tests (mezo-uakh): status, kind, feature and timestamp are
      * all caller-chosen, and the payload columns are filled so a test can assert that the LIST
      * response does not carry them. No pricing snapshot — see the overload below for a costed row.

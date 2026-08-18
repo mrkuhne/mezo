@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
@@ -38,8 +38,6 @@ test('own header: pghead-np over + h1', () => {
 
 test('renders the active mesocycle hero card', () => {
   setup()
-  // The title is shared with the template it was started from (Sablonok section),
-  // so match the tappable hero card itself — the template card is a plain div.
   expect(screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ })).toBeInTheDocument()
 })
 
@@ -55,34 +53,26 @@ test('renders the active section label with its count', () => {
 
 test('renders the new-mesocycle chip trigger in the header', () => {
   setup()
-  // The header `+ Új` chip (exact name) — distinct from the dashed
-  // "+ Új mesociklus tervezése" CTA further down the page.
+  // The header `+ Új` chip (exact name) — the only creation action left on this page.
   expect(screen.getByRole('button', { name: 'Új' })).toBeInTheDocument()
 })
 
-// --- Sablonok section (mezo-meyc.1): templates are the reusable blueprints; runs live below ---
+// --- Runs-only library (mezo-tlwa): the templates moved to their own `Sablonok` tab ---
 
-test('renders the Sablonok section with the fixture templates and their run-count badges', () => {
-  setup()
-  expect(screen.getByText(/Sablonok · 2/)).toBeInTheDocument()
-  // the never-run template's title is unique to the template list (the other one
-  // shares its title with the active run below)
-  expect(screen.getByText('Upper/Lower Power')).toBeInTheDocument()
-  expect(screen.getByText('1× futtatva')).toBeInTheDocument()
-  expect(screen.getByText('0× futtatva')).toBeInTheDocument()
-})
-
-test('a template card offers Szerkesztés + Indítás', () => {
-  setup()
-  expect(screen.getAllByRole('button', { name: /Szerkesztés/ })).toHaveLength(2)
-  expect(screen.getAllByRole('button', { name: /Indítás/ })).toHaveLength(2)
-})
-
-test('Indítás on a template opens the start sheet', async () => {
+test('the library carries NO template cards any more — only a nav row to their tab', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getAllByRole('button', { name: /Indítás/ })[0])
-  expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
+  // no card-level template affordances survive here
+  expect(screen.queryByRole('button', { name: /Szerkesztés/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /^Indítás$/ })).toBeNull()
+  expect(screen.queryByText('Upper/Lower Power')).toBeNull()
+  expect(screen.queryByText('1× futtatva')).toBeNull()
+  // …and the planner's dashed CTA went with them (the header chip is the one entry)
+  expect(screen.queryByRole('button', { name: /Új mesociklus tervezése/ })).toBeNull()
+
+  const row = screen.getByRole('button', { name: /Sablonok · 2/ })
+  await user.click(row)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/templates')
 })
 
 // --- Történet (was Archív) + rerun ---
@@ -107,6 +97,15 @@ test('Újrafuttatás on a closed run reruns it and opens the start sheet', async
   setup()
   await user.click(screen.getAllByRole('button', { name: /Újrafuttatás/ })[0])
   expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
+})
+
+test('Sablonná on a closed run saves it as a template and opens the new editor (mezo-tlwa)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getAllByRole('button', { name: /Sablonná/ })[0])
+  await waitFor(() =>
+    expect(screen.getByTestId('loc').textContent).toMatch(/^\/train\/mesocycles\/templates\/.+/),
+  )
 })
 
 // --- Összevetés selection mode (mezo-meyc.4) ---
@@ -138,8 +137,9 @@ test('Összevetés turns card taps into selection instead of navigation', async 
   // selected, NOT navigated to the report
   expect(card).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByTestId('loc').textContent).toBe('/')
-  // the rerun action steps aside while selecting
+  // the card's own actions step aside while selecting
   expect(screen.queryByRole('button', { name: /Újrafuttatás/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Sablonná/ })).toBeNull()
 })
 
 test('a third tap in selection mode is refused — the pair from the first two taps stands', async () => {

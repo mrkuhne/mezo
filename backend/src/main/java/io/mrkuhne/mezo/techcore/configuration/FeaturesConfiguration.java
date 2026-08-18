@@ -152,6 +152,12 @@ public class FeaturesConfiguration {
      *  adapter can publish an audit event and no llm_log_history row is ever written. */
     public static final String LLM_LOG_SWITCH = "mezo.feature.llm-log.enabled";
 
+    /** mezo-1y3p LLM-log payload retention cron — off ⇒ the LlmLogRetentionJob bean does not exist.
+     *  Deliberately independent of {@link #LLM_LOG_SWITCH}: payload already on disk keeps aging
+     *  even while recording is off. */
+    public static final String LLM_LOG_RETENTION_JOB_SWITCH =
+        "mezo.techcore.cron.llm-log-retention-job.enabled";
+
     /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
     public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
 

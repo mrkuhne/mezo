@@ -1,64 +1,44 @@
-import { useState } from 'react'
-import { Toggle } from '@/shared/ui/Toggle'
+import { useMemo, useState } from 'react'
+import { Icon } from '@/shared/ui/Icon'
+import { cn } from '@/shared/lib/cn'
+import { GhostState } from '@/shared/ui/GhostState'
 import { useKnowledge, useKnowledgeActions } from '@/data/hooks'
-import { factCategoryColor, factCategoryLabel } from '@/data/insights/knowledge'
-import type { FactCandidate, FactDecision } from '@/data/types'
-
-function CandidateCard({ candidate, onDecide }: {
-  candidate: FactCandidate
-  onDecide: (decision: FactDecision, refinedText?: string) => void
-}) {
-  const [refining, setRefining] = useState(false)
-  const [refinedText, setRefinedText] = useState(candidate.text)
-  const color = factCategoryColor(candidate.category)
-
-  return (
-    <div className="card" style={{ padding: 12, position: 'relative', borderColor: 'var(--line)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color }} />
-      <div className="col gap-sm" style={{ paddingLeft: 8 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{candidate.text}</span>
-        <span className="label-mono" style={{ fontSize: 9, color }}>{factCategoryLabel(candidate.category)}</span>
-        {refining ? (
-          <div className="row gap-sm" style={{ alignItems: 'center' }}>
-            <input
-              aria-label="Pontosított tény"
-              value={refinedText}
-              onChange={(e) => setRefinedText(e.target.value)}
-              style={{
-                flex: 1, fontSize: 12, padding: '6px 8px', borderRadius: 6,
-                border: '1px solid var(--border-default)', background: 'var(--surface-0)', color: 'var(--text-primary)',
-              }}
-            />
-            <button
-              className="chip"
-              disabled={!refinedText.trim()}
-              onClick={() => onDecide('refine', refinedText.trim())}
-              style={{ fontSize: 11 }}
-            >
-              Mentés
-            </button>
-          </div>
-        ) : (
-          <div className="row gap-sm">
-            <button className="chip" onClick={() => onDecide('accept')} style={{ fontSize: 11, color: 'var(--lav-deep)' }}>
-              Elfogad
-            </button>
-            <button className="chip" onClick={() => setRefining(true)} style={{ fontSize: 11 }}>
-              Pontosít
-            </button>
-            <button className="chip" onClick={() => onDecide('reject')} style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-              Elvet
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
+import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
+import { KnowledgeExplainer } from '@/features/insights/components/KnowledgeExplainer'
+import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
+import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
+import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
+import type { FactCategory, KnowledgeFact } from '@/data/types'
 
 export function KnowledgeListPage() {
-  const { facts, candidates, activeCount, degraded } = useKnowledge()
+  const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
   const { toggle, decide } = useKnowledgeActions()
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<FactCategory | 'all'>('all')
+
+  // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
+  // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
+  const buckets = useMemo(() => bucketFacts(facts, PROMPT_TOP_N), [facts])
+  const visible = (list: KnowledgeFact[]) =>
+    list.filter((f) => (category === 'all' || f.category === category) && matchesQuery(f, query))
+
+  // Real-mode-only cold-load window (mock mode's isPending is always false): facts=[]/degraded=false
+  // read as "genuinely empty" below WITHOUT this guard — a fabricated „0 tény / 0 megy a chatbe"
+  // header would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class,
+  // PatternsPage.tsx örököse).
+  if (isPending) {
+    return <GhostState message="A tudástár betöltése…" />
+  }
+
+  // Genuinely failed fetch (500, network) — külön a 404-degraded ÉS a betöltés-alatti ablaktól.
+  // Enélkül egy 500 a `realEmpty`-t adná vissza, ami itt „0 megy a chatbe"-ként olvasna
+  // ÁLLANDÓAN, miközben a társ éppen fut és tényeket injektál.
+  if (isError) {
+    return (
+      <GhostState message="Nem sikerült betölteni a tudástárat." ctaLabel="Újra" onCta={refetch} />
+    )
+  }
 
   if (degraded) {
     return (
@@ -72,12 +52,31 @@ export function KnowledgeListPage() {
     )
   }
 
+  const inPrompt = visible(buckets.inPrompt)
+  const waiting = visible(buckets.waiting)
+  const off = visible(buckets.off)
+  const nothingMatches = facts.length > 0 && inPrompt.length + waiting.length + off.length === 0
+  const filterActive = query.trim() !== '' || category !== 'all'
+  const hasNoFacts = facts.length === 0
+
+  const rows = (list: KnowledgeFact[], bucket: FactBucket) =>
+    list.map((f) => (
+      <KnowledgeFactRow key={f.id} fact={f} bucket={bucket} onToggle={() => toggle(f.id, !f.active)} />
+    ))
+
+  const clearFilters = () => {
+    setQuery('')
+    setCategory('all')
+  }
+
   return (
     <div className="col gap-md">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow">Tudás · {facts.length} fact</span>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{activeCount} aktív promptban</span>
+        <span className="eyebrow">Tudástár · {facts.length} tény</span>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{buckets.inPrompt.length} megy a chatbe</span>
       </div>
+
+      <KnowledgeExplainer />
 
       {candidates.length > 0 && (
         <div className="col gap-sm">
@@ -85,7 +84,7 @@ export function KnowledgeListPage() {
             Jóváhagyásra vár · {candidates.length}
           </span>
           {candidates.map((c) => (
-            <CandidateCard
+            <FactCandidateCard
               key={c.id}
               candidate={c}
               onDecide={(decision, refinedText) => decide(c.id, decision, refinedText)}
@@ -94,36 +93,94 @@ export function KnowledgeListPage() {
         </div>
       )}
 
-      <div className="col gap-sm">
-        {facts.map((f) => {
-          const color = factCategoryColor(f.category)
-          return (
-            <div key={f.id} className="card" style={{ padding: 12, opacity: f.active ? 1 : 0.5, position: 'relative' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color }} />
-              <div className="row gap-sm" style={{ paddingLeft: 8, alignItems: 'center' }}>
-                <div className="col flex-1">
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{f.text}</span>
-                  <div className="row gap-sm mt-sm">
-                    <span className="label-mono" style={{ fontSize: 9, color }}>{factCategoryLabel(f.category)}</span>
-                    <span className="text-tertiary" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>×{f.reinforced} reinforced</span>
-                    {f.patternTitle && (
-                      <span className="chip" style={{ fontSize: 9 }} title={f.patternTitle}>minta: {f.patternTitle}</span>
-                    )}
-                  </div>
-                </div>
-                <Toggle
-                  on={f.active}
-                  onToggle={() => toggle(f.id, !f.active)}
-                  ariaLabel={`${f.text} aktív a promptban`}
-                />
-              </div>
+      {hasNoFacts ? (
+        <div className="card" style={{ padding: 14 }}>
+          <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
+            Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.
+          </span>
+        </div>
+      ) : (
+        <>
+          <div>
+            <div className="searchfield" style={{ marginBottom: 8 }}>
+              <Icon name="search" size={16} color="var(--text-tertiary)" />
+              <input
+                aria-label="Keresés a tények között"
+                placeholder="Keresés · pl. alvás, kávé, váll"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             </div>
-          )
-        })}
-      </div>
+            <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+              <button
+                type="button"
+                className={cn('chip tapchip', category === 'all' && 'brand')}
+                onClick={() => setCategory('all')}
+              >
+                Mind
+              </button>
+              {FACT_CATEGORIES.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn('chip tapchip', category === id && 'brand')}
+                  onClick={() => setCategory(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {nothingMatches ? (
+            <div className="card col gap-sm" style={{ padding: 14, alignItems: 'flex-start' }}>
+              <span className="text-secondary" style={{ fontSize: 12 }}>Nincs találat a keresésre.</span>
+              <button type="button" className="chip tapchip" onClick={clearFilters}>
+                Szűrők törlése
+              </button>
+            </div>
+          ) : (
+            <div className="col gap-sm">
+              {inPrompt.length > 0 && (
+                <div className="col gap-sm">
+                  <span className="eyebrow" style={{ color: 'var(--sage)' }}>
+                    Most ezeket kapja meg a társ · {inPrompt.length}
+                  </span>
+                  {rows(inPrompt, 'in-prompt')}
+                  <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px' }}>
+                    Minden beszélgetés elején ezek a mondatok mennek elé: a {PROMPT_TOP_N} legerősebb
+                    bekapcsolt tény, plusz a frissen megerősített minták.
+                  </p>
+                </div>
+              )}
+
+              <LifecycleSection
+                title="Bekapcsolva, de most kimarad"
+                accent="var(--text-secondary)"
+                count={waiting.length}
+                defaultOpen
+                forceOpen={filterActive}
+                footNote="Ha megerősödnek, vagy egy erősebb tény kiesik, bekerülnek a chatbe."
+              >
+                {rows(waiting, 'waiting')}
+              </LifecycleSection>
+
+              <LifecycleSection
+                title="Kikapcsolva"
+                accent="var(--text-tertiary)"
+                count={off.length}
+                forceOpen={filterActive}
+                footNote="Megőrzöm őket, de a társ nem használja."
+              >
+                {rows(off, 'off')}
+              </LifecycleSection>
+            </div>
+          )}
+        </>
+      )}
 
       <p className="text-tertiary mt-md" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5, padding: '0 20px' }}>
-        Az aktív tények minden chat-fordulóba bekerülnek a system promptba. A graph nézethez · Me → Knowledge.
+        A graph nézethez · Me → Knowledge.
       </p>
     </div>
   )

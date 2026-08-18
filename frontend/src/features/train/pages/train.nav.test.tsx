@@ -57,6 +57,17 @@ test('the active workout session is a full-screen flow without the sub-nav', () 
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
 })
 
+// The templates tab is a TAB, not a full-screen sibling (mezo-tlwa): reaching it from
+// Mesociklusok must keep the Train sub-nav — which is also the library nav row's target.
+test('Sablonok is a Train tab reachable from the sub-nav', async () => {
+  renderApp('/train/mesocycles')
+  await userEvent.click(screen.getByRole('button', { name: 'Mesociklusok' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Sablonok' }))
+  expect(screen.getByRole('heading', { level: 1, name: 'Sablonok' })).toBeInTheDocument()
+  // the sub-nav trigger now names the active tab -> the section shell is still around it
+  expect(screen.getByRole('button', { name: 'Sablonok' })).toBeInTheDocument()
+})
+
 test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/mesocycles/new')
   expect(container.querySelector('.np-pills')).toBeNull()

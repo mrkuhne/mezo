@@ -18,7 +18,7 @@ describe('knowledgeApi wire mapping', () => {
     })
     expect(fact).toEqual({
       id: 'kf-1', text: 'Laktózérzékeny', category: 'health', active: false, reinforced: 4,
-      source: 'chat', lastReinforcedAt: null,
+      source: 'chat', lastReinforcedAt: null, createdAt: '2026-07-03T06:00:00Z',
     })
   })
 

@@ -41,6 +41,31 @@ test('renders question title, decision verbs and the detail link', () => {
   expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
 })
 
+// mezo-mqdj: az éjszakai job a kapu-bukáskor nem nyúl a már perzisztált sorhoz, így a befagyott
+// `mechanism` mondat ("Erős pozitív együttjárás … az elmúlt 60 napban") a mai adatról állítana
+// valótlant. A részlet-oldal ezt a kártyát használja fejlécként elavult sorra is.
+test('a non-live pair replaces the frozen mechanism sentence with the honest verdict', () => {
+  const stalePair = { ...pair, verdict: 'few_days' as const, r: null, n: null, p: null, missingDays: 4 }
+  render(
+    <MemoryRouter>
+      <PatternDecisionCard pattern={statistical} pair={stalePair} onDecide={() => {}} showDetailLink={false} />
+    </MemoryRouter>,
+  )
+  expect(screen.getByText(/Még 4 nap adat ebből/)).toBeInTheDocument()
+  expect(screen.queryByText(statistical.mechanism!)).not.toBeInTheDocument()
+})
+
+test('a live pair still shows the finding sentence, not the verdict', () => {
+  const livePair = { ...pair, verdict: 'live' as const, r: -0.55, n: 20, p: 0.01 }
+  render(
+    <MemoryRouter>
+      <PatternDecisionCard pattern={statistical} pair={livePair} onDecide={() => {}} showDetailLink={false} />
+    </MemoryRouter>,
+  )
+  expect(screen.queryByText(/nap adat ebből/)).not.toBeInTheDocument()
+  expect(screen.getByText(/Igen:|Meglepő:/)).toBeInTheDocument()
+})
+
 test('showDetailLink={false} suppresses the self-referential detail link (mezo-tk88.5 review fix)', () => {
   render(
     <MemoryRouter>

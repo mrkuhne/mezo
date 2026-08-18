@@ -2,9 +2,10 @@
 // Mezo · ArchivedMesoCard — dimmed (opacity 0.7) card for a finished
 // mesocycle: Archív + end date eyebrow, Display title, summary line.
 // The body opens the run's FROZEN report (mezo-meyc.2 — a closed run has no
-// builder); the footer's „Újrafuttatás" action
-// (mezo-meyc.1) reruns the closed block — the parent resolves its template
-// (materializing one for a legacy run) and opens MesoStartSheet on it.
+// builder); the footer carries two actions on the closed block — „Újrafuttatás"
+// (mezo-meyc.1) reruns it (the parent resolves its ORIGINATING template,
+// materializing one for a legacy run, and opens MesoStartSheet on it) and
+// „Sablonná" (mezo-tlwa) forks its plan into a brand-new template.
 //
 // Two additions in mezo-meyc.4:
 //  · a footer chip stating whether the run HAS a frozen report („riport") or not
@@ -31,11 +32,13 @@ interface ArchivedMesoCardProps {
   /** Opens the frozen report — or, in `selectMode`, toggles this run's selection. */
   onOpen: () => void
   onRerun: () => void
+  /** Forks this run's plan into a NEW template (mezo-tlwa) — see `logic/runToTemplate.ts`. */
+  onSaveAsTemplate: () => void
   selectMode?: boolean
   selected?: boolean
 }
 
-export function ArchivedMesoCard({ meso, onOpen, onRerun, selectMode = false, selected = false }: ArchivedMesoCardProps) {
+export function ArchivedMesoCard({ meso, onOpen, onRerun, onSaveAsTemplate, selectMode = false, selected = false }: ArchivedMesoCardProps) {
   return (
     // A plain card, not a <button>: the rerun action is a button of its own and
     // buttons cannot nest.
@@ -88,11 +91,17 @@ export function ArchivedMesoCard({ meso, onOpen, onRerun, selectMode = false, se
             nincs riport
           </span>
         )}
-        {/* While selecting, the only meaningful tap on this card is the selection itself. */}
+        {/* While selecting, the only meaningful tap on this card is the selection itself —
+            BOTH actions step aside (mezo-tlwa keeps the mezo-meyc.4 rule for the new one). */}
         {!selectMode && (
-          <button type="button" className="chip tapchip" onClick={onRerun}>
-            <Icon name="sparkle" size={10} /> Újrafuttatás
-          </button>
+          <div className="row gap-xs">
+            <button type="button" className="chip tapchip" onClick={onSaveAsTemplate}>
+              <Icon name="bookmark" size={10} /> Sablonná
+            </button>
+            <button type="button" className="chip tapchip" onClick={onRerun}>
+              <Icon name="sparkle" size={10} /> Újrafuttatás
+            </button>
+          </div>
         )}
       </div>
     </div>

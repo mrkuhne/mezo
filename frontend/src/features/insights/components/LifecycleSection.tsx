@@ -9,12 +9,19 @@ import { Icon } from '@/shared/ui/Icon'
  * (mezo-tk88.5 review fix) — a részlet-oldal „Motor-diagnosztika" szekciója nem egy lista-elemszám,
  * hanem egy önálló blokk, ezért nincs `· N` utótagja: `count` nélkül a szekció sosem tűnik el ÉS
  * a suffix sem jelenik meg; a dashboard hívói (mind számot adnak át) változatlanok.
- */
+ *
+ * `forceOpen` (mezo-9ryh review fix) — opcionális, visszafelé kompatibilis: nyitva tartja a
+ * szekciót a belső `open` állapottól függetlenül (a chevron/gomb tovább működik, csak a
+ * megjelenítés nem hallgat rá). A Tudástár lista adja át, amíg aktív szűrő fut — enélkül egy
+ * csak kikapcsolt tényekre illeszkedő keresés összecsukott „Kikapcsolva · 1" fejlécet mutatna,
+ * a találat pedig sosem látszana. A `PatternsPage`/`PatternDetailPage` hívói nem adnak át
+ * semmit, ezért változatlanul viselkednek. */
 export function LifecycleSection({
   title,
   accent,
   count,
   defaultOpen = false,
+  forceOpen = false,
   footNote,
   children,
 }: {
@@ -25,10 +32,13 @@ export function LifecycleSection({
   /** hiányában a szekció sosem tűnik el és a fejléc nem kap „· N" utótagot */
   count?: number
   defaultOpen?: boolean
+  /** nyitva tartja a szekciót a belső toggle-állapottól függetlenül (aktív szűrő ablaka) */
+  forceOpen?: boolean
   footNote?: string
   children: ReactNode
 }) {
   const [open, setOpen] = useState(defaultOpen)
+  const isOpen = forceOpen || open
   if (count === 0) return null
 
   return (
@@ -40,9 +50,9 @@ export function LifecycleSection({
         style={{ justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 16px' }}
       >
         <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>{title}{count != null ? ` · ${count}` : ''}</span>
-        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={11} color="var(--text-tertiary)" />
+        <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={11} color="var(--text-tertiary)" />
       </button>
-      {open && (
+      {isOpen && (
         <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {children}
           {footNote && (
