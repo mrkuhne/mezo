@@ -25,16 +25,17 @@ related: [proactive, today, ritual, me, fuel, insights, _platform-api-backend]
 
 > Cross-cutting delivery layer, no route/tab of its own (the FE surface lives at `/me/ertesitesek`,
 > documented from Me's side in [`me.md`](me.md)). **Push (N1/N2/N3): DONE** — N1 delivery spine + N2
-> dispatcher/prefs + N3 FE-schedule/preview are all shipped; all 14 categories are live (11 at N3
+> dispatcher/prefs + N3 FE-schedule/preview are all shipped; all 20 categories are live (11 at N3
 > ship, +3 companion-feed categories — `evening`/`sleep_reaction`/`weight_reaction` — once
 > `AnchorResolver`'s five prose anchors moved onto the unified `companion_message` table,
-> mezo-gst9). A real Web Push
+> mezo-gst9; +6 feed-anchored categories — `pattern`/`knowledge`/`prediction`/`experiment`/
+> `challenge`/`memory` — once the in-app feed was wired as a push source, mezo-gzhp.3). A real Web Push
 > reached Daniel's iPhone from the k3s backend on 2026-07-29 (N1's exit criterion, confirmed by
 > Daniel — bd `mezo-h4wp.6.1`) — real-world delivery is proven, not just unit-tested. This is the
 > slice that completes the `mezo-h4wp` proactive epic's long-deferred **H2** item — see
 > [`proactive.md`](proactive.md) and [`roadmap.md`](../milestones/roadmap.md).
 >
-> **In-app feed (F1/F2/F3, bd `mezo-gzhp`): F1 + F2 DONE, F3 NOT YET SHIPPED.** A second, sibling
+> **In-app feed (F1/F2/F3, bd `mezo-gzhp`): F1 + F2 + F3 all DONE.** A second, sibling
 > delivery layer sits alongside push: an `app_notification` outbox table + a bell/panel FE surface
 > in `AppHero`, fed by the AI-brain "pattern engine"/companion/proactive/insights domains rather
 > than by `AnchorResolver`'s anchors — the whole in-app-feed backend now lives in its own
@@ -46,9 +47,13 @@ related: [proactive, today, ritual, me, fuel, insights, _platform-api-backend]
 > `FactExtractionService`, `HypothesisPipelineService`, `MemoirGenerator`, `PredictionGenerator`,
 > `PredictionValidationService`, `ExperimentProposalGenerator`, `ExperimentOutcomeService`,
 > `ChallengeGenerator`, `ChallengeOutcomeEvaluator` and `DailySummaryService` — **all 12
-> `AppNotificationKind`s now emit** (§3a/§4/§5). **F3** (mapping the `familyKey`s onto push
-> categories + wiring `AnchorResolver` to the feed as a push source, with wake-deferral) is the only
-> piece **explicitly not built yet** — see §2/§3/§4/§9 below.
+> `AppNotificationKind`s now emit** (§3a/§4/§5). **F3** (2026-08-18, bd `mezo-gzhp.3`) wired the
+> remaining piece: the `NotificationCategory` catalog grew **14→20** (6 new feed-anchored, family-level
+> categories — `pattern`/`knowledge`/`prediction`/`experiment`/`challenge`/`memory`, all default ON,
+> lead 0, not `feWritten`) and `AnchorResolver.feedAnchors(...)` now maps every one of today's
+> `app_notification` rows onto a push anchor (minute = max(event minute, wake minute), so the
+> overnight 02:20-03:00 pattern-motor run defers to wake while daytime events push on their own
+> minute), reusing the row's own stored title/body verbatim (§2/§3/§3a/§4/§9 below).
 
 ## 1. Summary
 
@@ -62,7 +67,7 @@ iPhone **with the app closed**. It is a Web Push (RFC 8030/8291/8292) stack the 
 end, plus the FE opt-in/settings surface and service-worker handlers.
 
 **Driving spec:** [`docs/superpowers/specs/2026-07-29-push-notifications-design.md`](../superpowers/specs/2026-07-29-push-notifications-design.md)
-(§3 architecture, §5 data model, §6 the (now 14-)category catalog + copy rules, §7 frontend, §9 switches,
+(§3 architecture, §5 data model, §6 the (now 20-)category catalog + copy rules, §7 frontend, §9 switches,
 §13 risks). **ADR:** [`0014-own-webpush-implementation.md`](../decisions/0014-own-webpush-implementation.md)
 (why the protocol is hand-rolled). **Driver:** `mezo-h4wp.6` — N1 `mezo-h4wp.6.1`, N2 `mezo-h4wp.6.2`,
 N3 `mezo-h4wp.6.3` — all three slices shipped.
@@ -71,17 +76,20 @@ N3 `mezo-h4wp.6.3` — all three slices shipped.
 [`docs/superpowers/specs/2026-08-18-notification-center-design.md`](../superpowers/specs/2026-08-18-notification-center-design.md)
 (approved 2026-08-18, A-variant mockup approved) / plan
 [`docs/superpowers/plans/2026-08-18-notification-center.md`](../superpowers/plans/2026-08-18-notification-center.md).
-**Driver:** `mezo-gzhp` — F1 `mezo-gzhp.1` and F2 `mezo-gzhp.2` (this update) shipped; F3 (push
-mapping) is the one remaining, not-yet-started slice of the same epic.
+**Driver:** `mezo-gzhp` — F1 `mezo-gzhp.1`, F2 `mezo-gzhp.2` and F3 `mezo-gzhp.3` (this update) all
+shipped; the epic is complete.
 
 **Status per layer:**
 - **Backend `techcore/webpush`:** done (unchanged since N1) — VAPID ES256 signing, RFC 8291
   `aes128gcm` encryption, the outbound HTTP client. Zero new Maven dependencies.
 - **Backend `feature/notification`:** done — three tables beyond N1's `push_subscription`:
   `notification_pref` + `push_log` (N2), `notification_schedule` (N3). The `NotificationCategory`
-  enum (§4) is the 14-key catalog (11 at N3 ship, +`evening`/`sleep_reaction`/`weight_reaction`,
-  mezo-gst9). **`DueEvaluator`** (pure) + **`AnchorResolver`** (impure, reads
-  three anchor sources) feed **`NotificationDispatchJob`**, a per-minute cron that hands the actual
+  enum (§4) is the **20-key catalog** (11 at N3 ship, +`evening`/`sleep_reaction`/`weight_reaction`
+  mezo-gst9, +6 feed-anchored categories mezo-gzhp.3 — `pattern`/`knowledge`/`prediction`/
+  `experiment`/`challenge`/`memory`). **`DueEvaluator`** (pure) + **`AnchorResolver`** (impure, reads
+  three anchor sources — `AnchorResolver.feedAnchors(...)`, F3's `app_notification` reader, folds
+  into `backendAnchors` rather than adding a fourth list) feed **`NotificationDispatchJob`**, a
+  per-minute cron that hands the actual
   send to **`PushDispatchExecutor`**'s `@Async` method (§9 — the single most important gotcha in
   this feature). One `NotificationController` implements all six operations (subscribe/unsubscribe/
   test-push/pref-get/pref-put/schedule-put) — `openapi-generator` emits one interface per tag, so
@@ -90,7 +98,8 @@ mapping) is the one remaining, not-yet-started slice of the same epic.
   `useNotificationPrefs()` (N2, **server-owned**, `useDualQuery` — unlike N1's hook) +
   `useScheduleSnapshotWriter()` (N3, write-only, fire-and-forget, wired into `AppLayout.tsx`) feed
   the full `NotificationsPage` settings screen: the live volume-preview header + the iOS install-gate
-  + a two-section, per-category toggle list with lead chips where meaningful.
+  + a **three-section**, per-category toggle list with lead chips where meaningful — the third
+  section, "Az agy eseményei" (F3, bd `mezo-gzhp.3`), holds the 6 feed-anchored family toggles.
 - **Real-world delivery:** proven end to end, not merely unit-tested — a real push reached Daniel's
   iPhone from the k3s backend on 2026-07-29 (N1's exit criterion; bd `mezo-h4wp.6.1` notes "confirmed
   by Daniel"). N2/N3 build the dispatcher and the last two categories' feed on top of that proven
@@ -100,10 +109,12 @@ mapping) is the one remaining, not-yet-started slice of the same epic.
   `AppNotificationKind` catalog (§4), `AppNotificationService` (emit/feed/markAllRead, gated on
   `NOTIFICATION_FEED_SWITCH`), and the always-on `AppNotificationEmitter` facade every producer
   injects (§9). **All 12 kinds now emit** — F1 wired the 3 pattern-family sites (§3a/§5), F2 wired
-  the remaining 9 across the proactive/companion generators (§3a/§5). The package was moved out of
+  the remaining 9 across the proactive/companion generators (§3a/§5). **F3 (bd `mezo-gzhp.3`) is also
+  done** — every `familyKey` now maps onto one of the 6 new push categories and
+  `AnchorResolver.feedAnchors(...)` pushes each of today's rows (§3a/§4/§9). The package was moved out of
   `feature/notification` into its own `feature/appnotification` during F2, to break a
   `companion`↔`notification`↔`proactive` dependency cycle the new producers would otherwise have
-  created. Only the push-category mapping (F3) is **not built**.
+  created. The push-category mapping (F3, bd `mezo-gzhp.3`) is now also built (§3b/§4).
 - **Frontend in-app feed (F1):** done — `useNotificationFeed()`/`useNotificationFeedActions()`
   (`useDualQuery`, §6) feed a new `features/notification/` bell + dropdown panel, wired as the 4th
   `AppHero` counter chip (§2).
@@ -123,19 +134,25 @@ settings list beside it that cannot work.
    an hourly sparkline (`notificationForecast.ts`, §4/§6) + a "Sűrű ablak" warning when ≥2 pushes
    land within 15 minutes of each other. Needs no endpoint — the FE already knows today's anchors.
 2. **The N1 master toggle + dev "Teszt értesítés küldése" button** — unchanged.
-3. **The category list**, two sections (mockup direction C): **"Mezo megszólal"** (the prose
+3. **The category list**, now **three sections** (mockup direction C, extended by F3 bd
+   `mezo-gzhp.3`), rendered in this order: **"Mezo megszólal"** (the prose
    categories — `briefing`/`midday`/`evening`/`weekly`/`memoir`/`sleep_reaction`/`weight_reaction`,
-   mezo-gst9 added the last three) and **"Emlékeztetők"** (the reminder
+   mezo-gst9 added the last three), **"Az agy eseményei"** (F3 — the 6 feed-anchored, family-level
+   categories — `pattern`/`knowledge`/`prediction`/`experiment`/`challenge`/`memory` — one toggle per
+   `AppNotificationKind` family, `NOTIFICATION_CATEGORY_META`'s `section: 'brain'` entries), and
+   **"Emlékeztetők"** (the reminder
    categories — `gym`/`medication`/`ritual`/`lights_out`/`wind_down`/`checkin`/`fuel_slot`). Each row
    (`NotificationCategoryRow.tsx`) is a toggle + a live, per-day sub-line derived from data the page
    already holds (e.g. `"ma 17:00 · Láb nap"` for `gym`, `"szerda · D3"` for `medication`) — falling
    back to the static `NOTIFICATION_CATEGORY_META` description when the day genuinely has no anchor
-   (no session today, not a dose day). **Only `gym` shows a lead-minute chip** (`"−30 perc"`) — it is
+   (no session today, not a dose day). The 6 "Az agy eseményei" rows have no per-day derivation (an
+   in-app-feed event has no daily schedule to preview), so they always show the static description.
+   **Only `gym` shows a lead-minute chip** (`"−30 perc"`) — it is
    the sole category with a non-zero `leadMinutes`; a chip on any other row would expose a number the
    backend ignores (dishonest control, spec §6/§9).
 
 **Honest limits, stated plainly:** the mockup's single "Heti terv + memoir" settings row is actually
-**two independent rows/categories** (`weekly`, `memoir`) in the real 14-key catalog — the mockup
+**two independent rows/categories** (`weekly`, `memoir`) in the real 20-key catalog — the mockup
 compressed them for space, the catalog does not. `midday` and `memoir` keep the mockup's **fixed
 static sub-lines** (their anchors are not per-day data, so there is nothing to derive). **Known
 15-minute drift in that FE copy:** since the prose-generation grace (§9 trap #6) moved the real
@@ -192,7 +209,7 @@ read endpoint** — opening the panel is the only "read" action, by design (§9)
                               there is no generator cron to collide with
          c) FE snapshot       today's live notification_schedule rows (weekday match or NULL=every day),
                               each row's category + time individually guarded (§9 trap #7)
-    2. NotificationPrefService.effectiveFor(owner)  → all 14 categories, stored row or code default
+    2. NotificationPrefService.effectiveFor(owner)  → all 20 categories, stored row or code default
     3. DueEvaluator.due(nowMinute, prefs, anchors, catchUpMinutes)   — PURE, no collaborators
          fires when nowMinute − (anchorMinute − leadMinutes) ∈ [0, catchUpMinutes)
          — a BACKWARD window: on time, plus (catchUpMinutes − 1) recovered LATE minutes
@@ -286,9 +303,41 @@ reinforcement branch) sharing one dedup-key shape (`"fact_reinforced:{factId}:{c
 sources can never double-notify the same reinforcement count.
 
 **Copy is composed once, at emit time, in the producer** (Hungarian, following the same §6 copy
-rules as push) — never re-derived on read. This is deliberate: slice **F3** will have the push
-dispatcher send this **same stored `body`** verbatim, so the in-app feed and a future push for the
-same event can never say two different things.
+rules as push) — never re-derived on read. This is deliberate: **F3** (bd `mezo-gzhp.3`) has the push
+dispatcher send this **same stored `body`** verbatim (`AnchorResolver.feedAnchors(...)`, below), so
+the in-app feed and its push for the same event can never say two different things.
+
+### 3b. F3 — feed rows as a push source (bd `mezo-gzhp.3`)
+
+`AnchorResolver.feedAnchors(owner, date)` reads today's `app_notification` rows and turns each into
+a push `AnchoredEvent`, folded into `backendAnchors` (§3):
+
+```
+for each app_notification row occurring today:
+    kind = AppNotificationKind.fromKey(row.kind)
+    skip if kind unknown (forward-compat) OR kind.familyKey() == null (memoir_ready — the
+         existing `memoir` category already covers that event, §4)
+    category = NotificationCategory.fromKey(kind.familyKey())   # pattern/knowledge/prediction/
+                                                                  # experiment/challenge/memory
+    minute = max(row.occurredAt's own minute, wake minute)       # overnight 02:20-03:00 pattern-
+                                                                  # motor events defer to wake (the
+                                                                  # briefing precedent); daytime
+                                                                  # events push on their own minute
+    dedupSuffix = "HH:mm:" + first 8 chars of row.id             # NOT "{category}:{HHmm}" — that
+                                                                  # would collapse same-family
+                                                                  # wake-deferred events into one
+                                                                  # push; every event must push
+                                                                  # (user decision)
+    url = row.deeplink + ("?" or "&") + "n=" + first 8 chars of row.id   # push-sw.js uses the url
+                                                                  # as the notification tag — a
+                                                                  # shared deeplink would replace
+                                                                  # an undismissed push (the
+                                                                  # check-in bug class, §9)
+    title, body = row.title, row.body verbatim                  # single copy source (§3a)
+```
+
+No new content is generated on the push path — the row's own copy is reused verbatim, the same
+"excerpt, never regenerate" discipline the prose anchors already follow (§9).
 
 ## 4. Data model & API
 
@@ -311,15 +360,19 @@ Migration: [`202607291400_..._create_notification_pref_and_push_log.sql`](../../
 
 `uq_notification_pref_created_by_category` (partial, live rows only). **A missing row is never
 "off"** — `NotificationPrefService.effectiveFor` reports the category's code default
-(`NotificationCategory.defaultEnabled()`/`defaultLeadMinutes()`) for every one of the 14 keys, always
-— so a fresh install needs no seed data and a future 15th category ships with its intended default
+(`NotificationCategory.defaultEnabled()`/`defaultLeadMinutes()`) for every one of the 20 keys, always
+— so a fresh install needs no seed data and a future 21st category ships with its intended default
 instead of silently arriving OFF (`feature/notification/service/NotificationPrefService.java:32-44`).
 
 ### `push_log` (N2)
 
 Same migration as above. `log_date date`, `dedup_key varchar(80)` (`"{category}:{anchorHHmm}"`, e.g.
 `gym:10:00` — built from the **anchor** time, never the fire time, so changing a category's lead
-cannot re-fire something already sent today for the same anchor), `category`, `sent_at`.
+cannot re-fire something already sent today for the same anchor), `category`, `sent_at`. The 6
+feed-anchored categories (F3, bd `mezo-gzhp.3`) key off a different, more specific form of the
+same shape instead — `"{category}:{HHmm}:{id8}"` (e.g. `pattern:06:00:3f9a1c02`), the source
+`app_notification` row's id appended so two same-family events wake-deferred onto the same
+minute never collapse into one push (§3b/§9).
 `uq_push_log_created_by_log_date_dedup_key` (partial, live rows only). **Written before the send**
 (§9). No pruning job in v1 (~7 rows/day, single user — spec §5 retention note).
 
@@ -344,10 +397,13 @@ both the `categories` list and every entry, in `NotificationScheduleService.requ
 backend-native category's schedule (`gym`, `ritual`, …) would create a second source of truth for a
 minute the backend already owns.
 
-### `NotificationCategory` — the 14-key catalog (`feature/notification/domain/NotificationCategory.java`)
+### `NotificationCategory` — the 20-key catalog (`feature/notification/domain/NotificationCategory.java`)
 
 The single source of truth for which categories exist, their default enabled/lead, and which are
-FE-written — pinned by `NotificationCategoryTest` against spec §6:
+FE-written — pinned by `NotificationCategoryTest` against spec §6. The last 6 rows (bd
+`mezo-gzhp.3`) are the feed-anchored, family-level categories: they carry no anchor of their own in
+`AnchorResolver`'s backend-native sense — their "anchor" is whichever `app_notification` row of that
+family occurred today, wake-deferred (`AnchorResolver.feedAnchors(...)`, §3b):
 
 | # | Key | Default | Lead | FE-written | Anchor |
 |---|---|---|---|---|---|
@@ -365,6 +421,17 @@ FE-written — pinned by `NotificationCategoryTest` against spec §6:
 | 12 | `evening` | ON | 0 | no | **`feed.evening-cron` + grace = 20:45** (preferred slot 20:30); `companion_message` kind=`evening`, title `"Mezo · napzárás"` (mezo-gst9) |
 | 13 | `sleep_reaction` | ON | 0 | no | `companion_message` kind=`sleep` row's OWN `generatedAt` minute — no cron/grace, it fires off a sleep-log event, title `"Mezo · alvás"` (mezo-gst9) |
 | 14 | `weight_reaction` | ON | 0 | no | `companion_message` kind=`weight` row's OWN `generatedAt` minute — no cron/grace, it fires off a weight-log event, title `"Mezo · testsúly"` (mezo-gst9) |
+| 15 | `pattern` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.PATTERN_INBOX`/`PATTERN_SIGNAL`/`HYPOTHESIS_NEW`'s `app_notification` rows (mezo-gzhp.3) |
+| 16 | `knowledge` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.FACT_CANDIDATE`/`FACT_REINFORCED`'s `app_notification` rows (mezo-gzhp.3) |
+| 17 | `prediction` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.PREDICTION_NEW`/`PREDICTION_OUTCOME`'s `app_notification` rows (mezo-gzhp.3) |
+| 18 | `experiment` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.EXPERIMENT_PROPOSED`/`EXPERIMENT_CLOSED`'s `app_notification` rows (mezo-gzhp.3) |
+| 19 | `challenge` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.CHALLENGE_EVENT`'s `app_notification` rows (mezo-gzhp.3) |
+| 20 | `memory` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.MEMORY_NOTE`'s `app_notification` rows (mezo-gzhp.3) |
+
+**`memoir_ready` deliberately has no row here** — its `familyKey()` is `null`, so it never reaches
+`feedAnchors(...)`; the existing `memoir` category (row 7) already covers that event as a push, and
+giving it a second category would double-notify the same moment (§4/§9, `AppNotificationKindTest`
+pins the null).
 
 **Only `gym` carries a non-zero `defaultLeadMinutes()`.** The ritual-family categories
 (`ritual`/`lights_out`/`wind_down`) resolve their windows through `RitualService`, which already owns
@@ -375,12 +442,12 @@ a second source of truth for the same minute (class javadoc, `NotificationCatego
 
 | Class | Responsibility |
 |---|---|
-| `NotificationCategory` | the 14-key catalog enum (above) |
+| `NotificationCategory` | the 20-key catalog enum (above) |
 | `DueEvaluator` | **pure**, no collaborators — a **backward** window: `nowMinute − (anchorMinute − lead) ∈ [0, catchUpMinutes)`, i.e. on time plus one recovered late minute at the default width 2 (§9). Deliberately does not normalize a negative fire minute into the previous evening — the honest answer for such a combination is that it never fires |
-| `AnchorResolver` | the impure half — resolves all 14 categories' anchors for one owner+day into an `AnchorSet`; see §9 for its seven documented traps |
+| `AnchorResolver` | the impure half — resolves all 20 categories' anchors for one owner+day into an `AnchorSet`; see §9 for its seven documented traps |
 | `NotificationDispatchJob` | the per-minute `@Scheduled` cron — DB-only on the scheduler thread, hands the send to `PushDispatchExecutor` |
 | `PushDispatchExecutor` | the `@Async` send handoff — a **separate bean** (§9) |
-| `NotificationPrefService` | `effectiveFor` (all 14, code-default fallback) + `upsert` (per-category, blind-insert-safe) |
+| `NotificationPrefService` | `effectiveFor` (all 20, code-default fallback) + `upsert` (per-category, blind-insert-safe) |
 | `NotificationScheduleService` | `replace` (per-category full replace, `feWritten`-gated) + `liveFor` (the dispatcher's read) |
 | `NotificationController` | implements `NotificationApi` — all six push operations, thin delegation |
 | `PushSubscriptionService` / `PushSender` | N1, unchanged |
@@ -419,11 +486,12 @@ serves the feed read (`created_by, occurred_at desc`).
 
 ### `AppNotificationKind` — the 12-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
-The single source of truth for the in-app feed's kind key, its slice-F3 push `familyKey`, and its
+The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
 deeplink base — pinned by `AppNotificationKindTest`. **All 12 rows are wired to a producer as of F2**
-(bd `mezo-gzhp.2`) — only the `familyKey`→push-category mapping (F3) remains unbuilt.
+(bd `mezo-gzhp.2`), and **every non-null `familyKey` now maps onto a live push category as of F3**
+(bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end.
 
-| Key | familyKey (F3) | Deeplink base | Producer |
+| Key | familyKey (→ push category, F3) | Deeplink base | Producer |
 |---|---|---|---|
 | `pattern_inbox` | `pattern` | `/insights/patterns/{pairKey}` | F1 — `PatternDetectionService.upsert` |
 | `pattern_signal` | `pattern` | `/insights/patterns/{pairKey}` | F1 — `PatternDetectionService.recordSnapshot` |
@@ -444,7 +512,7 @@ deeplink base — pinned by `AppNotificationKindTest`. **All 12 rows are wired t
 |---|---|---|---|
 | `POST`/`DELETE` | `/api/notification/subscription` | N1 | unchanged |
 | `POST` | `/api/notification/test` | N1, dev-only | unchanged |
-| `GET` | `/api/notification/pref` | N2 | all 14 categories, always complete — a category with no stored row reports its code default |
+| `GET` | `/api/notification/pref` | N2 | all 20 categories, always complete — a category with no stored row reports its code default |
 | `PUT` | `/api/notification/pref` | N2 | upsert one or more; `400 NOTIFICATION_UNKNOWN_CATEGORY` on an unrecognized key |
 | `PUT` | `/api/notification/schedule` | N3 | replaces the named categories' live rows; `400 NOTIFICATION_UNKNOWN_CATEGORY` on an unrecognized key **or a known-but-backend-native one** |
 | `GET` | `/api/notification/feed?limit=` | F1 | `limit` 1..100, default 50; newest first; items `id`/`kind`/`title`/`body`/`deeplink`/`occurredAt`/`readAt` |
@@ -458,7 +526,7 @@ separate tag/controller pair, since the feed is a different resource (`/api/noti
 `/api/notification/{pref,schedule}`) with its own switch (`NOTIFICATION_FEED_SWITCH`).
 
 **`NOTIFICATION_UNKNOWN_CATEGORY` (400) is a single message code doing two jobs, deliberately.** On
-`pref`, any of the 14 keys is valid (every category — backend-native or FE-written — has a
+`pref`, any of the 20 keys is valid (every category — backend-native or FE-written — has a
 preference), so the code fires only on a genuinely unrecognized string
 (`NotificationController.toCategoryPref`). On `schedule`, the code fires on an unrecognized string
 **or** a recognized-but-not-`feWritten` one (`gym`, `ritual`, …) — the security boundary that stops a
@@ -511,8 +579,8 @@ the OpenAPI schema itself (1..100).
   (`prediction_new`/`prediction_outcome`), `ExperimentProposalGenerator`/`ExperimentOutcomeService`
   (`experiment_proposed`/`experiment_closed`), `ChallengeGenerator`/`ChallengeOutcomeEvaluator`
   (`challenge_event`, both lifecycle moments), `DailySummaryService` (`memory_note`) — see §3a for the
-  full per-producer dedup-key shapes. **All 12 `AppNotificationKind`s now emit; only the F3
-  push-category mapping remains.**
+  full per-producer dedup-key shapes. **All 12 `AppNotificationKind`s now emit, and F3 (bd
+  `mezo-gzhp.3`) wired the push-category mapping on top — see §3b/§4.**
 
 ## 6. How to use it (consume)
 
@@ -530,7 +598,7 @@ function Example() {
 
 **`useNotificationPrefs()` (`data/notification/notificationPrefHooks.ts`) IS a `useDualQuery`** —
 unlike N1's `usePushSubscription()`. The prefs are **server-owned** data (mock seeds the
-deterministic `notificationPrefSeed`, all 14 at spec defaults, synchronously; real fetches
+deterministic `notificationPrefSeed`, all 20 at spec defaults, synchronously; real fetches
 `GET /api/notification/pref` and returns the same seed as the honest pre-resolve ghost, since the
 backend's own "no stored row = code default" rule means the seed already IS the correct fallback).
 `setPref` is a **per-category** upsert (mirrors the backend's own per-category PUT semantics — never
@@ -568,7 +636,7 @@ IT test carries a class-level `@Transactional`, remove it** — `emit`'s `REQUIR
 will FK-deadlock against the test's own not-yet-committed rows otherwise (§9's F1/F2 gotcha; every
 one of the 12 current producer IT classes had to have this annotation dropped).
 
-## 7. How to extend it (adding a 15th category)
+## 7. How to extend it (adding a 21st category)
 
 1. **Catalog first** — add the key to `NotificationCategory` (`defaultEnabled`/`defaultLeadMinutes`/
    `feWritten`) and to spec §6's table; `NotificationCategoryTest` pins the catalog against the spec,
@@ -597,7 +665,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   forward-window bug (`testDue_shouldStillFire_whenTheTickWasMissedAndNowIsOneMinutePastTheFireMinute`,
   `testDue_shouldNotFire_whenNowIsOneMinuteBeforeTheFireMinute`), disabled category, lead applied,
   empty day, the negative-fire-minute non-wraparound.
-- `NotificationCategoryTest` — pins the 14-key catalog (keys, defaults, leads, `feWritten`) against
+- `NotificationCategoryTest` — pins the 20-key catalog (keys, defaults, leads, `feWritten`) against
   spec §6.
 - `AnchorResolverIT` + `AnchorResolverRitualSwitchOffIT` — per-category anchor resolution against a
   real Postgres, including the ritual-family absence when `RITUAL_SWITCH` is off. Trap #6 is covered
@@ -908,8 +976,8 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   Either way the second attempt is a silent no-op — never an error surfaced to the producer.
 - **`memoir_ready`'s `familyKey` is `null` on purpose, not an oversight.** The existing `memoir` push
   category (N-slice catalog, §4) already delivers that event as a push; giving `memoir_ready` a
-  familyKey too would double-notify the same moment through two different categories once F3 wires
-  the mapping. `AppNotificationKindTest` pins this null.
+  familyKey too would double-notify the same moment through two different categories now that F3 has
+  wired the mapping. `AppNotificationKindTest` pins this null.
 - **Classic bell semantics, deliberately simple: opening the panel marks EVERYTHING read.** There is
   no per-item read endpoint (§4) — the panel's own open-time snapshot (`NotificationBell`'s
   `snapshotRef`) is what keeps the just-read rows' dots visible while the panel stays open, so the
@@ -928,9 +996,25 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   own `feature/appnotification` package so both `companion` and `proactive` can depend on it without
   either depending on `notification` (the push slice) at all — the two delivery layers (push vs.
   in-app feed) no longer share a package, only the design intent (§1).
-- **F3 (push-category mapping + `AnchorResolver` feed source with wake-deferral) is the only piece
-  explicitly NOT built** — not a gap in F1/F2, a deliberate slice boundary (see the top-of-doc note
-  and §1).
+- **F3 (bd `mezo-gzhp.3`) — the feed-row dedup key MUST carry the row id, never bare
+  `{category}:{HHmm}`.** The N-slice `push_log` dedup key form (§4/§9) collapses two anchors that
+  land on the same category+minute into one send — exactly right for a single backend-native anchor
+  per category, but WRONG here: `feedAnchors(...)`'s wake-deferral (§3b) can put several distinct
+  `app_notification` rows of the same family on the SAME wake minute on a busy night (e.g. two
+  `pattern_inbox` rows both deferred to 06:00), and the design intent is that **every feed event
+  pushes** (spec §1) — a shared key would silently drop all but one. The fix: F3's dedup suffix is
+  `"HH:mm:" + the row id's first 8 hex chars`, so `push_log`'s
+  `(created_by, log_date, dedup_key)` uniqueness can never conflate two different rows.
+  **The `?n={idFragment}` query param on the push `url` is a second, independent fix for a related
+  but distinct problem** — `push-sw.js`'s `'push'` handler uses `data.url` as the OS notification
+  `tag` (§9's N-slice check-in gotcha), so two feed pushes that happen to deeplink to the same route
+  (e.g. two `pattern_inbox` events both linking `/insights/patterns/{pairKey}` for the *same* pair)
+  would still make the phone **replace** the first with the second even though `push_log` correctly
+  sent both. `?n=` makes every feed push's url — and therefore its tag — unique, so N distinct sends
+  produce N distinct notifications on the phone, not just N distinct `push_log` rows. **Do not
+  "simplify" either of these back to the plain `{category}:{HHmm}`/bare-deeplink forms** — that
+  reintroduces the exact collapse class the N-slice check-in fix (§9) already had to solve once, this
+  time at the family/wake-deferral level instead of the four-slots-a-day level.
 
 ### The §6 copy rules (verbatim from the design spec — the guardrail a later slice must not regress)
 
@@ -992,7 +1076,7 @@ cycle, §9)**
 **Frontend — data layer**
 - `frontend/src/data/notification/{notificationApi,notificationMock,notificationHooks,notificationPrefHooks,notificationScheduleWriter}.ts` — `usePushSubscription()` (N1) + `useNotificationPrefs()` (N2) + `useScheduleSnapshotWriter()`/`buildScheduleEntries()` (N3), all re-exported from `frontend/src/data/hooks.ts`
 - `frontend/src/data/notification/{feedApi,feedMock,feedHooks}.ts` (F1) — `useNotificationFeed()` + `useNotificationFeedActions()`, re-exported from `frontend/src/data/hooks.ts` (§6)
-- `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 14-key HU copy catalog); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (F1, the 12-key catalog)
+- `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 20-key HU copy catalog); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (F1, the 12-key catalog)
 - `frontend/src/app/AppLayout.tsx` — calls `useScheduleSnapshotWriter()` once per app-session mount
 
 **Frontend — Me surface (documented from Me's side in [`me.md`](me.md) §2/§10)**

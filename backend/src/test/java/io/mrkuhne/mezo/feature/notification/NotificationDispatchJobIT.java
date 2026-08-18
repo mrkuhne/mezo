@@ -9,14 +9,20 @@ import io.mrkuhne.mezo.feature.medication.entity.MedicationDoseEntity;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
+import io.mrkuhne.mezo.feature.notification.entity.PushLogEntity;
 import io.mrkuhne.mezo.feature.notification.repository.PushLogRepository;
 import io.mrkuhne.mezo.feature.notification.service.NotificationDispatchJob;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.AppNotificationPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -74,6 +80,7 @@ class NotificationDispatchJobIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private NotificationPopulator notificationPopulator;
+    @Autowired private AppNotificationPopulator appNotificationPopulator;
     @Autowired private PushLogRepository pushLogRepository;
     @Autowired private MedicationRepository medicationRepository;
     @Autowired private MedicationDoseRepository medicationDoseRepository;
@@ -81,6 +88,10 @@ class NotificationDispatchJobIT extends AbstractIntegrationTest {
 
     private UUID newOwner(String emailLocalPart) {
         return userPopulator.createUser(emailLocalPart + "@test.local").getId();
+    }
+
+    private static Instant onDay(LocalDate date, String hhmm) {
+        return LocalDateTime.of(date, LocalTime.parse(hhmm)).atZone(ZoneId.systemDefault()).toInstant();
     }
 
     @Test
@@ -133,6 +144,35 @@ class NotificationDispatchJobIT extends AbstractIntegrationTest {
                 .isEqualTo(1);
         assertThat(pushLogRepository.findByCreatedByAndLogDate(healthyOwner, WEDNESDAY)).hasSize(1);
         assertThat(pushLogRepository.findByCreatedByAndLogDate(brokenOwner, WEDNESDAY)).isEmpty();
+    }
+
+    /**
+     * The central F3 claim end-to-end (spec 2026-08-18 §1, bd mezo-gzhp.3): "every event pushes",
+     * proven all the way through the real dispatch job rather than just at {@code AnchorResolver}.
+     * Two {@code pattern_inbox} feed rows for the same owner, both occurring overnight (before the
+     * default 06:00 wake anchor), must produce TWO independent dispatches — not one collapsed by
+     * the {@code push_log} dedup — because F3's dedup suffix carries the row id
+     * ({@code "HH:mm:{id8}"}), never the bare {@code "{category}:{HHmm}"} form that would conflate
+     * same-family, same-minute events (see {@code AnchorResolver.feedAnchors} javadoc).
+     */
+    @Test
+    void testRunOnce_shouldDispatchBothFeedEvents_whenTwoPatternInboxRowsAreDueAtTheWakeAnchor() {
+        UUID owner = newOwner("dispatch-feed-pattern");
+        appNotificationPopulator.notification(owner, "pattern_inbox", "pattern_inbox:a", onDay(WEDNESDAY, "02:40"));
+        appNotificationPopulator.notification(owner, "pattern_inbox", "pattern_inbox:b", onDay(WEDNESDAY, "02:41"));
+
+        // Default wake anchor is 06:00 (SleepGoalProperties default, no sleep_goal row for a
+        // freshly created owner) — both overnight rows defer to it (AnchorResolverFeedIT covers
+        // the resolver-level behavior in isolation; this pins the same claim end-to-end).
+        int dispatched = job.runOnce(WEDNESDAY, 6 * 60);
+
+        assertThat(dispatched).isEqualTo(2);
+        List<PushLogEntity> logs = pushLogRepository.findByCreatedByAndLogDate(owner, WEDNESDAY);
+        assertThat(logs).hasSize(2);
+        assertThat(logs).allSatisfy(entry -> assertThat(entry.getDedupKey()).startsWith("pattern:"));
+        assertThat(logs.stream().map(PushLogEntity::getDedupKey).distinct().count())
+                .as("the row-id-carrying dedup suffix must keep the two same-minute, same-family events distinct")
+                .isEqualTo(2);
     }
 
     @Test

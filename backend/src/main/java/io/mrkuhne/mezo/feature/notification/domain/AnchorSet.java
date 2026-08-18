@@ -8,6 +8,7 @@ import java.util.List;
  * for that category, never a fabricated one.
  *
  * @param backendAnchors  gym, ritual, lights_out, wind_down, medication
+ *                        + the feed-anchored categories (app_notification rows, mezo-gzhp.3)
  * @param proseAnchors    briefing, midday, evening, sleep_reaction, weight_reaction, weekly,
  *                        memoir — only when the content row EXISTS
  * @param scheduleAnchors checkin, fuel_slot — from {@code notification_schedule}
@@ -25,7 +26,12 @@ public record AnchorSet(
      *                     the fire minute
      * @param dedupSuffix  the anchor's stable identity for the day (conventionally its
      *                     {@code HH:mm}), concatenated onto the category key by
-     *                     {@code DueEvaluator} to build {@link DueItem#dedupKey()}
+     *                     {@code DueEvaluator} to build {@link DueItem#dedupKey()}. The 6
+     *                     feed-anchored categories (mezo-gzhp.3) use a different shape,
+     *                     {@code "HH:mm:{id8}"} (the anchor minute plus the source
+     *                     {@code app_notification} row's id, first 8 hex chars) — the bare
+     *                     {@code HH:mm} form would collapse two same-family events wake-deferred
+     *                     onto the same minute into one push (see {@code AnchorResolver.feedAnchors}).
      */
     public record AnchoredEvent(NotificationCategory category, int minuteOfDay,
                                  String dedupSuffix, String title, String body, String url) {}
