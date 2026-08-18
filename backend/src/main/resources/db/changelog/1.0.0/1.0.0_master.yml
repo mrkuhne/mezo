@@ -671,3 +671,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608161600_mezo-meyc.2_create_mesocycle_report.sql
+  - changeSet:
+      id: "1.0.0:202608171200_mezo-dhzk_create_needs_day"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608171200_mezo-dhzk_create_needs_day.sql
