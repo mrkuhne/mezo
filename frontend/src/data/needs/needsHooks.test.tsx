@@ -46,6 +46,16 @@ describe('useNeedsSummary (real mode)', () => {
 })
 
 describe('applyMockNeedsClose', () => {
+  // `applyMockNeedsClose`/`awardGamificationEvent` is the MOCK-mode award mirror ("real mode
+  // never calls this; the backend awards server-side") — it must run against `useGamification()`
+  // in mock mode too, or the hook's real-mode arm kicks off an actual (MSW-intercepted)
+  // GET /api/gamification/profile fetch that resolves a tick after this file's synchronous
+  // setQueryData call and clobbers it with the static real-mode fixture (totalXp: 860,
+  // src/test/msw/handlers.ts) — every assertion then converges on 860 regardless of the
+  // awarded delta. Pin mock mode so `useGamification()` never races a network fetch here.
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
   test('all-green rings → streak 1, allGreen true, +60 XP', async () => {
     const { client, Wrapper } = seededWrapper()
     const { result } = renderHook(() => useGamification(), { wrapper: Wrapper })
