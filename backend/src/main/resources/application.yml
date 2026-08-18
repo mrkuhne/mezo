@@ -256,6 +256,10 @@ mezo:
     # Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist.
     needs:
       enabled: true
+    # Phase 5 W1.1 journal (bd mezo-b3pp.1) — free-prose entries + embed pipeline;
+    # off ⇒ /api/journal 404s and no journal beans exist.
+    journal:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);

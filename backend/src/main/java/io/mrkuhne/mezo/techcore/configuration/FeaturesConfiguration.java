@@ -173,4 +173,8 @@ public class FeaturesConfiguration {
 
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
+
+    /** Phase 5 W1.1 journal (bd mezo-b3pp.1) — off ⇒ the /api/journal surface 404s and no journal
+     *  beans exist. */
+    public static final String JOURNAL_SWITCH = "mezo.feature.journal.enabled";
 }
