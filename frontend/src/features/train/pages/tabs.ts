@@ -14,4 +14,7 @@ export const TRAIN_TABS: TrainTab[] = [
   { id: 'exercises', to: '/train/exercises', label: 'Gyakorlatok' },
   { id: 'medals', to: '/train/medals', label: 'Medálok' },
   { id: 'mesocycles', to: '/train/mesocycles', label: 'Mesociklusok' },
+  // The blueprint half of the template/run split — its own tab since mezo-tlwa
+  // (the library below it is runs-only and links here via a nav row).
+  { id: 'templates', to: '/train/templates', label: 'Sablonok' },
 ]
