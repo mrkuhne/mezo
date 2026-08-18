@@ -1,11 +1,13 @@
 package io.mrkuhne.mezo.feature.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.notification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.notification.repository.AppNotificationRepository;
+import io.mrkuhne.mezo.feature.notification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.notification.service.AppNotificationService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import java.util.UUID;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class AppNotificationServiceIT extends AbstractIntegrationTest {
 
     @Autowired private AppNotificationService service;
+    @Autowired private AppNotificationEmitter emitter;
     @Autowired private AppNotificationRepository repository;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -65,5 +68,24 @@ class AppNotificationServiceIT extends AbstractIntegrationTest {
                     null, "/insights/memoria", null, "memory_note:" + i);
         }
         assertThat(service.feed(owner, 3)).hasSize(3);
+    }
+
+    /**
+     * Not the literal unique-index race (that would need real concurrency to trigger
+     * deterministically) — instead a NULL deeplink deterministically fails the entity flush
+     * inside the service's own REQUIRES_NEW transaction ({@code deeplink} is @NotNull /
+     * NOT NULL). This still pins the load-bearing property the design leans on: no notification
+     * failure of ANY shape may escape {@link AppNotificationEmitter} and reach the caller.
+     */
+    @Test
+    void testEmit_shouldNotPropagateToCaller_whenPersistFailsInsideTheService() {
+        var owner = ownerId();
+
+        assertThatCode(() -> emitter.emit(owner, AppNotificationKind.MEMORY_NOTE, "t", null, null,
+                null, "memory_note:nulldeeplink"))
+                .doesNotThrowAnyException();
+
+        assertThat(repository.existsByCreatedByAndDedupKeyAndDeletedFalse(owner, "memory_note:nulldeeplink"))
+                .isFalse();
     }
 }
