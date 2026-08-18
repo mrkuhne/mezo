@@ -57,6 +57,23 @@ describe('deriveNudges', () => {
     expect(deriveNudges(states, d('2026-08-17T06:30:00'), wake, bed, [])).toEqual([])
   })
 
+  test('ébredés + 59 perc → még elnyomva (a wake+1h ablak zárt határa)', () => {
+    const states = allGreen().map((s) => (s.key === 'hidratacio' ? state('hidratacio', 'critical', 5) : s))
+    expect(deriveNudges(states, d('2026-08-17T06:59:00'), wake, bed, [])).toEqual([])
+  })
+
+  test('ébredés + 60 perc → már NEM elnyomott (a wake+1h ablak nyitott határa)', () => {
+    const states = allGreen().map((s) => (s.key === 'hidratacio' ? state('hidratacio', 'critical', 5) : s))
+    const out = deriveNudges(states, d('2026-08-17T07:00:00'), wake, bed, [])
+    expect(out).toEqual([{ key: 'hidratacio', at: d('2026-08-17T07:00:00').toISOString(), fresh: true }])
+  })
+
+  test('ébredés + 61 perc → már NEM elnyomott', () => {
+    const states = allGreen().map((s) => (s.key === 'hidratacio' ? state('hidratacio', 'critical', 5) : s))
+    const out = deriveNudges(states, d('2026-08-17T07:01:00'), wake, bed, [])
+    expect(out).toEqual([{ key: 'hidratacio', at: d('2026-08-17T07:01:00').toISOString(), fresh: true }])
+  })
+
   test('ébredés utáni második óra → már NEM elnyomott', () => {
     const states = allGreen().map((s) => (s.key === 'hidratacio' ? state('hidratacio', 'critical', 5) : s))
     const out = deriveNudges(states, d('2026-08-17T07:30:00'), wake, bed, [])

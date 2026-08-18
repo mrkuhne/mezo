@@ -15,6 +15,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { NUDGE_COPY } from '@/features/today/logic/needsNudges'
 import { NEED_META, type NeedBand, type NeedKey, type NeedState } from '@/features/today/logic/needs'
+import { localDateString } from '@/shared/lib/dates'
 
 const mocks = vi.hoisted(() => ({ useNeeds: vi.fn() }))
 vi.mock('@/features/today/logic/useNeeds', () => ({ useNeeds: mocks.useNeeds }))
@@ -31,6 +32,9 @@ const state = (key: NeedKey, band: NeedBand, pct = 80): NeedState => ({
 const allGreen = (): NeedState[] => ALL_KEYS.map((k) => state(k, 'green'))
 const withHidratacioRed = (): NeedState[] =>
   ALL_KEYS.map((k) => (k === 'hidratacio' ? state('hidratacio', 'red', 20) : state(k, 'green')))
+/** What every ring reads on the first real-mode render, before any data has arrived: the sim
+ * starts from empty events, so every band reads `critical` (review finding, post-Task-5). */
+const allCritical = (): NeedState[] => ALL_KEYS.map((k) => state(k, 'critical', 0))
 
 function tree() {
   return (
@@ -87,5 +91,23 @@ describe('TodayPage — küszöb-nudge-ok a mezo-szálban (mezo-dhzk Task 5)', (
     rerender(tree())
     rerender(tree())
     expect(chipCount()).toBe(baseline + 1)
+  })
+
+  test('isPending alatt minden ring critical-t mutatna, de nem nudge-ol és nem ír localStorage-t', () => {
+    mocks.useNeeds.mockReturnValue({ states: allCritical(), isPending: true })
+    const { rerender } = render(tree())
+    const baseline = chipCount()
+    expect(localStorage.getItem(`mezo.needsnudge.${localDateString()}`)).toBeNull()
+
+    // Still pending on a re-render (e.g. a focus refetch mid-flight) — still no nudge.
+    rerender(tree())
+    expect(chipCount()).toBe(baseline)
+    expect(localStorage.getItem(`mezo.needsnudge.${localDateString()}`)).toBeNull()
+
+    // Real data lands (isPending flips false) — now the six critical rings nudge for real.
+    mocks.useNeeds.mockReturnValue({ states: allCritical(), isPending: false })
+    rerender(tree())
+    expect(chipCount()).toBe(baseline + ALL_KEYS.length)
+    expect(localStorage.getItem(`mezo.needsnudge.${localDateString()}`)).not.toBeNull()
   })
 })

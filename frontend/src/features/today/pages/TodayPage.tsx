@@ -164,14 +164,26 @@ export function TodayPage() {
   // vissza a TELJES mai listát. Consume-once, a quest/habit level-up dance idiómája: csak
   // amikor VAN friss elem, mentjük el (`markNudgeShown`) és bővítjük a shown-halmazt — így a
   // hatás nem fut újra ugyanarra a nudge-ra, és nem kerülhet loopba.
+  // `needs.isPending` gate (review finding, post-Task-5): while the day's data is still
+  // loading, EVERY ring simulates from empty events, i.e. every band reads `critical` — an
+  // ungated derivation would burn the day's whole nudge budget on the first real-mode render,
+  // before any real data arrives. Mock mode never showed this because `initialData` resolves
+  // synchronously. Both the derivation and the marking effect stay empty/no-op until pending
+  // clears.
   const [shownEntries, setShownEntries] = useState<NudgeSeenEntry[]>(() => shownNudges(date))
-  const nudgeEntries = deriveNudges(needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownEntries)
+  const nudgeEntries = useMemo(
+    () => (needs.isPending
+      ? []
+      : deriveNudges(needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownEntries)),
+    [needs.isPending, needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownEntries],
+  )
   useEffect(() => {
+    if (needs.isPending) return
     const fresh = nudgeEntries.filter((n) => n.fresh)
     if (fresh.length === 0) return
     fresh.forEach((n) => markNudgeShown(date, n.key, n.at))
     setShownEntries((prev) => [...prev, ...fresh.map(({ key, at }) => ({ key, at }))])
-  }, [nudgeEntries])
+  }, [needs.isPending, nudgeEntries])
   // The sheet's quick-log CTA reuses the SAME sheet states / mutations every other row on
   // this screen already dispatches through — no new sheet, no new mutation (mezo-dhzk Task 4).
   const onNeedCta = (key: NeedKey) => {
