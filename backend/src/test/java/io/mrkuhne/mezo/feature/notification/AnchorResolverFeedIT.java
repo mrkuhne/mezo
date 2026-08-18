@@ -38,7 +38,7 @@ class AnchorResolverFeedIT extends AbstractIntegrationTest {
     void testResolve_shouldDeferOvernightEventToWake_whenOccurredBeforeWakeMinute() {
         LocalDate today = LocalDate.now();
         UUID owner = ownerId();
-        populator.notification(owner, "pattern_inbox", "pattern_inbox:x", onDay(today, "02:40"));
+        var row = populator.notification(owner, "pattern_inbox", "pattern_inbox:x", onDay(today, "02:40"));
 
         AnchorSet anchors = anchorResolver.resolve(owner, today);
 
@@ -48,7 +48,10 @@ class AnchorResolverFeedIT extends AbstractIntegrationTest {
         // freshly created owner) — 02:40 defers to it.
         assertThat(feedEvent.minuteOfDay()).isEqualTo(6 * 60);
         assertThat(feedEvent.url()).contains("?n=");
-        assertThat(feedEvent.dedupSuffix()).contains(":"); // HH:mm + ':' + id fragment
+        // Pins the exact shape ("HH:mm:" + the row id's first 8 hex chars) — a bare `contains(":")`
+        // is trivially true and would not catch a regression back to the collapsing
+        // "{category}:{HHmm}" form (spec 2026-08-18 §4).
+        assertThat(feedEvent.dedupSuffix()).isEqualTo("06:00:" + row.getId().toString().substring(0, 8));
     }
 
     @Test
@@ -72,8 +75,16 @@ class AnchorResolverFeedIT extends AbstractIntegrationTest {
 
         AnchorSet anchors = anchorResolver.resolve(owner, today);
 
+        // The feed dedupSuffix is always "HH:mm:{id8}" — it never contains the kind key, so a
+        // `contains("memoir_ready")` check can never fail regardless of whether the skip actually
+        // happened. Assert the two things that are actually true when the skip works: no feed
+        // anchor was produced in the MEMOIR category, and no feed-shaped `?n=` url exists at all
+        // (only feed anchors carry that discriminator — the seeded memoir_ready row is the only
+        // candidate here).
         assertThat(anchors.backendAnchors())
-                .noneMatch(a -> a.dedupSuffix().contains("memoir_ready"));
+                .noneMatch(a -> a.category() == NotificationCategory.MEMOIR);
+        assertThat(anchors.backendAnchors())
+                .noneMatch(a -> a.url().contains("?n="));
         // (The prose `memoir` anchor may or may not exist — that path is untouched.)
     }
 }

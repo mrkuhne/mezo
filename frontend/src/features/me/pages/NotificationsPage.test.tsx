@@ -251,4 +251,17 @@ describe('NotificationsPage', () => {
     expect(await screen.findByText('Az agy eseményei')).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'Minták' })).toBeInTheDocument()
   })
+
+  // The volume preview (NotificationPreviewHeader) cannot forecast the 6 feed-anchored
+  // categories (they have no FE-resolvable anchor, notificationForecast.ts's exhaustive switch
+  // returns null for all of them) — this static line discloses that gap instead of silently
+  // under-counting.
+  it('discloses that the feed-anchored categories are excluded from the volume preview', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    await screen.findByText('Az agy eseményei')
+    expect(
+      screen.getByText('Eseményvezérelt — nem szerepel a napi terhelés előnézetben.'),
+    ).toBeInTheDocument()
+  })
 })

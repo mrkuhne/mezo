@@ -273,6 +273,9 @@ export function NotificationsPage() {
 
         <div>
           <Eyebrow>Az agy eseményei</Eyebrow>
+          <p className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
+            Eseményvezérelt — nem szerepel a napi terhelés előnézetben.
+          </p>
           <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
             {brainCategories.map((pref) => (
               <NotificationCategoryRow

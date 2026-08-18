@@ -6,12 +6,15 @@ type NotificationScheduleEntry = components['schemas']['NotificationScheduleEntr
 type BackendNativeCategory = Exclude<NotificationCategoryKey, 'checkin' | 'fuel_slot'>
 
 /**
- * Today's resolvable anchor times for the 12 backend-native categories, straight off existing
- * FE hooks (design spec §7: "the FE already knows today's gym time, bed anchor and ritual
- * window") — `null`/`false` means no anchor today (nothing scheduled, the ritual feature is
- * unavailable, or not a medication dose day), never a fabricated minute. `sleep_reaction`/
+ * Today's resolvable anchor times for the FE-forecastable backend-native categories, straight
+ * off existing FE hooks (design spec §7: "the FE already knows today's gym time, bed anchor and
+ * ritual window") — `null`/`false` means no anchor today (nothing scheduled, the ritual feature
+ * is unavailable, or not a medication dose day), never a fabricated minute. `sleep_reaction`/
  * `weight_reaction` are backend-native too but never resolvable here (mezo-gst9): their anchor
- * is the companion message's own generation minute, unknowable client-side ahead of time.
+ * is the companion message's own generation minute, unknowable client-side ahead of time. Nor
+ * are the 6 feed-anchored categories added in F3 (mezo-gzhp.3) resolvable here — see the
+ * exhaustive `switch` below, which deliberately returns `null` for all of them (backend events,
+ * not client-forecastable); `NotificationsPage` discloses that gap next to their section.
  */
 export interface NotificationForecastAnchors {
   /** Wake anchor (briefing daily; weekly on Monday only) — HH:mm. */

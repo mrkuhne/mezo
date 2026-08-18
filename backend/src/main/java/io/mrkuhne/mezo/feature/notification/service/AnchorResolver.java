@@ -49,7 +49,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 14 categories'
+ * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 20 categories'
  * anchors for one owner+day into an {@link AnchorSet}, the pure {@link DueEvaluator}'s input.
  * A wrong read here produces a notification at the wrong minute or, worse, a per-minute write
  * storm — see the class-by-class notes below, each pinned to a verified trap.

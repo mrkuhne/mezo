@@ -61,7 +61,7 @@ paths:
       summary: Per-category notification preferences, code defaults filled in (Notification)
       responses:
         '200':
-          description: All 14 categories, always complete — a category with no stored row reports its code default
+          description: All 20 categories, always complete — a category with no stored row reports its code default
           content:
             application/json:
               schema: { $ref: '#/components/schemas/NotificationPrefListResponse' }

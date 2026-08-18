@@ -13,7 +13,7 @@ export function resetMockPushState(): void {
 }
 
 // ── Notification prefs seed (N2/N3 settings list) — the code defaults, verbatim off the
-// backend's NotificationCategory enum (defaultEnabled/defaultLeadMinutes): 10 of 14 ON, only
+// backend's NotificationCategory enum (defaultEnabled/defaultLeadMinutes): 16 of 20 ON, only
 // `gym` carries a non-zero lead. Used both as the mock-mode `useDualQuery` seed AND as the
 // real-mode pre-resolve ghost (data/notification/notificationPrefHooks.ts) — the same "no
 // stored row = code default" honesty the backend itself guarantees. ─────────────────────────

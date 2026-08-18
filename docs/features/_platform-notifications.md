@@ -368,7 +368,11 @@ instead of silently arriving OFF (`feature/notification/service/NotificationPref
 
 Same migration as above. `log_date date`, `dedup_key varchar(80)` (`"{category}:{anchorHHmm}"`, e.g.
 `gym:10:00` — built from the **anchor** time, never the fire time, so changing a category's lead
-cannot re-fire something already sent today for the same anchor), `category`, `sent_at`.
+cannot re-fire something already sent today for the same anchor), `category`, `sent_at`. The 6
+feed-anchored categories (F3, bd `mezo-gzhp.3`) key off a different, more specific form of the
+same shape instead — `"{category}:{HHmm}:{id8}"` (e.g. `pattern:06:00:3f9a1c02`), the source
+`app_notification` row's id appended so two same-family events wake-deferred onto the same
+minute never collapse into one push (§3b/§9).
 `uq_push_log_created_by_log_date_dedup_key` (partial, live rows only). **Written before the send**
 (§9). No pruning job in v1 (~7 rows/day, single user — spec §5 retention note).
 

@@ -1283,7 +1283,7 @@ export interface PushSubscriptionState {
 
 // ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
 // evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
-// The 14 keys/sections/defaults mirror the backend's authoritative enum
+// The 20 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
