@@ -182,7 +182,9 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         JournalEntryEntity entry = journalPopulator.createEntry(owner, DAY, "Eredeti szöveg.",
                 JournalEntryEntity.SOURCE_QUICKINPUT);
         memoryEmbeddingWriter.writeJournal(entry);
-        UUID originalRowId = memoryEmbeddingRepository.findAll().getFirst().getId();
+        MemoryEmbeddingEntity original = memoryEmbeddingRepository.findAll().getFirst();
+        UUID originalRowId = original.getId();
+        float[] originalEmbedding = original.getEmbedding();
 
         entry.setText("Módosított szöveg.");
         entry.setOccurredOn(DAY.plusDays(1));
@@ -194,6 +196,11 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(row.getId()).isEqualTo(originalRowId);
         assertThat(row.getContent()).isEqualTo("Módosított szöveg.");
         assertThat(row.getOccurredOn()).isEqualTo(DAY.plusDays(1));
+        // The fake embedding adapter is deterministic per input text (seeded Random(text.hashCode())),
+        // so distinct texts must yield distinct vectors — proves the re-embed actually re-embedded,
+        // not just re-stamped content/occurredOn on a stale vector.
+        assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding);
     }
 
     @Test

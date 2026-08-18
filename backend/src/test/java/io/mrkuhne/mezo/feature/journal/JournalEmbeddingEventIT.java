@@ -8,11 +8,13 @@ import io.mrkuhne.mezo.api.dto.CreateJournalEntryRequest;
 import io.mrkuhne.mezo.api.dto.JournalEntryResponse;
 import io.mrkuhne.mezo.api.dto.UpdateJournalEntryRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -74,10 +76,18 @@ class JournalEmbeddingEventIT extends ApiIntegrationTest {
                         .build(),
                 ownerAuthHeaders(), HttpStatus.CREATED, JournalEntryResponse.class);
 
-        await().atMost(10, SECONDS).untilAsserted(() ->
-                assertThat(memoryEmbeddingRepository
-                        .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, created.getId()))
-                        .isPresent());
+        // Capture the pre-edit row id + vector so the post-edit assertion can prove the vector
+        // ITSELF changed, not just the stored content — the fake embedding adapter is deterministic
+        // per input text (seeded Random(text.hashCode())), so distinct texts map to distinct vectors.
+        AtomicReference<UUID> originalRowId = new AtomicReference<>();
+        AtomicReference<float[]> originalEmbedding = new AtomicReference<>();
+        await().atMost(10, SECONDS).untilAsserted(() -> {
+            var row = memoryEmbeddingRepository
+                    .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, created.getId());
+            assertThat(row).isPresent();
+            originalRowId.set(row.get().getId());
+            originalEmbedding.set(row.get().getEmbedding());
+        });
 
         putForBody("/api/journal/" + created.getId(),
                 UpdateJournalEntryRequest.builder().text("Módosított szöveg.").build(),
@@ -86,7 +96,12 @@ class JournalEmbeddingEventIT extends ApiIntegrationTest {
         await().atMost(10, SECONDS).untilAsserted(() ->
                 assertThat(memoryEmbeddingRepository
                         .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, created.getId()))
-                        .hasValueSatisfying(row -> assertThat(row.getContent()).isEqualTo("Módosított szöveg.")));
+                        .hasValueSatisfying(row -> {
+                            assertThat(row.getId()).isEqualTo(originalRowId.get()); // update in place
+                            assertThat(row.getContent()).isEqualTo("Módosított szöveg.");
+                            assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+                            assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding.get());
+                        }));
 
         var rows = memoryEmbeddingRepository.findAll().stream()
                 .filter(r -> r.getCreatedBy().equals(owner))
