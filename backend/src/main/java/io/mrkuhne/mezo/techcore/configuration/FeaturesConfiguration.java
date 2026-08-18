@@ -158,4 +158,7 @@ public class FeaturesConfiguration {
     /** Per-minute push dispatch job (N2; schedule: mezo.notification.dispatch-cron) — techcore cron zone. */
     public static final String NOTIFICATION_DISPATCH_JOB_SWITCH =
             "mezo.techcore.cron.notification-dispatch-job.enabled";
+
+    /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
+    public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 }
