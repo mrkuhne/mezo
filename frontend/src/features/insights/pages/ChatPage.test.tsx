@@ -31,6 +31,24 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
   })
 
+  test('the composer wraps instead of scrolling sideways (mezo-a837)', () => {
+    renderPage()
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    // A textarea az, ami tördel — egy <input> vízszintesen csúsztatná el a hosszú üzenetet.
+    expect(input.tagName).toBe('TEXTAREA')
+    expect(input).toHaveAttribute('rows', '1')
+  })
+
+  test('Shift+Enter breaks a line instead of sending (mezo-a837)', () => {
+    renderPage()
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Első sor' } })
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
+    // nem ment el: a piszkozat a mezőben marad, a szálban nem jelenik meg buborékként
+    expect(input).toHaveValue('Első sor')
+    expect(screen.queryByText('Első sor', { ignore: 'textarea' })).not.toBeInTheDocument()
+  })
+
   test('parks the view on the newest message on open (mezo-at8x.2)', async () => {
     // jsdom has no layout and no scrollIntoView — stubbing it is how we observe the intent.
     const scrollIntoView = vi.fn()
