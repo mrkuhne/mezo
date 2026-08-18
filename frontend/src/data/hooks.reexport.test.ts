@@ -8,6 +8,10 @@ import {
   useSlotTemplateActions as useSlotTemplateActionsFromSlotTemplateHooks,
   useSlotTemplateEvaluation as useSlotTemplateEvaluationFromSlotTemplateHooks,
 } from '@/data/fuel/slotTemplateHooks'
+import {
+  useJournalNotes as useJournalNotesFromJournalHooks,
+  useJournalActions as useJournalActionsFromJournalHooks,
+} from '@/data/journal/journalHooks'
 
 describe('hooks.ts re-exports the dual-mode fuel-day hooks', () => {
   it('useFuelDay is the fuelHooks implementation (not the retired one-liner)', () => {
@@ -43,5 +47,14 @@ describe('hooks.ts re-exports the slot-template hooks (mezo-7102 / mezo-e6a4)', 
   })
   it('useSlotTemplateEvaluation is the slotTemplateHooks implementation', () => {
     expect(hooks.useSlotTemplateEvaluation).toBe(useSlotTemplateEvaluationFromSlotTemplateHooks)
+  })
+})
+
+describe('hooks.ts re-exports the journal hooks (mezo-b3pp.1)', () => {
+  it('useJournalNotes is the journalHooks implementation', () => {
+    expect(hooks.useJournalNotes).toBe(useJournalNotesFromJournalHooks)
+  })
+  it('useJournalActions is the journalHooks implementation', () => {
+    expect(hooks.useJournalActions).toBe(useJournalActionsFromJournalHooks)
   })
 })
