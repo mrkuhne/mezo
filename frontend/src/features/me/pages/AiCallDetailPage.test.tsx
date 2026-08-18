@@ -213,4 +213,25 @@ describe('AiCallDetailPage (real mode edge cases)', () => {
     renderDetail()
     expect(await screen.findByText(/retention törölte/)).toBeInTheDocument()
   })
+
+  it('shows the retention notice, not the truncation banner, on a scrubbed row that was also truncated', async () => {
+    // truncated: true would normally raise the red "A payload csonkolva lett…" banner, but once
+    // payloadScrubbedAt is set the payload is gone by design (retention), not by accident
+    // (truncation) — the honest scrubbed notice must win, not both / not the misleading one.
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/calls/${LLM_CALL_DETAIL_MOCK.id}`, () =>
+        HttpResponse.json({
+          ...LLM_CALL_DETAIL_MOCK,
+          systemPrompt: null,
+          userMessage: null,
+          responseText: null,
+          truncated: true,
+          payloadScrubbedAt: '2026-08-18T02:40:00Z',
+        }),
+      ),
+    )
+    renderDetail()
+    expect(await screen.findByText(/retention törölte/)).toBeInTheDocument()
+    expect(screen.queryByText(/csonkolva/)).not.toBeInTheDocument()
+  })
 })

@@ -1088,8 +1088,9 @@ but it is documented here because both recording adapters live in `feature/compa
   `thinkingPerMillion`, `cachedPerMillion`, `embedPerMillionChars`, `pricedOn`).
 - **INSERT-only — the one table with NO `is_deleted`** ([ADR 0014](../decisions/0014-llm-call-audit-log.md)):
   `LlmLogEntity` deliberately does **not** extend `OwnedEntity` (that superclass mandates the
-  soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable; they leave
-  only via retention pruning (a hard `DELETE`, not built yet).
+  soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable and never
+  deleted — no row ever leaves the table; the only thing that changes is its payload, NULLed in
+  place by the retention job below (`mezo-1y3p`, shipped).
 - **Retention (`mezo-1y3p`):** the nightly `LlmLogRetentionJob` (`mezo.techcore.cron.llm-log-retention-job.enabled`,
   independent of the write switch) NULLs the four payload columns (`system_prompt`,
   `conversation_history`, `user_message`, `response_text`) of rows older than
@@ -2224,8 +2225,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Deferred (with bd ids):**
 - **LLM audit-log follow-ups (mezo-2zyu; read API + `/me/ai-usage` browsing UI shipped `mezo-uakh`):**
-  still open — retention pruning (nothing prunes the table yet), budget alerting, and reconciling
-  the placeholder `mezo.llm-log.pricing` rates with current Gemini pricing. (`mezo-58ig` per-round usage and
+  still open — budget alerting and reconciling the placeholder `mezo.llm-log.pricing` rates with
+  current Gemini pricing (payload retention itself shipped, `mezo-1y3p` — see the retention bullet
+  above). (`mezo-58ig` per-round usage and
   `mezo-1rz9` CANCELLED streams are FIXED — see the audit-log section above.)
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
   `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review

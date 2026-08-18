@@ -37,8 +37,6 @@ public class LlmLogRetentionJob {
         Instant now = Instant.now();
         Instant cutoff = now.minus(Duration.ofDays(properties.retention().payloadDays()));
         int scrubbed = llmLogRepository.scrubPayloadsOlderThan(cutoff, now);
-        if (scrubbed > 0) {
-            log.info("LLM-log retention: scrubbed payload of {} row(s) older than {}", scrubbed, cutoff);
-        }
+        log.info("LLM-log retention run: {} row(s) scrubbed (cutoff {})", scrubbed, cutoff);
     }
 }
