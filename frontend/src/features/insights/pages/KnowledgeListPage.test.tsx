@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -22,7 +22,7 @@ describe('KnowledgeListPage (mock mode)', () => {
 
   test('a három prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
     renderPage()
-    expect(screen.getByText(/Most ezeket kapja meg a társ · 10\/10/)).toBeInTheDocument()
+    expect(screen.getByText(/Most ezeket kapja meg a társ · 10/)).toBeInTheDocument()
     expect(screen.getByText(/Bekapcsolva, de most kimarad · 4/)).toBeInTheDocument()
     expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
   })
@@ -52,10 +52,43 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText('Caffeine cutoff: 14:00 hard limit')).toBeInTheDocument()
   })
 
-  test('a találat nélküli keresés őszinte üres állapotot ad', async () => {
+  test('a találat nélküli keresés őszinte üres állapotot ad, "Szűrők törlése" gombbal', async () => {
     renderPage()
     await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'zzzz')
     expect(screen.getByText('Nincs találat a keresésre.')).toBeInTheDocument()
+    const clearBtn = screen.getByRole('button', { name: 'Szűrők törlése' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Élet' }))
+    await userEvent.click(clearBtn)
+    expect(screen.getByLabelText('Keresés a tények között')).toHaveValue('')
+    expect(screen.getByText('Caffeine cutoff: 14:00 hard limit')).toBeInTheDocument()
+  })
+
+  test('a "Mind" chip csak a kategória-szűrőt törli, a keresőmezőt érintetlenül hagyja (mezo-9ryh review fix)', async () => {
+    renderPage()
+    await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'caffeine')
+    await userEvent.click(screen.getByRole('button', { name: 'Élet' }))
+    expect(screen.getByText('Nincs találat a keresésre.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mind' }))
+    expect(screen.getByLabelText('Keresés a tények között')).toHaveValue('caffeine')
+    expect(screen.getByText('Caffeine cutoff: 14:00 hard limit')).toBeInTheDocument()
+  })
+
+  test('egy csak kikapcsolt tényre illeszkedő keresés kinyitja a "Kikapcsolva" szakaszt, nem mutat "Nincs találat"-ot (mezo-9ryh review fix)', async () => {
+    renderPage()
+    // f9 (kifli.hu…) az egyetlen kikapcsolt tény, és a "Kikapcsolva" szakasz alapból csukott.
+    await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'kifli')
+    expect(screen.queryByText('Nincs találat a keresésre.')).not.toBeInTheDocument()
+    expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
+    expect(screen.getByText('kifli.hu primary food source')).toBeInTheDocument()
+  })
+
+  test('az 1. szakasz darabszáma a szűrt listát mutatja, a globális fejléc a teljeset (mezo-9ryh review fix)', async () => {
+    renderPage()
+    await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'caffeine')
+    expect(screen.getByText('10 megy a chatbe')).toBeInTheDocument()
+    expect(screen.getByText(/Most ezeket kapja meg a társ · 1$/)).toBeInTheDocument()
   })
 
   test('renders the pending candidates with the L2 actions', () => {
@@ -168,5 +201,49 @@ describe('KnowledgeListPage (real mode)', () => {
     renderPage()
     expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  test('renders the honest loading state while the fetch is unresolved, never a fabricated "0 tény / 0 megy a chatbe" header (mezo-9ryh review fix)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, async () => {
+        await delay('infinite')
+        return HttpResponse.json([])
+      }),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, async () => {
+        await delay('infinite')
+        return HttpResponse.json([])
+      }),
+    )
+    renderPage()
+
+    expect(await screen.findByText('A tudástár betöltése…')).toBeInTheDocument()
+    expect(screen.queryByText(/tény$/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/megy a chatbe/)).not.toBeInTheDocument()
+  })
+
+  test('a genuinely failed fetch (500) renders a retry state, not the "0 megy a chatbe" realEmpty read (mezo-9ryh review fix)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json([])),
+    )
+    renderPage()
+
+    expect(await screen.findByText('Nem sikerült betölteni a tudástárat.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+    expect(screen.queryByText(/megy a chatbe/)).not.toBeInTheDocument()
+  })
+
+  test('a genuinely empty knowledge base renders an honest empty line, no search/filter chrome over nothing (mezo-9ryh review fix)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json([])),
+    )
+    renderPage()
+
+    expect(
+      await screen.findByText('Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Keresés a tények között')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mind' })).not.toBeInTheDocument()
   })
 })

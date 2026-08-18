@@ -20,3 +20,21 @@ test('összecsukható, és az állapot túléli az újrarenderelést', async () 
   render(<KnowledgeExplainer />)
   expect(screen.queryByText(/Csak a 10 legerősebb bekapcsolt tény fér be/)).not.toBeInTheDocument()
 })
+
+test('letiltott localStorage mellett is renderel (alapból nyitva) és a kapcsoló is működik (mezo-9ryh review fix)', async () => {
+  const getSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new DOMException('blocked', 'SecurityError')
+  })
+  const setSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new DOMException('blocked', 'SecurityError')
+  })
+
+  render(<KnowledgeExplainer />)
+  expect(screen.getByText(/Csak a 10 legerősebb bekapcsolt tény fér be/)).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: /Hogyan működik a tudástár/ }))
+  expect(screen.queryByText(/Csak a 10 legerősebb bekapcsolt tény fér be/)).not.toBeInTheDocument()
+
+  getSpy.mockRestore()
+  setSpy.mockRestore()
+})

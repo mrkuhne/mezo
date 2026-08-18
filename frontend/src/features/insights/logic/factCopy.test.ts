@@ -2,6 +2,7 @@ import {
   humanizeFactText, originSentence, originChipLabel, reinforcementSentence,
   promptStatusLabel, bucketFacts, matchesQuery,
 } from '@/features/insights/logic/factCopy'
+import { PATTERN_ACK_DAYS } from '@/data/insights/knowledge'
 import type { KnowledgeFact } from '@/data/types'
 
 const fact = (over: Partial<KnowledgeFact>): KnowledgeFact => ({
@@ -31,6 +32,23 @@ describe('humanizeFactText', () => {
 
   it('kettőnél több nyílnál nem találgat', () => {
     expect(humanizeFactText('a ↔ b ↔ c')).toBe('a ↔ b ↔ c')
+  })
+
+  it('csak a szó ELSŐ KÉT betűje alapján ismeri fel a rövidítést — a toldalékolt "HRV-alapú" nem kisbetűsödik hibásan', () => {
+    expect(humanizeFactText('HRV-alapú terhelés ↔ alvás'))
+      .toBe('A HRV-alapú terhelés és az alvás együtt mozognak.')
+  })
+
+  it('a záró írásjelet levágja mindkét oldalról, nem duplázza a mondatvégi pontot', () => {
+    expect(humanizeFactText('Stressz-szint ↔ aznapi alvásminőség.'))
+      .toBe('A stressz-szint és az aznapi alvásminőség együtt mozognak.')
+  })
+
+  it('rövidítésnél a betűnév kiejtése dönt a névelőről, nem az írott alak — "az RPE", nem "a RPE"', () => {
+    expect(humanizeFactText('Valami ↔ RPE'))
+      .toBe('A valami és az RPE együtt mozognak.')
+    // H betűnév ("há") mássalhangzóval kezdődik → marad "a"
+    expect(humanizeFactText('HRV ↔ valami')).toBe('A HRV és a valami együtt mozognak.')
   })
 })
 
@@ -82,6 +100,40 @@ describe('bucketFacts', () => {
     expect(waiting.map((f) => f.id)).toEqual(['a'])
     expect(off.map((f) => f.id)).toEqual(['c'])
   })
+
+  describe('friss minta-tény kivétel (a backend renderNewPatternFactsBlock tükre)', () => {
+    const now = new Date('2026-08-18T12:00:00Z')
+    const dayAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000).toISOString()
+
+    it('egy 0-szor megerősített, tegnap létrejött minta-tény a topN alól is bekerül az inPrompt vödörbe', () => {
+      const freshPattern = fact({ id: 'p-fresh', reinforced: 0, source: 'pattern', createdAt: dayAgo(1) })
+      const { inPrompt, waiting } = bucketFacts([...facts, freshPattern], 2, now)
+      expect(inPrompt.map((f) => f.id)).toContain('p-fresh')
+      expect(waiting.map((f) => f.id)).not.toContain('p-fresh')
+    })
+
+    it('ugyanaz a tény, de a PATTERN_ACK_DAYS-nél régebbi → visszaesik a waiting vödörbe', () => {
+      expect(PATTERN_ACK_DAYS).toBe(3)
+      const oldPattern = fact({ id: 'p-old', reinforced: 0, source: 'pattern', createdAt: dayAgo(10) })
+      const { inPrompt, waiting } = bucketFacts([...facts, oldPattern], 2, now)
+      expect(waiting.map((f) => f.id)).toContain('p-old')
+      expect(inPrompt.map((f) => f.id)).not.toContain('p-old')
+    })
+
+    it('chat eredetű, tegnap létrejött tény NEM kap kivételt — csak a pattern forrás', () => {
+      const freshChat = fact({ id: 'c-fresh', reinforced: 0, source: 'chat', createdAt: dayAgo(1) })
+      const { inPrompt, waiting } = bucketFacts([...facts, freshChat], 2, now)
+      expect(waiting.map((f) => f.id)).toContain('c-fresh')
+      expect(inPrompt.map((f) => f.id)).not.toContain('c-fresh')
+    })
+
+    it('egy tény sosem szerepel két vödörben egyszerre', () => {
+      const freshPattern = fact({ id: 'p-fresh', reinforced: 0, source: 'pattern', createdAt: dayAgo(1) })
+      const { inPrompt, waiting, off } = bucketFacts([...facts, freshPattern], 2, now)
+      const allIds = [...inPrompt, ...waiting, ...off].map((f) => f.id)
+      expect(new Set(allIds).size).toBe(allIds.length)
+    })
+  })
 })
 
 describe('promptStatusLabel + matchesQuery', () => {
@@ -97,5 +149,14 @@ describe('promptStatusLabel + matchesQuery', () => {
     expect(matchesQuery(f, 'EGÉSZSÉG')).toBe(true)
     expect(matchesQuery(f, 'bench')).toBe(false)
     expect(matchesQuery(f, '')).toBe(true)
+  })
+
+  it('a keresés az eredet-mondatban megjelenő minta-címre is illeszkedik', () => {
+    const f = fact({
+      text: 'Stressz rontja az alvást',
+      source: 'pattern',
+      patternTitle: 'Stressz-szint ↔ aznapi alvásminőség',
+    })
+    expect(matchesQuery(f, 'aznapi')).toBe(true)
   })
 })

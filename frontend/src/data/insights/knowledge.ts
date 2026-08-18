@@ -8,6 +8,15 @@ import type { KnowledgeFact, FactCandidate, KnowledgeEdge, FactCategory } from '
  */
 export const PROMPT_TOP_N = 10
 
+/**
+ * A backend `mezo.companion.facts.pattern-ack-days` (application.yml) kézzel szinkronban
+ * tartott tükre — ennyi napig marad "friss" egy minta-tény. `KnowledgeFactService
+ * .renderNewPatternFactsBlock()` a top-N-től FÜGGETLENÜL beleteszi a promptba minden
+ * `source: 'pattern'`, bekapcsolt tényt, ami ezen az ablakon belül jött létre — a
+ * `bucketFacts()` ezt a második injektálási csatornát tükrözi (factCopy.ts).
+ */
+export const PATTERN_ACK_DAYS = 3
+
 // Mock seed — categories carry the V1.2 backend taxonomy (train | fuel | health | life).
 export const facts: KnowledgeFact[] = [
   { id: 'f1', text: 'Pull Day-en a Chest Supported Row a key compound', category: 'train', active: true, reinforced: 12, source: 'chat', lastReinforcedAt: '2026-08-05T19:20:00Z', createdAt: '2026-03-02T09:00:00Z' },

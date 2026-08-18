@@ -30,7 +30,7 @@ const MOCK_KNOWLEDGE: KnowledgeBootstrap = {
  * pattern); everything else follows the useDualQuery ghost-guard recipe.
  */
 export function useKnowledge() {
-  const { data, isPending } = useDualQuery<KnowledgeBootstrap>({
+  const { data, isPending, isError, refetch } = useDualQuery<KnowledgeBootstrap>({
     queryKey: KNOWLEDGE_KEY,
     mockData: MOCK_KNOWLEDGE,
     realFetch: async () => {
@@ -47,7 +47,7 @@ export function useKnowledge() {
     },
     realEmpty: EMPTY_KNOWLEDGE,
   })
-  return { ...data, activeCount: data.facts.filter((f) => f.active).length, isPending }
+  return { ...data, activeCount: data.facts.filter((f) => f.active).length, isPending, isError, refetch }
 }
 
 interface DecideInput { id: string; decision: FactDecision; refinedText?: string }
