@@ -49,6 +49,62 @@ describe('useJournalActions (mock mode)', () => {
     expect(list.result.current.data[0].occurredOn).toBe('2026-08-16')
   })
 
+  test('addNote only lands in cached ranges that actually contain its occurredOn (mezo-b3pp.1 review fix)', async () => {
+    // Task 7's "Korábbi hónapok" widens `from`, so an August-only range and a July-only range can
+    // both be cached at once (mock's staleTime: Infinity keeps them alive). A note dated inside
+    // ONLY the August range must show up there and must NOT leak into the July-only range.
+    const wrapper = makeHookWrapper()
+    const august = renderHook(() => useJournalNotes('2026-08-01', '2026-08-31'), { wrapper })
+    const july = renderHook(() => useJournalNotes('2026-07-01', '2026-07-31'), { wrapper })
+    const actions = renderHook(() => useJournalActions(), { wrapper })
+    expect(august.result.current.data).toHaveLength(3)
+    expect(july.result.current.data).toHaveLength(2)
+
+    await act(async () => {
+      await actions.result.current.addNote('Csak augusztusi bejegyzés.', '2026-08-16')
+    })
+
+    await waitFor(() => expect(august.result.current.data).toHaveLength(4))
+    expect(august.result.current.data.some((n) => n.text === 'Csak augusztusi bejegyzés.')).toBe(true)
+    // The July-only cache entry must be untouched — no leak across ranges.
+    expect(july.result.current.data).toHaveLength(2)
+    expect(july.result.current.data.some((n) => n.text === 'Csak augusztusi bejegyzés.')).toBe(false)
+  })
+
+  test('addNote inserts a back-dated note in its sorted (newest-first) position, not always at index 0', async () => {
+    const wrapper = makeHookWrapper()
+    const list = renderHook(() => useJournalNotes(FROM, TO), { wrapper })
+    const actions = renderHook(() => useJournalActions(), { wrapper })
+    // Seed order (newest first): jn5 2026-08-15, jn4 2026-08-10, jn3 2026-08-02, jn2 2026-07-22, jn1 2026-07-08.
+    await act(async () => {
+      await actions.result.current.addNote('Július közepi utólagos bejegyzés.', '2026-07-15')
+    })
+    await waitFor(() => expect(list.result.current.data).toHaveLength(6))
+    const ids = list.result.current.data.map((n) => n.text === 'Július közepi utólagos bejegyzés.' ? 'NEW' : n.id)
+    // Must land between jn2 (2026-07-22) and jn1 (2026-07-08) — NOT prepended at index 0.
+    expect(ids).toEqual(['jn5', 'jn4', 'jn3', 'jn2', 'NEW', 'jn1'])
+  })
+
+  test('updateNote drops the note from a cached range it no longer falls into, and leaves other ranges alone', async () => {
+    const wrapper = makeHookWrapper()
+    const august = renderHook(() => useJournalNotes('2026-08-01', '2026-08-31'), { wrapper })
+    const wide = renderHook(() => useJournalNotes(FROM, TO), { wrapper })
+    const actions = renderHook(() => useJournalActions(), { wrapper })
+    expect(august.result.current.data).toHaveLength(3)
+    expect(wide.result.current.data).toHaveLength(5)
+
+    // jn5 (2026-08-15, inside the August-only range) moves to July — it must leave the
+    // August-only cache entry but stay present (repositioned) in the wide range.
+    await act(async () => {
+      await actions.result.current.updateNote('jn5', 'Áthelyezve júliusra.', '2026-07-05')
+    })
+
+    await waitFor(() => expect(august.result.current.data).toHaveLength(2))
+    expect(august.result.current.data.find((n) => n.id === 'jn5')).toBeUndefined()
+    await waitFor(() => expect(wide.result.current.data.find((n) => n.id === 'jn5')?.occurredOn).toBe('2026-07-05'))
+    expect(wide.result.current.data).toHaveLength(5)
+  })
+
   test('updateNote edits text and day on the seeded entry', async () => {
     const wrapper = makeHookWrapper()
     const list = renderHook(() => useJournalNotes(FROM, TO), { wrapper })
