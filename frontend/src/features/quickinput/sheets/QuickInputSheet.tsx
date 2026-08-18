@@ -18,21 +18,20 @@ import { useCheckins } from '@/data/hooks'
 type Phase = 'menu' | 'sleep' | 'naplo' | 'checkin'
 
 const NAV_ACTIONS = [
-  { label: 'Étkezés', sub: 'recept vagy szabad', emoji: '🍽', to: '/fuel' },
-  { label: 'Edzés', sub: 'indítás · jegyzet', emoji: '🏋️', to: '/train' },
-  { label: 'Víz', sub: '+250 ml', emoji: '💧', to: '/fuel' },
-  { label: 'Súly', sub: 'reggeli mérés', emoji: '⚖️', to: '/me/weight' },
-  { label: 'Stack', sub: 'bevettem', emoji: '💊', to: '/fuel/stack' },
+  { label: 'Étkezés', emoji: '🍽', to: '/fuel' },
+  { label: 'Edzés', emoji: '🏋️', to: '/train' },
+  { label: 'Víz', emoji: '💧', to: '/fuel' },
+  { label: 'Súly', emoji: '⚖️', to: '/me/weight' },
+  { label: 'Stack', emoji: '💊', to: '/fuel/stack' },
 ] as const
 
 function Tile({
-  emoji, label, hint, onClick,
-}: { emoji: string; label: string; hint: string; onClick: () => void }) {
+  emoji, label, onClick,
+}: { emoji: string; label: string; onClick: () => void }) {
   return (
     <button type="button" className="quicklog-tile np-press" onClick={onClick}>
       <span className="quicklog-emoji" aria-hidden>{emoji}</span>
       <span className="quicklog-label">{label}</span>
-      <span className="quicklog-hint">{hint}</span>
     </button>
   )
 }
@@ -49,7 +48,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   // slot's state synchronously via its own optimistic `local` layer, so a live `findIndex`
   // would flip out from under `CheckInSheet` mid-save and unmount it before its exit
   // animation's onClose ever fires (mezo-967c finding 1). `nextCheckInIdx` below still drives
-  // the tile's hint/click with a fresh read — only the mounted sheet needs the pin.
+  // the tile's click with a fresh read — only the mounted sheet needs the pin.
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const nextCheckInIdx = checkins.findIndex(isFillableSlot)
 
@@ -90,18 +89,17 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
 
           <div className="quicklog-grid">
             {NAV_ACTIONS.map(a => (
-              <Tile key={a.label} emoji={a.emoji} label={a.label} hint={a.sub}
+              <Tile key={a.label} emoji={a.emoji} label={a.label}
                 onClick={() => { close(); navigate(a.to) }} />
             ))}
             <Tile emoji="❤️" label="Check-in"
-              hint={nextCheckInIdx >= 0 ? `${checkins[nextCheckInIdx].time} · hogy vagyok` : 'mára mind megvan'}
               onClick={() => {
                 if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
                 else { close(); navigate('/today') }
               }} />
-            <Tile emoji="😴" label="Alvás" hint="az éjszakád"
+            <Tile emoji="😴" label="Alvás"
               onClick={() => setPhase('sleep')} />
-            <Tile emoji="📓" label="Napló" hint="egy mondat a napról"
+            <Tile emoji="📓" label="Napló"
               onClick={() => setPhase('naplo')} />
           </div>
         </div>

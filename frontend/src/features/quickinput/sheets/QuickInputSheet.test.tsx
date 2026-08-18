@@ -100,7 +100,6 @@ test('with every slot done the Check-in tile falls back to navigating to Today',
   })
   const onClose = vi.fn()
   renderSheet(onClose)
-  expect(screen.getByText('mára mind megvan')).toBeInTheDocument()
   await userEvent.click(screen.getByText('Check-in'))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
   expect(screen.getByTestId('loc')).toHaveTextContent('/today')
