@@ -21,6 +21,7 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
     patternTitle: f.patternTitle ?? undefined,
     source: f.source as FactSource,
     lastReinforcedAt: f.lastReinforcedAt ?? null,
+    createdAt: f.createdAt,
   }
 }
 

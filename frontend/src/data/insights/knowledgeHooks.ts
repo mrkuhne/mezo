@@ -114,6 +114,7 @@ function mockDecide(qc: QueryClient, input: DecideInput) {
       reinforced: 0,
       source: 'chat',
       lastReinforcedAt: null,
+      createdAt: new Date().toISOString(),
     }
     return { ...base, candidates: remaining, facts: [promoted, ...base.facts] }
   })

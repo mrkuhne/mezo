@@ -1081,7 +1081,7 @@ export const handlers = [
   // mutating flow (accept → refetch without the candidate) override with server.use.
   http.get(`${API_BASE}/api/companion/fact`, () =>
     HttpResponse.json(
-      knowledgeSeed.map((f, i) => ({
+      knowledgeSeed.map((f) => ({
         id: f.id,
         factText: f.text,
         category: f.category,
@@ -1089,7 +1089,7 @@ export const handlers = [
         reinforcementCount: f.reinforced,
         includeInPrompt: f.active,
         lastReinforcedAt: f.lastReinforcedAt,
-        createdAt: `2026-07-01T06:${String(i).padStart(2, '0')}:00Z`,
+        createdAt: f.createdAt,
         patternTitle: f.patternTitle ?? null,
       })),
     ),
