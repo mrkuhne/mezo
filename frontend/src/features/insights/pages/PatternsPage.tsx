@@ -168,7 +168,13 @@ export function PatternsPage() {
           <LifecycleMiniRow
             key={entry.key}
             title={rowTitle(entry)}
-            sub={findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''}
+            // mezo-mqdj: ha a pár ma nem él, a sor `mechanism`-je az utolsó élő éjszakáról fagyott
+            // be — a kapu saját mondata megy ki helyette. (A user által figyelt sor itt MARAD: a
+            // döntése az övé, csak a lelet nem állíthat többet, mint amit a mai ablak fed.)
+            sub={findingOneLiner(entry.pair)
+              ?? (entry.pair
+                ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair))
+                : entry.pattern?.mechanism ?? '')}
             to={entry.pair ? `/insights/patterns/${entry.key}` : undefined}
           />
         ))}
