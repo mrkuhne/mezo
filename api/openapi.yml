@@ -6211,6 +6211,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/feed:
+    get:
+      tags:
+        - NotificationFeed
+      operationId: getNotificationFeed
+      summary: 'The in-app notification feed, newest first (NotificationFeed)'
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: The newest feed rows for the current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationFeedResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/feed/read-all:
+    post:
+      tags:
+        - NotificationFeed
+      operationId: markNotificationFeedRead
+      summary: Mark every unread feed row read (NotificationFeed)
+      responses:
+        '204':
+          description: Stamped
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/notification/schedule:
     put:
       tags:
@@ -14514,6 +14557,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NotificationScheduleEntry'
+    NotificationFeedItem:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - deeplink
+        - occurredAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: pattern_inbox
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 300
+          nullable: true
+        deeplink:
+          type: string
+          minLength: 1
+          maxLength: 200
+        occurredAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+    NotificationFeedResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationFeedItem'
     LlmUsageSummaryResponse:
       type: object
       required:

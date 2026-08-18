@@ -1382,3 +1382,39 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     description: 'Üzenet a reggeli mérés után.', showLeadChip: false, iconBg: '--wash-sport',
   },
 }
+
+// --- In-app notification feed (bd mezo-gzhp.1, spec 2026-08-18) ---
+/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side). */
+export type AppNotificationKindKey =
+  | 'pattern_inbox' | 'pattern_signal' | 'hypothesis_new'
+  | 'fact_candidate' | 'fact_reinforced' | 'memoir_ready'
+  | 'prediction_new' | 'prediction_outcome'
+  | 'experiment_proposed' | 'experiment_closed'
+  | 'challenge_event' | 'memory_note'
+
+export interface AppNotificationView {
+  id: string
+  kind: AppNotificationKindKey
+  title: string
+  body: string | null
+  deeplink: string
+  /** ISO date-time */
+  occurredAt: string
+  readAt: string | null
+}
+
+/** Per-kind panel icon + tint class suffix (the mockup's family colors). */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string }> = {
+  pattern_inbox: { emoji: '🧩', tint: 'pattern' },
+  pattern_signal: { emoji: '🧩', tint: 'pattern' },
+  hypothesis_new: { emoji: '🧩', tint: 'pattern' },
+  fact_candidate: { emoji: '📚', tint: 'knowledge' },
+  fact_reinforced: { emoji: '📚', tint: 'knowledge' },
+  memoir_ready: { emoji: '✍️', tint: 'memoir' },
+  prediction_new: { emoji: '🔮', tint: 'prediction' },
+  prediction_outcome: { emoji: '🔮', tint: 'prediction' },
+  experiment_proposed: { emoji: '🧪', tint: 'experiment' },
+  experiment_closed: { emoji: '🧪', tint: 'experiment' },
+  challenge_event: { emoji: '🏆', tint: 'experiment' },
+  memory_note: { emoji: '🗂', tint: 'memory' },
+}
