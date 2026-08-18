@@ -212,7 +212,6 @@ tuning changes (§7).
   (`hours / goal × 100`, `sleepEvent`, `needsInputs.ts:92-101`); no sleep log for today/yesterday
   → no set event, Pihenés simply keeps decaying (the honest "logging sleep is what rescues it"
   design decision, spec §2).
-  ​
 - **← Train (gym/sport/running) + Growth (activity log)** — a completed gym workout, sport
   session, or run **sets** Mozgás to 100; an activity-log entry **adds** `+25`
   (`workoutEvents`, `needsInputs.ts:105-135`). **Honest gotcha:** gym and run events ARE filtered

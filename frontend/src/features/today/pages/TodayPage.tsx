@@ -47,6 +47,7 @@ import { MezoMessagesSheet } from '@/features/today/components/MezoMessagesSheet
 import { NeedsRow } from '@/features/today/components/NeedsRow'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
@@ -446,7 +447,13 @@ export function TodayPage() {
       {scenario.vulnerable && <VulnerabilityCard />}
       <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
       <MezoChip messages={messages} unread={msgsUnread} onOpen={openMessages} />
-      <NeedsRow states={needs.states} onOpen={setNeedSheet} />
+      {needs.isPending
+        // sleepGoal has already resolved here (the page-level skeleton above gates it), but
+        // useNeeds' own composite isPending can still be true for a beat — six rings simulated
+        // off empty events would all read `critical` and pulse red (fix-wave review finding).
+        // Same `.td-skel-needs` placeholder TodaySkeleton uses, so the layout doesn't shift.
+        ? <div className="td-skel td-skel-needs"><Skeleton height={46} /></div>
+        : <NeedsRow states={needs.states} onOpen={setNeedSheet} />}
       {selected === 'reggel' && (
         <DaypartMorning
           hero={mHero} facts={morningFacts}

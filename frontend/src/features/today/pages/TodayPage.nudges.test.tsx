@@ -110,4 +110,20 @@ describe('TodayPage — küszöb-nudge-ok a mezo-szálban (mezo-dhzk Task 5)', (
     expect(chipCount()).toBe(baseline + ALL_KEYS.length)
     expect(localStorage.getItem(`mezo.needsnudge.${localDateString()}`)).not.toBeNull()
   })
+
+  // Fix-wave review finding: the nudge gate above already proved isPending stays inert for
+  // nudging; this proves the RING ROW itself never paints the six-critical false signal either
+  // — while pending it renders the same `.td-skel-needs` placeholder TodaySkeleton uses instead
+  // of `NeedsRow`, so a real-mode cold load never shows six red pulsing "critical" rings.
+  test('isPending alatt a NeedsRow helyén a .td-skel-needs placeholder látszik, nem hat piros ring', () => {
+    mocks.useNeeds.mockReturnValue({ states: allCritical(), isPending: true })
+    const { container, rerender } = render(tree())
+    expect(screen.queryByRole('group', { name: 'Életjelek' })).toBeNull()
+    expect(container.querySelector('.td-skel-needs')).toBeTruthy()
+
+    mocks.useNeeds.mockReturnValue({ states: allCritical(), isPending: false })
+    rerender(tree())
+    expect(screen.getByRole('group', { name: 'Életjelek' })).toBeInTheDocument()
+    expect(container.querySelector('.td-skel-needs')).toBeNull()
+  })
 })
