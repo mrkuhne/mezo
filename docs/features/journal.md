@@ -110,6 +110,8 @@ JournalPage (/me/naplo) → JournalSheet (entry=note) (edit/delete, mock+real)
               AFTER the transaction commits (separate async hop, companion-owned):
               → JournalEmbeddingListener (COMPANION_SWITCH + JOURNAL_SWITCH gated)
                   onJournalEntrySaved  → reload the live entry → MemoryEmbeddingWriter.writeJournal
+                                          (lost the insert race? retry ONCE on a re-read)
+                                          (a racing delete won? clean up the orphaned vector)
                   onJournalEntryDeleted → MemoryEmbeddingWriter.deleteJournalEmbedding
               → memory_embedding (kind=journal_entry, one live row per entry id)
 ```
@@ -133,6 +135,16 @@ JournalPage (/me/naplo) → JournalSheet (entry=note) (edit/delete, mock+real)
   `CompanionMessageEventListener` already use ([`companion.md`](companion.md), [`me.md`](me.md)
   §5.9) — `feature/journal` has **no import of `feature/companion`**; the dependency runs the other
   way (companion imports `JournalEntryEntity`/`JournalEntryRepository`/the two event records).
+- **No nightly self-heal for journal embeds (unlike `chat_turn`'s `findUnembeddedTurnIds` sweep)** —
+  spec §5.5 scopes W1.5's catch-up job to `activity_note`/`checkin_note` only, so
+  `JournalEmbeddingListener` handles its own two races inline instead: a fast create-then-edit can
+  run both entries' AFTER_COMMIT handlers concurrently (Boot's default multi-threaded
+  `applicationTaskExecutor`), so `onJournalEntrySaved` catches the loser's
+  `DataIntegrityViolationException` on `uq_memory_embedding_kind_ref_id` and retries **once**,
+  re-reading the entry first so the retry embeds the latest text; and because the saved/deleted
+  listeners are unordered, a create-then-delete can otherwise leave a live vector for a dead entry
+  — after a successful write the listener re-checks the entry's liveness and calls
+  `deleteJournalEmbedding` if it's gone (`companion/embedding/JournalEmbeddingListener.java`).
 
 ## 4. Data model & API
 
@@ -210,8 +222,10 @@ entries spanning the current and previous month so month-grouping is visible in 
 
 - **→ Companion (embed pipeline, wired, one-way OUT):** every journal write feeds
   `memory_embedding` through the seam in §3 above. **Contract crossing the seam:** the two event
-  records `JournalEntrySavedEvent{userId, entryId}` / `JournalEntryDeletedEvent{userId, entryId}`
-  (`feature/journal/service/`) — plain Spring `ApplicationEvent`s, no direct method call, so
+  records `JournalEntrySavedEvent{entryId}` / `JournalEntryDeletedEvent{entryId}` (no `userId` —
+  mezo is single-user, so an owner id on the event could never discriminate anything; the listener
+  re-reads the entry by id anyway) (`feature/journal/service/`) — plain Spring `ApplicationEvent`s,
+  no direct method call, so
   `feature/journal` has zero compile-time dependency on `feature/companion`. See
   [`companion.md`](companion.md) for the consuming side (`JournalEmbeddingListener`,
   `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding`) and the ArchUnit
@@ -289,6 +303,10 @@ await removeNote(note.id)                            // soft delete
     newest-first ranged list, update (text changes, day preserved when omitted), 404 on
     not-own-entry, soft-delete vanishing from the list.
   - `JournalSwitchOffIT` — both GET and POST 404 with `mezo.feature.journal.enabled=false`.
+  - `JournalApiCompanionOffIT` — the companion-off / journal-on quadrant (spec §5.1's "both
+    switches honest when off"): with `mezo.feature.companion.enabled=false`, full journal CRUD
+    still answers 2xx (the listener bean is entirely absent — both-switches
+    `@ConditionalOnProperty`) and produces **zero** `memory_embedding` rows.
   - `JournalEmbeddingEventIT` (`@ActiveProfiles("companion-fake")`, NOT `@Transactional` — the
     AFTER_COMMIT hop must be real, awaited via Awaitility) — a committed create produces **exactly
     one** `memory_embedding(kind=journal_entry)` row; an update re-embeds (content changes, still
@@ -306,7 +324,7 @@ await removeNote(note.id)                            // soft delete
   button, the empty/loading/error states, the widening „Korábbi hónapok" CTA including the
   empty-but-widenable case); `data/hooks.reexport.test.ts` + `features/me/pages/MeSection.test.tsx`
   (barrel identity + the `Napló` tab label in the sub-nav loop).
-- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalEmbeddingEventIT,MemoryEmbeddingWriterIT'`
+- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,MemoryEmbeddingWriterIT'`
   (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky); `cd frontend && pnpm build &&
   pnpm test && VITE_USE_MOCK=true pnpm test`.
 
@@ -372,7 +390,7 @@ await removeNote(note.id)                            // soft delete
 - `backend/src/main/resources/db/changelog/1.0.0/1.0.0_master.yml:696-708` — both changeSets registered.
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalEmbeddingEventIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — journal cases (`testWriteJournal_*`, `testDeleteJournalEmbedding_*`).
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/JournalPopulator.java` + `support/ResetDatabase.java:41` (`journal_entry` in the TRUNCATE list).
 

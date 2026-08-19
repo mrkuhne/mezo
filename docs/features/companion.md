@@ -663,7 +663,11 @@ Spring events, no import of `feature/companion` — which the new **`JournalEmbe
 feature's own switch, failures logged+swallowed) consumes through two new
 `MemoryEmbeddingWriter` methods, **`writeJournal`/`deleteJournalEmbedding`**
 (`embedding/MemoryEmbeddingWriter.java:114-141`) — still the single write path, just a new
-`kind=journal_entry`. **The one genuinely new wrinkle: journal edits re-embed IN PLACE, not
+`kind=journal_entry`. **Unlike `chat_turn`, journal has no nightly self-heal sweep** (spec §5.5
+scopes W1.5's catch-up job to `activity_note`/`checkin_note` only), so the listener handles its own
+create-then-edit (insert-race retry-once) and create-then-delete (orphaned-vector cleanup) races
+inline instead — see [`journal.md`](journal.md) §3 for the detail. **The one genuinely new wrinkle:
+journal edits re-embed IN PLACE, not
 delete+insert.** `uq_memory_embedding_kind_ref_id` spans soft-deleted rows (no partial-index
 clause), so a soft-delete-then-reinsert on the same `(kind, ref_id)` would violate the unique
 constraint; `writeJournal` instead looks up the live row via the new
