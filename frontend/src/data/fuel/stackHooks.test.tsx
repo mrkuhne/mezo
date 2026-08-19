@@ -25,6 +25,15 @@ afterEach(() => vi.unstubAllEnvs())
 describe('useStack / useProtocol (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
+  it('useStack/useProtocol never report pending or error in mock mode (synchronous seed)', () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => ({ stack: useStack(), protocol: useProtocol() }), { wrapper: Wrapper })
+    expect(result.current.stack.pending).toBe(false)
+    expect(result.current.stack.error).toBe(false)
+    expect(result.current.protocol.pending).toBe(false)
+    expect(result.current.protocol.error).toBe(false)
+  })
+
   it('useStack marks exactly the seed taken:true items as taken', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useStack(), { wrapper: Wrapper })
@@ -211,6 +220,48 @@ describe('useStack / useProtocol (real mode)', () => {
     expect(result.current.protocol.version).toBe(0)
     expect(result.current.protocol.status).toBe('none')
     expect(result.current.occurrences).toEqual([]) // never the 8-item seed
+  })
+
+  // The notification snapshot writer gates on these flags (mezo-b6q0): while a read is
+  // unresolved (or terminally failed) its realEmpty value must never be mistaken for real data.
+  it('useProtocol reports pending while the protocol read is unresolved, cleared once it resolves', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/protocol`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(true)
+
+    server.resetHandlers() // back to the default (resolving) handler
+    const resolved = renderHook(() => useProtocol(), { wrapper: sharedWrapper().Wrapper })
+    await waitFor(() => expect(resolved.result.current.pending).toBe(false))
+    expect(resolved.result.current.error).toBe(false)
+  })
+
+  it('useStack reports pending while the pantry read is unresolved, cleared once it resolves', async () => {
+    server.use(http.get(`${API_BASE}/api/pantry`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useStack(), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(true)
+
+    server.resetHandlers() // back to the default (resolving) handler
+    const resolved = renderHook(() => useStack(), { wrapper: sharedWrapper().Wrapper })
+    await waitFor(() => expect(resolved.result.current.pending).toBe(false))
+    expect(resolved.result.current.error).toBe(false)
+  })
+
+  it('useProtocol reports error once the protocol read has terminally failed', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/protocol`, () => HttpResponse.error()))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useProtocol(), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.error).toBe(true))
+    expect(result.current.pending).toBe(false)
+  })
+
+  it('useStack reports error once the pantry read has terminally failed', async () => {
+    server.use(http.get(`${API_BASE}/api/pantry`, () => HttpResponse.error()))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useStack(), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.error).toBe(true))
+    expect(result.current.pending).toBe(false)
   })
 
   it('useProtocol returns the v0 ghost when the backend reports no active protocol', async () => {
