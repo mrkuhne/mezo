@@ -12,7 +12,6 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/shared/lib/markdown.tsx
   - frontend/src/data/insights/weeklyHooks.ts
-  - frontend/src/data/hooks.ts
 related: [_platform-data-layer, _platform-design-system, today, me, companion]
 ---
 
