@@ -43,7 +43,7 @@ public class JournalService {
         e.setText(request.getText());
         e.setSource(request.getSource());
         JournalEntryEntity saved = repository.saveAndFlush(e);
-        eventPublisher.publishEvent(new JournalEntrySavedEvent(userId, saved.getId()));
+        eventPublisher.publishEvent(new JournalEntrySavedEvent(saved.getId()));
         return mapper.toResponse(saved);
     }
 
@@ -62,7 +62,7 @@ public class JournalService {
             e.setOccurredOn(request.getOccurredOn());
         }
         JournalEntryEntity saved = repository.saveAndFlush(e);
-        eventPublisher.publishEvent(new JournalEntrySavedEvent(userId, saved.getId()));
+        eventPublisher.publishEvent(new JournalEntrySavedEvent(saved.getId()));
         return mapper.toResponse(saved);
     }
 
@@ -70,7 +70,7 @@ public class JournalService {
     public void delete(UUID userId, UUID entryId) {
         JournalEntryEntity e = findOwned(userId, entryId);
         repository.delete(e); // @SQLDelete -> soft delete
-        eventPublisher.publishEvent(new JournalEntryDeletedEvent(userId, e.getId()));
+        eventPublisher.publishEvent(new JournalEntryDeletedEvent(e.getId()));
     }
 
     private JournalEntryEntity findOwned(UUID userId, UUID entryId) {
