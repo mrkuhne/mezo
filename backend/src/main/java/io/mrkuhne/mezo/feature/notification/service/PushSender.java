@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.notification.service;
 import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import io.mrkuhne.mezo.feature.notification.entity.PushSubscriptionEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.webpush.WebPushClient;
 import io.mrkuhne.mezo.techcore.webpush.WebPushResult;
 import io.mrkuhne.mezo.techcore.webpush.WebPushSubscriptionKeys;
@@ -93,13 +94,15 @@ public class PushSender {
      *
      * <p>Package-private so {@code PushSenderTruncationTest} can drive the boundary directly — it
      * is a pure function of its two arguments, with no reachable state to misuse.
+     *
+     * <p>Delegates to {@link SafeTruncate#truncate(String, int)} (bd mezo-gzhp.1): the same logic
+     * is needed by {@code feature.appnotification.service.AppNotificationService}, which must not
+     * depend on this class's package (that would recreate the companion/notification/proactive
+     * cycle) — the shared implementation now lives in {@code techcore}, and this method stays as
+     * the pinned, package-private entry point its existing test drives.
      */
     static String truncateBody(String body, int maxChars) {
-        if (body == null || body.length() <= maxChars) {
-            return body;
-        }
-        int end = Character.isHighSurrogate(body.charAt(maxChars - 1)) ? maxChars - 1 : maxChars;
-        return body.substring(0, end);
+        return SafeTruncate.truncate(body, maxChars);
     }
 
     /** First {@value #ENDPOINT_LOG_PREFIX_LEN} chars only — an endpoint is a capability URL. */

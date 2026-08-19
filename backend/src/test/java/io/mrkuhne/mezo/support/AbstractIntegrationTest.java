@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.TestcontainersConfiguration;
 import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
+import io.mrkuhne.mezo.support.populator.AppNotificationPopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -94,7 +95,7 @@ import org.springframework.context.annotation.Import;
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,
     PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
-    LlmLogPopulator.class, NotificationPopulator.class, ResetDatabase.class})
+    LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired

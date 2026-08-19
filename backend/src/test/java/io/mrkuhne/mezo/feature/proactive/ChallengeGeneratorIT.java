@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.service.ChallengeGenerator;
@@ -20,20 +21,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The {@code [fake-challenge:{…}]} sentinel rides a check-in note — the gather renders the V0.3
  * snapshot, so the check-in channel IS in the payload the fake matches on. The snapshot's verbatim
  * check-in-note window is widened here so multi-proposal scripts survive un-truncated into the fake.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = "mezo.companion.snapshot.checkin-note-max-chars=1000")
 class ChallengeGeneratorIT extends AbstractIntegrationTest {
 
     @Autowired
     private ChallengeGenerator generator;
+
+    @Autowired
+    private AppNotificationRepository appNotificationRepository;
 
     @Autowired
     private UserPopulator userPopulator;
@@ -102,6 +109,11 @@ class ChallengeGeneratorIT extends AbstractIntegrationTest {
         assertThat(c.getRefs().refs()).hasSize(1);
         assertThat(c.getConfidence()).isNull();   // patternIndex null — never fabricated
         assertThat(c.getSourcePatternId()).isNull();
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("challenge_event");
+                    assertThat(n.getDeeplink()).isEqualTo("/train");
+                });
     }
 
     @Test

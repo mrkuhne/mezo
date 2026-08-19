@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -74,6 +76,7 @@ public class ExperimentProposalGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     public record Gather(String payload, List<PatternEntity> candidates) {
     }
@@ -128,6 +131,12 @@ public class ExperimentProposalGenerator {
             e.setSourcePatternId(resolveSourcePatternId(p.patternIndex(), gather.candidates()));
             e.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
             saved.add(experimentRepository.saveAndFlush(e));
+            ExperimentEntity savedRow = saved.get(saved.size() - 1);
+            appNotificationEmitter.emit(userId, AppNotificationKind.EXPERIMENT_PROPOSED,
+                    "Új kísérlet-javaslat",
+                    "„" + savedRow.getTitle() + "” — fogadd el vagy vesd el a Kísérletek fülön.",
+                    AppNotificationKind.EXPERIMENT_PROPOSED.deeplink(), savedRow.getId(),
+                    "experiment_proposed:" + savedRow.getId());
         }
         return saved;
     }

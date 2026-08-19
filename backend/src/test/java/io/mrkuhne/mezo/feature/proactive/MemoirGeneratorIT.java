@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
 import io.mrkuhne.mezo.feature.proactive.service.MemoirGenerator;
@@ -17,15 +18,18 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * W2 generation flow over the fake LLM: gather = the WEEK'S summaries [weekStart, weekStart+6]
  * + facts + patterns, with numbered anchor candidates; strict-JSON {title, body, anchorIndexes}
  * scripted via [fake-memoir:{…}] (check-in note → the note is NOT in the memoir gather, so the
  * sentinel is planted via a daily-summary NARRATIVE instead — summaries carry free text).
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class MemoirGeneratorIT extends AbstractIntegrationTest {
 
@@ -34,6 +38,7 @@ class MemoirGeneratorIT extends AbstractIntegrationTest {
 
     @Autowired private MemoirGenerator generator;
     @Autowired private MemoirRepository repository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private MemoirPopulator memoirPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private UserPopulator userPopulator;
@@ -76,6 +81,24 @@ class MemoirGeneratorIT extends AbstractIntegrationTest {
         assertThat(memoir.getBody()).isEqualTo("Szép hét volt.");
         assertThat(memoir.getAnchors().anchors()).hasSize(1);
         assertThat(memoir.getAnchors().anchors().get(0).kind()).isEqualTo("Memory");
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("memoir_ready");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights/memoir");
+                });
+    }
+
+    @Test
+    void testGenerate_shouldEmitOnlyOneMemoirReadyRow_whenCalledTwice() {
+        UUID user = userPopulator.createUser("mg-emit-once@test.local").getId();
+        dailySummaryPopulator.summary(user, WEEK_START.plusDays(2),
+                "[fake-memoir:{\"title\":\"Ismétlődő hét\",\"body\":\"Ugyanaz a hét.\",\"anchorIndexes\":[0]}]");
+
+        generator.generate(user, WEEK_START);
+        generator.generate(user, WEEK_START);
+
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user)
+                .stream().filter(n -> n.getKind().equals("memoir_ready")).count()).isEqualTo(1);
     }
 
     @Test

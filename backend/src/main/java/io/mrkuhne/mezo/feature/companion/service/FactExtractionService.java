@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -57,6 +59,7 @@ public class FactExtractionService {
     private final CompanionProperties properties;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     /** One extracted item as the LLM returns it. */
     record ExtractedFact(String fact, String category) {}
@@ -101,6 +104,11 @@ public class FactExtractionService {
                     hit.setReinforcementCount(hit.getReinforcementCount() + 1);
                     hit.setLastReinforcedAt(Instant.now());
                     knowledgeFactRepository.save(hit);
+                    appNotificationEmitter.emit(userId, AppNotificationKind.FACT_REINFORCED,
+                            "Egy tudás megerősödött ×" + hit.getReinforcementCount(),
+                            "„" + hit.getFactText() + "” — a beszélgetésben újra megerősítetted.",
+                            AppNotificationKind.FACT_REINFORCED.deeplink(), hit.getId(),
+                            "fact_reinforced:" + hit.getId() + ":" + hit.getReinforcementCount());
                 }
                 continue; // duplicate of a confirmed fact, a pending candidate, or this batch
             }
@@ -111,6 +119,11 @@ public class FactExtractionService {
             candidate.setDerivedFromMessageId(userMessageId);
             learnedFactRepository.saveAndFlush(candidate);
             persisted++;
+            appNotificationEmitter.emit(userId, AppNotificationKind.FACT_CANDIDATE,
+                    "Új tény vár jóváhagyásra",
+                    "„" + candidate.getCandidateText() + "” — a beszélgetésből emeltem ki.",
+                    AppNotificationKind.FACT_CANDIDATE.deeplink(), candidate.getId(),
+                    "fact_candidate:" + candidate.getId());
         }
         return persisted;
     }

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
 import io.mrkuhne.mezo.feature.proactive.service.ChallengeOutcomeEvaluator;
@@ -16,15 +17,18 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Deterministic, LLM-free set-level outcome evaluation of accepted workout challenges over FIXED
  * past/today dates. Proves PR (weight∧reps), Depth (last set RIR), Volume (logged-set count) hit/miss,
  * the honest {@code inconclusive} when a passed day carries no logged sets, and the untouched
  * still-accepted state when today's workout is simply not logged yet.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 class ChallengeOutcomeIT extends AbstractIntegrationTest {
 
     private static final LocalDate PAST = LocalDate.parse("2026-07-06");
@@ -35,6 +39,9 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
 
     @Autowired
     private ChallengeRepository challengeRepository;
+
+    @Autowired
+    private AppNotificationRepository appNotificationRepository;
 
     @Autowired
     private ChallengePopulator challengePopulator;
@@ -96,6 +103,12 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
         assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_HIT);
         assertThat(r.getOutcomeGood()).isTrue();
         assertThat(r.getOutcome()).startsWith("Sikerült");
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("challenge_event");
+                    assertThat(n.getDeeplink()).isEqualTo("/train");
+                    assertThat(n.getTitle()).isEqualTo("Kihívás lezárult");
+                });
     }
 
     @Test

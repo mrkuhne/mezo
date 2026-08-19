@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -30,6 +32,7 @@ public class ExperimentOutcomeService {
 
     private final ExperimentRepository experimentRepository;
     private final MetricWindowEvaluator evaluator;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     @Transactional
     public int evaluateClosed(UUID userId, LocalDate today) {
@@ -59,6 +62,11 @@ public class ExperimentOutcomeService {
             }
             experimentRepository.saveAndFlush(e);
             closed++;
+            appNotificationEmitter.emit(userId, AppNotificationKind.EXPERIMENT_CLOSED,
+                    "Kísérlet lezárult",
+                    "„" + e.getTitle() + "” — " + e.getOutcome(),
+                    AppNotificationKind.EXPERIMENT_CLOSED.deeplink(), e.getId(),
+                    "experiment_closed:" + e.getId());
         }
         return closed;
     }

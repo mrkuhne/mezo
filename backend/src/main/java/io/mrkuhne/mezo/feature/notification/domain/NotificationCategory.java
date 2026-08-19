@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * The 14 push-notification categories (bd mezo-h4wp.6.2, mezo-gst9). This enum is the single source of truth
+ * The 20 push-notification categories (14 anchor-resolved + 6 feed-anchored, spec 2026-08-18). This enum is the single source of truth
  * for which categories exist, which default ON, which carry a notification-side lead offset, and
  * which are FE-written — see spec §6 (`docs/superpowers/specs/2026-07-29-push-notifications-design.md`)
  * for the authoritative catalog table (key, anchor, source of truth, v1 default).
@@ -65,7 +65,25 @@ public enum NotificationCategory {
 
     /** Anchor: the row's own generation minute; source {@code companion_message} weight row
      *  (companion-feed, mezo-gst9). */
-    WEIGHT_REACTION("weight_reaction", true, 0, false);
+    WEIGHT_REACTION("weight_reaction", true, 0, false),
+
+    /** Anchor: the app_notification row's own occurred-at minute, wake-deferred (spec 2026-08-18 §4). */
+    PATTERN("pattern", true, 0, false),
+
+    /** Same feed-anchored family — knowledge (fact candidates + reinforcements). */
+    KNOWLEDGE("knowledge", true, 0, false),
+
+    /** Same feed-anchored family — predictions (new + outcome). */
+    PREDICTION("prediction", true, 0, false),
+
+    /** Same feed-anchored family — experiments (proposed + closed). */
+    EXPERIMENT("experiment", true, 0, false),
+
+    /** Same feed-anchored family — workout challenges. */
+    CHALLENGE("challenge", true, 0, false),
+
+    /** Same feed-anchored family — the nightly L1 memory note. */
+    MEMORY("memory", true, 0, false);
 
     private final String key;
     private final boolean defaultEnabled;

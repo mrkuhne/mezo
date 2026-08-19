@@ -35,15 +35,26 @@ const mockIntakeSeed: Intake[] = supplementsStash
 export function useProtocol(): {
   protocol: Protocol
   occurrences: ProtocolOccurrence[]
+  pending: boolean
+  error: boolean
 } {
-  const { data } = useDualQuery<ProtocolView>({
+  const mock = isMockMode()
+  const { data, isPending, isError } = useDualQuery<ProtocolView>({
     queryKey: PROTOCOL_KEY,
     mockData: mockView,
     realFetch: fuelApi.getProtocol,
     realEmpty: EMPTY_VIEW,
     realStaleTime: 0,
   })
-  return { protocol: data.protocol ?? GHOST_PROTOCOL, occurrences: data.occurrences }
+  return {
+    protocol: data.protocol ?? GHOST_PROTOCOL,
+    occurrences: data.occurrences,
+    // Real-mode read-state flags (mock seeds synchronously → always false, never errors).
+    // While pending/error, `occurrences` is the ghost's empty list, NOT real data — the
+    // notification snapshot writer gates on these so it never persists that state (mezo-b6q0).
+    pending: !mock && isPending,
+    error: !mock && isError,
+  }
 }
 
 /** The day's supplement intakes — mock derives from the stash's taken flags; real fetches the date.
@@ -64,11 +75,15 @@ export function useIntakes(date: string): Intake[] {
  * intakes (mock/real share the shape). Keeps the pre-existing `{ stash }` return so the Stack
  * views + StackPickerSheet are untouched.
  */
-export function useStack(): { stash: SupplementStashItem[] } {
-  const { stash } = usePantry()
+export function useStack(): { stash: SupplementStashItem[]; pending: boolean; error: boolean } {
+  const { stash, pending, error } = usePantry()
   const intakes = useIntakes(localDateString())
   const takenIds = new Set(intakes.map(i => i.pantryItemId))
-  return { stash: stash.map(s => ({ ...s, taken: takenIds.has(s.id) })) }
+  // pending/error track the PANTRY read (the item names/doses) — the intake read only refines
+  // the `taken` flags, so it doesn't gate. While pending/error, `stash` is realEmpty ([]), which
+  // projectStackDay would render as '(törölt Kamra-item)' — callers persisting the projection
+  // (the notification snapshot writer, mezo-b6q0) must wait for both flags to clear.
+  return { stash: stash.map(s => ({ ...s, taken: takenIds.has(s.id) })), pending, error }
 }
 
 /** Finds the day's intake row for `pantryItemId` matching `slotKey` exactly, falling back to a

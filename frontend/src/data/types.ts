@@ -1283,7 +1283,7 @@ export interface PushSubscriptionState {
 
 // ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
 // evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
-// The 14 keys/sections/defaults mirror the backend's authoritative enum
+// The 20 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
@@ -1291,12 +1291,14 @@ export type NotificationCategoryKey =
   | 'briefing' | 'gym' | 'medication' | 'ritual' | 'lights_out'
   | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
   | 'evening' | 'sleep_reaction' | 'weight_reaction'
+  | 'pattern' | 'knowledge' | 'prediction' | 'experiment' | 'challenge' | 'memory'
 
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'briefing', 'gym', 'medication', 'ritual', 'lights_out',
   'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
   'evening', 'sleep_reaction', 'weight_reaction',
+  'pattern', 'knowledge', 'prediction', 'experiment', 'challenge', 'memory',
 ]
 
 export interface NotificationPrefView {
@@ -1305,7 +1307,7 @@ export interface NotificationPrefView {
   leadMinutes: number
 }
 
-export type NotificationSection = 'prose' | 'reminder'
+export type NotificationSection = 'prose' | 'reminder' | 'brain'
 
 export interface NotificationCategoryMeta {
   label: string
@@ -1381,4 +1383,64 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     label: 'Súly-reakció', emoji: '⚖️', section: 'prose',
     description: 'Üzenet a reggeli mérés után.', showLeadChip: false, iconBg: '--wash-sport',
   },
+  pattern: {
+    label: 'Minták', emoji: '🧩', section: 'brain',
+    description: 'Új minta döntésre, jel-erősödés — reggel, ébredés után', showLeadChip: false, iconBg: '--wash-lav',
+  },
+  knowledge: {
+    label: 'Tudástár', emoji: '📚', section: 'brain',
+    description: 'Új tény jóváhagyásra, tudás-megerősödés', showLeadChip: false, iconBg: '--wash-sage',
+  },
+  prediction: {
+    label: 'Előrejelzések', emoji: '🔮', section: 'brain',
+    description: 'Új predikció, bevált / nem vált be', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  experiment: {
+    label: 'Kísérletek', emoji: '🧪', section: 'brain',
+    description: 'Új javaslat, kísérlet lezárult', showLeadChip: false, iconBg: '--wash-amber',
+  },
+  challenge: {
+    label: 'Kihívások', emoji: '🏆', section: 'brain',
+    description: 'Edzés-kihívás javaslat és eredmény', showLeadChip: false, iconBg: '--wash-gym',
+  },
+  memory: {
+    label: 'Memória', emoji: '🗂', section: 'brain',
+    description: 'Napi összefoglaló elkészült — ébredés után', showLeadChip: false, iconBg: '--wash-run',
+  },
+}
+
+// --- In-app notification feed (bd mezo-gzhp.1, spec 2026-08-18) ---
+/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side). */
+export type AppNotificationKindKey =
+  | 'pattern_inbox' | 'pattern_signal' | 'hypothesis_new'
+  | 'fact_candidate' | 'fact_reinforced' | 'memoir_ready'
+  | 'prediction_new' | 'prediction_outcome'
+  | 'experiment_proposed' | 'experiment_closed'
+  | 'challenge_event' | 'memory_note'
+
+export interface AppNotificationView {
+  id: string
+  kind: AppNotificationKindKey
+  title: string
+  body: string | null
+  deeplink: string
+  /** ISO date-time */
+  occurredAt: string
+  readAt: string | null
+}
+
+/** Per-kind panel icon + tint class suffix (the mockup's family colors). */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string }> = {
+  pattern_inbox: { emoji: '🧩', tint: 'pattern' },
+  pattern_signal: { emoji: '🧩', tint: 'pattern' },
+  hypothesis_new: { emoji: '🧩', tint: 'pattern' },
+  fact_candidate: { emoji: '📚', tint: 'knowledge' },
+  fact_reinforced: { emoji: '📚', tint: 'knowledge' },
+  memoir_ready: { emoji: '✍️', tint: 'memoir' },
+  prediction_new: { emoji: '🔮', tint: 'prediction' },
+  prediction_outcome: { emoji: '🔮', tint: 'prediction' },
+  experiment_proposed: { emoji: '🧪', tint: 'experiment' },
+  experiment_closed: { emoji: '🧪', tint: 'experiment' },
+  challenge_event: { emoji: '🏆', tint: 'experiment' },
+  memory_note: { emoji: '🗂', tint: 'memory' },
 }

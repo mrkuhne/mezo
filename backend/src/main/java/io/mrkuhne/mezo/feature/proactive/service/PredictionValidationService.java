@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -29,6 +31,7 @@ public class PredictionValidationService {
 
     private final PredictionRepository predictionRepository;
     private final MetricWindowEvaluator evaluator;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     @Transactional
     public int validateClosedWindows(UUID userId, LocalDate today) {
@@ -48,6 +51,12 @@ public class PredictionValidationService {
             p.setActual(v.actualText());
             predictionRepository.saveAndFlush(p);
             closed++;
+            boolean validated = PredictionEntity.STATUS_VALIDATED.equals(p.getStatus());
+            appNotificationEmitter.emit(userId, AppNotificationKind.PREDICTION_OUTCOME,
+                    validated ? "Bejött egy előrejelzés" : "Egy előrejelzés nem vált be",
+                    "„" + p.getTitle() + "” — " + p.getActual(),
+                    AppNotificationKind.PREDICTION_OUTCOME.deeplink(), p.getId(),
+                    "prediction_outcome:" + p.getId());
         }
         return closed;
     }

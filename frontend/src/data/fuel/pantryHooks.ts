@@ -25,7 +25,7 @@ export function usePantry() {
   const mock = isMockMode()
   // staleTime Infinity in mock (client-owned cache: usePantryActions edits via setQueryData
   // must not be clobbered by a refetch); 0 in real mode (mutations invalidate → refetch truth).
-  const { data, isPending } = useDualQuery({
+  const { data, isPending, isError } = useDualQuery({
     queryKey: PANTRY_KEY,
     mockData,
     realFetch: pantryApi.list,
@@ -42,6 +42,9 @@ export function usePantry() {
     // Real-mode loading window only (mock seeds synchronously → always false);
     // views branch on it to show the skeleton (mirrors runningPending, mezo-f2z).
     pending: !mock && isPending,
+    // Terminal real-mode fetch failure — realEmpty is NOT real data then. The notification
+    // snapshot writer gates on it via useStack (mezo-b6q0); mock never errors.
+    error: !mock && isError,
   }
 }
 

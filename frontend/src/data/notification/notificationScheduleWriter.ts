@@ -104,14 +104,16 @@ export function buildScheduleEntries(
  * session, already inside the QueryClientProvider tree).
  *
  * Real mode only — mock mode must never reach the network. Waits for `useSleepGoal()`'s
- * `isPending` to clear before writing: firing on the very first render would snapshot the
- * pre-resolve ghost wake/bed anchors (and possibly an empty stash) as if they were real,
- * which is a worse snapshot than waiting a beat. `useStack`/`useProtocol`/`useIntakes`/
- * `useFuelSettings`/`useTrain`/`useRunning` don't expose their own pending flag, so there is a
- * narrow window where the fuel/stack slots (including the gym-derived pre-workout time) could
- * still reflect a ghost if one of those fetches is slower than the sleep-goal one — an
- * accepted, documented gap (the design spec already frames FE-snapshot staleness as "degrades
- * gracefully"), not a silent one. `useScheduleSnapshotWriter` deliberately does NOT delegate to
+ * `isPending` to clear (ghost wake/bed anchors) AND for `useStack`/`useProtocol` to settle
+ * successfully (mezo-b6q0): while those reads are pending — or terminally failed — their
+ * realEmpty values ([] stash / ghost occurrences) are not real data, and snapshotting them
+ * poisoned every fuel_slot body with projectStackDay's '(törölt Kamra-item)' fallback, which
+ * the backend pushes verbatim. `useIntakes`/`useFuelSettings`/`useTrain`/`useRunning` still
+ * don't expose a pending flag, so there is a narrow window where slot TIMES (meal windows, the
+ * gym-derived pre-workout time) could reflect a ghost if one of those fetches is slower than
+ * the gated ones — an accepted, documented gap (the design spec already frames FE-snapshot
+ * staleness as "degrades gracefully"): stale times degrade; fallback NAMES were garbage, hence
+ * the gate. `useScheduleSnapshotWriter` deliberately does NOT delegate to
  * `useStackDay` (mezo-vx9v Task 9): that hook composes the same sources but doesn't surface
  * `useSleepGoal`'s `isPending`, which this gate needs — routing through it would silently drop
  * the "don't snapshot the pre-resolve ghost" protection this docstring describes.
@@ -132,8 +134,8 @@ export function buildScheduleEntries(
  */
 export function useScheduleSnapshotWriter(): void {
   const mock = isMockMode()
-  const { stash } = useStack()
-  const { occurrences } = useProtocol()
+  const { stash, pending: stackPending, error: stackError } = useStack()
+  const { occurrences, pending: protocolPending, error: protocolError } = useProtocol()
   const intakes = useIntakes(localDateString())
   const { settings } = useFuelSettings()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
@@ -142,7 +144,15 @@ export function useScheduleSnapshotWriter(): void {
   const written = useRef(false)
 
   useEffect(() => {
+    // The pantry/protocol gates fix mezo-b6q0: gating on the sleep goal ALONE let an app open
+    // where the (heaviest) pantry query was still unresolved snapshot every occurrence as
+    // projectStackDay's '(törölt Kamra-item)' fallback — which the backend then pushed verbatim
+    // in every fuel_slot notification until a later open happened to win the race. An errored
+    // read gates too: its realEmpty value is not real data either. Skipping on error (instead
+    // of writing a checkin-only snapshot) is deliberate — the failed-PUT rule below already
+    // accepts "this open wrote nothing, the next one retries" as an outcome.
     if (mock || written.current || sleepGoalPending) return
+    if (stackPending || stackError || protocolPending || protocolError) return
     written.current = true
 
     const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
