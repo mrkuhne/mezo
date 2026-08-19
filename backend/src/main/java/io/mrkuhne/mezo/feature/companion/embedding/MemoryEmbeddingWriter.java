@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -108,6 +109,35 @@ public class MemoryEmbeddingWriter {
                 .filter(id -> !memoryEmbeddingRepository.existsByKindAndRefId(
                         MemoryEmbeddingEntity.KIND_CHAT_TURN, id))
                 .toList();
+    }
+
+    /** W1.1 journal unit (spec §5.1): first write inserts; an edit re-embeds IN PLACE on the live
+     *  (kind, ref_id) row — uq_memory_embedding_kind_ref_id spans soft-deleted rows, so the spec's
+     *  "delete+insert" is realized as an update (same key, fresh vector + content). */
+    @Transactional
+    public void writeJournal(JournalEntryEntity entry) {
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId())
+                .ifPresentOrElse(existing -> {
+                    String capped = cap(entry.getText());
+                    float[] vector = llmCallContextHolder.runWith(
+                            new LlmCallContext("embed_memory", "document",
+                                    MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId()),
+                            () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
+                    existing.setContent(capped);
+                    existing.setEmbedding(vector);
+                    existing.setOccurredOn(entry.getOccurredOn());
+                    memoryEmbeddingRepository.saveAndFlush(existing);
+                }, () -> write(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
+                        entry.getId(), entry.getText(), entry.getOccurredOn()));
+    }
+
+    /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-3 honesty). */
+    @Transactional
+    public void deleteJournalEmbedding(UUID entryId) {
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entryId)
+                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
     }
 
     private void write(UUID createdBy, String kind, UUID refId, String content, LocalDate occurredOn) {

@@ -176,4 +176,8 @@ public class FeaturesConfiguration {
 
     /** In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed 404s, producers' emits no-op through AppNotificationEmitter. */
     public static final String NOTIFICATION_FEED_SWITCH = "mezo.feature.notification-feed.enabled";
+
+    /** Phase 5 W1.1 journal (bd mezo-b3pp.1) — off ⇒ the /api/journal surface 404s and no journal
+     *  beans exist. */
+    public static final String JOURNAL_SWITCH = "mezo.feature.journal.enabled";
 }

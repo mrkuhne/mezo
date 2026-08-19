@@ -9,10 +9,12 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private AiConversationPopulator aiConversationPopulator;
     @Autowired private AiMessagePopulator aiMessagePopulator;
+    @Autowired private JournalPopulator journalPopulator;
 
     @Test
     void testEmbedTurnByMessageId_shouldPersistTurnUnit_whenNewTurn() {
@@ -153,5 +156,64 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         List<UUID> ids = memoryEmbeddingWriter.findUnembeddedTurnIds(owner, Instant.now().minusSeconds(3600));
 
         assertThat(ids).containsExactly(missing.getId());
+    }
+
+    @Test
+    void testWriteJournal_shouldPersistJournalUnit_whenNewEntry() {
+        UUID owner = userPopulator.createUser().getId();
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, DAY, "Ma jó napom volt.",
+                JournalEntryEntity.SOURCE_QUICKINPUT);
+
+        memoryEmbeddingWriter.writeJournal(entry);
+
+        List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
+        assertThat(rows).hasSize(1);
+        MemoryEmbeddingEntity row = rows.getFirst();
+        assertThat(row.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY);
+        assertThat(row.getRefId()).isEqualTo(entry.getId());
+        assertThat(row.getContent()).isEqualTo(entry.getText());
+        assertThat(row.getOccurredOn()).isEqualTo(entry.getOccurredOn());
+        assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+    }
+
+    @Test
+    void testWriteJournal_shouldReembedInPlace_whenEntryEdited() {
+        UUID owner = userPopulator.createUser().getId();
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, DAY, "Eredeti szöveg.",
+                JournalEntryEntity.SOURCE_QUICKINPUT);
+        memoryEmbeddingWriter.writeJournal(entry);
+        MemoryEmbeddingEntity original = memoryEmbeddingRepository.findAll().getFirst();
+        UUID originalRowId = original.getId();
+        float[] originalEmbedding = original.getEmbedding();
+
+        entry.setText("Módosított szöveg.");
+        entry.setOccurredOn(DAY.plusDays(1));
+        memoryEmbeddingWriter.writeJournal(entry);
+
+        List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
+        assertThat(rows).hasSize(1);
+        MemoryEmbeddingEntity row = rows.getFirst();
+        assertThat(row.getId()).isEqualTo(originalRowId);
+        assertThat(row.getContent()).isEqualTo("Módosított szöveg.");
+        assertThat(row.getOccurredOn()).isEqualTo(DAY.plusDays(1));
+        // The fake embedding adapter is deterministic per input text (seeded Random(text.hashCode())),
+        // so distinct texts must yield distinct vectors — proves the re-embed actually re-embedded,
+        // not just re-stamped content/occurredOn on a stale vector.
+        assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding);
+    }
+
+    @Test
+    void testDeleteJournalEmbedding_shouldSoftDeleteRow_whenPresent() {
+        UUID owner = userPopulator.createUser().getId();
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, DAY, "Törlendő bejegyzés.",
+                JournalEntryEntity.SOURCE_QUICKINPUT);
+        memoryEmbeddingWriter.writeJournal(entry);
+
+        memoryEmbeddingWriter.deleteJournalEmbedding(entry.getId());
+
+        assertThat(memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId()))
+                .isEmpty();
     }
 }

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -30,7 +31,8 @@ public record CompanionProperties(
     @NotNull @Valid Patterns patterns,
     @NotNull @Valid Hypotheses hypotheses,
     @NotNull @Valid HabitSuggest habitSuggest,
-    @NotNull @Valid Transcription transcription
+    @NotNull @Valid Transcription transcription,
+    @NotNull @Valid Journal journal
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -196,5 +198,11 @@ public record CompanionProperties(
         @Min(1) @Max(52) int maxTrendWeeks,
         /** Max refs persisted per turn (deduped, insertion-ordered). */
         @Min(1) @Max(30) int maxRefsPerTurn
+    ) {}
+
+    /** Phase 5 W1 journal knobs (mezo-b3pp.1). decisionReviewDays feeds W1.4's decision review-due default. */
+    public record Journal(
+        /** decision_entry.review_due default offset in days from decided_on (W1.4). */
+        @Positive int decisionReviewDays
     ) {}
 }

@@ -8,6 +8,7 @@ export interface MeTab {
 export const ME_TABS: MeTab[] = [
   { id: 'profil', to: '/me', label: 'Profil', end: true },
   { id: 'growth', to: '/me/growth', label: 'Growth' },
+  { id: 'journal', to: '/me/naplo', label: 'Napló' },
   { id: 'goals', to: '/me/goals', label: 'Cél' },
   { id: 'weight', to: '/me/weight', label: 'Súly' },
   { id: 'sleep', to: '/me/sleep', label: 'Alvás' },

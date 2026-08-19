@@ -1235,4 +1235,32 @@ export const handlers = [
       totals: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
     }),
   ),
+
+  // Journal (mezo-b3pp.1) — honest-empty default list; create/update echo a
+  // JournalEntryResponse-shaped row, delete is a plain 204. Tests override with server.use().
+  http.get(`${API_BASE}/api/journal`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/journal`, async ({ request }) => {
+    const body = (await request.json()) as { text: string; occurredOn?: string; source: string }
+    return HttpResponse.json(
+      {
+        id: 'jn-new',
+        occurredOn: body.occurredOn ?? '2026-08-18',
+        text: body.text,
+        source: body.source,
+        createdAt: '2026-08-18T12:00:00Z',
+      },
+      { status: 201 },
+    )
+  }),
+  http.put(`${API_BASE}/api/journal/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as { text: string; occurredOn?: string }
+    return HttpResponse.json({
+      id: String(params.id),
+      occurredOn: body.occurredOn ?? '2026-08-18',
+      text: body.text,
+      source: 'quickinput',
+      createdAt: '2026-08-18T12:00:00Z',
+    })
+  }),
+  http.delete(`${API_BASE}/api/journal/:id`, () => new HttpResponse(null, { status: 204 })),
 ]

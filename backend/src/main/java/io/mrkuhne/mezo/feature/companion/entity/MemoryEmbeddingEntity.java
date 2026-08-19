@@ -44,6 +44,7 @@ public class MemoryEmbeddingEntity extends OwnedEntity {
     public static final String KIND_CHAT_TURN = "chat_turn";
     public static final String KIND_DAILY_SUMMARY = "daily_summary";
     public static final String KIND_WEEKLY_SUMMARY = "weekly_summary";
+    public static final String KIND_JOURNAL_ENTRY = "journal_entry";
 
     @Id
     @GeneratedValue
@@ -53,7 +54,7 @@ public class MemoryEmbeddingEntity extends OwnedEntity {
     /** Mirrors ck_memory_embedding_kind. */
     @NotNull
     @Size(max = 20)
-    @Pattern(regexp = "chat_turn|daily_summary|weekly_summary")
+    @Pattern(regexp = "chat_turn|daily_summary|weekly_summary|monthly_summary|journal_entry|reflection|gratitude|decision|activity_note|checkin_note")
     @Column(nullable = false, length = 20)
     private String kind;
 

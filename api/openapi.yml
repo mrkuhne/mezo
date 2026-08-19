@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.4.0
+  version: 0.5.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -6461,6 +6461,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NeedsSummaryResponse'
+  /api/journal:
+    get:
+      tags:
+        - Journal
+      operationId: listJournalEntries
+      summary: 'Journal entries in a date range, newest first (Journal)'
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Entries with occurred_on in [from, to], newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JournalEntryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Journal
+      operationId: createJournalEntry
+      summary: Create a free-prose journal entry (Journal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJournalEntryRequest'
+      responses:
+        '201':
+          description: Entry saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryResponse'
+        '400':
+          description: 'Validation error (empty text, bad source)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/journal/{id}':
+    put:
+      tags:
+        - Journal
+      operationId: updateJournalEntry
+      summary: Edit an entry's text and/or day (Journal)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateJournalEntryRequest'
+      responses:
+        '200':
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: JOURNAL_ENTRY_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Journal
+      operationId: deleteJournalEntry
+      summary: Soft-delete an entry (Journal)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: JOURNAL_ENTRY_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -15069,3 +15186,56 @@ components:
           format: date
         lastAllGreen:
           type: boolean
+    JournalEntryResponse:
+      type: object
+      required:
+        - id
+        - occurredOn
+        - text
+        - source
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredOn:
+          type: string
+          format: date
+        text:
+          type: string
+        source:
+          type: string
+          enum:
+            - quickinput
+            - ritual
+        createdAt:
+          type: string
+          format: date-time
+    CreateJournalEntryRequest:
+      type: object
+      required:
+        - text
+        - source
+      properties:
+        text:
+          type: string
+          minLength: 1
+        occurredOn:
+          type: string
+          format: date
+          description: The day the entry is ABOUT; server defaults to today when absent.
+        source:
+          type: string
+          pattern: ^(quickinput|ritual)$
+    UpdateJournalEntryRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+        occurredOn:
+          type: string
+          format: date
+          description: Absent = keep the current day.

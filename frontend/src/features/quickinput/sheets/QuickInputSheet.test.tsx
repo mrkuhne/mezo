@@ -61,12 +61,35 @@ test('the chat row closes the sheet and navigates to the companion chat', async 
   expect(screen.getByTestId('loc')).toHaveTextContent('/insights/chat')
 })
 
-test('the Napló tile swaps the menu for the activity log sheet, without closing', async () => {
+test('the Napló tile swaps the menu for a two-option picker, without closing', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
   await userEvent.click(screen.getByText('Napló'))
+  expect(await screen.findByText('Mit naplózol?')).toBeInTheDocument()
+  expect(screen.getByText('Aktivitás')).toBeInTheDocument()
+  expect(screen.getByText('Napló')).toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('picking Aktivitás from the Napló picker swaps to the activity log sheet, without closing', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByText('Napló'))
+  await screen.findByText('Mit naplózol?')
+  await userEvent.click(screen.getByText('Aktivitás'))
   expect(await screen.findByText('Tevékenységnapló')).toBeInTheDocument()
-  expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
+  expect(screen.queryByText('Mit naplózol?')).not.toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('picking Napló from the Napló picker swaps to the JournalSheet, without closing', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByText('Napló'))
+  await screen.findByText('Mit naplózol?')
+  await userEvent.click(screen.getByText('Napló'))
+  expect(await screen.findByText('Mi jár a fejedben?')).toBeInTheDocument()
+  expect(screen.queryByText('Mit naplózol?')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
 

@@ -2788,6 +2788,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Journal entries in a date range, newest first (Journal) */
+        get: operations["listJournalEntries"];
+        put?: never;
+        /** Create a free-prose journal entry (Journal) */
+        post: operations["createJournalEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit an entry's text and/or day (Journal) */
+        put: operations["updateJournalEntry"];
+        post?: never;
+        /** Soft-delete an entry (Journal) */
+        delete: operations["deleteJournalEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6197,6 +6233,34 @@ export interface components {
             /** Format: date */
             lastCloseDate?: string;
             lastAllGreen?: boolean;
+        };
+        JournalEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            occurredOn: string;
+            text: string;
+            /** @enum {string} */
+            source: "quickinput" | "ritual";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateJournalEntryRequest: {
+            text: string;
+            /**
+             * Format: date
+             * @description The day the entry is ABOUT; server defaults to today when absent.
+             */
+            occurredOn?: string;
+            source: string;
+        };
+        UpdateJournalEntryRequest: {
+            text: string;
+            /**
+             * Format: date
+             * @description Absent = keep the current day.
+             */
+            occurredOn?: string;
         };
     };
     responses: never;
@@ -13988,6 +14052,144 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NeedsSummaryResponse"];
+                };
+            };
+        };
+    };
+    listJournalEntries: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries with occurred_on in [from, to], newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJournalEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Entry saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResponse"];
+                };
+            };
+            /** @description Validation error (empty text, bad source) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJournalEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated entry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description JOURNAL_ENTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description JOURNAL_ENTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };
