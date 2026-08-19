@@ -118,3 +118,38 @@ test('"Korábbi hónapok" widens the window (a new range is requested from useJo
   const [firstFrom] = callsAfter[0]
   expect(lastFrom < firstFrom).toBe(true)
 })
+
+test('an empty current window still offers "Korábbi hónapok" (older notes may sit outside it), and it requests an earlier `from`', async () => {
+  // The current 3-month window has no notes — but that doesn't mean the user has none, only that
+  // their newest entry predates the window. Without a widen affordance here the ghost state would
+  // strand them (mezo-b3pp.1 review finding). GhostState's own ctaLabel/onCta carries it, wired to
+  // the same widen handler the in-list footer button uses.
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  const callsBefore = hooks.useJournalNotes.mock.calls.length
+  await userEvent.click(screen.getByRole('button', { name: 'Korábbi hónapok' }))
+  const callsAfter = hooks.useJournalNotes.mock.calls
+  expect(callsAfter.length).toBeGreaterThan(callsBefore)
+  const [firstFrom] = callsAfter[0]
+  const [lastFrom] = callsAfter[callsAfter.length - 1]
+  expect(lastFrom < firstFrom).toBe(true)
+})
+
+test('a failed fetch shows the retry state, not the create-invite empty state', async () => {
+  const refetch = vi.fn()
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: true, refetch })
+  renderPage()
+  expect(screen.getByText('Nem sikerült betölteni a naplót.')).toBeInTheDocument()
+  expect(screen.queryByText('Még nincs bejegyzés — kezdd a + gombbal.')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
+  expect(refetch).toHaveBeenCalledTimes(1)
+})
+
+test('an error with stale-but-present notes falls through to the normal list (not the retry state)', () => {
+  hooks.useJournalNotes.mockReturnValue({
+    data: [note({ text: 'Régi, de meglévő bejegyzés' })], isPending: false, isError: true, refetch: vi.fn(),
+  })
+  renderPage()
+  expect(screen.getByText('Régi, de meglévő bejegyzés')).toBeInTheDocument()
+  expect(screen.queryByText('Nem sikerült betölteni a naplót.')).not.toBeInTheDocument()
+})

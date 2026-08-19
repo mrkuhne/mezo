@@ -37,7 +37,8 @@ export function JournalPage() {
 
   const today = localDateString()
   const from = windowFrom(monthsBack, today)
-  const { data: notes, isPending } = useJournalNotes(from, today)
+  const { data: notes, isPending, isError, refetch } = useJournalNotes(from, today)
+  const widen = () => setMonthsBack((m) => m + 3)
 
   let lastMonth = ''
 
@@ -69,8 +70,22 @@ export function JournalPage() {
               </SkeletonCard>
             ))}
           </div>
+        ) : isError && notes.length === 0 ? (
+          // A genuinely failed fetch and an honest "not resolved yet" both read as an empty
+          // `notes` array — without `isError` this rendered the same inviting "+ kezdd" empty
+          // state a real empty window gets, hiding the failure (RoutineEditorPage.tsx idiom).
+          // Stale-but-present notes (a refetch failing after a successful first load) fall
+          // through to the normal list below instead.
+          <GhostState message="Nem sikerült betölteni a naplót." ctaLabel="Újra" onCta={refetch} />
         ) : notes.length === 0 ? (
-          <GhostState message="Még nincs bejegyzés — kezdd a + gombbal." />
+          // The empty window and "no entries at all" look identical here — the widen CTA covers
+          // both: a user whose newest entry is older than the current window can reach it without
+          // the ghost state stranding them (the header's + button still covers "write a new one").
+          <GhostState
+            message="Még nincs bejegyzés — kezdd a + gombbal."
+            ctaLabel="Korábbi hónapok"
+            onCta={widen}
+          />
         ) : (
           <div className="col gap-md">
             {notes.map((note) => {
@@ -101,7 +116,7 @@ export function JournalPage() {
             <button
               type="button"
               className="cta-ghost mt-md"
-              onClick={() => setMonthsBack((m) => m + 3)}
+              onClick={widen}
               style={{ textAlign: 'center' }}
             >
               Korábbi hónapok
