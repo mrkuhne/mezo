@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-18
+updated: 2026-08-19
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -12,7 +12,7 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, _platform-api-backend, _platform-auth-security]
+related: [insights, _platform-api-backend, _platform-auth-security, journal]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -578,6 +578,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
+| Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
@@ -651,6 +652,28 @@ plan
   invented concrete number still is, hedged or not. `AdvisorViolation.check`'s `"grounding"`
   literal became `"unmarked"`; `AdvisorRetry.block` gained a closing tone-preservation sentence so
   a corrective retry no longer flattens the whole answer a second time.
+
+**Journal embedding seam (`mezo-b3pp.1`, Phase 5 W1.1, post-epic) — a THIRD narrative unit joins
+`memory_embedding`, and the first one companion doesn't generate itself.** The new `feature/journal`
+domain ([`journal.md`](journal.md)) owns free-prose journal entries; on every commit
+(create/update/delete) it publishes `JournalEntrySavedEvent`/`JournalEntryDeletedEvent` — plain
+Spring events, no import of `feature/companion` — which the new **`JournalEmbeddingListener`**
+(`embedding/JournalEmbeddingListener.java`, the `TurnEmbeddingListener` idiom: `@Async
+@TransactionalEventListener(AFTER_COMMIT)`, gated on BOTH `COMPANION_SWITCH` and the journal
+feature's own switch, failures logged+swallowed) consumes through two new
+`MemoryEmbeddingWriter` methods, **`writeJournal`/`deleteJournalEmbedding`**
+(`embedding/MemoryEmbeddingWriter.java:114-141`) — still the single write path, just a new
+`kind=journal_entry`. **The one genuinely new wrinkle: journal edits re-embed IN PLACE, not
+delete+insert.** `uq_memory_embedding_kind_ref_id` spans soft-deleted rows (no partial-index
+clause), so a soft-delete-then-reinsert on the same `(kind, ref_id)` would violate the unique
+constraint; `writeJournal` instead looks up the live row via the new
+`MemoryEmbeddingRepository.findByKindAndRefId` and updates its `content`/`embedding`/`occurred_on`
+directly when present, falling back to the existing insert-only `write` helper on a first write.
+This slice also carries the `memory_embedding` **kind-CHECK widening to 10 values** (§4 above) in
+the same migration, landing schema headroom for the rest of the Phase 5 W1 wave
+(`reflection`/`gratitude`/`decision`/`monthly_summary`/`activity_note`/`checkin_note` — only
+`journal_entry` is written today). See [`journal.md`](journal.md) §3/§5/§9 for the full seam,
+including the spec-deviation writeup for the update-in-place decision.
 
 ## 2. User-facing behavior
 
@@ -1047,13 +1070,20 @@ swapped in-slice across compose/k3s/Testcontainers):
 
 - **`memory_embedding`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `is_deleted`,
   `created_at`, `kind varchar(20)` (`ck_memory_embedding_kind IN
-  (chat_turn,daily_summary,weekly_summary)`), `ref_id uuid`
+  (chat_turn,daily_summary,weekly_summary)` at V2.1 — **widened to 10 kinds at Phase 5 W1.1**
+  (`mezo-b3pp.1`, migration `202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`): `+
+  monthly_summary, journal_entry, reflection, gratitude, decision, activity_note, checkin_note`.
+  Only `journal_entry` is populated as of W1.1 (`KIND_JOURNAL_ENTRY`, written by the new
+  `JournalEmbeddingListener` below); the other five new kinds are schema headroom for the rest of
+  the Phase 5 W1 narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
+  design spec's explicit instruction, rather than one `alter table` per later slice), `ref_id uuid`
   (`uq_memory_embedding_kind_ref_id (kind, ref_id)` — one embedding per source unit, the V2.2
-  pipeline's idempotence anchor), `content text` (the embedded narrative, kept verbatim so recall
-  can quote it), `embedding vector(768) not null`, `occurred_on date` (when the episode happened —
-  the recency-ranking key); indexes `idx_memory_embedding_created_by_kind_occurred_on
-  (created_by, kind, occurred_on desc)` + `idx_memory_embedding_vector` (**HNSW,
-  `vector_cosine_ops`** — pairs with the `<=>` operator).
+  pipeline's idempotence anchor **and the spans-soft-deleted-rows constraint that makes journal's
+  edit path an update-in-place instead of delete+insert, see the bullet below**), `content text`
+  (the embedded narrative, kept verbatim so recall can quote it), `embedding vector(768) not null`,
+  `occurred_on date` (when the episode happened — the recency-ranking key); indexes
+  `idx_memory_embedding_created_by_kind_occurred_on (created_by, kind, occurred_on desc)` +
+  `idx_memory_embedding_vector` (**HNSW, `vector_cosine_ops`** — pairs with the `<=>` operator).
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -2322,12 +2352,18 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
 
+**Backend — journal embedding seam (`mezo-b3pp.1`, Phase 5 W1.1, post-epic — full detail in [`journal.md`](journal.md))**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s two events, gated on `COMPANION_SWITCH` + `JournalService`'s own switch (`FeaturesConfiguration.JOURNAL_SWITCH`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:114-141` — `writeJournal` (update-in-place re-embed on an edit — `uq_memory_embedding_kind_ref_id` spans soft-deleted rows, so a delete+insert would collide) / `deleteJournalEmbedding`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY` + the 10-kind `@Pattern` (§4 above).
+- Tests: journal cases folded into `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/JournalEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip) — full test map in [`journal.md`](journal.md) §8.
+
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the journal's `embedded` flag lookup).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.1`** added `Journal` (`:203-207` — `decisionReviewDays`, unused by this slice, landed early for W1.4's decision journal).
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `COMPANION_SWITCH` + extraction/advisors sub-switches.
 - `backend/src/main/resources/application.yml` — `mezo.feature.companion.enabled` + `mezo.companion.llm.*`/`chat.*` + `spring.ai.google.genai.api-key`.
 
@@ -2337,6 +2373,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031812_mezo-fnnq.7_learned_fact_category.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031900_mezo-fnnq.8_ai_message_degraded.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607281200_mezo-2zyu_create_llm_log_history.sql` (in `1.0.0_master.yml`) — the append-only audit table (no `is_deleted`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql` (in `1.0.0_master.yml`) — the `memory_embedding` kind-CHECK widening to 10 (§4 above); the sibling `journal_entry`-table migration lives with `feature/journal`, see [`journal.md`](journal.md) §10.
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
@@ -2378,6 +2415,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - V0.5 plan: [`docs/superpowers/plans/2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md)
 - ADR: [`docs/decisions/0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md)
 - Audit-log design spec: [`docs/superpowers/specs/2026-07-28-llm-call-audit-log-design.md`](../superpowers/specs/2026-07-28-llm-call-audit-log-design.md) + ADR: [`docs/decisions/0014-llm-call-audit-log.md`](../decisions/0014-llm-call-audit-log.md)
+- Phase 5 "deep memory" design spec (`mezo-b3pp`, the journal embedding seam's driver): [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.3/§5.1 · full feature doc: [`journal.md`](journal.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`, `companion_tool_conventions` — mezo-xixu's `@Tool` description house rule)
 

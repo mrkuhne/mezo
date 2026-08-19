@@ -47,6 +47,7 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 | [`companion.md`](companion.md) | Companion (AI chat brain, Phase-3) | mixed — backend ✅ V0.2 spine; FE 🔶 mock | The Phase-3 AI companion: persisted conversations + a sync Hungarian chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini). No FE surface yet — the ChatPage stays the mock `insights` chat until V0.4. |
 | [`growth.md`](growth.md) | Growth (daily quests, no own route — Today card) | ✅ E1 done | Gamified growth layer per ADR 0010: deterministic catalog-driven daily quests (BODY+FUELBIO), derived completion → XP via the progression award tail, LIFE band seed (`recovery`), reroll, cron backstops. E2 (LIFE band + activity log + GrowthCard) planned. |
 | [`ritual.md`](ritual.md) | Ritual (`/ritual`, sleep-anchored Napzárás closing flow) | ✅ BE+FE done; R4 visual goldens + reduced-motion audit shipped | Full-screen 5-act evening closing ritual (Megérkezés → A napod íve → Nyitott hurkok → Termés → Elengedés) entered via the Today evening island's Napzárás CTA (`IslandEvening`) or the `evening_ritual` habit row; closes open loops (check-in/reflection), stages the day's XP/coin/skill Harvest, hands off into sleep-prep. No new progression source — rides the HABIT tail. |
+| [`journal.md`](journal.md) | Journal (`/me/naplo`, "Napló"; also reachable from QuickInput) | ✅ done | Free-prose journal entries (`journal_entry`) feeding the companion's `memory_embedding(kind=journal_entry)` narrative memory via a post-commit event → `JournalEmbeddingListener` → the single `MemoryEmbeddingWriter` write path. W1.1 of the Phase 5 "deep memory" epic (`mezo-b3pp`) — the schema/pipeline shape W1.2–W1.5 (reflection/gratitude/decision/catch-up) reuse. |
 
 ### Platform docs (cross-cutting, `_`-prefixed — no route/tab of their own)
 
@@ -92,6 +93,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Sleep log ("Alvás") | `/me/sleep` | [`me.md`](me.md) §2–§4 (sleep ✅ backed) |
 | People / "Mizu Velünk" 1:1 ritual ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock-only) |
 | Push-notification opt-in ("Értesítés") — install-gate, subscribe toggle, test push | `/me/ertesitesek` | [`me.md`](me.md) §2, §5.8 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
+| Free-prose journal ("Napló") — write/edit/delete, month-grouped read view | `/me/naplo` | [`journal.md`](journal.md) §2 · Me surface: [`me.md`](me.md) §2 |
 | The `useX()` hooks / mock-vs-real / ghost-guard rule | — | [`_platform-data-layer.md`](_platform-data-layer.md) §2, §4 |
 | OpenAPI contract / `api/feature/<x>.yml` / codegen | — | [`_platform-api-backend.md`](_platform-api-backend.md) §3–§4 |
 | `OwnedEntity` / `CurrentUserId` / soft delete / typed jsonb | — | [`_platform-api-backend.md`](_platform-api-backend.md) §4b · [`_platform-auth-security.md`](_platform-auth-security.md) §4 |
@@ -124,6 +126,7 @@ Derived from each doc's **§5 Integrations**. The named **contract** is the type
 | **Cross-system "pattern engine"** 🟣 | Insights ← Train/Sleep/Fuel/Goals | shared stable pattern IDs (`P2`/`P3`) referenced by hand in mock copy across domains — build as a **shared service**, not Insights-local | [`insights.md`](insights.md) §5.4 |
 | **`TrendInsight` (lightweight insight)** | embedded in Goals/Sleep | `TrendInsight {type, text}` — a parallel, lighter insight type vs the rich `Pattern`; Phase-3 must reconcile | [`insights.md`](insights.md) §5.3 |
 | **Today ↔ Me** | shared object | `UserMeta` — `useProfile` re-exports the same `user` defined in Today's mock; biometrics backend is shared (check-in is a weight/sleep sibling) | [`me.md`](me.md) §5.1 |
+| **Journal → Companion** (wired, one-way OUT) | Journal → Companion | `JournalEntrySavedEvent`/`JournalEntryDeletedEvent` — a post-commit AFTER_COMMIT listener writes/removes the entry's `memory_embedding(kind=journal_entry)` vector through the single `MemoryEmbeddingWriter` path; `feature/journal` has no import of `feature/companion` | [`journal.md`](journal.md) §5 · [`companion.md`](companion.md) §4 |
 
 ### Domain ↔ platform (every domain rides these)
 
