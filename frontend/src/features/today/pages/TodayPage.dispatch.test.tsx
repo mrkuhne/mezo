@@ -126,6 +126,14 @@ const tab = (name: RegExp) =>
 
 const rowOf = (title: string) => screen.getByText(title).closest('.td-row') as HTMLElement
 
+async function openQuestSheet() {
+  await userEvent.click(screen.getByRole('button', { name: /Napi küldetések/ }))
+  return screen.findByRole('dialog', { name: 'Napi küldetések' })
+}
+
+const questRowOf = (scope: HTMLElement, title: string) =>
+  within(scope).getByText(title).closest('.td-quest-row') as HTMLElement
+
 let check: ReturnType<typeof vi.fn>
 let consumeHabitLevelUps: ReturnType<typeof vi.fn>
 let consumeQuestLevelUps: ReturnType<typeof vi.fn>
@@ -273,7 +281,7 @@ describe('TodayPage — a kézi pipa reward toastot dob', () => {
   })
 })
 
-describe('TodayPage — no quest row is a dead control either', () => {
+describe('TodayPage — no quest-sheet action is a dead control either', () => {
   const quest = (over: Partial<DailyQuest>): DailyQuest => ({
     id: 'q', questDate: '2026-05-21', slot: 'GROWTH', skillKey: 'mindset',
     title: 'Q', why: 'w', targetLabel: 't', metric: 'water_target', xp: 20,
@@ -282,58 +290,97 @@ describe('TodayPage — no quest row is a dead control either', () => {
   const slot = (time: string, state: CheckinSlot['state']): CheckinSlot =>
     ({ time, state, values: null, note: null })
 
-  test('an unmapped metric renders NO button — the production growth_intention case', () => {
+  test('an empty quest day is honest and does not advertise an unusable reroll', () => {
+    setup({ quests: [] })
+    renderToday()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Napi küldetések, nincs mai küldetés' }))
+    const dialog = screen.getByRole('dialog', { name: 'Napi küldetések' })
+    expect(within(dialog).getByText('Ma nincs kisorsolt küldetés.')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('progressbar')).toBeNull()
+    expect(within(dialog).queryByText(/újrasorsolás/)).toBeNull()
+  })
+
+  test('an unmapped metric renders no smart action — the production growth_intention case', async () => {
     setup({ quests: [quest({ id: 'gi', title: 'Fogalmazd meg a mai szándékod', metric: 'intention_focus_set' })] })
     renderToday()
-    const row = rowOf('Fogalmazd meg a mai szándékod')
-    expect(within(row).queryByRole('button')).toBeNull()
+    const dialog = await openQuestSheet()
+    const row = questRowOf(dialog, 'Fogalmazd meg a mai szándékod')
+    expect(row.querySelector('button.is-primary')).toBeNull()
+    expect(within(row).getByRole('button', { name: 'Csere' })).toBeInTheDocument()
   })
 
   // The pill says what it will DO (mezo-mvb4.1): `water_target` commits an immediate
   // 250 ml write with no sheet, so its pill must read `+250 ml`, never `Naplózz`.
-  test('the water quest\'s pill reads +250 ml and performs the log in place', () => {
+  test('the water quest\'s action reads +250 ml and performs the log in place', async () => {
     setup({ quests: [quest({ id: 'w', title: 'Igyál vizet', metric: 'water_target' })] })
     renderToday()
-    fireEvent.click(within(rowOf('Igyál vizet')).getByRole('button', { name: '+250 ml' }))
+    const dialog = await openQuestSheet()
+    fireEvent.click(within(questRowOf(dialog, 'Igyál vizet')).getByRole('button', { name: '+250 ml' }))
     expect(screen.getByTestId('loc').textContent).toBe('/today') // it did not navigate
-    expect(screen.queryByRole('dialog')).toBeNull()              // and opened no sheet
+    expect(dialog).toBeInTheDocument()                           // and kept the quest sheet open
+    expect(logWater).toHaveBeenCalledWith(250)
   })
 
-  test('a nav quest keeps its own destination label', () => {
+  test('a nav quest keeps its own destination label', async () => {
     setup({ quests: [quest({ id: 'wl', title: 'Mérd meg magad', metric: 'weight_logged' })] })
     renderToday()
-    fireEvent.click(within(rowOf('Mérd meg magad')).getByRole('button', { name: 'Mérés' }))
+    const dialog = await openQuestSheet()
+    fireEvent.click(within(questRowOf(dialog, 'Mérd meg magad')).getByRole('button', { name: 'Mérés' }))
     expect(screen.getByTestId('loc').textContent).toBe('/me/weight')
   })
 
-  test('a check-in quest renders NO button once every slot is already recorded', () => {
+  test('a completed standalone quest still contributes to the evening XP total', () => {
+    setup({ quests: [] })
+    const baselineView = renderToday('/today?dp=este')
+    const baseline = Number(
+      screen.getByText('Nap mérlege').closest('.td-stat')?.querySelector('.td-stat-v')?.textContent?.replace(/\D/g, ''),
+    )
+    baselineView.unmount()
+
+    setup({
+      quests: [quest({ id: 'done-q', title: 'Kész küldetés', status: 'completed', xp: 20 })],
+    })
+    renderToday('/today?dp=este')
+
+    const balance = screen.getByText('Nap mérlege').closest('.td-stat') as HTMLElement
+    expect(balance).toHaveTextContent(`+${baseline + 20}XP`)
+  })
+
+  test('a check-in quest renders no smart action once every slot is already recorded', async () => {
     setup({
       quests: [quest({ id: 'c', title: 'Töltsd ki a check-int', metric: 'checkin_full' })],
       checkins: [slot('06:30', 'done'), slot('10:00', 'done'), slot('14:00', 'done'), slot('20:00', 'done')],
     })
     renderToday()
-    expect(within(rowOf('Töltsd ki a check-int')).queryByRole('button')).toBeNull()
+    const dialog = await openQuestSheet()
+    expect(within(questRowOf(dialog, 'Töltsd ki a check-int'))
+      .queryByRole('button', { name: 'Check-in' })).toBeNull()
   })
 
-  test('a check-in quest keeps its button while a slot is still open', () => {
+  test('a check-in quest keeps its button while a slot is still open', async () => {
     setup({
       quests: [quest({ id: 'c', title: 'Töltsd ki a check-int', metric: 'checkin_full' })],
       checkins: [slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'done'), slot('20:00', 'pending')],
     })
     renderToday()
-    fireEvent.click(within(rowOf('Töltsd ki a check-int')).getByRole('button', { name: 'Check-in' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    const dialog = await openQuestSheet()
+    fireEvent.click(within(questRowOf(dialog, 'Töltsd ki a check-int')).getByRole('button', { name: 'Check-in' }))
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.queryByRole('dialog', { name: 'Napi küldetések' })).toBeNull()
   })
 
   // C1's other half: with a skipped slot still fillable, the quest stays winnable, so its CTA
   // must survive AND open a slot that can actually be filled — the first unrecorded one.
-  test('a check-in quest keeps its button when only SKIPPED slots are left, and opens one', () => {
+  test('a check-in quest keeps its button when only SKIPPED slots are left, and opens one', async () => {
     setup({
       quests: [quest({ id: 'c', title: 'Töltsd ki a check-int', metric: 'checkin_full' })],
       checkins: [slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'skipped'), slot('20:00', 'skipped')],
     })
     renderToday()
-    fireEvent.click(within(rowOf('Töltsd ki a check-int')).getByRole('button', { name: 'Check-in' }))
+    const dialog = await openQuestSheet()
+    fireEvent.click(within(questRowOf(dialog, 'Töltsd ki a check-int')).getByRole('button', { name: 'Check-in' }))
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
     expect(screen.getByRole('dialog').textContent).toContain('10:00')
   })
 })
@@ -382,7 +429,7 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
     status: 'offered', completionMode: 'DERIVED',
   }
 
-  test('an in-flight habit write withdraws habit pills but leaves quest pills live', () => {
+  test('an in-flight habit write withdraws habit pills but leaves quest actions live', async () => {
     setup({ habits: ALL_KINDS, quests: [waterQuest], pending: true })
     const { container } = renderToday('/today?dp=este')
     // no clickable control survives on a HABIT row — the DERIVED rows' pills stay as inert
@@ -394,8 +441,10 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
     expect(within(rowOf('MANUAL lánc')).queryByRole('button')).toBeNull()
     expect(rowOf('MANUAL lánc').querySelector('.td-tick')).toBeNull()
     expect(container.querySelector('.td-act.is-inert')).toBeTruthy()
-    // …while a quest row, which the habit write cannot double-fire, stays live
-    expect(within(rowOf('Igyál vizet')).getByRole('button', { name: '+250 ml' })).toBeInTheDocument()
+    // …while a quest action, which the habit write cannot double-fire, stays live
+    const dialog = await openQuestSheet()
+    expect(within(questRowOf(dialog, 'Igyál vizet'))
+      .getByRole('button', { name: '+250 ml' })).toBeInTheDocument()
   })
 
   test('with no write in flight the controls are live', () => {

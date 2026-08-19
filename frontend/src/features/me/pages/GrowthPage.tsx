@@ -82,12 +82,9 @@ export function GrowthPage() {
 
           {tab === 'skills' && (
             <>
-              {/* "Ma" block (Task 7 relocation): the quests + activity log cards moved here
-                  from Today (mezo-gj2y). Today still links back — since the daypart-faces
-                  re-composition (mezo-j7u4) the route in is `TodoCard`'s header link
-                  (`{done}/{total} · +{xp} XP ›`, TodoCard.tsx:55), which inherited the job
-                  from the retired compact TodayQuestsCard. Today = act, Growth = manage:
-                  reroll (`Csere`) + the why-lines are deliberately only here. */}
+              {/* "Ma" block: Growth keeps the full quest + activity cards. Today reads the
+                  same query through its standing DailyQuestsChip/Sheet; both surfaces share
+                  DailyQuestList, while Growth additionally owns the activity-log overview. */}
               <div>
                 <Eyebrow>Ma</Eyebrow>
                 <DailyQuestsCard />

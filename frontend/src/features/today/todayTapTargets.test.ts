@@ -98,4 +98,9 @@ describe('Today tap targets are >= 44px (mezo-e26w code review fix)', () => {
     expect(pxDeclaration(body, 'min-width')).toBeGreaterThanOrEqual(44)
     expect(pxDeclaration(body, 'min-height')).toBeGreaterThanOrEqual(44)
   })
+
+  test('daily-quest smart actions and rerolls are 44px tap targets', () => {
+    const body = ruleBody(rawCss, '.td-quest-actions button')
+    expect(pxDeclaration(body, 'min-height')).toBeGreaterThanOrEqual(44)
+  })
 })

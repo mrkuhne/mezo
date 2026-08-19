@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív" → Mezo Edition DS)
 type: feature-platform
 status: in-progress
-updated: 2026-08-18
+updated: 2026-08-19
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -460,6 +460,8 @@ Consumption/behavior detail lives in [today.md](today.md) — not duplicated her
 ### Today iOS list language — the `.td-*` family (`mezo-e26w`, 2026-08-11 — [ADR 0026](../decisions/0026-today-ios-list-language.md))
 
 Today's **fourth** render-layer swap replaces the daypart-tabs page's mixed vocabulary above (`.daytabs` wrapping `.segtabs`, `.coach-bubble.cb-band`, `.dv-hero*`/`.dv-act`/`.dv-done*`, plus `.dayview`'s compound-selector reuse of `.isl-facts`/`.isl-warnchip`/`.isl-cta`/`.isl-grouph`) with **one self-contained family**: `.td-*`, a single iOS "inset grouped list" idiom for the whole page. The section header comment in `prototype.css` (`Today · iOS list language (mezo-e26w)`) marks it as the file's own last top-level block. It reads DS tokens directly — most visibly `--sp-4` (16px) for every horizontal rail (segmented switcher, chip, hero, stats box, CTA, section header, list box, done-fold) rather than a Today-local custom property; **an earlier pass *did* introduce a locally-scoped `--td-gut` alias and it broke in production** (declared only under a 3-selector scope that included a typo, `.todaychip`, which never matched anything real — every rule outside that scope silently resolved the var to nothing and `width: calc(...)` fell back to `auto`, rendering the chip ~1060px wide on a real 375px phone; jsdom's no-layout unit tests couldn't see it). The fix deleted `--td-gut` outright; `frontend/src/features/today/todayCssTokens.test.ts` now asserts every custom property the `.td-*` block references is declared in a `:root` block, so no future Today-scoped alias can repeat the trap. **No new color or token was introduced** — same DS-tokens-only discipline as every other family in this file.
+
+The standing daily-quest entry extends that same family without introducing a second modal language: `.td-quest-chip` is the standard `.td-chip` with gold accent treatment, and `.td-quest-sheet` is the house `Sheet` containing `.td-quest-summary`, `.td-quest-progress`, and the reusable `.td-quest-list`/`.td-quest-row` rows. Offered/completed/expired states use the existing accent/success/text ramps, action buttons use `--surface-recess` or the dark primary treatment, and every token referenced inside the block remains covered by `todayCssTokens.test.ts`. The renderer (`DailyQuestList`) is shared by Today's sheet and Growth's `DailyQuestsCard`; only the surrounding entry pattern differs.
 
 - **The switcher** — `.td-segwrap`/`.td-seg`/`.td-now` (`components/DaypartTabs.tsx`) **replace** `.daytabs`'s `.segtabs` wrapping from the prior subsection: one `--surface-recess` track holding three buttons, the pressed one lifting onto `--surface-card` with a `.5px` contour (`box-shadow`) instead of the segtabs' bordered-pill look — the iOS segmented-control idiom, not the Sport/Futás pill switcher. `.td-now` is the same gold current-daypart dot as `.daytab-now` before it, just renamed with its new carrier.
 - **The chip** — `.td-chip`/`.td-av`(`.is-unread`)/`.td-chip-t`/`.td-chip-n`/`.td-chev` (`components/MezoChip.tsx`) **replace** `.coach-bubble.cb-band` — the companion's voice shrinks from a full-bleed always-visible band to a single 44px card-surface row with a coral-gradient avatar, an ellipsis-truncated preview line, a count badge, and a chevron.
