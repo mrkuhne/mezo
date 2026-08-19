@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-08-18
+updated: 2026-08-19
 tags: [today, habit, growth, intention, proactive, backend, frontend, data-layer, progression, needs]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
