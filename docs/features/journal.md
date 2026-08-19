@@ -176,8 +176,10 @@ ref_id)` uniqueness and the single `MemoryEmbeddingWriter` write path are unchan
 | `PUT /api/journal/{id}` (`{text, occurredOn?}`) | `updateJournalEntry` | `JournalEntryResponse` (200) | 400; 404 `JOURNAL_ENTRY_NOT_FOUND` |
 | `DELETE /api/journal/{id}` | `deleteJournalEntry` | 204 (soft delete) | 404 `JOURNAL_ENTRY_NOT_FOUND` |
 
-`source` is a **`pattern`**, not an `enum`, on the two request DTOs (`api_contract_conventions.md`
-rule — an invalid value must 400, not 500); the response DTO's `source` is a real enum. Errors go
+`source` is a **`pattern`**, not an `enum`, on `CreateJournalEntryRequest` (`api_contract_conventions.md`
+rule — an invalid value must 400 via bean validation, not 500 via a failed Jackson enum deserialize);
+`UpdateJournalEntryRequest` carries no `source` field at all (`{text, occurredOn?}` only — an edit
+never changes where an entry came from), and the response DTO's `source` is a real enum. Errors go
 through `SystemRuntimeErrorException` + `SystemMessage`
 (`JOURNAL_ENTRY_NOT_FOUND=A naplóbejegyzés nem található.` in `messages.properties:83`) per
 [`error_handling.md`](../references/error_handling.md). `JournalService.findOwned` is the single
@@ -198,7 +200,7 @@ entries spanning the current and previous month so month-grouping is visible in 
   `techcore/configuration/FeaturesConfiguration.java:179`) gates `JournalService` + `JournalController`
   **and** `JournalEmbeddingListener` (jointly with `COMPANION_SWITCH`) — off ⇒ `/api/journal` 404s,
   no journal beans exist, and the listener bean is absent so no journal embed call can ever happen.
-- **`CompanionProperties.Journal`** (`feature/companion/config/CompanionProperties.java:204-207`) —
+- **`CompanionProperties.Journal`** (`feature/companion/config/CompanionProperties.java:203-207`) —
   `@Positive int decisionReviewDays` (default 30, `mezo.companion.journal.decision-review-days` in
   `application.yml:817-818`). **Not consumed by anything in W1.1** — the record exists so W1.4's
   decision journal (`decision_entry.review_due` default offset, spec §5.4) has its config knob
@@ -354,7 +356,7 @@ await removeNote(note.id)                            // soft delete
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/mapper/JournalMapper.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/controller/JournalController.java`
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java:177-179` — `JOURNAL_SWITCH`.
-- `backend/src/main/resources/application.yml:258-262` — `mezo.feature.journal.enabled`; `:815-818` — `mezo.companion.journal.decision-review-days`.
+- `backend/src/main/resources/application.yml:259-262` — `mezo.feature.journal.enabled`; `:816-818` — `mezo.companion.journal.decision-review-days`.
 - `backend/src/main/resources/messages.properties:83` — `JOURNAL_ENTRY_NOT_FOUND`.
 
 **Backend — embed pipeline (companion-owned)**
