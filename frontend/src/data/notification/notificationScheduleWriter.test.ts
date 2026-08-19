@@ -188,13 +188,27 @@ const GYM_TODAY: GymSchedule = {
 
 function stubHooks(opts: {
   occurrences?: ProtocolOccurrence[]
+  stash?: SupplementStashItem[]
+  stackPending?: boolean
+  stackError?: boolean
+  protocolPending?: boolean
+  protocolError?: boolean
   sleepGoalPending?: boolean
   wakeTime?: string
   bedTime?: string
   gymSchedule?: GymSchedule | null
 } = {}) {
-  hooks.useStack.mockReturnValue({ stash: STASH })
-  hooks.useProtocol.mockReturnValue({ protocol: {}, occurrences: opts.occurrences ?? OCCURRENCES })
+  hooks.useStack.mockReturnValue({
+    stash: opts.stash ?? STASH,
+    pending: opts.stackPending ?? false,
+    error: opts.stackError ?? false,
+  })
+  hooks.useProtocol.mockReturnValue({
+    protocol: {},
+    occurrences: opts.occurrences ?? OCCURRENCES,
+    pending: opts.protocolPending ?? false,
+    error: opts.protocolError ?? false,
+  })
   hooks.useIntakes.mockReturnValue([])
   hooks.useFuelSettings.mockReturnValue({ settings: { mealsPerDay: 4, caffeineCutoff: '14:00' } })
   hooks.useSleepGoal.mockReturnValue({
@@ -234,6 +248,67 @@ describe('useScheduleSnapshotWriter', () => {
     renderHook(() => useScheduleSnapshotWriter())
     await new Promise((r) => setTimeout(r, 0))
     expect(putSchedule).not.toHaveBeenCalled()
+  })
+
+  // The '(törölt Kamra-item)' poison (mezo-b6q0): the writer used to gate on the sleep-goal read
+  // ONLY, so an app open where the (heaviest) pantry query was still unresolved snapshotted every
+  // occurrence with projectStackDay's deleted-item fallback name — and AnchorResolver pushes the
+  // stored body verbatim until a later open happens to win the race. These four tests pin the
+  // gate on every fuel-side read state that yields a not-yet-real stash/occurrence list.
+  it('real mode: does not write while the pantry read is still pending — an unresolved (empty) stash must never be snapshotted', async () => {
+    if (isMockMode()) return
+    stubHooks({ stash: [], stackPending: true })
+    putSchedule.mockResolvedValue(undefined)
+    renderHook(() => useScheduleSnapshotWriter())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(putSchedule).not.toHaveBeenCalled()
+  })
+
+  it('real mode: does not write while the protocol read is still pending — a checkin-only snapshot would strand stale fuel_slot rows', async () => {
+    if (isMockMode()) return
+    stubHooks({ occurrences: [], protocolPending: true })
+    putSchedule.mockResolvedValue(undefined)
+    renderHook(() => useScheduleSnapshotWriter())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(putSchedule).not.toHaveBeenCalled()
+  })
+
+  it('real mode: does not write after a terminally failed pantry read — realEmpty is not real data', async () => {
+    if (isMockMode()) return
+    stubHooks({ stash: [], stackError: true })
+    putSchedule.mockResolvedValue(undefined)
+    renderHook(() => useScheduleSnapshotWriter())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(putSchedule).not.toHaveBeenCalled()
+  })
+
+  it('real mode: does not write after a terminally failed protocol read', async () => {
+    if (isMockMode()) return
+    stubHooks({ occurrences: [], protocolError: true })
+    putSchedule.mockResolvedValue(undefined)
+    renderHook(() => useScheduleSnapshotWriter())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(putSchedule).not.toHaveBeenCalled()
+  })
+
+  it('real mode: the gate is a wait, not a skip — once the pantry read resolves on a later render, it writes once with real names', async () => {
+    if (isMockMode()) return
+    stubHooks({ stash: [], stackPending: true })
+    putSchedule.mockResolvedValue(undefined)
+    const { rerender } = renderHook(() => useScheduleSnapshotWriter())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(putSchedule).not.toHaveBeenCalled()
+
+    stubHooks() // the pantry query resolved: full stash, pending cleared
+    rerender()
+    await waitFor(() => expect(putSchedule).toHaveBeenCalledTimes(1))
+    const { entries } = putSchedule.mock.calls[0][0]
+    const fuelBodies = entries
+      .filter((e: { category: string }) => e.category === 'fuel_slot')
+      .map((e: { body: string }) => e.body)
+    expect(fuelBodies.length).toBeGreaterThan(0)
+    for (const body of fuelBodies) expect(body).not.toContain('törölt') // never the tombstone fallback
+    expect(fuelBodies.join(' ')).toContain('Kreatin monohidrát')
   })
 
   it('real mode: writes exactly once, with categories derived from the entries, once data is ready', async () => {
