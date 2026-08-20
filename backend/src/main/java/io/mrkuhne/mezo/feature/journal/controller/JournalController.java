@@ -1,8 +1,11 @@
 package io.mrkuhne.mezo.feature.journal.controller;
 
 import io.mrkuhne.mezo.api.controller.JournalApi;
+import io.mrkuhne.mezo.api.dto.CreateDecisionEntryRequest;
 import io.mrkuhne.mezo.api.dto.CreateJournalEntryRequest;
+import io.mrkuhne.mezo.api.dto.DecisionEntryResponse;
 import io.mrkuhne.mezo.api.dto.JournalEntryResponse;
+import io.mrkuhne.mezo.api.dto.ReviewDecisionRequest;
 import io.mrkuhne.mezo.api.dto.UpdateJournalEntryRequest;
 import io.mrkuhne.mezo.feature.journal.service.JournalService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -42,5 +45,23 @@ public class JournalController implements JournalApi {
     @Override
     public JournalEntryResponse updateJournalEntry(UUID id, UpdateJournalEntryRequest updateJournalEntryRequest) {
         return journalService.update(currentUserId.get(), id, updateJournalEntryRequest);
+    }
+
+    // Decision journal (bd mezo-b3pp.4): contract + persistence land in Task 1; the service wiring
+    // (DecisionService, ContextSnapshotAssembler) is Task 2+. These stubs exist ONLY so JournalApi
+    // (one generated interface per OpenAPI tag, skipDefaultInterface=true) still compiles.
+    @Override
+    public DecisionEntryResponse createDecisionEntry(CreateDecisionEntryRequest createDecisionEntryRequest) {
+        throw new UnsupportedOperationException("Decision journal service lands in Task 2 (mezo-b3pp.4)");
+    }
+
+    @Override
+    public List<DecisionEntryResponse> listDecisionEntries() {
+        throw new UnsupportedOperationException("Decision journal service lands in Task 2 (mezo-b3pp.4)");
+    }
+
+    @Override
+    public DecisionEntryResponse reviewDecisionEntry(UUID id, ReviewDecisionRequest reviewDecisionRequest) {
+        throw new UnsupportedOperationException("Decision journal service lands in Task 2 (mezo-b3pp.4)");
     }
 }
