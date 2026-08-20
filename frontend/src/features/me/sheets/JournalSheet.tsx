@@ -123,7 +123,7 @@ export function JournalSheet({ onClose, entry }: JournalSheetProps) {
               <span style={SECTION_LABEL}>{mode === 'decision' ? 'Döntés napja' : 'Dátum'}</span>
               <input
                 type="date"
-                aria-label="Dátum"
+                aria-label={mode === 'decision' ? 'Döntés napja' : 'Dátum'}
                 value={date}
                 onChange={(e) => e.target.value && setDate(e.target.value)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13 }}

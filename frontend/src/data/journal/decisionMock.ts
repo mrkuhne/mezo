@@ -1,7 +1,9 @@
 import type { DecisionEntry } from '@/data/journal/decisionTypes'
 
 /** Mock seed: one decision due for review, one still ripening, one already reviewed — so the
- * /me/naplo decisions block renders all three states in mock mode. */
+ * /me/naplo decisions block renders all three states in mock mode. `dec2.reviewDue` is pinned to
+ * 2026-08-15 to line up with `JournalPage.test.tsx`'s frozen "today" (the same date the page's
+ * own decisions-block test asserts a due chip against) — keep the two in sync if either changes. */
 export const mockDecisions: DecisionEntry[] = [
   {
     id: 'dec3',
@@ -17,7 +19,7 @@ export const mockDecisions: DecisionEntry[] = [
     id: 'dec2',
     decidedOn: '2026-07-21',
     decisionText: 'Esti edzésre váltok a reggeli helyett, mert reggel sosem alszom eleget.',
-    reviewDue: '2026-08-20',
+    reviewDue: '2026-08-15',
     reviewedAt: null,
     outcomeRating: null,
     outcomeText: null,

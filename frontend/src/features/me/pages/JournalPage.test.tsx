@@ -66,9 +66,11 @@ test('groups a two-month fixture under separate month separators, newest first',
   ]
   hooks.useJournalNotes.mockReturnValue({ data: notes, isPending: false, isError: false, refetch: vi.fn() })
   const { container } = renderPage()
-  // Scope to the month-separator elements (not the entry prose, which itself mentions the month
-  // name for these fixtures) — proves two distinct separators render, newest month first.
-  const separators = container.querySelectorAll('.eyebrow.text-tertiary')
+  // Scope to the month-separator elements inside the notes list (not the entry prose, which itself
+  // mentions the month name for these fixtures, and not the "Döntések" block's own eyebrow label,
+  // which shares the same `.eyebrow.text-tertiary` classes but lives outside the `.col.gap-md`
+  // notes-list container) — proves two distinct separators render, newest month first.
+  const separators = container.querySelectorAll('.col.gap-md .eyebrow.text-tertiary')
   expect(separators).toHaveLength(2)
   expect(separators[0].textContent).toMatch(/augusztus/i)
   expect(separators[1].textContent).toMatch(/július/i)
@@ -152,4 +154,28 @@ test('an error with stale-but-present notes falls through to the normal list (no
   renderPage()
   expect(screen.getByText('Régi, de meglévő bejegyzés')).toBeInTheDocument()
   expect(screen.queryByText('Nem sikerült betölteni a naplót.')).not.toBeInTheDocument()
+})
+
+// The decisions block reads the real (unmocked) useDecisions/isDecisionDue from the barrel, off
+// the mock seed in decisionMock.ts — dec2's reviewDue (2026-08-15) is pinned to this file's frozen
+// "today" so the due state below is deterministic; see the comment on that seed row.
+test('lists open decisions with a due chip and opens the review sheet', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  const user = userEvent.setup()
+  renderPage()
+
+  await screen.findByText('Döntések')
+  expect(screen.getByText('Nézd vissza')).toBeInTheDocument()
+  const due = await screen.findByText(/Esti edzésre váltok/)
+  await user.click(due)
+
+  expect(await screen.findByText('Hogyan sült el?')).toBeInTheDocument()
+})
+
+test('does not list already-reviewed decisions among the open ones', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  await screen.findByText('Döntések')
+
+  expect(screen.queryByText(/Kihagyom a nyári versenyt/)).not.toBeInTheDocument()
 })

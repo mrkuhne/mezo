@@ -105,6 +105,11 @@ describe('JournalSheet', () => {
 
     await user.click(screen.getByRole('button', { name: 'Döntés' }))
     expect(screen.getByText(/visszanézzük/i)).toBeInTheDocument()
+    // The date input's accessible name must follow the visible "Döntés napja" label switch, not
+    // stay hardcoded to the note-mode "Dátum" (screen-reader/sighted-label mismatch, mezo-b3pp.4
+    // Task 6 review finding, fixed in Task 7).
+    expect(screen.getByLabelText('Döntés napja')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Dátum')).not.toBeInTheDocument()
 
     await user.type(screen.getByRole('textbox', { name: /Döntés/i }), 'Esti edzésre váltok.')
     await user.click(screen.getByRole('button', { name: 'Mentem' }))
