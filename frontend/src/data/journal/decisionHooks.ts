@@ -3,7 +3,7 @@ import { decisionApi } from '@/data/journal/decisionApi'
 import { mockDecisions } from '@/data/journal/decisionMock'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
-import { localDateString } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import type { DecisionEntry } from '@/data/journal/decisionTypes'
 
 const DECISIONS_KEY = ['decisions'] as const
@@ -42,13 +42,14 @@ export function useDecisionActions(): {
         const decidedOn = input.decidedOn ?? localDateString()
         // The mock horizon mirrors the backend default (30 days) — a mock-only constant, never a
         // second source of truth for the real reviewDue, which the server always computes.
-        const due = new Date(`${decidedOn}T00:00:00`)
-        due.setDate(due.getDate() + 30)
+        // `addDays` is local-calendar arithmetic (DST-safe); a hand-rolled `Date#setDate` +
+        // `toISOString().slice(0, 10)` re-serializes in UTC and lands a day early for any
+        // positive UTC offset (e.g. Europe/Budapest) — see dates.ts:1 for the exact failure mode.
         const decision: DecisionEntry = {
           id: `dec-m-${Date.now()}`,
           decidedOn,
           decisionText: input.decisionText,
-          reviewDue: due.toISOString().slice(0, 10),
+          reviewDue: addDays(decidedOn, 30),
           reviewedAt: null,
           outcomeRating: null,
           outcomeText: null,
