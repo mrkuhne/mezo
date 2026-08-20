@@ -7,7 +7,7 @@ import java.util.List;
  * means "unavailable" — a missing prose row or an absent ritual configuration yields no anchor
  * for that category, never a fabricated one.
  *
- * @param backendAnchors  gym, ritual, lights_out, wind_down, medication
+ * @param backendAnchors  gym, ritual, lights_out, wind_down, medication, decision_review
  *                        + the feed-anchored categories (app_notification rows, mezo-gzhp.3)
  * @param proseAnchors    briefing, midday, evening, sleep_reaction, weight_reaction, weekly,
  *                        memoir — only when the content row EXISTS
