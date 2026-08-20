@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.journal;
 
+import io.mrkuhne.mezo.api.dto.CreateDecisionEntryRequest;
 import io.mrkuhne.mezo.api.dto.CreateJournalEntryRequest;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;
@@ -17,5 +18,17 @@ class JournalSwitchOffIT extends ApiIntegrationTest {
         postForBody("/api/journal",
             CreateJournalEntryRequest.builder().text("Bármi.").source("quickinput").build(),
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, Void.class);
+    }
+
+    @Test
+    void testCreateDecisionEntry_shouldReturn404_whenTheJournalFeatureIsOff() {
+        postForBody("/api/journal/decision",
+            CreateDecisionEntryRequest.builder().decisionText("Nem lesz mentve.").build(),
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, Void.class);
+    }
+
+    @Test
+    void testListDecisionEntries_shouldReturn404_whenTheJournalFeatureIsOff() {
+        getForBody("/api/journal/decision", ownerAuthHeaders(), HttpStatus.NOT_FOUND, Void.class);
     }
 }

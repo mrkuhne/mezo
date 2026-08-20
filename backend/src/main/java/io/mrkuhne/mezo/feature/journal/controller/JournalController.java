@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.DecisionEntryResponse;
 import io.mrkuhne.mezo.api.dto.JournalEntryResponse;
 import io.mrkuhne.mezo.api.dto.ReviewDecisionRequest;
 import io.mrkuhne.mezo.api.dto.UpdateJournalEntryRequest;
+import io.mrkuhne.mezo.feature.journal.service.DecisionService;
 import io.mrkuhne.mezo.feature.journal.service.JournalService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class JournalController implements JournalApi {
 
     private final JournalService journalService;
+    private final DecisionService decisionService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -47,21 +49,22 @@ public class JournalController implements JournalApi {
         return journalService.update(currentUserId.get(), id, updateJournalEntryRequest);
     }
 
-    // Decision journal (bd mezo-b3pp.4): contract + persistence land in Task 1; the service wiring
-    // (DecisionService, ContextSnapshotAssembler) is Task 2+. These stubs exist ONLY so JournalApi
-    // (one generated interface per OpenAPI tag, skipDefaultInterface=true) still compiles.
+    // Decision journal (bd mezo-b3pp.4): the generated JournalApi bundles every Journal-tagged
+    // operation (skipDefaultInterface=true, no default methods), so a second @RestController
+    // implementing the same interface for just these three methods cannot coexist with this one —
+    // they are folded in here instead, delegating to the separate DecisionService.
     @Override
     public DecisionEntryResponse createDecisionEntry(CreateDecisionEntryRequest createDecisionEntryRequest) {
-        throw new UnsupportedOperationException("Decision journal service lands in Task 2 (mezo-b3pp.4)");
+        return decisionService.create(currentUserId.get(), createDecisionEntryRequest);
     }
 
     @Override
     public List<DecisionEntryResponse> listDecisionEntries() {
-        throw new UnsupportedOperationException("Decision journal service lands in Task 2 (mezo-b3pp.4)");
+        return decisionService.list(currentUserId.get());
     }
 
     @Override
     public DecisionEntryResponse reviewDecisionEntry(UUID id, ReviewDecisionRequest reviewDecisionRequest) {
-        throw new UnsupportedOperationException("Decision journal service lands in Task 2 (mezo-b3pp.4)");
+        return decisionService.review(currentUserId.get(), id, reviewDecisionRequest);
     }
 }
