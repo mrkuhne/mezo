@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -138,6 +139,40 @@ public class MemoryEmbeddingWriter {
         memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entryId)
                 .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+    }
+
+    /**
+     * W1.4 decision unit (spec §5.4): the decision text on create, and — once reviewed — the same
+     * text plus its outcome, re-embedded IN PLACE on the live {@code (kind, ref_id)} row. The
+     * outcome is the half worth recalling ("what did I decide, and did it work"), which is why a
+     * review re-embeds instead of leaving the create-time vector standing.
+     */
+    @Transactional
+    public void writeDecision(DecisionEntryEntity decision) {
+        String content = decisionContent(decision);
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_DECISION, decision.getId())
+                .ifPresentOrElse(existing -> {
+                    String capped = cap(content);
+                    float[] vector = llmCallContextHolder.runWith(
+                            new LlmCallContext("embed_memory", "document",
+                                    MemoryEmbeddingEntity.KIND_DECISION, decision.getId()),
+                            () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
+                    existing.setContent(capped);
+                    existing.setEmbedding(vector);
+                    existing.setOccurredOn(decision.getDecidedOn());
+                    memoryEmbeddingRepository.saveAndFlush(existing);
+                }, () -> write(decision.getCreatedBy(), MemoryEmbeddingEntity.KIND_DECISION,
+                        decision.getId(), content, decision.getDecidedOn()));
+    }
+
+    private static String decisionContent(DecisionEntryEntity decision) {
+        if (decision.getOutcomeRating() == null) {
+            return decision.getDecisionText();
+        }
+        String outcome = decision.getOutcomeText() == null ? "" : " " + decision.getOutcomeText();
+        return decision.getDecisionText()
+                + "\n\nKimenet (" + decision.getOutcomeRating() + "/5):" + outcome;
     }
 
     private void write(UUID createdBy, String kind, UUID refId, String content, LocalDate occurredOn) {
