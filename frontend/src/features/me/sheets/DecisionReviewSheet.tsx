@@ -3,20 +3,25 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { useDecisionActions } from '@/data/hooks'
 import { dayLabel } from '@/features/me/logic/growthJournal'
-import { localDateString } from '@/shared/lib/dates'
 import type { DecisionEntry } from '@/data/journal/decisionTypes'
 
 const RATINGS = [1, 2, 3, 4, 5] as const
 
 interface DecisionReviewSheetProps {
   decision: DecisionEntry
+  /** The caller's already-computed "today" ISO string (one `localDateString()` call per render,
+   * shared with JournalPage's own `dayLabel` calls — see JournalPage.tsx's `today`). */
+  today: string
   onClose: () => void
 }
 
 // The review half of the decision journal (mezo-b3pp.4): re-reads the decision as it was written,
-// then records how it turned out (1-5 + optional prose). Re-openable on an already-reviewed
-// decision — the backend PUT overwrites, so hindsight can be refined later.
-export function DecisionReviewSheet({ decision, onClose }: DecisionReviewSheetProps) {
+// then records how it turned out (1-5 + optional prose). Today `JournalPage` only ever opens this
+// on an OPEN decision (its `openDecisions` filter excludes `reviewedAt !== null`), so the prefill
+// below is currently unreachable dead code, not a live re-review flow — it is kept (and correct)
+// because the backend PUT is re-runnable, so a future "review history" surface can reopen this
+// same sheet on an already-reviewed decision and reuse it as-is.
+export function DecisionReviewSheet({ decision, today, onClose }: DecisionReviewSheetProps) {
   const { reviewDecision, pending } = useDecisionActions()
   const [rating, setRating] = useState<number | null>(decision.outcomeRating)
   const [outcome, setOutcome] = useState(decision.outcomeText ?? '')
@@ -32,7 +37,7 @@ export function DecisionReviewSheet({ decision, onClose }: DecisionReviewSheetPr
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow">Döntés · {dayLabel(decision.decidedOn, localDateString())}</span>
+              <span className="eyebrow">Döntés · {dayLabel(decision.decidedOn, today)}</span>
               <div id="decision-review-title" className="h-display size-md" style={{ marginTop: 4 }}>
                 Hogyan sült el?
               </div>

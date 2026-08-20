@@ -5,17 +5,25 @@ import { MemoryRouter } from 'react-router-dom'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { JournalNote } from '@/data/journal/journalTypes'
+import type { DecisionEntry } from '@/data/journal/decisionTypes'
 
 // Barrel-mock the journal hooks so the fixtures drive the view deterministically in both
-// mock and real test modes (GrowthPage.test.tsx idiom).
+// mock and real test modes (GrowthPage.test.tsx idiom). `useDecisions`/`useDecisionActions` join
+// the same mock for the same reason — left unmocked, real-mode test runs hit a dead backend
+// (`/api/journal/decision` has no MSW handler), so the decisions block silently stayed empty and
+// `DecisionReviewSheet`'s save rejected with no `.catch` (mezo-b3pp.4 Task 7 review finding).
 const hooks = vi.hoisted(() => ({
   useJournalNotes: vi.fn(),
   useJournalActions: vi.fn(),
+  useDecisions: vi.fn(),
+  useDecisionActions: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useJournalNotes: hooks.useJournalNotes,
   useJournalActions: hooks.useJournalActions,
+  useDecisions: hooks.useDecisions,
+  useDecisionActions: hooks.useDecisionActions,
 }))
 
 // Pin "today" to 2026-08-15 so the widening window + Ma/Tegnap labels are deterministic.
@@ -35,6 +43,20 @@ function note(over: Partial<JournalNote> = {}): JournalNote {
   }
 }
 
+function decision(over: Partial<DecisionEntry> = {}): DecisionEntry {
+  return {
+    id: 'dec2',
+    decidedOn: '2026-07-21',
+    decisionText: 'Esti edzésre váltok a reggeli helyett, mert reggel sosem alszom eleget.',
+    reviewDue: '2026-08-15',
+    reviewedAt: null,
+    outcomeRating: null,
+    outcomeText: null,
+    createdAt: '2026-07-21T21:30:00Z',
+    ...over,
+  }
+}
+
 function renderPage() {
   return render(
     <QueryWrapper>
@@ -46,9 +68,14 @@ function renderPage() {
 }
 
 const actions = { addNote: vi.fn(), updateNote: vi.fn(), removeNote: vi.fn(), pending: false }
+const decisionActions = { addDecision: vi.fn(), reviewDecision: vi.fn(), pending: false }
 
 beforeEach(() => {
   hooks.useJournalActions.mockReturnValue(actions)
+  // Default: no open decisions, so the "Döntések" block stays out of the way for tests that
+  // aren't exercising it — individual tests below override this.
+  hooks.useDecisions.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisionActions.mockReturnValue(decisionActions)
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -156,11 +183,17 @@ test('an error with stale-but-present notes falls through to the normal list (no
   expect(screen.queryByText('Nem sikerült betölteni a naplót.')).not.toBeInTheDocument()
 })
 
-// The decisions block reads the real (unmocked) useDecisions/isDecisionDue from the barrel, off
-// the mock seed in decisionMock.ts — dec2's reviewDue (2026-08-15) is pinned to this file's frozen
-// "today" so the due state below is deterministic; see the comment on that seed row.
+// The decisions block reads `useDecisions` off the barrel mock (fixtures below), not a real or
+// MSW-backed fetch — dec2's reviewDue (2026-08-15) is pinned to this file's frozen "today" so the
+// due state is deterministic (isDecisionDue itself stays real/unmocked, a pure function).
 test('lists open decisions with a due chip and opens the review sheet', async () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({
+    data: [decision()],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  })
   const user = userEvent.setup()
   renderPage()
 
@@ -174,8 +207,54 @@ test('lists open decisions with a due chip and opens the review sheet', async ()
 
 test('does not list already-reviewed decisions among the open ones', async () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({
+    data: [
+      decision(),
+      decision({
+        id: 'dec1',
+        decidedOn: '2026-06-10',
+        decisionText: 'Kihagyom a nyári versenyt, és inkább alapozok.',
+        reviewDue: '2026-07-10',
+        reviewedAt: '2026-07-11T08:00:00Z',
+        outcomeRating: 4,
+        outcomeText: 'Jó döntés volt, ősszel sokkal frissebb voltam.',
+      }),
+    ],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  })
   renderPage()
   await screen.findByText('Döntések')
 
   expect(screen.queryByText(/Kihagyom a nyári versenyt/)).not.toBeInTheDocument()
+})
+
+// mezo-b3pp.4 Task 7 review finding: JournalPage previously destructured only `data` from
+// useDecisions, discarding isError — a failed decisions fetch rendered as nothing at all (an
+// overdue decision silently vanishing with no signal), unlike the notes list's own isError branch.
+test('a failed decisions fetch shows a retry state instead of silently vanishing', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  const refetchDecisions = vi.fn()
+  hooks.useDecisions.mockReturnValue({ data: [], isPending: false, isError: true, refetch: refetchDecisions })
+  renderPage()
+
+  expect(await screen.findByText('Nem sikerült betölteni a döntéseket.')).toBeInTheDocument()
+  expect(screen.queryByText('Döntések')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
+  expect(refetchDecisions).toHaveBeenCalledTimes(1)
+})
+
+test('a decisions error with stale-but-present open decisions falls through to the normal list', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({
+    data: [decision()],
+    isPending: false,
+    isError: true,
+    refetch: vi.fn(),
+  })
+  renderPage()
+
+  await screen.findByText('Döntések')
+  expect(screen.queryByText('Nem sikerült betölteni a döntéseket.')).not.toBeInTheDocument()
 })

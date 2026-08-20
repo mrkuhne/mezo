@@ -41,7 +41,11 @@ export function JournalPage() {
   const today = localDateString()
   const from = windowFrom(monthsBack, today)
   const { data: notes, isPending, isError, refetch } = useJournalNotes(from, today)
-  const { data: decisions } = useDecisions()
+  const {
+    data: decisions,
+    isError: decisionsError,
+    refetch: refetchDecisions,
+  } = useDecisions()
   const openDecisions = decisions.filter((d) => d.reviewedAt === null)
   const widen = () => setMonthsBack((m) => m + 3)
 
@@ -65,7 +69,15 @@ export function JournalPage() {
       </div>
 
       <div style={{ padding: '8px 24px 24px' }}>
-        {openDecisions.length > 0 && (
+        {decisionsError && openDecisions.length === 0 ? (
+          // Same honesty rule as the notes list below (isError && ...length === 0): a failed
+          // decisions fetch must not read as "no open decisions" — an overdue one would silently
+          // vanish with no signal. Kept to a single skeleton line + retry — the decisions block is
+          // a small section, not the page's main content.
+          <div style={{ marginBottom: 20 }}>
+            <GhostState message="Nem sikerült betölteni a döntéseket." ctaLabel="Újra" onCta={refetchDecisions} lines={1} />
+          </div>
+        ) : openDecisions.length > 0 && (
           <div className="col gap-sm" style={{ marginBottom: 20 }}>
             <span className="eyebrow text-tertiary">Döntések</span>
             {openDecisions.map((decision) => (
@@ -165,7 +177,7 @@ export function JournalPage() {
 
       {addOpen && <JournalSheet onClose={() => setAddOpen(false)} />}
       {editNote && <JournalSheet entry={editNote} onClose={() => setEditNote(null)} />}
-      {reviewing && <DecisionReviewSheet decision={reviewing} onClose={() => setReviewing(null)} />}
+      {reviewing && <DecisionReviewSheet decision={reviewing} today={today} onClose={() => setReviewing(null)} />}
     </>
   )
 }
