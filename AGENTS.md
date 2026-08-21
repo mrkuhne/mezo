@@ -174,7 +174,9 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
   `~/.local/bin` (bd) on PATH for desktop-spawned shells.
 - Memory = facts, skills = procedures: durable environment/project facts go to `bd remember`
   (and Hermes MEMORY.md/Hindsight pick them up); a repeated 5+ step procedure becomes a skill.
-- Model roles: Qwen3.8-27B for spec/plan/implementation/review (effort Medium; High does not
-  scale past ~60K context), Qwen3.6-35B-A3B for chat and quick questions (effort Low).
+- Model roles (A/B 2026-08-21): **Qwen3.6-35B-A3B, effort Medium** for spec/plan writing and
+  implementation (12-min plan vs no plan from the 27B); Qwen3.8-27B only for short-context
+  work (review of a diff, a single file) — its thinking runs away past ~60K context and trips
+  the stream watchdog; chat: 35B-A3B at effort Low.
 - Escalation rule: if you stall twice on the same slice, or CI goes red twice from the
   same mistake, STOP and report — the slice escalates to Claude. Log it as a bd comment.

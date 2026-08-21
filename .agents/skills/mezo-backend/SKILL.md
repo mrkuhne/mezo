@@ -18,3 +18,6 @@ Hard gates: UUID PKs · constructor injection only · no @Value · SystemRuntime
 + SystemMessage for errors · seed data in Java @Profile("demodata"), never SQL · soft delete
 via @SQLRestriction · changeset naming {YYYYMMDDHHMM}_{bd-id}_{desc} · ALWAYS ./mvnw clean.
 Contract-first: edit api/feature/<name>/<name>.yml BEFORE code; never hand-write boundary DTOs.
+SQL is PostgreSQL 16: date arithmetic is `col - (n) * interval '1 day'`, never MySQL `date_sub(...)`
+/ `interval n day`. Soft delete goes through repository.delete(entity) + @SQLDelete — no custom
+`@Modifying update … set deleted = true` queries.

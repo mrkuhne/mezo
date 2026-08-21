@@ -5,7 +5,10 @@ description: Use when a checkboxed implementation plan exists. Executes it task 
 
 # Executing Plans
 
-1. Work in a git worktree on a feat/<topic> branch, never on main.
+1. Isolate FIRST, before reading the plan: run `/worktree new <topic>` (or start the session
+   with `hermes -w`), then verify with `git branch --show-current` — it must print a
+   `feat/<topic>`-style branch, never `main`. If it prints `main`, STOP and create the
+   worktree; a pre-commit guard rejects commits on main anyway.
 2. Before the first task, register the plan's gates as goal gates so the harness enforces
    them: `/goal gate add "<exact gate command from the plan>"` for each gate (backend
    `cd backend && ./mvnw clean test -Dtest=...`, frontend `cd frontend && pnpm test`, docs
@@ -19,7 +22,9 @@ description: Use when a checkboxed implementation plan exists. Executes it task 
 6. Tasks that are independent of each other (no shared files, no produced/consumed
    interface between them) may be delegated in parallel with `delegate_task` — pass the
    full task text as the goal. Dependent tasks: never.
-7. Commit exactly where the plan says. Never batch multiple tasks into one commit.
+7. Keep every file-writing tool call ≤ ~150 lines (write the skeleton, then `patch` in
+   sections) — the local server buffers tool-call arguments until complete; long writes look
+   like a dead stream. Commit exactly where the plan says. Never batch multiple tasks into one commit.
 8. ESCALATION RULE: two stalls on the same task, or the same failure twice → stop,
    summarize the blocker, log a bd comment. Do not thrash.
 9. After the last task: run the full local gates from AGENTS.md (Build & Test section),
