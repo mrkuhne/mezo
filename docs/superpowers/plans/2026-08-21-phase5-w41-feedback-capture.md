@@ -42,6 +42,13 @@ Copied verbatim from `docs/superpowers/specs/2026-08-18-phase5-deep-memory-perso
 - Regenerated: `api/openapi.yml`, `frontend/src/data/_client/api.gen.ts`.
 
 **Backend** (`backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/`)
+
+> **Corrected during execution:** this flat package was wrong — `ArchitectureTest` (ArchUnit) requires
+> `@RestController`/`@Service`/`@Entity`/`Repository` classes to live in `..controller..`/`..service..`/
+> `..entity..`/`..repository..` packages, and CI (not the focused local ITs) caught it. The classes ship in
+> `feedback/{entity,repository,service,controller,mapper}/`. Task 3's service code block below has the same
+> class of bug: its `IllegalStateException` violates `no_raw_generic_exceptions_outside_techcore`, and ships
+> as `SystemRuntimeErrorException` + `SystemMessage.error("FEEDBACK_UPSERT_READBACK_FAILED")` at 500.
 - `MessageFeedbackEntity.java` — the row.
 - `MessageFeedbackRepository.java` — JPA finders + the native upsert.
 - `MessageFeedbackService.java` — upsert / retract / batch read; owns the toggle + validation rules.
