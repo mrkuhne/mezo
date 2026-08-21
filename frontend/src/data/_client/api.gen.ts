@@ -2497,6 +2497,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ritual/reflection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert the day's prose reflection before the close (Ritual) */
+        put: operations["saveRitualReflection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gamification/profile": {
         parameters: {
             query?: never;
@@ -6005,11 +6022,19 @@ export interface components {
             closed: boolean;
             /** Format: date-time */
             closedAt?: string | null;
+            /** @description The day's prose reflection (W1.2); null when skipped */
+            reflectionText?: string | null;
             window: components["schemas"]["RitualWindow"];
         };
         RitualCloseRequest: {
             /** Format: date */
             date: string;
+        };
+        RitualReflectionRequest: {
+            /** Format: date */
+            date: string;
+            /** @description Free prose; stored stripped of surrounding whitespace, and blank (or whitespace-only) clears the reflection */
+            text: string;
         };
         GamificationProfileResponse: {
             /** Format: int64 */
@@ -13580,6 +13605,39 @@ export interface operations {
         };
         responses: {
             /** @description The (now) closed day — same response on repeat close */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RitualDayResponse"];
+                };
+            };
+            /** @description RITUAL_NOT_TODAY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    saveRitualReflection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RitualReflectionRequest"];
+            };
+        };
+        responses: {
+            /** @description The day after the upsert (blank text clears the reflection) */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -40,6 +40,7 @@ const dayWith = (closed: boolean): RitualDay => ({
   date: DATE,
   closed,
   closedAt: closed ? '2026-07-20T20:30:00Z' : null,
+  reflectionText: null,
   window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
 })
 
@@ -108,6 +109,31 @@ describe('useRitualDay (mock mode)', () => {
     // mock mirror of the server-side ritual_closed derivation — the chain row must tick
     const habits = client.getQueryData<HabitDay>(['habitDay', DATE])?.habits
     expect(habits?.find((h) => h.key === 'evening_ritual')?.status).toBe('done')
+  })
+
+  test('saveReflection patches the ritualDay cache with the trimmed prose', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['ritualDay', DATE], dayWith(false))
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper })
+
+    await act(async () => { await actions.result.current.saveReflection('  Nehéz nap volt.  ') })
+
+    expect(client.getQueryData<RitualDay>(['ritualDay', DATE])?.reflectionText).toBe('Nehéz nap volt.')
+  })
+
+  test('saveReflection with blank text CLEARS the reflection (stores null, not empty string)', async () => {
+    const seeded = { ...dayWith(false), reflectionText: 'yesterday I wrote this' }
+    const wrapper = seededWrapper(seeded)
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper })
+
+    await act(async () => { await actions.result.current.saveReflection('   ') })
+
+    // seededWrapper builds its own internal client — reach it via the hook's own read.
+    const day = renderHook(() => useRitualDay(DATE), { wrapper })
+    expect(day.result.current.data.reflectionText).toBeNull()
   })
 })
 
@@ -266,5 +292,28 @@ describe('useRitualDay (real mode)', () => {
     expect(gamificationDayIdx).toBeGreaterThan(habitDayIdx)
 
     habitDayHook.unmount()
+  })
+
+  test('saveReflection PUTs the trimmed-server-side prose and reseeds the cache from the response', async () => {
+    let putBody: unknown = null
+    server.use(http.put(`${API_BASE}/api/ritual/reflection`, async ({ request }) => {
+      putBody = await request.json()
+      return HttpResponse.json({
+        date: DATE, closed: false, closedAt: null, reflectionText: 'Nehéz nap volt.',
+        window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+      })
+    }))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper })
+
+    const result = await act(() => actions.result.current.saveReflection('  Nehéz nap volt.  '))
+
+    // the hook forwards the raw text — trimming/blank-clearing is the server's contract (W1.2)
+    expect(putBody).toEqual({ date: DATE, text: '  Nehéz nap volt.  ' })
+    expect(result.reflectionText).toBe('Nehéz nap volt.')
+    expect(client.getQueryData<RitualDay>(['ritualDay', DATE])?.reflectionText).toBe('Nehéz nap volt.')
   })
 })

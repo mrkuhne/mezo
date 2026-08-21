@@ -8,6 +8,7 @@ const toDay = (w: Wire): RitualDay => ({
   date: w.date,
   closed: w.closed,
   closedAt: w.closedAt ?? null,
+  reflectionText: w.reflectionText ?? null,
   window: { opensAt: w.window.opensAt, prepStartsAt: w.window.prepStartsAt, bedTime: w.window.bedTime },
 })
 
@@ -15,4 +16,6 @@ export const ritualApi = {
   day: async (date: string) => toDay(await apiFetch<Wire>(`/api/ritual/day/${date}`)),
   close: async (date: string) =>
     toDay(await apiFetch<Wire>('/api/ritual/close', { method: 'POST', body: JSON.stringify({ date }) })),
+  saveReflection: async (date: string, text: string) =>
+    toDay(await apiFetch<Wire>('/api/ritual/reflection', { method: 'PUT', body: JSON.stringify({ date, text }) })),
 }

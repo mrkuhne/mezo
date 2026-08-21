@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 /**
  * Self-baselined visual goldens: 19 goto screens + the /ritual Harvest click-through
  * = 20 screens × 2 themes = 40 snapshots per platform (mezo-mzbz added the two /ritual
- * shots: Arrival act 1 via the SCREENS list + the Harvest act 4 via the click-through test;
+ * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este).
  *
@@ -54,7 +54,7 @@ const SCREENS: Array<[string, string, string?]> = [
   ['insights-elorejelzesek', '/insights/predictions'],
   ['insights-kiserletek', '/insights/experiments'],
   // Napzárás act 1 (Megérkezés): goto /ritual lands on the Arrival act directly. Harvest
-  // (act 4) is a separate click-through test below (it can't be reached by a bare goto).
+  // (act 5) is a separate click-through test below (it can't be reached by a bare goto).
   ['ritual-arrival', '/ritual'],
 ]
 
@@ -75,12 +75,14 @@ for (const theme of ['light', 'dark'] as const) {
       })
     }
 
-    // Napzárás act 4 (Termés/Harvest): not reachable by a bare goto — drive the flow to it.
+    // Napzárás act 5 (Termés/Harvest): not reachable by a bare goto — drive the flow to it.
     // No production `?act=` deep-link exists (and none should be added just for a test); each
     // act mounts exactly one `.rz-cta` advance button and only one act renders at a time, so
-    // clicking the labelled advance CTA three times walks Arrival → A napod íve → Nyitott
-    // hurkok → Termés. The Harvest read is a fixed mock day seed and CountUp renders its final
-    // value immediately under reduced motion, so the end state is deterministic.
+    // clicking the labelled advance CTA walks Arrival → A napod íve → Ma milyen volt → Nyitott
+    // hurkok → Termés. The reflection act (Ma milyen volt) is deliberately skipped via its
+    // „Ma nem írok" CTA rather than typed into, so the shot stays deterministic. The Harvest
+    // read is a fixed mock day seed and CountUp renders its final value immediately under
+    // reduced motion, so the end state is deterministic.
     test('ritual-harvest', async ({ page }) => {
       await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
       await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
@@ -88,7 +90,8 @@ for (const theme of ['light', 'dark'] as const) {
       await page.waitForLoadState('networkidle')
       await page.getByRole('button', { name: 'Kezdjük 🌙' }).click()  // act 1 → 2
       await page.getByRole('button', { name: 'Tovább' }).click()       // act 2 → 3
-      await page.getByRole('button', { name: 'Tovább' }).click()       // act 3 → 4
+      await page.getByRole('button', { name: 'Ma nem írok' }).click()  // act 3 → 4 (reflection skipped)
+      await page.getByRole('button', { name: 'Tovább' }).click()       // act 4 → 5
       await page.locator('.rz-harvest .rz-xp-num').waitFor()           // Harvest XP total rendered
       // Entering Harvest fires the mock close() award(s) — the ritual's own HABIT award plus
       // the needs-close award (mezo-dhzk), which pop as TWO stacked `.toast` entries in

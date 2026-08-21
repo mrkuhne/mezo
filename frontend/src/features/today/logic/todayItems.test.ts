@@ -279,7 +279,7 @@ describe('buildTodayItems — fuel slots', () => {
 
 describe('buildTodayItems — ritual', () => {
   const RITUAL: RitualDay = {
-    date: '2026-05-21', closed: false, closedAt: null,
+    date: '2026-05-21', closed: false, closedAt: null, reflectionText: null,
     window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
   }
 

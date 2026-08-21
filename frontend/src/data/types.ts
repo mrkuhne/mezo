@@ -1224,7 +1224,13 @@ export interface IntentionDay {
 
 // ── Daily closing ritual — sleep-anchored evening window (R3, mezo-ilsj) ────
 export interface RitualWindow { opensAt: string; prepStartsAt: string; bedTime: string }
-export interface RitualDay { date: string; closed: boolean; closedAt: string | null; window: RitualWindow }
+export interface RitualDay {
+  date: string
+  closed: boolean
+  closedAt: string | null
+  reflectionText: string | null // W1.2 (mezo-b3pp.2): the day's prose reflection; null when skipped
+  window: RitualWindow
+}
 
 // ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
 export type LifeSkillKey =

@@ -30,7 +30,7 @@ const meal = (overrides: Partial<FuelMeal>): FuelMeal => ({
 
 const emptyIntention = (date: string): IntentionDay => ({ date, creed: null, foci: [], reflection: null, focusCap: 3 })
 const emptyRitual = (date: string): RitualDay => ({
-  date, closed: false, closedAt: null, window: { opensAt: '', prepStartsAt: '', bedTime: BED },
+  date, closed: false, closedAt: null, reflectionText: null, window: { opensAt: '', prepStartsAt: '', bedTime: BED },
 })
 
 const habit = (overrides: Partial<HabitItem>): HabitItem => ({
@@ -239,7 +239,7 @@ describe('buildNeedsEvents — 💗 lélek (check-ins + intention + ritual)', ()
       checkinsToday: [], // today has nothing
       intentionToday: emptyIntention(TODAY), // today has nothing either
       intentionYesterday: { date: YESTERDAY, creed: null, foci: [{ id: 'f1', focusDate: YESTERDAY, text: 'x' }], reflection: 'yes' as const, focusCap: 3 },
-      ritualYesterday: { date: YESTERDAY, closed: true, closedAt: `${YESTERDAY}T22:30:00`, window: { opensAt: '', prepStartsAt: '', bedTime: BED } },
+      ritualYesterday: { date: YESTERDAY, closed: true, closedAt: `${YESTERDAY}T22:30:00`, reflectionText: null, window: { opensAt: '', prepStartsAt: '', bedTime: BED } },
     }
     const events = buildNeedsEvents(raw).lelek
     expect(events).toEqual(expect.arrayContaining([
@@ -263,7 +263,7 @@ describe('buildNeedsEvents — 💗 lélek (check-ins + intention + ritual)', ()
   })
 
   test('an open (unclosed) ritual yesterday contributes nothing', () => {
-    const raw = { ...baseRaw(), ritualYesterday: { date: YESTERDAY, closed: false, closedAt: null, window: { opensAt: '', prepStartsAt: '', bedTime: BED } } }
+    const raw = { ...baseRaw(), ritualYesterday: { date: YESTERDAY, closed: false, closedAt: null, reflectionText: null, window: { opensAt: '', prepStartsAt: '', bedTime: BED } } }
     expect(buildNeedsEvents(raw).lelek).toEqual([])
   })
 

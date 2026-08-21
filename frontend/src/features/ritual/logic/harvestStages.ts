@@ -1,7 +1,7 @@
 export interface HarvestStage { kind: 'xp-total' | 'source' | 'coin' | 'skill' | 'streak'; delayMs: number }
 
 /**
- * The Napzárás Harvest act's reward-choreography order + delays (R3, mezo-ilsj §4 act 4) — pure,
+ * The Napzárás Harvest act's reward-choreography order + delays (R3, mezo-ilsj §4 act 5) — pure,
  * no timers/animation here, just the schedule a component staggers its `CountUp`/pop-ins against.
  *
  * Fixed cadence: `xp-total` lands first at 400ms; each per-source chip follows +250ms after the

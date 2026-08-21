@@ -48,6 +48,23 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     /** The journal embed pipeline's update-in-place lookup (W1.1) — the live row for a source unit. */
     Optional<MemoryEmbeddingEntity> findByKindAndRefId(String kind, UUID refId);
 
+    /**
+     * The SAME row, soft-deleted ones INCLUDED — the revive lookup behind
+     * {@code MemoryEmbeddingWriter}'s upsert (mezo-b3pp.2).
+     *
+     * <p>Native by necessity: {@code @SQLRestriction("is_deleted = false")} is applied by Hibernate
+     * to every entity query — derived AND JPQL alike (see {@link #findRefIdsByCreatedByAndKind},
+     * whose javadoc records the same) — so only a native query can see past it. It has to see past
+     * it because {@code uq_memory_embedding_kind_ref_id} is a PLAIN unique constraint (no
+     * {@code where is_deleted = false} partial predicate, unlike {@code uq_ritual_day_user_date}):
+     * a soft-deleted row keeps occupying its {@code (kind, ref_id)} slot, so a later re-write of
+     * the same unit must UPDATE that row back to life instead of inserting a colliding one.
+     */
+    @Query(value = "select * from memory_embedding where kind = :kind and ref_id = :refId",
+           nativeQuery = true)
+    Optional<MemoryEmbeddingEntity> findByKindAndRefIdIncludingDeleted(@Param("kind") String kind,
+                                                                      @Param("refId") UUID refId);
+
     /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
     List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
 

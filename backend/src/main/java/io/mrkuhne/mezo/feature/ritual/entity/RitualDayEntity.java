@@ -32,7 +32,12 @@ public class RitualDayEntity extends OwnedEntity {
     @Column(name = "ritual_date", nullable = false)
     private LocalDate ritualDate;
 
-    @NotNull
-    @Column(name = "closed_at", nullable = false)
+    /** Null while the day is only reflected on — "closed" is `closed_at is not null` (mezo-b3pp.2). */
+    @Column(name = "closed_at")
     private Instant closedAt;
+
+    /** The evening's prose answer to „Milyen volt a napod valójában?" (W1.2) — nullable,
+     *  skipping is first-class. Written by an upsert BEFORE the close; embedded on close. */
+    @Column(name = "reflection_text", columnDefinition = "text")
+    private String reflectionText;
 }
