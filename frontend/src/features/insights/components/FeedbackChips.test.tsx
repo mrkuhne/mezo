@@ -48,22 +48,38 @@ test('clicking the down chip when not already down reveals the reason row withou
   expect(screen.getByRole('button', { name: 'nem rólam szól' })).toBeInTheDocument()
 })
 
-test('picking a reason votes down with that reason and hides the reason row', () => {
+test('picking a reason votes down with that reason and keeps the row, that reason selected', () => {
   const onVote = vi.fn()
-  render(<FeedbackChips value={undefined} onVote={onVote} label="a heti tervjavaslatról" />)
+  const { rerender } = render(
+    <FeedbackChips value={undefined} onVote={onVote} label="a heti tervjavaslatról" />,
+  )
   fireEvent.click(screen.getByRole('button', { name: /Nem talált/ }))
   fireEvent.click(screen.getByRole('button', { name: 'túl sok' }))
   expect(onVote).toHaveBeenCalledTimes(1)
   expect(onVote).toHaveBeenCalledWith('down', 'too_much')
-  expect(screen.queryByRole('button', { name: 'túl sok' })).not.toBeInTheDocument()
+  // What the vote does to `value` (the hook writes the row optimistically) — the card is now
+  // `down`, so the row stays up with the picked reason selected, not hidden.
+  rerender(
+    <FeedbackChips
+      value={feedback({ verdict: 'down', reason: 'too_much' })}
+      onVote={onVote}
+      label="a heti tervjavaslatról"
+    />,
+  )
+  expect(screen.getByRole('button', { name: 'túl sok' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('clicking the down chip when already down retracts (no reason) and shows no reason row', () => {
   const onVote = vi.fn()
-  render(<FeedbackChips value={feedback({ verdict: 'down', reason: 'too_much' })} onVote={onVote} label="a heti tervjavaslatról" />)
+  const { rerender } = render(
+    <FeedbackChips value={feedback({ verdict: 'down', reason: 'too_much' })} onVote={onVote} label="a heti tervjavaslatról" />,
+  )
   fireEvent.click(screen.getByRole('button', { name: /Nem talált/ }))
   expect(onVote).toHaveBeenCalledTimes(1)
   expect(onVote).toHaveBeenCalledWith('down')
+  // The retraction clears the row (the hook writes `null` optimistically) — the reason row goes
+  // with the verdict, because it is derived from it.
+  rerender(<FeedbackChips value={undefined} onVote={onVote} label="a heti tervjavaslatról" />)
   expect(screen.queryByRole('button', { name: 'pontatlan' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'túl sok' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'rossz időzítés' })).not.toBeInTheDocument()
@@ -80,6 +96,46 @@ test('a down verdict with a reason renders that reason chip selected', () => {
   )
   expect(screen.getByRole('button', { name: 'rossz időzítés' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByRole('button', { name: 'pontatlan' })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('a down verdict ARRIVING after mount opens the reason row with the stored reason selected', () => {
+  // The production mount path: in real mode `useDualQuery` serves `realEmpty` while the batch GET
+  // is unresolved, so every cold load renders `value={undefined}` first and the stored verdict
+  // arrives on a LATER render — with the instance keyed by artifact id, so no remount intervenes.
+  // The reason row therefore has to derive from the verdict, not be seeded once on mount.
+  const { rerender } = render(
+    <FeedbackChips value={undefined} onVote={() => {}} label="a heti tervjavaslatról" />,
+  )
+  expect(screen.queryByRole('button', { name: 'túl sok' })).not.toBeInTheDocument()
+
+  rerender(
+    <FeedbackChips
+      value={feedback({ verdict: 'down', reason: 'too_much' })}
+      onVote={() => {}}
+      label="a heti tervjavaslatról"
+    />,
+  )
+  expect(screen.getByRole('button', { name: 'túl sok' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'pontatlan' })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('picking a DIFFERENT reason on a stored down verdict upserts (never a retraction)', () => {
+  const onVote = vi.fn()
+  const { rerender } = render(
+    <FeedbackChips value={undefined} onVote={onVote} label="a heti tervjavaslatról" />,
+  )
+  rerender(
+    <FeedbackChips
+      value={feedback({ verdict: 'down', reason: 'too_much' })}
+      onVote={onVote}
+      label="a heti tervjavaslatról"
+    />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'rossz időzítés' }))
+  // A reason always rides along, so `useFeedback` takes the upsert branch, not the bare-tap
+  // retraction — this is how the user changes their mind about WHY.
+  expect(onVote).toHaveBeenCalledTimes(1)
+  expect(onVote).toHaveBeenCalledWith('down', 'bad_timing')
 })
 
 test('the chip group exposes an accessible name built from the label prop', () => {

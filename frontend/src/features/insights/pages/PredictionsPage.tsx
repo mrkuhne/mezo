@@ -77,8 +77,8 @@ export function PredictionsPage() {
           )}
 
           {/* Both modes — a prediction is an AI artifact wherever it comes from. Keyed by the
-              prediction id (as the card itself is): FeedbackChips seeds its reason-row state
-              once, on mount, so React must never reuse one card's instance for another row. */}
+              prediction id (as the card itself is), so React never reuses one card's
+              FeedbackChips instance — and its session-local reason-row state — for another row. */}
           <div className="mt-md">
             <FeedbackChips
               key={p.id}

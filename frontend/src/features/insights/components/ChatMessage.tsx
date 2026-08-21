@@ -74,8 +74,8 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
       </div>
       {/* Under the card, assistant rows only — and only once the answer is persisted, i.e. has
           an artifactId to vote on. The parent keys this row by that id, so React never reuses
-          one FeedbackChips instance (whose reason-row state is a one-time initializer) across
-          two different answers. */}
+          one FeedbackChips instance (whose reason-row state is session-local) across two
+          different answers — advisory since the row derives from the verdict, not load-bearing. */}
       {feedback && (
         <FeedbackChips value={feedback.value} onVote={feedback.onVote} label="a válaszról" />
       )}

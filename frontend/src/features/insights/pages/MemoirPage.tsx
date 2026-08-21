@@ -49,9 +49,12 @@ export function MemoirPage() {
           ))}
         </div>
 
-        {/* Both modes — the memoir is an AI artifact wherever it comes from. */}
+        {/* Both modes — the memoir is an AI artifact wherever it comes from. Keyed by the memoir
+            id like the other four mount sites: advisory since the reason row derives from the
+            verdict, but it still guarantees no per-instance state survives a change of artifact. */}
         <div className="mt-lg">
           <FeedbackChips
+            key={memoir.id}
             value={feedback.get(memoir.id)}
             onVote={(verdict, reason) => feedback.vote(memoir.id, verdict, reason)}
             label="a heti memoárról"

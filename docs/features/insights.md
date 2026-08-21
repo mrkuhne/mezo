@@ -291,15 +291,16 @@ the terminal `done` row lands, and the chips appear at that moment. `ChatPage` c
 `useFeedback('chat_message', assistantIds)` **once for the whole thread** (a per-bubble hook would
 fire one request per answer — 20+ on a real conversation) and hands each `ChatMessage` a
 `{value, onVote}` slice; `ChatMessage` renders the row only when that prop is present. Both bubbles
-and chips are keyed by the persisted id (`key={m.id ?? \`idx-${i}\`}`) because `FeedbackChips` seeds
-its reason-row visibility ONCE on mount — reusing one bubble's instance for a different answer would
-carry the open reason row across. `ChatMessage.id` is new (`types.ts`, optional) and the mock seed
+and chips are keyed by the persisted id (`key={m.id ?? \`idx-${i}\`}`) so that reusing one bubble's
+`FeedbackChips` instance for a different answer cannot carry that instance's session-local reason-row
+state across (advisory since the row derives from the verdict, §5.7 — but free, and the bubbles need
+the key anyway). `ChatMessage.id` is new (`types.ts`, optional) and the mock seed
 + the mock `cannedReply` path now mint ids too, so the demo surface shows the same affordance the
 live one does.
 
 ### 2.6 Predictions (`pages/PredictionsPage.tsx`) — **REAL dual-mode since proactive P1 (`mezo-h4wp.7`)**
 The tab **un-ghosted at P1**: `usePredictions()` (`data/insights/predictionsHooks.ts`) reads `GET /api/proactive/prediction` (a list; `[]` on loading/error — never a 404) and returns `{predictions, mode}`. Each `Prediction` card renders a status chip (`✓ Validated` / `✗ Missed` / `◐ Pending`), the derived window-label date, the display title, the confidence `bar-fill glow` + `NN%` **only when confidence is present** — otherwise the honest **„tanulom"** chip (a statistical pattern carries no confidence, so most v1 rows read „tanulom", never a fabricated %) — the optional `basis` paragraph, and (once the validation job closed the window) the code-formatted `actual` outcome line. The header's right side is the **accuracy derived from CLOSED rows** (`validated / (validated+missed)`), shown only when at least one has closed. An empty live list renders the honest **still-learning null-state** *"Az első predikciók a megerősített mintákból készülnek — a minta-motor még tanul."*. **Mock mode** keeps the Phase-1 seed + the literal `2 validated · 60-day acc 68%` header (byte-parity). Behavior detail in [proactive.md §2](proactive.md).
-- **Feedback chips (W4.1, `mezo-b3pp.15`):** one `FeedbackChips` row per prediction card, **both modes** — `useFeedback('prediction', predictionIds)` is called ONCE for the whole list (never per card) and sits **above** the empty-state early return, which is safe because an empty id set skips the network entirely. Predictions already carried an `id` on the wire, so this tab needed no contract change. Each row is keyed by the prediction id (the reason row is per-card mount state, §5.7).
+- **Feedback chips (W4.1, `mezo-b3pp.15`):** one `FeedbackChips` row per prediction card, **both modes** — `useFeedback('prediction', predictionIds)` is called ONCE for the whole list (never per card) and sits **above** the empty-state early return, which is safe because an empty id set skips the network entirely. Predictions already carried an `id` on the wire, so this tab needed no contract change. Each row is keyed by the prediction id (the reason row is per-card, §5.7).
 
 ### 2.7 Experiments (`pages/ExperimentsPage.tsx`) — **REAL dual-mode since proactive P2 (`mezo-h4wp.8`)**
 The **last** tab un-ghosts, and it's the first Insights surface with a WRITE. `useExperiments()`
@@ -576,6 +577,16 @@ It is **purely presentational and controlled**: `{ value, onVote, label }`, no h
   is always an upsert, which is how the user changes their mind about WHY. `FeedbackChips` only
   decides *when* to call `onVote` and with what: 👍 always votes `up`; 👎 opens the four-chip reason
   row instead of voting when not already down, and retracts when it is.
+- **The reason row is DERIVED from the verdict, never seeded on mount** (fixed in the W4.1 final
+  review). It renders when the value is `down` — OR when this session's 👎 opened it on a card with
+  no verdict yet. Seeding `useState(value?.verdict === 'down')` was a real bug: real mode serves
+  `useDualQuery`'s `realEmpty` until the batch GET resolves, so `value` is `undefined` at mount on
+  every cold load, and with the instance keyed by artifact id nothing ever remounts it — a stored
+  `down` could never show its reason row, and the 👎 re-tap retracted instead of offering the
+  reasons. Deriving it also makes the render independent of query-cache warmth (the seeded version
+  drew two different UIs for the same artifact). It follows that picking a reason does NOT close
+  the row (the card is now `down`, so the row belongs on screen with that reason selected), and
+  that the retraction closes it by clearing the verdict.
 - **Copy:** 👍 `Segített` / 👎 `Nem talált`, reasons `pontatlan` · `túl sok` · `rossz időzítés` ·
   `nem rólam szól`; the group's accessible name is `Visszajelzés {label}` (`a válaszról`,
   `a heti memoárról`, `a heti tervjavaslatról`, `az előrejelzésről`, `az üzenetről`).
@@ -656,10 +667,13 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   resolves, DELETE on re-tap, **a growing id set never blanking the chips already on screen**
   (the `keepPreviousRealData` case, §5.7), rollback on a failed vote, the 200-id cap keeping the
   NEWEST ids, no request at all on an empty id set, and a failing read degrading to "no verdicts"
-  instead of throwing (IDENT-3). `components/FeedbackChips.test.tsx` (8) covers the component's own
-  branches: 👎 reveals the reason row without voting, picking a reason votes + closes it, 👎 while
-  already down retracts, the stored reason renders selected, `aria-pressed`, and the group's
-  accessible name. Per-surface cases: `ChatPage.test.tsx` (chips on the two assistant answers only;
+  instead of throwing (IDENT-3). `components/FeedbackChips.test.tsx` (10) covers the component's own
+  branches: 👎 reveals the reason row without voting, picking a reason votes and leaves the row up
+  with that reason selected, 👎 while already down retracts (and the row goes when the verdict
+  does), the stored reason renders selected, **a `down` verdict ARRIVING after mount opens the row**
+  — the production path, `value={undefined}` first, then a rerender, since the seeded version made
+  a stored `down` unreachable — **and a different reason picked on it upserts rather than
+  retracting**, plus `aria-pressed` and the group's accessible name. Per-surface cases: `ChatPage.test.tsx` (chips on the two assistant answers only;
   **the in-flight draft carries none until `done` lands** — a gated-stream test; a 👎+reason writes
   only that answer, and the reason row is per-card), `MemoirPage.test.tsx` (the retired Like/Love/
   Save/Dismiss row is asserted GONE and the chips render in **real** mode too — the `mezo-kr9v`

@@ -80,8 +80,8 @@ export function WeeklyPage() {
               </div>
             ) : null}
             {/* Both modes — the suggestion is an AI artifact wherever it comes from. Keyed by the
-                artifactId: FeedbackChips seeds its reason-row state once, on mount, so React must
-                never carry one week's instance over to the next week's suggestion. */}
+                artifactId, so React never carries one week's FeedbackChips instance — and its
+                session-local reason-row state — over to the next week's suggestion. */}
             {weeklySuggestionId != null && (
               <div className="mt-md">
                 <FeedbackChips

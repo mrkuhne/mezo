@@ -1344,7 +1344,8 @@ switch-gated (404 when `COMPANION_SWITCH` is off) and protected (401 without a t
 `MessageFeedbackResponse {artifactKind, artifactId, verdict, reason?, updatedAt}`. The three enums
 are spelled as plain `type: string` in both, but **only the INPUT side constrains them**:
 `PutFeedbackRequest`'s `artifactKind`/`verdict`/`reason` (and the GET `kind` query param + the
-DELETE path params) carry a `pattern` holding the `artifact_kind`/`verdict`/`reason` CHECK values
+DELETE `artifactKind` path param — the sibling `artifactId` carries `format: uuid` only, having no
+enum to constrain) carry a `pattern` holding the `artifact_kind`/`verdict`/`reason` CHECK values
 verbatim, so a bad value is a 400 from bean validation rather than a 500 from Jackson (the house
 `pattern`-over-`enum` rule). `MessageFeedbackResponse`'s three fields carry **only a `description`
 listing the values — no `pattern`**, which is the normal asymmetry: validation belongs on what a

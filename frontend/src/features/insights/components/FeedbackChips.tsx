@@ -17,15 +17,21 @@ const REASONS: { value: FeedbackReason; label: string }[] = [
  * to call `onVote` and with what args.
  * - 👍 always calls `onVote('up')` — the hook turns a repeat tap into a retraction.
  * - 👎 when not already the current verdict reveals a four-chip reason row instead of voting
- *   immediately; picking a reason calls `onVote('down', reason)` and closes the row.
- * - 👎 when ALREADY `down` calls `onVote('down')` with no reason — a retraction — and closes
- *   the row.
+ *   immediately; picking a reason calls `onVote('down', reason)`.
+ * - 👎 when ALREADY `down` calls `onVote('down')` with no reason — a retraction.
  *
- * The reason row's initial visibility mirrors the incoming `value` (open when already `down`,
- * so the current reason renders selected and the user can tap a different one to change it —
- * the hook upserts on any `onVote('down', reason)` even while already down). It is otherwise
- * plain `useState`, not re-derived from props on every render: once open or closed by a click
- * in this session, it stays that way until the next click changes it.
+ * The reason row is DERIVED, not seeded: it shows whenever the verdict is `down` (`isDown`), or
+ * when this session's 👎 opened it on a card that has no verdict yet (`reasonsOpen`). Seeding
+ * `useState` from `value` on mount was a bug (mezo-b3pp.15 review): in real mode `useDualQuery`
+ * serves `realEmpty` until the batch GET resolves, so `value` is `undefined` at mount on every
+ * cold load and — since all five mount sites key the instance by artifact id, so the arriving
+ * value never remounts it — a stored `down` could NEVER show its reason row. Deriving it means a
+ * stored `down` always renders its reason selected and a different reason is one tap away (the
+ * hook upserts on any `onVote('down', reason)`, even while already down), and the render no
+ * longer depends on whether the query cache happened to be warm on the first paint.
+ *
+ * The row therefore closes when the verdict stops being `down` — which is exactly what the
+ * retraction the 👎 re-tap fires does (the hook writes the cleared row optimistically).
  */
 export function FeedbackChips({
   value,
@@ -37,10 +43,13 @@ export function FeedbackChips({
   /** Screen-reader context, e.g. 'a heti tervjavaslatról'. */
   label: string
 }) {
-  const [reasonsOpen, setReasonsOpen] = useState(value?.verdict === 'down')
+  // Only the "opened by 👎 before any vote exists" case needs state; a stored `down` speaks for
+  // itself through `isDown` below.
+  const [reasonsOpen, setReasonsOpen] = useState(false)
 
   const isUp = value?.verdict === 'up'
   const isDown = value?.verdict === 'down'
+  const showReasons = reasonsOpen || isDown
 
   function handleDown() {
     if (isDown) {
@@ -52,8 +61,9 @@ export function FeedbackChips({
   }
 
   function handleReason(reason: FeedbackReason) {
+    // No close here: the vote makes the card `down`, and a `down` card SHOWS its reason row —
+    // that is where the selected reason renders and where changing it stays one tap away.
     onVote('down', reason)
-    setReasonsOpen(false)
   }
 
   return (
@@ -78,7 +88,7 @@ export function FeedbackChips({
           👎 Nem talált
         </button>
       </div>
-      {reasonsOpen && (
+      {showReasons && (
         <div className="row gap-xs flex-wrap">
           {REASONS.map((r) => (
             <button

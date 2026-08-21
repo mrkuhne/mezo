@@ -166,8 +166,8 @@ export function ChatPage() {
             </p>
           </div>
         )}
-        {/* Keyed by the persisted row id where there is one: FeedbackChips seeds its reason-row
-            state once, on mount, so React must never reuse one bubble's instance for a different
+        {/* Keyed by the persisted row id where there is one, so React never reuses one bubble's
+            FeedbackChips instance — and its session-local reason-row state — for a different
             answer. Unpersisted rows (mock user bubbles) keep the positional fallback — they
             render no chips and only ever get appended to the end. */}
         {messages.map((m, i) => (
