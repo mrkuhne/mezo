@@ -5,11 +5,12 @@ import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { JournalNote } from '@/data/journal/journalTypes'
 
-const acts = vi.hoisted(() => ({ useJournalActions: vi.fn(), useDecisionActions: vi.fn() }))
+const acts = vi.hoisted(() => ({ useJournalActions: vi.fn(), useDecisionActions: vi.fn(), useGratitudeActions: vi.fn() }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useJournalActions: acts.useJournalActions,
   useDecisionActions: acts.useDecisionActions,
+  useGratitudeActions: acts.useGratitudeActions,
 }))
 
 function note(over: Partial<JournalNote> = {}): JournalNote {
@@ -34,9 +35,11 @@ describe('JournalSheet', () => {
   const removeNote = vi.fn()
   const addDecision = vi.fn()
   const reviewDecision = vi.fn()
+  const addEntry = vi.fn()
   beforeEach(() => {
     acts.useJournalActions.mockReturnValue({ addNote, updateNote, removeNote, pending: false })
     acts.useDecisionActions.mockReturnValue({ addDecision, reviewDecision, pending: false })
+    acts.useGratitudeActions.mockReturnValue({ addEntry, removeEntry: vi.fn(), pending: false })
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -123,5 +126,41 @@ describe('JournalSheet', () => {
     renderSheet({ entry: note({ id: 'jn1', occurredOn: '2026-08-15', text: 'Régi.' }) })
 
     expect(screen.queryByRole('button', { name: 'Döntés' })).not.toBeInTheDocument()
+  })
+
+  test('gratitude mode saves every non-empty row with the chosen life area', async () => {
+    addEntry.mockResolvedValue({ id: 'g1' })
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderSheet({ onClose })
+
+    await user.click(screen.getByRole('button', { name: 'Hála' }))
+    expect(screen.getByText('Hálabejegyzés')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('1. hálás gondolat'), 'Reggeli kávé a teraszon')
+    await user.click(screen.getByRole('button', { name: '+ Még egy' }))
+    await user.type(screen.getByLabelText('2. hálás gondolat'), 'Hívott anya')
+    await user.click(screen.getByRole('button', { name: '🤝 Kapcsolatok' }))
+    await user.click(screen.getByRole('button', { name: 'Mentem' }))
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(addEntry).toHaveBeenCalledTimes(2)
+    expect(addEntry).toHaveBeenNthCalledWith(1, 'Reggeli kávé a teraszon', 'connection', expect.any(String))
+    expect(addEntry).toHaveBeenNthCalledWith(2, 'Hívott anya', 'connection', expect.any(String))
+  })
+
+  test('gratitude mode caps at 3 rows', async () => {
+    const user = userEvent.setup()
+    renderSheet({})
+    await user.click(screen.getByRole('button', { name: 'Hála' }))
+    await user.click(screen.getByRole('button', { name: '+ Még egy' }))
+    await user.click(screen.getByRole('button', { name: '+ Még egy' }))
+    expect(screen.queryByRole('button', { name: '+ Még egy' })).not.toBeInTheDocument()
+  })
+
+  test('gratitude mode: Mentem stays disabled when all rows are empty', () => {
+    renderSheet({})
+    fireEvent.click(screen.getByRole('button', { name: 'Hála' }))
+    expect(screen.getByRole('button', { name: 'Mentem' })).toBeDisabled()
   })
 })

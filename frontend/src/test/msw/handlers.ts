@@ -1277,6 +1277,17 @@ export const handlers = [
   }),
   http.delete(`${API_BASE}/api/journal/:id`, () => new HttpResponse(null, { status: 204 })),
 
+  // Gratitude (mezo-b3pp.3) — honest-empty default list, echo on create, 204 on delete.
+  // Without these, real-mode reads of /api/journal/gratitude hit MSW's 'bypass' fallthrough
+  // (test/setup.ts) and resolve via a real network error instead of exercising this handler.
+  http.get(`${API_BASE}/api/journal/gratitude`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/journal/gratitude`, async ({ request }) => {
+    const b = (await request.json()) as { text: string; lifeArea?: string | null; occurredOn?: string }
+    return HttpResponse.json({ id: 'gratitude-new', occurredOn: b.occurredOn ?? '2026-08-21', text: b.text,
+      lifeArea: b.lifeArea ?? null, createdAt: '2026-08-21T20:00:00Z' }, { status: 201 })
+  }),
+  http.delete(`${API_BASE}/api/journal/gratitude/:id`, () => new HttpResponse(null, { status: 204 })),
+
   // Decisions (mezo-b3pp.4) — honest-empty default list, mirroring the journal-notes default
   // above; without this, real-mode reads of /api/journal/decision hit MSW's 'bypass' fallthrough
   // (test/setup.ts) and resolve via a real network error instead of exercising this handler.

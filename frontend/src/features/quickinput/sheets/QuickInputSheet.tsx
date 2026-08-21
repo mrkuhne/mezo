@@ -18,8 +18,8 @@ import { useCheckins } from '@/data/hooks'
 /** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
  * sheet opened in its place. Napló used to jump straight to the activity log (`'naplo'`); it now
  * offers a choice first (mezo-b3pp.1) — `'naplo-pick'` renders inside the same Sheet shell, while
- * `'aktivitas'`/`'journal'` are the two log sheets it can swap in. */
-type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'checkin'
+ * `'aktivitas'`/`'journal'`/`'gratitude'` are the three log sheets it can swap in. */
+type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin'
 
 const NAV_ACTIONS = [
   { label: 'Étkezés', emoji: '🍽', to: '/fuel' },
@@ -61,6 +61,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
   if (phase === 'aktivitas') return <ActivityLogSheet onClose={onClose} />
   if (phase === 'journal') return <JournalSheet onClose={onClose} />
+  if (phase === 'gratitude') return <JournalSheet onClose={onClose} initialMode="gratitude" />
   if (phase === 'checkin' && checkInIdx !== null) {
     return (
       <CheckInSheet
@@ -84,6 +85,8 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                   onClick={() => setPhase('aktivitas')} />
                 <Tile emoji="📓" label="Napló"
                   onClick={() => setPhase('journal')} />
+                <Tile emoji="🙏" label="Hála"
+                  onClick={() => setPhase('gratitude')} />
               </div>
             </>
           ) : (
