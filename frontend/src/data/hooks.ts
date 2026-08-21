@@ -60,3 +60,4 @@ export { useScheduleSnapshotWriter } from '@/data/notification/notificationSched
 export { useNotificationFeed, useNotificationFeedActions } from '@/data/notification/feedHooks'
 export { useJournalNotes, useJournalActions } from '@/data/journal/journalHooks'
 export { useDecisions, useDecisionActions, isDecisionDue } from '@/data/journal/decisionHooks'
+export { useFeedback } from '@/data/feedback/feedbackHooks'
