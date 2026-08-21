@@ -257,9 +257,13 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         seedAntiCorrelatedDays(owner, 10);
         PatternEntity confirmed = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
         BigDecimal frozenR = confirmed.getR();
-        // Since the class-level @Transactional removal, `after` is re-read from Postgres
-        // (timestamptz, microsecond precision) rather than served from the first-level cache —
-        // truncate the in-memory (nanosecond) value to match before comparing.
+        // `after` is re-read from Postgres (timestamptz, microsecond precision) rather than
+        // served from the first-level cache. Since mezo-mfmb the entity already truncates its
+        // own default to micros — timestamptz ROUNDS a nanosecond value while this truncates,
+        // and on linux (nanosecond-resolution Instant.now()) the two drifted by 1 us, so this
+        // assertion failed on CI while passing on darwin. The truncate below is now a no-op
+        // kept as a guard: if a future write path forgets to truncate, this comparison and not
+        // some distant reader is where it should surface.
         Instant frozenDetectedAt = confirmed.getLastDetectedAt().truncatedTo(ChronoUnit.MICROS);
 
         patternDetectionService.detect(owner);

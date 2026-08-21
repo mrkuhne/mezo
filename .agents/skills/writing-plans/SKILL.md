@@ -12,12 +12,16 @@ Audience: an engineer with zero context. Every task must be executable without a
 Target ≤ 12 tool calls and ≤ 40K tokens of reading before you write. Never read a whole
 feature doc or a whole large file "to be safe".
 
-1. `grep -n "^### <feature>" docs/CODEMAP.md` → read ONLY that block (read_file with
-   offset/limit, ~40 lines). It tells you every package, table, endpoint, hook, surface, test.
-   FE surfaces of a domain may live under another feature block (e.g. journal UI under `me`).
+1. Find the feature block in docs/CODEMAP.md — replace the placeholder with the real feature
+   name, e.g. `grep -n "^### journal" docs/CODEMAP.md` (NOT the literal text `### <feature>`),
+   then read ONLY that block (read_file with offset = that line, limit 40). It tells you every
+   package, table, endpoint, hook, surface, test. FE surfaces of a domain may live under another
+   feature block (e.g. journal UI under `me`).
 2. The spec: only the sections the bd issue names.
-3. The feature doc `docs/features/<x>.md`: `grep -n "^## "` for headings, then read ONLY
-   §7 "How to extend it" and §10 "Key files" via offset/limit.
+3. The feature doc, e.g. docs/features/journal.md: `grep -n "^## " docs/features/journal.md`
+   for the heading line numbers, then read ONLY §7 "How to extend it" and §10 "Key files"
+   (read_file offset = the §7 line, limit = lines until the next heading). Never page through
+   the whole doc.
 4. The newest sibling plan in docs/superpowers/plans/ — skim its headings only (`grep -n "^#"`)
    to mirror the format.
 5. Open a listed source file only when a task's code depends on its exact signatures; each
@@ -26,6 +30,11 @@ feature doc or a whole large file "to be safe".
    explicit "deferred" section, never silent.
 
 ## Writing the plan
+
+Decide, THEN write. Work out a decision in your reasoning, and write only the final decision
+into the plan. Never leave "Actually…", "Wait —", "Let me reconsider", "Decision revised" or
+competing options in the document; if you change your mind, rewrite the section. A plan with
+two decisions in it is not executable.
 
 1. Map the file structure first: which files are created/modified, one responsibility each.
 2. Break work into tasks. One task = one testable deliverable + its own commit.
@@ -37,6 +46,10 @@ feature doc or a whole large file "to be safe".
    `execute_code` script for it instead of hand steps.
 6. Header must carry: Goal, Architecture (2–3 sentences), Global Constraints (exact
    values from the spec), spec link, driving bd id.
-7. Save to docs/superpowers/plans/YYYY-MM-DD-<feature>.md, commit.
+7. Save to docs/superpowers/plans/YYYY-MM-DD-<feature>.md — **in chunks**: first `write_file`
+   with the header + Global Constraints + the task headings only, then append one task at a
+   time with `patch` (each call ≤ ~150 lines). LM Studio buffers a tool call's arguments until
+   the call is complete, so a single 1 000-line write is 15+ minutes of silence and trips the
+   stream watchdog. Then commit.
 8. Self-check against the spec: every requirement maps to a task; types/names consistent
    across tasks. Fix inline, then offer execution.
