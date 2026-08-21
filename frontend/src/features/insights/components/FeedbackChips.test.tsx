@@ -138,6 +138,39 @@ test('picking a DIFFERENT reason on a stored down verdict upserts (never a retra
   expect(onVote).toHaveBeenCalledWith('down', 'bad_timing')
 })
 
+test('👍 after a 👎 + reason clears the row — no negative reason chips under an up verdict', () => {
+  const onVote = vi.fn()
+  const { rerender } = render(
+    <FeedbackChips value={undefined} onVote={onVote} label="a heti tervjavaslatról" />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: /Nem talált/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'túl sok' }))
+  rerender(
+    <FeedbackChips
+      value={feedback({ verdict: 'down', reason: 'too_much' })}
+      onVote={onVote}
+      label="a heti tervjavaslatról"
+    />,
+  )
+
+  fireEvent.click(screen.getByRole('button', { name: /Segített/ }))
+  expect(onVote).toHaveBeenLastCalledWith('up')
+  rerender(
+    <FeedbackChips
+      value={feedback({ verdict: 'up', reason: null })}
+      onVote={onVote}
+      label="a heti tervjavaslatról"
+    />,
+  )
+  // The verdict is positive now, so the four NEGATIVE reason chips must be gone — the session's
+  // 👎 flag has to be cleared by 👍, not just by the verdict falling out of `down`.
+  expect(screen.getByRole('button', { name: /Segített/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.queryByRole('button', { name: 'pontatlan' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'túl sok' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'rossz időzítés' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'nem rólam szól' })).not.toBeInTheDocument()
+})
+
 test('the chip group exposes an accessible name built from the label prop', () => {
   render(<FeedbackChips value={undefined} onVote={() => {}} label="a heti tervjavaslatról" />)
   expect(screen.getByRole('group', { name: /a heti tervjavaslatról/ })).toBeInTheDocument()

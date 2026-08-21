@@ -586,7 +586,9 @@ It is **purely presentational and controlled**: `{ value, onVote, label }`, no h
   reasons. Deriving it also makes the render independent of query-cache warmth (the seeded version
   drew two different UIs for the same artifact). It follows that picking a reason does NOT close
   the row (the card is now `down`, so the row belongs on screen with that reason selected), and
-  that the retraction closes it by clearing the verdict.
+  that the retraction closes it by clearing the verdict. 👍 clears the session flag as well as
+  voting — otherwise an `up` card that a 👎 opened earlier in the session would keep the four
+  NEGATIVE reason chips on screen under a positive verdict.
 - **Copy:** 👍 `Segített` / 👎 `Nem talált`, reasons `pontatlan` · `túl sok` · `rossz időzítés` ·
   `nem rólam szól`; the group's accessible name is `Visszajelzés {label}` (`a válaszról`,
   `a heti memoárról`, `a heti tervjavaslatról`, `az előrejelzésről`, `az üzenetről`).
@@ -667,13 +669,15 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   resolves, DELETE on re-tap, **a growing id set never blanking the chips already on screen**
   (the `keepPreviousRealData` case, §5.7), rollback on a failed vote, the 200-id cap keeping the
   NEWEST ids, no request at all on an empty id set, and a failing read degrading to "no verdicts"
-  instead of throwing (IDENT-3). `components/FeedbackChips.test.tsx` (10) covers the component's own
+  instead of throwing (IDENT-3). `components/FeedbackChips.test.tsx` (11) covers the component's own
   branches: 👎 reveals the reason row without voting, picking a reason votes and leaves the row up
   with that reason selected, 👎 while already down retracts (and the row goes when the verdict
   does), the stored reason renders selected, **a `down` verdict ARRIVING after mount opens the row**
   — the production path, `value={undefined}` first, then a rerender, since the seeded version made
   a stored `down` unreachable — **and a different reason picked on it upserts rather than
-  retracting**, plus `aria-pressed` and the group's accessible name. Per-surface cases: `ChatPage.test.tsx` (chips on the two assistant answers only;
+  retracting**, **👍 after a 👎+reason clearing the row** (no negative reason chips under an `up`
+  verdict — the session flag has to be cleared by 👍, not only by the verdict leaving `down`),
+  plus `aria-pressed` and the group's accessible name. Per-surface cases: `ChatPage.test.tsx` (chips on the two assistant answers only;
   **the in-flight draft carries none until `done` lands** — a gated-stream test; a 👎+reason writes
   only that answer, and the reason row is per-card), `MemoirPage.test.tsx` (the retired Like/Love/
   Save/Dismiss row is asserted GONE and the chips render in **real** mode too — the `mezo-kr9v`
@@ -779,7 +783,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `logic/metricFormat.ts` — **`mezo-fy97`**, human-readable rendering of the engine's raw wire doubles: `formatMetricValue` (hour-kind → `HH:mm`, binary → `igen`/`nem`, else one decimal; key sets mirror the backend `MetricKey` extractors), `axisEndLabels` (scatter x-ends), `formatR`/`formatP` (diagnostics precision) — pure, unit-tested in `metricFormat.test.ts`
 - `components/PatternJournal.tsx` — **`mezo-tk88.5`**, the history timeline (§2.1b step 4): a left rail + one tone-colored dot per `journalEntries()` row, entry text through `SafeMarkdown` (bold-only inline renderer), a `→ a Tudástárban` link on a promoted `confirmed` entry
 - `components/PatternImpactCard.tsx` — **`mezo-tk88.5`**, „Mit kezd ezzel az app" (§2.1b step 5): the fact/predictions/experiments/challenges rows (only when `pattern.status === 'confirmed'`, each row omitted if its ref list is empty) or the single future-tense fallback row otherwise
-- `components/FeedbackChips.tsx` (+ test) — **W4.1 `mezo-b3pp.15`**, the shared 👍/👎 row: `{value, onVote, label}`, purely presentational (the toggle semantics live in `useFeedback`), the four-chip reason row revealed by 👎, HU copy `Segített`/`Nem talált` + `pontatlan`/`túl sok`/`rossz időzítés`/`nem rólam szól`. Mounted by `ChatMessage`, `MemoirPage`, `WeeklyPage`, `PredictionsPage` — **and by Today's `MezoMessagesSheet`** ([`today.md` §10](today.md)), making it the **first** Insights *component* with a cross-feature consumer (the only earlier cross-out import is the `useVoiceInput` hook, by `features/me/sheets/JournalSheet.tsx`) — §5.7
+- `components/FeedbackChips.tsx` (+ test) — **W4.1 `mezo-b3pp.15`**, the shared 👍/👎 row: `{value, onVote, label}`, purely presentational (the toggle semantics live in `useFeedback`), the four-chip reason row shown whenever the verdict is `down` — no tap needed — and opened by 👎 on a card with no verdict yet (§5.7), HU copy `Segített`/`Nem talált` + `pontatlan`/`túl sok`/`rossz időzítés`/`nem rólam szól`. Mounted by `ChatMessage`, `MemoirPage`, `WeeklyPage`, `PredictionsPage` — **and by Today's `MezoMessagesSheet`** ([`today.md` §10](today.md)), making it the **first** Insights *component* with a cross-feature consumer (the only earlier cross-out import is the `useVoiceInput` hook, by `features/me/sheets/JournalSheet.tsx`) — §5.7
 - `data/feedback/{feedbackTypes,feedbackApi,feedbackMock,feedbackHooks}.ts` (+ `feedbackHooks.test.tsx`) — **W4.1** the data half: the FE enums + `FeedbackHandle`, the three-call client over the companion-owned `/api/companion/feedback` (contract `api/feature/companion-feedback/companion-feedback.yml`, [`companion.md` §4](companion.md)), the deliberately EMPTY mock seed, and `useFeedback(kind, ids)` — one batch read per page, optimistic write, retract-on-bare-re-tap. Exported through the `@/data/hooks` barrel like every other data hook
 - `data/useDualQuery.ts` — gained the optional real-mode-only `keepPreviousRealData` flag for `useFeedback`'s id-set-keyed cache (§5.7); default OFF, no existing caller affected. Documented in full in [`_platform-data-layer.md` §4/§10](_platform-data-layer.md), which owns this helper
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)

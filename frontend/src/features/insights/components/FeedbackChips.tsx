@@ -31,7 +31,9 @@ const REASONS: { value: FeedbackReason; label: string }[] = [
  * longer depends on whether the query cache happened to be warm on the first paint.
  *
  * The row therefore closes when the verdict stops being `down` — which is exactly what the
- * retraction the 👎 re-tap fires does (the hook writes the cleared row optimistically).
+ * retraction the 👎 re-tap fires does (the hook writes the cleared row optimistically). The 👍
+ * handler additionally clears the session flag, or an `up` card opened by an earlier 👎 in this
+ * session would keep the four NEGATIVE reason chips on screen under a positive verdict.
  */
 export function FeedbackChips({
   value,
@@ -50,6 +52,13 @@ export function FeedbackChips({
   const isUp = value?.verdict === 'up'
   const isDown = value?.verdict === 'down'
   const showReasons = reasonsOpen || isDown
+
+  function handleUp() {
+    // Clearing the flag matters even though 👍 never sets it: an `up` verdict must never sit above
+    // a row of NEGATIVE reason chips left open by a 👎 earlier in this session.
+    onVote('up')
+    setReasonsOpen(false)
+  }
 
   function handleDown() {
     if (isDown) {
@@ -71,7 +80,7 @@ export function FeedbackChips({
       <div className="row gap-sm" role="group" aria-label={`Visszajelzés ${label}`}>
         <button
           type="button"
-          onClick={() => onVote('up')}
+          onClick={handleUp}
           className={cn('chip', isUp && 'brand')}
           aria-pressed={isUp}
           style={{ padding: '6px 12px' }}
