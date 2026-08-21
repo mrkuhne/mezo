@@ -1053,6 +1053,9 @@ mezo:
     # Medication has no per-day time column (MedicationCycleService only derives which cycle
     # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
     medication-time: "08:00"
+    # A decision's review has no time of its own, only a due DATE (decision_entry.review_due) —
+    # the decision_review push anchors on this fixed HH:mm instead (spec §5.4, bd mezo-b3pp.4).
+    decision-review-time: "09:00"
     # How much of an already-generated prose row (companion_message/weekly/memoir) AnchorResolver
     # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
     prose-excerpt-chars: 160

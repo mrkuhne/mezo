@@ -45,6 +45,7 @@ public class MemoryEmbeddingEntity extends OwnedEntity {
     public static final String KIND_DAILY_SUMMARY = "daily_summary";
     public static final String KIND_WEEKLY_SUMMARY = "weekly_summary";
     public static final String KIND_JOURNAL_ENTRY = "journal_entry";
+    public static final String KIND_DECISION = "decision";
 
     @Id
     @GeneratedValue

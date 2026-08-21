@@ -122,6 +122,11 @@ function backendAnchorMinute(
     case 'memory':
       // feed-anchored categories (mezo-gzhp.3): backend events, not FE-forecastable — no preview anchors
       return null
+    case 'decision_review':
+      // Depends on whether a decision falls due today — a fact the forecast's inputs don't carry.
+      // An honest "no resolvable anchor", never a fabricated 09:00 that may not fire (same
+      // contract as sleep_reaction/weight_reaction above).
+      return null
   }
 }
 

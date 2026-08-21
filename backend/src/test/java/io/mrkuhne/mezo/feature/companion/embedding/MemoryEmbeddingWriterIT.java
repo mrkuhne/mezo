@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
@@ -215,5 +216,52 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId()))
                 .isEmpty();
+    }
+
+    @Test
+    void testWriteDecision_shouldPersistDecisionUnit_whenNewEntry() {
+        UUID owner = userPopulator.createUser().getId();
+        DecisionEntryEntity decision = journalPopulator.createDecision(owner, DAY,
+                "Váltok esti edzésre.", DAY.plusDays(30), "ctx");
+
+        memoryEmbeddingWriter.writeDecision(decision);
+
+        List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
+        assertThat(rows).hasSize(1);
+        MemoryEmbeddingEntity row = rows.getFirst();
+        assertThat(row.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_DECISION);
+        assertThat(row.getRefId()).isEqualTo(decision.getId());
+        // No outcome yet — content is the decision text alone, no "Kimenet" suffix.
+        assertThat(row.getContent()).isEqualTo(decision.getDecisionText());
+        assertThat(row.getOccurredOn()).isEqualTo(decision.getDecidedOn());
+        assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+    }
+
+    @Test
+    void testWriteDecision_shouldReembedInPlace_whenReviewed() {
+        UUID owner = userPopulator.createUser().getId();
+        DecisionEntryEntity decision = journalPopulator.createDecision(owner, DAY,
+                "Esti edzésre váltok.", DAY.plusDays(30), "ctx");
+        memoryEmbeddingWriter.writeDecision(decision);
+        MemoryEmbeddingEntity original = memoryEmbeddingRepository.findAll().getFirst();
+        UUID originalRowId = original.getId();
+        float[] originalEmbedding = original.getEmbedding();
+
+        decision.setOutcomeRating((short) 4);
+        decision.setOutcomeText("Jobban aludtam tőle.");
+        memoryEmbeddingWriter.writeDecision(decision);
+
+        List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
+        assertThat(rows).hasSize(1);
+        MemoryEmbeddingEntity row = rows.getFirst();
+        assertThat(row.getId()).isEqualTo(originalRowId);
+        assertThat(row.getContent()).isEqualTo(
+                "Esti edzésre váltok.\n\nKimenet (4/5): Jobban aludtam tőle.");
+        // The fake embedding adapter is deterministic per input text (seeded Random(text.hashCode())),
+        // so distinct content must yield a distinct vector — proves the re-embed actually re-embedded,
+        // not just re-stamped content on a stale vector (the testWriteJournal_shouldReembedInPlace_*
+        // precedent above).
+        assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding);
     }
 }

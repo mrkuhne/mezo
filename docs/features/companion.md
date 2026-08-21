@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-19
+updated: 2026-08-21
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -579,6 +579,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
+| Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
@@ -662,7 +663,7 @@ Spring events, no import of `feature/companion` — which the new **`JournalEmbe
 @TransactionalEventListener(AFTER_COMMIT)`, gated on BOTH `COMPANION_SWITCH` and the journal
 feature's own switch, failures logged+swallowed) consumes through two new
 `MemoryEmbeddingWriter` methods, **`writeJournal`/`deleteJournalEmbedding`**
-(`embedding/MemoryEmbeddingWriter.java:114-141`) — still the single write path, just a new
+(`embedding/MemoryEmbeddingWriter.java:119-137`/`:138-150`) — still the single write path, just a new
 `kind=journal_entry`. **Unlike `chat_turn`, journal has no nightly self-heal sweep** (spec §5.5
 scopes W1.5's catch-up job to `activity_note`/`checkin_note` only), so the listener handles its own
 create-then-edit (insert-race retry-once) and create-then-delete (orphaned-vector cleanup) races
@@ -678,6 +679,42 @@ the same migration, landing schema headroom for the rest of the Phase 5 W1 wave
 (`reflection`/`gratitude`/`decision`/`monthly_summary`/`activity_note`/`checkin_note` — only
 `journal_entry` is written today). See [`journal.md`](journal.md) §3/§5/§9 for the full seam,
 including the spec-deviation writeup for the update-in-place decision.
+
+**Decision embedding seam (`mezo-b3pp.4`, Phase 5 W1.4, post-epic) — a FOURTH narrative kind joins
+`memory_embedding`, reusing the `journal_entry` seam's exact shape.** `feature/journal`'s
+`DecisionService` (the decision journal + review loop over the new `decision_entry` table,
+[`journal.md`](journal.md) §4/§5) publishes `DecisionEntrySavedEvent` on both create and review; the
+new **`DecisionEmbeddingListener`** (`embedding/DecisionEmbeddingListener.java`, the
+`JournalEmbeddingListener` idiom verbatim: `@Async @TransactionalEventListener(AFTER_COMMIT)`, gated
+on BOTH `COMPANION_SWITCH` and the journal feature's own switch, failures logged+swallowed) reloads
+the live decision and calls the new `MemoryEmbeddingWriter.writeDecision`
+(`embedding/MemoryEmbeddingWriter.java:150-176`) — `kind=decision`, `KIND_DECISION`. **The rule worth
+knowing: a decision embeds twice into the SAME `(kind, ref_id)` row, not once.** On create it embeds
+just `decisionText`; once Daniel reviews it (`PUT /api/journal/decision/{id}/review`), the SAME row
+is re-embedded in place with the outcome folded into the content
+(`decisionText + "\n\nKimenet (" + outcomeRating + "/5): " + outcomeText`) — because the outcome
+("what did I decide, and did it work") is the half of a decision actually worth recalling later, not
+the raw decision text alone. This reuses the exact update-in-place mechanics `writeJournal` already
+established (`findByKindAndRefId` → update `content`/`embedding`/`occurred_on` when a live row
+exists, insert-only `write` on the first call) — **the one genuine difference from `journal_entry` is
+that there is no delete path** (the decision surface offers no delete), so
+`DecisionEmbeddingListener` carries no orphaned-vector re-check, only the same create-then-fast-review
+insert-race retry-once (`DataIntegrityViolationException` on `uq_memory_embedding_kind_ref_id` →
+re-read → retry). See [`journal.md`](journal.md) §3/§4/§5/§9 for the full decision-journal seam.
+
+**The reverse read, and why it's a port, not a direct import ([ADR 0029](../decisions/0029-invert-journal-companion-decision-context-port.md)).**
+`DecisionService.create` also needs something FROM the companion — the rendered context-snapshot
+text frozen into `decision_entry.context_snapshot` (`journal.md` §4). A direct
+`ContextSnapshotAssembler` import from `feature/journal` would have closed a `journal ↔ companion`
+cycle (companion already imports journal for the two listeners above), which
+`ArchitectureTest.feature_slices_are_cycle_free` — a `FreezingArchRule` that treats any NEW cycle as
+a build failure, not something to freeze — caught during the branch review that shipped W1.4. Fixed
+with the ADR 0012 consumer-owned-port idiom: `feature/journal/service/DecisionContextPort` (owned by
+journal) is implemented by `feature/companion/service/DecisionContextAssemblerAdapter`
+(`@ConditionalOnProperty(COMPANION_SWITCH)`, a one-line delegation to `ContextSnapshotAssembler#render`),
+consumed by `DecisionService` via `ObjectProvider<DecisionContextPort>`. The cross-feature edge this
+creates is `companion → journal` — the SAME direction the rest of the seam already runs — so the
+architecture stays acyclic with no frozen exception.
 
 ## 2. User-facing behavior
 
@@ -1077,9 +1114,10 @@ swapped in-slice across compose/k3s/Testcontainers):
   (chat_turn,daily_summary,weekly_summary)` at V2.1 — **widened to 10 kinds at Phase 5 W1.1**
   (`mezo-b3pp.1`, migration `202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`): `+
   monthly_summary, journal_entry, reflection, gratitude, decision, activity_note, checkin_note`.
-  Only `journal_entry` is populated as of W1.1 (`KIND_JOURNAL_ENTRY`, written by the new
-  `JournalEmbeddingListener` below); the other five new kinds are schema headroom for the rest of
-  the Phase 5 W1 narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
+  `journal_entry` (W1.1, `KIND_JOURNAL_ENTRY`, written by `JournalEmbeddingListener` below) and
+  `decision` (W1.4, `KIND_DECISION`, written by `DecisionEmbeddingListener` below) are populated as
+  of `mezo-b3pp.4`; the remaining four kinds are schema headroom for the rest of the Phase 5 W1
+  narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
   design spec's explicit instruction, rather than one `alter table` per later slice), `ref_id uuid`
   (`uq_memory_embedding_kind_ref_id (kind, ref_id)` — one embedding per source unit, the V2.2
   pipeline's idempotence anchor **and the spans-soft-deleted-rows constraint that makes journal's
@@ -2362,12 +2400,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY` + the 10-kind `@Pattern` (§4 above).
 - Tests: journal cases folded into `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/JournalEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip) — full test map in [`journal.md`](journal.md) §8.
 
+**Backend — decision embedding seam (`mezo-b3pp.4`, Phase 5 W1.4, post-epic — full detail in [`journal.md`](journal.md))**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s `DecisionEntrySavedEvent` (fired on both create and review), gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH`; retries once on the create-then-fast-review insert race, no delete-race handling (decisions aren't deletable).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:150-176` — `writeDecision`: embeds `decisionText` on create, re-embeds the SAME `(kind=decision, ref_id)` row in place on review with the outcome folded into the content (`"…\n\nKimenet (N/5): …"`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_DECISION` (the 10-kind `@Pattern`, §4 above, unchanged — `'decision'` was already permitted).
+- Tests: decision cases folded into `MemoryEmbeddingWriterIT` (`testWriteDecision_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/DecisionEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip, both create and review) — full test map in [`journal.md`](journal.md) §8.
+
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.1`** added `Journal` (`:203-207` — `decisionReviewDays`, unused by this slice, landed early for W1.4's decision journal).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; see above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned port for the reverse (companion→journal) context-snapshot read (ADR 0029).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side adapter implementing `DecisionContextPort` (ADR 0029), gated `COMPANION_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `COMPANION_SWITCH` + extraction/advisors sub-switches.
 - `backend/src/main/resources/application.yml` — `mezo.feature.companion.enabled` + `mezo.companion.llm.*`/`chat.*` + `spring.ai.google.genai.api-key`.
 

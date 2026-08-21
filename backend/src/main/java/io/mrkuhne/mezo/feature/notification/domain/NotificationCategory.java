@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * The 20 push-notification categories (14 anchor-resolved + 6 feed-anchored, spec 2026-08-18). This enum is the single source of truth
+ * The 21 push-notification categories (15 anchor-resolved + 6 feed-anchored, spec 2026-08-18). This enum is the single source of truth
  * for which categories exist, which default ON, which carry a notification-side lead offset, and
  * which are FE-written — see spec §6 (`docs/superpowers/specs/2026-07-29-push-notifications-design.md`)
  * for the authoritative catalog table (key, anchor, source of truth, v1 default).
@@ -83,7 +83,11 @@ public enum NotificationCategory {
     CHALLENGE("challenge", true, 0, false),
 
     /** Same feed-anchored family — the nightly L1 memory note. */
-    MEMORY("memory", true, 0, false);
+    MEMORY("memory", true, 0, false),
+
+    /** Anchor: {@code mezo.notification.decision-review-time} on a decision's own {@code review_due}
+     *  day, while it is still unreviewed (Phase 5 W1.4, bd mezo-b3pp.4). */
+    DECISION_REVIEW("decision_review", true, 0, false);
 
     private final String key;
     private final boolean defaultEnabled;

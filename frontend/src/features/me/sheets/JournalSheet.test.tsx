@@ -1,13 +1,15 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { JournalNote } from '@/data/journal/journalTypes'
 
-const acts = vi.hoisted(() => ({ useJournalActions: vi.fn() }))
+const acts = vi.hoisted(() => ({ useJournalActions: vi.fn(), useDecisionActions: vi.fn() }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useJournalActions: acts.useJournalActions,
+  useDecisionActions: acts.useDecisionActions,
 }))
 
 function note(over: Partial<JournalNote> = {}): JournalNote {
@@ -30,8 +32,11 @@ describe('JournalSheet', () => {
   const addNote = vi.fn()
   const updateNote = vi.fn()
   const removeNote = vi.fn()
+  const addDecision = vi.fn()
+  const reviewDecision = vi.fn()
   beforeEach(() => {
     acts.useJournalActions.mockReturnValue({ addNote, updateNote, removeNote, pending: false })
+    acts.useDecisionActions.mockReturnValue({ addDecision, reviewDecision, pending: false })
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -90,5 +95,33 @@ describe('JournalSheet', () => {
     fireEvent.click(confirmButton)
     await waitFor(() => expect(removeNote).toHaveBeenCalledWith('jn-1'))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  test('offers a Döntés mode in create mode and saves through the decision hook', async () => {
+    addDecision.mockResolvedValue({ id: 'dec-1' })
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderSheet({ onClose })
+
+    await user.click(screen.getByRole('button', { name: 'Döntés' }))
+    expect(screen.getByText(/visszanézzük/i)).toBeInTheDocument()
+    // The date input's accessible name must follow the visible "Döntés napja" label switch, not
+    // stay hardcoded to the note-mode "Dátum" (screen-reader/sighted-label mismatch, mezo-b3pp.4
+    // Task 6 review finding, fixed in Task 7).
+    expect(screen.getByLabelText('Döntés napja')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Dátum')).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: /Döntés/i }), 'Esti edzésre váltok.')
+    await user.click(screen.getByRole('button', { name: 'Mentem' }))
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(addDecision).toHaveBeenCalledWith('Esti edzésre váltok.', expect.any(String))
+    expect(addNote).not.toHaveBeenCalled()
+  })
+
+  test('hides the mode toggle when editing an existing note', () => {
+    renderSheet({ entry: note({ id: 'jn1', occurredOn: '2026-08-15', text: 'Régi.' }) })
+
+    expect(screen.queryByRole('button', { name: 'Döntés' })).not.toBeInTheDocument()
   })
 })

@@ -2,37 +2,49 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-08-19
+updated: 2026-08-21
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
+  - backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java
   - frontend/src/data/journal
   - frontend/src/features/me/sheets/JournalSheet.tsx
+  - frontend/src/features/me/sheets/DecisionReviewSheet.tsx
   - frontend/src/features/me/pages/JournalPage.tsx
   - api/feature/journal/journal.yml
-related: [me, companion, _platform-data-layer, _platform-api-backend]
+related: [me, companion, _platform-data-layer, _platform-api-backend, _platform-notifications]
 ---
 
 # Journal — Free-Prose Notes + Narrative Memory Embedding
 
-> Free-prose journal entries, captured in two taps from either the global QuickInput sheet or the
-> dedicated `/me/naplo` page, persisted in `journal_entry`, and embedded post-commit into the
-> companion's `memory_embedding(kind=journal_entry)` vector store. **Status: ✅ done** (backend +
-> FE real + FE mock). Lives under the `Me` tab (`ME_TABS` entry `journal`, `/me/naplo`) — see
-> [`me.md`](me.md) §2 for the surface, this doc for the domain. bd `mezo-b3pp.1`, **W1.1 of the
-> Phase 5 "deep memory & personalization" epic** (`mezo-b3pp`).
+> Two aggregates in one domain: free-prose `journal_entry` notes (W1.1, `mezo-b3pp.1`), captured in
+> two taps from either the global QuickInput sheet or the dedicated `/me/naplo` page; and
+> `decision_entry` decisions + their later review (W1.4, `mezo-b3pp.4`), captured via the same
+> `JournalSheet` in a „Döntés" mode. Both persist server-side and embed post-commit into the
+> companion's `memory_embedding` vector store (`kind=journal_entry` / `kind=decision`).
+> **Status: ✅ done** (backend + FE real + FE mock, both aggregates). Lives under the `Me` tab
+> (`ME_TABS` entry `journal`, `/me/naplo`) — see [`me.md`](me.md) §2 for the surface, this doc for
+> the domain. **W1.1 + W1.4 of the Phase 5 "deep memory & personalization" epic** (`mezo-b3pp`).
 
 ## 1. Summary
 
-**Journal** is the first slice of Phase 5's W1 "narrative capture" wave: it gives Daniel a place to
-write whatever is on his mind — no structure, no scoring, no engine reading it back yet — and feeds
-that prose into the companion's episodic memory so a later chat can recall it. It deliberately does
-**less** than it could: one free-text field, one optional date, no tags, no AI processing of the
-entry itself. The value W1.1 ships is the **pipe**, not an app on top of it.
+**Journal** is the narrative-capture domain of Phase 5's W1 wave. It now holds two aggregates that
+ship the **same** embed pipeline twice over:
 
-Two things ship together:
+- **`journal_entry`** (W1.1, `mezo-b3pp.1`) — free prose, no structure, no scoring: one free-text
+  field, one optional date, no tags, no AI processing of the entry itself. The value W1.1 shipped is
+  the **pipe**, not an app on top of it.
+- **`decision_entry`** (W1.4, `mezo-b3pp.4`) — a decision captured **with its context frozen at the
+  moment of the decision** (server-side, never client-supplied, never returned over the wire) and a
+  later, optional review that records how it played out. Where `journal_entry` is unstructured
+  reflection, `decision_entry` is a lightweight decision journal + review loop: capture now, get
+  reminded later, look back honestly.
+
+Three things ship together (the first two from W1.1, the third added by W1.4):
 - **The `journal_entry` aggregate** (`feature/journal`) — a small, independent CRUD domain: create,
   ranged list (newest first), update (text and/or day), soft-delete. Own contract, own switch.
 - **The embed seam into `feature/companion`** — every create/update/delete publishes a Spring
@@ -40,15 +52,24 @@ Two things ship together:
   `memory_embedding` in sync through the **existing single write path**,
   `MemoryEmbeddingWriter` (companion.md §"Embed pipeline" / §4). Journal never touches
   `memory_embedding` or `EmbeddingPort` itself — the memory write is entirely companion's.
+- **The `decision_entry` aggregate** (`feature/journal`, same package, `DecisionService`) — create
+  (server-captures the context snapshot + defaults `reviewDue`), list (newest-first, no params),
+  review (stamps the outcome, re-runnable). Own `DecisionEntrySavedEvent` → `DecisionEmbeddingListener`
+  → `MemoryEmbeddingWriter.writeDecision` seam, mirroring `journal_entry`'s exactly, plus a
+  `decision_review` push category ([`_platform-notifications.md`](_platform-notifications.md) §4) that
+  reminds Daniel on the decision's own `review_due` day.
 
-Status per layer: **backend** ✅ (`feature/journal` — 1 table, `JournalService`, `JournalController`,
-switch-gated; companion's `JournalEmbeddingListener` + `MemoryEmbeddingWriter.writeJournal`/
-`.deleteJournalEmbedding`), **FE real** ✅ (`JournalSheet` create/edit/delete + `JournalPage` at
-`/me/naplo`, both wired through `@/data/hooks`), **FE mock** ✅ (deterministic 5-note seed spanning
-two months, dual-mode hooks). Driving design spec: [`2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md)
-§4.1 (data model), §4.3 (the `memory_embedding` kind expansion), §5.1 (W1.1 slice spec), §11
-(cross-cutting conventions). Plan of record:
-[`2026-08-18-w1-1-journal-embed-pipeline.md`](../superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md).
+Status per layer: **backend** ✅ (`feature/journal` — 2 tables, `JournalService`/`DecisionService`,
+one `JournalController` implementing both, switch-gated; companion's `JournalEmbeddingListener`/
+`DecisionEmbeddingListener` + `MemoryEmbeddingWriter.writeJournal`/`.writeDecision`/
+`.deleteJournalEmbedding`), **FE real** ✅ (`JournalSheet` create/edit/delete + Döntés capture mode +
+`JournalPage` at `/me/naplo` with its open-decisions block + `DecisionReviewSheet`, all wired through
+`@/data/hooks`), **FE mock** ✅ (deterministic seeds for both aggregates, dual-mode hooks). Driving
+design spec: [`2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md)
+§4.1 (data model), §4.3 (the `memory_embedding` kind expansion), §5.1 (W1.1 slice spec), §5.4 (W1.4
+decision-journal slice spec), §11 (cross-cutting conventions). Plans of record:
+[`2026-08-18-w1-1-journal-embed-pipeline.md`](../superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md),
+[`2026-08-20-w1-4-decision-journal.md`](../superpowers/plans/2026-08-20-w1-4-decision-journal.md).
 
 ## 2. User-facing behavior
 
@@ -61,7 +82,7 @@ two tiles: **„✍️ Aktivitás"** (unchanged — opens `ActivityLogSheet`, th
 and **„📓 Napló"** (opens `JournalSheet` in create mode). Both replace the picker in place — closing
 either closes the whole QuickInput stack (`QuickInputSheet.tsx:61-63`).
 
-### `JournalSheet` (`features/me/sheets/JournalSheet.tsx`) — create + edit + delete
+### `JournalSheet` (`features/me/sheets/JournalSheet.tsx`) — create + edit + delete, plus a „Döntés" capture mode
 One free-text `<textarea>` (no length cap, placeholder „Írd le, mi jár a fejedben…", autofocus) plus
 an optional `<input type="date">` defaulting to today, plus a mic button reusing the shared
 `useVoiceInput` hook (`features/insights/logic/useVoiceInput`, the `ChatPage` composer idiom — the
@@ -70,6 +91,17 @@ title „Mi jár a fejedben?" in create mode / „Bejegyzés szerkesztése" in e
 set). CTAs „Mégse" / „Mentem" — save calls `addNote` (create) or `updateNote` (edit) then closes.
 **Edit mode only** additionally offers **„Törlés"** behind a two-step confirm („Törlés" →
 „Biztosan törlöd?", `var(--error)` styling, the `EditGoalSheet` idiom) → `removeNote`.
+
+**Create mode only** (`!entry`) additionally renders a two-chip mode toggle — **„Napló" / „Döntés"**
+(`aria-pressed`, the house `.chip[aria-pressed='true']` idiom, no extra CSS class needed) — internal,
+ephemeral `useState`, always resets to `'note'` on remount, no prop to open the sheet pre-set to
+decision mode. Switching to **„Döntés"** (title „Milyen döntést hoztál?", date row label „Döntés
+napja") repoints the same textarea at a decision and, on save, calls `addDecision(text, date)`
+(`useDecisionActions`, W1.4 `mezo-b3pp.4`) instead of `addNote` — a day-count-free horizon hint
+paragraph („…és szólunk, amikor itt az ideje, hogy visszanézzük, hogyan sült el.") renders under the
+card, deliberately never naming `mezo.companion.journal.decision-review-days` as a number. Editing an
+existing note never shows the toggle — there is no note→decision conversion, and `mode` is always
+`'note'` whenever `entry` is set.
 
 ### `/me/naplo` — `JournalPage` (`features/me/pages/JournalPage.tsx`)
 The read + manage surface, reached via the `Napló` tab in `ME_TABS` (right after `Growth`). Header
@@ -91,6 +123,22 @@ grows it by 3 more months per tap (`windowFrom`, pure integer month arithmetic �
   „Korábbi hónapok" CTA as the footer (an empty *current* window and "no entries anywhere" render
   identically; widening covers both without stranding a user whose oldest entry sits outside the
   default 3-month window).
+
+### `/me/naplo` open-decisions block + `DecisionReviewSheet` (W1.4, `mezo-b3pp.4`)
+Above the notes list, `JournalPage` renders a **„Döntések"** block — but only when at least one
+decision is unreviewed (`reviewedAt === null`); a fully-reviewed history has no dedicated surface in
+this slice. Each card shows the decided-on day label and a chip: **„Nézd vissza"** (amber wash) once
+the decision's own `reviewDue` day has arrived (`isDecisionDue`, `data/journal/decisionHooks.ts`), or
+**„Visszanézés: {reviewDue}"** while it's still ripening. Tapping a card opens
+**`DecisionReviewSheet`** (`features/me/sheets/DecisionReviewSheet.tsx`) — title „Hogyan sült el?",
+eyebrow „Döntés · {dayLabel}", a required 1–5 rating (`role="group"` of `aria-pressed` chips, label
+„Mennyire vált be? (1–5)"), an optional outcome textarea (accessible name „Hogyan sült el —
+részletek"), CTAs „Mégse" / „Mentem" (disabled until a rating is chosen). Save calls `reviewDecision`
+(`useDecisionActions`) — no delete, no edit, neither endpoint exists for a decision. A failed
+decisions fetch (`isError && openDecisions.length === 0`) renders a compact one-line `GhostState`
+(„Nem sikerült betölteni a döntéseket." + „Újra" retry) instead of silently vanishing; a
+stale-but-present list on a later failed refetch falls through to the normal block, matching the
+notes list's own stale-data behavior.
 
 ## 3. Architecture & data flow
 
@@ -168,16 +216,39 @@ Migration [`202608181600_mezo-b3pp.1_create_journal_entry.sql`](../../backend/sr
 `findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc` (the ranged
 list, newest-first by day then by creation time within a day).
 
-### The `memory_embedding` kind expansion (rides in this slice, spec §4.3)
+### Backend table — `decision_entry` (W1.4, `mezo-b3pp.4`)
+
+Migration [`202608201200_mezo-b3pp.4_create_decision_entry.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202608201200_mezo-b3pp.4_create_decision_entry.sql)
+(registered in `1.0.0_master.yml`):
+
+- **`decision_entry`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user`, `is_deleted`,
+  `created_at timestamptz`, `decided_on date not null` (defaults to today server-side when omitted),
+  `decision_text text not null`, `context_snapshot jsonb not null` (`DecisionContextEnvelope`, a
+  server-rendered `ContextSnapshotAssembler.render` output frozen **at create time** — **never
+  client-supplied, never returned over the wire in either direction**; a client-supplied value is
+  silently ignored, pinned by `DecisionApiIT`), `review_due date not null` (defaults to
+  `decided_on + mezo.companion.journal.decision-review-days`, 30), `reviewed_at timestamptz`
+  (null = unreviewed), `outcome_rating smallint` (`ck_decision_entry_outcome_rating BETWEEN 1 AND 5`),
+  `outcome_text text`; index `idx_decision_entry_created_by_review_due (created_by, review_due)`.
+
+`DecisionEntryEntity` (`entity/DecisionEntryEntity.java`) `extends OwnedEntity`, `@SQLDelete`/
+`@SQLRestriction` soft delete, `@JdbcTypeCode(SqlTypes.JSON)` on `contextSnapshot`, `@Min(1)`/`@Max(5)`
+mirroring the DB CHECK. Repository (`repository/DecisionEntryRepository.java`) three finders: the
+owned-lookup-or-404 idiom, newest-first list, and a `review_due` finder `AnchorResolver` reads
+directly (§5, [`_platform-notifications.md`](_platform-notifications.md) §4).
+
+### The `memory_embedding` kind expansion (rides in W1.1, spec §4.3)
 
 Migration [`202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql)
 widens `ck_memory_embedding_kind` from the V2.2-era `chat_turn|daily_summary|weekly_summary` to ten
 values: `chat_turn, daily_summary, weekly_summary, monthly_summary, journal_entry, reflection,
-gratitude, decision, activity_note, checkin_note`. **Only `journal_entry` is populated as of W1.1**
-— `MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY` is the sole new constant/writer method; the other six
-new kinds are schema headroom the rest of the Phase 5 W1 wave will fill (§5 below). The `(kind,
-ref_id)` uniqueness and the single `MemoryEmbeddingWriter` write path are unchanged by design — see
-[`companion.md`](companion.md) §4 for the full `memory_embedding` table shape.
+gratitude, decision, activity_note, checkin_note`. **`journal_entry` (W1.1) and `decision` (W1.4) are
+now both populated** — `MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY`/`KIND_DECISION` are the two
+constants with a writer method so far; the other five kinds remain schema headroom the rest of the
+Phase 5 W1 wave will fill (§5 below). W1.4 needed **no migration** of its own for this — the CHECK
+already permitted `'decision'`. The `(kind, ref_id)` uniqueness and the single `MemoryEmbeddingWriter`
+write path are unchanged by design — see [`companion.md`](companion.md) §4 for the full
+`memory_embedding` table shape.
 
 ### API (contract-first, [`api/feature/journal/journal.yml`](../../api/feature/journal/journal.yml), tag `Journal` → `JournalApi`, `JournalController implements JournalApi`, gated `mezo.feature.journal.enabled` — off ⇒ the whole `/api/journal` surface 404s and no journal beans exist)
 
@@ -197,6 +268,27 @@ through `SystemRuntimeErrorException` + `SystemMessage`
 [`error_handling.md`](../references/error_handling.md). `JournalService.findOwned` is the single
 404 site (`service/JournalService.java:76-80`), reused by both `update` and `delete`.
 
+### API — decision endpoints (W1.4, `mezo-b3pp.4`, same contract file, same `JournalApi`/`JournalController`)
+
+| Method + path | Operation | Returns | Errors |
+|---|---|---|---|
+| `GET /api/journal/decision` | `listDecisionEntries` | `DecisionEntryResponse[]`, newest first — **no query params** (deliberate: every non-deleted decision, small per-user volume, no range concept the way notes have) | 401 |
+| `POST /api/journal/decision` (`{decisionText, decidedOn?}`) | `createDecisionEntry` | `DecisionEntryResponse` (201) | 400 (blank text) |
+| `PUT /api/journal/decision/{id}/review` (`{outcomeRating, outcomeText?}`) | `reviewDecisionEntry` | `DecisionEntryResponse` (200) | 400; 404 `DECISION_ENTRY_NOT_FOUND` |
+
+**`DecisionEntryResponse` never carries `contextSnapshot` — on neither `POST` nor `GET`, in either
+direction.** `context_snapshot` is rendered and stored **entirely server-side**
+(`ContextSnapshotAssembler.render`, called from `DecisionService.create`); the contract has no field
+for it at all, so there is nothing for a client to send or read. **There is no delete AND no update
+endpoint for decisions this slice** — a decision, once made, stays in the record with its original
+text/day even if its review never happens; only journal notes have both. **The review endpoint is deliberately re-runnable, no
+409** — `PUT .../review` always overwrites `reviewedAt`/`outcomeRating`/`outcomeText`, so a second,
+more honest review after further reflection is a feature, not an error path to guard against; see §9
+for why this shows up as an unreachable-but-kept prefill path in `DecisionReviewSheet` today.
+Errors go through the same `SystemRuntimeErrorException` + `SystemMessage` convention
+(`DECISION_ENTRY_NOT_FOUND=A döntés nem található.`, `messages.properties:84`, right after
+`JOURNAL_ENTRY_NOT_FOUND`).
+
 ### FE domain type + wire mapping
 
 `JournalNote` (`data/journal/journalTypes.ts`) — `{id, occurredOn, text, source: 'quickinput' |
@@ -206,21 +298,32 @@ through `SystemRuntimeErrorException` + `SystemMessage`
 wire types via `toJournalNote`; the mock seed (`journalMock.ts`, `mockJournalNotes`) is 5 Hungarian
 entries spanning the current and previous month so month-grouping is visible in mock mode.
 
+`DecisionEntry` (`data/journal/decisionTypes.ts`) — `{id, decidedOn, decisionText, reviewDue,
+reviewedAt: string | null, outcomeRating: number | null, outcomeText: string | null, createdAt}` — no
+`contextSnapshot` field, matching the wire contract above. `decisionApi.ts` maps
+`paths['/api/journal/decision']`/`paths['/api/journal/decision/{id}/review']` via `toDecisionEntry`
+(normalizing an omitted `reviewedAt`/`outcomeRating`/`outcomeText` to `null`, never `undefined`); the
+mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewed.
+
 ### Config
 
 - **Switch:** `mezo.feature.journal.enabled` (`FeaturesConfiguration.JOURNAL_SWITCH`,
-  `techcore/configuration/FeaturesConfiguration.java:179`) gates `JournalService` + `JournalController`
-  **and** `JournalEmbeddingListener` (jointly with `COMPANION_SWITCH`) — off ⇒ `/api/journal` 404s,
-  no journal beans exist, and the listener bean is absent so no journal embed call can ever happen.
-- **`CompanionProperties.Journal`** (`feature/companion/config/CompanionProperties.java:203-207`) —
-  `@Positive int decisionReviewDays` (default 30, `mezo.companion.journal.decision-review-days` in
-  `application.yml:817-818`). **Not consumed by anything in W1.1** — the record exists so W1.4's
-  decision journal (`decision_entry.review_due` default offset, spec §5.4) has its config knob
-  landed early rather than added as a later migration-adjacent change.
+  `techcore/configuration/FeaturesConfiguration.java:179`) gates `JournalService`/`DecisionService` +
+  `JournalController` **and** `JournalEmbeddingListener`/`DecisionEmbeddingListener` (jointly with
+  `COMPANION_SWITCH`) — off ⇒ `/api/journal` (both notes and decisions) 404s, no journal beans exist,
+  and neither listener bean exists so no embed call can ever happen.
+- **`JournalProperties`** (`feature/journal/config/JournalProperties.java`, own `@ConfigurationProperties`
+  record, ADR 0029) — `@Positive int decisionReviewDays` (default 30,
+  `mezo.companion.journal.decision-review-days` in `application.yml:821-822`; the prefix stayed on
+  `mezo.companion.journal.*` deliberately when the record moved out of `CompanionProperties.Journal`,
+  so neither the YAML key nor the design spec's configured key needed to change). Landed in W1.1
+  unconsumed, ahead of need; **W1.4's `DecisionService` now consumes it** to default
+  `decision_entry.review_due = decidedOn + decisionReviewDays` when the caller doesn't (the client
+  never computes or overrides `reviewDue`).
 
 ## 5. Integrations
 
-- **→ Companion (embed pipeline, wired, one-way OUT):** every journal write feeds
+- **→ Companion (embed pipeline, wired, one-way OUT — `journal_entry`):** every journal write feeds
   `memory_embedding` through the seam in §3 above. **Contract crossing the seam:** the two event
   records `JournalEntrySavedEvent{entryId}` / `JournalEntryDeletedEvent{entryId}` (no `userId` —
   mezo is single-user, so an owner id on the event could never discriminate anything; the listener
@@ -230,24 +333,59 @@ entries spanning the current and previous month so month-grouping is visible in 
   [`companion.md`](companion.md) for the consuming side (`JournalEmbeddingListener`,
   `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding`) and the ArchUnit
   `feature_slices_are_cycle_free` guard this keeps satisfied (companion → journal is allowed, the
-  reverse is not).
+  reverse is not — see the decision-context seam below for the ONE place `feature/journal` needs
+  something FROM the companion, and how it stays on the same one-way rule).
+- **→ Companion (embed pipeline, wired, one-way OUT — `decision`, W1.4 `mezo-b3pp.4`):** the exact
+  same shape as the note seam above, one event type: `DecisionEntrySavedEvent{decisionId}`, published
+  after both `create` **and** `review` commit. `DecisionEmbeddingListener`
+  (`feature/companion/embedding/`, `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`,
+  gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH`) re-reads the decision and calls
+  `MemoryEmbeddingWriter.writeDecision` — first write inserts a `kind=decision` row holding
+  `decisionText` alone; **the review re-embed updates the SAME row in place** with `decisionText +
+  "\n\nKimenet (N/5): outcomeText"`, so what the companion recalls always includes the outcome once
+  one exists. **No delete-race cleanup in this listener** (unlike `JournalEmbeddingListener`'s) —
+  there is no delete endpoint for decisions (§4), so there is no analogue of a racing delete to guard
+  against; if a future slice ever adds decision deletion, this listener needs that guard added at
+  that time.
+- **← Companion (context-snapshot read, wired, ADR 0029): the ONE place `feature/journal` needs
+  something FROM the companion, kept one-way via a journal-owned port.** `DecisionService.create`
+  needs the companion's rendered context-snapshot text at write time (§4's `context_snapshot`); a
+  direct `ContextSnapshotAssembler` import would have closed a `journal ↔ companion` cycle (companion
+  already imports journal for the two listeners above) — `ArchitectureTest.feature_slices_are_cycle_free`
+  caught exactly this as a NEW cycle during review and failed the build. Fixed with the same
+  consumer-owned-port idiom [ADR 0012](../decisions/0012-consumer-owned-llm-ports.md) established:
+  `feature/journal/service/DecisionContextPort` (one method, `render(userId, today)`) is owned here;
+  `feature/companion/service/DecisionContextAssemblerAdapter` implements it by delegating straight to
+  `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH` alone. `DecisionService` consumes it
+  through `ObjectProvider<DecisionContextPort>` — companion off ⇒ no adapter bean ⇒ empty
+  `snapshotText`, the exact honest-degraded behavior from before the fix (IDENT-3, pinned by
+  `DecisionApiCompanionOffIT`), unchanged by the inversion. The cross-feature edge this creates
+  (`companion → journal`, the adapter importing the journal-owned interface) runs the SAME direction
+  the rest of this seam already runs, so no new cycle. Full rationale: [ADR
+  0029](../decisions/0029-invert-journal-companion-decision-context-port.md).
 - **← QuickInput (wired):** the global `QuickInputSheet` „Napló" tile is journal's other write
   entry point, alongside `Me`'s own `+ Új bejegyzés`. See §2.
-- **↔ Me (wired, hosting):** `/me/naplo` is a `ME_TABS` tab; `JournalSheet`/`JournalPage` live under
-  `frontend/src/features/me/` even though the journal **domain** (types/hooks/API client) has its
-  own `data/journal/` module — the same "hosted in Me, owned by its own data module" shape
-  `growth.md` uses for the Growth page's history reads. See [`me.md`](me.md) §2 (`Napló`
-  subsection) / §5.
-- **🟣 Future W1 slices reuse this exact seam, not a new one (spec §5.2–§5.5):** W1.2 (evening
+- **↔ Me (wired, hosting):** `/me/naplo` is a `ME_TABS` tab; `JournalSheet`/`JournalPage`/
+  `DecisionReviewSheet` live under `frontend/src/features/me/` even though the journal **domain**
+  (types/hooks/API client for both aggregates) has its own `data/journal/` module — the same "hosted
+  in Me, owned by its own data module" shape `growth.md` uses for the Growth page's history reads.
+  See [`me.md`](me.md) §2 (`Napló` subsection) / §5.
+- **→ Push notifications (wired, one-way OUT — `decision_review`, W1.4 `mezo-b3pp.4`):**
+  `AnchorResolver` reads `DecisionEntryRepository` directly (a fourth backend-native anchor source,
+  alongside gym/medication/ritual) and fires a `decision_review` push for every unreviewed decision
+  whose `review_due` lands exactly on today (never `<=` — an overdue decision does not re-fire; it is
+  carried instead by the `/me/naplo` „Nézd vissza" chip, §2, so the push never nags every morning
+  after the due day passes). Full category shape (default ON, lead 0, dedup suffix) lives in
+  [`_platform-notifications.md`](_platform-notifications.md) §4 — this is the one seam in the domain
+  that is **not** the embed pipeline.
+- **🟣 Future W1 slices reuse the embed seam above, not a new one (spec §5.2–§5.5):** W1.2 (evening
   prose reflection in Napzárás, `mezo-b3pp.2`) embeds `kind=reflection` off `ritual_day` on close;
   W1.3 (gratitude entries, `mezo-b3pp.3`) adds `gratitude_entry` in the **same** `feature/journal`
-  package and embeds `kind=gratitude`; W1.4 (decision journal + review loop, `mezo-b3pp.4`) adds
-  `decision_entry` (server-captured context snapshot) and embeds `kind=decision` on create **and**
-  re-embeds on review; W1.5 (note-embedding catch-up, `mezo-b3pp.5`) extends the nightly
-  `DailySummaryJob` sweep to embed `activity_log`/check-in notes as `kind=activity_note`/
-  `checkin_note`. Every one of these is "a new `write<Kind>` method on `MemoryEmbeddingWriter`, not
-  a second writer" (spec §4.3) — the CHECK constraint this slice widened already has room for all
-  six.
+  package and embeds `kind=gratitude`; W1.5 (note-embedding catch-up, `mezo-b3pp.5`) extends the
+  nightly `DailySummaryJob` sweep to embed `activity_log`/check-in notes as `kind=activity_note`/
+  `checkin_note`. Every one of these is "a new `write<Kind>` method on `MemoryEmbeddingWriter`, not a
+  second writer" (spec §4.3) — the CHECK constraint W1.1 widened already has room for all of them;
+  W1.4 (decision journal + review loop) is the pattern in production, not future, as of this doc.
 
 ## 6. How to use it (consume)
 
@@ -263,34 +401,54 @@ await updateNote(note.id, 'Javított szöveg')        // day unchanged
 await removeNote(note.id)                            // soft delete
 ```
 
-- Never import `journalApi`/`mockJournalNotes` directly — go through `@/data/hooks` (barrel line
-  `data/hooks.ts:60`).
+```ts
+import { useDecisions, useDecisionActions, isDecisionDue } from '@/data/hooks'
+
+const { data: decisions, isPending, isError, refetch } = useDecisions()  // DecisionEntry[], no params
+const { addDecision, reviewDecision, pending } = useDecisionActions()
+
+await addDecision('Váltok edzéstervet.')                        // decidedOn defaults to today, reviewDue server-derived
+await reviewDecision(decision.id, 4, 'Bejött, kicsit fárasztó volt az első hét.')  // re-runnable, no 409
+
+isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && reviewDue <= today
+```
+
+- Never import `journalApi`/`mockJournalNotes`/`decisionApi`/`decisionMock` directly — go through
+  `@/data/hooks` (barrel line `data/hooks.ts:60` and the line right after it).
 - `useJournalNotes` needs both `from`/`to` bounds — there is no "all time" read; `JournalPage`'s
-  widening-window pattern (§2) is the reference for a bounded-but-growing view.
+  widening-window pattern (§2) is the reference for a bounded-but-growing view. `useDecisions()` takes
+  **no params** — every non-deleted decision, always (§4).
 - Ghost-guard obligation mirrors every other dual-mode list read: `isPending` → loading state,
   `isError && data.length === 0` → real-failure state (distinct from a genuinely empty range), else
   render the data (§2 "States").
+- No delete/update action exists for decisions — don't build UI affordances for either; `reviewDue`
+  is always server-computed (or mock-derived via `addDays`, never hand-rolled `Date` arithmetic that
+  re-serializes through `.toISOString()` — that silently loses a calendar day at a positive UTC
+  offset, the exact bug the mock `addDecision` branch had to fix).
 
 ## 7. How to extend it
 
-- **A new journal-adjacent entry kind in the SAME domain** (the W1.3 gratitude / W1.4 decision
-  pattern) — contract-first ([`api_contract_conventions.md`](../references/api_contract_conventions.md),
+- **A new journal-adjacent entry kind in the SAME domain** (the W1.3 gratitude pattern, and the W1.4
+  decision pattern now shipped) — contract-first ([`api_contract_conventions.md`](../references/api_contract_conventions.md),
   a new path under `api/feature/journal/journal.yml` or a sibling fragment) → a new
   entity/repository/service method in the **same** `feature/journal` package
   ([`java_package_structure.md`](../references/java_package_structure.md)) → migration
   ([`liquibase_conventions.md`](../references/liquibase_conventions.md), remember the
-  `ResetDatabase` TRUNCATE list — `journal_entry` is already in it,
-  `support/ResetDatabase.java:41`) → publish the equivalent Saved/Deleted event pair → a new
-  `write<Kind>`/`delete<Kind>Embedding` pair on `MemoryEmbeddingWriter` + a new
-  `<Kind>EmbeddingListener` mirroring `JournalEmbeddingListener` exactly (companion-owned, gated on
-  `COMPANION_SWITCH` + the new feature's own switch) → dual-mode FE hook
-  (`useDualQuery` recipe in [`_platform-data-layer.md`](_platform-data-layer.md)) → both
-  `pnpm test` modes green.
+  `ResetDatabase` TRUNCATE list — `journal_entry`/`decision_entry` are already in it,
+  `support/ResetDatabase.java:41`) → publish the equivalent Saved event (+ a Deleted event too, only
+  if the new kind is actually deletable — `decision_entry` isn't, so it has no
+  `DecisionEntryDeletedEvent`) → a new `write<Kind>`/`delete<Kind>Embedding` pair on
+  `MemoryEmbeddingWriter` + a new `<Kind>EmbeddingListener` mirroring `JournalEmbeddingListener`/
+  `DecisionEmbeddingListener` (companion-owned, gated on `COMPANION_SWITCH` + the new feature's own
+  switch) → dual-mode FE hook (`useDualQuery` recipe in [`_platform-data-layer.md`](_platform-data-layer.md))
+  → both `pnpm test` modes green.
 - **A new field on `journal_entry` itself** — same contract-first → backend → migration →
   dual-mode-hook → both-modes-green order; mirror the field in `journalMock.ts` so mock parity
   holds.
-- **A new tunable** → extend `CompanionProperties.Journal` or add a sibling `JournalProperties` under
-  `mezo.feature.journal.*`, never a code constant
+- **A new tunable** → extend the journal-owned `JournalProperties` (`feature/journal/config/`, ADR
+  0029; prefix `mezo.companion.journal.*`, kept from its `CompanionProperties.Journal` origin) or add
+  a sibling `*Properties` record under `mezo.feature.journal.*` for anything unrelated to the
+  companion-snapshot lineage, never a code constant
   ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 ## 8. Testing
@@ -315,16 +473,45 @@ await removeNote(note.id)                            // soft delete
     `testWriteJournal_shouldPersistJournalUnit_whenNewEntry`,
     `testWriteJournal_shouldReembedInPlace_whenEntryEdited` (same row id, fresh vector + content),
     `testDeleteJournalEmbedding_shouldSoftDeleteRow_whenPresent`.
+- **Backend ITs — decisions (W1.4, `mezo-b3pp.4`)**, same infra, `decision_entry` also in
+  `ResetDatabase`, `JournalPopulator.createDecision(...)`:
+  - `DecisionEntryPersistenceIT` — `contextSnapshot` jsonb round-trip, the `review_due` finder over a
+    mix of reviewed/unreviewed/different-day rows, an out-of-range `outcomeRating` rejected — the
+    entity's `@Min`/`@Max` bean validation fires (`ConstraintViolationException`) before
+    `ck_decision_entry_outcome_rating` is ever reached, the same distinction
+    `JournalEntryPersistenceIT`'s own `@Pattern`-vs-`ck_journal_entry_source` case draws.
+  - `DecisionApiIT` — create (defaults `decidedOn`/`reviewDue`), the client-supplied `contextSnapshot`
+    is silently ignored (round-trips through the real `ContextSnapshotAssembler`, asserts the injected
+    string is absent and the real assembler's marker is present), list newest-first, review (stamps
+    `reviewedAt`/`outcomeRating`/`outcomeText`, confirmed re-runnable — no "already reviewed" 409
+    case exists because none is wanted), 404 on not-own-decision.
+  - `JournalSwitchOffIT` — the two decision-surface 404 cases (`mezo.feature.journal.enabled=false`).
+  - `DecisionApiCompanionOffIT` — the companion-off / journal-on quadrant for decisions: a direct
+    bean-absence assertion on `DecisionEmbeddingListener` (`ApplicationContext.getBeanProvider`) plus a
+    POST that still succeeds with an empty stored `contextSnapshot.snapshotText()` and zero
+    `memory_embedding` rows.
+  - `DecisionEmbeddingEventIT` (`@ActiveProfiles("companion-fake")`, NOT `@Transactional`) — a
+    committed create produces **exactly one** `memory_embedding(kind=decision)` row; a committed
+    review re-embeds the SAME row with the outcome appended.
+  - `AnchorResolverDecisionIT` (`feature/notification/`) — the `decision_review` push anchor: fires on
+    the due day, suppressed once reviewed, suppressed once the due day has passed (never `<=`), two
+    decisions due the same day yield two anchors with distinct dedup suffixes. Full category detail:
+    [`_platform-notifications.md`](_platform-notifications.md) §4/§8.
 - **FE** (both modes green): `data/journal/journalHooks.test.tsx` (dual-mode read + the
   range-scoped mock mutations); `features/me/sheets/JournalSheet.test.tsx` (create saves via
-  `addNote`; edit prefills + calls `updateNote`; delete needs the second confirm tap); the
+  `addNote`; edit prefills + calls `updateNote`; delete needs the second confirm tap; the „Döntés"
+  mode toggle saves via `addDecision` and is hidden in edit mode); the
   `features/quickinput/sheets/QuickInputSheet.test.tsx` picker-phase tests (the „Napló" tile opens
   „Mit naplózol?"; picking „Aktivitás"/„Napló" swaps to the respective sheet without closing the
   stack); `features/me/pages/JournalPage.test.tsx` (month-separator grouping, edit-on-tap, the add
   button, the empty/loading/error states, the widening „Korábbi hónapok" CTA including the
-  empty-but-widenable case); `data/hooks.reexport.test.ts` + `features/me/pages/MeSection.test.tsx`
-  (barrel identity + the `Napló` tab label in the sub-nav loop).
-- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,MemoryEmbeddingWriterIT'`
+  empty-but-widenable case, the „Döntések" block's due/ripening chips and its own error-retry state);
+  `data/journal/decisionHooks.test.tsx` (dual-mode read + write, the `addDays`-based mock `reviewDue`
+  pinned against a UTC-reserialization regression at a month boundary);
+  `features/me/sheets/DecisionReviewSheet.test.tsx` (rating required to enable save, calls
+  `reviewDecision`); `data/hooks.reexport.test.ts` + `features/me/pages/MeSection.test.tsx` (barrel
+  identity + the `Napló` tab label in the sub-nav loop).
+- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,AnchorResolverDecisionIT,MemoryEmbeddingWriterIT'`
   (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky); `cd frontend && pnpm build &&
   pnpm test && VITE_USE_MOCK=true pnpm test`.
 
@@ -350,74 +537,117 @@ await removeNote(note.id)                            // soft delete
   bejegyzés` hardcode `source: 'quickinput'` client-side, `journalApi.ts:26`). `ritual` is reserved
   for a later slice's Napzárás-originated capture — do not repurpose it for anything else.
   `JournalSheet` never lets the caller choose a `source`.
-- **Gotcha — the six new `memory_embedding` kinds are unused schema, not dead weight.** Don't add a
-  "why does the CHECK allow kinds nothing writes" cleanup task — `reflection`/`gratitude`/
-  `decision`/`monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.2–W1.5
+- **Gotcha — the remaining five `memory_embedding` kinds are unused schema, not dead weight.** Don't
+  add a "why does the CHECK allow kinds nothing writes" cleanup task — `reflection`/`gratitude`/
+  `monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.2/W1.3/W1.5
   (§5), landed in one migration per spec §4.3's explicit instruction ("W1.1 carries the first
   batch") to avoid five more `alter table … drop constraint / add constraint` migrations later.
-- **Deferred (spec §5.2–§5.5, bd ids assigned, not started):** evening prose reflection
-  (`mezo-b3pp.2`), gratitude entries (`mezo-b3pp.3`), decision journal + review loop
-  (`mezo-b3pp.4`), note-embedding catch-up for activity/check-in text (`mezo-b3pp.5`). None of
-  these need a NEW embed pipeline — see §5 above.
+  `decision` (the sixth) is no longer headroom — W1.4 populates it (§4).
+- **Decision (W1.4) — no delete AND no update (edit) endpoint for decisions this slice.** A decision,
+  once captured, stays in the record permanently with its original `decisionText`/`decidedOn` — there
+  is no `DELETE /api/journal/decision/{id}`, no `PUT /api/journal/decision/{id}` (unlike
+  `journal_entry`, which has both), no `removeDecision`/`updateDecision` action, and
+  `DecisionEmbeddingListener` correspondingly has no delete-race cleanup (§5). The **only** write a
+  decision can receive after creation is a review (`PUT .../review`, next bullet) — that endpoint
+  stamps the outcome fields, never the decision's own text or day. This was a deliberate scope cut,
+  not an oversight: a decision journal's value is the honest, unedited record, including decisions
+  someone might want to "un-make" or rewrite from the UI — that's a product call for a later slice,
+  not this one.
+- **Decision (W1.4) — the review endpoint is deliberately re-runnable, no 409 on a second review.**
+  `PUT .../review` always overwrites; a decision can be reviewed, then reviewed again more honestly
+  later, with no "already reviewed" guard anywhere in the stack (backend or FE). This is why
+  `DecisionReviewSheet` prefills its rating/outcome fields from an already-reviewed decision even
+  though nothing in the shipped UI can reach that state today (see the next gotcha).
+- **Decision (W1.4) — `GET /api/journal/decision` deliberately takes no query parameters.** Unlike
+  `journal_entry`'s ranged `from`/`to` list, every non-deleted decision is returned, always — decision
+  volume per user is expected to stay small (a handful a month, not a daily habit like notes), so a
+  range concept would add API surface for no real benefit yet.
+- **Decision (W1.4) — the `decision_review` push fires on the `review_due` day ONLY, never `<=`.** An
+  overdue, unreviewed decision does not keep re-firing a push every day past its due date — that would
+  read as nagging. Instead, an overdue decision is carried by the persistent „Nézd vissza" chip on
+  `/me/naplo` (§2), which the user sees on their own schedule rather than being pushed at daily.
+- **Gotcha (W1.4) — `DecisionReviewSheet`'s prefill-from-already-reviewed path is currently
+  unreachable, and that's intentional, not dead code.** `JournalPage`'s „Döntések" block only lists
+  **unreviewed** decisions (`reviewedAt === null`, §2), so the sheet is never opened on an
+  already-reviewed one today — there is no review-history surface in this slice. The prefill logic is
+  kept anyway because the backend `PUT .../review` is re-runnable (previous bullet): a future
+  review-history surface can reopen this exact sheet on an already-reviewed decision with zero backend
+  or sheet changes, only a new list source.
+- **Deferred (spec §5.2–§5.5, bd ids assigned):** evening prose reflection (`mezo-b3pp.2`, not
+  started), gratitude entries (`mezo-b3pp.3`, not started), note-embedding catch-up for
+  activity/check-in text (`mezo-b3pp.5`, not started). Decision journal + review loop (`mezo-b3pp.4`)
+  **shipped** — see this doc throughout. None of the remaining slices need a NEW embed pipeline — see
+  §5 above.
 
 ## 10. Key files
 
 **API contract**
-- `api/feature/journal/journal.yml` — 4 endpoints (tag `Journal` → `JournalApi`), registered in
-  `api/generate/merge.yml` → merged `api/openapi.yml` (bumped to 0.5.0) → `api.gen.ts` +
-  `io.mrkuhne.mezo.api.*`.
+- `api/feature/journal/journal.yml` — 7 endpoints (tag `Journal` → `JournalApi`): 4 `journal_entry`
+  (W1.1) + 3 `decision_entry` (W1.4) — `GET`/`POST /api/journal/decision`,
+  `PUT /api/journal/decision/{id}/review`. Registered in `api/generate/merge.yml` → merged
+  `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
-**Backend — journal domain**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/entity/JournalEntryEntity.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/repository/JournalEntryRepository.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/{JournalService,JournalEntrySavedEvent,JournalEntryDeletedEvent}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/mapper/JournalMapper.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/controller/JournalController.java`
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java:177-179` — `JOURNAL_SWITCH`.
-- `backend/src/main/resources/application.yml:259-262` — `mezo.feature.journal.enabled`; `:816-818` — `mezo.companion.journal.decision-review-days`.
-- `backend/src/main/resources/messages.properties:83` — `JOURNAL_ENTRY_NOT_FOUND`.
+**Backend — journal domain (both aggregates, one package)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/entity/{JournalEntryEntity,DecisionEntryEntity,DecisionContextEnvelope}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/repository/{JournalEntryRepository,DecisionEntryRepository}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/{JournalService,JournalEntrySavedEvent,JournalEntryDeletedEvent,DecisionService,DecisionEntrySavedEvent}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/mapper/{JournalMapper,DecisionMapper}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/controller/JournalController.java` — implements the whole `JournalApi` (both aggregates; a second controller was rejected, §7/task-2 report — `skipDefaultInterface: true` bundles every `Journal`-tagged operation into one generated interface).
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java:177-179` — `JOURNAL_SWITCH` (gates both aggregates).
+- `backend/src/main/resources/application.yml:259-262` — `mezo.feature.journal.enabled`; `:821-822` — `mezo.companion.journal.decision-review-days` (consumed by `DecisionService` since W1.4).
+- `backend/src/main/resources/messages.properties:83-84` — `JOURNAL_ENTRY_NOT_FOUND`, `DECISION_ENTRY_NOT_FOUND`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; moved out of `CompanionProperties.Journal`, same YAML prefix).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned read seam for the companion's context-snapshot text (ADR 0029), consumed by `DecisionService` via `ObjectProvider`; keeps `feature/journal` free of a direct `feature/companion` import.
 
 **Backend — embed pipeline (companion-owned)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the AFTER_COMMIT trigger.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:114-141` — `writeJournal`/`deleteJournalEmbedding`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY` + the widened `kind` `@Pattern`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java:203-207` — the `Journal` record.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the `journal_entry` AFTER_COMMIT trigger.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the `decision_entry` AFTER_COMMIT trigger (create + review); no delete-race handling (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:119-137` (`writeJournal`), `:138-150` (`deleteJournalEmbedding`), `:151-176` (`writeDecision` — re-embeds in place on review, §5).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, shared by both writers).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
+
+**Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java` — `DECISION_REVIEW` enum entry.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/service/AnchorResolver.java` — `decisionReviewAnchors(owner, date)`, reads `DecisionEntryRepository` directly.
 
 **Backend — migrations**
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608181600_mezo-b3pp.1_create_journal_entry.sql`
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`
-- `backend/src/main/resources/db/changelog/1.0.0/1.0.0_master.yml:696-708` — both changeSets registered.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608201200_mezo-b3pp.4_create_decision_entry.sql` — `decision_entry` table (W1.4 needed no `memory_embedding`-kind migration — the CHECK already permitted `'decision'`).
+- `backend/src/main/resources/db/changelog/1.0.0/1.0.0_master.yml` — all three changeSets registered.
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — journal cases (`testWriteJournal_*`, `testDeleteJournalEmbedding_*`).
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/JournalPopulator.java` + `support/ResetDatabase.java:41` (`journal_entry` in the TRUNCATE list).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/feature/notification/AnchorResolverDecisionIT.java` — the `decision_review` anchor (§8; full test lives with the notification suite since it's `AnchorResolver`'s code, not journal's).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — journal + decision cases (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`, `testWriteDecision_*`).
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/JournalPopulator.java` — `createNote`/`createDecision`; `support/ResetDatabase.java:41` (`journal_entry`, `decision_entry` in the TRUNCATE list).
 
 **Frontend — data layer**
-- `frontend/src/data/journal/journalTypes.ts` — `JournalNote`.
-- `frontend/src/data/journal/journalApi.ts` — `journalApi` + `toJournalNote` wire mapper.
-- `frontend/src/data/journal/journalMock.ts` — `mockJournalNotes` (5-entry seed).
-- `frontend/src/data/journal/journalHooks.ts` — `useJournalNotes`/`useJournalActions` + the mock range-scoped mutation helpers.
-- `frontend/src/data/hooks.ts:60` — barrel re-export.
-- `frontend/src/test/msw/handlers.ts:1241-1265` — journal MSW fixtures.
+- `frontend/src/data/journal/journalTypes.ts` — `JournalNote`. `frontend/src/data/journal/decisionTypes.ts` — `DecisionEntry`.
+- `frontend/src/data/journal/journalApi.ts` — `journalApi` + `toJournalNote` wire mapper. `frontend/src/data/journal/decisionApi.ts` — `decisionApi` + `toDecisionEntry` wire mapper.
+- `frontend/src/data/journal/journalMock.ts` — `mockJournalNotes` (5-entry seed). `frontend/src/data/journal/decisionMock.ts` — 3-row seed (ripening/due/reviewed).
+- `frontend/src/data/journal/journalHooks.ts` — `useJournalNotes`/`useJournalActions` + the mock range-scoped mutation helpers. `frontend/src/data/journal/decisionHooks.ts` — `useDecisions`/`useDecisionActions`/`isDecisionDue`.
+- `frontend/src/data/hooks.ts:60-62` — both domains' barrel re-exports.
+- `frontend/src/test/msw/handlers.ts:1241-1265` — journal MSW fixtures (decision hooks are barrel-mocked in tests instead of MSW, §8/task-7 report).
 
 **Frontend — UI**
-- `frontend/src/features/me/sheets/JournalSheet.tsx` — create/edit/delete sheet.
-- `frontend/src/features/me/pages/JournalPage.tsx` — `/me/naplo`, month-grouped read/manage view.
+- `frontend/src/features/me/sheets/JournalSheet.tsx` — create/edit/delete sheet + the „Napló"/„Döntés" mode toggle (create mode only).
+- `frontend/src/features/me/sheets/DecisionReviewSheet.tsx` — the rating + outcome review sheet.
+- `frontend/src/features/me/pages/JournalPage.tsx` — `/me/naplo`, month-grouped notes view + the „Döntések" open-decisions block.
 - `frontend/src/features/me/pages/tabs.ts:11` — `ME_TABS` `journal` entry.
 - `frontend/src/app/router.tsx:50,155` — `JournalPage` import + `naplo` child route.
-- `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx:22,63,79-88` — the two-option picker phase.
+- `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx:22,63,79-88` — the two-option picker phase (notes only — no decision entry point from QuickInput).
 
 **Frontend — tests**
-- `frontend/src/data/journal/journalHooks.test.tsx`
-- `frontend/src/features/me/sheets/JournalSheet.test.tsx`
+- `frontend/src/data/journal/journalHooks.test.tsx`, `frontend/src/data/journal/decisionHooks.test.tsx`
+- `frontend/src/features/me/sheets/JournalSheet.test.tsx`, `frontend/src/features/me/sheets/DecisionReviewSheet.test.tsx`
 - `frontend/src/features/me/pages/JournalPage.test.tsx`
 - `frontend/src/features/quickinput/sheets/QuickInputSheet.test.tsx` (picker-phase cases)
 - `frontend/src/data/hooks.reexport.test.ts` + `frontend/src/features/me/pages/MeSection.test.tsx` (barrel identity + tab label).
 
 **Docs**
-- Design spec: [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.1, §4.3, §5.1, §11.
-- Plan: [`docs/superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md`](../superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md).
+- Design spec: [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.1, §4.3, §5.1, §5.4, §11.
+- Plans: [`docs/superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md`](../superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md), [`docs/superpowers/plans/2026-08-20-w1-4-decision-journal.md`](../superpowers/plans/2026-08-20-w1-4-decision-journal.md).
 - Roadmap: [`docs/milestones/roadmap.md`](../milestones/roadmap.md).
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `configuration_conventions`, `java_package_structure`, `error_handling`).

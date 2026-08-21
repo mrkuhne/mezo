@@ -1263,4 +1263,10 @@ export const handlers = [
     })
   }),
   http.delete(`${API_BASE}/api/journal/:id`, () => new HttpResponse(null, { status: 204 })),
+
+  // Decisions (mezo-b3pp.4) — honest-empty default list, mirroring the journal-notes default
+  // above; without this, real-mode reads of /api/journal/decision hit MSW's 'bypass' fallthrough
+  // (test/setup.ts) and resolve via a real network error instead of exercising this handler.
+  // Tests override with server.use() for anything beyond the empty-list default.
+  http.get(`${API_BASE}/api/journal/decision`, () => HttpResponse.json([])),
 ]

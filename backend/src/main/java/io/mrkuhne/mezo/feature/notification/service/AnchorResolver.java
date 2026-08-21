@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
@@ -49,7 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 20 categories'
+ * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 21 categories'
  * anchors for one owner+day into an {@link AnchorSet}, the pure {@link DueEvaluator}'s input.
  * A wrong read here produces a notification at the wrong minute or, worse, a per-minute write
  * storm — see the class-by-class notes below, each pinned to a verified trap.
@@ -106,6 +107,7 @@ public class AnchorResolver {
     private static final String URL_LIGHTS_OUT = "/me/sleep";
     private static final String URL_INSIGHTS_WEEKLY = "/insights/weekly";
     private static final String URL_INSIGHTS_MEMOIR = "/insights/memoir";
+    private static final String URL_JOURNAL = "/me/naplo";
 
     /** The intended (pre-grace) in-day slots for the two constant-anchored prose categories. Both
      *  go through {@link #anchorAfterGeneration}, so the minute actually used is derived from the
@@ -130,12 +132,14 @@ public class AnchorResolver {
     private final NotificationProperties notificationProperties;
     private final ProactiveProperties proactiveProperties;
     private final AppNotificationRepository appNotificationRepository;
+    private final DecisionEntryRepository decisionEntryRepository;
 
     @Transactional(readOnly = true)
     public AnchorSet resolve(UUID owner, LocalDate date) {
         List<AnchoredEvent> backendAnchors = new ArrayList<>(gymAnchors(owner, date));
         medicationAnchor(owner, date).ifPresent(backendAnchors::add);
         ritualFamilyAnchors(owner, date, backendAnchors);
+        backendAnchors.addAll(decisionReviewAnchors(owner, date));
         backendAnchors.addAll(feedAnchors(owner, date));
 
         List<AnchoredEvent> proseAnchors = new ArrayList<>();
@@ -241,6 +245,28 @@ public class AnchorResolver {
             return "";
         }
         return " " + med.getDefaultDose().stripTrailingZeros().toPlainString() + " " + med.getDoseUnit() + ".";
+    }
+
+    // ---- decision_review (decision_entry.review_due, W1.4) --------------------------------------
+
+    /**
+     * One anchor per decision whose {@code review_due} is EXACTLY {@code date} and that is still
+     * unreviewed. Deliberately not {@code review_due <= date}: an overdue decision is carried by
+     * the /me/naplo chip, never by a push that would then re-fire every morning forever.
+     *
+     * <p>The dedup suffix carries the decision's id fragment (the feed-anchor shape) because two
+     * decisions can fall due on the same day at the same fixed minute — a bare {@code HH:mm} would
+     * collapse them into a single push through {@code push_log}'s day-scoped dedup.
+     */
+    private List<AnchoredEvent> decisionReviewAnchors(UUID owner, LocalDate date) {
+        String time = notificationProperties.decisionReviewTime();
+        return decisionEntryRepository
+                .findByCreatedByAndReviewDueAndReviewedAtIsNullAndDeletedFalse(owner, date)
+                .stream()
+                .map(decision -> new AnchoredEvent(NotificationCategory.DECISION_REVIEW,
+                        minuteOfDay(time), time + ":" + decision.getId().toString().substring(0, 8),
+                        "Hogyan sült el?", excerptProse(decision.getDecisionText()), URL_JOURNAL))
+                .toList();
     }
 
     // ---- ritual / lights_out / wind_down ---------------------------------------------------------

@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
-import { useJournalNotes } from '@/data/hooks'
+import { isDecisionDue, useDecisions, useJournalNotes } from '@/data/hooks'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
+import { DecisionReviewSheet } from '@/features/me/sheets/DecisionReviewSheet'
 import { dayLabel } from '@/features/me/logic/growthJournal'
 import { localDateString } from '@/shared/lib/dates'
 import type { JournalNote } from '@/data/journal/journalTypes'
+import type { DecisionEntry } from '@/data/journal/decisionTypes'
 
 function monthLabel(date: string): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long' })
@@ -34,10 +36,17 @@ export function JournalPage() {
   const [monthsBack, setMonthsBack] = useState(3)
   const [addOpen, setAddOpen] = useState(false)
   const [editNote, setEditNote] = useState<JournalNote | null>(null)
+  const [reviewing, setReviewing] = useState<DecisionEntry | null>(null)
 
   const today = localDateString()
   const from = windowFrom(monthsBack, today)
   const { data: notes, isPending, isError, refetch } = useJournalNotes(from, today)
+  const {
+    data: decisions,
+    isError: decisionsError,
+    refetch: refetchDecisions,
+  } = useDecisions()
+  const openDecisions = decisions.filter((d) => d.reviewedAt === null)
   const widen = () => setMonthsBack((m) => m + 3)
 
   let lastMonth = ''
@@ -60,6 +69,47 @@ export function JournalPage() {
       </div>
 
       <div style={{ padding: '8px 24px 24px' }}>
+        {decisionsError && openDecisions.length === 0 ? (
+          // Same honesty rule as the notes list below (isError && ...length === 0): a failed
+          // decisions fetch must not read as "no open decisions" — an overdue one would silently
+          // vanish with no signal. Kept to a single skeleton line + retry — the decisions block is
+          // a small section, not the page's main content.
+          <div style={{ marginBottom: 20 }}>
+            <GhostState message="Nem sikerült betölteni a döntéseket." ctaLabel="Újra" onCta={refetchDecisions} lines={1} />
+          </div>
+        ) : openDecisions.length > 0 && (
+          <div className="col gap-sm" style={{ marginBottom: 20 }}>
+            <span className="eyebrow text-tertiary">Döntések</span>
+            {openDecisions.map((decision) => (
+              <button
+                key={decision.id}
+                type="button"
+                className="card"
+                onClick={() => setReviewing(decision)}
+                style={{ padding: 16, textAlign: 'left', width: '100%' }}
+              >
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+                    {dayLabel(decision.decidedOn, today)}
+                  </span>
+                  <span
+                    className="chip"
+                    style={
+                      isDecisionDue(decision, today)
+                        ? { background: 'var(--wash-amber)', color: 'var(--coral-deep)' }
+                        : undefined
+                    }
+                  >
+                    {isDecisionDue(decision, today) ? 'Nézd vissza' : `Visszanézés: ${dayLabel(decision.reviewDue, today)}`}
+                  </span>
+                </div>
+                <p style={{ fontSize: 14, lineHeight: 1.65, marginTop: 10, color: 'var(--text-primary)' }}>
+                  {decision.decisionText}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
         {isPending ? (
           <div className="col gap-sm" role="status" aria-label="Betöltés…">
             {Array.from({ length: 3 }, (_, i) => (
@@ -127,6 +177,7 @@ export function JournalPage() {
 
       {addOpen && <JournalSheet onClose={() => setAddOpen(false)} />}
       {editNote && <JournalSheet entry={editNote} onClose={() => setEditNote(null)} />}
+      {reviewing && <DecisionReviewSheet decision={reviewing} today={today} onClose={() => setReviewing(null)} />}
     </>
   )
 }

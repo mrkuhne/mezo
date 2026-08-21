@@ -6173,7 +6173,7 @@ paths:
       responses:
         '200':
           description: >-
-            All 20 categories, always complete — a category with no stored row
+            All 21 categories, always complete — a category with no stored row
             reports its code default
           content:
             application/json:
@@ -6574,6 +6574,89 @@ paths:
           description: Deleted
         '404':
           description: JOURNAL_ENTRY_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/journal/decision:
+    get:
+      tags:
+        - Journal
+      operationId: listDecisionEntries
+      summary: 'All decisions, newest first (Journal)'
+      responses:
+        '200':
+          description: 'Every non-deleted decision, newest first by decidedOn'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionEntryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Journal
+      operationId: createDecisionEntry
+      summary: Record a decision; the server freezes its own context snapshot (Journal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDecisionEntryRequest'
+      responses:
+        '201':
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionEntryResponse'
+        '400':
+          description: Validation error (empty decisionText)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/journal/decision/{id}/review':
+    put:
+      tags:
+        - Journal
+      operationId: reviewDecisionEntry
+      summary: Rate how a decision turned out (Journal)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDecisionRequest'
+      responses:
+        '200':
+          description: Reviewed decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionEntryResponse'
+        '400':
+          description: Validation error (rating out of 1..5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: DECISION_ENTRY_NOT_FOUND
           content:
             application/json:
               schema:
@@ -15239,3 +15322,64 @@ components:
           type: string
           format: date
           description: Absent = keep the current day.
+    DecisionEntryResponse:
+      type: object
+      required:
+        - id
+        - decidedOn
+        - decisionText
+        - reviewDue
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        decidedOn:
+          type: string
+          format: date
+        decisionText:
+          type: string
+        reviewDue:
+          type: string
+          format: date
+          description: >-
+            decidedOn + mezo.companion.journal.decision-review-days,
+            server-computed.
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        outcomeRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        outcomeText:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    CreateDecisionEntryRequest:
+      type: object
+      required:
+        - decisionText
+      properties:
+        decisionText:
+          type: string
+          minLength: 1
+        decidedOn:
+          type: string
+          format: date
+          description: The day the decision was made; server defaults to today when absent.
+    ReviewDecisionRequest:
+      type: object
+      required:
+        - outcomeRating
+      properties:
+        outcomeRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        outcomeText:
+          type: string
