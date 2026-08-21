@@ -46,7 +46,7 @@ Applied via `hermes config set`:
 
 ```yaml
 model:
-  default: qwen/qwen3.8-27b     # switch to qwen/qwen3.6-27b to fall back
+  default: qwen/qwen3.6-35b-a3b # work model (A/B 2026-08-21); qwen3.8-27b for short-context review
   provider: lmstudio            # built-in provider, base_url http://localhost:1234/v1
   context_length: 262144        # explicit — name-based estimation is unreliable
 terminal:
