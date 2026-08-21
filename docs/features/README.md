@@ -8,15 +8,16 @@ This folder is mezo's **living, current** engineering reference: one doc per dom
 
 `docs/features/` is the answer to *"how does feature X work, and how do I build on it?"* — read it before touching any feature or wiring any new one. It is durable memory that tracks the code, not a point-in-time artifact.
 
-Three doc families, three different jobs — read the right one (or all three) for the job at hand:
+Four doc families, four different jobs — read the right one (or all of them) for the job at hand:
 
 | Folder | Question it answers | Lifecycle | When to read it |
 |---|---|---|---|
+| **[`docs/CODEMAP.md`](../CODEMAP.md)** | **WHERE it lives** — per feature: backend package, entities→tables, controllers→`<Tag>Api`, contract endpoints, FE data hooks, pages/sheets/components/logic, ITs + populators | **Generated** — `node scripts/gen-codemap.mjs`, CI-gated, never hand-edited | You need to *find* the files for a feature. Read it BEFORE this folder — then open the feature doc it links. Never grep the tree to orient. |
 | **`docs/features/`** (this folder) | **HOW it works NOW** — operation, data flow, data model/API, integrations, use, extend, test | **Living** — kept in sync with the code | You're understanding, consuming, debugging, extending, or wiring a feature. Start here. |
 | **`docs/superpowers/specs/`** | **WHAT we decided to build & WHY then** — the design as it stood when the feature was conceived | **Point-in-time** — a historical artifact, *not* kept in sync | You need the original design rationale, slice map, or the "why this shape" behind a decision. Each feature doc links its driving spec. |
 | **`docs/references/`** | **HOW we build** — Java/Spring/Liquibase/testing/API **house standards** | **Living, non-negotiable** rules | You're writing/reviewing backend code, a migration, a test, or a contract. The feature doc tells you *what*; the reference tells you the *mandatory pattern*. |
 
-Rule of thumb: a feature doc tells you the feature's seams and the recipe to extend it, then **links** to the relevant `references/*.md` for the exact house standard and to its `specs/` for the original rationale — it never restates them. ADRs (`docs/decisions/`), infra (`docs/infrastructure/`), and the roadmap (`docs/milestones/roadmap.md`) are linked, never duplicated.
+Rule of thumb: `CODEMAP.md` gets you to the right files; the feature doc explains them. A feature doc tells you the feature's seams and the recipe to extend it, then **links** to the relevant `references/*.md` for the exact house standard and to its `specs/` for the original rationale — it never restates them. ADRs (`docs/decisions/`), infra (`docs/infrastructure/`), and the roadmap (`docs/milestones/roadmap.md`) are linked, never duplicated.
 
 ### Maintenance policy — living, but kept lean
 

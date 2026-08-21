@@ -80,6 +80,8 @@ Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), 
 
 If a finished piece of work leaves no trace in `docs/` of the decision behind it, the work is **not done** — capture it before closing the `bd` issue.
 
+> **Trigger — orienting in the codebase (ALWAYS first):** locate files via **[`docs/CODEMAP.md`](docs/CODEMAP.md)** first, then read the matching **`docs/features/<x>.md` §10**; do not grep the tree for orientation. CODEMAP.md is generated (`node scripts/gen-codemap.mjs`) and CI-gated — never hand-edit it; it answers **WHERE** (packages, entities/tables, endpoints, hooks, surfaces, tests), the feature doc answers **HOW**.
+
 > **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Understanding / extending / integrating an existing feature → read its **[`docs/features/<domain>.md`](docs/features/README.md)** FIRST. Documenting a feature, ingesting research, or running the doc-lint → follow the **knowledge-base workflow** ([`docs/research/SCHEMA.md`](docs/research/SCHEMA.md) + `node scripts/lint-docs.mjs`). Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
 
 ## Architecture Overview
