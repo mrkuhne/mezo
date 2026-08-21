@@ -21,7 +21,7 @@ of that makes `journal ↔ companion` a genuine two-way cycle at the package-sli
 
 `ArchitectureTest.feature_slices_are_cycle_free` (mezo-ah18.7, [ADR 0007](0007-machine-enforcement-of-conventions.md))
 is a `FreezingArchRule` over `SlicesRuleDefinition.slices().matching("io.mrkuhne.mezo.feature.(*)..")`.
-Two cycles are already frozen as pre-existing debt (its javadoc is explicit that these are debt, not
+One cycle (biometrics↔goal) is already frozen as pre-existing debt (its javadoc is explicit that these are debt, not
 a pattern to extend); the same javadoc states that **any NEW cycle — including any widening of a
 frozen one — fails the build**. `./mvnw clean test -Dtest=ArchitectureTest` confirmed this: the
 branch as shipped fails with `Cycle detected: Slice companion -> Slice journal -> Slice companion`,
@@ -66,12 +66,12 @@ consumer-owned-port idiom exactly — the same shape as `SleepAnchorPort`, `Caff
 
 The resulting cross-feature edge is `companion → journal` (the adapter importing the journal-owned
 port interface) — the SAME direction the embed-listener edges already run. No cycle, no frozen
-exception, no widening of the two pre-existing frozen cycles.
+exception, no widening of the pre-existing frozen cycle.
 
 ## Consequences
 
 - **`ArchitectureTest.feature_slices_are_cycle_free` passes** with the `archunit-store` freeze file
-  unchanged (no new violation recorded, none of the two pre-existing frozen cycles widened).
+  unchanged (no new violation recorded, the pre-existing frozen cycle not widened).
 - **One more small port + thin adapter joins the pattern** ADR 0012 started (now five:
   `SleepAnchorPort`, `CaffeineCutoffPort`, `HabitSuggestPort`, `AccountProgressPort`,
   `DecisionContextPort`). Accepted per ADR 0012's own reasoning — the blast radius per port is a
