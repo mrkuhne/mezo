@@ -62,3 +62,14 @@ under [`docs/research/raw/articles/`](../research/raw/articles/).
   remains available for sandboxing later.
 - **GGUF/llama.cpp as engine** — M5 Neural Accelerators favor MLX (3.3–4.1× prefill);
   llama.cpp Metal support lagged on M5.
+
+## Amendment 2026-08-21 — planner model after the Phase-1 A/B
+
+The Phase-1 A/B (`mezo-zjtm.3`, W1.3 plan) reversed the primary/chat split: **Qwen3.8-27B**
+failed twice to produce a plan (thinking grew to 23 min/turn past ~60K context and tripped
+Hermes's 900 s stale-stream watchdog), while **Qwen3.6-35B-A3B** delivered a full plan in
+12 minutes with zero hallucinated files and defects fixable in one editing pass. Decision:
+35B-A3B is the work model (plan + implementation + chat); 3.8-27B is kept for short-context
+review. Phase 2 (low-risk implementation slices) is **GO** on 35B-A3B behind the CI gate.
+Evidence: [`2026-08-21-w13-gratitude-LOCAL.md`](../superpowers/plans/2026-08-21-w13-gratitude-LOCAL.md)
+vs [`2026-08-21-w13-gratitude.md`](../superpowers/plans/2026-08-21-w13-gratitude.md).

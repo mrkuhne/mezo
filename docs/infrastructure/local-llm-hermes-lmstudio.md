@@ -11,8 +11,8 @@ Driver: `mezo-zjtm`. Facts verified 2026-08-21.
 |---|---|
 | LM Studio | ≥0.3.31, mlx-engine **1.11.0 (nax)** selected (`lms runtime ls`) |
 | Hermes agent | **v0.20.4**, native install (`~/.hermes/hermes-agent`), Python 3.11; surfaces: TUI (`hermes`), desktop app (`/Applications/Hermes.app`, shares `~/.hermes`), Discord gateway (launchd), web dashboard (`hermes dashboard`, `127.0.0.1:9119`) |
-| Work model | `qwen/qwen3.8-27b` — **MLX 8bit** (29.5 GB): spec, plan, implementation, review |
-| Chat model | `qwen/qwen3.6-35b-a3b` — MLX 8bit (37.8 GB, 3B active → ~2× faster): daily chat, quick questions |
+| Work model | `qwen/qwen3.6-35b-a3b` — MLX 8bit (37.8 GB, 3B active): spec/plan writing, implementation, chat (A/B 2026-08-21: 12-min plan, 0 hallucinated files) |
+| Review / short-context model | `qwen/qwen3.8-27b` — **MLX 8bit** (29.5 GB): diff review, single-file tasks; thinking runs away past ~60K ctx (2 failed plan runs) |
 | Auxiliary model | `google/gemma-4-e4b` (4bit, 6.9 GB): memory query-rewrite only |
 | Fallback | `qwen/qwen3.6-27b` MLX 8bit (downloaded, standing by) |
 | Phase-2 model (planned) | `qwen/qwen3-coder-next` — on disk at 4bit; **re-download at 6-bit before use** |
