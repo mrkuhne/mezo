@@ -8,3 +8,12 @@ export interface JournalNote {
   source: 'quickinput' | 'ritual'
   createdAt: string
 }
+
+/** One gratitude line (≤280 chars) about a day; `lifeArea` is one of the 8 LIFE skill keys or null. */
+export interface GratitudeEntry {
+  id: string
+  occurredOn: string
+  text: string
+  lifeArea: string | null
+  createdAt: string
+}

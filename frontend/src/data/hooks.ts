@@ -61,3 +61,4 @@ export { useNotificationFeed, useNotificationFeedActions } from '@/data/notifica
 export { useJournalNotes, useJournalActions } from '@/data/journal/journalHooks'
 export { useDecisions, useDecisionActions, isDecisionDue } from '@/data/journal/decisionHooks'
 export { useFeedback } from '@/data/feedback/feedbackHooks'
+export { useGratitudeEntries, useGratitudeActions } from '@/data/journal/gratitudeHooks'
