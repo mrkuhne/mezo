@@ -1730,9 +1730,10 @@ cycle/water/weight/check-in) — zero new cross-feature finders v1; `PatternsPag
 `usePatterns`/`usePatternActions` from `@/data/hooks` ([`insights.md`](insights.md) §2.1).
 **V3.4 widened the read set** (still read-only, one-way): exercise-feedback, habit-day,
 ritual-day, mention and medication-dose repositories; the only NEW
-finders are two derived queries on `RitualDayRepository`
-(`findByCreatedByAndRitualDateBetween`, `findFirstByCreatedByOrderByRitualDateAsc`) — no
-migration. The digest additionally reads `MentionRepository` + `DailyIntentionRepository`.
+finders are two derived queries on `RitualDayRepository` — since `mezo-b3pp.2` their
+closed-only forms (`findByCreatedByAndRitualDateBetweenAndClosedAtIsNotNull`,
+`findFirstByCreatedByAndClosedAtIsNotNullOrderByRitualDateAsc`; the original
+row-existence variants are deleted) — no migration. The digest additionally reads `MentionRepository` + `DailyIntentionRepository`.
 **Activity/quest XP comes through the PORTS, not repositories** — `feature.activity` and
 `feature.quest` depend on companion (LLM callers), so a direct companion → activity/quest
 repository read closes a slice cycle (`feature_slices_are_cycle_free` caught exactly this);

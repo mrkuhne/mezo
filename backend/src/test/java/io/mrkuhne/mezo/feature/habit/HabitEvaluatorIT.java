@@ -204,7 +204,7 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testSatisfied_shouldCompleteRitualClosed_whenRitualDayRowExists() {
+    void testSatisfied_shouldCompleteRitualClosed_whenAClosedRitualDayRowExists() {
         UUID owner = owner();
         LocalDate d = LocalDate.now();
         assertThat(evaluator.satisfied("ritual_closed", owner, d)).isFalse();
