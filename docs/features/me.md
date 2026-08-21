@@ -356,6 +356,22 @@ it). Full detail — including the update-in-place re-embed decision, the port s
 [`companion.md`](companion.md) §4. **W1.4 also adds a `decision_review` push category** (fires on the
 decision's own `review_due` day, never after) — see [`_platform-notifications.md`](_platform-notifications.md) §4.
 
+### 5.11 `check_in.note` → Companion (embed pipeline, wired, one-way OUT, Phase 5 W1.5 `mezo-b3pp.5`)
+The third seam out of the shared `feature/biometrics` package (§5.1 owns the package, §5.9 its
+sleep/weight → proactive events), and the only one with **no listener at all**: a `check_in.note`
+of at least `mezo.companion.embedding.note-min-chars` (80) characters becomes a
+`memory_embedding(kind=checkin_note)` vector, written by the **nightly `DailySummaryJob` note pass**
+(`NoteEmbeddingCatchUp` → `MemoryEmbeddingWriter.writeNote`), not by the check-in write path — so
+nothing in `feature/biometrics/checkin` changed, and neither `Súly`/`Alvás` nor any Me view renders
+anything from this seam. The candidate query is `CheckInRepository.findNoteCandidates`, read by
+`CheckInNoteSourceAdapter` — which lives in `feature/companion/embedding/`, **not** here, because
+implementing the companion-owned `NarrativeNoteSource` port from inside
+`biometrics/checkin/service` would close a new slice cycle
+(`ArchitectureTest.feature_slices_are_cycle_free`, the §5.10/ADR 0029 failure mode again), while a
+plain `companion → biometrics` read is safe. The pass carries no lower date bound, so its first run
+backfills existing check-in history; capture happens on **Today** ([`today.md`](today.md)), never
+here. Full seam + its two known gaps (write-once, no delete path): [`journal.md`](journal.md) §3/§9.
+
 ## 6. How to use it (consume)
 
 Import the hook from `@/data/hooks` (never deeper) and destructure. Always ghost-guard real mode (empty arrays / `lastNight === undefined` on first paint).

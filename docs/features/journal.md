@@ -211,6 +211,57 @@ JournalPage (/me/naplo) → JournalSheet (entry=note) (edit/delete, mock+real)
   — after a successful write the listener re-checks the entry's liveness and calls
   `deleteJournalEmbedding` if it's gone (`companion/embedding/JournalEmbeddingListener.java`).
 
+### The note catch-up seam (W1.5, `mezo-b3pp.5`) — the narrative written OUTSIDE the journal
+
+The two kinds W1.1 left as headroom are now written, and by a path that is **not** a listener:
+
+```
+(no listener, no new cron — the EXISTING nightly sweep)
+DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAILY_SUMMARY_JOB_SWITCH)
+  per user: … daily summaries … → chat-turn catch-up …
+  → NoteEmbeddingCatchUp.run(userId, yesterday)          (COMPANION_SWITCH-gated bean)
+      guard: mezo.companion.embedding.embed-notes        (checked INSIDE the pass)
+      for each NarrativeNoteSource bean (List<> injection):
+        source.notesToEmbed(userId, through, note-min-chars)   ← the port, oldest first
+          ActivityNoteSourceAdapter  (feature/activity/service/) → activity_log.text  → activity_note
+          CheckInNoteSourceAdapter   (feature/companion/embedding/) → check_in.note   → checkin_note
+        minus MemoryEmbeddingRepository.findRefIdsByCreatedByAndKind(userId, kind)
+        each surviving row → MemoryEmbeddingWriter.writeNote(kind, note)   (own @Transactional)
+      run-wide budget: mezo.companion.embedding.note-batch-size (200), across BOTH sources
+  → memory_embedding (kind=activity_note | checkin_note, write-once per source row)
+```
+
+- **No listener behind these kinds — the nightly sweep is their only writer** (spec §5.5: one
+  nightly narrative sweep, not a new cron). `DailySummaryJob` calls `NoteEmbeddingCatchUp.run` once
+  per user after the summary + turn passes, wrapped in its own try/catch, and logs the count
+  alongside the day count.
+- **The pass carries NO lower date bound** — `findNoteCandidates` filters on `occurred_on <= through`
+  only, which is precisely what makes the **first run the one-time history backfill**: every live,
+  length-gated row that has no vector yet is a candidate, however old. Later runs converge because
+  already-embedded rows drop out via `MemoryEmbeddingRepository.findRefIdsByCreatedByAndKind` (one
+  set read per kind, not a probe per row).
+- **Three tunables, three different jobs** (`mezo.companion.embedding.*`,
+  `CompanionProperties.Embedding`): `note-min-chars` (80) is the **retrieval-value gate** — „fáradt
+  vagyok" is not a memory, and a null `check_in.note` fails the SQL `length()` predicate so no null
+  branch is needed; `note-batch-size` (200) caps the **whole run per user** across both sources, so
+  a long history spreads over nights instead of one burst — a run picks up exactly where the
+  previous one's ref-id set left off, so a second night on the same backlog converges the
+  remainder (pinned by `NoteEmbeddingBudgetIT`); `embed-notes` is the toggle, checked **inside**
+  `NoteEmbeddingCatchUp.run` so the pass **heals** it rather than bypasses it (the
+  `embed-chat-turns` idiom in the same job). The two sources draw from this **one shared pool**,
+  consumed in `ObjectProvider#orderedStream()` order — that decides which KIND gets backfilled
+  FIRST on a large history (the second source can be starved for several nights), not whether both
+  eventually converge; each starved source now logs its own line (`NoteEmbeddingCatchUp`) so a
+  starved-second-source night is visible, not just inferred from the count.
+- **Per-row isolation:** `NoteEmbeddingCatchUp.run` is deliberately **not** `@Transactional`, so
+  each `MemoryEmbeddingWriter.writeNote` call crosses the Spring proxy in its **own** transaction —
+  one bad or racing row is logged (`warn`) and skipped, the rest of the run continues. Same shape as
+  the turn catch-up's log-and-continue loop.
+- **The note sources sit behind a companion-owned port, not behind repository imports** —
+  `feature/companion/NarrativeNoteSource`. The rationale (and the ArchUnit failure that forced it)
+  is §9's port-inversion decision; the asymmetry that one adapter lives in `feature/activity` and
+  the other in `feature/companion` is documented there too.
+
 ## 4. Data model & API
 
 ### Backend table
@@ -276,11 +327,12 @@ ranged list, newest-first by day then by creation time within a day — same sha
 Migration [`202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql)
 widens `ck_memory_embedding_kind` from the V2.2-era `chat_turn|daily_summary|weekly_summary` to ten
 values: `chat_turn, daily_summary, weekly_summary, monthly_summary, journal_entry, reflection,
-gratitude, decision, activity_note, checkin_note`. **`journal_entry` (W1.1) and `decision` (W1.4) are
-now both populated** — `MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY`/`KIND_DECISION` are the two
-constants with a writer method so far; the other five kinds remain schema headroom the rest of the
-Phase 5 W1 wave will fill (§5 below). W1.4 needed **no migration** of its own for this — the CHECK
-already permitted `'decision'`. The `(kind, ref_id)` uniqueness and the single `MemoryEmbeddingWriter`
+gratitude, decision, activity_note, checkin_note`. **`journal_entry` (W1.1), `decision` (W1.4),
+`reflection` (W1.2) and — since `mezo-b3pp.5` — `activity_note`/`checkin_note` (W1.5) are populated**;
+`gratitude` (W1.3), `monthly_summary` and `weekly_summary` are the schema headroom that is left.
+Neither W1.4 nor W1.5 needed **a migration of its own** — the CHECK already permitted `'decision'`,
+`'activity_note'` and `'checkin_note'`, which is the entire point of landing all ten in one batch.
+The `(kind, ref_id)` uniqueness and the single `MemoryEmbeddingWriter`
 write path are unchanged by design — see [`companion.md`](companion.md) §4 for the full
 `memory_embedding` table shape.
 
@@ -443,9 +495,31 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   `MemoryEmbeddingWriter.writeGratitude(entry)` / `.deleteGratitudeEmbedding(id)` with
   `kind=gratitude` (`KIND_GRATITUDE`), riding W1.2's shared `upsert`. No edit endpoint, so no
   create-then-edit race branch — only the create-then-delete liveness re-check.
-- **🟣 Remaining W1 slice reuses the same seam (spec §5.5):** W1.5 (note-embedding catch-up,
-  `mezo-b3pp.5`) extends the nightly `DailySummaryJob` sweep to embed `activity_log`/check-in notes
-  as `kind=activity_note`/`checkin_note`. The CHECK constraint W1.1 widened already has room for it.
+- **✅ W1.5 shipped the fourth consumer of this seam, and the first one with NO listener
+  (`mezo-b3pp.5`).** The narrative Daniel writes outside the journal — the QuickInput „Napló"
+  activity entry's `activity_log.text` ([`growth.md`](growth.md)) and `check_in.note`
+  ([`today.md`](today.md)) — becomes `kind=activity_note`/`checkin_note` through
+  `MemoryEmbeddingWriter.writeNote(kind, note)`, driven ONLY by the nightly
+  `DailySummaryJob` → `NoteEmbeddingCatchUp` pass (§3 above). **Contract crossing the seam:** the
+  companion-owned port `feature/companion/NarrativeNoteSource` (`kind()` +
+  `notesToEmbed(userId, through, minChars)` returning a flat `Note(id, createdBy, text, occurredOn)`
+  record) — not the owning features' entities. `ActivityNoteSourceAdapter`
+  (`feature/activity/service/`) implements it over `ActivityLogRepository.findNoteCandidates`;
+  `CheckInNoteSourceAdapter` lives in `feature/companion/embedding/` and reads
+  `CheckInRepository.findNoteCandidates` directly — the asymmetry is deliberate and load-bearing,
+  §9. **Both adapters are deliberately UNGATED by their feature's own switch** (unlike every
+  listener seam above): history already logged must stay embeddable by the sweep even on a day
+  activity-capture or check-in capture is switched off — the sweep, not the capture path, owns
+  whether this backlog gets embedded. The adapters carry no `@ConditionalOnProperty` at all; the
+  gates all sit on the consuming side — `mezo.companion.embedding.embed-notes` (checked inside the
+  pass), `COMPANION_SWITCH` (removes `NoteEmbeddingCatchUp` itself), and `DAILY_SUMMARY_JOB_SWITCH`
+  (`mezo.techcore.cron.daily-summary-job.enabled`), which removes the driving `DailySummaryJob`, so
+  with the cron off nothing sweeps at all.
+- **✅ The W1 narrative-capture wave is complete as of `mezo-b3pp.5`.** All five slices ship on this
+  one seam: `journal_entry` (W1.1), `reflection` (W1.2, from `feature/ritual`), `gratitude` (W1.3),
+  `decision` (W1.4) and the listener-less `activity_note`/`checkin_note` pair (W1.5). The only W1
+  follow-on still open is `mezo-b3pp.25` (gratitude rows in the ritual `ReflectionStep`), a surface
+  task that reuses the W1.3 seam unchanged.
 
 ## 6. How to use it (consume)
 
@@ -576,7 +650,27 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
     the due day, suppressed once reviewed, suppressed once the due day has passed (never `<=`), two
     decisions due the same day yield two anchors with distinct dedup suffixes. Full category detail:
     [`_platform-notifications.md`](_platform-notifications.md) §4/§8.
-- **FE** (both modes green): `data/journal/journalHooks.test.tsx` (dual-mode read + the
+- **Backend ITs — the note catch-up (W1.5, `mezo-b3pp.5`)**, all under
+  `feature/companion/embedding/`, all `@ActiveProfiles("companion-fake")`, data via
+  `ActivityPopulator`/`CheckInPopulator` (no journal populator involved — the sources are other
+  features' tables):
+  - `NoteEmbeddingWriterIT` — the two `findNoteCandidates` queries through their adapters
+    (`notesToEmbed` gates on length and on `through`, a null `check_in.note` is simply absent) and
+    `MemoryEmbeddingWriter.writeNote` (`occurred_on` = the entry's own day, never the embed day;
+    a second call for the same ref writes nothing new).
+  - `NoteEmbeddingCatchUpIT` — both kinds embedded in one run with the length gate applied, a
+    second run writing nothing new (idempotence via the ref-id set), **a row months older than the
+    daily-summary catch-up window still embedded** (that IS the one-time history backfill), a
+    soft-deleted source row skipped, and another user's notes never touched.
+  - `NoteEmbeddingBudgetIT` — separate from the above because it needs its own
+    `note-batch-size=1` `@TestPropertySource`: with a candidate in BOTH sources exactly ONE vector
+    is written, pinning that the budget caps the whole run rather than each source.
+  - `NoteEmbeddingSwitchOffIT` — `embed-notes=false`: the full `DailySummaryJob.run()` produces
+    zero note vectors (the toggle is honoured by the pass, not bypassed by the job).
+  - `DailySummaryJobIT.testRun_shouldEmbedSubstantiveNotes_whenNotesExist` — the wiring itself: the
+    nightly job's own run embeds the notes, so the pass is reached from the cron path and not only
+    when called directly.
+- **FE** (both modes green — W1.5 has **no** frontend surface at all): `data/journal/journalHooks.test.tsx` (dual-mode read + the
   range-scoped mock mutations); `features/me/sheets/JournalSheet.test.tsx` (create saves via
   `addNote`; edit prefills + calls `updateNote`; delete needs the second confirm tap; the „Döntés"
   mode toggle saves via `addDecision` and is hidden in edit mode); the
@@ -601,7 +695,7 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
     removes the embedding.
   - Gratitude cases folded into `MemoryEmbeddingWriterIT`: `testWriteGratitude_*`,
     `testDeleteGratitudeEmbedding_*`.
-- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,AnchorResolverDecisionIT,MemoryEmbeddingWriterIT'`
+- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,GratitudeEntryPersistenceIT,GratitudeApiIT,GratitudeEmbeddingEventIT,AnchorResolverDecisionIT,MemoryEmbeddingWriterIT,NoteEmbeddingWriterIT,NoteEmbeddingCatchUpIT,NoteEmbeddingBudgetIT,NoteEmbeddingSwitchOffIT,DailySummaryJobIT' -Dmezo.test.use-testcontainers=true`
   (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky); `cd frontend && pnpm build &&
   pnpm test && VITE_USE_MOCK=true pnpm test`.
 
@@ -646,15 +740,16 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   bejegyzés` hardcode `source: 'quickinput'` client-side, `journalApi.ts:26`). `ritual` is reserved
   for a later slice's Napzárás-originated capture — do not repurpose it for anything else.
   `JournalSheet` never lets the caller choose a `source`.
-- **Gotcha — the remaining four `memory_embedding` kinds are unused schema, not dead weight.** Don't
-  add a "why does the CHECK allow kinds nothing writes" cleanup task — `gratitude`/
-  `monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.3/W1.5
-  (§5), landed in one migration per spec §4.3's explicit instruction ("W1.1 carries the first
-  batch") to avoid five more `alter table … drop constraint / add constraint` migrations later.
-  Two of the six are no longer headroom: `decision` — W1.4 populates it (§4) — and, since
-  `mezo-b3pp.2`, **`reflection`**, written by `ReflectionEmbeddingListener` off the Napzárás close
-  (§5, [`ritual.md`](ritual.md)); neither needed a migration of its own, which is the whole point
-  of the batch.
+- **Gotcha — the remaining `memory_embedding` kinds are unused schema, not dead weight.** Don't
+  add a "why does the CHECK allow kinds nothing writes" cleanup task — `gratitude` (W1.3) and
+  `monthly_summary` are load-bearing headroom (§5) that W1.1's migration landed in one go
+  per spec §4.3's explicit instruction ("W1.1 carries the first batch") to avoid five more
+  `alter table … drop constraint / add constraint` migrations later (`weekly_summary` is NOT part of
+  that batch — it sat in the V2.1-era CHECK from the start, and is unwritten for its own reasons).
+  Four of the six kinds that arrived as headroom are no longer headroom: `decision` (W1.4, §4), `reflection` (`mezo-b3pp.2`, written by
+  `ReflectionEmbeddingListener` off the Napzárás close — §5, [`ritual.md`](ritual.md)) and, since
+  `mezo-b3pp.5`, `activity_note`/`checkin_note` (the nightly note sweep, §3). **None of them needed
+  a migration of its own, which is the whole point of the batch.**
 - **Decision (W1.4) — no delete AND no update (edit) endpoint for decisions this slice.** A decision,
   once captured, stays in the record permanently with its original `decisionText`/`decidedOn` — there
   is no `DELETE /api/journal/decision/{id}`, no `PUT /api/journal/decision/{id}` (unlike
@@ -685,13 +780,64 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   kept anyway because the backend `PUT .../review` is re-runnable (previous bullet): a future
   review-history surface can reopen this exact sheet on an already-reviewed decision with zero backend
   or sheet changes, only a new list source.
-- **Deferred (spec §5.5, bd ids assigned):** note-embedding catch-up for activity/check-in text
-  (`mezo-b3pp.5`, not started). Decision journal + review loop (`mezo-b3pp.4`), evening prose
-  reflection (`mezo-b3pp.2`, outside this domain — see §5 and [`ritual.md`](ritual.md)) and
-  gratitude entries (`mezo-b3pp.3`) have all **shipped** — see this doc throughout. The ritual
-  `ReflectionStep` gratitude rows are the one W1.3 piece still open: W1.3b (`mezo-b3pp.25`),
-  unblocked now that W1.2 is on main. None of the remaining slices need a NEW embed pipeline — see
-  §5 above.
+- **Decision (W1.5) — the note sources went behind a companion-owned port, because ArchUnit failed
+  the direct design.** The plan had `NoteEmbeddingCatchUp` importing `ActivityLogRepository`/
+  `ActivityLogEntity` straight from `feature/activity`.
+  `ArchitectureTest.feature_slices_are_cycle_free` — a **`FreezingArchRule`**, so only the already
+  frozen cycles are tolerated and any NEW one fails the build — rejected it: `feature/activity`
+  already depends on `feature/companion` (directly, `ActivityClassifier` → `CompanionLlm`, and
+  transitively via `feature/quest`), so the import closed `activity → companion → activity` plus
+  `activity → quest → companion → activity`. Exactly the failure mode that caught the
+  journal/companion decision-context seam ([ADR 0029](../decisions/0029-invert-journal-companion-decision-context-port.md)),
+  and it took the same, established fix: the **consumer-owned port**
+  ([ADR 0012](../decisions/0012-consumer-owned-llm-ports.md), with
+  `feature/companion/TodayActivitySource` + `feature/activity/service/DailyActivityAdapter` as the
+  in-repo precedent). Companion declares what it needs — `NarrativeNoteSource`, whose `Note` record
+  is flat (`id, createdBy, text, occurredOn`) so no companion class ever sees an activity ENTITY,
+  and whose `ACTIVITY_NOTE`/`CHECKIN_NOTE` constants mirror `MemoryEmbeddingEntity`'s so an
+  implementing feature needn't import a companion entity either — and the owning feature implements
+  it. `NoteEmbeddingCatchUp` injects `ObjectProvider<NarrativeNoteSource>`, not a plain
+  `List<NarrativeNoteSource>` — a `List<T>` constructor parameter with zero matching beans resolves
+  to `null` in Spring (`DefaultListableBeanFactory.resolveMultipleBeans`), which fails context
+  startup on the required dependency; `ObjectProvider#orderedStream()` yields an empty stream
+  instead. That makes zero note sources (no implementation on the classpath, or every one switched
+  off) an actually-safe no-op today, and lets a future `@ConditionalOnProperty` on either adapter
+  drop it to zero without risking the context.
+- **Gotcha (W1.5) — the two adapters live in DIFFERENT slices, and that asymmetry is deliberate.**
+  `ActivityNoteSourceAdapter` sits in `feature/activity/service/` (the inversion described above),
+  but `CheckInNoteSourceAdapter` sits in `feature/companion/embedding/` and imports
+  `CheckInRepository` directly. Reason: `feature/biometrics` has **no** edge into
+  `feature/companion` today, so implementing the port from inside `biometrics/checkin/service` would
+  have ADDED that missing leg and closed a NEW, un-frozen 4-slice cycle (`biometrics → companion →
+  meal → goal → biometrics`, the `goal ↔ biometrics` leg being a pre-existing FROZEN cycle) —
+  whereas a plain `companion → biometrics` read is the direction that already exists safely in this
+  pipeline. Don't "tidy" the two adapters into the same place; either move breaks the build. The
+  full reasoning is in each class's javadoc, next to the code that depends on it.
+- **Known gap (W1.5) — `activity_note`/`checkin_note` are WRITE-ONCE: an edited source note keeps
+  its ORIGINAL vector.** `writeNote` goes through the insert-only `write` helper, not the
+  re-embedding `upsert` the journal/decision/reflection kinds use, and the exists-probe makes a
+  second pass over the same `ref_id` a no-op — so editing an `activity_log.text` or a
+  `check_in.note` after the sweep embedded it leaves the pre-edit text standing in
+  `memory_embedding` forever. Nothing in the sweep can notice: it has no content comparison, only
+  the ref-id set. A follow-up bd issue is filed for this (`mezo-b3pp.26`).
+- **Known gap (W1.5) — soft-deleting a source row does NOT remove its vector.** Unlike
+  `journal_entry`, which has an explicit delete path (`deleteJournalEmbedding` off
+  `JournalEntryDeletedEvent`), the note kinds have no listener at all — `findNoteCandidates` simply
+  stops returning the deleted row, so its already-written vector is never revisited and stays
+  recallable. This is the IDENT-3 honesty rule's one currently-unmet corner in the embed pipeline;
+  it is recorded, not hidden, and shares the follow-up bd issue (`mezo-b3pp.26`) with the write-once gap above.
+  `uq_memory_embedding_kind_ref_id` is a PLAIN (non-partial) unique index, so a soft-deleted
+  `activity_note`/`checkin_note` vector still occupies its `(kind, ref_id)` slot — whoever adds this
+  delete path MUST route any note re-write through `MemoryEmbeddingWriter`'s revive-on-write
+  `upsert`, never the insert-only `write` `writeNote` uses today, or every nightly run re-selects
+  the row, burns an embedding call, hits the constraint, and warns — forever.
+- **Deferred — the W1 wave itself is done; two follow-ons remain.** Every W1 slice has shipped:
+  journal (`mezo-b3pp.1`), evening reflection (`mezo-b3pp.2`, outside this domain — see §5 and
+  [`ritual.md`](ritual.md)), gratitude (`mezo-b3pp.3`), decision journal + review loop
+  (`mezo-b3pp.4`) and the note-embedding catch-up (`mezo-b3pp.5`, §3/§5/§8, with its two known
+  gaps two bullets up). Still open: **W1.3b** (`mezo-b3pp.25`) — gratitude rows in the ritual
+  `ReflectionStep` — and **`mezo-b3pp.26`**, the W1.5 write-once staleness follow-up. Neither
+  needs a NEW embed pipeline; both reuse the seam in §5.
 
 ## 10. Key files
 
@@ -720,7 +866,19 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeJournal`, `deleteJournalEmbedding`, `writeDecision` (re-embeds in place on review, §5), and the private `upsert(...)` all three re-embeddable kinds share since `mezo-b3pp.2` (`writeReflection`, the ritual-sourced fifth kind, is the third caller — [`ritual.md`](ritual.md) §5).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the live-row lookup, still the delete path's probe) and, since `mezo-b3pp.2`, the native `findByKindAndRefIdIncludingDeleted` the single shared `upsert(...)` reads through so a soft-deleted row is revived rather than re-inserted (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-53,63` — the kind constants (`KIND_JOURNAL_ENTRY`/`KIND_DECISION`/`KIND_REFLECTION` + W1.5's `KIND_ACTIVITY_NOTE`/`KIND_CHECKIN_NOTE`) and the widened `kind` `@Pattern` mirroring `ck_memory_embedding_kind`.
+
+**Backend — the note catch-up (W1.5, `mezo-b3pp.5`; no listener, no migration, no FE)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/NarrativeNoteSource.java` — the companion-owned port (`kind()` + `notesToEmbed`, the flat `Note` record, the two kind constants); its javadoc carries the cycle rationale (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/activity/service/ActivityNoteSourceAdapter.java` — the `activity_note` source, a plain `ActivityLogRepository` read (NOT `ActivityService` — that import would close a cycle of its own), ungated by `ACTIVITY_SWITCH`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/CheckInNoteSourceAdapter.java` — the `checkin_note` source; lives in companion, not in `biometrics/checkin/service`, for the reason in §9.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/NoteEmbeddingCatchUp.java` — the pass itself: toggle check, per-kind ref-id diff, run-wide budget, per-row try/catch, deliberately NOT `@Transactional`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeNote(kind, note)`, the write-once path (the insert-only `write`, not `upsert` — §9's gaps).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DailySummaryJob.java` — the wiring: the note pass runs per user inside the EXISTING nightly cron, after the summary + turn passes.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/activity/repository/ActivityLogRepository.java` — `findNoteCandidates(createdBy, through, minChars)` (JPQL, `@SQLRestriction` keeps soft-deleted rows out, oldest first).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/repository/CheckInRepository.java` — `findNoteCandidates(...)` (a null note fails the `length()` predicate in SQL, so no null branch).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findRefIdsByCreatedByAndKind` (one set read per kind, the pass's idempotence anchor).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Embedding.embedNotes`/`noteMinChars`/`noteBatchSize`; `backend/src/main/resources/application.yml:396-402` — `mezo.companion.embedding.embed-notes` / `note-min-chars: 80` / `note-batch-size: 200`.
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java` — `DECISION_REVIEW` enum entry.

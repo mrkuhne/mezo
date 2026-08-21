@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.embedding;
 
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
+import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -174,6 +175,17 @@ public class MemoryEmbeddingWriter {
         }
         upsert(day.getCreatedBy(), MemoryEmbeddingEntity.KIND_REFLECTION, day.getId(), text,
                 day.getRitualDate());
+    }
+
+    /**
+     * W1.5 note unit (spec §5.5): a substantive note from a {@link NarrativeNoteSource}
+     * (activity-log „Napló" entry or check-in note), embedded WRITE-ONCE via {@link #write} —
+     * there is no listener behind these kinds, only the nightly sweep, so an edited or deleted
+     * source row keeps/leaves orphaned its original vector (known gap, journal.md §9).
+     */
+    @Transactional
+    public void writeNote(String kind, NarrativeNoteSource.Note note) {
+        write(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
     }
 
     /**

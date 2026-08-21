@@ -586,6 +586,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
 | Gratitude embedding seam | ✅ `mezo-b3pp.3` | A SIXTH `memory_embedding` kind, `gratitude`: 1–3 short lines a day from `gratitude_entry` (`feature/journal`, [`journal.md`](journal.md) §5). `GratitudeEmbeddingListener` is the journal-shaped twin of the journal listener (`COMPANION_SWITCH` + `JOURNAL_SWITCH`, AFTER_COMMIT/`@Async`), calling `MemoryEmbeddingWriter.writeGratitude` / `.deleteGratitudeEmbedding` over the shared `upsert`; no edit endpoint, so only the create-then-delete liveness re-check. Short texts embed fine — they carry disproportionate emotional signal (spec §5.3). |
+| Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Records only — nothing reads it yet; W4.2 is what it is for** (§4/§5.7/§9). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
@@ -683,8 +684,9 @@ constraint; `writeJournal` instead looks up the live row via the new
 directly when present, falling back to the existing insert-only `write` helper on a first write.
 This slice also carries the `memory_embedding` **kind-CHECK widening to 10 values** (§4 above) in
 the same migration, landing schema headroom for the rest of the Phase 5 W1 wave
-(`reflection`/`gratitude`/`decision`/`monthly_summary`/`activity_note`/`checkin_note` — only
-`journal_entry`, `decision`, and `gratitude` are written today). See [`journal.md`](journal.md) §3/§5/§9 for the full seam,
+(`reflection`/`gratitude`/`decision`/`monthly_summary`/`activity_note`/`checkin_note` — of which
+`journal_entry` alone was written at W1.1; of that batch only `monthly_summary` is still unwritten
+today, §4). See [`journal.md`](journal.md) §3/§5/§9 for the full seam,
 including the spec-deviation writeup for the update-in-place decision.
 
 **Decision embedding seam (`mezo-b3pp.4`, Phase 5 W1.4, post-epic) — a FOURTH narrative kind joins
@@ -1136,9 +1138,11 @@ swapped in-slice across compose/k3s/Testcontainers):
   `journal_entry` (W1.1, `KIND_JOURNAL_ENTRY`, written by `JournalEmbeddingListener` below),
   `decision` (W1.4, `KIND_DECISION`, written by `DecisionEmbeddingListener` below),
   `reflection` (W1.2, `KIND_REFLECTION`, written by `ReflectionEmbeddingListener` off
-  `feature/ritual`'s close event) and `gratitude` (W1.3, `KIND_GRATITUDE`, written by
-  `GratitudeEmbeddingListener` below) are populated as of `mezo-b3pp.4` / `.2` / `.3`;
-  `activity_note`/`checkin_note` (W1.5) are still schema headroom for the rest of
+  `feature/ritual`'s close event), `gratitude` (W1.3, `KIND_GRATITUDE`, written by
+  `GratitudeEmbeddingListener` below) and `activity_note`/`checkin_note` (W1.5,
+  `KIND_ACTIVITY_NOTE`/`KIND_CHECKIN_NOTE`, written write-once by the nightly
+  `NoteEmbeddingCatchUp` pass — the only kinds with NO listener behind them) are all populated;
+  `monthly_summary` is what is still schema headroom from
   the Phase 5 W1 narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
   design spec's explicit instruction, rather than one `alter table` per later slice), `ref_id uuid`
   (`uq_memory_embedding_kind_ref_id (kind, ref_id)` — one embedding per source unit, the V2.2
