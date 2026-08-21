@@ -18,6 +18,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 /**
@@ -122,8 +123,13 @@ public class PatternEntity extends OwnedEntity {
     @Column(name = "promoted_fact_id", columnDefinition = "uuid")
     private UUID promotedFactId;
 
-    /** When the nightly job last computed/refreshed the stats. */
+    /** When the nightly job last computed/refreshed the stats. Truncated to micros on every
+     *  write (here and in {@code PatternDetectionService}/{@code HypothesisPipelineService}):
+     *  {@code timestamptz} stores microseconds and ROUNDS a nanosecond value, while readers that
+     *  compare against the in-memory instant truncate — on linux, where {@code Instant.now()} has
+     *  nanosecond resolution, the two drift by 1 us and the row re-read from Postgres no longer
+     *  equals the one that was persisted (mezo-mfmb). The {@code RitualService.close} precedent. */
     @NotNull
     @Column(name = "last_detected_at", nullable = false)
-    private Instant lastDetectedAt = Instant.now();
+    private Instant lastDetectedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
 }

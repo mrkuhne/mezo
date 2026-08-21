@@ -17,6 +17,7 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 /**
@@ -58,7 +59,7 @@ public class PatternEventEntity extends OwnedEntity {
 
     @NotNull
     @Column(name = "occurred_at", nullable = false)
-    private Instant occurredAt = Instant.now();
+    private Instant occurredAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
 
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
