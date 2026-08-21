@@ -1,6 +1,14 @@
+---
+title: "Local LLMs for agentic coding on 128 GB M5 Max — deep research report (agent web-research)"
+type: article
+source_url: agent-web-research (Claude subagent, sources cited inline)
+ingested: 2026-08-21
+sha256: 1c86c91890366e3e6b14d1aff641658d1219d83da8d04c04f64dd361cdae1ec3  # body below this frontmatter, pre-frontmatter capture
+---
+
 <!-- RAW SOURCE — immutable. Agent web-research report (Claude subagent, 2026-08-21),
      commissioned for the mezo local-LLM workflow design (epic mezo-zjtm).
-     Ingest via the knowledge-base skill; do not edit content below. -->
+     Do not edit content below. -->
 
 # Local LLMs for Agentic Coding on a 128 GB M5 Max — State of Mid-2026 (researched 2026-08-21)
 

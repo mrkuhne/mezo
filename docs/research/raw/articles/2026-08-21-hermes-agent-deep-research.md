@@ -1,6 +1,14 @@
+---
+title: "Hermes Agent — deep research report (agent web-research)"
+type: article
+source_url: agent-web-research (Claude subagent, sources cited inline)
+ingested: 2026-08-21
+sha256: baf730ed0fb0234b6cc5f97d5e065bbb8c4408f927da1eca6a437043d27bdc56  # body below this frontmatter, pre-frontmatter capture
+---
+
 <!-- RAW SOURCE — immutable. Agent web-research report (Claude subagent, 2026-08-21),
      commissioned for the mezo local-LLM workflow design (epic mezo-zjtm).
-     Ingest via the knowledge-base skill; do not edit content below. -->
+     Do not edit content below. -->
 
 # Hermes Agent — Research Report (as of 2026-08-21)
 
