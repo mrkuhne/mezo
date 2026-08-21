@@ -5,6 +5,7 @@ import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 import { isDecisionDue, useDecisions, useJournalNotes } from '@/data/hooks'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { DecisionReviewSheet } from '@/features/me/sheets/DecisionReviewSheet'
+import { GratitudeStreakCard } from '@/features/me/components/GratitudeStreakCard'
 import { dayLabel } from '@/features/me/logic/growthJournal'
 import { localDateString } from '@/shared/lib/dates'
 import type { JournalNote } from '@/data/journal/journalTypes'
@@ -69,6 +70,8 @@ export function JournalPage() {
       </div>
 
       <div style={{ padding: '8px 24px 24px' }}>
+        <GratitudeStreakCard from={from} to={today} todayIso={today} />
+
         {decisionsError && openDecisions.length === 0 ? (
           // Same honesty rule as the notes list below (isError && ...length === 0): a failed
           // decisions fetch must not read as "no open decisions" — an overdue one would silently

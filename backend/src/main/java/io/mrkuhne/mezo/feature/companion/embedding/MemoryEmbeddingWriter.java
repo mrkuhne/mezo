@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -120,11 +121,26 @@ public class MemoryEmbeddingWriter {
                 entry.getText(), entry.getOccurredOn());
     }
 
-    /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-3 honesty). */
+    /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-1 honesty). */
     @Transactional
     public void deleteJournalEmbedding(UUID entryId) {
         memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entryId)
+                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+    }
+
+    /** W1.3 gratitude unit (spec §4.1 / §5.3): short lines, same upsert-in-place seam as journal. */
+    @Transactional
+    public void writeGratitude(GratitudeEntryEntity entry) {
+        upsert(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId(),
+                entry.getText(), entry.getOccurredOn());
+    }
+
+    /** Deleted gratitude entries must not be recallable — soft-deletes the entry's vector row. */
+    @Transactional
+    public void deleteGratitudeEmbedding(UUID entryId) {
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entryId)
                 .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
     }
 
