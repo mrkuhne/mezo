@@ -56,3 +56,11 @@ test('clearing the field then saving persists null', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(setExerciseVideo).toHaveBeenCalledWith('cat-1', null, expect.anything())
 })
+
+test('an Instagram reel permalink is passed through to setExerciseVideo unchanged', async () => {
+  render(<VideoUrlSheet exercise={{ id: 'cat-9', name: 'Box Jump', videoUrl: null }} onClose={vi.fn()} />)
+  const reel = 'https://www.instagram.com/reel/DAbc-1_x2yZ/'
+  await userEvent.type(screen.getByLabelText('Videó URL'), reel)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(setExerciseVideo).toHaveBeenCalledWith('cat-9', reel, expect.anything())
+})
