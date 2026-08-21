@@ -69,7 +69,10 @@ export function useFeedback(kind: FeedbackArtifactKind, ids: string[]): Feedback
 
   // Dedupe (the same artifact can legitimately be rendered twice) and cap at the contract's
   // maxItems — an oversized list is a guaranteed 400, i.e. NO verdicts for the whole page.
-  const requestIds = useMemo(() => [...new Set(ids)].slice(0, FEEDBACK_MAX_IDS), [ids])
+  // The cap keeps the LAST ids, not the first: every one of these surfaces renders
+  // oldest-first with the user pinned to the newest end (chat especially), so the tail is what
+  // is actually on screen — dropping the head loses chips nobody can see.
+  const requestIds = useMemo(() => [...new Set(ids)].slice(-FEEDBACK_MAX_IDS), [ids])
   const fingerprint = useMemo(() => [...requestIds].sort().join(','), [requestIds])
   const queryKey = useMemo(
     () => (mock ? ['feedback', kind] : ['feedback', kind, fingerprint]),
@@ -84,6 +87,11 @@ export function useFeedback(kind: FeedbackArtifactKind, ids: string[]): Feedback
     // would be a guaranteed 400.
     realFetch: async () => (requestIds.length ? feedbackApi.list(kind, requestIds) : EMPTY),
     realEmpty: EMPTY,
+    // The real-mode key encodes the id set, so it changes every time the page grows by one card
+    // (a new chat message). Without this, every already-known verdict on screen would blank for
+    // the width of the new round-trip; with it, the previous response stays until the wider one
+    // lands. Real mode only, and it is the previous REAL response — never the mock seed.
+    keepPreviousRealData: true,
   })
 
   const byId = useMemo(() => new Map(data.map((r) => [r.artifactId, r])), [data])
@@ -140,8 +148,11 @@ export function useFeedback(kind: FeedbackArtifactKind, ids: string[]): Feedback
       // The reason is only legal on `down` — the backend 400s a reason sent with `up`.
       const nextReason = verdict === 'down' ? reason : undefined
       const sameVerdict = current?.verdict === verdict
-      const noNewReason = nextReason === undefined || nextReason === current?.reason
-      if (sameVerdict && noNewReason) {
+      // Retraction is the BARE re-tap only. A tap that carries a reason is always an upsert —
+      // including re-picking the reason that is already stored (confirming "too_much" on a card
+      // that already says "too_much" must keep the vote, not silently delete it).
+      const bareTap = nextReason === undefined
+      if (sameVerdict && bareTap) {
         mutate({ op: 'retract', artifactId })
         return
       }

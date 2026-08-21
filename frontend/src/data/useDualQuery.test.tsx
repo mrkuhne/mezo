@@ -71,6 +71,55 @@ describe('useDualQuery', () => {
     expect(result.current.isError).toBe(false)
   })
 
+  it('real mode: keepPreviousRealData keeps the PREVIOUS key’s data while the new key resolves (mezo-b3pp.15)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const FIRST = ['first']
+    const SECOND = ['first', 'second']
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => {
+      release = r
+    })
+    const { result, rerender } = renderHook(
+      ({ n }: { n: number }) =>
+        useDualQuery({
+          queryKey: ['dq-keep', n],
+          mockData: SEED,
+          realFetch: n === 1 ? async () => FIRST : async () => {
+            await gate
+            return SECOND
+          },
+          realEmpty: EMPTY,
+          keepPreviousRealData: true,
+        }),
+      { wrapper: makeWrapper(), initialProps: { n: 1 } },
+    )
+    await waitFor(() => expect(result.current.data).toBe(FIRST))
+    rerender({ n: 2 })
+    // the key changed and the new fetch is still open — the previous REAL response stays…
+    expect(result.current.data).toBe(FIRST)
+    expect(result.current.data).not.toBe(SEED) // …and it is never the mock seed
+    release()
+    await waitFor(() => expect(result.current.data).toBe(SECOND))
+  })
+
+  it('real mode: WITHOUT the flag a key change still drops to realEmpty (existing callers unchanged)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const FIRST = ['first']
+    const { result, rerender } = renderHook(
+      ({ n }: { n: number }) =>
+        useDualQuery({
+          queryKey: ['dq-nokeep', n],
+          mockData: SEED,
+          realFetch: n === 1 ? async () => FIRST : () => new Promise<string[]>(() => {}),
+          realEmpty: EMPTY,
+        }),
+      { wrapper: makeWrapper(), initialProps: { n: 1 } },
+    )
+    await waitFor(() => expect(result.current.data).toBe(FIRST))
+    rerender({ n: 2 })
+    expect(result.current.data).toBe(EMPTY)
+  })
+
   it('refetch() re-runs the query — a failed real-mode fetch can recover without a remount', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     let attempt = 0
