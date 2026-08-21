@@ -26,9 +26,13 @@ related: [me, companion, _platform-data-layer, _platform-api-backend, _platform-
 > `decision_entry` decisions + their later review (W1.4, `mezo-b3pp.4`), captured via the same
 > `JournalSheet` in a „Döntés" mode. Both persist server-side and embed post-commit into the
 > companion's `memory_embedding` vector store (`kind=journal_entry` / `kind=decision`).
-> **Status: ✅ done** (backend + FE real + FE mock, both aggregates). Lives under the `Me` tab
+> **Status: ✅ done** (backend + FE real + FE mock, all three aggregates). Lives under the `Me` tab
 > (`ME_TABS` entry `journal`, `/me/naplo`) — see [`me.md`](me.md) §2 for the surface, this doc for
 > the domain. **W1.1 + W1.4 of the Phase 5 "deep memory & personalization" epic** (`mezo-b3pp`).
+> **W1.3 (gratitude entries, `mezo-b3pp.3`) is also ✅ done** — a third aggregate in the same
+> package with `kind=gratitude` embedding, capture via `JournalSheet` gratitude mode and QuickInput
+> Hála tile, and a derived streak card on `/me/naplo`. Ritual `ReflectionStep` gratitude rows
+> 🟣 deferred to W1.3b (W1.2 unmerged).
 
 ## 1. Summary
 
@@ -82,15 +86,28 @@ two tiles: **„✍️ Aktivitás"** (unchanged — opens `ActivityLogSheet`, th
 and **„📓 Napló"** (opens `JournalSheet` in create mode). Both replace the picker in place — closing
 either closes the whole QuickInput stack (`QuickInputSheet.tsx:61-63`).
 
-### `JournalSheet` (`features/me/sheets/JournalSheet.tsx`) — create + edit + delete, plus a „Döntés" capture mode
+### `JournalSheet` (`features/me/sheets/JournalSheet.tsx`) — create + edit + delete, plus „Döntés" and „Hála" capture modes
 One free-text `<textarea>` (no length cap, placeholder „Írd le, mi jár a fejedben…", autofocus) plus
 an optional `<input type="date">` defaulting to today, plus a mic button reusing the shared
 `useVoiceInput` hook (`features/insights/logic/useVoiceInput`, the `ChatPage` composer idiom — the
 transcript is **appended** to whatever's already typed, not overwritten). Header eyebrow „Napló",
 title „Mi jár a fejedben?" in create mode / „Bejegyzés szerkesztése" in edit mode (`entry` prop
 set). CTAs „Mégse" / „Mentem" — save calls `addNote` (create) or `updateNote` (edit) then closes.
-**Edit mode only** additionally offers **„Törlés"** behind a two-step confirm („Törlés" →
+**Edit mode only** additionally offers **„Törlés" behind a two-step confirm („Törlés" →
 „Biztosan törlöd?", `var(--error)` styling, the `EditGoalSheet` idiom) → `removeNote`.
+
+**Create mode** additionally offers a three-chip mode toggle — **„Napló" / „Döntés" / „Hála"**
+(both mode toggles are internal, ephemeral `useState`, always reset to `'note'` on remount,
+`initialMode` prop exists for QuickInput's direct-open path). **„Hála" mode** (W1.3, `mezo-b3pp.3`)
+renders 1–3 text rows (expandable via „+ Még egy" up to 3), each with a mic button and a `maxLength={280}`
+constraint; an optional **life-area chip row** (`LIFE_SKILLS` from `@/features/progression/logic/levelUpMeta`,
+the 8 LIFE keys) applies to every saved row. Save posts each non-empty row through `addEntry(text, lifeArea, occurredOn)`
+(`useGratitudeActions`, Task 5) and closes. `JournalSheetProps.initialMode?: 'note' | 'decision' | 'gratitude'`
+(default `'note'`) lets QuickInput open the sheet directly in gratitude mode (no picker step).
+
+**QuickInput Hála tile** (W1.3): `QuickInputSheet.tsx` phase `'gratitude'` renders
+`<JournalSheet onClose={onClose} initialMode="gratitude" />`; the naplo-pick grid gained a
+`<Tile emoji="🙏" label="Hála" onClick={() => setPhase('gratitude')} />` tile.
 
 **Create mode only** (`!entry`) additionally renders a two-chip mode toggle — **„Napló" / „Döntés"**
 (`aria-pressed`, the house `.chip[aria-pressed='true']` idiom, no extra CSS class needed) — internal,
@@ -237,6 +254,23 @@ mirroring the DB CHECK. Repository (`repository/DecisionEntryRepository.java`) t
 owned-lookup-or-404 idiom, newest-first list, and a `review_due` finder `AnchorResolver` reads
 directly (§5, [`_platform-notifications.md`](_platform-notifications.md) §4).
 
+### Backend table — `gratitude_entry` (W1.3, `mezo-b3pp.3`)
+
+Migration [`202608211200_mezo-b3pp.3_create_gratitude_entry.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.3_create_gratitude_entry.sql)
+(registered in `1.0.0_master.yml`):
+
+- **`gratitude_entry`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user ON DELETE CASCADE`,
+  `is_deleted`, `created_at timestamptz`, `occurred_on date not null` (defaults to today server-side when omitted),
+  `text varchar(280) not null` (≤ 280 chars, enforced at column + entity `@Size(max = 280)`),
+  `life_area varchar(16)` nullable (`ck_gratitude_entry_life_area` on the 8 LIFE keys:
+  `mindfulness|mindset|cooking|financial|productivity|learning|connection|recovery`);
+  index `idx_gratitude_entry_created_by_occurred_on (created_by, occurred_on desc)`.
+
+`GratitudeEntryEntity` (`entity/GratitudeEntryEntity.java`) `extends OwnedEntity`, `@SQLDelete`/
+`@SQLRestriction` soft delete, `@Pattern` on `lifeArea`. Repository
+(`repository/GratitudeEntryRepository.java`) two finders: the owned-lookup-or-404 idiom and the
+ranged list, newest-first by day then by creation time within a day — same shape as `journal_entry`.
+
 ### The `memory_embedding` kind expansion (rides in W1.1, spec §4.3)
 
 Migration [`202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql)
@@ -288,6 +322,21 @@ for why this shows up as an unreachable-but-kept prefill path in `DecisionReview
 Errors go through the same `SystemRuntimeErrorException` + `SystemMessage` convention
 (`DECISION_ENTRY_NOT_FOUND=A döntés nem található.`, `messages.properties:84`, right after
 `JOURNAL_ENTRY_NOT_FOUND`).
+
+### API — gratitude endpoints (W1.3, `mezo-b3pp.3`, same contract file, same `JournalApi`/`JournalController`)
+
+| Method + path | Operation | Returns | Errors |
+|---|---|---|---|
+| `GET /api/journal/gratitude?from&to` | `listGratitudeEntries` | `GratitudeEntryResponse[]`, newest first | 400 (bad dates) |
+| `POST /api/journal/gratitude` (`{text, lifeArea?, occurredOn?}`) | `createGratitudeEntry` | `GratitudeEntryResponse` (201) | 400 (blank/long text, unknown `lifeArea`) |
+| `DELETE /api/journal/gratitude/{id}` | `deleteGratitudeEntry` | 204 (soft delete) | 404 `GRATITUDE_ENTRY_NOT_FOUND` |
+
+`GratitudeEntryResponse` — `{id, occurredOn, text, lifeArea: string|null, createdAt}`.
+`CreateGratitudeEntryRequest` — `{text: string (min 1, max 280), lifeArea: string|null (pattern: LIFE keys), occurredOn: string|null}`.
+`lifeArea` is a **`pattern`** (not `enum`) on the request — invalid values 400 via bean validation.
+Errors go through the same convention (`GRATITUDE_ENTRY_NOT_FOUND=A hálabejegyzés nem található.`,
+`messages.properties:85`, after `DECISION_ENTRY_NOT_FOUND`). `GratitudeService.findOwned` is the
+single 404 site, reused by `delete`.
 
 ### FE domain type + wire mapping
 
@@ -378,7 +427,7 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   after the due day passes). Full category shape (default ON, lead 0, dedup suffix) lives in
   [`_platform-notifications.md`](_platform-notifications.md) §4 — this is the one seam in the domain
   that is **not** the embed pipeline.
-- **🟣 Future W1 slices reuse the embed seam above, not a new one (spec §5.2–§5.5):** W1.2 (evening
+|- **🟣 Future W1 slices reuse the embed seam above, not a new one (spec §5.2–§5.5):** W1.2 (evening
   prose reflection in Napzárás, `mezo-b3pp.2`) embeds `kind=reflection` off `ritual_day` on close;
   W1.3 (gratitude entries, `mezo-b3pp.3`) adds `gratitude_entry` in the **same** `feature/journal`
   package and embeds `kind=gratitude`; W1.5 (note-embedding catch-up, `mezo-b3pp.5`) extends the
@@ -386,6 +435,10 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   `checkin_note`. Every one of these is "a new `write<Kind>` method on `MemoryEmbeddingWriter`, not a
   second writer" (spec §4.3) — the CHECK constraint W1.1 widened already has room for all of them;
   W1.4 (decision journal + review loop) is the pattern in production, not future, as of this doc.
+  **W1.3 is now ✅ done** — `GratitudeEmbeddingListener` (`companion/embedding/`, same `@Async
+  @TransactionalEventListener(AFTER_COMMIT)` shape, `COMPANION_SWITCH` + `JOURNAL_SWITCH` gated)
+  calls `MemoryEmbeddingWriter.writeGratitude(entry)` / `.deleteGratitudeEmbedding(id)` with
+  `kind=gratitude`, `KIND_GRATITUDE`. No delete-race cleanup needed (gratitude has no edit endpoint).
 
 ## 6. How to use it (consume)
 
@@ -411,6 +464,22 @@ await addDecision('Váltok edzéstervet.')                        // decidedOn d
 await reviewDecision(decision.id, 4, 'Bejött, kicsit fárasztó volt az első hét.')  // re-runnable, no 409
 
 isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && reviewDue <= today
+```
+
+```ts
+import { useGratitudeEntries, useGratitudeActions } from '@/data/hooks'
+
+const { data: entries, isPending, isError, refetch } = useGratitudeEntries(from, to)  // GratitudeEntry[]
+const { addEntry, removeEntry, pending } = useGratitudeActions()
+
+await addEntry('Jó kávé ma.', 'cooking')                          // lifeArea optional, occurredOn defaults to today
+await addEntry('Anyám hívott.', 'connection', '2026-08-20')        // explicit day
+await removeEntry(entry.id)                                         // soft delete
+
+// Streak is derived client-side:
+import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
+const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateString())
+// counts consecutive days with ≥1 entry, walking back from today (or yesterday if today empty)
 ```
 
 - Never import `journalApi`/`mockJournalNotes`/`decisionApi`/`decisionMock` directly — go through
@@ -511,6 +580,17 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   `features/me/sheets/DecisionReviewSheet.test.tsx` (rating required to enable save, calls
   `reviewDecision`); `data/hooks.reexport.test.ts` + `features/me/pages/MeSection.test.tsx` (barrel
   identity + the `Napló` tab label in the sub-nav loop).
+- **Backend ITs — gratitude (W1.3, `mezo-b3pp.3`)**, same infra, `gratitude_entry` also in
+  `ResetDatabase`, `JournalPopulator.createGratitude(...)`:
+  - `GratitudeEntryPersistenceIT` — round-trip create with lifeArea, newest-first range ordering,
+    `ck_gratitude_entry_life_area` CHECK rejecting an unknown value.
+  - `GratitudeApiIT` — 201 with defaulted `occurredOn`, 400 on text too long / unknown `lifeArea`,
+    soft-delete vanishing from the list, 404 on unknown id.
+  - `GratitudeEmbeddingEventIT` (`@ActiveProfiles("companion-fake")`, NOT `@Transactional`) — a
+    committed create produces **exactly one** `memory_embedding(kind=gratitude)` row; a delete
+    removes the embedding.
+  - Gratitude cases folded into `MemoryEmbeddingWriterIT`: `testWriteGratitude_*`,
+    `testDeleteGratitudeEmbedding_*`.
 - **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,AnchorResolverDecisionIT,MemoryEmbeddingWriterIT'`
   (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky); `cd frontend && pnpm build &&
   pnpm test && VITE_USE_MOCK=true pnpm test`.
@@ -574,38 +654,40 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   review-history surface can reopen this exact sheet on an already-reviewed decision with zero backend
   or sheet changes, only a new list source.
 - **Deferred (spec §5.2–§5.5, bd ids assigned):** evening prose reflection (`mezo-b3pp.2`, not
-  started), gratitude entries (`mezo-b3pp.3`, not started), note-embedding catch-up for
-  activity/check-in text (`mezo-b3pp.5`, not started). Decision journal + review loop (`mezo-b3pp.4`)
-  **shipped** — see this doc throughout. None of the remaining slices need a NEW embed pipeline — see
-  §5 above.
+  started), note-embedding catch-up for activity/check-in text (`mezo-b3pp.5`, not started).
+  Gratitude entries (`mezo-b3pp.3`) **shipped** — see this doc throughout. Ritual `ReflectionStep`
+  gratitude rows 🟣 deferred to W1.3b (`mezo-b3pp.3b`, blocked by W1.2 `mezo-b3pp.2` unmerged).
+  Decision journal + review loop (`mezo-b3pp.4`) **shipped**. None of the remaining slices need a
+  NEW embed pipeline — see §5 above.
 
 ## 10. Key files
 
 **API contract**
-- `api/feature/journal/journal.yml` — 7 endpoints (tag `Journal` → `JournalApi`): 4 `journal_entry`
-  (W1.1) + 3 `decision_entry` (W1.4) — `GET`/`POST /api/journal/decision`,
-  `PUT /api/journal/decision/{id}/review`. Registered in `api/generate/merge.yml` → merged
+- `api/feature/journal/journal.yml` — 10 endpoints (tag `Journal` → `JournalApi`): 4 `journal_entry`
+  (W1.1) + 3 `decision_entry` (W1.4) + 3 `gratitude_entry` (W1.3) — `GET`/`POST /api/journal/gratitude`,
+  `DELETE /api/journal/gratitude/{id}`. Registered in `api/generate/merge.yml` → merged
   `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
-**Backend — journal domain (both aggregates, one package)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/entity/{JournalEntryEntity,DecisionEntryEntity,DecisionContextEnvelope}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/repository/{JournalEntryRepository,DecisionEntryRepository}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/{JournalService,JournalEntrySavedEvent,JournalEntryDeletedEvent,DecisionService,DecisionEntrySavedEvent}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/mapper/{JournalMapper,DecisionMapper}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/controller/JournalController.java` — implements the whole `JournalApi` (both aggregates; a second controller was rejected, §7/task-2 report — `skipDefaultInterface: true` bundles every `Journal`-tagged operation into one generated interface).
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java:177-179` — `JOURNAL_SWITCH` (gates both aggregates).
+**Backend — journal domain (all three aggregates, one package)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/entity/{JournalEntryEntity,DecisionEntryEntity,DecisionContextEnvelope,GratitudeEntryEntity}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/repository/{JournalEntryRepository,DecisionEntryRepository,GratitudeEntryRepository}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/{JournalService,JournalEntrySavedEvent,JournalEntryDeletedEvent,DecisionService,DecisionEntrySavedEvent,GratitudeService,GratitudeEntrySavedEvent,GratitudeEntryDeletedEvent}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/mapper/{JournalMapper,DecisionMapper,GratitudeMapper}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/controller/JournalController.java` — implements the whole `JournalApi` (all three aggregates; a second controller was rejected, §7/task-2 report — `skipDefaultInterface: true` bundles every `Journal`-tagged operation into one generated interface).
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java:177-179` — `JOURNAL_SWITCH` (gates all three aggregates).
 - `backend/src/main/resources/application.yml:259-262` — `mezo.feature.journal.enabled`; `:821-822` — `mezo.companion.journal.decision-review-days` (consumed by `DecisionService` since W1.4).
-- `backend/src/main/resources/messages.properties:83-84` — `JOURNAL_ENTRY_NOT_FOUND`, `DECISION_ENTRY_NOT_FOUND`.
+- `backend/src/main/resources/messages.properties:83-85` — `JOURNAL_ENTRY_NOT_FOUND`, `DECISION_ENTRY_NOT_FOUND`, `GRATITUDE_ENTRY_NOT_FOUND`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; moved out of `CompanionProperties.Journal`, same YAML prefix).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned read seam for the companion's context-snapshot text (ADR 0029), consumed by `DecisionService` via `ObjectProvider`; keeps `feature/journal` free of a direct `feature/companion` import.
 
 **Backend — embed pipeline (companion-owned)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the `journal_entry` AFTER_COMMIT trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the `decision_entry` AFTER_COMMIT trigger (create + review); no delete-race handling (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:119-137` (`writeJournal`), `:138-150` (`deleteJournalEmbedding`), `:151-176` (`writeDecision` — re-embeds in place on review, §5).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/GratitudeEmbeddingListener.java` — the `gratitude_entry` AFTER_COMMIT trigger (create + delete); no edit-race cleanup (gratitude has no edit endpoint).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:119-137` (`writeJournal`), `:138-150` (`deleteJournalEmbedding`), `:151-176` (`writeDecision` — re-embeds in place on review, §5), `:177-195` (`writeGratitude`, `deleteGratitudeEmbedding`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, shared by both writers).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, shared by all writers).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-62` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION`/`KIND_GRATITUDE` + the widened `kind` `@Pattern`.
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java` — `DECISION_REVIEW` enum entry.
@@ -615,39 +697,47 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608181600_mezo-b3pp.1_create_journal_entry.sql`
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608201200_mezo-b3pp.4_create_decision_entry.sql` — `decision_entry` table (W1.4 needed no `memory_embedding`-kind migration — the CHECK already permitted `'decision'`).
-- `backend/src/main/resources/db/changelog/1.0.0/1.0.0_master.yml` — all three changeSets registered.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.3_create_gratitude_entry.sql` — `gratitude_entry` table (W1.3); `gratitude_entry` added to `ResetDatabase` TRUNCATE list.
+- `backend/src/main/resources/db/changelog/1.0.0/1.0.0_master.yml` — all four changeSets registered.
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,GratitudeEntryPersistenceIT,GratitudeApiIT,GratitudeEmbeddingEventIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/notification/AnchorResolverDecisionIT.java` — the `decision_review` anchor (§8; full test lives with the notification suite since it's `AnchorResolver`'s code, not journal's).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — journal + decision cases (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`, `testWriteDecision_*`).
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/JournalPopulator.java` — `createNote`/`createDecision`; `support/ResetDatabase.java:41` (`journal_entry`, `decision_entry` in the TRUNCATE list).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — journal + decision + gratitude cases (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`, `testWriteDecision_*`, `testWriteGratitude_*`/`testDeleteGratitudeEmbedding_*`).
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/JournalPopulator.java` — `createNote`/`createDecision`/`createGratitude`; `support/ResetDatabase.java:41` (`journal_entry`, `decision_entry`, `gratitude_entry` in the TRUNCATE list).
 
 **Frontend — data layer**
-- `frontend/src/data/journal/journalTypes.ts` — `JournalNote`. `frontend/src/data/journal/decisionTypes.ts` — `DecisionEntry`.
+- `frontend/src/data/journal/journalTypes.ts` — `JournalNote`. `frontend/src/data/journal/decisionTypes.ts` — `DecisionEntry`. `frontend/src/data/journal/journalTypes.ts` also — `GratitudeEntry`.
 - `frontend/src/data/journal/journalApi.ts` — `journalApi` + `toJournalNote` wire mapper. `frontend/src/data/journal/decisionApi.ts` — `decisionApi` + `toDecisionEntry` wire mapper.
+- `frontend/src/data/journal/gratitudeApi.ts` — `gratitudeApi` + `toEntry` wire mapper.
 - `frontend/src/data/journal/journalMock.ts` — `mockJournalNotes` (5-entry seed). `frontend/src/data/journal/decisionMock.ts` — 3-row seed (ripening/due/reviewed).
+- `frontend/src/data/journal/gratitudeMock.ts` — `mockGratitudeEntries` (6-entry seed, 4 consecutive days).
 - `frontend/src/data/journal/journalHooks.ts` — `useJournalNotes`/`useJournalActions` + the mock range-scoped mutation helpers. `frontend/src/data/journal/decisionHooks.ts` — `useDecisions`/`useDecisionActions`/`isDecisionDue`.
-- `frontend/src/data/hooks.ts:60-62` — both domains' barrel re-exports.
-- `frontend/src/test/msw/handlers.ts:1241-1265` — journal MSW fixtures (decision hooks are barrel-mocked in tests instead of MSW, §8/task-7 report).
+- `frontend/src/data/journal/gratitudeHooks.ts` — `useGratitudeEntries`/`useGratitudeActions` (dual-mode, `useDualQuery` with `mockData`, queryKey `['gratitude', from, to]`).
+- `frontend/src/data/hooks.ts:60-63` — all three domains' barrel re-exports.
+- `frontend/src/test/msw/handlers.ts:1241-1270` — journal + gratitude MSW fixtures.
 
 **Frontend — UI**
-- `frontend/src/features/me/sheets/JournalSheet.tsx` — create/edit/delete sheet + the „Napló"/„Döntés" mode toggle (create mode only).
+- `frontend/src/features/me/sheets/JournalSheet.tsx` — create/edit/delete sheet + the „Napló" / „Döntés" / „Hála" mode toggle (create mode only); `initialMode` prop for QuickInput.
 - `frontend/src/features/me/sheets/DecisionReviewSheet.tsx` — the rating + outcome review sheet.
-- `frontend/src/features/me/pages/JournalPage.tsx` — `/me/naplo`, month-grouped notes view + the „Döntések" open-decisions block.
+- `frontend/src/features/me/pages/JournalPage.tsx` — `/me/naplo`, month-grouped notes view + the „Döntések" open-decisions block + the `GratitudeStreakCard`.
 - `frontend/src/features/me/pages/tabs.ts:11` — `ME_TABS` `journal` entry.
 - `frontend/src/app/router.tsx:50,155` — `JournalPage` import + `naplo` child route.
-- `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx:22,63,79-88` — the two-option picker phase (notes only — no decision entry point from QuickInput).
+- `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx:22,63-65,79-89` — the three-option picker phase (`naplo-pick` with Aktivitás/Napló/Hála); `'gratitude'` phase renders JournalSheet with `initialMode="gratitude"`.
+- `frontend/src/features/me/logic/gratitudeStreak.ts` — `gratitudeStreakDays()` (consecutive days derived from entry dates, yesterday-grace).
+- `frontend/src/features/me/components/GratitudeStreakCard.tsx` — streak card rendered on `/me/naplo` above the open-decisions block.
 
 **Frontend — tests**
-- `frontend/src/data/journal/journalHooks.test.tsx`, `frontend/src/data/journal/decisionHooks.test.tsx`
+- `frontend/src/data/journal/journalHooks.test.tsx`, `frontend/src/data/journal/decisionHooks.test.tsx`, `frontend/src/data/journal/gratitudeHooks.test.tsx`
 - `frontend/src/features/me/sheets/JournalSheet.test.tsx`, `frontend/src/features/me/sheets/DecisionReviewSheet.test.tsx`
 - `frontend/src/features/me/pages/JournalPage.test.tsx`
-- `frontend/src/features/quickinput/sheets/QuickInputSheet.test.tsx` (picker-phase cases)
+- `frontend/src/features/quickinput/sheets/QuickInputSheet.test.tsx` (picker-phase cases including the Hála tile)
+- `frontend/src/features/me/logic/gratitudeStreak.test.ts` (consecutive-day counting, yesterday-grace)
+- `frontend/src/features/me/components/GratitudeStreakCard.test.tsx` (derived streak rendering, ghost copy)
 - `frontend/src/data/hooks.reexport.test.ts` + `frontend/src/features/me/pages/MeSection.test.tsx` (barrel identity + tab label).
 
 **Docs**
 - Design spec: [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.1, §4.3, §5.1, §5.4, §11.
-- Plans: [`docs/superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md`](../superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md), [`docs/superpowers/plans/2026-08-20-w1-4-decision-journal.md`](../superpowers/plans/2026-08-20-w1-4-decision-journal.md).
+- Plans: [`docs/superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md`](../superpowers/plans/2026-08-18-w1-1-journal-embed-pipeline.md), [`docs/superpowers/plans/2026-08-20-w1-4-decision-journal.md`](../superpowers/plans/2026-08-20-w1-4-decision-journal.md), [`docs/superpowers/plans/2026-08-21-w13-gratitude.md`](../superpowers/plans/2026-08-21-w13-gratitude.md).
 - Roadmap: [`docs/milestones/roadmap.md`](../milestones/roadmap.md).
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `configuration_conventions`, `java_package_structure`, `error_handling`).
