@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { Icon } from '@/shared/ui/Icon'
-import { usePredictions } from '@/data/hooks'
+import { useFeedback, usePredictions } from '@/data/hooks'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { Prediction } from '@/data/types'
 
 /** Right-side header: mock keeps the Phase-1 literal; live derives honestly from CLOSED rows. */
@@ -14,6 +16,11 @@ function accuracyHeader(predictions: Prediction[], mock: boolean): string | null
 export function PredictionsPage() {
   const { predictions, mode } = usePredictions()
   const header = accuracyHeader(predictions, mode === 'mock')
+  // ONE feedback read for the whole list (mezo-b3pp.15) — a per-card hook would fire one HTTP
+  // request per prediction. Called ABOVE the empty-state early return: an empty id set simply
+  // skips the network. The cards stay dumb — they read get(id) and call vote(id, …).
+  const predictionIds = useMemo(() => predictions.map((p) => p.id), [predictions])
+  const feedback = useFeedback('prediction', predictionIds)
 
   if (predictions.length === 0) {
     return (
@@ -68,6 +75,18 @@ export function PredictionsPage() {
               <span style={{ fontSize: 12, color: 'var(--success)' }}>{p.actual}</span>
             </div>
           )}
+
+          {/* Both modes — a prediction is an AI artifact wherever it comes from. Keyed by the
+              prediction id (as the card itself is), so React never reuses one card's
+              FeedbackChips instance — and its session-local reason-row state — for another row. */}
+          <div className="mt-md">
+            <FeedbackChips
+              key={p.id}
+              value={feedback.get(p.id)}
+              onVote={(verdict, reason) => feedback.vote(p.id, verdict, reason)}
+              label="az előrejelzésről"
+            />
+          </div>
         </div>
       ))}
     </div>

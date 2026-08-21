@@ -18,6 +18,7 @@ describe('useMemoir (real mode default)', () => {
     server.use(
       http.get(`${API_BASE}/api/proactive/memoir`, () =>
         HttpResponse.json({
+          id: '9c2f1a44-0000-4000-8000-000000000777',
           weekStart: '2026-06-29',
           title: 'A várakozás hete',
           body: 'Szép hét volt.',
@@ -28,6 +29,8 @@ describe('useMemoir (real mode default)', () => {
     )
     const { result } = renderHook(() => useMemoir(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.memoir).not.toBeNull())
+    // The row id rides through — it is the feedback artifactId (mezo-b3pp.15).
+    expect(result.current.memoir!.id).toBe('9c2f1a44-0000-4000-8000-000000000777')
     expect(result.current.memoir!.title).toBe('A várakozás hete')
     expect(result.current.memoir!.body).toBe('Szép hét volt.')
     expect(result.current.memoir!.week).toMatch(/^Hét \d+/)

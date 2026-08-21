@@ -165,7 +165,7 @@ The push-notification settings surface, at `/me/ertesitesek` (`ME_TABS` entry `n
 
 ## 3. Architecture & data flow
 
-The single FE↔data boundary is **`frontend/src/data/hooks.ts`**. Each hook branches on `isMockMode()` (`frontend/src/data/_client/mode.ts` — `import.meta.env.VITE_USE_MOCK !== 'false'`, **default mock**). Views import only from `@/data/hooks`, never deeper. (The barrel is app-wide shared — other domains' re-export additions, e.g. the `mezo-cd8s` train review hooks or, most recently, the `mezo-ilsj` ritual/recap hooks, move this key_file without changing anything Me consumes.)
+The single FE↔data boundary is **`frontend/src/data/hooks.ts`**. Each hook branches on `isMockMode()` (`frontend/src/data/_client/mode.ts` — `import.meta.env.VITE_USE_MOCK !== 'false'`, **default mock**). Views import only from `@/data/hooks`, never deeper. (The barrel is app-wide shared — other domains' re-export additions, e.g. the `mezo-cd8s` train review hooks, the `mezo-ilsj` ritual/recap hooks or, most recently, **`useFeedback`** (Phase 5 W4.1 `mezo-b3pp.15` — the 👍/👎 hook behind the companion-owned `/api/companion/feedback`, consumed by Insights + Today, [`_platform-data-layer.md` §2](_platform-data-layer.md)), move this key_file **without changing anything Me consumes**. No Me surface carries feedback chips: the Me tab renders no AI-generated artifact — its AI-adjacent pages are the *audit* reads (AI-napló, Knowledge graph), which show what the model did, not model output to rate.)
 
 ```
 WeightPage ─ useWeight() ┬─ mock:  initialWeightLog + mockWeightTrends (initialData, sync)

@@ -1269,4 +1269,21 @@ export const handlers = [
   // (test/setup.ts) and resolve via a real network error instead of exercising this handler.
   // Tests override with server.use() for anything beyond the empty-list default.
   http.get(`${API_BASE}/api/journal/decision`, () => HttpResponse.json([])),
+
+  // Companion feedback (mezo-b3pp.15) — honest-empty default batch read; the PUT echoes the body
+  // back as the stored MessageFeedbackResponse row and the retraction is a plain 204. Without
+  // these, every real-mode test that renders a 👍/👎 surface falls through MSW's 'bypass'
+  // (test/setup.ts) into a live connection attempt to localhost:8090 — slow and flaky. Tests that
+  // need actual verdicts override with server.use().
+  http.get(`${API_BASE}/api/companion/feedback`, () => HttpResponse.json([])),
+  http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+    const body = (await request.json()) as {
+      artifactKind: string
+      artifactId: string
+      verdict: string
+      reason?: string | null
+    }
+    return HttpResponse.json({ ...body, reason: body.reason ?? null, updatedAt: '2026-08-21T12:00:00Z' })
+  }),
+  http.delete(`${API_BASE}/api/companion/feedback/:artifactKind/:artifactId`, () => new HttpResponse(null, { status: 204 })),
 ]

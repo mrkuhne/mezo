@@ -720,3 +720,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608201200_mezo-b3pp.4_create_decision_entry.sql
+  - changeSet:
+      id: "1.0.0:202608211200_mezo-b3pp.15_create_message_feedback"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608211200_mezo-b3pp.15_create_message_feedback.sql

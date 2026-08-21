@@ -1,4 +1,4 @@
-import { useQuery, type QueryKey } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 
 /**
@@ -26,6 +26,18 @@ export function useDualQuery<T>(opts: {
   realEmpty: T
   /** real-mode staleTime (mock mode is always Infinity). Omit → TanStack app default. */
   realStaleTime?: number
+  /**
+   * Real mode only, opt-in (mezo-b3pp.15): when the queryKey CHANGES, keep the previous key's
+   * already-fetched data on screen while the new key resolves, instead of dropping to `realEmpty`.
+   *
+   * For a hook whose key encodes the set of rows a page is asking about (`useFeedback`), the key
+   * changes every time the page grows by one item — and without this every already-known value
+   * blanks for the width of a round-trip. It is `placeholderData: keepPreviousData`, i.e. the
+   * PREVIOUS REAL RESPONSE — never `mockData` — so the "no static fallback in real mode"
+   * invariant above is untouched. Omitted/false ⇒ `placeholderData: undefined`, which is
+   * identical to not passing the option at all: no existing caller's behaviour can change.
+   */
+  keepPreviousRealData?: boolean
 }): { data: T; isPending: boolean; isError: boolean; refetch: () => void } {
   const mock = isMockMode()
   const q = useQuery({
@@ -33,6 +45,7 @@ export function useDualQuery<T>(opts: {
     queryFn: mock ? async () => opts.mockData : opts.realFetch,
     initialData: mock ? opts.mockData : undefined,
     staleTime: mock ? Infinity : opts.realStaleTime,
+    placeholderData: !mock && opts.keepPreviousRealData ? keepPreviousData : undefined,
   })
   return {
     // mock: q.data is always the seed (initialData). real: the fetched value, or — while

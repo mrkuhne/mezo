@@ -56,9 +56,9 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
     void testGetFeed_shouldReturnMessagesInGeneratedOrder_whenRowsExist() {
         // no daily summaries planted -> the elapsed-window miss-recovery is a no-op (honest null),
         // so only the two pre-populated rows come back, in insertion (generatedAt) order
-        companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+        CompanionMessageEntity morningRow = companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
                 CompanionMessageEntity.KIND_MORNING, "Jó reggelt", List.of("Mai terv."));
-        companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+        CompanionMessageEntity sleepRow = companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
                 CompanionMessageEntity.KIND_SLEEP, "Jó alvás", List.of("Pihenten kelsz."));
 
         List<FeedMessageResponse> feed = getForList(
@@ -71,8 +71,10 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed.get(0).getBody()).containsExactly("Mai terv.");
         assertThat(feed.get(0).getRefs()).isEmpty();
         assertThat(feed.get(0).getGeneratedAt()).isNotNull();
+        assertThat(feed.get(0).getId()).isEqualTo(morningRow.getId());
         assertThat(feed.get(1).getEyebrow()).isEqualTo("Jó alvás");
         assertThat(feed.get(1).getBody()).containsExactly("Pihenten kelsz.");
+        assertThat(feed.get(1).getId()).isEqualTo(sleepRow.getId());
     }
 
     @Test
@@ -82,7 +84,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         // still reach the reader — and it only can if the generate ran in its OWN transaction.
         dailySummaryPopulator.summary(ownerId(), LocalDate.now().minusDays(1), "Tegnap pihenőnap volt.");
         checkInPopulator.createCheckIn(ownerId(), LocalDate.now(), "06:30", 4, 2, "[fake-fail]");
-        companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+        CompanionMessageEntity sleepRow = companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
                 CompanionMessageEntity.KIND_SLEEP, "Jó alvás", List.of("Pihenten kelsz."));
 
         List<FeedMessageResponse> feed = getForList(
@@ -91,6 +93,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed).extracting(FeedMessageResponse::getKind)
                 .containsExactly(FeedMessageResponse.KindEnum.SLEEP);
         assertThat(feed.get(0).getEyebrow()).isEqualTo("Jó alvás");
+        assertThat(feed.get(0).getId()).isEqualTo(sleepRow.getId());
     }
 
     @Test
@@ -109,6 +112,8 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(morning.getBody()).containsExactly("Mai terv.");
         assertThat(morning.getDate()).isEqualTo(LocalDate.now());
         assertThat(morning.getGeneratedAt()).isNotNull();
+        // lazily generated inside the endpoint — no populated row to pin identity against
+        assertThat(morning.getId()).isNotNull();
     }
 
     @Test
@@ -122,6 +127,9 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
 
         assertThat(feed).extracting(FeedMessageResponse::getKind)
                 .contains(FeedMessageResponse.KindEnum.MIDDAY, FeedMessageResponse.KindEnum.EVENING);
+        // all rows here are lazily generated inside the endpoint — no populated row to pin
+        // identity against, so only assert every row's id came back non-null
+        assertThat(feed).extracting(FeedMessageResponse::getId).doesNotContainNull();
     }
 
     @Test

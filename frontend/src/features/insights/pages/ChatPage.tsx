@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
-import { NEW_CHAT, useChat, useChatActions, useConversations } from '@/data/hooks'
+import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
@@ -63,6 +63,15 @@ export function ChatPage() {
   // The switch-off 404 can surface on either read; a draft thread makes no read of its own.
   const degraded = data.degraded || companionOff
   const isNew = selection === NEW_CHAT
+
+  // ONE feedback read for the whole thread (mezo-b3pp.15) — a per-bubble hook would fire one
+  // HTTP request per answer. Only persisted assistant rows are votable: the in-flight draft has
+  // no id yet, and a user bubble is not an AI artifact.
+  const assistantIds = useMemo(
+    () => messages.flatMap((m) => (m.role === 'assistant' && m.id ? [m.id] : [])),
+    [messages],
+  )
+  const feedback = useFeedback('chat_message', assistantIds)
 
   // Landing on the conversation (or gaining a message) parks the view on the newest turn —
   // a chat opens at the bottom, never at its first line (mezo-at8x.2).
@@ -157,8 +166,23 @@ export function ChatPage() {
             </p>
           </div>
         )}
+        {/* Keyed by the persisted row id where there is one, so React never reuses one bubble's
+            FeedbackChips instance — and its session-local reason-row state — for a different
+            answer. Unpersisted rows (mock user bubbles) keep the positional fallback — they
+            render no chips and only ever get appended to the end. */}
         {messages.map((m, i) => (
-          <ChatMessage key={i} m={m} />
+          <ChatMessage
+            key={m.id ?? `idx-${i}`}
+            m={m}
+            feedback={
+              m.role === 'assistant' && m.id
+                ? {
+                    value: feedback.get(m.id),
+                    onVote: (verdict, reason) => feedback.vote(m.id!, verdict, reason),
+                  }
+                : undefined
+            }
+          />
         ))}
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
         {/* mezo-280 (Finding 3): thinking flips false the moment a 'tool' event lands, well before

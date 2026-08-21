@@ -8,6 +8,8 @@ import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 
 const renderPage = () => render(<MemoirPage />, { wrapper: QueryWrapper })
 
+const FEEDBACK_GROUP = 'Visszajelzés a heti memoárról'
+
 describe('MemoirPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
@@ -23,12 +25,22 @@ describe('MemoirPage (mock mode)', () => {
     expect(screen.getByText('Memoir archive · 17 darab')).toBeInTheDocument()
   })
 
-  test('reaction chips toggle the brand state', async () => {
+  test('renders the feedback chips instead of the retired mock reaction row (mezo-kr9v)', () => {
     renderPage()
-    const like = screen.getByRole('button', { name: /Like/ })
-    expect(like.className).not.toMatch(/brand/)
-    await userEvent.click(like)
-    expect(like.className).toMatch(/brand/)
+    // The Phase-1 Like/Love/Save/Dismiss row was a mock-only false affordance — gone for good.
+    expect(screen.queryByText('Love')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Like/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Save/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Dismiss/ })).toBeNull()
+    expect(screen.getByRole('group', { name: FEEDBACK_GROUP })).toBeInTheDocument()
+  })
+
+  test('a 👍 tap marks the chip pressed', async () => {
+    renderPage()
+    const up = screen.getByRole('button', { name: /Segített/ })
+    expect(up).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(up)
+    await waitFor(() => expect(up).toHaveAttribute('aria-pressed', 'true'))
   })
 })
 
@@ -40,6 +52,7 @@ describe('MemoirPage (real mode)', () => {
     server.use(
       http.get(`${API_BASE}/api/proactive/memoir`, () =>
         HttpResponse.json({
+          id: '9c2f1a44-0000-4000-8000-000000000777',
           weekStart: '2026-06-29',
           title: 'A várakozás hete',
           body: 'Szép hét volt, tartottad a ritmust.',
@@ -56,6 +69,8 @@ describe('MemoirPage (real mode)', () => {
     expect(screen.queryByText('Évforduló · 1 hónap')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Like/ })).not.toBeInTheDocument()
     expect(screen.queryByText('Memoir archive · 17 darab')).not.toBeInTheDocument()
+    // ...but the feedback chips are NOT mock-only — that asymmetry was the mezo-kr9v bug.
+    expect(screen.getByRole('group', { name: FEEDBACK_GROUP })).toBeInTheDocument()
   })
 
   test('renders the honest készül placeholder on the default 404, not the demo fiction', async () => {
@@ -66,5 +81,7 @@ describe('MemoirPage (real mode)', () => {
     )
     expect(screen.queryByText('Évforduló · 1 hónap')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Like/ })).not.toBeInTheDocument()
+    // No memoir → no artifact to vote on → no chips.
+    expect(screen.queryByRole('group', { name: FEEDBACK_GROUP })).not.toBeInTheDocument()
   })
 })

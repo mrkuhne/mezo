@@ -14,6 +14,8 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
+  /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
+  id: string
   kind: FeedMessageKind
   eyebrow: string
   body: BriefingPara[]
@@ -806,6 +808,8 @@ export interface PatternPairDetail {
 
 export interface MemoirAnchor { kind: string; label: string }
 export interface Memoir {
+  /** The memoir row id — the W4.1 feedback artifactId (`memoir`, mezo-b3pp.15). */
+  id: string
   week: string
   title: string
   body: string
@@ -854,6 +858,12 @@ export interface WeeklyGrowth {
 export type ChatRole = 'user' | 'assistant'
 export interface ChatRef { kind: string; id: string }
 export interface ChatMessage {
+  /**
+   * The persisted `ai_message` row id — the W4.1 feedback artifactId (`chat_message`,
+   * mezo-b3pp.15). Absent while a turn is still streaming, which is exactly when there is
+   * nothing to vote on yet (and on the optimistic user bubble, which is never votable).
+   */
+  id?: string
   role: ChatRole
   ts: string
   text: string

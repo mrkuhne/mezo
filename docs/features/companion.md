@@ -9,10 +9,11 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiUsageExtractor.java
   - api/feature/companion/companion.yml
+  - api/feature/companion-feedback/companion-feedback.yml
   - frontend/src/data/insights/chatHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, _platform-api-backend, _platform-auth-security, journal]
+related: [insights, proactive, today, _platform-api-backend, _platform-auth-security, journal]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -580,6 +581,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
+| Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Records only — nothing reads it yet; W4.2 is what it is for** (§4/§5.7/§9). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
@@ -1185,7 +1187,46 @@ but it is documented here because both recording adapters live in `feature/compa
   NOT apply the usual `created_by = currentUser` ownership filter (it would hide exactly the
   invisible cron and streaming volume).
 
+### Backend tables (W4.1 feedback, ✅ `mezo-b3pp.15`)
+
+Migration `202608211200_mezo-b3pp.15_create_message_feedback.sql` (in `1.0.0_master.yml`) — Phase 5
+W4.1, the 👍/👎 capture layer over **every** AI-produced artifact, so W4.2 has real training data
+instead of months of unrecorded signal. Driving spec:
+[`specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md)
+§4.4/§8.1.
+
+- **`message_feedback`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON
+  DELETE CASCADE`, `is_deleted`, `created_at`, `updated_at timestamptz` (`@UpdateTimestamp` — the
+  wire's `updatedAt`), `artifact_kind varchar(20)`, `artifact_id uuid`, `verdict varchar(4)`,
+  `reason varchar(16)` (nullable). Constraints: `pk_message_feedback_id`,
+  `fk_message_feedback_created_by_app_user_id`, **`uq_message_feedback_artifact (created_by,
+  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the five
+  kinds `chat_message|feed_message|weekly_suggestion|memoir|prediction`),
+  `ck_message_feedback_verdict` (`up|down`), `ck_message_feedback_reason_value`
+  (`inaccurate|too_much|bad_timing|not_about_me`) and the cross-field
+  **`ck_message_feedback_reason`** (`reason is null or verdict = 'down'`). Index
+  `idx_message_feedback_created_by_kind (created_by, artifact_kind)` — the batch-read's key.
+- **The five kinds span FIVE different tables** — `ai_message` (chat answers), `companion_message`
+  (the Today feed), `weekly_suggestion`, `memoir`, `prediction` (the last four are proactive-owned,
+  [`proactive.md` §4](proactive.md)). **`artifact_id` therefore carries NO foreign key**: existence
+  is deliberately not validated cross-table (spec §8.1) — five conditional FKs cannot be expressed,
+  and a dangling id is harmless in a single-user app. A vote on a since-deleted artifact simply
+  never gets read back.
+- **`uq_message_feedback_artifact` spans soft-deleted rows too** (it is a plain unique constraint,
+  not a `where is_deleted = false` partial index — deliberate, and the reason the write path is a
+  native upsert rather than find-then-save; see the endpoint table below and §9).
+- **No own feature switch** — the whole surface rides `mezo.feature.companion.enabled`
+  (`FeaturesConfiguration.COMPANION_SWITCH`); feedback is a companion organ, not a feature
+  (spec §8.1). Switch off ⇒ the `@ConditionalOnProperty` controller + service are absent ⇒ 404
+  on all three operations (`CompanionFeedbackSwitchOffIT`).
+
 ### Entities
+
+`MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
+soft-deleted (`@SQLDelete` + `@SQLRestriction`); `KIND_*`/`VERDICT_*`/`REASON_*` constants +
+`@Pattern` mirrors of the value CHECKs — the `AiMessageEntity.role` precedent, no Java enum. The
+cross-field `ck_message_feedback_reason` has **no entity-level equivalent** (a `@Pattern` cannot see
+two fields); the service enforces it instead (below).
 
 `MemoryEmbeddingEntity` (`entity/MemoryEmbeddingEntity.java`, V2.1) `extends OwnedEntity`,
 soft-deleted, `KIND_*` constants + `@Pattern` mirror; the vector maps as `float[]` via
@@ -1284,6 +1325,43 @@ fact (via `PatternEntity.promotedFactId`), the three ref lists are grounded rows
 proactive repository's `findByCreatedByAndSourcePatternIdAndDeletedFalse` (S2, `mezo-tk88.2`);
 `PatternImpactRef {id, title, status}`. **Assembly crosses the companion↔proactive boundary** —
 see §5.5's `PatternImpactSource` paragraph for how that stays ArchitectureTest-clean.
+
+### REST endpoints — feedback (contract-first — tag `CompanionFeedback` → `CompanionFeedbackApi`)
+
+Fragment `api/feature/companion-feedback/companion-feedback.yml` (its **own** fragment, registered in
+`api/generate/merge.yml`; the `Companion` tag was left alone so the generated `CompanionApi` did not
+grow a third responsibility); `CompanionFeedbackController implements CompanionFeedbackApi`, thin
+delegation to `MessageFeedbackService`, ownership from `CurrentUserId`. All three paths are
+switch-gated (404 when `COMPANION_SWITCH` is off) and protected (401 without a token).
+
+| Method + path | Returns | Status | Notes |
+|---|---|---|---|
+| `GET /api/companion/feedback?kind&ids` | `MessageFeedbackResponse[]` | 200 · 400 · 401 | **Batch page hydration.** `ids` is a comma-joined uuid list (`style: form, explode: false`), **1..200** (`minItems`/`maxItems`). Returns only the requested ids that carry a live verdict — a never-voted id is simply ABSENT, never an error, so the surface degrades to "no chip selected" rather than a failed page. |
+| `PUT /api/companion/feedback` | `MessageFeedbackResponse` | 200 · 400 · 401 | **Upsert** — `PutFeedbackRequest {artifactKind, artifactId, verdict, reason?}`. ONE updatable verdict per `(user, artifactKind, artifactId)`: the opposite verdict overwrites the row, a new `reason` updates it. `reason` with a non-`down` verdict → 400 **`FEEDBACK_REASON_REQUIRES_DOWN`** (an honest 400 in the service; the DB CHECK is only the backstop — a CHECK violation surfacing as a 500 is not an answer). |
+| `DELETE /api/companion/feedback/{artifactKind}/{artifactId}` | — | 204 · 400 · 401 | **Retraction** — soft-deletes the row via `@SQLDelete`. **Idempotent:** retracting a never-voted artifact also answers 204, because "I have no opinion on this" is already what a missing row means. |
+
+**Schemas:** `PutFeedbackRequest {artifactKind, artifactId, verdict, reason?}` and
+`MessageFeedbackResponse {artifactKind, artifactId, verdict, reason?, updatedAt}`. The three enums
+are spelled as plain `type: string` in both, but **only the INPUT side constrains them**:
+`PutFeedbackRequest`'s `artifactKind`/`verdict`/`reason` (and the GET `kind` query param + the
+DELETE `artifactKind` path param — the sibling `artifactId` carries `format: uuid` only, having no
+enum to constrain) carry a `pattern` holding the `artifact_kind`/`verdict`/`reason` CHECK values
+verbatim, so a bad value is a 400 from bean validation rather than a 500 from Jackson (the house
+`pattern`-over-`enum` rule). `MessageFeedbackResponse`'s three fields carry **only a `description`
+listing the values — no `pattern`**, which is the normal asymmetry: validation belongs on what a
+client sends, not on what the server returns.
+Either way `openapi-typescript` yields `string` for all six (it narrows neither a `pattern` nor a
+description), so the FE narrows once at its own boundary
+(`data/feedback/feedbackApi.ts`'s `toArtifactFeedback`). There is no `id` on the wire: the artifact
+triple IS the identity.
+
+**The write path is a native upsert, not find-then-save** (`MessageFeedbackRepository.upsertVerdict`,
+`@Modifying(clearAutomatically, flushAutomatically)`): `insert … on conflict on constraint
+uq_message_feedback_artifact do update set verdict, reason, is_deleted = false, updated_at = now()`.
+Because that constraint spans soft-deleted rows (§4 above) a retracted row still owns the slot while
+`@SQLRestriction` hides it from every derived finder — so a re-vote after a retraction would collide
+on a plain `save`. The upsert **resurrects** it instead. The service re-reads the row afterwards and
+maps it, so the response is always server truth.
 
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
@@ -1762,6 +1840,26 @@ V3.1 nightly re-detection reinforces it → the reinforcement raises its injecti
 epics (proactive briefing/heartbeat/memoir, Fuel P8) build on the now-complete
 snapshot+facts+summaries+patterns stack — see the roadmap's "Relationship to other roadmaps".
 
+### 5.7 Companion feedback → every AI surface (✅ W4.1 wired, `mezo-b3pp.15`)
+
+`message_feedback` is companion-owned but **votes on artifacts four of them do not belong to** — the
+one seam in this doc that fans OUT to three other features at once. The crossing contract is the
+`(artifactKind, artifactId)` pair; nothing is joined server-side.
+
+| Kind | Artifact table | Owner doc | FE surface |
+|---|---|---|---|
+| `chat_message` | `ai_message` | this doc (§4) | `ChatPage` assistant bubbles ([`insights.md` §2.5](insights.md)) |
+| `feed_message` | `companion_message` | [`proactive.md` §4](proactive.md) | `MezoMessagesSheet` ([`today.md` §1](today.md)) |
+| `weekly_suggestion` | `weekly_suggestion` | [`proactive.md` §4](proactive.md) | Weekly „heti tervjavaslat" card ([`insights.md` §2.2](insights.md)) |
+| `memoir` | `memoir` | [`proactive.md` §4](proactive.md) | `MemoirPage` ([`insights.md` §2.3](insights.md)) |
+| `prediction` | `prediction` | [`proactive.md` §4](proactive.md) | `PredictionsPage` cards ([`insights.md` §2.6](insights.md)) |
+
+Three of those artifacts had **no `id` on the wire** before this slice — `FeedMessageResponse`,
+`WeeklySuggestionResponse` and `MemoirResponse` gained a required `id` (contract-only; the entities
+always had one), because without it the FE has nothing to vote on. See [`proactive.md` §4](proactive.md).
+The FE side is a single page-level hook + one shared controlled component
+(`useFeedback(kind, ids)` / `FeedbackChips`) — [`insights.md` §4/§5.7](insights.md).
+
 ## 6. How to use it (consume)
 
 **From the FE:** import `useChat` / `useChatActions` from `@/data/hooks` (implementations in
@@ -2055,6 +2153,41 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **FE:** `chatApi.test.ts` (degraded mapping: false → undefined, true → true),
   `ChatPage.test.tsx` (mock seed shows no badge; a degraded `done` renders `nem ellenőrzött`).
 
+**W4.1 feedback test additions (`mezo-b3pp.15`) — all integration-first, no LLM in the path:**
+
+- **`feedback/CompanionFeedbackApiIT`** (11 tests, HTTP-level, deliberately NOT `@Transactional` —
+  the `JournalApiIT` rationale) — first vote, opposite-verdict overwrite,
+  **resurrect-after-retraction**, the service-level `FEEDBACK_REASON_REQUIRES_DOWN` guard (400 on a
+  reason sent with `up`), retraction incl. idempotency, batch-read incl. cross-user isolation, and a
+  **dangling `artifact_id` accepted on purpose** (spec §8.1 — the no-cross-table-FK decision's
+  regression anchor: if someone ever "fixes" it with a lookup, this test fails first). Its
+  **contract-validation coverage is `artifactKind` only** — `testPutFeedback_shouldReturn400_whenArtifactKindUnknown`
+  and `testListFeedback_shouldReturn400_whenKindUnknown`.
+- **Known gap — the rest of the contract's validation is UNTESTED on the backend.** Nothing asserts
+  that an unknown `verdict`, an unknown `reason` value, an **empty** `ids` list (`minItems: 1`) or a
+  **>200** one (`maxItems: 200`) is rejected. Those constraints are declared in the fragment and so
+  are enforced by generated bean validation — the same machinery the `artifactKind` cases prove is
+  wired — which is why the gap was accepted rather than a bug, but it IS a gap: a fragment edit that
+  dropped one of those four could not fail a test today. The FE tests that look adjacent do **not**
+  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty or >200 list — the
+  cap and the skip-on-empty are hook behavior, not a server-rejection assertion). Cheapest fix if it
+  ever bites: four more cases in this IT, mirroring the two `whenArtifactKindUnknown` ones.
+- **`feedback/MessageFeedbackPersistenceIT`** — the entity/constraint layer under the API: an `up`
+  row without a reason and a `down` row with one round-trip; `ck_message_feedback_reason` really
+  fires on reason-with-`up`; `uq_message_feedback_artifact` really fires on a second plain save; and
+  the two `upsertVerdict` behaviors — flip-verdict-and-clear-reason, and **resurrect a soft-deleted
+  row** (the proof the constraint spans them).
+- **`feedback/CompanionFeedbackSwitchOffIT`** — `mezo.feature.companion.enabled=false` ⇒ all three
+  operations 404 (no controller/service bean). Feedback has no switch of its own.
+- **Support:** `support/populator/FeedbackPopulator` + `message_feedback` in `ResetDatabase`'s
+  truncate list (house rule for every new domain table).
+- **FE** (both Vitest modes): `data/feedback/feedbackHooks.test.tsx` (the toggle semantics, the
+  optimistic write + rollback, the 200-id cap keeping the NEWEST ids, empty-id-set = no request, a
+  failing read degrading to "no verdicts"), `features/insights/components/FeedbackChips.test.tsx`
+  (the reason row's reveal/retract branches, `aria-pressed`), plus per-surface cases in
+  `ChatPage`/`MemoirPage`/`WeeklyPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback`
+  tests — see [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
+
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
@@ -2298,7 +2431,42 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   throwing), and `llm_log_history` has no `is_deleted`. So don't add an ownership filter to a future
   read side, and filter `status = 'SUCCESS'` in any usage/cost aggregate.
 
+**W4.1 feedback decisions + gotchas (`mezo-b3pp.15`, spec §4.4/§8.1):**
+
+- **Experiments and challenges are deliberately NOT feedback artifact kinds.** Their own
+  `POST …/experiment/{id}/decision` and `POST …/challenge/{id}/decision` endpoints (accept/dismiss,
+  [`proactive.md` §4](proactive.md)) ALREADY carry the same signal, and carry it better — a decision
+  is an act with consequences, not an opinion. Adding a second, weaker channel for the same judgment
+  would split the training data W4.2 reads and let the two disagree. The five kinds are exactly the
+  artifacts the user can otherwise only read.
+- **Re-tapping the SAME verdict is a retraction, not a no-op** — one tap sets it, the same tap again
+  clears it. The semantics live in the FE hook (`useFeedback.vote`), not in the backend: the API has
+  a plain upsert and a plain delete, and it is `vote()` that decides which one a tap means. A tap
+  that carries a reason is **always** an upsert, even when the verdict is unchanged — otherwise
+  re-picking the reason already stored would silently delete the vote.
+- **Re-voting after a retraction RESURRECTS the row** rather than inserting a new one, because
+  `uq_message_feedback_artifact` spans soft-deleted rows. Do not "simplify" the native upsert into a
+  find-then-save: `@SQLRestriction` hides the ghost row from every derived finder, so the save would
+  hit a unique violation nobody's code can see coming. (Contrast `daily_summary`, which uses a
+  `where is_deleted = false` PARTIAL unique index for the opposite reason — regenerability. Both
+  choices are deliberate; check which one a table made before writing its write path.)
+- **The reason/verdict cross-field rule is enforced TWICE, on purpose.** `ck_message_feedback_reason`
+  is the backstop; `MessageFeedbackService.put` raises the honest 400
+  `FEEDBACK_REASON_REQUIRES_DOWN` first, because a CHECK violation reaching the client as a 500 is
+  not an answer. A `@Pattern` cannot express it (it sees one field), so the entity carries only the
+  two value patterns.
+- **Artifact existence is never checked.** Five kinds, five tables, no conditional FK — and a
+  dangling id is harmless single-user (a vote on a since-deleted artifact simply never gets read
+  back). `CompanionFeedbackApiIT.testPutFeedback_shouldAccept_whenArtifactIdDanglingAcrossTables` is
+  the regression anchor: it fails the moment someone adds a lookup.
+- **No feature switch of its own** — feedback rides `COMPANION_SWITCH` as a companion organ. Don't
+  add `mezo.feature.feedback.*`; a surface whose chips work while the companion is dark would be
+  collecting opinions about nothing.
+
 **Deferred (with bd ids):**
+- **W4.2 — what the captured verdicts are FOR.** W4.1 only records; nothing reads `message_feedback`
+  yet (no prompt influence, no ranking, no aggregate surface). That is the point — it starts the
+  data collecting now so the personalization slice has history instead of a cold start.
 - **LLM audit-log follow-ups (mezo-2zyu; read API + `/me/ai-usage` browsing UI shipped `mezo-uakh`):**
   still open — budget alerting and reconciling the placeholder `mezo.llm-log.pricing` rates with
   current Gemini pricing (payload retention itself shipped, `mezo-1y3p` — see the retention bullet
@@ -2323,6 +2491,17 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **API contract**
 - `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written), the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`) and, since **`mezo-al1i`**, the `memory/{overview,summary,similar-days,llm-usage}` reads on the same `Companion` tag;
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
+- `api/feature/companion-feedback/companion-feedback.yml` — **`mezo-b3pp.15`** the 👍/👎 surface on its OWN fragment + tag (`CompanionFeedback` → `CompanionFeedbackApi`); GET batch-read / PUT upsert / DELETE retract, also registered in `api/generate/merge.yml`.
+
+**Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/service/MessageFeedbackService.java` — `put` (the honest `FEEDBACK_REASON_REQUIRES_DOWN` 400 before the upsert, then a re-read so the response is server truth — the can't-happen empty re-read raises `FEEDBACK_UPSERT_READBACK_FAILED` **500**: our fault, not the caller's) / `retract` (idempotent soft delete) / `list` (batch read).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/repository/MessageFeedbackRepository.java` — the two owner+kind finders and **`upsertVerdict`**, the native `on conflict … do update` that resurrects a retracted row (§9 — do not replace it with find-then-save).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/entity/MessageFeedbackEntity.java` — `extends OwnedEntity`, soft-deleted, `KIND_*`/`VERDICT_*`/`REASON_*` constants + the value `@Pattern`s (the cross-field CHECK has no entity twin, §4).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/mapper/MessageFeedbackMapper.java` — entity → `MessageFeedbackResponse` (`Instant` → UTC `OffsetDateTime`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.15_create_message_feedback.sql` — the table (in `1.0.0_master.yml`); `messages.properties` gained `FEEDBACK_REASON_REQUIRES_DOWN` + `FEEDBACK_UPSERT_READBACK_FAILED`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/feedback/{CompanionFeedbackApiIT,MessageFeedbackPersistenceIT,CompanionFeedbackSwitchOffIT}.java` + `support/populator/FeedbackPopulator.java` (+ `message_feedback` in `ResetDatabase`) — §8.
+- **FE side** (documented in [`insights.md` §10](insights.md)): `frontend/src/data/feedback/` (`feedbackTypes`/`feedbackApi`/`feedbackMock`/`feedbackHooks`, exported through the `@/data/hooks` barrel) + `frontend/src/features/insights/components/FeedbackChips.tsx`.
 
 **Backend — controllers / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionController.java` — `implements CompanionApi`, JWT ownership, switch-gated.

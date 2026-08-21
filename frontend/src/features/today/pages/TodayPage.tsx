@@ -32,7 +32,7 @@ import {
   useActivities, useCheckins, useCompanionFeed, useDailyQuests, useFuelPreview, useGoal,
   useHabitActions, useHabitCatalog, useHabitDay, useIntentionActions, useIntentionDay,
   useQuestActions, useQuickStats, useRitualDay, useSleep, useSleepGoal, useToday,
-  useTodayScenario, useWaterActions, useWeight, resolveBriefing,
+  useTodayScenario, useWaterActions, useWeight, resolveBriefing, useFeedback,
 } from '@/data/hooks'
 import { AppHero } from '@/features/progression/components/AppHero'
 import { buildHabitRewardToast, buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
@@ -145,6 +145,11 @@ export function TodayPage() {
   const { addFocus, reflect } = useIntentionActions(date)
   const stats = useQuickStats()
   const feed = useCompanionFeed()
+  // ONE feedback read for the whole thread (mezo-b3pp.15) — a per-bubble hook would fire one
+  // HTTP request per message. Called ABOVE this page's early returns (anchor mode, skeleton);
+  // in mock mode the feed is deliberately `[]`, so the id set is empty and nothing is fetched.
+  const feedIds = useMemo(() => feed.map((m) => m.id), [feed])
+  const feedback = useFeedback('feed_message', feedIds)
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
@@ -530,7 +535,7 @@ export function TodayPage() {
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
-      {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} />}
+      {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} feedback={feedback} />}
       {questsOpen && (
         <DailyQuestsSheet
           quests={quests}

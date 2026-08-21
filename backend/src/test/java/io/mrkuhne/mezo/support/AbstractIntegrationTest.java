@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MealSlotTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
+import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
@@ -78,7 +79,7 @@ import org.springframework.context.annotation.Import;
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
     DailySummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
-    CompanionMessagePopulator.class,
+    CompanionMessagePopulator.class, FeedbackPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
