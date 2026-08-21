@@ -98,6 +98,10 @@ export const growthWeek: WeeklyGrowth = {
 export const weeklySuggestion =
   'Hét 22: tartsd ezt a Pull/Push váltogatást. A volleyball után visszamentünk 7.2h-ra — vasárnap próbáljunk 8h+-ot.'
 
+/** Stable demo artifactId so a mock-mode 👍/👎 on the suggestion has something to key on
+ *  (mezo-b3pp.15) — mock must render the same chips live mode does. */
+export const weeklySuggestionId = '5a91b0e8-0000-4000-8000-00000000e402'
+
 export const memoir: Memoir = {
   // Stable demo artifactId so a mock-mode 👍/👎 has something to key on (mezo-b3pp.15).
   id: '3f7c1d20-0000-4000-8000-00000000e401',
