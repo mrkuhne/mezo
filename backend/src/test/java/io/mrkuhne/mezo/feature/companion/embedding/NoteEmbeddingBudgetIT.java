@@ -45,4 +45,19 @@ class NoteEmbeddingBudgetIT extends AbstractIntegrationTest {
         assertThat(written).isEqualTo(1);
         assertThat(memoryEmbeddingRepository.count()).isEqualTo(1);
     }
+
+    @Test
+    void testRun_shouldConvergeOnTheRemainder_whenRunAgainTheNextNight() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
+        checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
+
+        int firstNight = noteEmbeddingCatchUp.run(owner, yesterday);
+        int secondNight = noteEmbeddingCatchUp.run(owner, yesterday);
+
+        assertThat(firstNight).isEqualTo(1);
+        assertThat(secondNight).isEqualTo(1);
+        assertThat(memoryEmbeddingRepository.count()).isEqualTo(2);
+    }
 }

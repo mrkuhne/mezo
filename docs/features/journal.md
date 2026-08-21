@@ -227,9 +227,15 @@ DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAI
   `CompanionProperties.Embedding`): `note-min-chars` (80) is the **retrieval-value gate** — „fáradt
   vagyok" is not a memory, and a null `check_in.note` fails the SQL `length()` predicate so no null
   branch is needed; `note-batch-size` (200) caps the **whole run per user** across both sources, so
-  a long history spreads over nights instead of one burst; `embed-notes` is the toggle, checked
-  **inside** `NoteEmbeddingCatchUp.run` so the pass **heals** it rather than bypasses it (the
-  `embed-chat-turns` idiom in the same job).
+  a long history spreads over nights instead of one burst — a run picks up exactly where the
+  previous one's ref-id set left off, so a second night on the same backlog converges the
+  remainder (pinned by `NoteEmbeddingBudgetIT`); `embed-notes` is the toggle, checked **inside**
+  `NoteEmbeddingCatchUp.run` so the pass **heals** it rather than bypasses it (the
+  `embed-chat-turns` idiom in the same job). The two sources draw from this **one shared pool**,
+  consumed in `ObjectProvider#orderedStream()` order — that decides which KIND gets backfilled
+  FIRST on a large history (the second source can be starved for several nights), not whether both
+  eventually converge; each starved source now logs its own line (`NoteEmbeddingCatchUp`) so a
+  starved-second-source night is visible, not just inferred from the count.
 - **Per-row isolation:** `NoteEmbeddingCatchUp.run` is deliberately **not** `@Transactional`, so
   each `MemoryEmbeddingWriter.writeNote` call crosses the Spring proxy in its **own** transaction —
   one bad or racing row is logged (`warn`) and skipped, the rest of the run continues. Same shape as
@@ -707,8 +713,13 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   is flat (`id, createdBy, text, occurredOn`) so no companion class ever sees an activity ENTITY,
   and whose `ACTIVITY_NOTE`/`CHECKIN_NOTE` constants mirror `MemoryEmbeddingEntity`'s so an
   implementing feature needn't import a companion entity either — and the owning feature implements
-  it. `NoteEmbeddingCatchUp` injects `List<NarrativeNoteSource>`: an empty list (no implementation on
-  the classpath) is a legitimate no-op, not an error.
+  it. `NoteEmbeddingCatchUp` injects `ObjectProvider<NarrativeNoteSource>`, not a plain
+  `List<NarrativeNoteSource>` — a `List<T>` constructor parameter with zero matching beans resolves
+  to `null` in Spring (`DefaultListableBeanFactory.resolveMultipleBeans`), which fails context
+  startup on the required dependency; `ObjectProvider#orderedStream()` yields an empty stream
+  instead. That makes zero note sources (no implementation on the classpath, or every one switched
+  off) an actually-safe no-op today, and lets a future `@ConditionalOnProperty` on either adapter
+  drop it to zero without risking the context.
 - **Gotcha (W1.5) — the two adapters live in DIFFERENT slices, and that asymmetry is deliberate.**
   `ActivityNoteSourceAdapter` sits in `feature/activity/service/` (the inversion described above),
   but `CheckInNoteSourceAdapter` sits in `feature/companion/embedding/` and imports
@@ -732,6 +743,11 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   stops returning the deleted row, so its already-written vector is never revisited and stays
   recallable. This is the IDENT-3 honesty rule's one currently-unmet corner in the embed pipeline;
   it is recorded, not hidden, and shares the follow-up bd issue with the write-once gap above.
+  `uq_memory_embedding_kind_ref_id` is a PLAIN (non-partial) unique index, so a soft-deleted
+  `activity_note`/`checkin_note` vector still occupies its `(kind, ref_id)` slot — whoever adds this
+  delete path MUST route any note re-write through `MemoryEmbeddingWriter`'s revive-on-write
+  `upsert`, never the insert-only `write` `writeNote` uses today, or every nightly run re-selects
+  the row, burns an embedding call, hits the constraint, and warns — forever.
 - **Deferred (spec §5.2–§5.5, bd ids assigned):** gratitude entries (`mezo-b3pp.3`, not started) are
   all that is left. Decision journal + review loop (`mezo-b3pp.4`) **shipped** — see this doc
   throughout; evening prose reflection (`mezo-b3pp.2`) **shipped** too, outside this domain — see §5

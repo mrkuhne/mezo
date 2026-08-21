@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +39,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class NoteEmbeddingCatchUp {
 
-    private final List<NarrativeNoteSource> noteSources;
+    private final ObjectProvider<NarrativeNoteSource> noteSources;
     private final MemoryEmbeddingRepository memoryEmbeddingRepository;
     private final MemoryEmbeddingWriter memoryEmbeddingWriter;
     private final CompanionProperties properties;
@@ -46,9 +47,17 @@ public class NoteEmbeddingCatchUp {
     /**
      * Embeds this user's still-unembedded notes up to and including {@code through}, newest run
      * first-come, oldest row first. Returns how many vectors were written (the caller logs it).
-     * The toggle is checked HERE so the pass heals it rather than bypassing it. An empty
-     * {@code noteSources} (no implementation on the classpath, or every one switched off) is a
-     * legitimate no-op, not an error.
+     * The toggle is checked HERE so the pass heals it rather than bypasses it. Sources are
+     * injected as {@link ObjectProvider} — not {@code List<NarrativeNoteSource>} — precisely
+     * because a plain {@code List<T>} constructor parameter with zero matching beans resolves to
+     * {@code null} in Spring, which then fails context startup on the required dependency;
+     * {@link ObjectProvider#orderedStream()} instead yields an empty stream when nothing is on the
+     * classpath. That makes zero note sources (no implementation on the classpath, or every one
+     * switched off) an actually-safe no-op today, and means a FUTURE
+     * {@code @ConditionalOnProperty} on either adapter can drop it to zero without risking the
+     * context. Both sources currently share one budget pool consumed in {@code orderedStream()}
+     * order: that decides which KIND gets backfilled first on a large history, not whether both
+     * eventually converge (see {@link #embed} for the starved-source log).
      */
     public int run(UUID userId, LocalDate through) {
         if (!properties.embedding().embedNotes()) {
@@ -58,7 +67,7 @@ public class NoteEmbeddingCatchUp {
         int budget = properties.embedding().noteBatchSize();
 
         int written = 0;
-        for (NarrativeNoteSource source : noteSources) {
+        for (NarrativeNoteSource source : noteSources.orderedStream().toList()) {
             written += embed(source, userId, through, minChars, budget - written);
         }
         return written;
@@ -66,10 +75,12 @@ public class NoteEmbeddingCatchUp {
 
     /** One source's pass: drop what already has a vector, honour the remaining budget, isolate failures. */
     private int embed(NarrativeNoteSource source, UUID userId, LocalDate through, int minChars, int budget) {
+        String kind = source.kind();
         if (budget <= 0) {
+            log.info("Note-embedding budget already exhausted before user {} kind {} got a turn — "
+                    + "starved this run, waits for the next one", userId, kind);
             return 0;
         }
-        String kind = source.kind();
         List<Note> candidates = source.notesToEmbed(userId, through, minChars);
         if (candidates.isEmpty()) {
             return 0;
