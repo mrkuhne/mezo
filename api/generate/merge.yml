@@ -32,4 +32,5 @@ inputs:
   - inputFile: ../feature/llm-usage/llm-usage.yml
   - inputFile: ../feature/needs/needs.yml
   - inputFile: ../feature/journal/journal.yml
+  - inputFile: ../feature/companion-feedback/companion-feedback.yml
 output: ../openapi.yml

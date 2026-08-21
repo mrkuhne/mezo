@@ -6661,6 +6661,133 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/feedback:
+    get:
+      tags:
+        - CompanionFeedback
+      operationId: listFeedback
+      summary: >-
+        Batch-read this user's verdicts for one artifact kind
+        (CompanionFeedback)
+      description: >-
+        Page hydration: the caller passes every artifact id it renders and gets
+        back only the ones that carry a verdict. Unknown/never-voted ids are
+        simply absent (never an error) — the surface degrades to "no chip
+        selected", never to a failed page.
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+        - name: ids
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 200
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: The verdicts that exist among the requested ids (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageFeedbackResponse'
+        '400':
+          description: 'Validation error (unknown kind, empty/oversized id list)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - CompanionFeedback
+      operationId: putFeedback
+      summary: Upsert the single verdict for one artifact (CompanionFeedback)
+      description: >-
+        One updatable verdict per (user, artifactKind, artifactId). Re-tapping
+        the OTHER verdict overwrites this row; re-tapping the SAME verdict is a
+        retraction and goes to DELETE. Artifact existence is deliberately NOT
+        checked cross-table (the kinds span five tables; a dangling id is
+        harmless in a single-user app).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutFeedbackRequest'
+      responses:
+        '200':
+          description: The stored verdict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageFeedbackResponse'
+        '400':
+          description: >-
+            Validation error (unknown kind/verdict/reason, or reason sent with
+            an up verdict)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/feedback/{artifactKind}/{artifactId}':
+    delete:
+      tags:
+        - CompanionFeedback
+      operationId: deleteFeedback
+      summary: Retract the verdict on one artifact (CompanionFeedback)
+      parameters:
+        - name: artifactKind
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: >-
+            Retracted (idempotent — retracting a never-voted artifact also
+            returns 204)
+        '400':
+          description: Validation error (unknown kind)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -13408,6 +13535,7 @@ components:
     FeedMessageResponse:
       type: object
       required:
+        - id
         - date
         - kind
         - eyebrow
@@ -13415,6 +13543,12 @@ components:
         - refs
         - generatedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            The companion_message row id — the W4.1 feedback artifactId
+            (feed_message).
         date:
           type: string
           format: date
@@ -13442,10 +13576,17 @@ components:
     WeeklySuggestionResponse:
       type: object
       required:
+        - id
         - weekStart
         - prose
         - generatedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            The weekly_suggestion row id — the W4.1 feedback artifactId
+            (weekly_suggestion).
         weekStart:
           type: string
           format: date
@@ -13473,12 +13614,17 @@ components:
     MemoirResponse:
       type: object
       required:
+        - id
         - weekStart
         - title
         - body
         - anchors
         - generatedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: The memoir row id — the W4.1 feedback artifactId (memoir).
         weekStart:
           type: string
           format: date
@@ -15383,3 +15529,54 @@ components:
           maximum: 5
         outcomeText:
           type: string
+    PutFeedbackRequest:
+      type: object
+      required:
+        - artifactKind
+        - artifactId
+        - verdict
+      properties:
+        artifactKind:
+          type: string
+          pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+        artifactId:
+          type: string
+          format: uuid
+        verdict:
+          type: string
+          pattern: ^(up|down)$
+        reason:
+          type: string
+          nullable: true
+          pattern: ^(inaccurate|too_much|bad_timing|not_about_me)$
+          description: >-
+            Only legal with verdict=down (mirrors ck_message_feedback_reason);
+            absent otherwise.
+    MessageFeedbackResponse:
+      type: object
+      required:
+        - artifactKind
+        - artifactId
+        - verdict
+        - updatedAt
+      properties:
+        artifactKind:
+          type: string
+          description: >-
+            'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' |
+            'prediction'
+        artifactId:
+          type: string
+          format: uuid
+        verdict:
+          type: string
+          description: '''up'' | ''down'''
+        reason:
+          type: string
+          nullable: true
+          description: >-
+            'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down
+            verdicts only
+        updatedAt:
+          type: string
+          format: date-time

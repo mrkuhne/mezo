@@ -2859,6 +2859,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read this user's verdicts for one artifact kind (CompanionFeedback)
+         * @description Page hydration: the caller passes every artifact id it renders and gets back only the ones that carry a verdict. Unknown/never-voted ids are simply absent (never an error) — the surface degrades to "no chip selected", never to a failed page.
+         */
+        get: operations["listFeedback"];
+        /**
+         * Upsert the single verdict for one artifact (CompanionFeedback)
+         * @description One updatable verdict per (user, artifactKind, artifactId). Re-tapping the OTHER verdict overwrites this row; re-tapping the SAME verdict is a retraction and goes to DELETE. Artifact existence is deliberately NOT checked cross-table (the kinds span five tables; a dangling id is harmless in a single-user app).
+         */
+        put: operations["putFeedback"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/feedback/{artifactKind}/{artifactId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Retract the verdict on one artifact (CompanionFeedback) */
+        delete: operations["deleteFeedback"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5480,6 +5521,11 @@ export interface components {
             label: string;
         };
         FeedMessageResponse: {
+            /**
+             * Format: uuid
+             * @description The companion_message row id — the W4.1 feedback artifactId (feed_message).
+             */
+            id: string;
             /** Format: date */
             date: string;
             /** @enum {string} */
@@ -5491,6 +5537,11 @@ export interface components {
             generatedAt: string;
         };
         WeeklySuggestionResponse: {
+            /**
+             * Format: uuid
+             * @description The weekly_suggestion row id — the W4.1 feedback artifactId (weekly_suggestion).
+             */
+            id: string;
             /** Format: date */
             weekStart: string;
             /** @description Plain Hungarian plan-suggestion prose (smart tier; no markdown structure) */
@@ -5504,6 +5555,11 @@ export interface components {
             label: string;
         };
         MemoirResponse: {
+            /**
+             * Format: uuid
+             * @description The memoir row id — the W4.1 feedback artifactId (memoir).
+             */
+            id: string;
             /** Format: date */
             weekStart: string;
             /** @description Display title of the week's narrative */
@@ -6326,6 +6382,26 @@ export interface components {
         ReviewDecisionRequest: {
             outcomeRating: number;
             outcomeText?: string;
+        };
+        PutFeedbackRequest: {
+            artifactKind: string;
+            /** Format: uuid */
+            artifactId: string;
+            verdict: string;
+            /** @description Only legal with verdict=down (mirrors ck_message_feedback_reason); absent otherwise. */
+            reason?: string | null;
+        };
+        MessageFeedbackResponse: {
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' | 'prediction' */
+            artifactKind: string;
+            /** Format: uuid */
+            artifactId: string;
+            /** @description 'up' | 'down' */
+            verdict: string;
+            /** @description 'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down verdicts only */
+            reason?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
         };
     };
     responses: never;
@@ -14356,6 +14432,128 @@ export interface operations {
             };
             /** @description DECISION_ENTRY_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listFeedback: {
+        parameters: {
+            query: {
+                kind: string;
+                ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The verdicts that exist among the requested ids (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageFeedbackResponse"][];
+                };
+            };
+            /** @description Validation error (unknown kind, empty/oversized id list) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageFeedbackResponse"];
+                };
+            };
+            /** @description Validation error (unknown kind/verdict/reason, or reason sent with an up verdict) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifactKind: string;
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retracted (idempotent — retracting a never-voted artifact also returns 204) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error (unknown kind) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

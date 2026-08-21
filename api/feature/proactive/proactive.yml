@@ -279,8 +279,9 @@ components:
           type: string
     FeedMessageResponse:
       type: object
-      required: [date, kind, eyebrow, body, refs, generatedAt]
+      required: [id, date, kind, eyebrow, body, refs, generatedAt]
       properties:
+        id: { type: string, format: uuid, description: The companion_message row id — the W4.1 feedback artifactId (feed_message). }
         date: { type: string, format: date }
         kind:
           type: string
@@ -295,8 +296,9 @@ components:
         generatedAt: { type: string, format: date-time }
     WeeklySuggestionResponse:
       type: object
-      required: [weekStart, prose, generatedAt]
+      required: [id, weekStart, prose, generatedAt]
       properties:
+        id: { type: string, format: uuid, description: The weekly_suggestion row id — the W4.1 feedback artifactId (weekly_suggestion). }
         weekStart: { type: string, format: date }
         prose:
           type: string
@@ -313,8 +315,9 @@ components:
           type: string
     MemoirResponse:
       type: object
-      required: [weekStart, title, body, anchors, generatedAt]
+      required: [id, weekStart, title, body, anchors, generatedAt]
       properties:
+        id: { type: string, format: uuid, description: The memoir row id — the W4.1 feedback artifactId (memoir). }
         weekStart: { type: string, format: date }
         title:
           type: string
