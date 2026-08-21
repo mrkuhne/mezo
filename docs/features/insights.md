@@ -575,13 +575,11 @@ It is **purely presentational and controlled**: `{ value, onVote, label }`, no h
 - **Crossing contract:** `(FeedbackArtifactKind, artifactId)` over the companion-owned
   `/api/companion/feedback` — see [`companion.md` §4/§5.7](companion.md). Insights owns no table or
   endpoint here, exactly as with Weekly/Memoir/Predictions/Memory.
-- **`useDualQuery` gained one optional flag for this** (`data/useDualQuery.ts`,
-  `keepPreviousRealData`, real-mode-only, default OFF): `useFeedback`'s real-mode cache key encodes
-  the rendered id SET, so it changes every time a page grows by one card — without the flag every
-  already-known chip would blank for the width of the new round-trip. It maps to
-  `placeholderData: keepPreviousData`, i.e. the previous REAL response, never `mockData`, so the
-  "no static fallback in real mode" invariant is untouched and no existing caller changes
-  ([`_platform-data-layer.md`](_platform-data-layer.md)).
+- **`useDualQuery` gained one optional flag for this** — `keepPreviousRealData`, real-mode-only,
+  default OFF, so a page that grows by one card does not blank the chips already on screen.
+  `useFeedback` is its only consumer. **Full contract, rationale and the `isPending` caveat live in
+  [`_platform-data-layer.md` §4](_platform-data-layer.md)** — that doc owns `useDualQuery`; don't
+  restate it here.
 
 ---
 
@@ -762,7 +760,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `components/PatternImpactCard.tsx` — **`mezo-tk88.5`**, „Mit kezd ezzel az app" (§2.1b step 5): the fact/predictions/experiments/challenges rows (only when `pattern.status === 'confirmed'`, each row omitted if its ref list is empty) or the single future-tense fallback row otherwise
 - `components/FeedbackChips.tsx` (+ test) — **W4.1 `mezo-b3pp.15`**, the shared 👍/👎 row: `{value, onVote, label}`, purely presentational (the toggle semantics live in `useFeedback`), the four-chip reason row revealed by 👎, HU copy `Segített`/`Nem talált` + `pontatlan`/`túl sok`/`rossz időzítés`/`nem rólam szól`. Mounted by `ChatMessage`, `MemoirPage`, `WeeklyPage`, `PredictionsPage` — **and by Today's `MezoMessagesSheet`** ([`today.md` §10](today.md)), which makes it the second Insights component with a cross-feature consumer (§5.7)
 - `data/feedback/{feedbackTypes,feedbackApi,feedbackMock,feedbackHooks}.ts` (+ `feedbackHooks.test.tsx`) — **W4.1** the data half: the FE enums + `FeedbackHandle`, the three-call client over the companion-owned `/api/companion/feedback` (contract `api/feature/companion-feedback/companion-feedback.yml`, [`companion.md` §4](companion.md)), the deliberately EMPTY mock seed, and `useFeedback(kind, ids)` — one batch read per page, optimistic write, retract-on-bare-re-tap. Exported through the `@/data/hooks` barrel like every other data hook
-- `data/useDualQuery.ts` — gained the optional real-mode-only `keepPreviousRealData` flag for `useFeedback`'s id-set-keyed cache (§5.7); default OFF, no existing caller affected
+- `data/useDualQuery.ts` — gained the optional real-mode-only `keepPreviousRealData` flag for `useFeedback`'s id-set-keyed cache (§5.7); default OFF, no existing caller affected. Documented in full in [`_platform-data-layer.md` §4/§10](_platform-data-layer.md), which owns this helper
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
 - **`components/MotorHero.tsx · VerdictFilterChips.tsx · DomainSection.tsx · PairRow.tsx` are DELETED (`mezo-tk88.4`)** — the Motor page's `mezo-18bx` presentational units (hero card, verdict-filter chips, collapsible domain sections, expandable pair rows); superseded by `MotorStateHero`/`LifecycleSection` above. **`components/MetricCoverageRing.tsx` survives unchanged** — its `metric`/`referencingTitles`/`waiting` props are still exactly what the „Adat-egészség" panel needs
 - `logic/domains.ts` — **mezo-18bx, KEPT `mezo-tk88.4`**: `DOMAIN_META`/`DOMAIN_ORDER` (token-based domain colors, feeds `MotorStateHero`'s chip row) + `comparePairs` + `groupPairsByDomain` (primary domain = metric-B; `comparePairs`/`groupPairsByDomain` no longer have a live page consumer post-retirement but stay pure-tested, `domains.test.ts`)
