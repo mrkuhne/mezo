@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.embedding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -12,8 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-
-import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 
 /**
  * W1.5 blast-radius guard, isolated from {@link NoteEmbeddingCatchUpIT} because it needs its own

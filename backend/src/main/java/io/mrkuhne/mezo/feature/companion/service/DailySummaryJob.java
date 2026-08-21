@@ -22,8 +22,12 @@ import java.util.UUID;
  * user and every FINISHED day in the catch-up window it (a) generates the missing
  * {@code daily_summary} (idempotent — an existing day is returned, not regenerated) and (b)
  * embeds it; then (c) catch-up-embeds any chat turns still missing their vector (covers
- * listener-off periods, crashes, and pre-V2.2 history). Per-date failures are isolated: one
- * bad day must never kill the run — the next night retries it via the same catch-up.
+ * listener-off periods, crashes, and pre-V2.2 history); and, since W1.5 (spec §5.5, bd
+ * mezo-b3pp.5), (d) runs {@link NoteEmbeddingCatchUp} — the narrative written OUTSIDE the journal
+ * ({@code activity_log.text}, {@code check_in.note}) has NO listener, so this one nightly sweep is
+ * its only writer (its own toggle, length gate and per-run budget live in the pass). Per-date
+ * failures are isolated: one bad day must never kill the run — the next night retries it via the
+ * same catch-up.
  */
 @Slf4j
 @Component
