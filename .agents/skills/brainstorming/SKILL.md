@@ -7,7 +7,7 @@ description: Use BEFORE designing or building anything new — turns an idea int
 
 HARD RULE: no code, no file scaffolding, no implementation until the user approves a design.
 
-1. Orient cheaply: AGENTS.md, docs/milestones/roadmap.md, the `### <feature>` block(s) in
+1. Orient cheaply: the house-rules doc (AGENTS, repo root), docs/milestones/roadmap.md, the `### <feature>` block(s) in
    docs/CODEMAP.md the idea touches, and ONLY §1 + §9 of the matching docs/features/<x>.md
    (grep the headings, read with offset/limit). Budget: ≤ 8 tool calls before the first question.
 2. If the idea touches existing code or a bug, your FIRST question asks for the concrete
