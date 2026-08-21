@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-19
+updated: 2026-08-21
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -579,6 +579,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
+| Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
@@ -678,6 +679,28 @@ the same migration, landing schema headroom for the rest of the Phase 5 W1 wave
 (`reflection`/`gratitude`/`decision`/`monthly_summary`/`activity_note`/`checkin_note` — only
 `journal_entry` is written today). See [`journal.md`](journal.md) §3/§5/§9 for the full seam,
 including the spec-deviation writeup for the update-in-place decision.
+
+**Decision embedding seam (`mezo-b3pp.4`, Phase 5 W1.4, post-epic) — a FOURTH narrative kind joins
+`memory_embedding`, reusing the `journal_entry` seam's exact shape.** `feature/journal`'s
+`DecisionService` (the decision journal + review loop over the new `decision_entry` table,
+[`journal.md`](journal.md) §4/§5) publishes `DecisionEntrySavedEvent` on both create and review; the
+new **`DecisionEmbeddingListener`** (`embedding/DecisionEmbeddingListener.java`, the
+`JournalEmbeddingListener` idiom verbatim: `@Async @TransactionalEventListener(AFTER_COMMIT)`, gated
+on BOTH `COMPANION_SWITCH` and the journal feature's own switch, failures logged+swallowed) reloads
+the live decision and calls the new `MemoryEmbeddingWriter.writeDecision`
+(`embedding/MemoryEmbeddingWriter.java:150-176`) — `kind=decision`, `KIND_DECISION`. **The rule worth
+knowing: a decision embeds twice into the SAME `(kind, ref_id)` row, not once.** On create it embeds
+just `decisionText`; once Daniel reviews it (`PUT /api/journal/decision/{id}/review`), the SAME row
+is re-embedded in place with the outcome folded into the content
+(`decisionText + "\n\nKimenet (" + outcomeRating + "/5): " + outcomeText`) — because the outcome
+("what did I decide, and did it work") is the half of a decision actually worth recalling later, not
+the raw decision text alone. This reuses the exact update-in-place mechanics `writeJournal` already
+established (`findByKindAndRefId` → update `content`/`embedding`/`occurred_on` when a live row
+exists, insert-only `write` on the first call) — **the one genuine difference from `journal_entry` is
+that there is no delete path** (the decision surface offers no delete), so
+`DecisionEmbeddingListener` carries no orphaned-vector re-check, only the same create-then-fast-review
+insert-race retry-once (`DataIntegrityViolationException` on `uq_memory_embedding_kind_ref_id` →
+re-read → retry). See [`journal.md`](journal.md) §3/§4/§5/§9 for the full decision-journal seam.
 
 ## 2. User-facing behavior
 
@@ -1077,9 +1100,10 @@ swapped in-slice across compose/k3s/Testcontainers):
   (chat_turn,daily_summary,weekly_summary)` at V2.1 — **widened to 10 kinds at Phase 5 W1.1**
   (`mezo-b3pp.1`, migration `202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`): `+
   monthly_summary, journal_entry, reflection, gratitude, decision, activity_note, checkin_note`.
-  Only `journal_entry` is populated as of W1.1 (`KIND_JOURNAL_ENTRY`, written by the new
-  `JournalEmbeddingListener` below); the other five new kinds are schema headroom for the rest of
-  the Phase 5 W1 narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
+  `journal_entry` (W1.1, `KIND_JOURNAL_ENTRY`, written by `JournalEmbeddingListener` below) and
+  `decision` (W1.4, `KIND_DECISION`, written by `DecisionEmbeddingListener` below) are populated as
+  of `mezo-b3pp.4`; the remaining four kinds are schema headroom for the rest of the Phase 5 W1
+  narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
   design spec's explicit instruction, rather than one `alter table` per later slice), `ref_id uuid`
   (`uq_memory_embedding_kind_ref_id (kind, ref_id)` — one embedding per source unit, the V2.2
   pipeline's idempotence anchor **and the spans-soft-deleted-rows constraint that makes journal's
@@ -2361,6 +2385,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:114-141` — `writeJournal` (update-in-place re-embed on an edit — `uq_memory_embedding_kind_ref_id` spans soft-deleted rows, so a delete+insert would collide) / `deleteJournalEmbedding`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY` + the 10-kind `@Pattern` (§4 above).
 - Tests: journal cases folded into `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/JournalEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip) — full test map in [`journal.md`](journal.md) §8.
+
+**Backend — decision embedding seam (`mezo-b3pp.4`, Phase 5 W1.4, post-epic — full detail in [`journal.md`](journal.md))**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s `DecisionEntrySavedEvent` (fired on both create and review), gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH`; retries once on the create-then-fast-review insert race, no delete-race handling (decisions aren't deletable).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:150-176` — `writeDecision`: embeds `decisionText` on create, re-embeds the SAME `(kind=decision, ref_id)` row in place on review with the outcome folded into the content (`"…\n\nKimenet (N/5): …"`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_DECISION` (the 10-kind `@Pattern`, §4 above, unchanged — `'decision'` was already permitted).
+- Tests: decision cases folded into `MemoryEmbeddingWriterIT` (`testWriteDecision_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/DecisionEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip, both create and review) — full test map in [`journal.md`](journal.md) §8.
 
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
