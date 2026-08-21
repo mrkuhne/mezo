@@ -14,6 +14,8 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
+  /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
+  id: string
   kind: FeedMessageKind
   eyebrow: string
   body: BriefingPara[]

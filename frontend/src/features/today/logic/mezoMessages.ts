@@ -12,8 +12,13 @@
 import type { Briefing, BriefingRef, FeedMessage } from '@/data/types'
 
 export interface MezoMessageItem {
-  /** Stabil a napon belül. */
+  /** Stabil a napon belül: a feed KINDJE (`morning`/`sleep`/…) vagy a nudge/demo kulcsa —
+   *  React-kulcs ÉS a látott-üzenet kulcs. NEM artifact-azonosító. */
   id: string
+  /** A perzisztált companion_message sor uuid-je — a `feed_message` visszajelzés artifactId-je
+   *  (mezo-b3pp.15). CSAK feed-sorokon van: a cimkézett demo-briefing kártya és a küszöb-nudge
+   *  nem perzisztált AI-artifact, nincs mire visszajelezni — chip sem ülhet rájuk (mezo-kr9v). */
+  artifactId?: string
   eyebrow: string
   time: string | null
   /** Markdown-forrás; a renderelő `SafeMarkdown`-ozza. */
@@ -38,6 +43,7 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
 }): MezoMessageItem[] {
   const out: MezoMessageItem[] = feed.map((m) => ({
     id: m.kind,
+    artifactId: m.id,
     eyebrow: m.eyebrow,
     time: hhmm(m.generatedAt),
     paragraphs: m.body.map((p) => p.text),

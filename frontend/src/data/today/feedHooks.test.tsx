@@ -12,6 +12,7 @@ afterEach(() => {
 
 const feedFixture = [
   {
+    id: '11111111-1111-4111-8111-111111111111',
     date: '2026-07-06',
     kind: 'morning',
     eyebrow: 'Reggeli briefing · Reta nap 3',
@@ -28,6 +29,9 @@ describe('useCompanionFeed (real mode default)', () => {
     server.use(http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json(feedFixture)))
     const { result } = renderHook(() => useCompanionFeed(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current).toHaveLength(1))
+    // The companion_message row id — the W4.1 feedback artifactId (mezo-b3pp.15). Without it
+    // the Today thread cannot vote on a feed message at all.
+    expect(result.current[0].id).toBe('11111111-1111-4111-8111-111111111111')
     expect(result.current[0].kind).toBe('morning')
     expect(result.current[0].eyebrow).toBe('Reggeli briefing · Reta nap 3')
     expect(result.current[0].body).toEqual([

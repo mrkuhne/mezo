@@ -5,9 +5,11 @@ import type { FeedMessage } from '@/data/types'
 type FeedWire =
   paths['/api/proactive/feed']['get']['responses']['200']['content']['application/json']
 
-/** Wire → FE FeedMessage[]: paragraphs wrap into BriefingPara, refs pass through. */
+/** Wire → FE FeedMessage[]: paragraphs wrap into BriefingPara, refs pass through. The row `id`
+ *  rides along untouched — it is the `feed_message` feedback artifactId (mezo-b3pp.15). */
 export function toFeedMessages(wire: FeedWire): FeedMessage[] {
   return wire.map((m) => ({
+    id: m.id,
     kind: m.kind,
     eyebrow: m.eyebrow,
     body: m.body.map((text) => ({ type: 'p' as const, text })),

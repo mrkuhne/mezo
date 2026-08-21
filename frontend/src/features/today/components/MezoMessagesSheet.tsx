@@ -9,11 +9,16 @@
 import { Sheet } from '@/shared/ui/Sheet'
 import { RefTag } from '@/shared/ui/RefTag'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import type { FeedbackHandle } from '@/data/feedback/feedbackTypes'
 
-export function MezoMessagesSheet({ messages, onClose }: {
+export function MezoMessagesSheet({ messages, onClose, feedback }: {
   messages: MezoMessageItem[]
   onClose: () => void
+  /** A lap `useFeedback('feed_message', …)` handle-je (mezo-b3pp.15) — a komponens
+   *  prezentációs marad, a hookot a TodayPage birtokolja. Elhagyva nincs chip sehol. */
+  feedback?: FeedbackHandle
 }) {
   return (
     <Sheet onClose={onClose} labelledBy="mezo-msgs-title">
@@ -42,6 +47,21 @@ export function MezoMessagesSheet({ messages, onClose }: {
                     </div>
                   )}
                   {m.meta && <div className="td-bub-meta">{m.meta}</div>}
+                  {/* Chip CSAK perzisztált AI-artifactre: a cimkézett demo-briefing kártyának és
+                      a küszöb-nudge-nak nincs sor-azonosítója, egy rájuk ültetett chip hamis
+                      affordancia lenne (mezo-kr9v). Kulcs az artifactId: a FeedbackChips egyszer,
+                      mountkor magolja be az indok-sor nyitottságát, ezért minden üzenetnek SAJÁT
+                      példány jár — React sosem használhatja újra az egyikét a másikra. */}
+                  {feedback && m.artifactId != null && (
+                    <div className="mt-sm">
+                      <FeedbackChips
+                        key={m.artifactId}
+                        value={feedback.get(m.artifactId)}
+                        onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
+                        label="az üzenetről"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
