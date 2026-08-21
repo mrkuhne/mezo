@@ -16,15 +16,28 @@ import type { CheckinSlot } from '@/data/types'
 // assertion failure. Every test gets a deterministic four-slot fixture by default; tests that
 // care about a specific state override it with their own `mockReturnValue`.
 const checkinsMock = vi.hoisted(() => ({ useCheckins: vi.fn() }))
+const gratitudeActionsMock = vi.hoisted(() => ({ useGratitudeActions: vi.fn() }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
-  return { ...actual, useCheckins: () => checkinsMock.useCheckins() }
+  return {
+    ...actual,
+    useCheckins: () => checkinsMock.useCheckins(),
+    useGratitudeActions: () => gratitudeActionsMock.useGratitudeActions(),
+  }
 })
 
 beforeEach(() => {
   checkinsMock.useCheckins.mockReturnValue({ checkins: initialCheckins, saveCheckIn: vi.fn() })
+  gratitudeActionsMock.useGratitudeActions.mockReturnValue({
+    addEntry: vi.fn().mockResolvedValue(undefined),
+    removeEntry: vi.fn(),
+    pending: false,
+  })
 })
-afterEach(() => checkinsMock.useCheckins.mockReset())
+afterEach(() => {
+  checkinsMock.useCheckins.mockReset()
+  gratitudeActionsMock.useGratitudeActions.mockReset()
+})
 
 function LocationProbe() {
   return <div data-testid="loc">{useLocation().pathname}</div>
@@ -89,6 +102,17 @@ test('picking Napló from the Napló picker swaps to the JournalSheet, without c
   await screen.findByText('Mit naplózol?')
   await userEvent.click(screen.getByText('Napló'))
   expect(await screen.findByText('Mi jár a fejedben?')).toBeInTheDocument()
+  expect(screen.queryByText('Mit naplózol?')).not.toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('the Hála tile in the Napló picker opens JournalSheet in gratitude mode, without closing', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByText('Napló'))
+  await screen.findByText('Mit naplózol?')
+  await userEvent.click(screen.getByRole('button', { name: /Hála/ }))
+  expect(await screen.findByText('Hálabejegyzés')).toBeInTheDocument()
   expect(screen.queryByText('Mit naplózol?')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
