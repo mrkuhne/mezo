@@ -10,6 +10,7 @@ milestone, and standard lives here as a file, not only in chat or in `bd` issues
 
 | Folder | Question it answers | What lives here |
 |---|---|---|
+| **`CODEMAP.md`** (generated) | **WHERE it lives** | The agent orientation index: one block per feature — backend package, entities→tables, services/controllers/repositories/mappers, contract fragment + endpoints, FE data hooks, pages/sheets/components/logic, ITs + populators, and the `features/` doc to read next. Produced by `node scripts/gen-codemap.mjs`, CI-gated for freshness, **never hand-edited**. Read it BEFORE grepping the tree; see [`infrastructure/codemap-generation.md`](infrastructure/codemap-generation.md). |
 | `decisions/` | **WHY** (and what we rejected) | Architecture Decision Records (ADRs): every significant decision, direction change, tool/platform choice, or trade-off. One file per decision. |
 | `infrastructure/` | **WHERE / HOW it runs** | Deployment topology, hosting, CI/CD, networking, secrets, ops runbooks, target architecture. |
 | `milestones/` | **WHEN / WHAT shipped** | Roadmap, phase status, milestone log. The high-level "where are we" timeline. |
@@ -77,6 +78,7 @@ the work is **not done**. Capture it before closing the `bd` issue.
 - [`infrastructure/deployment-k3s-argocd.md`](infrastructure/deployment-k3s-argocd.md) — deployment architecture + current live facts.
 - [`infrastructure/runbook.md`](infrastructure/runbook.md) — **operational runbook**: access, logins, day-to-day ops, troubleshooting, recovery.
 - [`milestones/roadmap.md`](milestones/roadmap.md) — phase & milestone status.
+- [`CODEMAP.md`](CODEMAP.md) — **generated codebase map**: where every feature's code lives (packages, tables, endpoints, hooks, surfaces, tests). First stop when locating files.
 - [`features/README.md`](features/README.md) — **per-feature documentation index** (operation, usage, extension, integrations) for every domain + platform area.
 - [`guides/companion-hogyan-mukodik.md`](guides/companion-hogyan-mukodik.md) — **felhasználói útmutató** a Phase-3 companionhöz (mit tud, mi fut magától, mi a te szereped).
 - [`research/SCHEMA.md`](research/SCHEMA.md) — the **research wiki** conventions (source-ingested LLM-wiki). Lint both collections with `node scripts/lint-docs.mjs`; the [`knowledge-base` skill](../.claude/skills/knowledge-base/SKILL.md) is the operating manual.

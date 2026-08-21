@@ -31,6 +31,10 @@ jobs:
         run: node scripts/lint-docs.mjs --errors-only
       - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
         run: node scripts/lint-liquibase.mjs
+      - name: Codemap generator tests (fixture trees)
+        run: node --test scripts/gen-codemap.test.mjs
+      - name: Codemap freshness (docs/CODEMAP.md must regenerate identically)
+        run: node scripts/gen-codemap.mjs --check
 
   contract-drift:
     # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
