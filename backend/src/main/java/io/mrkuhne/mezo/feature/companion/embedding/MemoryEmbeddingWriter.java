@@ -1,8 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.embedding;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
+import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -163,22 +162,14 @@ public class MemoryEmbeddingWriter {
     }
 
     /**
-     * W1.5 activity note (spec §5.5): a substantive „Napló" entry's own words. WRITE-ONCE via
-     * {@link #write} — there is no listener behind this kind, only the nightly sweep, so an edited
-     * source row keeps its original vector (known gap, journal.md §9). The entity may be detached:
-     * only getters are read.
+     * W1.5 note unit (spec §5.5): a substantive note from a {@link NarrativeNoteSource}
+     * (activity-log „Napló" entry or check-in note), embedded WRITE-ONCE via {@link #write} —
+     * there is no listener behind these kinds, only the nightly sweep, so an edited or deleted
+     * source row keeps/leaves orphaned its original vector (known gap, journal.md §9).
      */
     @Transactional
-    public void writeActivityNote(ActivityLogEntity entry) {
-        write(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, entry.getId(),
-                entry.getText(), entry.getOccurredOn());
-    }
-
-    /** W1.5 check-in note (spec §5.5) — same write-once unit, dated to the check-in's day. */
-    @Transactional
-    public void writeCheckInNote(CheckInEntity checkIn) {
-        write(checkIn.getCreatedBy(), MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, checkIn.getId(),
-                checkIn.getNote(), checkIn.getDate());
+    public void writeNote(String kind, NarrativeNoteSource.Note note) {
+        write(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
     }
 
     /**
