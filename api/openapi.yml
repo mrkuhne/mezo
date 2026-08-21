@@ -6661,6 +6661,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/journal/gratitude:
+    get:
+      tags:
+        - Journal
+      summary: List gratitude entries in a date range (Journal)
+      operationId: listGratitudeEntries
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Entries, newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GratitudeEntryResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Journal
+      summary: Create a gratitude entry (Journal)
+      operationId: createGratitudeEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGratitudeEntryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GratitudeEntryResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/journal/gratitude/{id}':
+    delete:
+      tags:
+        - Journal
+      summary: Soft-delete a gratitude entry (Journal)
+      operationId: deleteGratitudeEntry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/feedback:
     get:
       tags:
@@ -15531,6 +15611,49 @@ components:
           maximum: 5
         outcomeText:
           type: string
+    GratitudeEntryResponse:
+      type: object
+      required:
+        - id
+        - occurredOn
+        - text
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredOn:
+          type: string
+          format: date
+        text:
+          type: string
+          maxLength: 280
+        lifeArea:
+          type: string
+          nullable: true
+          pattern: >-
+            ^(mindfulness|mindset|cooking|financial|productivity|learning|connection|recovery)$
+        createdAt:
+          type: string
+          format: date-time
+    CreateGratitudeEntryRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 280
+        lifeArea:
+          type: string
+          nullable: true
+          pattern: >-
+            ^(mindfulness|mindset|cooking|financial|productivity|learning|connection|recovery)$
+        occurredOn:
+          type: string
+          format: date
+          description: Defaults to today when absent
     PutFeedbackRequest:
       type: object
       required:
