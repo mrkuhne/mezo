@@ -80,6 +80,8 @@ Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), 
 
 If a finished piece of work leaves no trace in `docs/` of the decision behind it, the work is **not done** — capture it before closing the `bd` issue.
 
+> **Trigger — orienting in the codebase (ALWAYS first):** locate files via **[`docs/CODEMAP.md`](docs/CODEMAP.md)** first, then read the matching **`docs/features/<x>.md` §10**; do not grep the tree for orientation. CODEMAP.md is generated (`node scripts/gen-codemap.mjs`) and CI-gated — never hand-edit it; it answers **WHERE** (packages, entities/tables, endpoints, hooks, surfaces, tests), the feature doc answers **HOW**.
+
 > **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Understanding / extending / integrating an existing feature → read its **[`docs/features/<domain>.md`](docs/features/README.md)** FIRST. Documenting a feature, ingesting research, or running the doc-lint → follow the **knowledge-base workflow** ([`docs/research/SCHEMA.md`](docs/research/SCHEMA.md) + `node scripts/lint-docs.mjs`). Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
 
 ## Architecture Overview
@@ -167,7 +169,12 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
   `mezo-api-contract`, `mezo-testing`, `mezo-deploy`. Invoke the process skill FIRST
   (it tells you when to pull a domain skill).
 - Work in a git worktree (Hermes worktree mode) on a `feat/<topic>` branch; never on main.
-- Start interactive sessions from the repo directory — one-shot `hermes -z` mode starts its
-  shell in `$HOME` (known v0.20.4 behavior), so agent work runs via the interactive TUI.
+- Terminal sessions start in the repo (`terminal.cwd` in `~/.hermes/config.yaml`) on every
+  surface — TUI, desktop app, Discord gateway, one-shot `-z`. `~/.hermes/shell-init.sh` puts
+  `~/.local/bin` (bd) on PATH for desktop-spawned shells.
+- Memory = facts, skills = procedures: durable environment/project facts go to `bd remember`
+  (and Hermes MEMORY.md/Hindsight pick them up); a repeated 5+ step procedure becomes a skill.
+- Model roles: Qwen3.8-27B for spec/plan/implementation/review (effort Medium; High does not
+  scale past ~60K context), Qwen3.6-35B-A3B for chat and quick questions (effort Low).
 - Escalation rule: if you stall twice on the same slice, or CI goes red twice from the
   same mistake, STOP and report — the slice escalates to Claude. Log it as a bd comment.

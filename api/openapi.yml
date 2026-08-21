@@ -8161,7 +8161,7 @@ components:
           type: string
           nullable: true
           pattern: >-
-            ^https?://(www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?$
+            ^https?://((www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?|(www\.|m\.)?instagram\.com/([A-Za-z0-9_.]+/)?(reels?|p|tv)/[A-Za-z0-9_-]{5,}/?([?#].*)?)$
         imageStartUrl:
           type: string
           nullable: true
@@ -8176,9 +8176,11 @@ components:
         videoUrl:
           type: string
           nullable: true
-          description: 'A YouTube watch/short URL, or null to clear the demo'
+          description: >-
+            A YouTube watch/short URL or an Instagram reel/post permalink, or
+            null to clear the demo
           pattern: >-
-            ^https?://(www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?$
+            ^https?://((www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?|(www\.|m\.)?instagram\.com/([A-Za-z0-9_.]+/)?(reels?|p|tv)/[A-Za-z0-9_-]{5,}/?([?#].*)?)$
     CatalogImagesRequest:
       type: object
       description: >-

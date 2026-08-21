@@ -3446,7 +3446,7 @@ export interface components {
             imageEndUrl?: string | null;
         };
         CatalogVideoRequest: {
-            /** @description A YouTube watch/short URL, or null to clear the demo */
+            /** @description A YouTube watch/short URL or an Instagram reel/post permalink, or null to clear the demo */
             videoUrl?: string | null;
         };
         /** @description Demo stills for a catalog exercise. Either field null clears that frame. Values are same-origin vendored paths (/exercises/{slug}-a.jpg) or an absolute http(s) URL. */

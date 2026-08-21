@@ -4,7 +4,9 @@
 // when a video already exists an Eltávolítás ghost clears it (saves null). Calls
 // setExerciseVideo (PUT /api/train/exercises/{id}/video) — the ownership-free
 // endpoint — so built-in rows get demo videos too, unlike the owner-only full
-// edit in CatalogExerciseSheet. Mirrors the CatalogExerciseSheet visual idiom.
+// edit in CatalogExerciseSheet. The contract pattern accepts a YouTube watch/short
+// URL or an Instagram reel/post permalink; anything else comes back 400.
+// Mirrors the CatalogExerciseSheet visual idiom.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -64,7 +66,7 @@ export function VideoUrlSheet({ exercise, onClose }: VideoUrlSheetProps) {
             <input
               aria-label="Videó URL"
               className="rad-12"
-              placeholder="https://youtu.be/…"
+              placeholder="https://youtu.be/… vagy https://instagram.com/reel/…"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               style={fieldStyle}
