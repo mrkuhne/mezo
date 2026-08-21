@@ -100,7 +100,7 @@ export function JournalPage() {
                         : undefined
                     }
                   >
-                    {isDecisionDue(decision, today) ? 'Nézd vissza' : `Visszanézés: ${decision.reviewDue}`}
+                    {isDecisionDue(decision, today) ? 'Nézd vissza' : `Visszanézés: ${dayLabel(decision.reviewDue, today)}`}
                   </span>
                 </div>
                 <p style={{ fontSize: 14, lineHeight: 1.65, marginTop: 10, color: 'var(--text-primary)' }}>

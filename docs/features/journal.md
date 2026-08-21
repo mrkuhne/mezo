@@ -10,6 +10,7 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java
   - frontend/src/data/journal
   - frontend/src/features/me/sheets/JournalSheet.tsx
   - frontend/src/features/me/sheets/DecisionReviewSheet.tsx
@@ -311,11 +312,14 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   `JournalController` **and** `JournalEmbeddingListener`/`DecisionEmbeddingListener` (jointly with
   `COMPANION_SWITCH`) — off ⇒ `/api/journal` (both notes and decisions) 404s, no journal beans exist,
   and neither listener bean exists so no embed call can ever happen.
-- **`CompanionProperties.Journal`** (`feature/companion/config/CompanionProperties.java:203-207`) —
-  `@Positive int decisionReviewDays` (default 30, `mezo.companion.journal.decision-review-days` in
-  `application.yml:817-818`). Landed in W1.1 unconsumed, ahead of need; **W1.4's `DecisionService`
-  now consumes it** to default `decision_entry.review_due = decidedOn + decisionReviewDays` when the
-  caller doesn't (the client never computes or overrides `reviewDue`).
+- **`JournalProperties`** (`feature/journal/config/JournalProperties.java`, own `@ConfigurationProperties`
+  record, ADR 0029) — `@Positive int decisionReviewDays` (default 30,
+  `mezo.companion.journal.decision-review-days` in `application.yml:821-822`; the prefix stayed on
+  `mezo.companion.journal.*` deliberately when the record moved out of `CompanionProperties.Journal`,
+  so neither the YAML key nor the design spec's configured key needed to change). Landed in W1.1
+  unconsumed, ahead of need; **W1.4's `DecisionService` now consumes it** to default
+  `decision_entry.review_due = decidedOn + decisionReviewDays` when the caller doesn't (the client
+  never computes or overrides `reviewDue`).
 
 ## 5. Integrations
 
@@ -329,7 +333,8 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   [`companion.md`](companion.md) for the consuming side (`JournalEmbeddingListener`,
   `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding`) and the ArchUnit
   `feature_slices_are_cycle_free` guard this keeps satisfied (companion → journal is allowed, the
-  reverse is not).
+  reverse is not — see the decision-context seam below for the ONE place `feature/journal` needs
+  something FROM the companion, and how it stays on the same one-way rule).
 - **→ Companion (embed pipeline, wired, one-way OUT — `decision`, W1.4 `mezo-b3pp.4`):** the exact
   same shape as the note seam above, one event type: `DecisionEntrySavedEvent{decisionId}`, published
   after both `create` **and** `review` commit. `DecisionEmbeddingListener`
@@ -342,6 +347,22 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   there is no delete endpoint for decisions (§4), so there is no analogue of a racing delete to guard
   against; if a future slice ever adds decision deletion, this listener needs that guard added at
   that time.
+- **← Companion (context-snapshot read, wired, ADR 0029): the ONE place `feature/journal` needs
+  something FROM the companion, kept one-way via a journal-owned port.** `DecisionService.create`
+  needs the companion's rendered context-snapshot text at write time (§4's `context_snapshot`); a
+  direct `ContextSnapshotAssembler` import would have closed a `journal ↔ companion` cycle (companion
+  already imports journal for the two listeners above) — `ArchitectureTest.feature_slices_are_cycle_free`
+  caught exactly this as a NEW cycle during review and failed the build. Fixed with the same
+  consumer-owned-port idiom [ADR 0012](../decisions/0012-consumer-owned-llm-ports.md) established:
+  `feature/journal/service/DecisionContextPort` (one method, `render(userId, today)`) is owned here;
+  `feature/companion/service/DecisionContextAssemblerAdapter` implements it by delegating straight to
+  `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH` alone. `DecisionService` consumes it
+  through `ObjectProvider<DecisionContextPort>` — companion off ⇒ no adapter bean ⇒ empty
+  `snapshotText`, the exact honest-degraded behavior from before the fix (IDENT-3, pinned by
+  `DecisionApiCompanionOffIT`), unchanged by the inversion. The cross-feature edge this creates
+  (`companion → journal`, the adapter importing the journal-owned interface) runs the SAME direction
+  the rest of this seam already runs, so no new cycle. Full rationale: [ADR
+  0029](../decisions/0029-invert-journal-companion-decision-context-port.md).
 - **← QuickInput (wired):** the global `QuickInputSheet` „Napló" tile is journal's other write
   entry point, alongside `Me`'s own `+ Új bejegyzés`. See §2.
 - **↔ Me (wired, hosting):** `/me/naplo` is a `ME_TABS` tab; `JournalSheet`/`JournalPage`/
@@ -424,8 +445,10 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 - **A new field on `journal_entry` itself** — same contract-first → backend → migration →
   dual-mode-hook → both-modes-green order; mirror the field in `journalMock.ts` so mock parity
   holds.
-- **A new tunable** → extend `CompanionProperties.Journal` or add a sibling `JournalProperties` under
-  `mezo.feature.journal.*`, never a code constant
+- **A new tunable** → extend the journal-owned `JournalProperties` (`feature/journal/config/`, ADR
+  0029; prefix `mezo.companion.journal.*`, kept from its `CompanionProperties.Journal` origin) or add
+  a sibling `*Properties` record under `mezo.feature.journal.*` for anything unrelated to the
+  companion-snapshot lineage, never a code constant
   ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 ## 8. Testing
@@ -453,8 +476,10 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 - **Backend ITs — decisions (W1.4, `mezo-b3pp.4`)**, same infra, `decision_entry` also in
   `ResetDatabase`, `JournalPopulator.createDecision(...)`:
   - `DecisionEntryPersistenceIT` — `contextSnapshot` jsonb round-trip, the `review_due` finder over a
-    mix of reviewed/unreviewed/different-day rows, the `outcome_rating` CHECK rejecting an out-of-range
-    value.
+    mix of reviewed/unreviewed/different-day rows, an out-of-range `outcomeRating` rejected — the
+    entity's `@Min`/`@Max` bean validation fires (`ConstraintViolationException`) before
+    `ck_decision_entry_outcome_rating` is ever reached, the same distinction
+    `JournalEntryPersistenceIT`'s own `@Pattern`-vs-`ck_journal_entry_source` case draws.
   - `DecisionApiIT` — create (defaults `decidedOn`/`reviewDue`), the client-supplied `contextSnapshot`
     is silently ignored (round-trips through the real `ContextSnapshotAssembler`, asserts the injected
     string is absent and the real assembler's marker is present), list newest-first, review (stamps
@@ -569,16 +594,18 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/mapper/{JournalMapper,DecisionMapper}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/controller/JournalController.java` — implements the whole `JournalApi` (both aggregates; a second controller was rejected, §7/task-2 report — `skipDefaultInterface: true` bundles every `Journal`-tagged operation into one generated interface).
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java:177-179` — `JOURNAL_SWITCH` (gates both aggregates).
-- `backend/src/main/resources/application.yml:259-262` — `mezo.feature.journal.enabled`; `:816-818` — `mezo.companion.journal.decision-review-days` (consumed by `DecisionService` since W1.4).
+- `backend/src/main/resources/application.yml:259-262` — `mezo.feature.journal.enabled`; `:821-822` — `mezo.companion.journal.decision-review-days` (consumed by `DecisionService` since W1.4).
 - `backend/src/main/resources/messages.properties:83-84` — `JOURNAL_ENTRY_NOT_FOUND`, `DECISION_ENTRY_NOT_FOUND`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; moved out of `CompanionProperties.Journal`, same YAML prefix).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned read seam for the companion's context-snapshot text (ADR 0029), consumed by `DecisionService` via `ObjectProvider`; keeps `feature/journal` free of a direct `feature/companion` import.
 
 **Backend — embed pipeline (companion-owned)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the `journal_entry` AFTER_COMMIT trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the `decision_entry` AFTER_COMMIT trigger (create + review); no delete-race handling (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:114-141` — `writeJournal`/`deleteJournalEmbedding`/`writeDecision` (the latter re-embeds in place on review, §5).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:119-137` (`writeJournal`), `:138-150` (`deleteJournalEmbedding`), `:151-176` (`writeDecision` — re-embeds in place on review, §5).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, shared by both writers).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java:203-207` — the `Journal` record (`decisionReviewDays`).
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java` — `DECISION_REVIEW` enum entry.

@@ -663,7 +663,7 @@ Spring events, no import of `feature/companion` — which the new **`JournalEmbe
 @TransactionalEventListener(AFTER_COMMIT)`, gated on BOTH `COMPANION_SWITCH` and the journal
 feature's own switch, failures logged+swallowed) consumes through two new
 `MemoryEmbeddingWriter` methods, **`writeJournal`/`deleteJournalEmbedding`**
-(`embedding/MemoryEmbeddingWriter.java:114-141`) — still the single write path, just a new
+(`embedding/MemoryEmbeddingWriter.java:119-137`/`:138-150`) — still the single write path, just a new
 `kind=journal_entry`. **Unlike `chat_turn`, journal has no nightly self-heal sweep** (spec §5.5
 scopes W1.5's catch-up job to `activity_note`/`checkin_note` only), so the listener handles its own
 create-then-edit (insert-race retry-once) and create-then-delete (orphaned-vector cleanup) races
@@ -701,6 +701,20 @@ that there is no delete path** (the decision surface offers no delete), so
 `DecisionEmbeddingListener` carries no orphaned-vector re-check, only the same create-then-fast-review
 insert-race retry-once (`DataIntegrityViolationException` on `uq_memory_embedding_kind_ref_id` →
 re-read → retry). See [`journal.md`](journal.md) §3/§4/§5/§9 for the full decision-journal seam.
+
+**The reverse read, and why it's a port, not a direct import ([ADR 0029](../decisions/0029-invert-journal-companion-decision-context-port.md)).**
+`DecisionService.create` also needs something FROM the companion — the rendered context-snapshot
+text frozen into `decision_entry.context_snapshot` (`journal.md` §4). A direct
+`ContextSnapshotAssembler` import from `feature/journal` would have closed a `journal ↔ companion`
+cycle (companion already imports journal for the two listeners above), which
+`ArchitectureTest.feature_slices_are_cycle_free` — a `FreezingArchRule` that treats any NEW cycle as
+a build failure, not something to freeze — caught during the branch review that shipped W1.4. Fixed
+with the ADR 0012 consumer-owned-port idiom: `feature/journal/service/DecisionContextPort` (owned by
+journal) is implemented by `feature/companion/service/DecisionContextAssemblerAdapter`
+(`@ConditionalOnProperty(COMPANION_SWITCH)`, a one-line delegation to `ContextSnapshotAssembler#render`),
+consumed by `DecisionService` via `ObjectProvider<DecisionContextPort>`. The cross-feature edge this
+creates is `companion → journal` — the SAME direction the rest of the seam already runs — so the
+architecture stays acyclic with no frozen exception.
 
 ## 2. User-facing behavior
 
@@ -2397,7 +2411,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.1`** added `Journal` (`:203-207` — `decisionReviewDays`, unused by this slice, landed early for W1.4's decision journal).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; see above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned port for the reverse (companion→journal) context-snapshot read (ADR 0029).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side adapter implementing `DecisionContextPort` (ADR 0029), gated `COMPANION_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `COMPANION_SWITCH` + extraction/advisors sub-switches.
 - `backend/src/main/resources/application.yml` — `mezo.feature.companion.enabled` + `mezo.companion.llm.*`/`chat.*` + `spring.ai.google.genai.api-key`.
 

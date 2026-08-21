@@ -389,6 +389,14 @@ class re-derived independently — not a re-use of `feedAnchors`. `AnchorSet`'s 
 that need the `HH:mm:{id8}` shape; only `decision_review` gets there via a direct `decision_entry`
 read rather than an `app_notification` row.
 
+**Gotcha — `decisionReviewAnchors` is gated on `NOTIFICATION_SWITCH` alone, not `JOURNAL_SWITCH`.**
+With `mezo.feature.journal.enabled=false` but notifications on, `DecisionEntryRepository` is still a
+live bean (only `JournalController`/`DecisionService` are switch-gated, not the repository), so an
+existing unreviewed decision whose `review_due` lands on today still produces a `decision_review`
+push — whose `/me/naplo` deeplink then 404s (journal disabled). Honest in the sense that the anchor
+data itself is real, not fabricated, but worth naming: this is the one push category that can point
+at a currently-unreachable page.
+
 ## 4. Data model & API
 
 ### `push_subscription` (N1 — unchanged)

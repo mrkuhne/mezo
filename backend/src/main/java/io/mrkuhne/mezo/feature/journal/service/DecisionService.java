@@ -3,8 +3,7 @@ package io.mrkuhne.mezo.feature.journal.service;
 import io.mrkuhne.mezo.api.dto.CreateDecisionEntryRequest;
 import io.mrkuhne.mezo.api.dto.DecisionEntryResponse;
 import io.mrkuhne.mezo.api.dto.ReviewDecisionRequest;
-import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
-import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
+import io.mrkuhne.mezo.feature.journal.config.JournalProperties;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionContextEnvelope;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.mapper.DecisionMapper;
@@ -30,10 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
  * outcome). Both writes publish {@link DecisionEntrySavedEvent} for the companion embed listener.
  * Gated {@code JOURNAL_SWITCH}, exactly like {@code JournalService}.
  *
- * <p>The assembler arrives through an {@link ObjectProvider} because it is
- * {@code @ConditionalOnProperty(COMPANION_SWITCH)}: with the companion off there is no snapshot to
- * take, and the honest record of that is an EMPTY snapshotText — not a fabricated one, and not a
- * failed decision write (IDENT-3).
+ * <p>The context snapshot arrives through an {@link ObjectProvider} over the journal-owned {@link
+ * DecisionContextPort} (ADR 0029) rather than a direct companion import — {@code feature/companion}
+ * already imports {@code feature/journal} for the embed listeners, so a direct {@code
+ * ContextSnapshotAssembler} dependency here would close a slice cycle. The port's adapter is {@code
+ * @ConditionalOnProperty(COMPANION_SWITCH)}: with the companion off there is no bean, and the honest
+ * record of that is an EMPTY snapshotText — not a fabricated one, and not a failed decision write
+ * (IDENT-3).
  */
 @Service
 @RequiredArgsConstructor
@@ -43,8 +45,8 @@ public class DecisionService {
     private final DecisionEntryRepository repository;
     private final DecisionMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
-    private final ObjectProvider<ContextSnapshotAssembler> contextSnapshotAssembler;
-    private final CompanionProperties companionProperties;
+    private final ObjectProvider<DecisionContextPort> decisionContextPort;
+    private final JournalProperties journalProperties;
 
     @Transactional
     public DecisionEntryResponse create(UUID userId, CreateDecisionEntryRequest request) {
@@ -54,7 +56,7 @@ public class DecisionService {
         e.setDecidedOn(decidedOn);
         e.setDecisionText(request.getDecisionText());
         e.setContextSnapshot(captureSnapshot(userId));
-        e.setReviewDue(decidedOn.plusDays(companionProperties.journal().decisionReviewDays()));
+        e.setReviewDue(decidedOn.plusDays(journalProperties.decisionReviewDays()));
         DecisionEntryEntity saved = repository.saveAndFlush(e);
         eventPublisher.publishEvent(new DecisionEntrySavedEvent(saved.getId()));
         return mapper.toResponse(saved);
@@ -85,8 +87,8 @@ public class DecisionService {
     }
 
     private DecisionContextEnvelope captureSnapshot(UUID userId) {
-        ContextSnapshotAssembler assembler = contextSnapshotAssembler.getIfAvailable();
-        String text = assembler == null ? "" : assembler.render(userId, LocalDate.now());
+        DecisionContextPort port = decisionContextPort.getIfAvailable();
+        String text = port == null ? "" : port.render(userId, LocalDate.now());
         return new DecisionContextEnvelope(text, Instant.now());
     }
 }

@@ -68,6 +68,8 @@ class DecisionEntryPersistenceIT extends AbstractIntegrationTest {
             "Rossz értékelés.", LocalDate.parse("2026-09-19"), "ctx");
         e.setOutcomeRating((short) 9);
 
+        // the entity's @Min/@Max guard fires before the DB CHECK (ck_decision_entry_outcome_rating)
+        // is ever reached — the JournalEntryPersistenceIT#testSource_* precedent, same distinction
         assertThatThrownBy(() -> repository.saveAndFlush(e))
             .isInstanceOf(ConstraintViolationException.class);
     }

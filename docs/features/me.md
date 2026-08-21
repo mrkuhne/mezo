@@ -335,11 +335,16 @@ seam for decisions:** `DecisionEntrySavedEvent`, published on both create and re
 `memory_embedding(kind=decision)` in sync via `DecisionEmbeddingListener` +
 `MemoryEmbeddingWriter.writeDecision` — a review re-embeds the SAME row with the outcome appended, so
 what the companion recalls always reflects the latest known outcome. `feature/journal` has **no
-import of `feature/companion`** (a plain `ApplicationEvent`, dependency runs the other way). Full
-detail — including the update-in-place re-embed decision and the `memory_embedding` kind-CHECK
-expansion W1.1 carries — lives in [`journal.md`](journal.md) §3/§5 and [`companion.md`](companion.md)
-§4. **W1.4 also adds a `decision_review` push category** (fires on the decision's own `review_due`
-day, never after) — see [`_platform-notifications.md`](_platform-notifications.md) §4.
+import of `feature/companion`** (a plain `ApplicationEvent`, dependency runs the other way) — with
+ONE narrow exception in the other direction, kept one-way by a port: `DecisionService` needs the
+companion's rendered context-snapshot text at create time, reached through a journal-owned
+`DecisionContextPort` that `feature/companion`'s `DecisionContextAssemblerAdapter` implements (ADR
+0029 — a direct import here would have closed a `journal ↔ companion` slice cycle, which
+`ArchitectureTest.feature_slices_are_cycle_free` catches and rejects as new debt rather than freezing
+it). Full detail — including the update-in-place re-embed decision, the port seam, and the
+`memory_embedding` kind-CHECK expansion W1.1 carries — lives in [`journal.md`](journal.md) §3/§5 and
+[`companion.md`](companion.md) §4. **W1.4 also adds a `decision_review` push category** (fires on the
+decision's own `review_due` day, never after) — see [`_platform-notifications.md`](_platform-notifications.md) §4.
 
 ## 6. How to use it (consume)
 

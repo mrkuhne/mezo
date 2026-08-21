@@ -88,6 +88,10 @@ describe('useDecisions (real mode)', () => {
     const { result } = renderHook(() => useDecisions(), { wrapper: makeHookWrapper() })
     expect(result.current.data).toEqual([])
     await waitFor(() => expect(result.current.isPending).toBe(false))
+    // isError:false pins this to the MSW default handler's real 200 response — without it, an
+    // unhandled request (bypassed per test/setup.ts) would settle on the SAME empty-array/
+    // non-pending state via the error path, silently proving nothing about the mapping.
+    expect(result.current.isError).toBe(false)
     expect(result.current.data).toEqual([])
   })
 

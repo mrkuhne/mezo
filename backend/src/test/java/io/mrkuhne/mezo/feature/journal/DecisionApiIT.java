@@ -6,7 +6,7 @@ import io.mrkuhne.mezo.api.dto.CreateDecisionEntryRequest;
 import io.mrkuhne.mezo.api.dto.DecisionEntryResponse;
 import io.mrkuhne.mezo.api.dto.ReviewDecisionRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.journal.config.JournalProperties;
 import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
@@ -34,7 +34,7 @@ class DecisionApiIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private DecisionEntryRepository decisionEntryRepository;
     @Autowired private JournalPopulator journalPopulator;
-    @Autowired private CompanionProperties companionProperties;
+    @Autowired private JournalProperties journalProperties;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -50,7 +50,7 @@ class DecisionApiIT extends ApiIntegrationTest {
 
         assertThat(created.getDecidedOn()).isEqualTo(LocalDate.now());
         assertThat(created.getReviewDue())
-            .isEqualTo(LocalDate.now().plusDays(companionProperties.journal().decisionReviewDays()));
+            .isEqualTo(LocalDate.now().plusDays(journalProperties.decisionReviewDays()));
         assertThat(created.getReviewedAt()).isNull();
         assertThat(created.getOutcomeRating()).isNull();
     }
