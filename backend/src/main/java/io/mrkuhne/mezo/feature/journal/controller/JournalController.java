@@ -2,12 +2,15 @@ package io.mrkuhne.mezo.feature.journal.controller;
 
 import io.mrkuhne.mezo.api.controller.JournalApi;
 import io.mrkuhne.mezo.api.dto.CreateDecisionEntryRequest;
+import io.mrkuhne.mezo.api.dto.CreateGratitudeEntryRequest;
 import io.mrkuhne.mezo.api.dto.CreateJournalEntryRequest;
 import io.mrkuhne.mezo.api.dto.DecisionEntryResponse;
+import io.mrkuhne.mezo.api.dto.GratitudeEntryResponse;
 import io.mrkuhne.mezo.api.dto.JournalEntryResponse;
 import io.mrkuhne.mezo.api.dto.ReviewDecisionRequest;
 import io.mrkuhne.mezo.api.dto.UpdateJournalEntryRequest;
 import io.mrkuhne.mezo.feature.journal.service.DecisionService;
+import io.mrkuhne.mezo.feature.journal.service.GratitudeService;
 import io.mrkuhne.mezo.feature.journal.service.JournalService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -27,6 +30,7 @@ public class JournalController implements JournalApi {
 
     private final JournalService journalService;
     private final DecisionService decisionService;
+    private final GratitudeService gratitudeService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -66,5 +70,21 @@ public class JournalController implements JournalApi {
     @Override
     public DecisionEntryResponse reviewDecisionEntry(UUID id, ReviewDecisionRequest reviewDecisionRequest) {
         return decisionService.review(currentUserId.get(), id, reviewDecisionRequest);
+    }
+
+    // Gratitude (bd mezo-b3pp.3)
+    @Override
+    public GratitudeEntryResponse createGratitudeEntry(CreateGratitudeEntryRequest createGratitudeEntryRequest) {
+        return gratitudeService.create(currentUserId.get(), createGratitudeEntryRequest);
+    }
+
+    @Override
+    public List<GratitudeEntryResponse> listGratitudeEntries(LocalDate from, LocalDate to) {
+        return gratitudeService.list(currentUserId.get(), from, to);
+    }
+
+    @Override
+    public void deleteGratitudeEntry(UUID id) {
+        gratitudeService.delete(currentUserId.get(), id);
     }
 }
