@@ -1,7 +1,10 @@
-package io.mrkuhne.mezo.feature.companion.feedback;
+package io.mrkuhne.mezo.feature.companion.feedback.service;
 
 import io.mrkuhne.mezo.api.dto.MessageFeedbackResponse;
 import io.mrkuhne.mezo.api.dto.PutFeedbackRequest;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
+import io.mrkuhne.mezo.feature.companion.feedback.mapper.MessageFeedbackMapper;
+import io.mrkuhne.mezo.feature.companion.feedback.repository.MessageFeedbackRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -39,7 +42,11 @@ public class MessageFeedbackService {
         return mapper.toResponse(repository
             .findByCreatedByAndArtifactKindAndArtifactIdAndDeletedFalse(
                 userId, request.getArtifactKind(), request.getArtifactId())
-            .orElseThrow(() -> new IllegalStateException("upserted verdict vanished")));
+            // Can't-happen: the upsert above ran in this same transaction. If the row is gone
+            // anyway, that is OUR fault, not the caller's — a 500, never a 400 (error_handling.md).
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("FEEDBACK_UPSERT_READBACK_FAILED").build(),
+                HttpStatus.INTERNAL_SERVER_ERROR)));
     }
 
     /** Retraction (spec §4.4: re-tapping the same verdict removes it) — soft delete via @SQLDelete;

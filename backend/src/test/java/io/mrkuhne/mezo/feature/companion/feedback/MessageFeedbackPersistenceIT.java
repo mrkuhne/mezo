@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.feedback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
+import io.mrkuhne.mezo.feature.companion.feedback.repository.MessageFeedbackRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;

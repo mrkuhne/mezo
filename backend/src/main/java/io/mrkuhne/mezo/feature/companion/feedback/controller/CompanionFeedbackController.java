@@ -1,8 +1,9 @@
-package io.mrkuhne.mezo.feature.companion.feedback;
+package io.mrkuhne.mezo.feature.companion.feedback.controller;
 
 import io.mrkuhne.mezo.api.controller.CompanionFeedbackApi;
 import io.mrkuhne.mezo.api.dto.MessageFeedbackResponse;
 import io.mrkuhne.mezo.api.dto.PutFeedbackRequest;
+import io.mrkuhne.mezo.feature.companion.feedback.service.MessageFeedbackService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;

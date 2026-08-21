@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.MessageFeedbackResponse;
 import io.mrkuhne.mezo.api.dto.PutFeedbackRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;

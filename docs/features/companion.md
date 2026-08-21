@@ -1222,7 +1222,7 @@ instead of months of unrecorded signal. Driving spec:
 
 ### Entities
 
-`MessageFeedbackEntity` (`feedback/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
+`MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
 soft-deleted (`@SQLDelete` + `@SQLRestriction`); `KIND_*`/`VERDICT_*`/`REASON_*` constants +
 `@Pattern` mirrors of the value CHECKs — the `AiMessageEntity.role` precedent, no Java enum. The
 cross-field `ck_message_feedback_reason` has **no entity-level equivalent** (a `@Pattern` cannot see
@@ -2494,12 +2494,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `api/feature/companion-feedback/companion-feedback.yml` — **`mezo-b3pp.15`** the 👍/👎 surface on its OWN fragment + tag (`CompanionFeedback` → `CompanionFeedbackApi`); GET batch-read / PUT upsert / DELETE retract, also registered in `api/generate/merge.yml`.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/MessageFeedbackService.java` — `put` (the honest `FEEDBACK_REASON_REQUIRES_DOWN` 400 before the upsert, then a re-read so the response is server truth) / `retract` (idempotent soft delete) / `list` (batch read).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/MessageFeedbackRepository.java` — the two owner+kind finders and **`upsertVerdict`**, the native `on conflict … do update` that resurrects a retracted row (§9 — do not replace it with find-then-save).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/MessageFeedbackEntity.java` — `extends OwnedEntity`, soft-deleted, `KIND_*`/`VERDICT_*`/`REASON_*` constants + the value `@Pattern`s (the cross-field CHECK has no entity twin, §4).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/MessageFeedbackMapper.java` — entity → `MessageFeedbackResponse` (`Instant` → UTC `OffsetDateTime`).
-- `backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.15_create_message_feedback.sql` — the table (in `1.0.0_master.yml`); `messages.properties` gained `FEEDBACK_REASON_REQUIRES_DOWN`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/service/MessageFeedbackService.java` — `put` (the honest `FEEDBACK_REASON_REQUIRES_DOWN` 400 before the upsert, then a re-read so the response is server truth — the can't-happen empty re-read raises `FEEDBACK_UPSERT_READBACK_FAILED` **500**: our fault, not the caller's) / `retract` (idempotent soft delete) / `list` (batch read).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/repository/MessageFeedbackRepository.java` — the two owner+kind finders and **`upsertVerdict`**, the native `on conflict … do update` that resurrects a retracted row (§9 — do not replace it with find-then-save).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/entity/MessageFeedbackEntity.java` — `extends OwnedEntity`, soft-deleted, `KIND_*`/`VERDICT_*`/`REASON_*` constants + the value `@Pattern`s (the cross-field CHECK has no entity twin, §4).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/mapper/MessageFeedbackMapper.java` — entity → `MessageFeedbackResponse` (`Instant` → UTC `OffsetDateTime`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.15_create_message_feedback.sql` — the table (in `1.0.0_master.yml`); `messages.properties` gained `FEEDBACK_REASON_REQUIRES_DOWN` + `FEEDBACK_UPSERT_READBACK_FAILED`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/feedback/{CompanionFeedbackApiIT,MessageFeedbackPersistenceIT,CompanionFeedbackSwitchOffIT}.java` + `support/populator/FeedbackPopulator.java` (+ `message_feedback` in `ResetDatabase`) — §8.
 - **FE side** (documented in [`insights.md` §10](insights.md)): `frontend/src/data/feedback/` (`feedbackTypes`/`feedbackApi`/`feedbackMock`/`feedbackHooks`, exported through the `@/data/hooks` barrel) + `frontend/src/features/insights/components/FeedbackChips.tsx`.
 

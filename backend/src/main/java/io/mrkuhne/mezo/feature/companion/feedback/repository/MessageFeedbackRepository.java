@@ -1,5 +1,6 @@
-package io.mrkuhne.mezo.feature.companion.feedback;
+package io.mrkuhne.mezo.feature.companion.feedback.repository;
 
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

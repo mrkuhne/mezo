@@ -1,7 +1,7 @@
 package io.mrkuhne.mezo.support.populator;
 
-import io.mrkuhne.mezo.feature.companion.feedback.MessageFeedbackEntity;
-import io.mrkuhne.mezo.feature.companion.feedback.MessageFeedbackRepository;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
+import io.mrkuhne.mezo.feature.companion.feedback.repository.MessageFeedbackRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;

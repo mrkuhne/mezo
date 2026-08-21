@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.feedback;
 
 import io.mrkuhne.mezo.api.dto.PutFeedbackRequest;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

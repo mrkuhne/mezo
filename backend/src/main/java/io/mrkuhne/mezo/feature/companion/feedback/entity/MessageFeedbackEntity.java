@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.companion.feedback;
+package io.mrkuhne.mezo.feature.companion.feedback.entity;
 
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.Column;
@@ -25,7 +25,7 @@ import org.hibernate.annotations.UpdateTimestamp;
  * and a dangling id is harmless in a single-user app (spec §8.1).
  *
  * <p>{@code uq_message_feedback_artifact} spans soft-deleted rows too, so the write path
- * (see {@link MessageFeedbackRepository#upsertVerdict}) is a native upsert that resurrects
+ * (see {@link io.mrkuhne.mezo.feature.companion.feedback.repository.MessageFeedbackRepository#upsertVerdict}) is a native upsert that resurrects
  * a retracted row rather than colliding with it.
  */
 @Getter
