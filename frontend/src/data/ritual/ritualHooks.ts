@@ -20,7 +20,11 @@ export function useRitualDay(date: string): { data: RitualDay; isPending: boolea
 
 export function useRitualActions(
   date: string,
-): { close: (rings?: NeedsRingsWire) => Promise<RitualDay>; pending: boolean } {
+): {
+  close: (rings?: NeedsRingsWire) => Promise<RitualDay>
+  saveReflection: (text: string) => Promise<RitualDay>
+  pending: boolean
+} {
   const qc = useQueryClient()
   const mock = isMockMode()
   const mutation = useMutation({
@@ -68,5 +72,26 @@ export function useRitualActions(
       return day
     },
   })
-  return { close: (rings?: NeedsRingsWire) => mutation.mutateAsync(rings), pending: mutation.isPending }
+  // W1.2 (mezo-b3pp.2): the prose reflection upserts BEFORE the close — the one write the ritual
+  // performs before act 5. Mock mode patches the ritualDay cache directly (no server round trip);
+  // real mode PUTs and lets the response reseed the cache. Blank/whitespace text is a CLEAR, not a
+  // create — mirrors the backend's strip()-then-null-if-blank semantics so modes don't diverge.
+  const reflectionMutation = useMutation({
+    mutationFn: async (text: string): Promise<RitualDay> => {
+      if (mock) {
+        const prev = qc.getQueryData<RitualDay>(['ritualDay', date]) ?? mockRitualDay(date)
+        const next = { ...prev, reflectionText: text.trim() || null }
+        qc.setQueryData(['ritualDay', date], next)
+        return next
+      }
+      const day = await ritualApi.saveReflection(date, text)
+      qc.setQueryData(['ritualDay', date], day)
+      return day
+    },
+  })
+  return {
+    close: (rings?: NeedsRingsWire) => mutation.mutateAsync(rings),
+    saveReflection: (text: string) => reflectionMutation.mutateAsync(text),
+    pending: mutation.isPending || reflectionMutation.isPending,
+  }
 }
