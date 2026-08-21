@@ -6,7 +6,7 @@ description: Use before claiming ANY work finished, fixed, or passing — eviden
 # Verification Before Completion
 
 1. Never say "done/fixed/passing" without having just run the proving command.
-2. Minimum gates (from AGENTS.md): backend change → cd backend && ./mvnw clean test;
+2. Minimum gates (from the house-rules doc (AGENTS, repo root)): backend change → cd backend && ./mvnw clean test;
    frontend change → cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test;
    docs change → node scripts/lint-docs.mjs; any new/moved source file → node
    scripts/gen-codemap.mjs --check (regenerate and commit docs/CODEMAP.md if it changed).
