@@ -13,7 +13,7 @@ afterEach(() => {
 })
 
 describe('useNotificationPrefs', () => {
-  it('returns all 21 categories with the spec defaults (17 ON, gym leads 30) — +7 feed families, all ON', async () => {
+  it('returns all 21 categories with the spec defaults (17 ON, gym leads 30) — +6 feed families +1 decision_review, all ON', async () => {
     // Registered unconditionally: harmless in mock mode (never reached), the read source of
     // truth in real mode (no default handler exists for this endpoint yet).
     server.use(http.get(`${API_BASE}/api/notification/pref`, () => HttpResponse.json({ prefs: notificationPrefSeed })))

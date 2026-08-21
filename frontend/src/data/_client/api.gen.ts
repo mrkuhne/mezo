@@ -13781,7 +13781,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All 20 categories, always complete — a category with no stored row reports its code default */
+            /** @description All 21 categories, always complete — a category with no stored row reports its code default */
             200: {
                 headers: {
                     [name: string]: unknown;

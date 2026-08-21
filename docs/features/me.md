@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-08-19
+updated: 2026-08-21
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -32,7 +32,7 @@ The **Me** area is the user's personal hub: who they are (`Profil`), their long-
 |---|---|---|---|
 | `Profil` | `/me` (index) | **Backend-only:** the "Profil" header is now the shared **`AppHero`** (gamified-header slice `mezo-k7rn`, 2026-07-18 — replaces the retired `MeHead`; mounted once by `MeSection` above every `/me/*` page's `<Outlet>`, not a `ProfilePage`-local header) with a `SubNavDropdown` (`ME_TABS`, `--lav-deep`, ⚙️ "Beállítások" `extraAction`) as its `utilities` prop → `SettingsSheet` (real theme toggle); the page body itself is five cards in order — **`MeBioRow`** (the one-line biometrics readout, was `MeHead`'s `.t2` — `AppHero` itself is biometrics-free) → **`GoalMiniCard`** (goal mini-track) → the **Biometria card + editor** (G6, `useBiometricProfile`) → one **`GrowthSummaryCard`** (`mezo-rmhr`, whole card → `/me/growth`) → **`AiUsageCard`** (`mezo-h3gb`, LLM audit-log usage). All mock surfaces removed; the three former progression cards (athletic radar / muscle levels / LIFE) were consolidated into that one summary. | ✅ `biometric_profile` (G1) + derived `tdeeBootstrap` (G6) + `GET /api/progression/profile` (P4) |
 | `Growth` | `/me/growth` | ✅ **progression-backed (`mezo-rmhr`):** hero trio (Össz XP FE-summed / Fegyelem / Ritmus) + a segmented `Skillek` / `Rutin` / `Napló` / `Kitüntetések` control. **Skillek** = 3 `SkillBandCard`s listing ALL LIFE/athletic/muscle skills; **Rutin** = the catalog-driven habit-chain overview (one card per active chain + 28-day strengths + perfect-day counts + a today-only „Szerkesztés" entry into the routine editor, owned by the habit domain — [habit.md](habit.md)); **Napló** (this tab's own segment, NOT the `Napló` top-level tab below — a 30-day quest+activity journal, `buildGrowthJournal`); **Kitüntetések** = `BadgesCard` (9 derived badges) + `PerksCard` (perk unlocks). Ghosts before any XP via the Profil summary. | ✅ `GET /api/progression/profile` + `/quest/history` + `/activity/history` + `/progression/achievements` |
-| `Napló` (free-prose journal) | `/me/naplo` | ✅ **backend-backed (Phase 5 W1.1, `mezo-b3pp.1`):** month-grouped read/manage view over a widening date window (`JournalPage`) + a create/edit/two-step-delete sheet (`JournalSheet`, also reachable from the global QuickInput „Napló" picker). Every write feeds the companion's narrative-memory embed pipeline (`memory_embedding(kind=journal_entry)`). Full detail — own doc: [`journal.md`](journal.md). | ✅ `journal_entry` (own `feature/journal` package) |
+| `Napló` (free-prose journal + decisions) | `/me/naplo` | ✅ **backend-backed (Phase 5 W1.1 `mezo-b3pp.1` + W1.4 `mezo-b3pp.4`):** month-grouped read/manage view over a widening date window (`JournalPage`) + a create/edit/two-step-delete sheet (`JournalSheet`, also reachable from the global QuickInput „Napló" picker) that now also captures decisions via a „Napló"/„Döntés" mode toggle; an open-decisions „Döntések" block with due chips + `DecisionReviewSheet` for recording how a decision played out. Every write feeds the companion's narrative-memory embed pipeline (`memory_embedding(kind=journal_entry\|decision)`); an unreviewed decision also gets a `decision_review` push reminder on its `review_due` day. Full detail — own doc: [`journal.md`](journal.md). | ✅ `journal_entry` + `decision_entry` (own `feature/journal` package) |
 | `Cél` (goal/strategy) | `/me/goals` (+ `/me/goals/new` wizard) | **Backend-only:** goal hero (2 real stats — `Hátra`/`Tempó`) + empty-state/`GoalGate` + `<GoalTimeline>` + `<GoalRecept>`/evaluate + `<GoalPlanSlots>` + `EditGoalSheet`. The Mezo insight cards + "Hatások" factor section + tool chips were removed. "Új cél" stays **hard-gated** on a complete biometric profile (G6, `GoalGate.tsx` + route guard `GoalPlannerPage.tsx:37-42`). | ✅ `goal` (G1) + `goal_plan_link` links (G3) |
 | `Súly` (weight log + trend) | `/me/weight` | **Backend-only (redesigned `mezo-l82h`):** `WeightHero` (down-from-start big number + `start→latest · cél` subline + `% a célig` pill + 3 stat cards Jelenleg/7-nap-hét/ETA + 4-week pace caption + log CTA) + `WeightTrendChart` (actual + smoothed MA + plan-trajectory line + tolerance band, period toggle `7d/30d/90d/1y`) + `WeeklyWeightCard` list (ISO-week aggregates, expandable per-day rows, "Régebbi hetek" pager). | ✅ `weight_log` (G1) + real EWMA trend (G5) + `goalResponse` plan trajectory |
 | `Alvás` (sleep) | `/me/sleep` | **Backend-only:** last-night hero (real metrics) + empty-state guard + log chip/sheet + the real-series trend chart + last-7-nights log. Weekly cells, Mezo insights, factor cards, tool chips, the chart target overlay and the hero "Target" comparison were removed. | ✅ `sleep_log` |
@@ -84,19 +84,33 @@ The dedicated home of the whole XP universe (route `/me/growth`, the `ME_TABS` t
 - **Napló tab (`JournalTab`):** a `<GrowthJournalCard>` over a **fixed 30-day window** — `useQuestHistory(from,to)` + `useActivityHistory(from,to)` merged by the pure **`buildGrowthJournal(quests, activities, today)`** (`logic/growthJournal.ts`) into descending day groups with per-day XP totals; header chip `{completed} ✓ · {expired} — · {activities} ✎`. Still-live `offered`/`rerolled` quests are excluded (they belong to Today). Quests show ✓ completed (`--sage-deep`, "tevékenységgel teljesült" when `completionMode === 'ACTIVITY'`) / `—` "csendben lejárt" when expired (XP 0); activities show ✎ (`--lav-deep`) + skill icon/name (+ `amountHuf` Ft for financial); all XP values render in `--amber-deep` (`mezo-8141` Task 7 accent mapping). No pagination in v1.
 - **Kitüntetések tab (`AwardsTab`):** `<BadgesCard>` (a 3-column grid of the **9 computed badges** — achieved = `--wash-sage` tile + `--sage-deep` ✓, else a `--lav-deep` progress bar + `current / target`, `mezo-8141` Task 7) + `<PerksCard>` (the user's unlocked perk milestones, newest first, eyebrow `--lav-deep`). Both from `useAchievements()`. **No unlock dates in v1** (badges are derived on read — §9 / [growth.md §9](growth.md)). The four Growth cards' old `--brand-core`/`--brand-primary` left accent bar was dropped (not recolored) in the Task 7 sweep.
 
-### `Napló` (`pages/JournalPage.tsx` + `sheets/JournalSheet.tsx`) — ✅ backend-backed (Phase 5 W1.1, `mezo-b3pp.1`)
-Free-prose journaling — the first Phase-5 "deep memory" surface, note-taking with no engine reading
-it back yet, feeding the companion's narrative-memory embed pipeline. **Full data
-model/API/embed-pipeline detail lives in its own doc, [`journal.md`](journal.md) — not duplicated
-here.** `/me/naplo` (`ME_TABS` entry `journal`, right after `Growth`) renders `JournalPage`: a
-month-grouped list of entries over a widening `[from,to]` window (`useJournalNotes`, `monthsBack`
-state starting at 3, „Korábbi hónapok" widens by 3 more months per tap), a `+ Új bejegyzés` header
-CTA, and a tap-any-card edit affordance — both open the same `JournalSheet` (create when `entry` is
-omitted; edit + two-step delete when set). The sheet is a free-text textarea + optional date + a
-mic button reusing `useVoiceInput` (the `ChatPage` composer idiom). **The same sheet is also
-reachable from the global QuickInput „Napló" tile**, which now opens a two-option picker
-(„Aktivitás" → the existing `ActivityLogSheet`; „Napló" → `JournalSheet`) instead of jumping
-straight to the activity log — see §5 below and [`journal.md`](journal.md) §2.
+### `Napló` (`pages/JournalPage.tsx` + `sheets/{JournalSheet,DecisionReviewSheet}.tsx`) — ✅ backend-backed (Phase 5 W1.1 `mezo-b3pp.1` + W1.4 `mezo-b3pp.4`)
+Two aggregates share this surface: free-prose journaling (W1.1) — note-taking with no engine reading
+it back yet — and a decision journal + review loop (W1.4): capture a decision's text now (with its
+context frozen server-side), get reminded when it's time to look back, record honestly how it went.
+Both feed the companion's narrative-memory embed pipeline. **Full data model/API/embed-pipeline
+detail lives in its own doc, [`journal.md`](journal.md) — not duplicated here.** `/me/naplo`
+(`ME_TABS` entry `journal`, right after `Growth`) renders `JournalPage`: a month-grouped list of
+notes over a widening `[from,to]` window (`useJournalNotes`, `monthsBack` state starting at 3,
+„Korábbi hónapok" widens by 3 more months per tap), a `+ Új bejegyzés` header CTA, and a tap-any-card
+edit affordance — both open the same `JournalSheet` (create when `entry` is omitted; edit + two-step
+delete when set). The sheet is a free-text textarea + optional date + a mic button reusing
+`useVoiceInput` (the `ChatPage` composer idiom). **The same sheet is also reachable from the global
+QuickInput „Napló" tile**, which now opens a two-option picker („Aktivitás" → the existing
+`ActivityLogSheet`; „Napló" → `JournalSheet`) instead of jumping straight to the activity log — see
+§5 below and [`journal.md`](journal.md) §2.
+
+**In create mode only**, `JournalSheet` also offers a **„Napló" / „Döntés" mode toggle** — switching
+to „Döntés" repoints the same free-text field at a decision (`addDecision`) and shows a day-count-free
+horizon hint instead of the note copy; there is no note↔decision conversion, so editing an existing
+entry never shows the toggle. **Above the notes list**, a **„Döntések" block** renders whenever at
+least one decision is unreviewed: a card per open decision with a due chip (**„Nézd vissza"** once its
+`review_due` day arrives, **„Visszanézés: {date}"** while ripening) that opens
+**`DecisionReviewSheet`** — a required 1–5 rating + optional outcome text, saved via `reviewDecision`
+(re-runnable, no delete/edit). Neither decisions block has a QuickInput entry point — only
+`JournalSheet`'s in-sheet toggle creates a decision. Full flow + exact copy:
+[`journal.md`](journal.md) §2; the `decision_review` push reminder that points back here:
+[`_platform-notifications.md`](_platform-notifications.md) §4.
 
 ### `Cél` (`pages/GoalsPage.tsx`) — ✅ goal command-center (G4b; placeholder-stripped `mezo-lfw`)
 The long-term goal & strategy surface — **no daily weight log here anymore** (that moved to `Súly`, G2). A tappable goal hero (trajectory + guard pills, kg progress track start→target — the shared `.track`/`.fill`/`.dot`/`.track-l` idiom, Napiv S7 Task 3/5: an **active `maintain` goal (no target weight, `totalRange === 0`) renders the hero WITHOUT the track** rather than divide-by-zero, the exact same contract the Profil `GoalMiniCard` mini-track uses, `GoalsPage.tsx:78-79,183` / `GoalMiniCard.tsx:13-15,25` — **two real stats** `Hátra` [weight-log derived] + `Tempó` [the real EWMA `last4w.weeklyRate`], identity frame) opens **`EditGoalSheet`** — now a **manage sheet** (G4b): read-only field rows + **Archiválás** (`archive(goalId)`) + **Törlés** (`remove(goalId)`, behind an inline two-step "Biztosan törlöd?" confirm; destructive color `var(--error)`) wired to `useGoalActions()`. **The "Napi ritmus" day-planner section is GONE (`mezo-53su`)** — the meal cadence moved to a Fuel-owned `fuel_settings` singleton edited via `FuelSettingsSheet` on the Mai page (`mezo-dbsr` had already moved the wake/bed anchors to the Alvás page), so the sheet no longer writes the goal at all: `useGoalActions().savePlanner` is **deleted** (the `goalResponseToUpsert`/`goalApi.update` wire mapper survives orphaned-but-kept for the later joint column drop; see [`fuel.md`](fuel.md) §4). The sheet keeps only its `goalResponse` prop for the contract (no longer read in-body). On success the sheet closes and the `['goals']` invalidation refetches `useGoal` — when no active goal remains, `GoalsPage` falls back to the empty state. **The hero reads the raw `GoalResponse` directly (G4b Decision C):** trajectory (→ `TRAJECTORY_LABEL`), `guards` (chip pills), the window (`huMonthDay(startDate/targetDate)`), and `startWeightKg`/`targetWeightKg` — these no longer pass through the `toGoal` back-compat mapper (which dropped its `startDate`/`targetDate`/`unit` fields). The latest-weight/progress numbers (`currentWeight`/`startWeight`) still come from `goal` (weight-log derived). In mock mode the hero renders the static `mockGoal` + `mockGoalResponse`. **Empty-state guard (`GoalsPage.tsx`, `mezo-72d`):** when `useGoal()` returns `goal === null`/`goalResponse === null` (real mode, no active goal), `GoalsPage` short-circuits to a `GhostState` "set up a goal" card with a `＋ Új cél` CTA (→ `/me/goals/new`) **before** any `goal.X`/`goalResponse.X` read. **The Mezo `InsightCard` section (`weightTrends.insights`) + the "Hatások" `FactorCard`s + the decorative `ToolChipRow` were removed (`mezo-lfw`)** — they were static narrative the engine never computes. Below the hero now: the **`<GoalTimeline>` lane view** (G4b) — gym/run plan bars positioned by start/end week + uncovered-window gap chips + the ambient volleyball band, replacing the old "Cél alatt fut" `LinkedMesoCard`s. Each plan bar's ✕ detaches the link via `useGoalActions().detachPlan(goalId, linkId)`. **Under the timeline sits the attach/detach hub** — `<GoalPlanSlots goalId>` (`components/GoalPlanSlots.tsx`): two always-present slots, **Mesociklus** + **Futóblokk**, each offering `＋ Tervezd` (launch the existing planner — meso `navigate('/train/mesocycles/new')`; run the create-then-navigate idiom `saveRunningBlock(null, newDraft(…), { onSuccess: b => navigate('/train/futas/'+b.id) })`) and `＋ Csatolj meglévőt` (open **`AttachPlanSheet`**, `AttachPlanSheet.tsx`). The attach sheet lists the user's owned plans of that type (`useTrain().mesocycles` / `useRunning().runningBlocks`) **excluding those already linked** (id in `timeline.links[].planId` for that type) + a start-week input (1..`timeline.weeks`), and confirms via `useGoalActions().attachPlan(goalId, { planType, planId, startWeek })` (POST `/api/goals/{goalId}/plans`). Volleyball is **not** a slot (ambient/read-only — it lives in the timeline band). `GoalsPage` calls `useGoal()` (goal + goalResponse + timeline + goalId), `useGoalActions()` (detach + evaluate), and `useWeight()` **only for `weightTrends.last4w.weeklyRate`** (the hero's `Tempó` stat). The `WeightChart`/`TrendCell`/`WeightLogSheet`/period-toggle it used to own are now in `WeightPage`.
@@ -312,15 +326,20 @@ anything from this seam — the reaction message surfaces on **Today**'s MezoChi
 [proactive.md §1/§3](proactive.md) (`CompanionMessageEventListener`) and [today.md](today.md)
 (`useCompanionFeed`) for the consuming side.
 
-### 5.10 `Napló` ↔ Companion (embed pipeline, wired, one-way OUT, Phase 5 W1.1 `mezo-b3pp.1`)
+### 5.10 `Napló` ↔ Companion (embed pipeline, wired, one-way OUT, Phase 5 W1.1 `mezo-b3pp.1` + W1.4 `mezo-b3pp.4`)
 Every journal create/update/delete publishes `JournalEntrySavedEvent`/`JournalEntryDeletedEvent`;
 a companion-owned `@Async AFTER_COMMIT` listener keeps the entry's `memory_embedding(kind=
 journal_entry)` vector row in sync through the companion's single `MemoryEmbeddingWriter` write
-path — the same fire-and-forget shape as §5.9's sleep/weight → proactive seam. `feature/journal`
-has **no import of `feature/companion`** (a plain `ApplicationEvent`, dependency runs the other
-way). Full detail — including the update-in-place re-embed decision and the `memory_embedding`
-kind-CHECK expansion this slice also carries — lives in [`journal.md`](journal.md) §3/§5 and
-[`companion.md`](companion.md) §4.
+path — the same fire-and-forget shape as §5.9's sleep/weight → proactive seam. **W1.4 adds the same
+seam for decisions:** `DecisionEntrySavedEvent`, published on both create and review, keeps
+`memory_embedding(kind=decision)` in sync via `DecisionEmbeddingListener` +
+`MemoryEmbeddingWriter.writeDecision` — a review re-embeds the SAME row with the outcome appended, so
+what the companion recalls always reflects the latest known outcome. `feature/journal` has **no
+import of `feature/companion`** (a plain `ApplicationEvent`, dependency runs the other way). Full
+detail — including the update-in-place re-embed decision and the `memory_embedding` kind-CHECK
+expansion W1.1 carries — lives in [`journal.md`](journal.md) §3/§5 and [`companion.md`](companion.md)
+§4. **W1.4 also adds a `decision_review` push category** (fires on the decision's own `review_due`
+day, never after) — see [`_platform-notifications.md`](_platform-notifications.md) §4.
 
 ## 6. How to use it (consume)
 

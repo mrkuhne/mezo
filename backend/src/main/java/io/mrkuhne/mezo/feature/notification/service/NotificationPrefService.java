@@ -29,7 +29,7 @@ public class NotificationPrefService {
 
     private final NotificationPrefRepository prefRepository;
 
-    /** All 20 categories, always — a stored row wins, a missing one reports the code default. */
+    /** All 21 categories, always — a stored row wins, a missing one reports the code default. */
     public List<CategoryPref> effectiveFor(UUID owner) {
         Map<String, NotificationPrefEntity> stored = prefRepository.findByCreatedBy(owner).stream()
             .collect(Collectors.toMap(NotificationPrefEntity::getCategory, Function.identity()));
