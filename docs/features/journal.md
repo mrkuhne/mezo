@@ -736,13 +736,13 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   second pass over the same `ref_id` a no-op — so editing an `activity_log.text` or a
   `check_in.note` after the sweep embedded it leaves the pre-edit text standing in
   `memory_embedding` forever. Nothing in the sweep can notice: it has no content comparison, only
-  the ref-id set. A follow-up bd issue is filed for this.
+  the ref-id set. A follow-up bd issue is filed for this (`mezo-b3pp.26`).
 - **Known gap (W1.5) — soft-deleting a source row does NOT remove its vector.** Unlike
   `journal_entry`, which has an explicit delete path (`deleteJournalEmbedding` off
   `JournalEntryDeletedEvent`), the note kinds have no listener at all — `findNoteCandidates` simply
   stops returning the deleted row, so its already-written vector is never revisited and stays
   recallable. This is the IDENT-3 honesty rule's one currently-unmet corner in the embed pipeline;
-  it is recorded, not hidden, and shares the follow-up bd issue with the write-once gap above.
+  it is recorded, not hidden, and shares the follow-up bd issue (`mezo-b3pp.26`) with the write-once gap above.
   `uq_memory_embedding_kind_ref_id` is a PLAIN (non-partial) unique index, so a soft-deleted
   `activity_note`/`checkin_note` vector still occupies its `(kind, ref_id)` slot — whoever adds this
   delete path MUST route any note re-write through `MemoryEmbeddingWriter`'s revive-on-write
