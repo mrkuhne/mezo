@@ -1,5 +1,5 @@
 /**
- * Napzárás act 5 — Elengedés (mezo-ilsj, spec §4). The closing circle (np-draw reuse),
+ * Napzárás act 6 — Elengedés (mezo-ilsj, spec §4). The closing circle (np-draw reuse),
  * the fixed release line, an optional companion closingNote, then the evening handoff
  * panel that reads straight from the ritual window (Task 1) — no new data, just the
  * two remaining stops (prep + bed). `onFinish` navigates to /today, where the Este face

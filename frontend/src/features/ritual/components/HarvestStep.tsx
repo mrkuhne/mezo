@@ -31,7 +31,7 @@ const CONFETTI_COLOR = ['var(--dv-lav)', 'var(--dv-amber)', 'var(--dv-sage)', 'v
 const clampPct = (n: number) => Math.max(0, Math.min(100, n))
 
 /**
- * Napzárás act 4 — A mai termés (mezo-ilsj, spec §4, Task 6). The choreography peak: an XP
+ * Napzárás act 5 — A mai termés (mezo-ilsj, spec §4, Task 6). The choreography peak: an XP
  * count-up (the shared `CountUp` primitive), per-source + coin chips, an optional LIFE
  * skill highlight, the streak flame, and a one-shot confetti burst — all staggered via
  * `harvestStages()`'s fixed cadence, applied as inline `animationDelay`.

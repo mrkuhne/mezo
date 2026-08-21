@@ -26,6 +26,15 @@ import { localDateString } from '@/shared/lib/dates'
  * the act after a back-out shows what was written — but a background refetch can never overwrite
  * what the user is currently typing.
  *
+ * „Tovább" writes iff the prose CHANGED against that seed — not merely iff it is non-empty. The
+ * difference is the clear path: a user who wrote prose, backed out, re-entered and DELETED the
+ * text must have that erasure persist, or the close would embed prose the user just took back
+ * (the whole `text.isBlank() ? null` chain — RitualService, the mock branch, the MSW default —
+ * exists for exactly this and would otherwise be unreachable from the UI). Comparing against the
+ * seed also drops the redundant identical re-PUT when the act is re-entered and advanced unedited.
+ * „Ma nem írok" is NOT a clear: skipping means "don't touch today's entry", so it writes nothing
+ * whatever is in the box.
+ *
  * The W1.3 gratitude rows join this act below the textarea (spec §5.2's "combined writing act",
  * ONE act, both parts optional); until that slice lands the gratitude half simply isn't rendered.
  */
@@ -34,14 +43,20 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
   const { data } = useRitualDay(date)
   const { saveReflection } = useRitualActions(date)
   const [text, setText] = useState(data.reflectionText ?? '')
+  // The prose as it stood when the act opened, normalised the same way the comparison below is
+  // (and the same way the server stores it) so a whitespace-only difference is never a "change".
+  const [seed] = useState(() => (data.reflectionText ?? '').trim())
   // Same append-to-what's-typed idiom as JournalSheet/ChatPage's composer (useVoiceInput.ts).
   const voice = useVoiceInput((t) => setText((d) => (d ? `${d} ${t}` : t)))
   const recording = voice.state === 'recording'
 
   const advance = () => {
-    if (text.trim()) {
+    const next = text.trim()
+    // `next !== seed` — NOT `next` — so an emptied box actually clears the stored prose ('' is
+    // the CLEAR payload the backend maps to null), and an untouched one writes nothing at all.
+    if (next !== seed) {
       // fire-and-forget: a failed save must never trap the user inside the ritual
-      void saveReflection(text.trim()).catch(() => {})
+      void saveReflection(next).catch(() => {})
     }
     onNext()
   }
