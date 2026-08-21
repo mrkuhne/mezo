@@ -16,6 +16,8 @@ const CONVERSATION = '/api/companion/conversation'
 /** Wire → FE mock-era shape (deliberately aligned in V0.2 — the cast below is the bridge). */
 export function toChatMessage(m: MessageResponse): ChatMessage {
   return {
+    // The persisted row id — what the 👍/👎 chips vote on (mezo-b3pp.15).
+    id: m.id,
     role: m.role as ChatRole,
     ts: new Date(m.createdAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }),
     text: m.content,

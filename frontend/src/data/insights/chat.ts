@@ -11,8 +11,12 @@ export function cannedReply(text: string): string {
   )
 }
 
+/** The demo answers carry stable ids so the 👍/👎 chips are votable in mock mode too — the
+ *  demo surface must show the same affordance the live one does (mezo-b3pp.15). The user
+ *  bubble deliberately has none: only assistant answers are votable artifacts. */
 export const initialChat: ChatMessage[] = [
   {
+    id: 'c1a70000-0000-4000-8000-000000000001',
     role: 'assistant',
     ts: '06:32',
     text: 'Jó reggelt. Tegnap a Push Day jól ment — a Lat Pulldown 105 × 9 @ RIR 1 volt, és ez a sorozat az egyik legtisztább március óta. Ma Pull Day, a Chest Row PR-attempt logikus, ha az első melegítő szet könnyű.',
@@ -31,6 +35,7 @@ export const initialChat: ChatMessage[] = [
     text: 'Aludtam 7h-t. Érzem hogy ma jobb mint tegnap.',
   },
   {
+    id: 'c1a70000-0000-4000-8000-000000000003',
     role: 'assistant',
     ts: '06:34',
     text: 'Jó jel. 7h a héten az átlag fölött van — vasárnap óta négy nap volt 7+. A gyógyszer-ciklus D3-át ne felejtsük: az étvágy ma délután fog leesni, és ha PR-t akarunk, a 13:30 pre-workout meal nem opcionális. Ha 30g whey + banán + földimogyoróvaj akkor is megy, ha nem éhezünk, az ma fontos.',

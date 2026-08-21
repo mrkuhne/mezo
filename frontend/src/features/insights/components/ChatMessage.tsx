@@ -1,9 +1,18 @@
 import { Markdown } from '@/shared/lib/markdown'
 import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
+import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
-export function ChatMessage({ m }: { m: ChatMessageT }) {
+/** The card's slice of the page-level `useFeedback` handle (mezo-b3pp.15). Absent when the
+ *  message is not votable — a user bubble, or an answer still streaming (no persisted id yet). */
+export interface ChatMessageFeedback {
+  value: ArtifactFeedback | undefined
+  onVote: (verdict: FeedbackVerdict, reason?: FeedbackReason) => void
+}
+
+export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatMessageFeedback }) {
   if (m.role === 'user') {
     return (
       <div style={{ alignSelf: 'flex-end', maxWidth: '80%' }}>
@@ -63,6 +72,13 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
           </div>
         )}
       </div>
+      {/* Under the card, assistant rows only — and only once the answer is persisted, i.e. has
+          an artifactId to vote on. The parent keys this row by that id, so React never reuses
+          one FeedbackChips instance (whose reason-row state is a one-time initializer) across
+          two different answers. */}
+      {feedback && (
+        <FeedbackChips value={feedback.value} onVote={feedback.onVote} label="a válaszról" />
+      )}
     </div>
   )
 }

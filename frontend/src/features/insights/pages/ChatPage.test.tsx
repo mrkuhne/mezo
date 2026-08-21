@@ -1,4 +1,5 @@
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -8,6 +9,8 @@ import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { cannedReply } from '@/data/insights/chat'
 
 // The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
+const FEEDBACK_GROUP = 'Visszajelzés a válaszról'
+
 const renderPage = (path = '/insights/chat') =>
   render(
     <QueryWrapper>
@@ -72,6 +75,18 @@ describe('ChatPage (mock mode)', () => {
     })
     expect(screen.getByText(/A gyógyszer-ciklus D3-án ez gyakori/)).toBeInTheDocument()
     vi.useRealTimers()
+  })
+
+  test('renders feedback chips on the assistant answers only (mezo-b3pp.15)', async () => {
+    renderPage()
+    // The demo thread is assistant / user / assistant — two votable answers, one user bubble.
+    expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2)
+    const [up] = screen.getAllByRole('button', { name: /Segített/ })
+    expect(up).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(up)
+    await waitFor(() => expect(up).toHaveAttribute('aria-pressed', 'true'))
+    // ...and only that one card's chip flips — each answer carries its own instance.
+    expect(screen.getAllByRole('button', { name: /Segített/ })[1]).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
@@ -275,6 +290,70 @@ describe('ChatPage (real mode)', () => {
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
     fireEvent.click(screen.getByLabelText('Beszélgetések'))
     expect(await screen.findByText('Aludtam 7h-t…')).toBeInTheDocument()
+  })
+
+  test('chips ride the persisted answers, never the in-flight draft (mezo-b3pp.15)', async () => {
+    // Same gated-stream idiom as the live-tool-chip test above: hold 'delta'/'done' back so the
+    // streaming turn is actually observable on screen.
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          await rest
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    // The MSW history is assistant / user / assistant — two votable answers.
+    await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2))
+
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    // The draft answer is on screen but not yet persisted — there is nothing to vote on.
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+    expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2)
+
+    releaseRest()
+    // Once 'done' lands the persisted row carries an id — and gains its own chips.
+    await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(3))
+  })
+
+  test('a 👎 + reason on one answer writes only that answer (mezo-b3pp.15)', async () => {
+    const puts: unknown[] = []
+    server.use(http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+      const body = await request.json()
+      puts.push(body)
+      return HttpResponse.json({ ...(body as object), updatedAt: '2026-08-21T12:00:00Z' })
+    }))
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2))
+
+    // The reason row is per-card state: opening it on the FIRST answer must not open it on the second.
+    await userEvent.click(screen.getAllByRole('button', { name: /Nem talált/ })[0])
+    expect(screen.getAllByRole('button', { name: 'pontatlan' })).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: 'pontatlan' }))
+
+    await waitFor(() => expect(puts).toHaveLength(1))
+    expect(puts[0]).toMatchObject({
+      artifactKind: 'chat_message', artifactId: 'msg-0', verdict: 'down', reason: 'inaccurate',
+    })
   })
 
   test('renders the honest degraded state when the companion switch is off', async () => {

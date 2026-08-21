@@ -198,6 +198,9 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
       append(conversationId, [
         { role: 'user', ts: 'now', text },
         {
+          // A mock answer is "persisted" the moment it lands in the cache — give it an id so it
+          // is votable exactly like a live one (mezo-b3pp.15).
+          id: crypto.randomUUID(),
           role: 'assistant', ts: 'now', text: cannedReply(text),
           tools: [
             { type: 'read', name: 'get_recent_checkins(d=3)' },

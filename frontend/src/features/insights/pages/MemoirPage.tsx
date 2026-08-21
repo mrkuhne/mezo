@@ -1,20 +1,16 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { RefTag } from '@/shared/ui/RefTag'
-import { cn } from '@/shared/lib/cn'
-import { useMemoir } from '@/data/hooks'
-
-type ReactionKey = 'like' | 'love' | 'save' | 'dismiss'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { useFeedback, useMemoir } from '@/data/hooks'
 
 export function MemoirPage() {
   const { memoir, anniversaryNote, mode } = useMemoir()
-  const [reactions, setReactions] = useState<Record<ReactionKey, boolean>>({
-    like: false,
-    love: false,
-    save: false,
-    dismiss: false,
-  })
-  const toggle = (k: ReactionKey) => setReactions((r) => ({ ...r, [k]: !r[k] }))
+  // Real 👍/👎 on the memoir (mezo-b3pp.15) — this REPLACED a mock-only Like/Love/Save/Dismiss
+  // row that wrote nowhere and never rendered in live mode at all (mezo-kr9v).
+  const memoirId = memoir?.id
+  const feedbackIds = useMemo(() => (memoirId ? [memoirId] : []), [memoirId])
+  const feedback = useFeedback('memoir', feedbackIds)
 
   // Live mode with no generated memoir yet (404/loading/error) → honest placeholder, never
   // the demo fiction. Mock always has the seed, so a null memoir only ever occurs in live mode.
@@ -53,22 +49,14 @@ export function MemoirPage() {
           ))}
         </div>
 
-        {mode === 'mock' ? (
-          <div className="row gap-sm mt-lg">
-            <button type="button" onClick={() => toggle('like')} className={cn('chip', reactions.like && 'brand')} style={{ padding: '8px 12px' }}>
-              👍 Like
-            </button>
-            <button type="button" onClick={() => toggle('love')} className={cn('chip', reactions.love && 'brand')} style={{ padding: '8px 12px' }}>
-              <Icon name="heart" size={12} color={reactions.love ? 'var(--coral)' : undefined} /> Love
-            </button>
-            <button type="button" onClick={() => toggle('save')} className={cn('chip', reactions.save && 'brand')} style={{ padding: '8px 12px' }}>
-              <Icon name="bookmark" size={12} color={reactions.save ? 'var(--coral)' : undefined} /> Save
-            </button>
-            <button type="button" onClick={() => toggle('dismiss')} className="chip" style={{ padding: '8px 12px', opacity: reactions.dismiss ? 0.5 : 1 }}>
-              <Icon name="x" size={12} /> Dismiss
-            </button>
-          </div>
-        ) : null}
+        {/* Both modes — the memoir is an AI artifact wherever it comes from. */}
+        <div className="mt-lg">
+          <FeedbackChips
+            value={feedback.get(memoir.id)}
+            onVote={(verdict, reason) => feedback.vote(memoir.id, verdict, reason)}
+            label="a heti memoárról"
+          />
+        </div>
       </div>
 
       {mode === 'mock' ? (

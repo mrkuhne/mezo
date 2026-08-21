@@ -99,6 +99,8 @@ export const weeklySuggestion =
   'Hét 22: tartsd ezt a Pull/Push váltogatást. A volleyball után visszamentünk 7.2h-ra — vasárnap próbáljunk 8h+-ot.'
 
 export const memoir: Memoir = {
+  // Stable demo artifactId so a mock-mode 👍/👎 has something to key on (mezo-b3pp.15).
+  id: '3f7c1d20-0000-4000-8000-00000000e401',
   week: 'Hét 20 · 2026 · Máj 11-17',
   title: 'Egy hét amikor a tested megtanult várni',
   body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a hétfő reggeleken mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi. A Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',

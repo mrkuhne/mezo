@@ -52,3 +52,12 @@ test('transcribe posts the clip as multipart and returns the text (mezo-at8x.4)'
   expect(contentType).toMatch(/^multipart\/form-data; boundary=/)
   expect(audioPart).not.toBeNull()
 })
+
+test('carries the persisted row id — the W4.1 feedback artifactId (mezo-b3pp.15)', () => {
+  const mapped = toChatMessage({
+    id: '0b4f6c1e-0000-4000-8000-000000000001', role: 'assistant', content: 'Szia!',
+    createdAt: '2026-07-03T06:32:00Z', tools: [], refs: [], degraded: false,
+  })
+  // Without the id the answer has nothing to vote on — the chips simply would not render.
+  expect(mapped.id).toBe('0b4f6c1e-0000-4000-8000-000000000001')
+})

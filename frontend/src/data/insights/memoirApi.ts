@@ -9,6 +9,8 @@ type MemoirWire = paths['/api/proactive/memoir']['get']['responses']['200']['con
 /** Wire → FE Memoir: the week label derives client-side from weekStart. */
 export function toMemoir(wire: MemoirWire): Memoir {
   return {
+    // The memoir row id — the artifactId the 👍/👎 chips vote on (mezo-b3pp.15).
+    id: wire.id,
     week: `Hét ${isoWeekNumber(wire.weekStart)} · ${deriveWeekTitle(wire.weekStart)}`,
     title: wire.title,
     body: wire.body,
