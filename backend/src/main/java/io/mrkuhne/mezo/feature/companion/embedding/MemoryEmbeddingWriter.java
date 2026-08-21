@@ -162,22 +162,34 @@ public class MemoryEmbeddingWriter {
 
     /**
      * The re-embeddable unit's write path: first write inserts; a later edit re-embeds IN PLACE on
-     * the live {@code (kind, ref_id)} row. {@code uq_memory_embedding_kind_ref_id} spans
-     * soft-deleted rows, so the spec's "delete + insert" is realized as an update (same key, fresh
-     * vector + content). Only kinds whose source text can change go through here — {@code
-     * chat_turn}/{@code daily_summary} are write-once and use {@link #write} directly.
+     * the {@code (kind, ref_id)} row. {@code uq_memory_embedding_kind_ref_id} spans soft-deleted
+     * rows, so the spec's "delete + insert" is realized as an update (same key, fresh vector +
+     * content). Only kinds whose source text can change go through here — {@code chat_turn}/{@code
+     * daily_summary} are write-once and use {@link #write} directly.
+     *
+     * <p>The lookup deliberately INCLUDES soft-deleted rows and revives what it finds. A cleared
+     * unit ({@link #writeReflection}'s blank branch, {@link #deleteJournalEmbedding}) soft-deletes
+     * its vector, but the plain unique constraint keeps that dead row parked on the key — so
+     * without the revive a later re-write would take the insert branch, hit the constraint, and
+     * (both listeners swallow their failures) leave the unit silently un-embeddable FOREVER.
+     * Reviving is safe for every kind routed here: {@code writeJournal} is only ever reached for
+     * an entry that is still live (its listener re-reads through the {@code @SQLRestriction}
+     * filter first, and re-checks liveness AFTER the write, deleting again if a racing delete won),
+     * and decisions cannot be deleted at all.
      */
     private void upsert(UUID createdBy, String kind, UUID refId, String content, LocalDate occurredOn) {
-        memoryEmbeddingRepository.findByKindAndRefId(kind, refId).ifPresentOrElse(existing -> {
-            String capped = cap(content);
-            float[] vector = llmCallContextHolder.runWith(
-                    new LlmCallContext("embed_memory", "document", kind, refId),
-                    () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
-            existing.setContent(capped);
-            existing.setEmbedding(vector);
-            existing.setOccurredOn(occurredOn);
-            memoryEmbeddingRepository.saveAndFlush(existing);
-        }, () -> write(createdBy, kind, refId, content, occurredOn));
+        memoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted(kind, refId)
+                .ifPresentOrElse(existing -> {
+                    String capped = cap(content);
+                    float[] vector = llmCallContextHolder.runWith(
+                            new LlmCallContext("embed_memory", "document", kind, refId),
+                            () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
+                    existing.setContent(capped);
+                    existing.setEmbedding(vector);
+                    existing.setOccurredOn(occurredOn);
+                    existing.setDeleted(false); // revive: the key is still ours, take it back
+                    memoryEmbeddingRepository.saveAndFlush(existing);
+                }, () -> write(createdBy, kind, refId, content, occurredOn));
     }
 
     private static String decisionContent(DecisionEntryEntity decision) {

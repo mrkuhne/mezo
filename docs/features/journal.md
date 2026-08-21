@@ -534,7 +534,7 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   `where is_deleted = false` partial clause), so a soft-delete-then-insert on the same key would
   violate the unique constraint, and a hard delete would break the soft-delete-everywhere rule.
   `MemoryEmbeddingWriter.writeJournal` instead
-  looks up the live row by `(kind, ref_id)` and, if present, updates its `content`/`embedding`/
+  looks the row up by `(kind, ref_id)` and, if present, updates its `content`/`embedding`/
   `occurred_on` in place — same effect (fresh vector describing the edited text), same key, no
   constraint conflict. First write still inserts via the shared `write` helper. **Since `mezo-b3pp.2`
   this lookup-then-update-or-insert body lives once**, in the private
@@ -542,6 +542,20 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   `writeJournal`/`writeDecision`/`writeReflection` all delegate to; the write-once kinds
   (`chat_turn`, `daily_summary`) keep calling the insert-only `write` directly, since a lookup they
   can never hit would be pure cost.
+- **Gotcha — that lookup must IGNORE `is_deleted`, and the found branch REVIVES the row.** Same
+  root cause as the bullet above, one step further: because the unique index is not partial, a
+  soft-deleted vector keeps **occupying** its `(kind, ref_id)` slot. So a cleared-then-rewritten
+  unit (the reflection path — `writeReflection`'s blank branch soft-deletes, and a later non-blank
+  save re-publishes `RitualClosedEvent`) would find nothing through the `@SQLRestriction` filter,
+  take the insert branch, and hit the constraint — which both embed listeners swallow as a warn,
+  leaving the unit silently un-embeddable **forever**. `upsert` therefore reads through
+  `MemoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted` — **native by necessity**, since
+  `@SQLRestriction` applies to derived *and* JPQL queries alike — and sets `deleted = false` next
+  to the content/vector/`occurred_on` update. Safe for every kind routed through `upsert`:
+  `writeJournal` is only ever reached for a still-live entry (`JournalEmbeddingListener` re-reads
+  through the filter first, and re-checks liveness *after* the write, deleting again if a racing
+  delete won), and decisions cannot be deleted at all. `writeSummary`'s soft-delete targets a
+  *different* summary row's `ref_id` and goes through `write`, so it is untouched by this.
 - **Decision — the embed tag stays the generic `embed_memory`/`document`, `entityKind=journal_entry`
   is the discriminator (spec §11 single-writer rule).** The spec names a possible per-feature
   `journal` LLM-call tag; W1.1 has no journal-specific LLM call to tag (the embed call rides
@@ -592,10 +606,10 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   kept anyway because the backend `PUT .../review` is re-runnable (previous bullet): a future
   review-history surface can reopen this exact sheet on an already-reviewed decision with zero backend
   or sheet changes, only a new list source.
-- **Deferred (spec §5.2–§5.5, bd ids assigned):** evening prose reflection (`mezo-b3pp.2`, not
-  started), gratitude entries (`mezo-b3pp.3`, not started), note-embedding catch-up for
-  activity/check-in text (`mezo-b3pp.5`, not started). Decision journal + review loop (`mezo-b3pp.4`)
-  **shipped** — see this doc throughout. None of the remaining slices need a NEW embed pipeline — see
+- **Deferred (spec §5.2–§5.5, bd ids assigned):** gratitude entries (`mezo-b3pp.3`, not started),
+  note-embedding catch-up for activity/check-in text (`mezo-b3pp.5`, not started). Decision journal +
+  review loop (`mezo-b3pp.4`) **shipped** — see this doc throughout; evening prose reflection
+  (`mezo-b3pp.2`) **shipped** too, outside this domain — see §5 and [`ritual.md`](ritual.md). None of the remaining slices need a NEW embed pipeline — see
   §5 above.
 
 ## 10. Key files
@@ -623,7 +637,7 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the `decision_entry` AFTER_COMMIT trigger (create + review); no delete-race handling (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeJournal`, `deleteJournalEmbedding`, `writeDecision` (re-embeds in place on review, §5), and the private `upsert(...)` all three re-embeddable kinds share since `mezo-b3pp.2` (`writeReflection`, the ritual-sourced fifth kind, is the third caller — [`ritual.md`](ritual.md) §5).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, called from the single shared `upsert(...)` since `mezo-b3pp.2`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the live-row lookup, still the delete path's probe) and, since `mezo-b3pp.2`, the native `findByKindAndRefIdIncludingDeleted` the single shared `upsert(...)` reads through so a soft-deleted row is revived rather than re-inserted (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**

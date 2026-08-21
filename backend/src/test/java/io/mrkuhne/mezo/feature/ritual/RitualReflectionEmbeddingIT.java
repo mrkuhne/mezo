@@ -158,5 +158,45 @@ class RitualReflectionEmbeddingIT extends ApiIntegrationTest {
         saveReflection("   "); // blank clears the prose — an erased evening must stop being recallable
 
         await().atMost(10, SECONDS).untilAsserted(() -> assertThat(reflectionRows(owner)).isEmpty());
+
+        // the clear must be a SOFT delete, not a hard one: findAll() above is
+        // @SQLRestriction-filtered, so it reads identically either way. The row has to SURVIVE —
+        // uq_memory_embedding_kind_ref_id is plain (not partial), so the dead row still owns the
+        // (kind, ref_id) slot and a later re-write has to revive THIS row rather than insert.
+        assertThat(memoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted(
+            MemoryEmbeddingEntity.KIND_REFLECTION, dayId))
+            .hasValueSatisfying(row -> assertThat(row.isDeleted()).isTrue());
+    }
+
+    @Test
+    void testSaveReflection_shouldReviveTheVector_whenProseIsWrittenAgainAfterAClear() {
+        UUID owner = ownerId();
+        saveReflection("Első este.");
+        close();
+        UUID dayId = ritualDayId(owner);
+
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(memoryEmbeddingRepository
+            .findByKindAndRefId(MemoryEmbeddingEntity.KIND_REFLECTION, dayId)).isPresent());
+        UUID rowIdBefore = memoryEmbeddingRepository
+            .findByKindAndRefId(MemoryEmbeddingEntity.KIND_REFLECTION, dayId).orElseThrow().getId();
+
+        saveReflection("  "); // clear → soft delete, but the (kind, ref_id) slot stays occupied
+        await().atMost(10, SECONDS).untilAsserted(() -> assertThat(reflectionRows(owner)).isEmpty());
+
+        saveReflection("Mégis leírom."); // write again on the still-closed day
+
+        // without the revive this re-write takes the insert branch, hits the plain unique
+        // constraint, and the listener's catch-and-warn swallows it — the day would be silently
+        // un-embeddable forever. It must instead come back to life on the SAME row.
+        await().atMost(10, SECONDS).untilAsserted(() -> {
+            List<MemoryEmbeddingEntity> rows = reflectionRows(owner);
+            assertThat(rows).hasSize(1);
+            MemoryEmbeddingEntity row = rows.getFirst();
+            assertThat(row.getId()).isEqualTo(rowIdBefore);
+            assertThat(row.getRefId()).isEqualTo(dayId);
+            assertThat(row.getContent()).isEqualTo("Mégis leírom.");
+            assertThat(row.isDeleted()).isFalse();
+            assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        });
     }
 }
