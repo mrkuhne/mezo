@@ -217,6 +217,21 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
         assertThat(series.get(DAY)).isEqualTo(1.0);
     }
 
+    /** mezo-b3pp.2: a reflexió-only (nyitott) sor se az adopciót nem hozza előre, se nem világít. */
+    @Test
+    void testSeries_shouldIgnoreOpenRows_whenOnlyAReflectionExists() {
+        UUID owner = userPopulator.createUser().getId();
+        ritualPopulator.openDay(owner, DAY.minusDays(4), "Csak reflexió, nem zártam le.");
+        ritualPopulator.closedDay(owner, DAY.minusDays(2));
+        ritualPopulator.openDay(owner, DAY, "Ma is csak írtam.");
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.RITUAL_CLOSED, DAY.minusDays(7), DAY);
+
+        assertThat(series).containsOnlyKeys(DAY.minusDays(2), DAY.minusDays(1), DAY);
+        assertThat(series.get(DAY)).isEqualTo(0.0); // nyitott sor ≠ lezárt nap
+    }
+
     @Test
     void testSeries_shouldSumXpAcrossSources_whenActivityHabitAndQuestAwardXp() {
         UUID owner = userPopulator.createUser().getId();

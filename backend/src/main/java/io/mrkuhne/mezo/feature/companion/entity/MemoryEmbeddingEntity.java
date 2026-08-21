@@ -47,6 +47,7 @@ public class MemoryEmbeddingEntity extends OwnedEntity {
     public static final String KIND_JOURNAL_ENTRY = "journal_entry";
     public static final String KIND_DECISION = "decision";
     public static final String KIND_GRATITUDE = "gratitude";
+    public static final String KIND_REFLECTION = "reflection";
 
     @Id
     @GeneratedValue

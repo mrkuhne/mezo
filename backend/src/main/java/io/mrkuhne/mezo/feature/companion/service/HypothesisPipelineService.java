@@ -28,6 +28,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.List;
@@ -321,7 +322,7 @@ public class HypothesisPipelineService {
         pattern.setCritique(new PatternCritiqueEnvelope(critique.statistical(), critique.confounders(),
                 critique.l3align(), critique.actionability(), critique.reasoning()));
         pattern.setStatus(PatternEntity.STATUS_PROPOSED);
-        pattern.setLastDetectedAt(Instant.now());
+        pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
         appNotificationEmitter.emit(userId, AppNotificationKind.HYPOTHESIS_NEW,
                 "Új AI-hipotézis készült",

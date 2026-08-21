@@ -21,4 +21,13 @@ public class RitualPopulator {
         e.setClosedAt(Instant.now());
         return ritualDayRepository.saveAndFlush(e);
     }
+
+    /** An OPEN ritual_day row — the reflection-before-close shape (mezo-b3pp.2): no closed_at. */
+    public RitualDayEntity openDay(UUID owner, LocalDate date, String reflectionText) {
+        RitualDayEntity e = new RitualDayEntity();
+        e.setCreatedBy(owner);
+        e.setRitualDate(date);
+        e.setReflectionText(reflectionText);
+        return ritualDayRepository.saveAndFlush(e);
+    }
 }

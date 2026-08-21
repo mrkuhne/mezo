@@ -4,6 +4,7 @@ import { ArrivalStep } from '@/features/ritual/components/ArrivalStep'
 import { DayStoryStep } from '@/features/ritual/components/DayStoryStep'
 import { HarvestStep } from '@/features/ritual/components/HarvestStep'
 import { LoopsStep } from '@/features/ritual/components/LoopsStep'
+import { ReflectionStep } from '@/features/ritual/components/ReflectionStep'
 import { ReleaseStep } from '@/features/ritual/components/ReleaseStep'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
@@ -13,18 +14,20 @@ import { localDateString } from '@/shared/lib/dates'
 import { useTheme } from '@/app/ThemeProvider'
 import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
 
-const ACT_COUNT = 5
+const ACT_COUNT = 6
 
 /**
- * Full-screen Napzárás flow (/ritual, spec §4, mezo-ilsj) — a 5-act state machine over a
+ * Full-screen Napzárás flow (/ritual, spec §4, mezo-ilsj) — a 6-act state machine over a
  * forced-dark surface (train/session idiom: AppLayout hides the tab bar for this route).
- * Nothing writes anything before act 4 — the ✕ exit is consequence-free at any point up to
- * there. Entering act 4 (Task 6) is the one write in the whole flow: a `closedRef` guard
- * fires `useRitualActions(date).close()` exactly once, then silently drops any habit
- * levelUps accrued earlier today (see the effect below) — the Harvest stage IS the
- * celebration, so the global LevelUpProvider overlay must never fire a second one on /today.
+ * The ONLY write before the Harvest act is the optional prose reflection in act 3
+ * (`ReflectionStep`, W1.2) — an idempotent upsert that cannot conflict with the close, which
+ * only stamps `closed_at`. The ✕ exit stays consequence-free otherwise: entering act 5 is
+ * still the close — a `closedRef` guard fires `useRitualActions(date).close()` exactly once,
+ * then silently drops any habit levelUps accrued earlier today (see the effect below) — the
+ * Harvest stage IS the celebration, so the global LevelUpProvider overlay must never fire a
+ * second one on /today.
  *
- * Act 3 (LoopsStep) only SIGNALS (onOpenCheckIn/onOpenJournal) — the reused sheets
+ * Act 4 (LoopsStep) only SIGNALS (onOpenCheckIn/onOpenJournal) — the reused sheets
  * (CheckInSheet, ActivityLogSheet) are mounted HERE, at the page level, exactly like
  * TodayPage.tsx mounts CheckInSheet (TodayPage.tsx:37-42/76-83): this page keeps its own
  * `useCheckins` + the same next-open-slot `findIndex` predicate so it can resolve
@@ -71,9 +74,9 @@ export function RitualPage() {
 
   const closedRef = useRef(false)
   useEffect(() => {
-    if (act === 4 && !closedRef.current) {
+    if (act === 5 && !closedRef.current) {
       closedRef.current = true
-      // Fix-wave review finding: if useNeeds' composite read is still pending at act 4 (an
+      // Fix-wave review finding: if useNeeds' composite read is still pending at act 5 (an
       // unlucky timing window — every other act gives the reads time to resolve, but nothing
       // guarantees it), `states` would be the empty-events zero snapshot. The close endpoint
       // is idempotent PER DATE, so persisting that snapshot would silently freeze the day's
@@ -104,15 +107,16 @@ export function RitualPage() {
 
       {act === 1 && <ArrivalStep onNext={() => setAct(2)} />}
       {act === 2 && <DayStoryStep onNext={() => setAct(3)} />}
-      {act === 3 && (
+      {act === 3 && <ReflectionStep onNext={() => setAct(4)} />}
+      {act === 4 && (
         <LoopsStep
-          onNext={() => setAct(4)}
+          onNext={() => setAct(5)}
           onOpenCheckIn={() => setCheckInIdx(nextCheckinIdx)}
           onOpenJournal={() => setJournalOpen(true)}
         />
       )}
-      {act === 4 && <HarvestStep onNext={() => setAct(5)} />}
-      {act === 5 && (
+      {act === 5 && <HarvestStep onNext={() => setAct(6)} />}
+      {act === 6 && (
         <ReleaseStep
           prepStartsAt={data.window.prepStartsAt}
           bedTime={data.window.bedTime}

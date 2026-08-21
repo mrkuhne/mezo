@@ -7,7 +7,7 @@ import { localDateString } from '@/shared/lib/dates'
 const REFLECT_LABEL: Record<Reflection, string> = { yes: 'Igen', partial: 'Részben', no: 'Nem' }
 
 /**
- * Napzárás act 3 — Nyitott hurkok (mezo-ilsj, spec §4). Soft close-out of the day's two GATED
+ * Napzárás act 4 — Nyitott hurkok (mezo-ilsj, spec §4). Soft close-out of the day's two GATED
  * loops (missed check-in, intention reflection) plus a standing "log anything else" journal
  * invite. Nothing here is mandatory — Tovább always advances regardless of state.
  *

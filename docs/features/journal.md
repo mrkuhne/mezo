@@ -16,7 +16,7 @@ key_files:
   - frontend/src/features/me/sheets/DecisionReviewSheet.tsx
   - frontend/src/features/me/pages/JournalPage.tsx
   - api/feature/journal/journal.yml
-related: [me, companion, _platform-data-layer, _platform-api-backend, _platform-notifications]
+related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _platform-notifications]
 ---
 
 # Journal — Free-Prose Notes + Narrative Memory Embedding
@@ -427,18 +427,25 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   after the due day passes). Full category shape (default ON, lead 0, dedup suffix) lives in
   [`_platform-notifications.md`](_platform-notifications.md) §4 — this is the one seam in the domain
   that is **not** the embed pipeline.
-|- **🟣 Future W1 slices reuse the embed seam above, not a new one (spec §5.2–§5.5):** W1.2 (evening
-  prose reflection in Napzárás, `mezo-b3pp.2`) embeds `kind=reflection` off `ritual_day` on close;
-  W1.3 (gratitude entries, `mezo-b3pp.3`) adds `gratitude_entry` in the **same** `feature/journal`
-  package and embeds `kind=gratitude`; W1.5 (note-embedding catch-up, `mezo-b3pp.5`) extends the
-  nightly `DailySummaryJob` sweep to embed `activity_log`/check-in notes as `kind=activity_note`/
-  `checkin_note`. Every one of these is "a new `write<Kind>` method on `MemoryEmbeddingWriter`, not a
-  second writer" (spec §4.3) — the CHECK constraint W1.1 widened already has room for all of them;
-  W1.4 (decision journal + review loop) is the pattern in production, not future, as of this doc.
-  **W1.3 is now ✅ done** — `GratitudeEmbeddingListener` (`companion/embedding/`, same `@Async
-  @TransactionalEventListener(AFTER_COMMIT)` shape, `COMPANION_SWITCH` + `JOURNAL_SWITCH` gated)
-  calls `MemoryEmbeddingWriter.writeGratitude(entry)` / `.deleteGratitudeEmbedding(id)` with
-  `kind=gratitude`, `KIND_GRATITUDE`. No delete-race cleanup needed (gratitude has no edit endpoint).
+- **✅ W1.2 shipped the third consumer of this seam, from OUTSIDE `feature/journal` (`mezo-b3pp.2`).**
+  The Napzárás evening reflection (`ritual_day.reflection_text`, [`ritual.md`](ritual.md)) embeds as
+  `kind=reflection` through the new `MemoryEmbeddingWriter.writeReflection` + a
+  `ReflectionEmbeddingListener` gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — proof that "a new
+  `write<Kind>` method, not a second writer" (spec §4.3) holds for a source domain journal doesn't
+  own. It also **refactored the writer**: the three duplicated re-embed blocks (journal, decision,
+  reflection) collapsed into one private `upsert(createdBy, kind, refId, content, occurredOn)`, so
+  `writeJournal`/`writeDecision` are now one-liners over it and the update-in-place mechanics
+  documented in §9 live in exactly one method. Behaviour is unchanged — same lookup, same
+  `LlmCallContext`, same insert fallback — so the journal/decision ITs pinned it without edits.
+- **✅ W1.3 shipped gratitude on the same seam, inside `feature/journal` (`mezo-b3pp.3`).**
+  `GratitudeEmbeddingListener` (`companion/embedding/`, same `@Async
+  @TransactionalEventListener(AFTER_COMMIT)` shape, `COMPANION_SWITCH` + `JOURNAL_SWITCH` gated) calls
+  `MemoryEmbeddingWriter.writeGratitude(entry)` / `.deleteGratitudeEmbedding(id)` with
+  `kind=gratitude` (`KIND_GRATITUDE`), riding W1.2's shared `upsert`. No edit endpoint, so no
+  create-then-edit race branch — only the create-then-delete liveness re-check.
+- **🟣 Remaining W1 slice reuses the same seam (spec §5.5):** W1.5 (note-embedding catch-up,
+  `mezo-b3pp.5`) extends the nightly `DailySummaryJob` sweep to embed `activity_log`/check-in notes
+  as `kind=activity_note`/`checkin_note`. The CHECK constraint W1.1 widened already has room for it.
 
 ## 6. How to use it (consume)
 
@@ -507,9 +514,12 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   `support/ResetDatabase.java:41`) → publish the equivalent Saved event (+ a Deleted event too, only
   if the new kind is actually deletable — `decision_entry` isn't, so it has no
   `DecisionEntryDeletedEvent`) → a new `write<Kind>`/`delete<Kind>Embedding` pair on
-  `MemoryEmbeddingWriter` + a new `<Kind>EmbeddingListener` mirroring `JournalEmbeddingListener`/
-  `DecisionEmbeddingListener` (companion-owned, gated on `COMPANION_SWITCH` + the new feature's own
-  switch) → dual-mode FE hook (`useDualQuery` recipe in [`_platform-data-layer.md`](_platform-data-layer.md))
+  `MemoryEmbeddingWriter` — a re-embeddable kind's `write<Kind>` should be a one-liner over the
+  shared private `upsert(...)`, not a fourth copy of the lookup-then-update body (`mezo-b3pp.2`) —
+  + a new `<Kind>EmbeddingListener` mirroring `JournalEmbeddingListener`/
+  `DecisionEmbeddingListener`/`ReflectionEmbeddingListener` (companion-owned, gated on
+  `COMPANION_SWITCH` + the new feature's own switch — `ReflectionEmbeddingListener` is the worked
+  example of that second switch not being journal's) → dual-mode FE hook (`useDualQuery` recipe in [`_platform-data-layer.md`](_platform-data-layer.md))
   → both `pnpm test` modes green.
 - **A new field on `journal_entry` itself** — same contract-first → backend → migration →
   dual-mode-hook → both-modes-green order; mirror the field in `journalMock.ts` so mock parity
@@ -602,27 +612,49 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   key". `uq_memory_embedding_kind_ref_id` spans **soft-deleted** rows (the index has no
   `where is_deleted = false` partial clause), so a soft-delete-then-insert on the same key would
   violate the unique constraint, and a hard delete would break the soft-delete-everywhere rule.
-  `MemoryEmbeddingWriter.writeJournal` (`embedding/MemoryEmbeddingWriter.java:117-133`) instead
-  looks up the live row by `(kind, ref_id)` and, if present, updates its `content`/`embedding`/
+  `MemoryEmbeddingWriter.writeJournal` instead
+  looks the row up by `(kind, ref_id)` and, if present, updates its `content`/`embedding`/
   `occurred_on` in place — same effect (fresh vector describing the edited text), same key, no
-  constraint conflict. First write still inserts via the shared `write` helper.
+  constraint conflict. First write still inserts via the shared `write` helper. **Since `mezo-b3pp.2`
+  this lookup-then-update-or-insert body lives once**, in the private
+  `MemoryEmbeddingWriter.upsert(createdBy, kind, refId, content, occurredOn)`, which
+  `writeJournal`/`writeDecision`/`writeReflection` all delegate to; the write-once kinds
+  (`chat_turn`, `daily_summary`) keep calling the insert-only `write` directly, since a lookup they
+  can never hit would be pure cost.
+- **Gotcha — that lookup must IGNORE `is_deleted`, and the found branch REVIVES the row.** Same
+  root cause as the bullet above, one step further: because the unique index is not partial, a
+  soft-deleted vector keeps **occupying** its `(kind, ref_id)` slot. So a cleared-then-rewritten
+  unit (the reflection path — `writeReflection`'s blank branch soft-deletes, and a later non-blank
+  save re-publishes `RitualClosedEvent`) would find nothing through the `@SQLRestriction` filter,
+  take the insert branch, and hit the constraint — which both embed listeners swallow as a warn,
+  leaving the unit silently un-embeddable **forever**. `upsert` therefore reads through
+  `MemoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted` — **native by necessity**, since
+  `@SQLRestriction` applies to derived *and* JPQL queries alike — and sets `deleted = false` next
+  to the content/vector/`occurred_on` update. Safe for every kind routed through `upsert`:
+  `writeJournal` is only ever reached for a still-live entry (`JournalEmbeddingListener` re-reads
+  through the filter first, and re-checks liveness *after* the write, deleting again if a racing
+  delete won), and decisions cannot be deleted at all. `writeSummary`'s soft-delete targets a
+  *different* summary row's `ref_id` and goes through `write`, so it is untouched by this.
 - **Decision — the embed tag stays the generic `embed_memory`/`document`, `entityKind=journal_entry`
   is the discriminator (spec §11 single-writer rule).** The spec names a possible per-feature
   `journal` LLM-call tag; W1.1 has no journal-specific LLM call to tag (the embed call rides
-  `MemoryEmbeddingWriter`'s existing `LlmCallContext("embed_memory", "document", kind, refId)` —
-  `MemoryEmbeddingWriter.java:123-125`) — one write path, one tag family, `kind` is the only new
-  axis.
+  `MemoryEmbeddingWriter`'s existing `LlmCallContext("embed_memory", "document", kind, refId)`,
+  since `mezo-b3pp.2` stated once inside the shared `upsert`/`write` pair) — one write path, one tag
+  family, `kind` is the only new axis.
 - **Gotcha — `source=ritual` exists in the CHECK/entity but nothing sets it yet.** W1.1 always
   writes `SOURCE_QUICKINPUT` (both the QuickInput sheet's `create` call and the Me page's `+ Új
   bejegyzés` hardcode `source: 'quickinput'` client-side, `journalApi.ts:26`). `ritual` is reserved
   for a later slice's Napzárás-originated capture — do not repurpose it for anything else.
   `JournalSheet` never lets the caller choose a `source`.
-- **Gotcha — the remaining five `memory_embedding` kinds are unused schema, not dead weight.** Don't
-  add a "why does the CHECK allow kinds nothing writes" cleanup task — `reflection`/`gratitude`/
-  `monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.2/W1.3/W1.5
+- **Gotcha — the remaining four `memory_embedding` kinds are unused schema, not dead weight.** Don't
+  add a "why does the CHECK allow kinds nothing writes" cleanup task — `gratitude`/
+  `monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.3/W1.5
   (§5), landed in one migration per spec §4.3's explicit instruction ("W1.1 carries the first
   batch") to avoid five more `alter table … drop constraint / add constraint` migrations later.
-  `decision` (the sixth) is no longer headroom — W1.4 populates it (§4).
+  Two of the six are no longer headroom: `decision` — W1.4 populates it (§4) — and, since
+  `mezo-b3pp.2`, **`reflection`**, written by `ReflectionEmbeddingListener` off the Napzárás close
+  (§5, [`ritual.md`](ritual.md)); neither needed a migration of its own, which is the whole point
+  of the batch.
 - **Decision (W1.4) — no delete AND no update (edit) endpoint for decisions this slice.** A decision,
   once captured, stays in the record permanently with its original `decisionText`/`decidedOn` — there
   is no `DELETE /api/journal/decision/{id}`, no `PUT /api/journal/decision/{id}` (unlike
@@ -653,12 +685,13 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   kept anyway because the backend `PUT .../review` is re-runnable (previous bullet): a future
   review-history surface can reopen this exact sheet on an already-reviewed decision with zero backend
   or sheet changes, only a new list source.
-- **Deferred (spec §5.2–§5.5, bd ids assigned):** evening prose reflection (`mezo-b3pp.2`, not
-  started), note-embedding catch-up for activity/check-in text (`mezo-b3pp.5`, not started).
-  Gratitude entries (`mezo-b3pp.3`) **shipped** — see this doc throughout. Ritual `ReflectionStep`
-  gratitude rows 🟣 deferred to W1.3b (`mezo-b3pp.3b`, blocked by W1.2 `mezo-b3pp.2` unmerged).
-  Decision journal + review loop (`mezo-b3pp.4`) **shipped**. None of the remaining slices need a
-  NEW embed pipeline — see §5 above.
+- **Deferred (spec §5.5, bd ids assigned):** note-embedding catch-up for activity/check-in text
+  (`mezo-b3pp.5`, not started). Decision journal + review loop (`mezo-b3pp.4`), evening prose
+  reflection (`mezo-b3pp.2`, outside this domain — see §5 and [`ritual.md`](ritual.md)) and
+  gratitude entries (`mezo-b3pp.3`) have all **shipped** — see this doc throughout. The ritual
+  `ReflectionStep` gratitude rows are the one W1.3 piece still open: W1.3b (`mezo-b3pp.25`),
+  unblocked now that W1.2 is on main. None of the remaining slices need a NEW embed pipeline — see
+  §5 above.
 
 ## 10. Key files
 
@@ -684,10 +717,10 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the `journal_entry` AFTER_COMMIT trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the `decision_entry` AFTER_COMMIT trigger (create + review); no delete-race handling (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/GratitudeEmbeddingListener.java` — the `gratitude_entry` AFTER_COMMIT trigger (create + delete); no edit-race cleanup (gratitude has no edit endpoint).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:119-137` (`writeJournal`), `:138-150` (`deleteJournalEmbedding`), `:151-176` (`writeDecision` — re-embeds in place on review, §5), `:177-195` (`writeGratitude`, `deleteGratitudeEmbedding`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeJournal`, `deleteJournalEmbedding`, `writeDecision` (re-embeds in place on review, §5), and the private `upsert(...)` all three re-embeddable kinds share since `mezo-b3pp.2` (`writeReflection`, the ritual-sourced fifth kind, is the third caller — [`ritual.md`](ritual.md) §5).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, shared by all writers).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-62` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION`/`KIND_GRATITUDE` + the widened `kind` `@Pattern`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the live-row lookup, still the delete path's probe) and, since `mezo-b3pp.2`, the native `findByKindAndRefIdIncludingDeleted` the single shared `upsert(...)` reads through so a soft-deleted row is revived rather than re-inserted (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java` — `DECISION_REVIEW` enum entry.

@@ -734,3 +734,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608211200_mezo-b3pp.3_create_gratitude_entry.sql
+  - changeSet:
+      id: "1.0.0:202608211500_mezo-b3pp.2_ritual_day_reflection"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608211500_mezo-b3pp.2_ritual_day_reflection.sql

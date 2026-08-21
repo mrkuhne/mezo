@@ -119,7 +119,7 @@ public class HabitEvaluator {
             case "intention_reflected" -> dailyIntentionRepository
                 .findByCreatedByAndIntentionDateAndDeletedFalse(userId, date).isPresent();
             case "ritual_closed" -> ritualDayRepository
-                .findByCreatedByAndRitualDate(userId, date).isPresent();
+                .findByCreatedByAndRitualDateAndClosedAtIsNotNull(userId, date).isPresent();
             case METRIC_BED_NEXT_DAY -> sleepLog(userId, date.plusDays(1))
                 .map(SleepLogEntity::getBedtime).filter(Objects::nonNull)
                 .map(b -> bedtimeOnTime(LocalTime.parse(b),
