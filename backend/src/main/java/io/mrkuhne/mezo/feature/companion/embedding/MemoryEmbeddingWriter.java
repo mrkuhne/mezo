@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -133,11 +134,35 @@ public class MemoryEmbeddingWriter {
                         entry.getId(), entry.getText(), entry.getOccurredOn()));
     }
 
-    /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-3 honesty). */
+    /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-1 honesty). */
     @Transactional
     public void deleteJournalEmbedding(UUID entryId) {
         memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entryId)
+                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+    }
+
+    /** W1.3 gratitude unit (spec §4.1): first write inserts; an update re-embeds IN PLACE on the live
+     *  (kind, ref_id) row — uq_memory_embedding_kind_ref_id spans soft-deleted rows, so the spec's
+     *  "delete+insert" is realized as an update (same key, fresh vector + content). */
+    @Transactional
+    public void writeGratitude(GratitudeEntryEntity entry) {
+        String content = cap(entry.getText());
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId())
+                .ifPresentOrElse(existing -> {
+                    existing.setContent(content);
+                    existing.setOccurredOn(entry.getOccurredOn());
+                    memoryEmbeddingRepository.saveAndFlush(existing);
+                }, () -> write(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_GRATITUDE,
+                        entry.getId(), content, entry.getOccurredOn()));
+    }
+
+    /** Deleted gratitude entries must not be recallable — soft-deletes the entry's vector row. */
+    @Transactional
+    public void deleteGratitudeEmbedding(UUID entryId) {
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entryId)
                 .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
     }
 

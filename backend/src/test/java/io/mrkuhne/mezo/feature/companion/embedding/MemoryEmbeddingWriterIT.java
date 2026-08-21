@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
@@ -263,5 +264,29 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         // precedent above).
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
         assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding);
+    }
+
+    @Test
+    void testWriteGratitude_shouldCreateOneRow_whenFirstWrite() {
+        UUID owner = userPopulator.createUser().getId();
+        GratitudeEntryEntity entry = journalPopulator.createGratitude(owner, DAY,
+                "hála a csendért", "mindfulness");
+
+        memoryEmbeddingWriter.writeGratitude(entry);
+
+        assertThat(memoryEmbeddingRepository.findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId()))
+                .isPresent();
+    }
+
+    @Test
+    void testDeleteGratitudeEmbedding_shouldRemoveRow_whenPresent() {
+        UUID owner = userPopulator.createUser().getId();
+        GratitudeEntryEntity entry = journalPopulator.createGratitude(owner, DAY, "x", null);
+        memoryEmbeddingWriter.writeGratitude(entry);
+
+        memoryEmbeddingWriter.deleteGratitudeEmbedding(entry.getId());
+
+        assertThat(memoryEmbeddingRepository.findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId()))
+                .isEmpty();
     }
 }
