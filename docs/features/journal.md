@@ -553,12 +553,15 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   bejegyzés` hardcode `source: 'quickinput'` client-side, `journalApi.ts:26`). `ritual` is reserved
   for a later slice's Napzárás-originated capture — do not repurpose it for anything else.
   `JournalSheet` never lets the caller choose a `source`.
-- **Gotcha — the remaining five `memory_embedding` kinds are unused schema, not dead weight.** Don't
-  add a "why does the CHECK allow kinds nothing writes" cleanup task — `reflection`/`gratitude`/
-  `monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.2/W1.3/W1.5
+- **Gotcha — the remaining four `memory_embedding` kinds are unused schema, not dead weight.** Don't
+  add a "why does the CHECK allow kinds nothing writes" cleanup task — `gratitude`/
+  `monthly_summary`/`activity_note`/`checkin_note` are load-bearing headroom for W1.3/W1.5
   (§5), landed in one migration per spec §4.3's explicit instruction ("W1.1 carries the first
   batch") to avoid five more `alter table … drop constraint / add constraint` migrations later.
-  `decision` (the sixth) is no longer headroom — W1.4 populates it (§4).
+  Two of the six are no longer headroom: `decision` — W1.4 populates it (§4) — and, since
+  `mezo-b3pp.2`, **`reflection`**, written by `ReflectionEmbeddingListener` off the Napzárás close
+  (§5, [`ritual.md`](ritual.md)); neither needed a migration of its own, which is the whole point
+  of the batch.
 - **Decision (W1.4) — no delete AND no update (edit) endpoint for decisions this slice.** A decision,
   once captured, stays in the record permanently with its original `decisionText`/`decidedOn` — there
   is no `DELETE /api/journal/decision/{id}`, no `PUT /api/journal/decision/{id}` (unlike

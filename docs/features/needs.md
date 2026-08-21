@@ -74,7 +74,7 @@ server-evaluated push nudges (§9).
   briefing/feed message would.
 - **Rough day (`?day=rough`)** — the anchor melt hides `NeedsRow` along with the rest of the
   normal panel (anchor mode's early return in `TodayPage` renders before the row).
-- **Napzárás recap** — `RitualPage`'s Harvest act (act 4) shows "🛟 N napja életben" from
+- **Napzárás recap** — `RitualPage`'s Harvest act (act 5 since `mezo-b3pp.2`, act 4 before it) shows "🛟 N napja életben" from
   `useNeedsSummary()` when the needs streak is > 0 (`HarvestStep.tsx:155-159`) — see §5.
 
 ## 3. Architecture & data flow
@@ -237,8 +237,10 @@ tuning changes (§7).
 - **↔ Ritual** — `RitualPage` (`frontend/src/features/ritual/pages/RitualPage.tsx:44-45,76`)
   snapshots `useNeeds(tickNow)` at a **single stable instant** captured on mount (not a value
   that drifts mid-ritual as the sim decays), and passes `ringsOf(states)` into
-  `useRitualActions(date).close(rings)` on entering act 4 (the same call that closes the day and
-  awards the ritual's own HABIT XP) — `frontend/src/data/ritual/ritualHooks.ts:71` `close`. Real
+  `useRitualActions(date).close(rings)` on **entering the Harvest act** (the same call that closes
+  the day and awards the ritual's own HABIT XP) — `frontend/src/data/ritual/ritualHooks.ts:71`
+  `close`. The trigger is entry into Harvest, not an ordinal: that act was 4 as built and is **5**
+  since `mezo-b3pp.2` inserted the prose-reflection act at 3, with no change to this seam. Real
   mode: the needs award is **best-effort** — `needsApi.close` failures are swallowed so a needs
   outage never blocks the napzárás itself (`ritualHooks.ts:44-53`); a fire-and-forget
   `['needsSummary']` invalidation follows. Mock mode: `applyMockNeedsClose` runs inside the same
@@ -401,7 +403,8 @@ await useRitualActions(date).close(ringsOf(states))   // rings is optional — c
   `202608180300_mezo-dhzk_needs_source_type.sql` (`level_up_event.source_type` CHECK += `NEEDS`).
   Message: `NEEDS_NOT_TODAY` in `messages.properties`.
 - **Ritual integration:** `frontend/src/features/ritual/pages/RitualPage.tsx` (snapshots
-  `useNeeds`, calls `close(ringsOf(states))` on entering act 4) ·
+  `useNeeds`, calls `close(ringsOf(states))` on entering the Harvest act — act 5 since
+  `mezo-b3pp.2`) ·
   `frontend/src/data/ritual/ritualHooks.ts` (`close(rings?)`) ·
   `frontend/src/features/ritual/components/HarvestStep.tsx` (`useNeedsSummary` recap line).
 - **Tests:** `frontend/src/features/today/logic/{needs,needsInputs,useNeeds,needsNudges}.test.{ts,tsx}`
