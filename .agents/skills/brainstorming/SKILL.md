@@ -7,14 +7,18 @@ description: Use BEFORE designing or building anything new — turns an idea int
 
 HARD RULE: no code, no file scaffolding, no implementation until the user approves a design.
 
-1. Read the project context first: AGENTS.md, docs/milestones/roadmap.md, and any
-   docs/features/<domain>.md the idea touches.
-2. Ask clarifying questions ONE AT A TIME (purpose, constraints, success criteria).
+1. Orient cheaply: AGENTS.md, docs/milestones/roadmap.md, the `### <feature>` block(s) in
+   docs/CODEMAP.md the idea touches, and ONLY §1 + §9 of the matching docs/features/<x>.md
+   (grep the headings, read with offset/limit). Budget: ≤ 8 tool calls before the first question.
+2. If the idea touches existing code or a bug, your FIRST question asks for the concrete
+   anchors you are missing: exact file paths, the error text, the expected vs actual behaviour.
+   Never guess them.
+3. Ask clarifying questions ONE AT A TIME (purpose, constraints, success criteria).
    Prefer multiple-choice. Stop asking when you can state the design.
-3. Propose 2–3 approaches with trade-offs. Recommend one. Wait for the user's pick.
-4. Present the design in short sections (goal, architecture, data flow, error handling,
+4. Propose 2–3 approaches with trade-offs. Recommend one. Wait for the user's pick.
+5. Present the design in short sections (goal, architecture, data flow, error handling,
    testing). Ask after each section if it is right.
-5. On approval, write the spec to docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md
+6. On approval, write the spec to docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md
    (mirror the format of the newest file already in that directory), commit it.
-6. Self-check the spec: no TBD/TODO, no contradictions, no ambiguity. Fix inline.
-7. Ask the user to review the spec file. When approved, switch to the writing-plans skill.
+7. Self-check the spec: no TBD/TODO, no contradictions, no ambiguity. Fix inline.
+8. Ask the user to review the spec file. When approved, switch to the writing-plans skill.

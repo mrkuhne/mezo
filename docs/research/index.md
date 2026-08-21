@@ -33,6 +33,7 @@ ingest.
 ## Comparisons
 
 - [Plan-builder guidance UX](comparisons/plan-builder-guidance-ux.md) — RP app vs Alpha Progression vs Hevy vs Juggernaut vs Fitbod terv-építési guidance; a piaci rés, amit a mezo befoglalhat. `confidence: medium`.
+- [Hermes memory providers](comparisons/hermes-memory-providers.md) — Hindsight vs Honcho vs ByteRover vs Holographic vs Mem0/OpenViking/cloud-only; why Hindsight local embedded. `confidence: medium`.
 - [Local coding models on 128 GB M5 Max](comparisons/local-coding-models-128gb-m5max.md) — the mid-2026 field (Qwen line, Coder-Next, MiniMax, gpt-oss, Gemma 4, Hermes 4) behind ADR 0029's choice. `confidence: medium`.
 
 ## Queries
