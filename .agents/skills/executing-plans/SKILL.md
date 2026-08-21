@@ -15,6 +15,9 @@ description: Use when a checkboxed implementation plan exists. Executes it task 
    `node scripts/lint-docs.mjs`). A failing gate's output becomes your next instruction.
 3. Load the plan file. Execute ONE task at a time, steps in order, checking off boxes
    in the plan file as you go. Orient with the plan's file list — not by grepping the tree.
+   Context budget: at most TWO tasks per session; after committing a task, if the
+   conversation is long (many test outputs), run `/compress` before the next task or stop
+   and hand off — a local model past ~100K tokens slows to a crawl and derails.
 4. Follow steps EXACTLY. If a step conflicts with reality (file moved, API differs),
    STOP the task, state the conflict, and ask before improvising.
 5. Run every verification command a step names; paste the actual output before claiming
