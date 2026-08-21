@@ -1341,9 +1341,16 @@ switch-gated (404 when `COMPANION_SWITCH` is off) and protected (401 without a t
 | `DELETE /api/companion/feedback/{artifactKind}/{artifactId}` | — | 204 · 400 · 401 | **Retraction** — soft-deletes the row via `@SQLDelete`. **Idempotent:** retracting a never-voted artifact also answers 204, because "I have no opinion on this" is already what a missing row means. |
 
 **Schemas:** `PutFeedbackRequest {artifactKind, artifactId, verdict, reason?}` and
-`MessageFeedbackResponse {artifactKind, artifactId, verdict, reason?, updatedAt}` — the three enums
-ride as `pattern`-constrained strings (the `artifact_kind`/`verdict`/`reason` CHECK values verbatim),
-so `openapi-typescript` widens them to `string` and the FE narrows once at its boundary
+`MessageFeedbackResponse {artifactKind, artifactId, verdict, reason?, updatedAt}`. The three enums
+are spelled as plain `type: string` in both, but **only the INPUT side constrains them**:
+`PutFeedbackRequest`'s `artifactKind`/`verdict`/`reason` (and the GET `kind` query param + the
+DELETE path params) carry a `pattern` holding the `artifact_kind`/`verdict`/`reason` CHECK values
+verbatim, so a bad value is a 400 from bean validation rather than a 500 from Jackson (the house
+`pattern`-over-`enum` rule). `MessageFeedbackResponse`'s three fields carry **only a `description`
+listing the values — no `pattern`**, which is the normal asymmetry: validation belongs on what a
+client sends, not on what the server returns.
+Either way `openapi-typescript` yields `string` for all six (it narrows neither a `pattern` nor a
+description), so the FE narrows once at its own boundary
 (`data/feedback/feedbackApi.ts`'s `toArtifactFeedback`). There is no `id` on the wire: the artifact
 triple IS the identity.
 
@@ -2147,12 +2154,23 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
 **W4.1 feedback test additions (`mezo-b3pp.15`) — all integration-first, no LLM in the path:**
 
-- **`feedback/CompanionFeedbackApiIT`** (HTTP-level, deliberately NOT `@Transactional` — the
-  `JournalApiIT` rationale) — first vote, opposite-verdict overwrite, **resurrect-after-retraction**,
-  the `FEEDBACK_REASON_REQUIRES_DOWN` guard, contract validation (unknown kind/verdict/reason, empty
-  + oversized id list), retraction incl. idempotency, batch-read incl. cross-user isolation, and a
+- **`feedback/CompanionFeedbackApiIT`** (11 tests, HTTP-level, deliberately NOT `@Transactional` —
+  the `JournalApiIT` rationale) — first vote, opposite-verdict overwrite,
+  **resurrect-after-retraction**, the service-level `FEEDBACK_REASON_REQUIRES_DOWN` guard (400 on a
+  reason sent with `up`), retraction incl. idempotency, batch-read incl. cross-user isolation, and a
   **dangling `artifact_id` accepted on purpose** (spec §8.1 — the no-cross-table-FK decision's
-  regression anchor: if someone ever "fixes" it with a lookup, this test fails first).
+  regression anchor: if someone ever "fixes" it with a lookup, this test fails first). Its
+  **contract-validation coverage is `artifactKind` only** — `testPutFeedback_shouldReturn400_whenArtifactKindUnknown`
+  and `testListFeedback_shouldReturn400_whenKindUnknown`.
+- **Known gap — the rest of the contract's validation is UNTESTED on the backend.** Nothing asserts
+  that an unknown `verdict`, an unknown `reason` value, an **empty** `ids` list (`minItems: 1`) or a
+  **>200** one (`maxItems: 200`) is rejected. Those constraints are declared in the fragment and so
+  are enforced by generated bean validation — the same machinery the `artifactKind` cases prove is
+  wired — which is why the gap was accepted rather than a bug, but it IS a gap: a fragment edit that
+  dropped one of those four could not fail a test today. The FE tests that look adjacent do **not**
+  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty or >200 list — the
+  cap and the skip-on-empty are hook behavior, not a server-rejection assertion). Cheapest fix if it
+  ever bites: four more cases in this IT, mirroring the two `whenArtifactKindUnknown` ones.
 - **`feedback/MessageFeedbackPersistenceIT`** — the entity/constraint layer under the API: an `up`
   row without a reason and a `down` row with one round-trip; `ck_message_feedback_reason` really
   fires on reason-with-`up`; `uq_message_feedback_artifact` really fires on a second plain save; and

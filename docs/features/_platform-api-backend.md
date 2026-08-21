@@ -121,7 +121,7 @@ For the actual screen flows that *consume* this spine, see the per-feature docs 
 
 - `api/base.yml` — `info` / `servers` (`http://localhost:8090`) / global `bearerAuth` security; `paths: {}`. Merge base — its info/servers/security win.
 - `api/common/common-schemas.yml` — `SystemMessage` (fields `level` enum ERROR/WARNING/INFO, `code`, `params`, `message`, `fieldName`, `type` enum REQUEST/FIELD, `exceptionTraceId` uuid) + `SystemMessageList` (array). **Every non-2xx response references `#/components/schemas/SystemMessageList`.**
-- `api/generate/merge.yml` — the ordered `inputs:` list, **34 entries** today: base → common → auth → weight → sleep → checkin → train → goal → biometrics-profile → … → needs → journal → **companion-feedback** (the newest, `mezo-b3pp.15`). **Forgetting to append a new fragment here silently drops it from the merge** — no error, the endpoints just never appear in `api/openapi.yml` or `api.gen.ts`. Order matters only for the base (first wins on `info`/`servers`/`security`); everything after it is additive, so a new fragment goes on the end.
+- `api/generate/merge.yml` — the ordered `inputs:` list: **32 `inputFile` entries** today = `base.yml` + `common/common-schemas.yml` + **30 per-feature fragments** under `api/feature/`. Order: base → common → auth → weight → sleep → checkin → train → goal → biometrics-profile → … → needs → journal → **companion-feedback** (the newest, `mezo-b3pp.15`). (Two numbers, don't conflate them: 32 is what `grep -c 'inputFile:' api/generate/merge.yml` returns; 30 is the per-feature count that matters when you're asking how many features are contract-backed.) **Forgetting to append a new fragment here silently drops it from the merge** — no error, the endpoints just never appear in `api/openapi.yml` or `api.gen.ts`. Order matters only for the base (first wins on `info`/`servers`/`security`); everything after it is additive, so a new fragment goes on the end.
 - `api/generate/package.json` — `openapi-merge-cli ^1.3.2`, script `generate:api`.
 - `api/openapi.yml` — committed merged output. `frontend/src/data/_client/api.gen.ts` is its committed TS projection (`components['schemas']['X']`, `operations`, `paths`).
 
@@ -395,7 +395,7 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 - `api/generate/merge.yml` — ordered fragment input list (append new fragments here)
 - `api/generate/package.json` — `openapi-merge-cli`, `generate:api`
 - `api/openapi.yml` — committed merged contract (source of truth)
-- `api/feature/{auth,weight,sleep,checkin,train,goal,biometrics-profile,pantry,…}/*.yml` — per-feature fragments (**34** in `merge.yml`; the newest is `companion-feedback/companion-feedback.yml`, tag `CompanionFeedback`, `mezo-b3pp.15` — a fragment of its own rather than an addition to `companion.yml`, §4a/§9)
+- `api/feature/{auth,weight,sleep,checkin,train,goal,biometrics-profile,pantry,…}/*.yml` — the **30 per-feature fragments** (of `merge.yml`'s 32 `inputFile` entries — the other two are `base.yml` + `common-schemas.yml`, §4a); the newest is `companion-feedback/companion-feedback.yml`, tag `CompanionFeedback`, `mezo-b3pp.15` — a fragment of its own rather than an addition to `companion.yml`, §4a/§9)
 
 **Backend generator config**
 - `backend/pom.xml` (~175-215) — `openapi-generator-maven-plugin` (spring), configOptions, Lombok DTO annotations
