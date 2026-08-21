@@ -273,6 +273,19 @@ export const handlers = [
       window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
     })
   }),
+  // Ritual reflection upsert (W1.2, mezo-b3pp.2) — a DEFAULT so real-mode COMPONENT tests that
+  // save prose (ReflectionStep/RitualPage) never fall through to the network: `setupServer` has
+  // no `onUnhandledRequest: 'error'`, so a missing handler would fail confusingly rather than
+  // loudly. Echoes the backend's strip()-then-null-if-blank semantics; tests that assert the
+  // exact payload override with server.use().
+  http.put(`${API_BASE}/api/ritual/reflection`, async ({ request }) => {
+    const body = (await request.json()) as { date: string; text: string }
+    return HttpResponse.json({
+      date: body.date, closed: false, closedAt: null,
+      reflectionText: body.text.trim() || null,
+      window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+    })
+  }),
 
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>

@@ -2865,7 +2865,30 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-ev-meta { color: var(--text-disabled); font-size: 12px; }
 .rz-ev-meta.ok { color: var(--success-base); }
 
-/* Loops act (act 3): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
+/* Reflection act (act 3, W1.2 mezo-b3pp.2): „Ma milyen volt" — a free-prose textarea with the
+   shared push-to-talk mic chip (the JournalSheet composer idiom, re-dressed for the dark canvas)
+   and a one-tap „Ma nem írok" skip below the CTA. Deliberately STATIC: the writing beat is the
+   still point of the flow, so this family declares no animation at all and the reduced-motion
+   guard (features/ritual/reducedMotionGuard.test.ts) has nothing to neutralise here. */
+.rz-reflect-title { font-family: var(--ff-display); font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.3; text-align: center; margin: 10px 4px 18px; color: var(--text-primary); }
+.rz-reflect-box { position: relative; }
+.rz-reflect-input { width: 100%; min-height: 160px; resize: none; padding: 14px 44px 14px 14px;
+  border-radius: var(--r-lg); border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); color: var(--text-primary);
+  font-family: var(--ff-body); font-size: 16px; line-height: 1.5; }
+.rz-reflect-input::placeholder { color: color-mix(in srgb, var(--text-primary) 40%, transparent); }
+.rz-reflect-mic { position: absolute; top: 8px; right: 8px; padding: 8px; }
+.rz-reflect-hint { font-family: var(--ff-body); font-size: 11px; margin: 8px 2px 0;
+  color: color-mix(in srgb, var(--text-primary) 55%, transparent); }
+/* the CTA sits right under the box here — the shared .rz-cta 56px top margin is tuned for the
+   short arrival/story acts and would strand it off-screen below a 160px textarea. */
+.rz-reflect .rz-cta { margin-top: 26px; }
+.rz-skip { margin: 10px auto 0; padding: 10px 16px; background: none; border: 0; cursor: pointer;
+  font-family: var(--ff-body); font-size: 13px;
+  color: color-mix(in srgb, var(--text-primary) 55%, transparent); }
+
+/* Loops act (act 4): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
    once a row closes, and the single "Minden hurok zárva" beat once nothing is left open. The
    glow is a static wash + inset ring (no pulse) — the retired RoutineCard's first-pending
    idiom, not an animated pulsing dot. */
@@ -2890,7 +2913,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   color: color-mix(in srgb, var(--text-primary) 70%, transparent);
   font: italic 500 14px/1.5 var(--ff-serif); }
 
-/* Harvest act (act 4): XP count-up (the shared CountUp primitive), per-source/coin chips
+/* Harvest act (act 5): XP count-up (the shared CountUp primitive), per-source/coin chips
    (np-pop reuse via .rz-pop), an optional LIFE skill highlight (bar-only — honest-absence,
    no fabricated "N XP to next level" hint), the streak flame (AppHero .cnt.fire dim
    precedent, opacity .45), and a one-shot confetti burst (rz-fall reuse) gated on xpTotal > 0. */
@@ -2923,7 +2946,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-conf i { position: absolute; top: -8px; width: 6px; height: 10px; border-radius: 2px; opacity: 0;
   animation: rz-fall 2.6s ease-in forwards; }
 
-/* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
+/* Release act (act 6): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
 .rz-ring { fill: none; stroke: var(--dv-lav); stroke-width: 2.5; stroke-linecap: round;
   stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center;
