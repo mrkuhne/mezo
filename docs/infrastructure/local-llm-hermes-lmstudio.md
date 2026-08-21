@@ -82,6 +82,11 @@ sessions ignoring `SOUL.md` (#26596/#34852).
 - Orientation protocol (in the skills): `docs/CODEMAP.md` feature block → feature doc §7/§10
   only → listed files once. Budget ≤12 tool calls before writing a plan. Unguided exploration
   cost 45 turns / 50 min on a 27B (A/B run 1) — the map exists because of that.
+- **Worktree enforcement (3 layers):** skills start with `/worktree new <topic>` / `hermes -w`
+  and verify the branch; `.worktrees/` is gitignored; and a local pre-commit guard rejects
+  commits on `main` (snippet versioned at `scripts/git-hooks/pre-commit-no-main.sh` — append it
+  to `.git/hooks/pre-commit` outside the beads block; `git merge --no-ff` is unaffected;
+  escape hatch `ALLOW_MAIN_COMMIT=1`).
 - Hermes project registered: `hermes project create mezo <repo-path> --use` (desktop session
   grouping + worktree/branch conventions).
 - Discord: bot `LocalHermesAgent`, gateway under launchd (`hermes gateway status|restart`),

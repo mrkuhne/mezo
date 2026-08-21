@@ -5,7 +5,10 @@ description: Use when a checkboxed implementation plan exists. Executes it task 
 
 # Executing Plans
 
-1. Work in a git worktree on a feat/<topic> branch, never on main.
+1. Isolate FIRST, before reading the plan: run `/worktree new <topic>` (or start the session
+   with `hermes -w`), then verify with `git branch --show-current` — it must print a
+   `feat/<topic>`-style branch, never `main`. If it prints `main`, STOP and create the
+   worktree; a pre-commit guard rejects commits on main anyway.
 2. Before the first task, register the plan's gates as goal gates so the harness enforces
    them: `/goal gate add "<exact gate command from the plan>"` for each gate (backend
    `cd backend && ./mvnw clean test -Dtest=...`, frontend `cd frontend && pnpm test`, docs
