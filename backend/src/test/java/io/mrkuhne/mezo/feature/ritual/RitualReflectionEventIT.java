@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.ritual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
+import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.feature.ritual.service.RitualClosedEvent;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -24,8 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
  * would go unseen there. The {@code MesocycleCloseReportIT} idiom — call the service directly
  * and assert on the recorded stream.
  *
- * <p>Task 3 will add the publication on {@code close}'s stamp branch and the AFTER_COMMIT
- * listener that consumes it; this class pins only what Task 2 actually publishes.
+ * <p>Pins the publication CONTRACT only — that the right sites publish exactly once. What the
+ * AFTER_COMMIT consumer then does with the event is {@code RitualReflectionEmbeddingIT}'s job.
  */
 @Transactional
 @RecordApplicationEvents
@@ -34,6 +35,7 @@ class RitualReflectionEventIT extends AbstractIntegrationTest {
     @Autowired private RitualService ritualService;
     @Autowired private UserPopulator userPopulator;
     @Autowired private RitualPopulator ritualPopulator;
+    @Autowired private RitualDayRepository ritualDayRepository;
     @Autowired private ApplicationEvents events;
 
     @Test
@@ -55,18 +57,33 @@ class RitualReflectionEventIT extends AbstractIntegrationTest {
         ritualService.saveReflection(owner, LocalDate.now(), "Első kör."); // inserts an open row
         ritualService.saveReflection(owner, LocalDate.now(), "Második kör."); // overwrites it
 
-        // nothing is embeddable before the close — the close itself will publish (Task 3)
+        // nothing is embeddable before the close — the close itself is what publishes
         assertThat(events.stream(RitualClosedEvent.class)).isEmpty();
     }
 
     @Test
-    void testClose_shouldPublishNothing_whenTheDayIsClosed() {
+    void testClose_shouldPublishExactlyOnce_whenTheDayIsClosedTwice() {
         UUID owner = userPopulator.createUser("ritual-evt-c@test.hu").getId();
         ritualService.saveReflection(owner, LocalDate.now(), "Zárás előtti próza.");
 
         ritualService.close(owner, LocalDate.now());
+        ritualService.close(owner, LocalDate.now()); // idempotent repeat — nothing new to embed
 
-        // Task 2 deliberately leaves close() silent — Task 3 moves the publication onto its stamp
-        assertThat(events.stream(RitualClosedEvent.class)).isEmpty();
+        // the closing stamp publishes; the repeat finds closed_at set and skips the branch
+        assertThat(events.stream(RitualClosedEvent.class)).singleElement()
+            .satisfies(e -> assertThat(e.ritualDayId()).isEqualTo(
+                ritualDayRepository.findByCreatedByAndRitualDate(owner, LocalDate.now())
+                    .orElseThrow().getId()));
+    }
+
+    @Test
+    void testClose_shouldPublish_whenTheDayWasNeverTouchedBefore() {
+        UUID owner = userPopulator.createUser("ritual-evt-d@test.hu").getId();
+
+        // no reflection row exists — close inserts an open row and immediately stamps it, and the
+        // publication must still fire exactly once (the listener decides there is nothing to embed)
+        ritualService.close(owner, LocalDate.now());
+
+        assertThat(events.stream(RitualClosedEvent.class)).hasSize(1);
     }
 }

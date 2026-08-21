@@ -52,11 +52,14 @@ public class RitualService {
             .orElseGet(() -> insertOpenRow(userId, date));
         if (row.getClosedAt() == null) {
             // the sole closing stamp: reached both for a day that was only reflected on
-            // (mezo-b3pp.2) and for the row just inserted above, so Task 3's embed publication
-            // has exactly one place to hang off. timestamptz stores micros — truncate so the
+            // (mezo-b3pp.2) and for the row just inserted above, so the embed publication has
+            // exactly one place to hang off. timestamptz stores micros — truncate so the
             // pre/post-persist responses match.
             row.setClosedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
             row = ritualDayRepository.saveAndFlush(row);
+            // exactly one publication per FIRST close — a repeat close finds closed_at set and
+            // skips this branch entirely, so the evening is never re-embedded for nothing
+            eventPublisher.publishEvent(new RitualClosedEvent(row.getId()));
         }
         return toResponse(userId, date, row);
     }

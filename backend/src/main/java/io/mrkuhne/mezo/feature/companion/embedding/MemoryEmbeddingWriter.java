@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -112,25 +113,11 @@ public class MemoryEmbeddingWriter {
                 .toList();
     }
 
-    /** W1.1 journal unit (spec §5.1): first write inserts; an edit re-embeds IN PLACE on the live
-     *  (kind, ref_id) row — uq_memory_embedding_kind_ref_id spans soft-deleted rows, so the spec's
-     *  "delete+insert" is realized as an update (same key, fresh vector + content). */
+    /** W1.1 journal unit (spec §5.1): create inserts, an edit re-embeds in place ({@link #upsert}). */
     @Transactional
     public void writeJournal(JournalEntryEntity entry) {
-        memoryEmbeddingRepository
-                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId())
-                .ifPresentOrElse(existing -> {
-                    String capped = cap(entry.getText());
-                    float[] vector = llmCallContextHolder.runWith(
-                            new LlmCallContext("embed_memory", "document",
-                                    MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId()),
-                            () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
-                    existing.setContent(capped);
-                    existing.setEmbedding(vector);
-                    existing.setOccurredOn(entry.getOccurredOn());
-                    memoryEmbeddingRepository.saveAndFlush(existing);
-                }, () -> write(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
-                        entry.getId(), entry.getText(), entry.getOccurredOn()));
+        upsert(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId(),
+                entry.getText(), entry.getOccurredOn());
     }
 
     /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-3 honesty). */
@@ -149,21 +136,48 @@ public class MemoryEmbeddingWriter {
      */
     @Transactional
     public void writeDecision(DecisionEntryEntity decision) {
-        String content = decisionContent(decision);
-        memoryEmbeddingRepository
-                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_DECISION, decision.getId())
-                .ifPresentOrElse(existing -> {
-                    String capped = cap(content);
-                    float[] vector = llmCallContextHolder.runWith(
-                            new LlmCallContext("embed_memory", "document",
-                                    MemoryEmbeddingEntity.KIND_DECISION, decision.getId()),
-                            () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
-                    existing.setContent(capped);
-                    existing.setEmbedding(vector);
-                    existing.setOccurredOn(decision.getDecidedOn());
-                    memoryEmbeddingRepository.saveAndFlush(existing);
-                }, () -> write(decision.getCreatedBy(), MemoryEmbeddingEntity.KIND_DECISION,
-                        decision.getId(), content, decision.getDecidedOn()));
+        upsert(decision.getCreatedBy(), MemoryEmbeddingEntity.KIND_DECISION, decision.getId(),
+                decisionContent(decision), decision.getDecidedOn());
+    }
+
+    /**
+     * W1.2 evening reflection (spec §5.2): the day's prose, embedded when the ritual closes and
+     * re-embedded when an already-closed day's prose is edited, so the vector never goes stale.
+     * A blank or cleared reflection is not embeddable — any existing vector is soft-deleted, so a
+     * skipped (or erased) evening is never recallable (IDENT-3 honesty, the {@link
+     * #deleteJournalEmbedding} idiom).
+     */
+    @Transactional
+    public void writeReflection(RitualDayEntity day) {
+        String text = day.getReflectionText();
+        if (text == null || text.isBlank()) {
+            memoryEmbeddingRepository
+                    .findByKindAndRefId(MemoryEmbeddingEntity.KIND_REFLECTION, day.getId())
+                    .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+            return;
+        }
+        upsert(day.getCreatedBy(), MemoryEmbeddingEntity.KIND_REFLECTION, day.getId(), text,
+                day.getRitualDate());
+    }
+
+    /**
+     * The re-embeddable unit's write path: first write inserts; a later edit re-embeds IN PLACE on
+     * the live {@code (kind, ref_id)} row. {@code uq_memory_embedding_kind_ref_id} spans
+     * soft-deleted rows, so the spec's "delete + insert" is realized as an update (same key, fresh
+     * vector + content). Only kinds whose source text can change go through here — {@code
+     * chat_turn}/{@code daily_summary} are write-once and use {@link #write} directly.
+     */
+    private void upsert(UUID createdBy, String kind, UUID refId, String content, LocalDate occurredOn) {
+        memoryEmbeddingRepository.findByKindAndRefId(kind, refId).ifPresentOrElse(existing -> {
+            String capped = cap(content);
+            float[] vector = llmCallContextHolder.runWith(
+                    new LlmCallContext("embed_memory", "document", kind, refId),
+                    () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
+            existing.setContent(capped);
+            existing.setEmbedding(vector);
+            existing.setOccurredOn(occurredOn);
+            memoryEmbeddingRepository.saveAndFlush(existing);
+        }, () -> write(createdBy, kind, refId, content, occurredOn));
     }
 
     private static String decisionContent(DecisionEntryEntity decision) {

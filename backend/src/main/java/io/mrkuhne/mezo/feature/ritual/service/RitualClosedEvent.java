@@ -11,10 +11,10 @@ import java.util.UUID;
  * never a plain {@code @EventListener}, or the listener runs inside the writing transaction and
  * may embed prose that then rolls back (the {@code JournalEntrySavedEvent} listener's shape).
  *
- * <p>Currently published from ONE site only: {@code RitualService.saveReflection}, when an
- * already-closed day's reflection is edited, so the vector cannot go stale. {@code close} does
- * not publish yet — Task 3 (spec §5.2) adds the publication to its single {@code closed_at}
- * stamp branch and introduces the {@code ReflectionEmbeddingListener} that consumes this.
+ * <p>Published from exactly TWO sites, both in {@code RitualService}: the single {@code closed_at}
+ * stamp branch in {@code close} (once per FIRST close — a repeat close skips the branch), and
+ * {@code saveReflection} when an already-closed day's reflection is edited, so the vector cannot
+ * go stale. {@code ReflectionEmbeddingListener} consumes it.
  *
  * <p>No {@code userId} field — mezo is single-user and the listener re-reads the row by id
  * (the {@code JournalEntrySavedEvent} precedent).
