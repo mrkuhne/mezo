@@ -12,3 +12,9 @@ AbstractIntegrationTest (service-level) or ApiIntegrationTest (HTTP-level) · da
 *Populator factories only · new domain table → ResetDatabase TRUNCATE list · naming
 test{Method}_should{Result}_when{Condition} · AssertJ only · NO mocks/@MockBean/H2 in ITs.
 Run: cd backend && ./mvnw clean test (compose up first; CI uses Testcontainers mode).
+
+Pitfalls:
+- **Hibernate bean validation fires BEFORE DB CHECK constraints.** When testing a CHECK constraint
+  (e.g. `ck_gratitude_entry_life_area`) via a populator that sets a `@Pattern`-annotated field,
+  expect `ConstraintViolationException`, NOT `DataIntegrityViolationException`. The entity-level
+  `@Pattern` guard catches it first — this is the same pattern as `JournalEntryPersistenceIT.testSource_shouldRejectUnknownValue_whenViolatingCheck`.
