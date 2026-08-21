@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-08-18
+updated: 2026-08-21
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts

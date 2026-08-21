@@ -2,7 +2,7 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-08-19
+updated: 2026-08-21
 tags: [today, me, train, fuel, intention, ritual, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
