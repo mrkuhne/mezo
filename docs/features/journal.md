@@ -450,8 +450,10 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   listener seam above): history already logged must stay embeddable by the sweep even on a day
   activity-capture or check-in capture is switched off — the sweep, not the capture path, owns
   whether this backlog gets embedded. The adapters carry no `@ConditionalOnProperty` at all; the
-  only gates are `mezo.companion.embedding.embed-notes` (inside the pass) and `COMPANION_SWITCH`,
-  which removes `NoteEmbeddingCatchUp` — the consumer — entirely.
+  gates all sit on the consuming side — `mezo.companion.embedding.embed-notes` (checked inside the
+  pass), `COMPANION_SWITCH` (removes `NoteEmbeddingCatchUp` itself), and `DAILY_SUMMARY_JOB_SWITCH`
+  (`mezo.techcore.cron.daily-summary-job.enabled`), which removes the driving `DailySummaryJob`, so
+  with the cron off nothing sweeps at all.
 - **🟣 The one remaining W1 slice reuses the same seam (spec §5.3):** W1.3 (gratitude entries,
   `mezo-b3pp.3`) adds `gratitude_entry` in the **same** `feature/journal` package and embeds
   `kind=gratitude`. The CHECK constraint W1.1 widened already has room for it; W1.2, W1.4 and W1.5
@@ -650,11 +652,12 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   for a later slice's Napzárás-originated capture — do not repurpose it for anything else.
   `JournalSheet` never lets the caller choose a `source`.
 - **Gotcha — the remaining `memory_embedding` kinds are unused schema, not dead weight.** Don't
-  add a "why does the CHECK allow kinds nothing writes" cleanup task — `gratitude` (W1.3) and the
-  `monthly_summary`/`weekly_summary` pair are load-bearing headroom (§5), landed in one migration
+  add a "why does the CHECK allow kinds nothing writes" cleanup task — `gratitude` (W1.3) and
+  `monthly_summary` are load-bearing headroom (§5) that W1.1's migration landed in one go
   per spec §4.3's explicit instruction ("W1.1 carries the first batch") to avoid five more
-  `alter table … drop constraint / add constraint` migrations later. Four of the six that arrived as
-  headroom are no longer headroom: `decision` (W1.4, §4), `reflection` (`mezo-b3pp.2`, written by
+  `alter table … drop constraint / add constraint` migrations later (`weekly_summary` is NOT part of
+  that batch — it sat in the V2.1-era CHECK from the start, and is unwritten for its own reasons).
+  Four of the six kinds that arrived as headroom are no longer headroom: `decision` (W1.4, §4), `reflection` (`mezo-b3pp.2`, written by
   `ReflectionEmbeddingListener` off the Napzárás close — §5, [`ritual.md`](ritual.md)) and, since
   `mezo-b3pp.5`, `activity_note`/`checkin_note` (the nightly note sweep, §3). **None of them needed
   a migration of its own, which is the whole point of the batch.**
@@ -762,7 +765,7 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeJournal`, `deleteJournalEmbedding`, `writeDecision` (re-embeds in place on review, §5), and the private `upsert(...)` all three re-embeddable kinds share since `mezo-b3pp.2` (`writeReflection`, the ritual-sourced fifth kind, is the third caller — [`ritual.md`](ritual.md) §5).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the live-row lookup, still the delete path's probe) and, since `mezo-b3pp.2`, the native `findByKindAndRefIdIncludingDeleted` the single shared `upsert(...)` reads through so a soft-deleted row is revived rather than re-inserted (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-53,63` — the kind constants (`KIND_JOURNAL_ENTRY`/`KIND_DECISION`/`KIND_REFLECTION` + W1.5's `KIND_ACTIVITY_NOTE`/`KIND_CHECKIN_NOTE`) and the widened `kind` `@Pattern` mirroring `ck_memory_embedding_kind`.
 
 **Backend — the note catch-up (W1.5, `mezo-b3pp.5`; no listener, no migration, no FE)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/NarrativeNoteSource.java` — the companion-owned port (`kind()` + `notesToEmbed`, the flat `Note` record, the two kind constants); its javadoc carries the cycle rationale (§9).

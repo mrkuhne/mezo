@@ -8,11 +8,14 @@ import java.util.UUID;
 /**
  * Port for the W1.5 nightly note sweep ({@code NoteEmbeddingCatchUp}, mezo-b3pp.5): companion only
  * needs "which live notes still need a vector", flattened to the fields the writer embeds — HOW the
- * note is stored (activity log vs. check-in) belongs to the owning feature, which implements this
- * ({@code activity/service/ActivityNoteSourceAdapter}, {@code
- * biometrics/checkin/service/CheckInNoteSourceAdapter}). The dependency stays
- * activity/biometrics → companion, never back — {@code feature.activity} already depends on {@code
- * feature.companion} (both directly, {@code ActivityClassifier} calling {@link CompanionLlm}, and
+ * note is stored (activity log vs. check-in) belongs to the owning feature, which implements this —
+ * {@code activity/service/ActivityNoteSourceAdapter}; the check-in side
+ * ({@code companion/embedding/CheckInNoteSourceAdapter}) is the documented ASYMMETRY: it stays in
+ * companion because {@code feature.biometrics} has no edge into {@code feature.companion} today, so
+ * implementing this port from there would close a NEW 4-slice cycle, while a plain
+ * companion → biometrics read is safe (that class's javadoc carries the full argument). The
+ * dependency otherwise stays activity → companion, never back — {@code feature.activity} already
+ * depends on {@code feature.companion} (both directly, {@code ActivityClassifier} calling {@link CompanionLlm}, and
  * transitively via {@code feature.quest}, which also depends on companion), so a direct {@code
  * companion.embedding → activity.repository.ActivityLogRepository} import would close a NEW slice
  * cycle ({@code ArchitectureTest#feature_slices_are_cycle_free} is a FreezingArchRule — only
