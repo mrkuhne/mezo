@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.List;
@@ -135,7 +136,7 @@ public class PatternDetectionService {
         pattern.setN(result.n());
         pattern.setP(BigDecimal.valueOf(result.p()).setScale(6, RoundingMode.HALF_UP));
         pattern.setConfidence(null); // honest small-n — V3.2's critique fills it for hypotheses
-        pattern.setLastDetectedAt(Instant.now());
+        pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
         recordSnapshot(pattern, result);
         if (isNew && passesInboxGate(result)) {
@@ -202,7 +203,7 @@ public class PatternDetectionService {
             return; // direction flipped — that is NOT the confirmed pattern recurring
         }
         Instant cooldownFloor = Instant.now().minus(
-                properties.patterns().reinforceCooldownDays(), java.time.temporal.ChronoUnit.DAYS);
+                properties.patterns().reinforceCooldownDays(), ChronoUnit.DAYS);
         knowledgeFactRepository.findById(pattern.getPromotedFactId()).ifPresent(fact -> {
             if (fact.getLastReinforcedAt() != null && fact.getLastReinforcedAt().isAfter(cooldownFloor)) {
                 return; // the sliding window re-counts the SAME evidence — cool down (review finding)
