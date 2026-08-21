@@ -94,7 +94,7 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Facts(10, 3),
                 new Extraction(true, 3),
                 new Advisors(true, 1, List.of("teszt-anyag")),
-                new Embedding("gemini-embedding-001", true, 2000),
+                new Embedding("gemini-embedding-001", true, 2000, true, 80, 200),
                 new Summary("0 20 2 * * *", 7, 200),
                 new Recall(90, 5, 0.25, 20, 300),
                 new Patterns("0 40 2 * * *", 60, 8, 7, 100, List.of(minimalPatternPair())),

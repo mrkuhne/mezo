@@ -47,6 +47,10 @@ public class MemoryEmbeddingEntity extends OwnedEntity {
     public static final String KIND_JOURNAL_ENTRY = "journal_entry";
     public static final String KIND_DECISION = "decision";
     public static final String KIND_REFLECTION = "reflection";
+    /** W1.5 (mezo-b3pp.5): a substantive „Napló" activity entry, embedded by the nightly catch-up. */
+    public static final String KIND_ACTIVITY_NOTE = "activity_note";
+    /** W1.5 (mezo-b3pp.5): a substantive check-in note, embedded by the nightly catch-up. */
+    public static final String KIND_CHECKIN_NOTE = "checkin_note";
 
     @Id
     @GeneratedValue

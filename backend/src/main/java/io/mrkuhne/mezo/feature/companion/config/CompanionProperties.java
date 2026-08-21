@@ -87,7 +87,13 @@ public record CompanionProperties(
         /** V2.2: embed each completed chat turn (user+assistant as one unit, post-commit async) — off removes the listener bean (COMPANION_EMBED_TURNS_SWITCH). */
         boolean embedChatTurns,
         /** Upper cap on embedded content length (chars) per narrative unit (turn / summary). */
-        @Min(200) @Max(20000) int embedMaxChars
+        @Min(200) @Max(20000) int embedMaxChars,
+        /** W1.5: embed activity_log.text / check_in.note in the nightly sweep — off = the catch-up does nothing (the pass HEALS the toggle, never bypasses it). */
+        boolean embedNotes,
+        /** W1.5 length gate: below this many chars a note carries no retrieval value („fáradt vagyok") and is never embedded. */
+        @Min(1) @Max(500) int noteMinChars,
+        /** W1.5 blast-radius guard: at most this many note embeddings per user per nightly run — the first-run history backfill spreads over nights instead of one giant burst. */
+        @Min(1) @Max(5000) int noteBatchSize
     ) {}
 
     /** V2.3 episodic recall (find_similar_past_days) — rank = similarity × exp(-age/τ). */

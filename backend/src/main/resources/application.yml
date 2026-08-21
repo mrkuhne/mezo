@@ -393,6 +393,13 @@ mezo:
       embed-chat-turns: true
       # Upper cap on embedded content length (chars) per narrative unit (turn / summary)
       embed-max-chars: 2000
+      # W1.5 (mezo-b3pp.5): the nightly sweep also embeds the narrative written OUTSIDE the journal —
+      # activity_log.text (QuickInput „Napló") and check_in.note. Off = the catch-up pass does nothing.
+      embed-notes: true
+      # Length gate: a note shorter than this carries no retrieval value, so it never becomes a vector
+      note-min-chars: 80
+      # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
+      note-batch-size: 200
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)
