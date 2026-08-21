@@ -58,7 +58,7 @@ import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SetStepper } from '@/features/train/components/SetStepper'
-import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
+import { VideoDemo, videoEmbed } from '@/features/train/components/VideoDemo'
 import { MedalChip } from '@/features/train/components/MedalChip'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
@@ -1314,7 +1314,7 @@ function ActiveWorkoutSession({
               )}
             </div>
           )}
-          {current.videoUrl && youTubeId(current.videoUrl) && (
+          {videoEmbed(current.videoUrl) && (
             <div className="mt-sm">
               <VideoDemo url={current.videoUrl} />
             </div>
