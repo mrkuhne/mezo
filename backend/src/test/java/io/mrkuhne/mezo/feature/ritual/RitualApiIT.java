@@ -6,7 +6,10 @@ import io.mrkuhne.mezo.api.dto.RitualCloseRequest;
 import io.mrkuhne.mezo.api.dto.RitualDayResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
+import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -17,6 +20,8 @@ import org.springframework.http.HttpStatus;
 class RitualApiIT extends ApiIntegrationTest {
 
     @Autowired SleepGoalPopulator sleepGoalPopulator;
+    @Autowired private RitualPopulator ritualPopulator;
+    @Autowired private RitualDayRepository ritualDayRepository;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -61,5 +66,28 @@ class RitualApiIT extends ApiIntegrationTest {
             RitualCloseRequest.builder().date(LocalDate.now().minusDays(1)).build(),
             ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
         assertHasRequestError(err, "RITUAL_NOT_TODAY");
+    }
+
+    @Test
+    void testGetDay_shouldReportNotClosed_whenOnlyAReflectionRowExists() {
+        ritualPopulator.openDay(ownerId(), LocalDate.now(), "Fáradt voltam, de befejeztem.");
+        RitualDayResponse day = getForBody("/api/ritual/day/" + LocalDate.now(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getClosed()).isFalse();
+        assertThat(day.getClosedAt()).isNull();
+    }
+
+    @Test
+    void testClose_shouldCloseTheExistingOpenRow_whenAReflectionRowAlreadyExists() {
+        ritualPopulator.openDay(ownerId(), LocalDate.now(), "Fáradt voltam, de befejeztem.");
+        RitualDayResponse day = postForBody("/api/ritual/close",
+            RitualCloseRequest.builder().date(LocalDate.now()).build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getClosed()).isTrue();
+        assertThat(day.getClosedAt()).isNotNull();
+        // the close must REUSE the open row, never insert a second one (uq_ritual_day_user_date)
+        assertThat(ritualDayRepository.findByCreatedByAndRitualDate(ownerId(), LocalDate.now()))
+            .get().extracting(RitualDayEntity::getReflectionText)
+            .isEqualTo("Fáradt voltam, de befejeztem.");
     }
 }

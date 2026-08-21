@@ -49,6 +49,11 @@ public class RitualService {
         }
         RitualDayEntity row = ritualDayRepository.findByCreatedByAndRitualDate(userId, date)
             .orElseGet(() -> insertOrReread(userId, date));
+        if (row.getClosedAt() == null) {
+            // an open row exists (a reflection was written first, mezo-b3pp.2) — stamp it closed
+            row.setClosedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+            row = ritualDayRepository.saveAndFlush(row);
+        }
         return toResponse(userId, date, row);
     }
 
@@ -72,10 +77,12 @@ public class RitualService {
             .opensAt(bed.minusMinutes(properties.leadMin()).format(HHMM))
             .prepStartsAt(bed.minusMinutes(properties.prepLeadMin()).format(HHMM))
             .build();
+        // a row may exist for a reflection alone (mezo-b3pp.2) — closure is closed_at, not existence
+        Instant closedAt = row == null ? null : row.getClosedAt();
         return RitualDayResponse.builder()
             .date(date)
-            .closed(row != null)
-            .closedAt(row == null ? null : OffsetDateTime.ofInstant(row.getClosedAt(), ZoneOffset.UTC))
+            .closed(closedAt != null)
+            .closedAt(closedAt == null ? null : OffsetDateTime.ofInstant(closedAt, ZoneOffset.UTC))
             .window(window)
             .build();
     }

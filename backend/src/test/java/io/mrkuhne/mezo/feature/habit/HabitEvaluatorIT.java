@@ -211,4 +211,13 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
         ritualPopulator.closedDay(owner, d);
         assertThat(evaluator.satisfied("ritual_closed", owner, d)).isTrue();
     }
+
+    /** mezo-b3pp.2: a puszta reflexió-sor még nem lezárás — a habit csak closed_at-re teljesül. */
+    @Test
+    void testSatisfied_shouldNotCompleteRitualClosed_whenOnlyAReflectionRowExists() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        ritualPopulator.openDay(owner, d, "Csak leírtam, még nem zártam le.");
+        assertThat(evaluator.satisfied("ritual_closed", owner, d)).isFalse();
+    }
 }

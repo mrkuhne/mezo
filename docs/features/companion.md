@@ -476,7 +476,9 @@ COMPLETE (all 14 slices):**
     `medication-dose-mg` (the last administered dose on-or-before each day — the cycle-day anchor
     pattern) · `habits-done` (count of `done` rows; a habit-row day with zero done is a REAL 0)
     · `ritual-closed` (0/1 from the first-ever closed day onward — pre-adoption days are absent,
-    not 0) · `daily-xp` (activity + habit + completed-quest XP sum; zero-XP days absent) ·
+    not 0; **`mezo-b3pp.2`:** both the adoption lookup and the lit-day set use the closed-only
+    `ritual_day` finders, so an OPEN reflection-only row neither starts the series early nor
+    lights a day up) · `daily-xp` (activity + habit + completed-quest XP sum; zero-XP days absent) ·
     `social-mentions` (mentions per ts-day) · `run-hr-recovery-s` (avg).
   - *Derived (sport-science):* `weekend` (0/1 calendar series — control variable) · `acwr`
     (7d/28d rolling mean ratio of daily load; the extractor internally reads 28 days BEFORE the
