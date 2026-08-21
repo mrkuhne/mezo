@@ -169,7 +169,12 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
   `mezo-api-contract`, `mezo-testing`, `mezo-deploy`. Invoke the process skill FIRST
   (it tells you when to pull a domain skill).
 - Work in a git worktree (Hermes worktree mode) on a `feat/<topic>` branch; never on main.
-- Start interactive sessions from the repo directory — one-shot `hermes -z` mode starts its
-  shell in `$HOME` (known v0.20.4 behavior), so agent work runs via the interactive TUI.
+- Terminal sessions start in the repo (`terminal.cwd` in `~/.hermes/config.yaml`) on every
+  surface — TUI, desktop app, Discord gateway, one-shot `-z`. `~/.hermes/shell-init.sh` puts
+  `~/.local/bin` (bd) on PATH for desktop-spawned shells.
+- Memory = facts, skills = procedures: durable environment/project facts go to `bd remember`
+  (and Hermes MEMORY.md/Hindsight pick them up); a repeated 5+ step procedure becomes a skill.
+- Model roles: Qwen3.8-27B for spec/plan/implementation/review (effort Medium; High does not
+  scale past ~60K context), Qwen3.6-35B-A3B for chat and quick questions (effort Low).
 - Escalation rule: if you stall twice on the same slice, or CI goes red twice from the
   same mistake, STOP and report — the slice escalates to Claude. Log it as a bd comment.
