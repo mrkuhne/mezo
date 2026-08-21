@@ -1283,7 +1283,7 @@ export interface PushSubscriptionState {
 
 // ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
 // evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
-// The 20 keys/sections/defaults mirror the backend's authoritative enum
+// The 21 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
@@ -1292,6 +1292,7 @@ export type NotificationCategoryKey =
   | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
   | 'evening' | 'sleep_reaction' | 'weight_reaction'
   | 'pattern' | 'knowledge' | 'prediction' | 'experiment' | 'challenge' | 'memory'
+  | 'decision_review'
 
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
@@ -1299,6 +1300,7 @@ export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
   'evening', 'sleep_reaction', 'weight_reaction',
   'pattern', 'knowledge', 'prediction', 'experiment', 'challenge', 'memory',
+  'decision_review',
 ]
 
 export interface NotificationPrefView {
@@ -1406,6 +1408,10 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
   memory: {
     label: 'Memória', emoji: '🗂', section: 'brain',
     description: 'Napi összefoglaló elkészült — ébredés után', showLeadChip: false, iconBg: '--wash-run',
+  },
+  decision_review: {
+    label: 'Döntés visszanézés', emoji: '⚖️', section: 'brain',
+    description: 'Amikor egy döntésed esedékes visszanézni', showLeadChip: false, iconBg: '--wash-lav',
   },
 }
 
