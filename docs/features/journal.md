@@ -16,7 +16,7 @@ key_files:
   - frontend/src/features/me/sheets/DecisionReviewSheet.tsx
   - frontend/src/features/me/pages/JournalPage.tsx
   - api/feature/journal/journal.yml
-related: [me, companion, _platform-data-layer, _platform-api-backend, _platform-notifications]
+related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _platform-notifications]
 ---
 
 # Journal — Free-Prose Notes + Narrative Memory Embedding
@@ -378,14 +378,22 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   after the due day passes). Full category shape (default ON, lead 0, dedup suffix) lives in
   [`_platform-notifications.md`](_platform-notifications.md) §4 — this is the one seam in the domain
   that is **not** the embed pipeline.
-- **🟣 Future W1 slices reuse the embed seam above, not a new one (spec §5.2–§5.5):** W1.2 (evening
-  prose reflection in Napzárás, `mezo-b3pp.2`) embeds `kind=reflection` off `ritual_day` on close;
-  W1.3 (gratitude entries, `mezo-b3pp.3`) adds `gratitude_entry` in the **same** `feature/journal`
-  package and embeds `kind=gratitude`; W1.5 (note-embedding catch-up, `mezo-b3pp.5`) extends the
-  nightly `DailySummaryJob` sweep to embed `activity_log`/check-in notes as `kind=activity_note`/
-  `checkin_note`. Every one of these is "a new `write<Kind>` method on `MemoryEmbeddingWriter`, not a
-  second writer" (spec §4.3) — the CHECK constraint W1.1 widened already has room for all of them;
-  W1.4 (decision journal + review loop) is the pattern in production, not future, as of this doc.
+- **✅ W1.2 shipped the third consumer of this seam, from OUTSIDE `feature/journal` (`mezo-b3pp.2`).**
+  The Napzárás evening reflection (`ritual_day.reflection_text`, [`ritual.md`](ritual.md)) embeds as
+  `kind=reflection` through the new `MemoryEmbeddingWriter.writeReflection` + a
+  `ReflectionEmbeddingListener` gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — proof that "a new
+  `write<Kind>` method, not a second writer" (spec §4.3) holds for a source domain journal doesn't
+  own. It also **refactored the writer**: the three duplicated re-embed blocks (journal, decision,
+  reflection) collapsed into one private `upsert(createdBy, kind, refId, content, occurredOn)`, so
+  `writeJournal`/`writeDecision` are now one-liners over it and the update-in-place mechanics
+  documented in §9 live in exactly one method. Behaviour is unchanged — same lookup, same
+  `LlmCallContext`, same insert fallback — so the journal/decision ITs pinned it without edits.
+- **🟣 Remaining W1 slices reuse the same seam (spec §5.3/§5.5):** W1.3 (gratitude entries,
+  `mezo-b3pp.3`) adds `gratitude_entry` in the **same** `feature/journal` package and embeds
+  `kind=gratitude`; W1.5 (note-embedding catch-up, `mezo-b3pp.5`) extends the nightly
+  `DailySummaryJob` sweep to embed `activity_log`/check-in notes as `kind=activity_note`/
+  `checkin_note`. The CHECK constraint W1.1 widened already has room for both; W1.4 (decision
+  journal + review loop) and W1.2 are the pattern in production, not future, as of this doc.
 
 ## 6. How to use it (consume)
 
@@ -438,9 +446,12 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   `support/ResetDatabase.java:41`) → publish the equivalent Saved event (+ a Deleted event too, only
   if the new kind is actually deletable — `decision_entry` isn't, so it has no
   `DecisionEntryDeletedEvent`) → a new `write<Kind>`/`delete<Kind>Embedding` pair on
-  `MemoryEmbeddingWriter` + a new `<Kind>EmbeddingListener` mirroring `JournalEmbeddingListener`/
-  `DecisionEmbeddingListener` (companion-owned, gated on `COMPANION_SWITCH` + the new feature's own
-  switch) → dual-mode FE hook (`useDualQuery` recipe in [`_platform-data-layer.md`](_platform-data-layer.md))
+  `MemoryEmbeddingWriter` — a re-embeddable kind's `write<Kind>` should be a one-liner over the
+  shared private `upsert(...)`, not a fourth copy of the lookup-then-update body (`mezo-b3pp.2`) —
+  + a new `<Kind>EmbeddingListener` mirroring `JournalEmbeddingListener`/
+  `DecisionEmbeddingListener`/`ReflectionEmbeddingListener` (companion-owned, gated on
+  `COMPANION_SWITCH` + the new feature's own switch — `ReflectionEmbeddingListener` is the worked
+  example of that second switch not being journal's) → dual-mode FE hook (`useDualQuery` recipe in [`_platform-data-layer.md`](_platform-data-layer.md))
   → both `pnpm test` modes green.
 - **A new field on `journal_entry` itself** — same contract-first → backend → migration →
   dual-mode-hook → both-modes-green order; mirror the field in `journalMock.ts` so mock parity
@@ -522,16 +533,21 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
   key". `uq_memory_embedding_kind_ref_id` spans **soft-deleted** rows (the index has no
   `where is_deleted = false` partial clause), so a soft-delete-then-insert on the same key would
   violate the unique constraint, and a hard delete would break the soft-delete-everywhere rule.
-  `MemoryEmbeddingWriter.writeJournal` (`embedding/MemoryEmbeddingWriter.java:117-133`) instead
+  `MemoryEmbeddingWriter.writeJournal` instead
   looks up the live row by `(kind, ref_id)` and, if present, updates its `content`/`embedding`/
   `occurred_on` in place — same effect (fresh vector describing the edited text), same key, no
-  constraint conflict. First write still inserts via the shared `write` helper.
+  constraint conflict. First write still inserts via the shared `write` helper. **Since `mezo-b3pp.2`
+  this lookup-then-update-or-insert body lives once**, in the private
+  `MemoryEmbeddingWriter.upsert(createdBy, kind, refId, content, occurredOn)`, which
+  `writeJournal`/`writeDecision`/`writeReflection` all delegate to; the write-once kinds
+  (`chat_turn`, `daily_summary`) keep calling the insert-only `write` directly, since a lookup they
+  can never hit would be pure cost.
 - **Decision — the embed tag stays the generic `embed_memory`/`document`, `entityKind=journal_entry`
   is the discriminator (spec §11 single-writer rule).** The spec names a possible per-feature
   `journal` LLM-call tag; W1.1 has no journal-specific LLM call to tag (the embed call rides
-  `MemoryEmbeddingWriter`'s existing `LlmCallContext("embed_memory", "document", kind, refId)` —
-  `MemoryEmbeddingWriter.java:123-125`) — one write path, one tag family, `kind` is the only new
-  axis.
+  `MemoryEmbeddingWriter`'s existing `LlmCallContext("embed_memory", "document", kind, refId)`,
+  since `mezo-b3pp.2` stated once inside the shared `upsert`/`write` pair) — one write path, one tag
+  family, `kind` is the only new axis.
 - **Gotcha — `source=ritual` exists in the CHECK/entity but nothing sets it yet.** W1.1 always
   writes `SOURCE_QUICKINPUT` (both the QuickInput sheet's `create` call and the Me page's `+ Új
   bejegyzés` hardcode `source: 'quickinput'` client-side, `journalApi.ts:26`). `ritual` is reserved
@@ -602,9 +618,9 @@ isDecisionDue(decision, localDateString())   // pure: reviewedAt === null && rev
 **Backend — embed pipeline (companion-owned)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the `journal_entry` AFTER_COMMIT trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the `decision_entry` AFTER_COMMIT trigger (create + review); no delete-race handling (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:119-137` (`writeJournal`), `:138-150` (`deleteJournalEmbedding`), `:151-176` (`writeDecision` — re-embeds in place on review, §5).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeJournal`, `deleteJournalEmbedding`, `writeDecision` (re-embeds in place on review, §5), and the private `upsert(...)` all three re-embeddable kinds share since `mezo-b3pp.2` (`writeReflection`, the ritual-sourced fifth kind, is the third caller — [`ritual.md`](ritual.md) §5).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side `DecisionContextPort` adapter (ADR 0029), delegating to `ContextSnapshotAssembler#render`, gated `COMPANION_SWITCH`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, shared by both writers).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the update-in-place lookup, called from the single shared `upsert(...)` since `mezo-b3pp.2`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY`/`KIND_DECISION` + the widened `kind` `@Pattern`.
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**

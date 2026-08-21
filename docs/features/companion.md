@@ -13,7 +13,7 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, proactive, today, _platform-api-backend, _platform-auth-security, journal]
+related: [insights, proactive, today, _platform-api-backend, _platform-auth-security, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -583,6 +583,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
+| Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Records only — nothing reads it yet; W4.2 is what it is for** (§4/§5.7/§9). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
@@ -705,6 +706,14 @@ that there is no delete path** (the decision surface offers no delete), so
 `DecisionEmbeddingListener` carries no orphaned-vector re-check, only the same create-then-fast-review
 insert-race retry-once (`DataIntegrityViolationException` on `uq_memory_embedding_kind_ref_id` →
 re-read → retry). See [`journal.md`](journal.md) §3/§4/§5/§9 for the full decision-journal seam.
+
+**Reflection embedding seam (`mezo-b3pp.2`, Phase 5 W1.2) — a FIFTH narrative kind, and the first one sourced from outside `feature/journal`.** The Napzárás evening ritual ([`ritual.md`](ritual.md)) gained an optional prose reflection stored on `ritual_day.reflection_text`; `RitualService` publishes **`RitualClosedEvent`** and the new **`ReflectionEmbeddingListener`** (`embedding/ReflectionEmbeddingListener.java`) consumes it into `MemoryEmbeddingWriter.writeReflection` → `kind=reflection`, `ref_id = ritual_day.id`, `occurred_on = ritual_date`. Three things differ from the two journal-sourced seams, and all three are worth knowing:
+
+- **The second switch is `RITUAL_SWITCH`, not `JOURNAL_SWITCH`.** The `@ConditionalOnProperty` array-AND is the same mechanism, but this listener's source domain is ritual — either switch off and the bean does not exist, so no embed call can happen. `RitualApiCompanionOffIT` pins the companion-off half (the close still succeeds, no embeddings written).
+- **The trigger is a *lifecycle* event, not a save event.** `journal_entry`/`decision` embed on every write of their unit; the reflection embeds when the **day closes**, and again only if a *closed* day's prose is later edited. `RitualClosedEvent` is published from exactly two sites, both in `RitualService` — the single `closed_at` stamp branch (so a repeat close publishes nothing) and `saveReflection` on an already-closed row. A save *before* the close writes the column and publishes nothing; the close then embeds the final text. That is also why this listener carries **no create-then-fast-edit insert-race retry**: there is no per-keystroke write path to race with, and the FE upholds that end (`ReflectionStep` saves on advance, never a debounced autosave — [`ritual.md`](ritual.md) §9). A lost race would surface as the swallowed warning and heal on the next edit.
+- **It has a delete path, but no delete event.** Clearing the prose is an ordinary `saveReflection` with blank text; `writeReflection` sees a null/blank `reflection_text` and **soft-deletes** the existing vector rather than embedding an empty string — the `deleteJournalEmbedding` idiom reached through the same write call instead of a second listener method (IDENT-3: an erased evening must stop being recallable).
+
+Like `journal_entry` and `decision`, the event is published **inside** the writing transaction and the AFTER_COMMIT phase is the consumer's obligation (the `RitualClosedEvent` javadoc says so explicitly), the listener re-reads its row **by id** so a close plus a fast follow-up edit both embed the latest prose, and failures are logged and swallowed. The cross-feature edge is `companion → ritual`, the same direction the journal seams run — `feature/ritual` imports nothing from companion. This slice also **folded the three duplicated re-embed blocks into one private `MemoryEmbeddingWriter.upsert(createdBy, kind, refId, content, occurredOn)`**: `writeJournal`, `writeDecision` and `writeReflection` are now one-liners over it, so the update-in-place mechanics (`findByKindAndRefId` → refresh `content`/`embedding`/`occurred_on`, else insert via `write`) exist once. Write-once kinds (`chat_turn`, `daily_summary`) still call `write` directly — going through `upsert` would buy them a pointless lookup.
 
 **The reverse read, and why it's a port, not a direct import ([ADR 0029](../decisions/0029-invert-journal-companion-decision-context-port.md)).**
 `DecisionService.create` also needs something FROM the companion — the rendered context-snapshot
@@ -1118,10 +1127,12 @@ swapped in-slice across compose/k3s/Testcontainers):
   (chat_turn,daily_summary,weekly_summary)` at V2.1 — **widened to 10 kinds at Phase 5 W1.1**
   (`mezo-b3pp.1`, migration `202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`): `+
   monthly_summary, journal_entry, reflection, gratitude, decision, activity_note, checkin_note`.
-  `journal_entry` (W1.1, `KIND_JOURNAL_ENTRY`, written by `JournalEmbeddingListener` below) and
-  `decision` (W1.4, `KIND_DECISION`, written by `DecisionEmbeddingListener` below) are populated as
-  of `mezo-b3pp.4`; the remaining four kinds are schema headroom for the rest of the Phase 5 W1
-  narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
+  `journal_entry` (W1.1, `KIND_JOURNAL_ENTRY`, written by `JournalEmbeddingListener` below),
+  `decision` (W1.4, `KIND_DECISION`, written by `DecisionEmbeddingListener` below) and — since
+  `mezo-b3pp.2` — `reflection` (W1.2, `KIND_REFLECTION`, written by `ReflectionEmbeddingListener`
+  off `feature/ritual`'s close event) are populated; `gratitude` (W1.3) and
+  `activity_note`/`checkin_note` (W1.5) are still schema headroom for the rest of
+  the Phase 5 W1 narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
   design spec's explicit instruction, rather than one `alter table` per later slice), `ref_id uuid`
   (`uq_memory_embedding_kind_ref_id (kind, ref_id)` — one embedding per source unit, the V2.2
   pipeline's idempotence anchor **and the spans-soft-deleted-rows constraint that makes journal's
@@ -2578,15 +2589,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — journal embedding seam (`mezo-b3pp.1`, Phase 5 W1.1, post-epic — full detail in [`journal.md`](journal.md))**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s two events, gated on `COMPANION_SWITCH` + `JournalService`'s own switch (`FeaturesConfiguration.JOURNAL_SWITCH`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:114-141` — `writeJournal` (update-in-place re-embed on an edit — `uq_memory_embedding_kind_ref_id` spans soft-deleted rows, so a delete+insert would collide) / `deleteJournalEmbedding`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeJournal` / `deleteJournalEmbedding`. Since `mezo-b3pp.2` `writeJournal` is a one-liner over the shared private `upsert(...)` (the update-in-place re-embed — `uq_memory_embedding_kind_ref_id` spans soft-deleted rows, so a delete+insert would collide).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_JOURNAL_ENTRY` + the 10-kind `@Pattern` (§4 above).
 - Tests: journal cases folded into `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/JournalEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip) — full test map in [`journal.md`](journal.md) §8.
 
 **Backend — decision embedding seam (`mezo-b3pp.4`, Phase 5 W1.4, post-epic — full detail in [`journal.md`](journal.md))**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s `DecisionEntrySavedEvent` (fired on both create and review), gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH`; retries once on the create-then-fast-review insert race, no delete-race handling (decisions aren't deletable).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java:150-176` — `writeDecision`: embeds `decisionText` on create, re-embeds the SAME `(kind=decision, ref_id)` row in place on review with the outcome folded into the content (`"…\n\nKimenet (N/5): …"`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeDecision`: embeds `decisionText` on create, re-embeds the SAME `(kind=decision, ref_id)` row in place on review with the outcome folded into the content (`"…\n\nKimenet (N/5): …"`) — since `mezo-b3pp.2` also through the shared `upsert(...)`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-58` — `KIND_DECISION` (the 10-kind `@Pattern`, §4 above, unchanged — `'decision'` was already permitted).
 - Tests: decision cases folded into `MemoryEmbeddingWriterIT` (`testWriteDecision_*`) + `backend/src/test/java/io/mrkuhne/mezo/feature/journal/DecisionEmbeddingEventIT.java` (the end-to-end AFTER_COMMIT round trip, both create and review) — full test map in [`journal.md`](journal.md) §8.
+
+**Backend — reflection embedding seam (`mezo-b3pp.2`, Phase 5 W1.2 — full detail in [`ritual.md`](ritual.md))**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/ReflectionEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/ritual`'s `RitualClosedEvent`, gated on `COMPANION_SWITCH` + **`FeaturesConfiguration.RITUAL_SWITCH`** (not the journal switch); re-reads the `ritual_day` row by id, no insert-race retry (there is no per-keystroke write path to race with — §5 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeReflection` (blank/cleared prose ⇒ soft-delete the vector; otherwise the shared `upsert(...)`) + the private `upsert(...)` itself, extracted in this slice out of the three duplicated re-embed blocks.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java` — `KIND_REFLECTION` (the 10-kind `@Pattern` unchanged — `'reflection'` was already permitted, so W1.2 ships no companion-side migration).
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/ritual/RitualReflectionEmbeddingIT.java` (the end-to-end vector: embed on close, none when skipped, none before the close, in-place re-embed on a post-close edit, soft-delete on a clear) + `RitualReflectionEventIT` (the publication contract) + `RitualApiCompanionOffIT` (companion off ⇒ close succeeds, no embeddings) — full test map in [`ritual.md`](ritual.md) §8.
 
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
