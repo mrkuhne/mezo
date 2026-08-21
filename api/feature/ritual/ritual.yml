@@ -89,4 +89,4 @@ components:
       required: [date, text]
       properties:
         date: { type: string, format: date }
-        text: { type: string, description: "Free prose; blank clears the reflection" }
+        text: { type: string, description: "Free prose; stored stripped of surrounding whitespace, and blank (or whitespace-only) clears the reflection" }

@@ -117,6 +117,19 @@ class RitualApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testSaveReflection_shouldStripSurroundingWhitespace_whenTheProseIsPadded() {
+        // whitespace-only already collapses to null; stripping makes that normalisation TOTAL
+        // rather than "blank is cleaned but padding survives" — and keeps a textarea's trailing
+        // newline from changing Task 3's embedding vector for otherwise identical prose
+        RitualDayResponse day = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("  Csendes nap volt.\n").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getReflectionText()).isEqualTo("Csendes nap volt.");
+        assertThat(ritualDayRepository.findByCreatedByAndRitualDate(ownerId(), LocalDate.now()))
+            .get().extracting(RitualDayEntity::getReflectionText).isEqualTo("Csendes nap volt.");
+    }
+
+    @Test
     void testSaveReflection_shouldCreateNoRow_whenTextIsBlankAndNoRowExists() {
         RitualDayResponse day = putForBody("/api/ritual/reflection",
             RitualReflectionRequest.builder().date(LocalDate.now()).text("   ").build(),

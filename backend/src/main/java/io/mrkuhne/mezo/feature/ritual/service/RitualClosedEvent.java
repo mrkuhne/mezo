@@ -3,9 +3,18 @@ package io.mrkuhne.mezo.feature.ritual.service;
 import java.util.UUID;
 
 /**
- * Published AFTER_COMMIT when a Napzárás day is closed (bd mezo-b3pp.2, spec §5.2) — and again
- * when an already-closed day's reflection is edited, so the vector never goes stale. The
- * companion's {@code ReflectionEmbeddingListener} consumes it and embeds the day's prose.
+ * Signals that a Napzárás day's prose needs (re-)embedding (bd mezo-b3pp.2, spec §5.2).
+ *
+ * <p><b>Published INSIDE the writing transaction</b> — a plain {@code publishEvent} from
+ * {@code RitualService}, not an AFTER_COMMIT hand-off. The commit boundary is therefore the
+ * CONSUMER's responsibility: embed off a {@code @TransactionalEventListener(phase = AFTER_COMMIT)},
+ * never a plain {@code @EventListener}, or the listener runs inside the writing transaction and
+ * may embed prose that then rolls back (the {@code JournalEntrySavedEvent} listener's shape).
+ *
+ * <p>Currently published from ONE site only: {@code RitualService.saveReflection}, when an
+ * already-closed day's reflection is edited, so the vector cannot go stale. {@code close} does
+ * not publish yet — Task 3 (spec §5.2) adds the publication to its single {@code closed_at}
+ * stamp branch and introduces the {@code ReflectionEmbeddingListener} that consumes this.
  *
  * <p>No {@code userId} field — mezo is single-user and the listener re-reads the row by id
  * (the {@code JournalEntrySavedEvent} precedent).

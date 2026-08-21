@@ -73,6 +73,9 @@ public class RitualService {
         if (!LocalDate.now().equals(date)) {
             throw ritualNotToday();
         }
+        // total normalisation, stated in the contract: whitespace-only clears, and surrounding
+        // padding is stripped rather than stored — a textarea's trailing newline must not give
+        // otherwise identical prose a different embedding vector (Task 3)
         String cleaned = text == null || text.isBlank() ? null : text.strip();
         RitualDayEntity row = ritualDayRepository.findByCreatedByAndRitualDate(userId, date).orElse(null);
         if (row == null) {
