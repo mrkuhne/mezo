@@ -19,7 +19,9 @@ description: Use when a checkboxed implementation plan exists. Executes it task 
 6. Tasks that are independent of each other (no shared files, no produced/consumed
    interface between them) may be delegated in parallel with `delegate_task` — pass the
    full task text as the goal. Dependent tasks: never.
-7. Commit exactly where the plan says. Never batch multiple tasks into one commit.
+7. Keep every file-writing tool call ≤ ~150 lines (write the skeleton, then `patch` in
+   sections) — the local server buffers tool-call arguments until complete; long writes look
+   like a dead stream. Commit exactly where the plan says. Never batch multiple tasks into one commit.
 8. ESCALATION RULE: two stalls on the same task, or the same failure twice → stop,
    summarize the blocker, log a bd comment. Do not thrash.
 9. After the last task: run the full local gates from AGENTS.md (Build & Test section),

@@ -46,6 +46,10 @@ two decisions in it is not executable.
    `execute_code` script for it instead of hand steps.
 6. Header must carry: Goal, Architecture (2–3 sentences), Global Constraints (exact
    values from the spec), spec link, driving bd id.
-7. Save to docs/superpowers/plans/YYYY-MM-DD-<feature>.md, commit.
+7. Save to docs/superpowers/plans/YYYY-MM-DD-<feature>.md — **in chunks**: first `write_file`
+   with the header + Global Constraints + the task headings only, then append one task at a
+   time with `patch` (each call ≤ ~150 lines). LM Studio buffers a tool call's arguments until
+   the call is complete, so a single 1 000-line write is 15+ minutes of silence and trips the
+   stream watchdog. Then commit.
 8. Self-check against the spec: every requirement maps to a task; types/names consistent
    across tasks. Fix inline, then offer execution.

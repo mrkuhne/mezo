@@ -66,8 +66,11 @@ under [`docs/research/raw/articles/`](../research/raw/articles/).
 ## Amendment 2026-08-21 — planner model after the Phase-1 A/B
 
 The Phase-1 A/B (`mezo-zjtm.3`, W1.3 plan) reversed the primary/chat split: **Qwen3.8-27B**
-failed twice to produce a plan (thinking grew to 23 min/turn past ~60K context and tripped
-Hermes's 900 s stale-stream watchdog), while **Qwen3.6-35B-A3B** delivered a full plan in
+failed twice to produce a plan — root cause measured afterwards: LM Studio does **not stream
+tool-call arguments** (a 120-line `write_file` = 167 s of silence; a 1 700-line plan at the
+27B's ~20 tok/s ≈ 40 min), so Hermes's 900 s stale-stream watchdog killed and retried the
+write; the 35B-A3B only survived because it writes 2–3× faster. Mitigations: chunked writes
+(≤150 lines per tool call, in the skills) + `agent.local_stream_stale_timeout: 2400`, while **Qwen3.6-35B-A3B** delivered a full plan in
 12 minutes with zero hallucinated files and defects fixable in one editing pass. Decision:
 35B-A3B is the work model (plan + implementation + chat); 3.8-27B is kept for short-context
 review. Phase 2 (low-risk implementation slices) is **GO** on 35B-A3B behind the CI gate.

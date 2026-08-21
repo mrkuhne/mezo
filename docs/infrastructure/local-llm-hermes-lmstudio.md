@@ -39,6 +39,10 @@ Set on the model **before/at load** (GUI load panel; `lms load <key> -c 262144` 
   ~60–100K-token agent context Qwen3.8 thinks 7→23 min per turn and hits Hermes's stream
   timeout, which then retries the identical request (A/B run 1, 2026-08-21).
 - JIT loading: first API request loads the model (~10 s warm); idle TTL 60 min unloads it.
+- **Tool-call arguments are NOT streamed** (measured 2026-08-21: reasoning + content stream
+  immediately; a `write_file` call's arguments arrive only when complete — 167 s of silence
+  for a 120-line file). Consequences: keep file-writing tool calls ≤ ~150 lines (skills do),
+  and `agent.local_stream_stale_timeout: 2400` in Hermes so a long write is not killed at 900 s.
 
 ## 3. Hermes config (`~/.hermes/config.yaml` + `~/.hermes/.env`)
 
