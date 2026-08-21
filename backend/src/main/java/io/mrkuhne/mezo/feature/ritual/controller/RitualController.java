@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.ritual.controller;
 import io.mrkuhne.mezo.api.controller.RitualApi;
 import io.mrkuhne.mezo.api.dto.RitualCloseRequest;
 import io.mrkuhne.mezo.api.dto.RitualDayResponse;
+import io.mrkuhne.mezo.api.dto.RitualReflectionRequest;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -28,5 +29,10 @@ public class RitualController implements RitualApi {
     @Override
     public RitualDayResponse closeRitualDay(RitualCloseRequest request) {
         return ritualService.close(currentUserId.get(), request.getDate());
+    }
+
+    @Override
+    public RitualDayResponse saveRitualReflection(RitualReflectionRequest request) {
+        return ritualService.saveReflection(currentUserId.get(), request.getDate(), request.getText());
     }
 }

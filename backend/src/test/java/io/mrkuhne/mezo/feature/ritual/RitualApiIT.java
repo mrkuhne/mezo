@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.RitualCloseRequest;
 import io.mrkuhne.mezo.api.dto.RitualDayResponse;
+import io.mrkuhne.mezo.api.dto.RitualReflectionRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
@@ -89,5 +90,75 @@ class RitualApiIT extends ApiIntegrationTest {
         assertThat(ritualDayRepository.findByCreatedByAndRitualDate(ownerId(), LocalDate.now()))
             .get().extracting(RitualDayEntity::getReflectionText)
             .isEqualTo("Fáradt voltam, de befejeztem.");
+    }
+
+    @Test
+    void testSaveReflection_shouldUpsertAnOpenRow_whenNoRowExists() {
+        RitualDayResponse day = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("Nehéz nap volt, de bírtam.").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getReflectionText()).isEqualTo("Nehéz nap volt, de bírtam.");
+        assertThat(day.getClosed()).isFalse();
+    }
+
+    @Test
+    void testSaveReflection_shouldOverwrite_whenCalledTwice() {
+        putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("Első").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        RitualDayResponse day = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("Második").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getReflectionText()).isEqualTo("Második");
+        assertThat(ritualDayRepository.findByCreatedByAndRitualDate(ownerId(), LocalDate.now()))
+            .get().extracting(RitualDayEntity::getReflectionText).isEqualTo("Második");
+        // the upsert must never insert a SECOND row for the same (created_by, ritual_date)
+        assertThat(ritualDayRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void testSaveReflection_shouldCreateNoRow_whenTextIsBlankAndNoRowExists() {
+        RitualDayResponse day = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("   ").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getReflectionText()).isNull();
+        assertThat(ritualDayRepository.findByCreatedByAndRitualDate(ownerId(), LocalDate.now())).isEmpty();
+    }
+
+    @Test
+    void testSaveReflection_shouldClear_whenTextIsBlankAndRowExists() {
+        ritualPopulator.openDay(ownerId(), LocalDate.now(), "Valami");
+        RitualDayResponse day = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getReflectionText()).isNull();
+        assertThat(ritualDayRepository.findByCreatedByAndRitualDate(ownerId(), LocalDate.now()))
+            .get().extracting(RitualDayEntity::getReflectionText).isNull();
+    }
+
+    @Test
+    void testSaveReflection_shouldReject_whenNotToday() {
+        String err = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now().minusDays(1)).text("Tegnap").build(),
+            ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(err, "RITUAL_NOT_TODAY");
+    }
+
+    @Test
+    void testSaveReflection_shouldKeepTheDayClosed_whenEditedAfterTheClose() {
+        ritualPopulator.closedDay(ownerId(), LocalDate.now());
+        RitualDayResponse day = putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("Utólag pontosítom.").build(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getClosed()).isTrue();
+        assertThat(day.getReflectionText()).isEqualTo("Utólag pontosítom.");
+    }
+
+    @Test
+    void testGetDay_shouldServeTheReflection_whenOneWasSaved() {
+        ritualPopulator.openDay(ownerId(), LocalDate.now(), "Megírtam.");
+        RitualDayResponse day = getForBody("/api/ritual/day/" + LocalDate.now(),
+            ownerAuthHeaders(), HttpStatus.OK, RitualDayResponse.class);
+        assertThat(day.getReflectionText()).isEqualTo("Megírtam.");
     }
 }

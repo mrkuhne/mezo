@@ -40,6 +40,27 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/ritual/reflection:
+    put:
+      tags: [Ritual]
+      operationId: saveRitualReflection
+      summary: Upsert the day's prose reflection before the close (Ritual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RitualReflectionRequest' }
+      responses:
+        '200':
+          description: The day after the upsert (blank text clears the reflection)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RitualDayResponse' }
+        '409':
+          description: RITUAL_NOT_TODAY
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     RitualWindow:
@@ -56,9 +77,16 @@ components:
         date: { type: string, format: date }
         closed: { type: boolean }
         closedAt: { type: string, format: date-time, nullable: true }
+        reflectionText: { type: string, nullable: true, description: "The day's prose reflection (W1.2); null when skipped" }
         window: { $ref: '#/components/schemas/RitualWindow' }
     RitualCloseRequest:
       type: object
       required: [date]
       properties:
         date: { type: string, format: date }
+    RitualReflectionRequest:
+      type: object
+      required: [date, text]
+      properties:
+        date: { type: string, format: date }
+        text: { type: string, description: "Free prose; blank clears the reflection" }
