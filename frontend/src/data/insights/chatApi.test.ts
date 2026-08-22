@@ -26,8 +26,24 @@ test('omits empty tools/refs so user bubbles stay lean', () => {
   })
   expect(mapped.tools).toBeUndefined()
   expect(mapped.refs).toBeUndefined()
+  // W3.1b: `recalled: []` is the wire's "nothing was recalled" — it must NOT become an
+  // empty Emlékek row on the bubble.
+  expect(mapped.recalled).toBeUndefined()
   // V1.3: a clean answer carries no degraded prop at all (mock messages never set it)
   expect(mapped.degraded).toBeUndefined()
+})
+
+test('passes the recalled memories through untouched so the Emlékek row can render (mezo-b3pp.28)', () => {
+  const recalled = [
+    { occurredOn: '2026-05-21', kind: 'SleepLog', label: 'Alvás', gist: '7.2 h, 4 ébredés', similarity: 0.84 },
+    { occurredOn: '2026-03-04', kind: 'Workout', label: 'Pull Day', gist: 'Lat Pulldown 105 × 9', similarity: 0.71 },
+  ]
+  const mapped = toChatMessage({
+    id: 'm4', role: 'assistant', content: 'Jó jel.', createdAt: '2026-07-03T06:36:00Z',
+    tools: [], refs: [], recalled, degraded: false,
+  })
+  // Same order, same values — the row renders prompt order and the raw cosine (as NN%).
+  expect(mapped.recalled).toEqual(recalled)
 })
 
 test('maps a degraded answer so the bubble can render the flag (V1.3)', () => {
