@@ -18,8 +18,14 @@ public interface GraphMapper {
     GraphNodeResponse toResponse(GraphNodeEntity e);
 
     /** W2.3: how many edges accepting this candidate would create — 0 for every non-candidate
-     *  node, and 0 for a candidate whose meta carries no (or a malformed) proposedEdges list. */
+     *  node (an accepted/active node keeps its original {@code meta.proposedEdges} list around
+     *  even though {@code LifeEventCandidateService.decide} already materialised those edges, so
+     *  the status check here is load-bearing, not redundant with the meta read), and 0 for a
+     *  candidate whose meta carries no (or a malformed) proposedEdges list. */
     default Integer proposedEdgeCount(GraphNodeEntity e) {
+        if (!GraphNodeEntity.STATUS_CANDIDATE.equals(e.getStatus())) {
+            return 0;
+        }
         Object raw = e.getMeta() == null ? null : e.getMeta().get(GraphProposedEdge.META_KEY);
         return raw instanceof java.util.List<?> list ? list.size() : 0;
     }

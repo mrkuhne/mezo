@@ -71,6 +71,10 @@ class GraphCandidateApiIT extends ApiIntegrationTest {
             Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
 
         assertThat(decided.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.ACTIVE);
+        // the accept response itself must not still claim the (already-materialised) proposal
+        // (GraphMapper.proposedEdgeCount is 0 for any non-candidate node, even though the node's
+        // meta.proposedEdges list is left untouched — the status check is load-bearing there)
+        assertThat(decided.getProposedEdgeCount()).isZero();
         assertThat(nodeRepository.findById(candidate.getId()).orElseThrow().getStatus())
             .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
         List<GraphEdgeEntity> edges = edgeRepository.findAll();
@@ -82,6 +86,14 @@ class GraphCandidateApiIT extends ApiIntegrationTest {
         assertThat(edges.getFirst().getWeight()).isEqualByComparingTo("0.400");
         assertThat(edges.getFirst().getEvidence()).singleElement()
             .satisfies(e -> assertThat(e.sourceKind()).isEqualTo("extractor"));
+
+        // and the same honest 0 shows up when the now-active node is read back through the
+        // ordinary active-node list, not just in the one-shot decision response
+        List<GraphNodeResponse> activeNodes = getForList("/api/companion/graph/node", ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+        assertThat(activeNodes).filteredOn(n -> n.getId().equals(candidate.getId()))
+            .singleElement()
+            .satisfies(n -> assertThat(n.getProposedEdgeCount()).isZero());
     }
 
     @Test
