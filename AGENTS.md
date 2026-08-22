@@ -162,6 +162,8 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 
 ## Hermes Agent Specifics
 
+- Operator playbook (how Daniel starts and chains sessions, prompt templates, gates):
+  [`docs/infrastructure/hermes-playbook.md`](docs/infrastructure/hermes-playbook.md).
 - Skills live in `.agents/skills/` (repo = source of truth; Hermes discovers repo-local
   skills there natively after a one-time `hermes skills trust`). Process skills:
   `brainstorming`, `writing-plans`, `executing-plans`, `fixing-bugs` (small fixes — no spec/plan),

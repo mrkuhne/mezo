@@ -76,6 +76,8 @@ the work is **not done**. Capture it before closing the `bd` issue.
 
 - [`decisions/0001-deploy-on-k3s-argocd-learning-track.md`](decisions/0001-deploy-on-k3s-argocd-learning-track.md) — why we deploy on self-managed k3s + ArgoCD.
 - [`infrastructure/deployment-k3s-argocd.md`](infrastructure/deployment-k3s-argocd.md) — deployment architecture + current live facts.
+- [`infrastructure/hermes-playbook.md`](infrastructure/hermes-playbook.md) — how to start and chain Hermes local-agent sessions: prompt templates per session type, the state line, gates, troubleshooting.
+- [`infrastructure/local-llm-hermes-lmstudio.md`](infrastructure/local-llm-hermes-lmstudio.md) — the local LLM stack setup (LM Studio + Hermes + Hindsight) and its verified quirks.
 - [`infrastructure/runbook.md`](infrastructure/runbook.md) — **operational runbook**: access, logins, day-to-day ops, troubleshooting, recovery.
 - [`milestones/roadmap.md`](milestones/roadmap.md) — phase & milestone status.
 - [`CODEMAP.md`](CODEMAP.md) — **generated codebase map**: where every feature's code lives (packages, tables, endpoints, hooks, surfaces, tests). First stop when locating files.
