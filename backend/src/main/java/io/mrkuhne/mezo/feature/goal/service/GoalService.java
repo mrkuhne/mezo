@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class GoalService {
     private final GoalMapper goalMapper;
     private final GoalEngineService goalEngineService;
     private final GoalFeasibilityService goalFeasibilityService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Active goal first, then by start date desc (DB ordering, service hoists active). */
     public List<GoalResponse> listGoals(UUID userId) {
@@ -51,13 +53,19 @@ public class GoalService {
         e.setCreatedBy(userId);   // server-side ownership — never from the client
         e.setStatus("planned");
         applyUpsert(e, req);
-        return goalMapper.toResponse(goalRepository.save(e));
+        GoalEntity saved = goalRepository.save(e);
+        // W2.2 (mezo-b3pp.7): a freshly-created goal is never active, so syncGoal(...) is a no-op
+        // today — publishing anyway keeps the "every write publishes" invariant simple and future-proof.
+        eventPublisher.publishEvent(new GoalSavedEvent(userId, saved.getId()));
+        return goalMapper.toResponse(saved);
     }
 
     @Transactional
     public GoalResponse updateGoal(UUID userId, UUID id, GoalUpsertRequest req) {
         GoalEntity e = requireOwned(userId, id);
         applyUpsert(e, req);   // status is NOT touched here (lifecycle endpoints own it)
+        // W2.2 (mezo-b3pp.7): title can change here, so re-sync the graph node (idempotent UPSERT).
+        eventPublisher.publishEvent(new GoalSavedEvent(userId, id));
         return goalMapper.toResponse(e);
     }
 
@@ -78,6 +86,9 @@ public class GoalService {
         for (GoalEntity other : goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")) {
             if (!other.getId().equals(id)) {
                 other.setStatus("archived");
+                // W2.2 (mezo-b3pp.7): each goal the invariant demotes needs its own event, otherwise
+                // its GOAL node would stay active in the graph after this goal is no longer active.
+                eventPublisher.publishEvent(new GoalSavedEvent(userId, other.getId()));
             }
         }
         if (!"active".equals(target.getStatus())) {
@@ -87,6 +98,8 @@ public class GoalService {
         // owner's spine. Graceful on a missing profile — evaluate returns the "profile required"
         // note rather than throwing, so the activation never breaks (same tx, cheap, synchronous).
         goalEngineService.evaluate(userId, id);
+        // W2.2 (mezo-b3pp.7): the newly-active goal gets (or re-syncs) its GOAL node.
+        eventPublisher.publishEvent(new GoalSavedEvent(userId, id));
         return goalMapper.toResponse(target);
     }
 
@@ -96,6 +109,8 @@ public class GoalService {
         if (!"archived".equals(e.getStatus())) {
             e.setStatus("archived");
         }
+        // W2.2 (mezo-b3pp.7): archiving demotes the GOAL node too (idempotent — a re-archive is a no-op UPSERT).
+        eventPublisher.publishEvent(new GoalSavedEvent(userId, id));
         return goalMapper.toResponse(e);
     }
 

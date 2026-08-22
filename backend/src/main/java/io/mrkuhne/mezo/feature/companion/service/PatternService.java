@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ public class PatternService {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final PatternEventRepository patternEventRepository;
     private final CompanionMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<PatternResponse> list(UUID userId) {
         return patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId)
@@ -75,6 +77,11 @@ public class PatternService {
             pattern.setPromotedFactId(promote(userId, pattern));
             recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
                     PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));
+        }
+        if (PatternEntity.STATUS_CONFIRMED.equals(status)) {
+            // W2.2 (mezo-b3pp.7): every confirm re-syncs the graph node; the promotion itself is
+            // an idempotent UPSERT, so a re-confirm costs nothing and never duplicates.
+            eventPublisher.publishEvent(new PatternConfirmedEvent(userId, pattern.getId()));
         }
         return mapper.toPatternResponse(patternRepository.saveAndFlush(pattern));
     }
