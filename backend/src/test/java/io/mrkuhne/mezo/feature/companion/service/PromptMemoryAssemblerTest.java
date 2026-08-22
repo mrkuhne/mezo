@@ -41,17 +41,20 @@ class PromptMemoryAssemblerTest {
     @Test
     void testRenderBlock_shouldStopAtFirstOverflowingItem_whenBudgetTight() {
         String longText = "x".repeat(200);
-        // header ≈ 100 chars; each line ≈ 230 chars → with a 120-token (360-char) budget only ONE line fits
+        // The 130-token budget is chosen to DISCRIMINATE stop-at-first from skip-ahead: header (102
+        // chars) + line 1 (223) = 109 tokens fits; line 2 (235 more) = 187 tokens overflows; but the
+        // short third line (42 more) would land at 123 tokens — a `continue`-instead-of-`break`
+        // implementation WOULD fit it and fail below. Stop-at-first must never reach it.
         Rendered rendered = PromptMemoryAssembler.renderBlock(List.of(
                 item("journal_entry", longText, 0.9),
                 item("daily_summary", longText, 0.8),
-                item("chat_turn", "rövid", 0.7)), 120, 300);
+                item("chat_turn", "rövid", 0.7)), 130, 300);
 
         assertThat(rendered.rendered()).hasSize(1);
         assertThat(rendered.rendered().getFirst().kind()).isEqualTo("journal_entry");
         // relevance order is sacred: the short third item must NOT sneak in past the overflowing second
         assertThat(rendered.block()).doesNotContain("rövid");
-        assertThat(PromptMemoryAssembler.estimateTokens(rendered.block().length())).isLessThanOrEqualTo(120);
+        assertThat(PromptMemoryAssembler.estimateTokens(rendered.block().length())).isLessThanOrEqualTo(130);
     }
 
     @Test
@@ -60,6 +63,19 @@ class PromptMemoryAssemblerTest {
                 List.of(item("journal_entry", "x".repeat(300), 0.9)), 100, 300);
 
         assertThat(rendered).isSameAs(Rendered.EMPTY);
+    }
+
+    @Test
+    void testRenderBlock_shouldSkipItemsWithBlankGist_whenContentWhitespace() {
+        Rendered rendered = PromptMemoryAssembler.renderBlock(List.of(
+                item("journal_entry", "  \n  ", 0.9),
+                item("daily_summary", "Kemény nap volt.", 0.8)), 1200, 300);
+
+        // a blank gist would render a dangling "- <date> (napló): " line (and a ref for nothing)
+        assertThat(rendered.rendered()).hasSize(1);
+        assertThat(rendered.rendered().getFirst().kind()).isEqualTo("daily_summary");
+        assertThat(rendered.block()).doesNotContain("(napló)");
+        assertThat(rendered.block()).contains("- 2026-08-10 (napi összefoglaló): Kemény nap volt.\n");
     }
 
     @Test

@@ -33,9 +33,12 @@ import java.util.UUID;
  * {@code find_similar_past_days} tool stays for deep, targeted recall on demand.
  *
  * <p>Failure honesty (IDENT-3): an embed/ANN failure is logged and the block is simply omitted —
- * the turn itself is fine, so the caller's {@code degraded} flag is NOT touched. The realistic
- * failure is the embed network hop (outside the DB); the ANN query shares the turn's transaction
- * exactly like the tool path's {@code MemoryRecallService} does today.
+ * the turn itself is fine, so the caller's {@code degraded} flag is NOT touched.
+ *
+ * <p>No {@code @Transactional} here (the {@code MemoryRecallService} precedent): the class joins
+ * whatever transaction the caller holds — {@code ChatService}'s turn transaction today — so the
+ * embed hop and the four ANN queries run inside it; the realistic failure is the embed network
+ * hop, outside the DB.
  *
  * <p>Dedupe: today's episodes are skipped (the context snapshot already carries the day), and
  * items are keyed by {@code (kind, ref_id)} so no unit enters the block twice.
@@ -110,23 +113,19 @@ public class PromptMemoryAssembler {
             CompanionProperties.Recall recall = properties.recall();
 
             // (kind, ref_id)-keyed so a unit can never enter twice; groups are disjoint today, the
-            // map is the cheap guarantee that they stay so.
+            // map is the cheap guarantee that they stay so. Order matters only for the dedupe
+            // tie-break — the final sort below is by score.
+            List<Map.Entry<List<String>, Integer>> groups = List.of(
+                    Map.entry(KINDS_DAILY_SUMMARY, ambient.capDailySummary()),
+                    Map.entry(KINDS_JOURNAL, ambient.capJournal()),
+                    Map.entry(KINDS_CHAT_TURN, ambient.capChatTurn()),
+                    Map.entry(KINDS_OTHER, ambient.capOther()));
             Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
-            for (RecalledItem item : recallGroup(userId, KINDS_DAILY_SUMMARY, ambient.capDailySummary(),
-                    literal, today, ambient, recall)) {
-                byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
-            }
-            for (RecalledItem item : recallGroup(userId, KINDS_JOURNAL, ambient.capJournal(),
-                    literal, today, ambient, recall)) {
-                byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
-            }
-            for (RecalledItem item : recallGroup(userId, KINDS_CHAT_TURN, ambient.capChatTurn(),
-                    literal, today, ambient, recall)) {
-                byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
-            }
-            for (RecalledItem item : recallGroup(userId, KINDS_OTHER, ambient.capOther(),
-                    literal, today, ambient, recall)) {
-                byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
+            for (Map.Entry<List<String>, Integer> group : groups) {
+                for (RecalledItem item : recallGroup(userId, group.getKey(), group.getValue(),
+                        literal, today, ambient, recall)) {
+                    byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
+                }
             }
             List<RecalledItem> items = new ArrayList<>(byUnit.values());
             items.sort(Comparator.comparingDouble(RecalledItem::score).reversed());
@@ -177,7 +176,8 @@ public class PromptMemoryAssembler {
     /**
      * Renders relevance-ordered items under the token cap. Stops at the FIRST item that would
      * overflow — a later, shorter item never jumps ahead of a more relevant one (the order IS the
-     * relevance statement). Empty when nothing fits.
+     * relevance statement). Items whose gist is blank are skipped outright (no dangling line, no
+     * ref). Empty when nothing fits.
      */
     static Rendered renderBlock(List<RecalledItem> items, int maxTokens, int renderMaxChars) {
         if (items.isEmpty()) {
@@ -186,9 +186,15 @@ public class PromptMemoryAssembler {
         StringBuilder block = new StringBuilder(MEMORIES_HEADER);
         List<RecalledItem> rendered = new ArrayList<>();
         for (RecalledItem item : items) {
+            String gist = oneLine(item.content(), renderMaxChars);
+            if (gist.isBlank()) {
+                // whitespace-only content would render a dangling "- <date> (napló): " line and
+                // claim a ref for nothing — skip it; this is NOT a budget stop, so keep scanning.
+                continue;
+            }
             String line = "- " + item.occurredOn()
                     + " (" + KIND_LABELS.getOrDefault(item.kind(), item.kind()) + "): "
-                    + oneLine(item.content(), renderMaxChars) + '\n';
+                    + gist + '\n';
             if (estimateTokens(block.length() + line.length()) > maxTokens) {
                 break;
             }
