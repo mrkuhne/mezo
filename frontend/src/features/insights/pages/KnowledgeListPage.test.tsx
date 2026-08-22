@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -93,9 +93,15 @@ describe('KnowledgeListPage (mock mode)', () => {
 
   test('renders the pending candidates with the L2 actions', () => {
     renderPage()
-    expect(screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length}`)).toBeInTheDocument()
+    const heading = screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length}`)
+    expect(heading).toBeInTheDocument()
     expect(screen.getByText(candidateSeed[0].text)).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Elfogad' })).toHaveLength(candidateSeed.length)
+    // az „Elfogad" gomb a jelöltek csoportjára van skálázva, mert az életesemény-jelöltek
+    // csoportja is ad egy „Elfogad" gombot (W2.3, mezo-b3pp.8) — a globális lekérdezés
+    // hamisan bukna emiatt.
+    expect(within(heading.parentElement as HTMLElement).getAllByRole('button', { name: 'Elfogad' })).toHaveLength(
+      candidateSeed.length,
+    )
   })
 
   test('accepting a candidate promotes it into the fact list', async () => {
@@ -121,6 +127,22 @@ describe('KnowledgeListPage (mock mode)', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Elvet' })[0])
     expect(await screen.findByText('Jóváhagyásra vár · 1')).toBeInTheDocument()
     expect(screen.getByText('Tudástár · 15 tény')).toBeInTheDocument()
+  })
+
+  it('kirajzolja az életesemény-jelöltek csoportot és a döntés gombjait', async () => {
+    renderPage()
+    expect(await screen.findByText(/Életesemény-jelöltek/)).toBeInTheDocument()
+    expect(screen.getByText('Új munkahely első hete')).toBeInTheDocument()
+    const accept = screen.getAllByRole('button', { name: 'Elfogad' })
+    expect(accept.length).toBeGreaterThan(0)
+  })
+
+  it('elvetés után eltűnik a jelölt a listáról', async () => {
+    renderPage()
+    const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Elvet' }))
+    await waitFor(() =>
+      expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument())
   })
 })
 
