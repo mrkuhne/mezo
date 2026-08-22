@@ -1214,6 +1214,16 @@ so the only import crossing the boundary is still proactive → companion (uncha
 companion reaches proactive's data purely through Spring DI, never a compile-time dependency. See
 [`companion.md`](companion.md) §5.5 for the companion-side writeup of the same seam.
 
+**W4.2 (`mezo-b3pp.16`) added a second instance of that same inversion.** The nightly feedback
+rollup buckets `feed_message` verdicts by feed slot, which means resolving artifact ids to
+`companion_message.kind` — proactive data again, read from `feature.companion`. `FeedMessageKindService`
+(`feature.proactive.service`, `COMPANION_SWITCH` only, like `PatternImpactService`) implements the
+companion-owned `FeedMessageKindSource` port (`feature.companion.feedback.service`), which also
+carries the five feed-slot constants as literal mirrors of `CompanionMessageEntity.KIND_*` — the
+same "literal mirror rather than import" rule as the fake sentinels (§9 gotcha a). The lookup is
+`userId`-scoped inside the implementation. See [`companion.md`](companion.md) §3 (W4.2 backend
+classes) for the companion-side writeup.
+
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
 All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per
 companion-feed message) and **smart tier** (`completeSmart`, one call per weekly suggestion / one per

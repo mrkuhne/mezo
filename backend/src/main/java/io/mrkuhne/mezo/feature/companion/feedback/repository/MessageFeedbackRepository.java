@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.feedback.repository;
 
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,14 @@ public interface MessageFeedbackRepository extends JpaRepository<MessageFeedback
 
     List<MessageFeedbackEntity> findByCreatedByAndArtifactKindAndArtifactIdInAndDeletedFalse(
         UUID createdBy, String artifactKind, Collection<UUID> artifactIds);
+
+    /** The trailing-window read for {@code FeedbackLearningService} (W4.2, mezo-b3pp.16) — keyed
+     *  on {@code updated_at}, NOT {@code created_at}: {@link #upsertVerdict} leaves
+     *  {@code created_at} at the first vote, so a later flip/re-vote on an artifact first rated
+     *  outside the window would otherwise be invisible to the rollup. {@code updated_at} is set on
+     *  BOTH the insert and the update branch, so it also never misses a first-time verdict. */
+    List<MessageFeedbackEntity> findByCreatedByAndUpdatedAtAfterAndDeletedFalse(
+        UUID createdBy, Instant since);
 
     /** The single write path for a verdict (spec §4.4: ONE updatable verdict per artifact).
      *

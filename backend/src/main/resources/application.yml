@@ -274,6 +274,10 @@ mezo:
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
         enabled: true
+      # W4.2 (mezo-b3pp.16) nightly feedback rollup job (schedule: mezo.companion.feedback-learning.cron);
+      # off = the FeedbackLearningJob bean does not exist
+      feedback-learning-job:
+        enabled: true
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
@@ -430,6 +434,14 @@ mezo:
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)
       revise-threshold: 0.50
+    feedback-learning:
+      # W4.2 (mezo-b3pp.16, spec §8.2): nightly rollup-only pass over message_feedback — per-surface
+      # effectiveness + style (down-reason) histograms. 03:10, a free dawn slot (02:20/02:40/03:00
+      # SUN/03:40 are taken). The reinforcement layer (graph-node edge weighting) is a later,
+      # switch-guarded slice and is NOT built here.
+      cron: "0 10 3 * * *"
+      # Trailing window (days) the rollups are computed over
+      window-days: 30
     patterns:
       # V3.1 nightly Pearson correlation over the pair catalog — 02:40, after the summary job
       cron: "0 40 2 * * *"
