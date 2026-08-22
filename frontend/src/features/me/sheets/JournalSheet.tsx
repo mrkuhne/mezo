@@ -13,6 +13,8 @@ type Mode = 'note' | 'decision' | 'gratitude'
 
 interface JournalSheetProps {
   onClose: () => void
+  /** Return to the naplo-pick grid (QuickInputSheet). */
+  onBack?: () => void
   /** Task 7's /me/naplo edit flow passes the note being edited; omitted → create mode. */
   entry?: JournalNote | null
   /** QuickInput's „Hála" tile opens the sheet directly in gratitude mode. */
@@ -26,7 +28,7 @@ interface JournalSheetProps {
 // no backend operation to convert a note into a decision.
 // Task 7 adds a "Hála" mode: 1–3 gratitude lines with an optional life-area chip, batch-saved
 // through the gratitude hook.
-export function JournalSheet({ onClose, entry, initialMode }: JournalSheetProps) {
+export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalSheetProps) {
   const { addNote, updateNote, removeNote, pending: journalPending } = useJournalActions()
   const { addDecision, pending: decisionPending } = useDecisionActions()
   const { addEntry, pending: gratitudePending } = useGratitudeActions()
@@ -71,7 +73,13 @@ export function JournalSheet({ onClose, entry, initialMode }: JournalSheetProps)
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
+            <div className="col" style={{ gap: 4 }}>
+              {onBack && (
+                <button type="button" className="cta-ghost" onClick={onBack}
+                  style={{ padding: '4px 8px', fontSize: 14 }}>
+                  ← Vissza
+                </button>
+              )}
               <span className="eyebrow">Napló</span>
               <div id="journal-title" className="h-display size-md" style={{ marginTop: 4 }}>
                 {title}

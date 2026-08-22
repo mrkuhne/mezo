@@ -56,12 +56,15 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const nextCheckInIdx = checkins.findIndex(isFillableSlot)
 
+  // Return to naplo-pick from a sub-sheet (aktivitas/journal/gratitude).
+  const goBack = () => setPhase('naplo-pick')
+
   // Each log sheet brings its own portal + backdrop, so it REPLACES the menu
   // rather than layering over it. Closing it closes the whole stack.
   if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
-  if (phase === 'aktivitas') return <ActivityLogSheet onClose={onClose} />
-  if (phase === 'journal') return <JournalSheet onClose={onClose} />
-  if (phase === 'gratitude') return <JournalSheet onClose={onClose} initialMode="gratitude" />
+  if (phase === 'aktivitas') return <ActivityLogSheet onClose={onClose} onBack={goBack} />
+  if (phase === 'journal') return <JournalSheet onClose={onClose} onBack={goBack} />
+  if (phase === 'gratitude') return <JournalSheet onClose={onClose} initialMode="gratitude" onBack={goBack} />
   if (phase === 'checkin' && checkInIdx !== null) {
     return (
       <CheckInSheet
@@ -75,10 +78,16 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet onClose={onClose} labelledBy="quicklog-title">
-      {close => (
+      {(close) => (
         <div className="quicklog">
           {phase === 'naplo-pick' ? (
             <>
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <button type="button" className="cta-ghost" onClick={() => setPhase('menu')}
+                  style={{ padding: '4px 8px', fontSize: 14 }}>
+                  ← Vissza
+                </button>
+              </div>
               <h2 id="quicklog-title">Mit naplózol?</h2>
               <div className="quicklog-grid mt-lg">
                 <Tile emoji="✍️" label="Aktivitás"

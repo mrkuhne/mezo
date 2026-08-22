@@ -11,6 +11,8 @@ import type { ActivityWriteResult } from '@/data/activity/activityApi'
 
 interface ActivityLogSheetProps {
   onClose: () => void
+  /** Return to the naplo-pick grid (QuickInputSheet). */
+  onBack?: () => void
   /** Opened from an activity-mode quest → contextual banner + the quest completes on a match. */
   quest?: DailyQuest | null
   /** Opened to categorize an existing uncategorized entry → starts in the picker phase. */
@@ -20,7 +22,7 @@ interface ActivityLogSheetProps {
 const skillMeta = (key: LifeSkillKey | null | undefined) =>
   key ? LIFE_SKILLS.find((s) => s.key === key) : undefined
 
-export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProps) {
+export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogSheetProps) {
   const date = localDateString()
   const { logActivity, categorize, pending } = useActivityActions(date)
   const [text, setText] = useState('')
@@ -62,7 +64,13 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
+            <div className="col" style={{ gap: 4 }}>
+              {onBack && (
+                <button type="button" className="cta-ghost" onClick={onBack}
+                  style={{ padding: '4px 8px', fontSize: 14 }}>
+                  ← Vissza
+                </button>
+              )}
               <span className="eyebrow">Tevékenységnapló</span>
               <div id="activity-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mi történt ma?</div>
             </div>
