@@ -17,6 +17,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,9 +74,17 @@ class MemoryEmbeddingAnnQueryIT extends AbstractIntegrationTest {
     void testNearestInKinds_shouldLimitToKAndExcludeOtherUsers_whenManyRows() {
         UUID owner = userPopulator.createUser().getId();
         UUID stranger = userPopulator.createUser().getId();
-        // MORE owner rows than k, so `limit :k` is actually exercised (2 rows and k=3 would not)
+        // MORE owner rows than k, so `limit :k` is actually exercised (2 rows and k=3 would not).
+        // The owner's rows sit FARTHER from the axis-0 query (blend, distance ≈ 0.2929) than the
+        // stranger's (axis-0, distance 0) — so the excluded row is the CLOSEST one in the table and
+        // a missing `created_by` filter would deterministically surface it first. Seeding everyone
+        // on axis 0 would tie all five at distance 0 and leave the exclusion resting on Postgres's
+        // arbitrary tie-break.
+        List<UUID> ownerRowIds = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
-            memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY.minusDays(i), 0);
+            ownerRowIds.add(memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN,
+                UUID.randomUUID(), "owner " + i, DAY.minusDays(i),
+                MemoryEmbeddingPopulator.blendVector(0, 1)).getId());
         }
         MemoryEmbeddingEntity strangerRow = memoryEmbeddingPopulator.embedding(
             stranger, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY, 0);
@@ -85,7 +94,7 @@ class MemoryEmbeddingAnnQueryIT extends AbstractIntegrationTest {
 
         assertThat(hits).hasSize(3);
         assertThat(hits).allSatisfy(h -> assertThat(h.kind()).isEqualTo(MemoryEmbeddingEntity.KIND_CHAT_TURN));
-        assertThat(hits).extracting(Hit::id).doesNotContain(strangerRow.getId());
+        assertThat(hits).extracting(Hit::id).isSubsetOf(ownerRowIds).doesNotContain(strangerRow.getId());
     }
 
     /**

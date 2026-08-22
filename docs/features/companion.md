@@ -2364,9 +2364,11 @@ fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
   whitespace-only gist without spending a ref or leaving a dangling line** and keeps scanning
   (a blank gist is not a budget stop), falls back to the raw kind for an unlabelled kind; plus
   `oneLine` (first line + `…` truncation) and `estimateTokens` (ceil at 3 chars/token).
-- **`PromptMemoryAssemblerIT`** (9, `@Transactional`, `companion-fake`): a relevant episode renders
-  with its date and HU source tag; each kind group is capped independently; **the floor is pinned
-  BETWEEN the two thresholds** — a similarity-0.4 row passes the tool's `recall.min-similarity`
+- **`PromptMemoryAssemblerIT`** (10, `@Transactional`, `companion-fake`): a relevant episode renders
+  with its date and HU source tag; **two episodes of the SAME day render two lines but yield ONE
+  `Memory`/date ref** (refs carry the date, not the row id — a dense day cannot eat the turn's ref
+  budget); each kind group is capped independently; **the floor is pinned BETWEEN the two
+  thresholds** — a similarity-0.4 row passes the tool's `recall.min-similarity`
   (0.25) and must still fail the ambient 0.55, so a `recall.minSimilarity()`/`ambient.minSimilarity()`
   typo fails here first; today's episodes are skipped (the snapshot already carries the day); equal
   similarity orders by the decayed score; an empty store, a blank message, `FakeEmbeddingAdapter.FAIL_EMBED`
@@ -2381,9 +2383,8 @@ fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
   would leave Postgres's "current transaction is aborted" state and Hibernate's rollback-only mark.
 - **`ChatServiceAmbientRecallIT`** (4, deliberately NOT `@Transactional` — these assert the turn
   COMMITS): the block sits strictly between the pattern-ack block and `TONE_REMINDER` in the real
-  assembled prompt, every rendered **day** adds one `Memory`/date ref (same-day items collapse;
-  tool refs keep priority under `tools.max-refs-per-turn`) and it appears BOTH on the wire and on
-  the persisted row, `FAIL_EMBED` and `FAIL_ANN` each omit the block while the turn still answers with
+  assembled prompt, the rendered item's `Memory`/date ref appears BOTH on the wire and on the
+  persisted row, `FAIL_EMBED` and `FAIL_ANN` each omit the block while the turn still answers with
   `degraded=false`, and tool refs precede the ambient `Memory` refs in the envelope.
 - **`PromptMemoryAssemblerSwitchOffIT`** — `mezo.companion.ambient-recall.enabled=false` ⇒ empty
   even with seeded, matching vectors (short-circuits before the embed — by construction, not
@@ -2392,7 +2393,10 @@ fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
   recall — the V0.2 steady state is untouched); `ChatStreamServiceIT` gained the streamed block +
   `Memory`-refs-on-`done` test and the streamed twin of the tool-refs-before-Memory-refs ordering;
   `CompanionPropertiesIT` gained the `ambient-recall.*` binding case (all seven keys from
-  `application.yml`).
+  `application.yml`); `FakeEmbeddingAdapterIT` pins BOTH new sentinels (`FAIL_EMBED` throws from
+  `embedQuery` and `embedDocuments`; `FAIL_ANN` returns a unit-norm 3-dim vector) — without that,
+  a sentinel that quietly stopped failing would turn every "the block is omitted" assertion above
+  into a vacuous truth.
 - **Support:** no new populator — the V2.1 `support/populator/MemoryEmbeddingPopulator` already
   stages exact cosine geometry (`axisVector`/`blendVector`), which is what makes the floor/cap/order
   assertions deterministic without any embedding provider.
