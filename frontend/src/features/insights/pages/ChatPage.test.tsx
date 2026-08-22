@@ -88,6 +88,16 @@ describe('ChatPage (mock mode)', () => {
     // ...and only that one card's chip flips — each answer carries its own instance.
     expect(screen.getAllByRole('button', { name: /Segített/ })[1]).toHaveAttribute('aria-pressed', 'false')
   })
+
+  test('the first assistant message shows a collapsed Emlékek row that reveals the recalled gists', async () => {
+    renderPage()
+    const toggle = await screen.findByText(/Emlékek · 2/)
+    // collapsed by default — the answer is the point, this is only its provenance
+    expect(screen.queryByText('futás után jobban aludtam')).not.toBeInTheDocument()
+    fireEvent.click(toggle)
+    expect(screen.getByText('futás után jobban aludtam')).toBeInTheDocument()
+    expect(screen.getByText(/napló · 92%/)).toBeInTheDocument()
+  })
 })
 
 describe('ChatPage (real mode)', () => {
@@ -116,6 +126,23 @@ describe('ChatPage (real mode)', () => {
     expect(screen.getByText(/\[Sleep\]/)).toBeInTheDocument()
   })
 
+  test('the streamed answer carries its own Emlékek disclosure (mezo-b3pp.28)', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    // the persisted history's first answer already discloses what it recalled
+    expect(screen.getByText(/Emlékek · 2/)).toBeInTheDocument()
+
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+
+    const toggle = screen.getByText(/Emlékek · 1/)
+    expect(screen.queryByText('korábban is rosszul aludtál edzés után')).not.toBeInTheDocument()
+    fireEvent.click(toggle)
+    expect(screen.getByText('korábban is rosszul aludtál edzés után')).toBeInTheDocument()
+  })
+
   test('renders the live tool chip while the turn is still streaming (mezo-280)', async () => {
     // the stream is gated after the 'tool' frame — the module handler's frames all land
     // within the same microtask flush (too fast for any assertion to catch mid-stream),
@@ -137,6 +164,7 @@ describe('ChatPage (real mode)', () => {
             createdAt: '2026-07-03T07:00:05Z',
             tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
             degraded: false,
           })))
           controller.close()
@@ -181,6 +209,7 @@ describe('ChatPage (real mode)', () => {
             createdAt: '2026-07-03T07:00:05Z',
             tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
             degraded: false,
           })))
           controller.close()
@@ -215,7 +244,7 @@ describe('ChatPage (real mode)', () => {
           controller.enqueue(encoder.encode(frame('delta', { text: 'bizonytalan válasz' })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-degraded', role: 'assistant', content: 'bizonytalan válasz',
-            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: true,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: true,
           })))
           controller.close()
         },
@@ -242,7 +271,7 @@ describe('ChatPage (real mode)', () => {
           controller.enqueue(encoder.encode(frame('delta', { text: answer })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-md', role: 'assistant', content: answer,
-            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: false,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: false,
           })))
           controller.close()
         },
@@ -308,7 +337,7 @@ describe('ChatPage (real mode)', () => {
           await rest
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-done', role: 'assistant', content: reply,
-            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: false,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: false,
           })))
           controller.close()
         },

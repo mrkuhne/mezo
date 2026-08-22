@@ -92,6 +92,7 @@ describe('useChatActions (real mode)', () => {
             createdAt: '2026-07-03T07:00:05Z',
             tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
             degraded: false,
           })))
           controller.close()

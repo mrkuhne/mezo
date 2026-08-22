@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * W3.1 (mezo-b3pp.12): the {@code [Emlékek]} ambient-recall block on the SYNC chat path — prompt
@@ -98,6 +100,24 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         assertThat(lastAssistantRow(conversation.getId(), userId).getRefs().refs())
                 .contains(new RefsEnvelope.Ref("Memory", LocalDate.now().minusDays(3).toString()));
         assertThat(answer.getDegraded()).isFalse();
+        // W3.1b (mezo-b3pp.28): the answer discloses WHICH memories it was given — on the wire…
+        assertThat(answer.getRecalled()).singleElement().satisfies(item -> {
+            assertThat(item.getOccurredOn()).isEqualTo(LocalDate.now().minusDays(3));
+            assertThat(item.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY);
+            assertThat(item.getLabel()).isEqualTo("napló");
+            assertThat(item.getGist()).isEqualTo("futás után jobban aludtam");
+            assertThat(item.getSimilarity()).isCloseTo(1.0, within(1e-6));
+        });
+        // …and on the committed row, so history re-renders the same disclosure
+        assertThat(lastAssistantRow(conversation.getId(), userId).getRecalledMemories().items())
+                .extracting(RecalledMemoriesEnvelope.Item::occurredOn, RecalledMemoriesEnvelope.Item::kind,
+                        RecalledMemoriesEnvelope.Item::label, RecalledMemoriesEnvelope.Item::gist)
+                .containsExactly(Tuple.tuple(LocalDate.now().minusDays(3),
+                        MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "napló", "futás után jobban aludtam"));
+        // the USER row never carries a recall — the block belongs to the ANSWER
+        assertThat(messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId)
+                .getFirst().getRecalledMemories()).isNull();
     }
 
     @Test
@@ -117,6 +137,9 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
         assertThat(answer.getDegraded()).isFalse();
         assertThat(answer.getRefs()).isEmpty();
+        // W3.1b: a failed recall discloses nothing — [] on the wire, null on the row
+        assertThat(answer.getRecalled()).isEmpty();
+        assertThat(lastAssistantRow(conversation.getId(), userId).getRecalledMemories()).isNull();
         assertThat(messageRepository
                 .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId))
                 .hasSize(2);
@@ -145,6 +168,8 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
         assertThat(answer.getDegraded()).isFalse();
         assertThat(answer.getRefs()).isEmpty();
+        assertThat(answer.getRecalled()).isEmpty();
+        assertThat(lastAssistantRow(conversation.getId(), userId).getRecalledMemories()).isNull();
         // both rows COMMITTED — the turn survived the failed ANN statement
         assertThat(messageRepository
                 .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId))

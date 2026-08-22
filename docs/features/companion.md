@@ -589,7 +589,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
-| Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → *(W2.4 Összefüggések slot)* → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. |
+| Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → *(W2.4 Összefüggések slot)* → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
@@ -772,6 +772,19 @@ companion surface since V0.4, dual-mode:
   the timestamp (tooltip: „Ez a válasz nem ment át az önellenőrzésen — kezeld fenntartással.").
   On a streamed turn a rejected attempt-1 may briefly be visible while streaming; the `done`
   swap replaces it with the corrected answer (or flags it). Mock mode never shows the badge.
+- **„Emlékek · N" — the recall disclosure (W3.1b, `mezo-b3pp.28`)** — an assistant bubble whose
+  answer was written with ambient recall in its prompt carries a small **collapsed** row under the
+  card (above the 👍/👎 chips): the eyebrow „Emlékek · N" plus a chevron (tooltip: „Ezekre
+  emlékezett a társ a válasz előtt (W3.1 ambient recall)"). Tapping it expands one line per
+  recalled memory — `<YYYY-MM-DD> · <forrás> · <NN>%` with the injected one-line gist under it, in
+  **prompt order**. What it is NOT: it is not the answer, and not a citation list the model chose —
+  it is the answer's **provenance**, the raw material ambient recall put in front of the model
+  before it wrote anything (the model may well have ignored all of it). The percentage is the raw
+  cosine similarity to the user's message, not a confidence in the answer. A turn that recalled
+  nothing — and every user bubble, and every pre-W3.1b answer — renders **no row at all**, not an
+  empty one. Both modes show it (mock seeds two items on the first assistant message, one on the
+  canned reply); the sibling „Hivatkozott · L3" ref row is unchanged and independent — refs collapse
+  a day into one chip, the disclosure lists every episode.
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
   removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
@@ -793,7 +806,10 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          separately) — the SAME private assembleSystemPrompt(userId, today, memoriesBlock) helper
          the sync path uses, with ONE LocalDate.now() per turn shared by the snapshot and the
          recall; persist USER row, title-once + lastMessageAt. The recalled Memory refs ride
-         PreparedTurn.recalledRefs to step 5
+         PreparedTurn.recalledRefs to step 5 — and since W3.1b (mezo-b3pp.28) so do the RENDERED
+         ITEMS, in prompt order: PreparedTurn.recalled = RecalledMemoriesEnvelope.ofOrNull(
+         recalled.items()), null when the turn recalled nothing. Only TX #1 ever runs the recall,
+         so anything TX #2 must persist has to travel on the PreparedTurn
       2. audit = toolRegistry.newTurnAudit()          ── V0.5: per-turn budget + call/ref collector
          toolSink = Sinks.many().unicast().onBackpressureBuffer(); audit.onCall(call ->
          toolSink.tryEmitNext(toolEvent(call)))       ── mezo-280: registered BEFORE step 3, because
@@ -819,10 +835,12 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
       4b. turn.recalledRefs().forEach(audit::addRef)   ── W3.1: the ambient Memory refs join the
          audit AFTER the tool loop AND the advisor review, immediately before step 5 — the tool
          refs are the answer's own provenance and win the tools.max-refs-per-turn cap (first-wins)
-      5. chatService.completeTurn(userId, id, answer, audit, degraded) ── TX #2: persist ASSISTANT
-         row WITH tool_calls/refs envelopes + degraded → terminal event:done, data: MessageResponse
+      5. chatService.completeTurn(userId, id, answer, audit, degraded, turn.recalled()) ── TX #2:
+         persist ASSISTANT row WITH tool_calls/refs/recalled_memories envelopes + degraded →
+         terminal event:done, data: MessageResponse
          (tools[] = "name(args)" chips, refs[] = tool-contributed data refs + the W3.1 Memory/date
-         refs, degraded flag)
+         refs, recalled[] = the W3.1b disclosure — CompanionMapper.toRecalled over the row's
+         recalled_memories envelope, [] when null, degraded flag)
       onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
   → FE: deltas AND tool events append into the optimistic draft bubble (chips render live through
     ToolChipRow — mezo-280); done → the persisted pair is written into the ['chat'] query cache (no
@@ -867,15 +885,26 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
       4b. recalled.refs().forEach(audit::addRef)     ── W3.1: the ambient Memory refs join the audit
           AFTER the LLM round, so the tool refs (the answer's own provenance) take the
           tools.max-refs-per-turn cap first — the streamed twin does the same before completeTurn
-      5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope() + degraded
+      4c. RecalledMemoriesEnvelope.ofOrNull(recalled.items())  ── W3.1b (mezo-b3pp.28): the answer
+          also DISCLOSES what it was given — the SAME rendered items, in prompt order, each gist
+          byte-identical to the [Emlékek] line the model read (both go through oneLine at
+          recall.render-max-chars). Refs collapse a day into one Memory/date ref; the items do NOT
+          (a dense day is two lines in the prompt and two lines in the disclosure). Also carries
+          refId, which the wire deliberately does not
+      5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope() + the W3.1b
+         recalled_memories envelope + degraded
          (tool_calls stays null when no tool ran — the V0.2 steady state is unchanged; refs is null
-          only when NEITHER a tool nor the ambient recall contributed one)
+          only when NEITHER a tool nor the ambient recall contributed one; recalled_memories is null
+          whenever the recall produced nothing — an omitted block and a failed recall look the same
+          on the row, and every pre-W3.1b row is already null)
       6. touchConversation → lastMessageAt = now; title = first user msg (once)
       6b. publish ChatTurnCompleted ── V1.2: AFTER_COMMIT → @Async FactExtractionListener
           → FactExtractionService.extractFromTurn (cheap-tier LLM, JSON parse, dedupe, cap)
           → undecided learned_fact candidates (the streamed path publishes in completeTurn)
   → CompanionMapper.toMessageResponse(assistant)   mapper/CompanionMapper.java:30
-      (null envelope → []; envelope entry {type,name,args} → wire MessageTool{type, "name(args)"})
+      (null envelope → []; envelope entry {type,name,args} → wire MessageTool{type, "name(args)"};
+       W3.1b toRecalled drops refId and keeps {occurredOn,kind,label,gist,similarity} — the SAME
+       mapper serves GET /messages, so a reloaded history re-renders the disclosure unchanged)
 ```
 
 **The tool pipeline (V0.5, expanded to 15 tools at mezo-xixu).** `CompanionToolRegistry`
@@ -1112,7 +1141,12 @@ Migration `202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (registe
   (**both null in V0.2** — filled at V0.5); indexes `idx_ai_message_conversation_id_created_at`
   (history/window ordering key) + `idx_ai_message_created_by`. **V1.3** adds `degraded boolean
   not null default false` (`202607031900_mezo-fnnq.8_ai_message_degraded.sql`) — true when the
-  advisor chain rejected the answer even after the corrective retry.
+  advisor chain rejected the answer even after the corrective retry. **W3.1b** adds
+  `recalled_memories jsonb` (`202608221700_mezo-b3pp.28_ai_message_recalled_memories.sql`,
+  `mezo-b3pp.28`) — the `[Emlékek]` items ambient recall injected into THIS answer's prompt, in
+  prompt order (`RecalledMemoriesEnvelope`); **null** on user rows, on every pre-W3.1b answer, and
+  whenever the turn recalled nothing (the `refs`/`tool_calls` null-not-empty precedent). Additive,
+  no backfill, no index — it is read only alongside its own row.
 
 ### Backend tables (V1.1, ✅)
 
@@ -1349,7 +1383,14 @@ learned-fact refs are **loose UUID columns** (`derivedFromMessageId`, `promotedF
 `@JdbcTypeCode(SqlTypes.JSON)`: `toolCalls: ToolCallsEnvelope` (`{calls:[{type,name}]}`) and
 `refs: RefsEnvelope` (`{refs:[{kind,id}]}`) — the ADR 0006 / `ProvenanceEnvelope` typed-jsonb
 precedent. **Field names mirror the FE mock `Tool{type,name}` / `ChatRef{kind,id}`** so V0.5 wiring
-is mechanical (Decision #5). Round-trip proven by `AiMessageJsonbRoundTripIT`.
+is mechanical (Decision #5). **W3.1b (`mezo-b3pp.28`) adds a THIRD** typed jsonb envelope,
+`recalledMemories: RecalledMemoriesEnvelope` (`entity/RecalledMemoriesEnvelope.java`) —
+`{items:[{kind, refId, occurredOn, label, gist, similarity}]}`, with a static
+`ofOrNull(items)` factory so "nothing recalled" is a null column rather than an empty envelope.
+`refId` is the source row's UUID: persisted (the row can be traced back to the episode it quoted)
+but deliberately **not on the wire** — the chat has no route to a `memory_embedding` source, and a
+raw id in a disclosure is noise. Round-trip proven by `AiMessageJsonbRoundTripIT` (the W3.1b case
+pins the `LocalDate` `occurredOn` surviving Jackson and `jsonb_typeof = 'object'`).
 
 ### REST endpoints (contract-first — tag `Companion` → `CompanionApi`)
 
@@ -1377,10 +1418,19 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
-`MessageResponse {id, role, content, createdAt, tools[], refs[], degraded}` (**filled since
-V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
+`MessageResponse {id, role, content, createdAt, tools[], refs[], recalled[], degraded}` (**filled
+since V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
 `CompanionMapper.toTools/toRefs`; `degraded` required boolean since V1.3 — always false on user
-rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
+rows; **`recalled` required array since W3.1b `mezo-b3pp.28`**, `[]` when the answer disclosed
+nothing — the `tools`/`refs` "required, empty is the absence" convention, so the FE never
+branches on undefined), `RecalledMemory {occurredOn (date), kind, label, gist, similarity}` (W3.1b
+— one `[Emlékek]` line the model was given, in prompt order: `kind` is the raw
+`memory_embedding.kind`, `label` the Hungarian source tag exactly as rendered in the prompt
+(`napló`, `napi összefoglaló`, …), `gist` the injected one-liner byte-identical to the prompt line.
+**`similarity` is the RAW cosine 0..1 to the user's message — NOT the `similarity × exp(-age/τ)`
+decayed score the re-rank ordered by** (that one is `SimilarDayItem.finalScore`), so an old but
+near-identical memory reads honestly as a high match even though it sorted low; the FE renders
+`Math.round(similarity*100)%`. The envelope's `refId` is NOT exposed), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
 carries the args baked in — `get_recovery(scope=sleep, days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
 `Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, since
 V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
@@ -2404,6 +2454,46 @@ fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
   in a non-`@Transactional` class. Inside a test-managed transaction the turn never commits, so a
   `done`-row/refs-envelope assertion would be asserting nothing.
 
+**W3.1b disclosure test additions (`mezo-b3pp.28`) — no new test class on the backend: every
+assertion was folded into the class that already owned that seam, so a regression fails where the
+behaviour lives:**
+
+- **`PromptMemoryAssemblerIT`** — the same-day case now pins **items vs refs**: two episodes of one
+  day render **2 `AmbientRecall.items()` but still 1 `Memory` ref** (the disclosure is per episode,
+  the ref budget is per day), each item's `gist` equals the `[Emlékek]` line's text and `similarity`
+  is the raw cosine (`isCloseTo(1.0, within(1e-6))` on the staged axis vectors — the decayed score is
+  never what reaches the wire). The `FAIL_EMBED`/`FAIL_ANN` cases now also assert `items()` is
+  empty, not merely that the block is — `AmbientRecall.EMPTY` must be empty in all three fields.
+- **`ChatServiceAmbientRecallIT`** — the sync answer's `recalled[]` on the WIRE (occurredOn/kind/
+  label/gist/similarity) **and** the same envelope on the COMMITTED row (history re-renders it), the
+  **user row's `recalledMemories` is null** (a disclosure belongs to an answer), and both failure
+  branches (`FAIL_EMBED`/`FAIL_ANN`) leave `recalled` `[]` on the wire and **null on the row** while
+  the turn still answers with `degraded=false` — a failed recall must be invisible, not an empty row.
+- **`ChatStreamServiceIT`** — the streamed twin: the terminal `done` `MessageResponse` carries the
+  items and the committed assistant row carries the envelope, proving `PreparedTurn.recalled`
+  survives the TX #1 → TX #2 hop (the one place the two paths could silently diverge).
+- **`CompanionApiIT`** — `GET /conversation/{id}/messages` after a recall-bearing turn: the user row
+  discloses `[]`, the assistant row carries the items — the **history** contract, not just the
+  send response.
+- **`CompanionStreamApiIT`** — the raw SSE body contains `"recalled":[{` on the `done` event, so the
+  field survives real serialization on the hand-written stream path (the generated mapper is not
+  involved in shaping that frame's JSON).
+- **`AiMessageJsonbRoundTripIT`** — the envelope survives Postgres: `LocalDate occurredOn` back as a
+  `LocalDate` (not a string or an epoch array — the Jackson `JavaTimeModule` trap this class exists
+  for), `refId` preserved, and `jsonb_typeof(recalled_memories) = 'object'`; the pre-existing case
+  pins that a row without a recall keeps the column **null**.
+- **FE:** `chatApi.test.ts` — `recalled: []` maps to `undefined` (no empty disclosure row) and a
+  non-empty `recalled` passes through **unchanged**, same order and values. `ChatPage.test.tsx` in
+  **both modes**: the mock seed's first assistant message shows the collapsed „Emlékek · 2" row and
+  expands to the gists on click; the real-mode streamed answer carries its own disclosure from the
+  MSW `done` frame. `chatHooks.test.tsx` and the MSW `GET /messages` fixture carry `recalled` so the
+  handlers stay contract-shaped (`recalled` is REQUIRED on the wire — a fixture missing it would be
+  a type error, which is the point).
+- **Visual goldens moved** (`tests/visual/visual.spec.ts-snapshots/`): `insights-chat-{light,dark}`
+  only — the first assistant bubble gains the collapsed row and the bottom-anchored transcript
+  shifts above it; every other page's golden is byte-identical. Darwin regenerated locally
+  (`pnpm test:visual:update`), linux via `gh workflow run update-visual-baselines.yml`.
+
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
@@ -2851,6 +2941,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/RecalledMemoriesEnvelope.java` — **`mezo-b3pp.28`** the W3.1b disclosure envelope on `ai_message.recalled_memories`: `{items:[{kind, refId, occurredOn, label, gist, similarity}]}` in prompt order, with `ofOrNull(items)` so "recalled nothing" is a **null column**, not an empty envelope (the `RefsEnvelope` precedent). `refId` is persisted but never mapped onto the wire.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above); **`mezo-b3pp.2`** added `findByKindAndRefIdIncludingDeleted` (native — `@SQLRestriction` applies to JPQL too — the revive lookup `upsert` now reads through).
@@ -2867,6 +2958,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031812_mezo-fnnq.7_learned_fact_category.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031900_mezo-fnnq.8_ai_message_degraded.sql` (in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608221700_mezo-b3pp.28_ai_message_recalled_memories.sql` (in `1.0.0_master.yml`) — W3.1b `alter table ai_message add column recalled_memories jsonb`; additive, nullable, no backfill.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607281200_mezo-2zyu_create_llm_log_history.sql` (in `1.0.0_master.yml`) — the append-only audit table (no `is_deleted`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql` (in `1.0.0_master.yml`) — the `memory_embedding` kind-CHECK widening to 10 (§4 above); the sibling `journal_entry`-table migration lives with `feature/journal`, see [`journal.md`](journal.md) §10.
 
@@ -2886,8 +2978,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Frontend (chat real since V0.4, knowledge since V1.2)**
 - `frontend/src/data/_client/api.ts` — `apiSse` (fetch-ReadableStream SSE reader) + its `api.sse.test.ts`.
-- `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper (+ `degraded` since V1.3).
-- `frontend/src/features/insights/components/ChatMessage.tsx` — the bubble (chips, refs, V1.3 `nem ellenőrzött` badge).
+- `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper (+ `degraded` since V1.3; **`mezo-b3pp.28`** maps `recalled`, `[]` → `undefined` so a recall-less answer renders no disclosure at all).
+- `frontend/src/features/insights/components/ChatMessage.tsx` — the bubble (chips, refs, V1.3 `nem ellenőrzött` badge; **`mezo-b3pp.28`** mounts `RecalledMemoriesRow` under the card, above the W4.1 feedback chips).
+- `frontend/src/features/insights/components/RecalledMemoriesRow.tsx` — **`mezo-b3pp.28`** the W3.1b „Emlékek · N" disclosure: a collapsed `aria-expanded` button (the answer is the point; this is its provenance) that opens to one `YYYY-MM-DD · forrás · NN%` line + gist per recalled memory, in prompt order. `similarity` is rendered `Math.round(s*100)%` — the raw cosine, not the decayed rank score.
 - `frontend/src/data/insights/chatHooks.ts` — `useChat` (bootstrap dual-read) + `useChatActions` (send/stream state machine); re-exported from `data/hooks.ts`.
 - `frontend/src/data/insights/chat.ts` — the mock seed (`initialChat`) + the shared `cannedReply`.
 - `frontend/src/data/insights/knowledgeApi.ts` — V1.2 fact/candidate REST client + wire mappers.

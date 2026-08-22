@@ -2,23 +2,39 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
+import io.mrkuhne.mezo.api.dto.RecalledMemory;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /** HTTP-level companion flow against the fake LLM ("companion-fake" merges with the base's "demodata"). */
 @ActiveProfiles("companion-fake")
 class CompanionApiIT extends ApiIntegrationTest {
 
     private static final String CONVERSATION_URI = "/api/companion/conversation";
+
+    @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
+    @Autowired private AppUserRepository appUserRepository;
+    @Autowired private OwnerProperties ownerProperties;
+
+    private UUID ownerId() {
+        return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+    }
 
     @Test
     void testListConversations_shouldReturn401_whenNoToken() {
@@ -49,6 +65,8 @@ class CompanionApiIT extends ApiIntegrationTest {
         assertThat(answer.getContent()).startsWith(FakeCompanionLlm.PREFIX);
         assertThat(answer.getTools()).isEmpty();
         assertThat(answer.getRefs()).isEmpty();
+        // W3.1b (mezo-b3pp.28): required on the wire, [] when this turn recalled nothing
+        assertThat(answer.getRecalled()).isEmpty();
 
         List<MessageResponse> messages = getForList(
                 CONVERSATION_URI + "/" + conversation.getId() + "/messages",
@@ -67,6 +85,40 @@ class CompanionApiIT extends ApiIntegrationTest {
                     assertThat(c.getTitle()).isEqualTo("mi a mai terv?");
                     assertThat(c.getLastMessageAt()).isNotNull();
                 });
+    }
+
+    /**
+     * W3.1b (mezo-b3pp.28): the disclosure survives a reload — GET /messages re-renders the
+     * assistant row's persisted {@code recalled_memories}, not just the live send response.
+     * (This class is NOT {@code @Transactional} — ApiIntegrationTest runs the server's own
+     * transactions — so the seeded vector and the committed turn are visible to the HTTP calls.)
+     */
+    @Test
+    void testListMessages_shouldReturnPersistedRecalledMemories_whenTurnRecalledMemories() {
+        LocalDate memoryDay = LocalDate.now().minusDays(3);
+        memoryEmbeddingPopulator.embedding(ownerId(), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
+                UUID.randomUUID(), "futás után jobban aludtam", memoryDay,
+                MemoryEmbeddingPopulator.axisVector(0));
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        MessageResponse answer = postForBody(
+                CONVERSATION_URI + "/" + conversation.getId() + "/message",
+                SendMessageRequest.builder().content("[fake-embed:1] hogy aludtam futás után?").build(),
+                ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
+
+        assertThat(answer.getRecalled()).extracting(RecalledMemory::getOccurredOn, RecalledMemory::getKind,
+                        RecalledMemory::getLabel, RecalledMemory::getGist)
+                .containsExactly(tuple(memoryDay, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
+                        "napló", "futás után jobban aludtam"));
+
+        List<MessageResponse> messages = getForList(
+                CONVERSATION_URI + "/" + conversation.getId() + "/messages",
+                ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
+        assertThat(messages.getFirst().getRecalled()).isEmpty();   // the user row discloses nothing
+        assertThat(messages.getLast().getRecalled()).extracting(RecalledMemory::getOccurredOn,
+                        RecalledMemory::getLabel, RecalledMemory::getGist)
+                .containsExactly(tuple(memoryDay, "napló", "futás után jobban aludtam"));
     }
 
     @Test

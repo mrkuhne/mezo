@@ -28,6 +28,12 @@ export const initialChat: ChatMessage[] = [
       { kind: 'Workout', id: 'w-2026-05-21' },
       { kind: 'PR', id: 'pr-2026-03-04' },
     ],
+    // W3.1b (mezo-b3pp.28): the ambient-recall block behind this answer — the demo surface
+    // shows the same provenance the live one does.
+    recalled: [
+      { occurredOn: '2026-05-18', kind: 'journal_entry', label: 'napló', gist: 'futás után jobban aludtam', similarity: 0.92 },
+      { occurredOn: '2026-05-12', kind: 'daily_summary', label: 'napi összefoglaló', gist: 'Kemény Pull Day, este korán ágyba.', similarity: 0.71 },
+    ],
   },
   {
     role: 'user',

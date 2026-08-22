@@ -207,6 +207,9 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
             { type: 'compute', name: `recallSharedMemory(theme='${text.slice(0, 20)}')` },
           ],
           refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
+          recalled: [
+            { occurredOn: '2026-05-19', kind: 'chat_turn', label: 'korábbi beszélgetés', gist: 'Daniel: fáradt vagyok ma', similarity: 0.66 },
+          ],
         },
       ])
       setTurn(null)

@@ -5124,6 +5124,26 @@ export interface components {
             tools: components["schemas"]["MessageTool"][];
             /** @description Data references backing this answer (V0.5): entity refs contributed by the executed tools (deduped, capped). Empty when the turn used no tools. */
             refs: components["schemas"]["MessageRef"][];
+            /** @description W3.1b (mezo-b3pp.28): the memories ambient recall injected into this answer's prompt (the [Emlékek] block), in prompt order — date + source + one-line gist + raw cosine similarity. Empty on user rows, on pre-W3.1 rows, and when recall found nothing or failed (the turn is never degraded by a failed recall). */
+            recalled: components["schemas"]["RecalledMemory"][];
+        };
+        RecalledMemory: {
+            /**
+             * Format: date
+             * @description The day the remembered episode happened
+             */
+            occurredOn: string;
+            /** @description memory_embedding.kind (journal_entry | daily_summary | chat_turn | …) */
+            kind: string;
+            /** @description Hungarian source tag as rendered in the prompt (napló, napi összefoglaló, …) */
+            label: string;
+            /** @description The one-line excerpt that was injected (first line, capped) */
+            gist: string;
+            /**
+             * Format: double
+             * @description Raw cosine similarity to the user message
+             */
+            similarity: number;
         };
         MessageTool: {
             /** @description 'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only 'read' */
