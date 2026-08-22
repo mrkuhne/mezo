@@ -6893,6 +6893,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/node:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: listGraphNodes
+      summary: Active knowledge-graph nodes for the current user (KnowledgeGraph)
+      responses:
+        '200':
+          description: 'Active nodes, newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/graph/node/{id}/archive':
+    post:
+      tags:
+        - KnowledgeGraph
+      operationId: archiveGraphNode
+      summary: >-
+        Archive a node — hides it from active listing and traversal
+        (KnowledgeGraph)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archived node
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -15788,6 +15843,56 @@ components:
           description: >-
             'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down
             verdicts only
+        updatedAt:
+          type: string
+          format: date-time
+    GraphNodeResponse:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - PATTERN
+            - PREFERENCE
+            - GOAL
+            - LIFE_EVENT
+            - SEASON
+            - INSIGHT
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - candidate
+            - active
+            - archived
+        sourceKind:
+          type: string
+          nullable: true
+        sourceId:
+          type: string
+          format: uuid
+          nullable: true
+        occurredOn:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
         updatedAt:
           type: string
           format: date-time

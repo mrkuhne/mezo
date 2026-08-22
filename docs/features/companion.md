@@ -1348,6 +1348,56 @@ nightly, rollup-only aggregation layer over `message_feedback` (spec §4.4/§8.2
   `ai_message.refs` into knowledge-graph edge weights) activates only once W2 is live and ships as
   a separate, later, switch-guarded slice (design spec §8.2/§10) — not built here.
 
+### Backend tables (W2.1 knowledge graph, ✅ `mezo-b3pp.6`)
+
+Migration `202608221600_mezo-b3pp.6_create_knowledge_graph.sql` (in `1.0.0_master.yml`) — the
+Postgres-native knowledge-graph skeleton (spec §4.2/§6.1, [ADR 0031](../decisions/0031-knowledge-graph-postgres-native.md)).
+Behind the W2 graph gate ([ADR 0030](../decisions/0030-graph-gate-outcome-build.md), spec §10):
+build was chosen after living with W3.1's always-on recall.
+
+- **`knowledge_node`** — `id uuid pk`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`,
+  `updated_at timestamptz`, `kind varchar(12)` (`PATTERN|PREFERENCE|GOAL|LIFE_EVENT|SEASON|INSIGHT`),
+  `title varchar(120)`, `summary text`, `status varchar(10)` default `active`
+  (`candidate|active|archived`), `source_kind varchar(20)`, `source_id uuid`, `occurred_on date`,
+  `meta jsonb`. **`uq_knowledge_node_source (created_by, source_kind, source_id)`** (partial, where
+  `source_id is not null and is_deleted = false`) is the idempotent promotion anchor W2.2/W2.3
+  UPSERT against.
+- **`knowledge_edge`** — `id uuid pk`, `created_by uuid fk`, `from_node_id`/`to_node_id uuid
+  fk→knowledge_node(id) ON DELETE CASCADE`, `kind varchar(12)`
+  (`TRIGGERS|PRECEDED_BY|SUPPORTS|CONFLICTS|RELATES_TO`), `weight numeric(4,3)` default `0.500`
+  (`ck_knowledge_edge_weight` 0..1), `evidence jsonb`, `last_reinforced_at timestamptz`.
+  **`uq_knowledge_edge_pair (created_by, from_node_id, to_node_id, kind)`** (partial, where
+  `is_deleted = false`) — same UPSERT idiom, so a later soft-delete (W2.5) doesn't block
+  re-upserting the same pair.
+- **`status` vs `is_deleted`** — the two are independent: `is_deleted` is the inherited
+  `OwnedEntity` soft-delete; `status='archived'` is the visible L2 lifecycle state (the `GoalEntity`
+  `planned/active/archived` idiom). Archiving a node keeps the row, just out of active
+  listing/traversal.
+- **The W4.3 companion profile is a singleton `knowledge_node`** of `kind=INSIGHT`,
+  `source_kind='profile'`, per user — not a separate table (spec §4.2).
+- **`GraphNodeEntity`/`GraphEdgeEntity`** (`feature/companion/graph/entity/`, W2.1)
+  `extends OwnedEntity`; `meta` is a generic `Map<String,Object>` jsonb column for now — typed
+  envelopes per kind arrive with the slices that write them (W2.2 PATTERN meta `{r,n,direction}`,
+  W2.3 LIFE_EVENT meta); `evidence` is a typed `List<GraphEdgeEvidence>` jsonb column
+  (`{sourceKind, sourceId, note, at}` per item, the `PantryItemEntity.micros` List<record> jsonb
+  precedent).
+- **`GraphService`** (`feature/companion/graph/service/`, W2.1) — `upsertNode`/`upsertEdge` are the
+  ONLY write paths later slices use (never a direct `repository.save`); both UPSERT by their unique
+  index so re-promoting the same source row never duplicates. `archive(userId, nodeId)` flips
+  `status` only.
+- **Switch** `mezo.feature.knowledge-graph.enabled` (`FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH`)
+  — off ⇒ no graph beans exist, `/api/companion/graph/*` 404s, and every graph hook elsewhere (W3.1
+  `[Összefüggések]` block, W4.2 reinforcement, RECOVERY profile input) stays silently absent.
+- **`CompanionProperties.Graph`** (prefix `mezo.companion.graph`): `maxHops` (1..3, default 2),
+  `topK` (1..20, default 8), `decayFactor` (0.9..1, default 0.99), `pruneFloor` (0..1, default 0.05),
+  `renderMaxTokens` (default 800) — declared now, consumed starting W2.4 (traversal) and W2.5
+  (maintenance job); unused until then.
+- **Scope, explicitly**: this slice is schema + CRUD + the two REST operations the spec commits to
+  now (list active nodes, archive a node). No node-*creation* REST endpoint (nodes are written only
+  by internal promotion/extraction pipelines, W2.2/W2.3); no `GraphEdgeResponse` REST DTO yet
+  (nothing consumes edges over HTTP until W2.4 traversal / W2.6 FE surface) — edges are exercised at
+  the service/repository layer directly (`GraphEntityPersistenceIT`).
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -1507,6 +1557,14 @@ Because that constraint spans soft-deleted rows (§4 above) a retracted row stil
 on a plain `save`. The upsert **resurrects** it instead. The service re-reads the row afterwards and
 maps it, so the response is always server truth.
 
+### REST endpoints — knowledge graph (contract-first — tag `KnowledgeGraph` → `KnowledgeGraphApi`)
+
+W2.1 (`mezo-b3pp.6`) — gated `KNOWLEDGE_GRAPH_SWITCH`:
+
+- `GET /api/companion/graph/node` — active nodes for the current user, newest first.
+- `POST /api/companion/graph/node/{id}/archive` — archive a node (200 + the archived node body;
+  404 `GRAPH_NODE_NOT_FOUND` if not owned).
+
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
 | Tool (args) | Source (existing reads) | Ref |
@@ -1648,6 +1706,17 @@ maps it, so the response is always server truth.
 - `mezo.companion.hypotheses.max-per-run` = **3** (`@Min(1) @Max(10)`) — hypotheses judged per run.
 - `mezo.companion.hypotheses.keep-threshold` = **0.75** / `revise-threshold` = **0.50** (0..1) —
   the arch §4.7 routing thresholds; the four WEIGHTS are code constants (they define the score).
+- `mezo.companion.graph.max-hops` = **2** (`@Min(1) @Max(3)`) — W2.1: neighborhood traversal depth
+  from a seed node; consumed starting W2.4.
+- `mezo.companion.graph.top-k` = **8** (`@Min(1) @Max(20)`) — W2.1: top-K neighbors returned by
+  weight; consumed starting W2.4.
+- `mezo.companion.graph.decay-factor` = **0.99** (0.9..1) — W2.1: nightly edge-weight
+  multiplicative decay (e.g. 0.99 = 1%/day fade); consumed starting W2.5.
+- `mezo.companion.graph.prune-floor` = **0.05** (0..1) — W2.1: edges below this weight are
+  soft-deleted on the nightly pass; consumed starting W2.5.
+- `mezo.companion.graph.render-max-tokens` = **800** (`@Min(1)`) — W2.1: hard cap on the rendered
+  `[Összefüggések]` block in estimated tokens; consumed starting W2.4. All five fields are
+  declared now and unused until their consuming slice lands.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
@@ -2839,6 +2908,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written), the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`) and, since **`mezo-al1i`**, the `memory/{overview,summary,similar-days,llm-usage}` reads on the same `Companion` tag;
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 - `api/feature/companion-feedback/companion-feedback.yml` — **`mezo-b3pp.15`** the 👍/👎 surface on its OWN fragment + tag (`CompanionFeedback` → `CompanionFeedbackApi`); GET batch-read / PUT upsert / DELETE retract, also registered in `api/generate/merge.yml`.
+- `api/feature/knowledge-graph/knowledge-graph.yml` — **`mezo-b3pp.6`** the W2.1 knowledge-graph surface on its OWN fragment + tag (`KnowledgeGraph` → `KnowledgeGraphApi`); GET active nodes / POST archive, also registered in `api/generate/merge.yml`.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
@@ -2849,6 +2919,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.15_create_message_feedback.sql` — the table (in `1.0.0_master.yml`); `messages.properties` gained `FEEDBACK_REASON_REQUIRES_DOWN` + `FEEDBACK_UPSERT_READBACK_FAILED`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/feedback/{CompanionFeedbackApiIT,MessageFeedbackPersistenceIT,CompanionFeedbackSwitchOffIT}.java` + `support/populator/FeedbackPopulator.java` (+ `message_feedback` in `ResetDatabase`) — §8.
 - **FE side** (documented in [`insights.md` §10](insights.md)): `frontend/src/data/feedback/` (`feedbackTypes`/`feedbackApi`/`feedbackMock`/`feedbackHooks`, exported through the `@/data/hooks` barrel) + `frontend/src/features/insights/components/FeedbackChips.tsx`.
+
+**Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/service/GraphService.java` — `upsertNode`/`upsertEdge` are the ONLY write paths later slices use; `archive` flips `status` only.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/controller/GraphController.java` — `implements KnowledgeGraphApi`, `KNOWLEDGE_GRAPH_SWITCH`-gated, ownership from `CurrentUserId`.
 
 **Backend — controllers / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionController.java` — `implements CompanionApi`, JWT ownership, switch-gated.

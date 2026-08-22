@@ -264,6 +264,10 @@ mezo:
     # off ⇒ /api/journal 404s and no journal beans exist.
     journal:
       enabled: true
+    # Phase 5 W2.1 knowledge graph (bd mezo-b3pp.6) — off ⇒ /api/companion/graph 404s, no graph
+    # beans exist, and every graph hook elsewhere stays silently absent.
+    knowledge-graph:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -431,6 +435,15 @@ mezo:
       min-similarity: 0.55
       # Hard cap on the rendered block (estimated tokens; ~3 chars/token for Hungarian prose)
       max-tokens: 1200
+    graph:
+      # W2.1 (mezo-b3pp.6, spec §6.1): traversal bounds consumed by W2.4's GraphTraversalService
+      # and nightly maintenance knobs consumed by W2.5's GraphMaintenanceJob. Declared here now so
+      # every later slice reads the same record; unused until then.
+      max-hops: 2
+      top-k: 8
+      decay-factor: 0.99
+      prune-floor: 0.05
+      render-max-tokens: 800
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
