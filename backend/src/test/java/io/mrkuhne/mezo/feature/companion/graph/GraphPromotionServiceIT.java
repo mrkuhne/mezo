@@ -177,6 +177,35 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
         assertThat(nodeRepository.findAll()).isEmpty();
     }
 
+    /** Finding 3 (mezo-b3pp.7 final review): cross-user isolation was pinned for {@code
+     *  promotePattern} only; the same {@code findByIdAndCreatedByAndDeletedFalse} guard is used by
+     *  {@code promoteFact}, so it needs its own IT anchor. */
+    @Test
+    void testPromoteFact_shouldReturnEmpty_whenFactBelongsToAnotherUser() {
+        UUID owner = ownerId();
+        UUID stranger = databasePopulator.populateUser("stranger-" + UUID.randomUUID() + "@example.com");
+        KnowledgeFactEntity fact = new KnowledgeFactEntity();
+        fact.setCreatedBy(owner);
+        fact.setFactText("Reggel jobban bírom az erős edzést.");
+        fact.setCategory("train");
+        fact.setSource(KnowledgeFactEntity.SOURCE_CHAT);
+        fact = knowledgeFactRepository.saveAndFlush(fact);
+
+        assertThat(promotionService.promoteFact(stranger, fact.getId())).isEmpty();
+        assertThat(nodeRepository.findAll()).isEmpty();
+    }
+
+    /** Finding 3 (mezo-b3pp.7 final review): same isolation gap for {@code syncGoal}. */
+    @Test
+    void testSyncGoal_shouldReturnEmpty_whenGoalBelongsToAnotherUser() {
+        UUID owner = ownerId();
+        UUID stranger = databasePopulator.populateUser("stranger-" + UUID.randomUUID() + "@example.com");
+        GoalEntity goal = goalPopulator.createGoal(owner, "active");
+
+        assertThat(promotionService.syncGoal(stranger, goal.getId())).isEmpty();
+        assertThat(nodeRepository.findAll()).isEmpty();
+    }
+
     /** The fake echoes a [fake-graph-edges:{json}] sentinel planted in the pattern MECHANISM (it
      *  becomes the node's unbounded summary — unlike the title, which knowledge_node truncates to
      *  120 chars and would clip the sentinel's closing bracket). */
@@ -200,8 +229,33 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
         assertThat(edges.getFirst().getWeight()).isEqualByComparingTo(new BigDecimal("0.400")); // 0.8 × 0.5
         assertThat(edges.getFirst().getEvidence()).hasSize(1);
         assertThat(edges.getFirst().getEvidence().getFirst().sourceKind()).isEqualTo("pattern");
-        // the below-floor (0.2) suggestion toward existingB never became an edge
-        assertThat(edges.getFirst().getToNodeId()).isIn(existingA.getId(), existingB.getId());
+        // candidates are listed newest-first, so index 0 (confidence 0.8, the floor-passer) is
+        // existingB (created after existingA); the below-floor (0.2) suggestion toward existingA
+        // (index 1) never became an edge
+        assertThat(edges.getFirst().getToNodeId()).isEqualTo(existingB.getId());
+    }
+
+    /** Finding 1 (mezo-b3pp.7 final review): a cheap model answering percent-style (or otherwise
+     *  out-of-range) must never reach {@code weight = confidence × 0.5} — that would overflow
+     *  {@code knowledge_edge.weight numeric(4,3)} / {@code ck_knowledge_edge_weight} and, before the
+     *  fix, poisoned the shared transaction so the node was silently lost even though {@code
+     *  promotePattern} appeared to succeed. The out-of-range suggestion must be dropped (never
+     *  clamped) and the node must still be promoted with no edge created for it. */
+    @Test
+    void testPromotePattern_shouldDropOutOfRangeConfidence_andStillPromoteTheNode() {
+        UUID owner = ownerId();
+        graphPopulator.createNode(owner, GraphNodeEntity.KIND_PREFERENCE, "Alvásminőség");
+        PatternEntity pattern = confirmedPattern(owner);
+        // 1.5 is a plausible "percent-style" cheap-model answer (e.g. echoing 85 -> 0.85 done wrong)
+        pattern.setMechanism("Késői evés rontja az alvást. "
+            + "[fake-graph-edges:[{\"index\":0,\"kind\":\"TRIGGERS\",\"confidence\":1.5}]]");
+        pattern = patternPopulator.save(pattern);
+
+        GraphNodeEntity node = promotionService.promotePattern(owner, pattern.getId()).orElseThrow();
+
+        assertThat(node.getId()).isNotNull();
+        assertThat(nodeRepository.findByIdAndCreatedByAndDeletedFalse(node.getId(), owner)).isPresent();
+        assertThat(edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(owner, node.getId())).isEmpty();
     }
 
     @Test

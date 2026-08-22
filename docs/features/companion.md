@@ -1433,7 +1433,11 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     re-confirm/re-save or the future nightly reconciler heals it with no special-casing needed. The
     user-facing safety net — a graph hiccup must never break the pattern/fact/goal write itself —
     is NOT this method's job; it comes from the async, AFTER_COMMIT listener below running outside
-    the user's own write transaction entirely.
+    the user's own write transaction entirely. **The honesty of "loses that one promotion" depends
+    on `GraphEdgeStructurer` never swallowing a real persistence failure** (see below) — only the
+    model-answer half of edge structuring is best-effort; a `DataAccessException` from the edge
+    upsert propagates out of `promotePattern` so the transaction that rolls back and the caller
+    that gets told about it agree.
 - **`GraphEdgeStructurer`** (`graph/service/GraphEdgeStructurer.java`) — runs ONLY for a genuinely
   NEW node (re-promotion is a pure UPSERT, no LLM call), inside `GraphPromotionService`'s own
   transaction (tried `REQUIRES_NEW` once — reverted, since the new node isn't committed yet in the
@@ -1445,12 +1449,19 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
   echoing Hungarian text back verbatim) of up to `top-k × 3` of the user's other active nodes,
   newest first, so the prompt stays flat as the graph grows instead of scaling with total node
   count. **Emptiness gate**: with no other active node there is nothing to link to and no LLM call
-  is made at all. Suggestions below `mezo.companion.graph.edge-confidence-floor` are dropped; of the
-  survivors, at most `top-k` are created (highest confidence first — the plan's locked decision to
-  reuse W2.4's traversal cap rather than add a second knob) at `weight = confidence × 0.5` — edges
-  start humble and only W2.5 reinforcement raises them. **IDENT-3**: a failed, empty or unparseable
-  LLM answer degrades to NO edges, logged and swallowed — never a failed promotion; the node the
-  caller already persisted stands on its own.
+  is made at all. Suggestions below `mezo.companion.graph.edge-confidence-floor` **or above `1.0`**
+  are dropped — never clamped, so a cheap model answering percent-style (`85`) or otherwise
+  out-of-range can never reach `weight = confidence × 0.5` and threaten `knowledge_edge.weight
+  numeric(4,3)` / `ck_knowledge_edge_weight`. Of the survivors, at most `top-k` are created (highest
+  confidence first — the plan's locked decision to reuse W2.4's traversal cap rather than add a
+  second knob) at `weight = confidence × 0.5` — edges start humble and only W2.5 reinforcement
+  raises them. **IDENT-3, narrowly scoped to the model's answer**: a failed LLM call or an
+  unparseable/empty response degrades to NO edges, logged and swallowed — never a failed promotion;
+  the node the caller already persisted stands on its own. A `DataAccessException` out of the edge
+  upsert itself is a DIFFERENT failure mode and is deliberately **not** swallowed: it propagates out
+  of `structureEdges` and `promotePattern` so the caller's transaction actually rolls back and the
+  caller is told the promotion failed, instead of the transaction silently going rollback-only while
+  a "successful" node is returned.
 - **`GraphPromotionListener`** (`graph/service/GraphPromotionListener.java`) — the
   `JournalEmbeddingListener` idiom: `@Async` + `@TransactionalEventListener(phase =
   TransactionPhase.AFTER_COMMIT)`, so promotion (LLM-bearing, via the structurer) never sits inside

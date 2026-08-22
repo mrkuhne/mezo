@@ -34,9 +34,19 @@ import tools.jackson.databind.ObjectMapper;
  * top-k}, newest first) so prompt size stays flat as the graph grows instead of scaling with the
  * user's total active node count.
  *
- * <p>IDENT-3: a failed, empty or unparseable answer means NO edges — never a failed promotion. The
- * caller has already persisted the node before this runs. Emptiness gate: with no other active
- * node there is nothing to link to and no LLM call is made.
+ * <p>IDENT-3: a failed, empty or unparseable MODEL ANSWER means NO edges — never a failed
+ * promotion. The caller has already persisted the node before this runs. Emptiness gate: with no
+ * other active node there is nothing to link to and no LLM call is made. This degrade is
+ * deliberately narrower than "any exception in this method": a {@code DataAccessException} out of
+ * the edge upsert loop (e.g. a suggestion the DB itself rejects, or a genuine outage) is NOT
+ * swallowed — it propagates out of {@link #structureEdges}, so the caller's transaction rolls back
+ * for real and its return value agrees with the DB. Swallowing it here used to let {@code
+ * promotePattern} return a "success" while the shared transaction was already rollback-only,
+ * producing an {@code UnexpectedRollbackException} the caller never saw and a PATTERN node that
+ * silently never existed. Confidence out of range (below the floor OR above {@code 1.0}, e.g. a
+ * cheap model answering percent-style) is rejected the same way the below-floor case always was —
+ * dropped, never clamped, so an out-of-range suggestion can never reach {@link
+ * GraphService#upsertEdge} and threaten {@code ck_knowledge_edge_weight} in the first place.
  *
  * <p><b>Transaction shape (deliberate):</b> this method runs INSIDE the caller's (
  * {@code GraphPromotionService.promotePattern}) transaction — no {@code @Transactional} here, and
@@ -96,40 +106,56 @@ public class GraphEdgeStructurer {
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
 
-    /** Best-effort: proposes and persists edges from {@code newNode}. Never throws. */
+    /** Best-effort ONLY for the model's answer (IDENT-3): a failed LLM call or an unparseable
+     *  response degrades to no edges, logged and swallowed. A {@code DataAccessException} out of
+     *  the edge-persistence loop below is NOT swallowed — see the class javadoc's "Transaction
+     *  shape" note for why letting it propagate is what keeps the caller's rollback and its
+     *  returned value honest. */
     public void structureEdges(UUID userId, GraphNodeEntity newNode, String evidenceSourceKind, UUID evidenceSourceId) {
+        int topK = properties.graph().topK();
+        List<GraphNodeEntity> candidates = nodeRepository
+            .findByCreatedByAndStatusAndIdNotAndDeletedFalseOrderByCreatedAtDesc(
+                userId, GraphNodeEntity.STATUS_ACTIVE, newNode.getId(),
+                Limit.of(topK * CANDIDATE_POOL_MULTIPLIER));
+        if (candidates.isEmpty()) {
+            return;   // emptiness gate — nothing to link to, no LLM call
+        }
+        List<GraphEdgeSuggestion> accepted;
         try {
-            int topK = properties.graph().topK();
-            List<GraphNodeEntity> candidates = nodeRepository
-                .findByCreatedByAndStatusAndIdNotAndDeletedFalseOrderByCreatedAtDesc(
-                    userId, GraphNodeEntity.STATUS_ACTIVE, newNode.getId(),
-                    Limit.of(topK * CANDIDATE_POOL_MULTIPLIER));
-            if (candidates.isEmpty()) {
-                return;   // emptiness gate — nothing to link to, no LLM call
-            }
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_graph", "structure_edges", evidenceSourceKind, evidenceSourceId),
                 () -> companionLlm.complete(SYSTEM_PROMPT, buildUserMessage(newNode, candidates)));
-            List<GraphEdgeSuggestion> accepted = parse(raw).stream()
+            accepted = parse(raw).stream()
                 .filter(s -> s.index() != null && s.index() >= 0 && s.index() < candidates.size()
                     && s.kind() != null && ALLOWED_KINDS.contains(s.kind())
-                    && s.confidence() != null && s.confidence() >= properties.graph().edgeConfidenceFloor())
+                    && s.confidence() != null && s.confidence() >= properties.graph().edgeConfidenceFloor()
+                    // reject, never clamp: an out-of-range answer (e.g. a percent-style "85" or a
+                    // stray "1.5") must not reach upsertEdge, where weight = confidence × 0.5 would
+                    // overflow knowledge_edge.weight numeric(4,3) / ck_knowledge_edge_weight.
+                    && s.confidence() <= 1.0)
                 // top-k cap (plan's locked decision — reuse the traversal knob, no new cap knob):
                 // a chatty model must never create unboundedly many edges from one promotion.
                 .sorted(Comparator.comparingDouble(GraphEdgeSuggestion::confidence).reversed())
                 .limit(topK)
                 .toList();
-            for (GraphEdgeSuggestion s : accepted) {
-                BigDecimal weight = BigDecimal.valueOf(s.confidence())
-                    .multiply(new BigDecimal("0.5")).setScale(3, RoundingMode.HALF_UP);
-                graphService.upsertEdge(userId, newNode.getId(), candidates.get(s.index()).getId(),
-                    s.kind(), weight,
-                    List.of(new GraphEdgeEvidence(evidenceSourceKind, evidenceSourceId,
-                        "structurer confidence=" + s.confidence(), Instant.now())));
-            }
         } catch (Exception e) {
             // IDENT-3: the node stands on its own; a missing edge set is an honest degraded graph.
+            // Deliberately narrow — this wraps ONLY the LLM call and the response parse, never the
+            // persistence loop below.
             log.warn("Graph edge structuring failed for node {}", newNode.getId(), e);
+            return;
+        }
+        // Deliberately NOT inside the try above: a DataAccessException here (e.g. a genuine outage,
+        // or a constraint this method's own filtering somehow missed) must mark the caller's
+        // transaction rollback-only AND be seen by the caller, not be swallowed into a "success"
+        // that the DB itself did not honor.
+        for (GraphEdgeSuggestion s : accepted) {
+            BigDecimal weight = BigDecimal.valueOf(s.confidence())
+                .multiply(new BigDecimal("0.5")).setScale(3, RoundingMode.HALF_UP);
+            graphService.upsertEdge(userId, newNode.getId(), candidates.get(s.index()).getId(),
+                s.kind(), weight,
+                List.of(new GraphEdgeEvidence(evidenceSourceKind, evidenceSourceId,
+                    "structurer confidence=" + s.confidence(), Instant.now())));
         }
     }
 
