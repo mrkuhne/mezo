@@ -30,5 +30,9 @@ description: Use when a checkboxed implementation plan exists. Executes it task 
    like a dead stream. Commit exactly where the plan says. Never batch multiple tasks into one commit.
 8. ESCALATION RULE: two stalls on the same task, or the same failure twice → stop,
    summarize the blocker, log a bd comment. Do not thrash.
-9. After the last task: run the full local gates from the house-rules doc (AGENTS, repo root) (Build & Test section),
-   then follow the Git Workflow (push → self-PR → CI green).
+9. After the last task: run the full local gates from the house-rules doc (AGENTS, repo root;
+   Build & Test section), then `git push -u origin <branch>` and OPEN A PULL REQUEST with
+   `gh pr create` — title = the driving bd id + one line; body = what changed (per task, with
+   commit hashes), the actual gate output (test counts, both FE modes), every deviation from
+   the plan and why, and anything a human must still do. **Never merge.** Daniel reviews the
+   PR and merges it himself; report the PR URL and stop.

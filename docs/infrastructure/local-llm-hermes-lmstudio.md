@@ -58,7 +58,7 @@ terminal:
   shell_init_files: ["~/.hermes/shell-init.sh"]        # exports ~/.local/bin (bd) + ~/.lmstudio/bin
 auxiliary:
   memory_query_rewrite: { provider: lmstudio, model: google/gemma-4-e4b }
-  background_review: { provider: auto }                # stays on the main model — it patches skills/memories
+  background_review: { enabled: false }               # (c) decision 2026-08-22: no silent skill/memory patching; /refine is manual
 memory:
   provider: hindsight
 # compression defaults already match the design: threshold 50%, protect_last 20
@@ -95,6 +95,9 @@ sessions ignoring `SOUL.md` (#26596/#34852).
   commits on `main` (snippet versioned at `scripts/git-hooks/pre-commit-no-main.sh` — append it
   to `.git/hooks/pre-commit` outside the beads block; `git merge --no-ff` is unaffected;
   escape hatch `ALLOW_MAIN_COMMIT=1`).
+- **PR-closing rule:** Hermes never merges — each work unit ends with `gh pr create` (commits, gate
+  output, deviations in the body); Daniel reviews and `--no-ff` merges. `gh` is on the default PATH and
+  authenticated as mrkuhne.
 - Hermes project registered: `hermes project create mezo <repo-path> --use` (desktop session
   grouping + worktree/branch conventions).
 - Discord: bot `LocalHermesAgent`, gateway under launchd (`hermes gateway status|restart`),

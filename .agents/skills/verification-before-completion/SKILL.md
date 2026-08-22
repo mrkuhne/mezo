@@ -14,7 +14,10 @@ description: Use before claiming ANY work finished, fixed, or passing — eviden
 4. If a gate fails: report the failure honestly, do NOT rationalize it as unrelated
    without proof (git stash the change, re-run, compare).
 5. Work is complete only when: gates green + bd issue updated + docs/ obligations met
-   (feature doc touched if behavior changed) + pushed per Git Workflow.
+   (feature doc touched if behavior changed) + branch pushed + **a pull request is open**
+   (`gh pr create`, body per the executing-plans skill). Merging is not your job — the human
+   reviews the PR. Skill or memory changes you want to propose go into the PR body or a bd
+   comment, never silently into files.
 6. Closing reflection (one line each): did this task repeat a 5+ step procedure you will
    do again? → propose a skill (don't create it silently). Did you learn a durable fact
    about the environment? → `bd remember` it (facts), never a skill (procedures).
