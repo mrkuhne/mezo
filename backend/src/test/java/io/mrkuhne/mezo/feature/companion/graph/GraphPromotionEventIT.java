@@ -60,7 +60,7 @@ class GraphPromotionEventIT extends ApiIntegrationTest {
             PatternDecisionRequest.builder().decision("confirm").build(),
             ownerAuthHeaders(), HttpStatus.OK, Object.class);
 
-        await().during(1, SECONDS).atMost(10, SECONDS).untilAsserted(() ->
+        await().during(2, SECONDS).atMost(10, SECONDS).untilAsserted(() ->
             assertThat(nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
                 owner, GraphNodeEntity.STATUS_ACTIVE)).hasSize(1));
 
