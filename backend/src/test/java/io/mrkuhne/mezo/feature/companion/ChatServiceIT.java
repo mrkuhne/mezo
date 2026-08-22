@@ -4,10 +4,14 @@ import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
+import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.feature.companion.tools.RecordingToolCallback;
@@ -16,8 +20,10 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
+import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
@@ -44,6 +50,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private KnowledgeFactPopulator factPopulator;
+    @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
@@ -356,5 +363,85 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+    }
+
+    @Test
+    void testSendMessage_shouldInjectMemoriesBlockBetweenPatternAckAndToneReminder_whenSimilarMemoriesExist() {
+        UUID userId = databasePopulator.populateUser("chat-memories@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
+        memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
+                "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request("[fake-embed:1] hogy aludtam futás után?"));
+
+        String echoed = answer.getContent();
+        String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
+        int facts = systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK");
+        int memories = systemBlock.indexOf(PromptMemoryAssembler.MEMORIES_HEADER);
+        int tone = systemBlock.indexOf(ChatService.TONE_REMINDER);
+        assertThat(facts).isPositive();
+        assertThat(memories).isGreaterThan(facts);
+        assertThat(tone).isGreaterThan(memories);
+        assertThat(systemBlock).contains("(napló): futás után jobban aludtam");
+        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        // every recalled item is a Memory/date ref — on the wire and on the persisted row
+        assertThat(answer.getRefs()).extracting(MessageRef::getKind, MessageRef::getId)
+                .contains(Tuple.tuple("Memory", LocalDate.now().minusDays(3).toString()));
+        assertThat(lastAssistantRow(conversation.getId(), userId).getRefs().refs())
+                .contains(new RefsEnvelope.Ref("Memory", LocalDate.now().minusDays(3).toString()));
+        assertThat(answer.getDegraded()).isFalse();
+    }
+
+    @Test
+    void testSendMessage_shouldOmitMemoriesBlockAndStayHealthy_whenEmbeddingFails() {
+        UUID userId = databasePopulator.populateUser("chat-memories-fail@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
+                "lenne mit felidézni", LocalDate.now().minusDays(1), MemoryEmbeddingPopulator.axisVector(0));
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request(FakeEmbeddingAdapter.FAIL_EMBED + " hogy aludtam?"));
+
+        String echoed = answer.getContent();
+        String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
+        // IDENT-3: the block is simply absent — the turn is NOT degraded and the prompt shape is intact
+        assertThat(systemBlock).doesNotContain("[Emlékek]");
+        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(answer.getDegraded()).isFalse();
+        assertThat(answer.getRefs()).isEmpty();
+        assertThat(messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId))
+                .hasSize(2);
+    }
+
+    @Test
+    void testSendMessage_shouldOmitMemoriesBlock_whenNothingSimilar() {
+        UUID userId = databasePopulator.populateUser("chat-memories-none@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        assertThat(answer.getContent()).doesNotContain("[Emlékek]");
+        assertThat(answer.getRefs()).isEmpty();
+    }
+
+    @Test
+    void testSendMessage_shouldKeepToolRefsAheadOfMemoryRefs_whenBothPresent() {
+        UUID userId = databasePopulator.populateUser("chat-memories-order@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
+                "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(),
+                request("[fake-embed:1] aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"));
+
+        // the answer's own provenance (tool refs) wins the per-turn ref cap; ambient refs follow
+        List<String> kinds = resp.getRefs().stream().map(MessageRef::getKind).toList();
+        assertThat(kinds).contains("Sleep", "Memory");
+        assertThat(kinds.indexOf("Memory")).isGreaterThan(kinds.lastIndexOf("Sleep"));
+        assertThat(kinds.getLast()).isEqualTo("Memory");
     }
 }

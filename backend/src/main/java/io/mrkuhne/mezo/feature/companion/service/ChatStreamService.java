@@ -101,6 +101,8 @@ public class ChatStreamService {
                         finalAnswer = advised.answer();
                         degraded = advised.degraded();
                     }
+                    // W3.1: ambient Memory refs after the tool loop + review — tool refs keep cap priority
+                    turn.recalledRefs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
                     return ServerSentEvent.<Object>builder(
                                     chatService.completeTurn(userId, conversationId, turn.userMessageId(),
                                             turn.userContent(), finalAnswer, audit, degraded))
