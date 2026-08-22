@@ -25,6 +25,9 @@ export function toChatMessage(m: MessageResponse): ChatMessage {
     tools: m.tools.length ? (m.tools as Tool[]) : undefined,
     refs: m.refs.length ? m.refs : undefined,
     degraded: m.degraded || undefined,
+    // W3.1b: the [Emlékek] block behind this answer — absent (not an empty row) when recall
+    // found nothing, so the disclosure only appears where there is provenance to show.
+    recalled: m.recalled.length ? m.recalled : undefined,
   }
 }
 

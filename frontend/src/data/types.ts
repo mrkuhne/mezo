@@ -857,6 +857,15 @@ export interface WeeklyGrowth {
 
 export type ChatRole = 'user' | 'assistant'
 export interface ChatRef { kind: string; id: string }
+/** W3.1b (mezo-b3pp.28): one memory ambient recall injected into the answer's prompt —
+ *  `similarity` is the raw cosine 0..1 (the row renders `Math.round(s * 100)%`). */
+export interface ChatRecalledMemory {
+  occurredOn: string
+  kind: string
+  label: string
+  gist: string
+  similarity: number
+}
 export interface ChatMessage {
   /**
    * The persisted `ai_message` row id — the W4.1 feedback artifactId (`chat_message`,
@@ -871,6 +880,8 @@ export interface ChatMessage {
   refs?: ChatRef[]
   /** V1.3: answer failed the backend self-check even after retry — render flagged. */
   degraded?: boolean
+  /** W3.1b: what ambient recall put in front of the model before this answer (undefined = none). */
+  recalled?: ChatRecalledMemory[]
 }
 
 // --- Train (mesocycles, workouts, sport) ---

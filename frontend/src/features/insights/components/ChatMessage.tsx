@@ -2,6 +2,7 @@ import { Markdown } from '@/shared/lib/markdown'
 import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
@@ -72,6 +73,8 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
           </div>
         )}
       </div>
+      {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
+      {m.recalled && <RecalledMemoriesRow items={m.recalled} />}
       {/* Under the card, assistant rows only — and only once the answer is persisted, i.e. has
           an artifactId to vote on. The parent keys this row by that id, so React never reuses
           one FeedbackChips instance (whose reason-row state is session-local) across two
