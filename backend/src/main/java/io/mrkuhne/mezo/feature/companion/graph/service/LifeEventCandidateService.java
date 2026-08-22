@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.graph.service;
 
 import io.mrkuhne.mezo.api.dto.GraphCandidateDecisionRequest;
 import io.mrkuhne.mezo.api.dto.GraphNodeResponse;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEvidence;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphProposedEdge;
@@ -35,6 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Reject is a soft delete, not an {@code archived} status: an un-confirmed guess must leave no
  * residue at all (spec's own acceptance wording), and archived is reserved for nodes that WERE
  * true and are being retired (W2.6's archive action).
+ *
+ * <p>Being the ONLY path to durable structure also makes {@link #decide} the trust boundary: it
+ * re-validates every stored {@code meta.proposedEdges} entry (allowed kind, confidence range,
+ * no self-loop) rather than assuming the extractor's own validation still holds — see {@link
+ * #createEdge}'s javadoc.
  */
 @Slf4j
 @Service
@@ -48,6 +54,7 @@ public class LifeEventCandidateService {
     private final GraphService graphService;
     private final GraphNodeRepository nodeRepository;
     private final GraphMapper graphMapper;
+    private final CompanionProperties properties;
 
     @Transactional(readOnly = true)
     public List<GraphNodeResponse> listPending(UUID userId) {
@@ -75,9 +82,26 @@ public class LifeEventCandidateService {
     }
 
     /** Materialise one proposed edge — silently skipped when its target vanished (archived or
-     *  soft-deleted) between extraction and the decision: a stale proposal must never block the
-     *  confirmation of an otherwise good life event. */
+     *  soft-deleted) between extraction and the decision, when it points back at the candidate
+     *  itself (a self-loop the extractor can never legitimately propose), or when {@code kind}/
+     *  {@code confidence} fail the SAME validation the extractor applies before writing {@code
+     *  meta.proposedEdges} in the first place. The stored JSON is not re-derived here — it is
+     *  {@code decide}'s job to re-validate it, not trust it: a confirm is the boundary where a
+     *  proposal becomes durable graph structure, and {@code meta} is a plain JSON column no DB
+     *  CHECK constraint reaches, so a confidence of e.g. {@code 5} would compute a weight of
+     *  {@code 2.500} and only be caught at INSERT time by {@code ck_knowledge_edge_weight} — an
+     *  otherwise-good accept blowing up into a 500 that rolls back the whole decision. Dropping
+     *  (never clamping) a malformed proposal here keeps that impossible: a stale/malformed
+     *  proposal must never block the confirmation of an otherwise good life event. */
     private void createEdge(UUID userId, GraphNodeEntity from, GraphProposedEdge proposed) {
+        if (proposed.toNodeId().equals(from.getId())
+                || proposed.kind() == null || !LifeEventExtractionService.ALLOWED_KINDS.contains(proposed.kind())
+                || proposed.confidence() == null
+                || proposed.confidence() < properties.graph().edgeConfidenceFloor()
+                || proposed.confidence() > 1.0) {
+            log.info("Dropping malformed/self-loop proposed edge from {}: {}", from.getId(), proposed);
+            return;
+        }
         Optional<GraphNodeEntity> target = nodeRepository
             .findByIdAndCreatedByAndDeletedFalse(proposed.toNodeId(), userId)
             .filter(t -> GraphNodeEntity.STATUS_ACTIVE.equals(t.getStatus()));

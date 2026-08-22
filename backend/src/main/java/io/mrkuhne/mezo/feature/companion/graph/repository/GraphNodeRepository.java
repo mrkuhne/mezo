@@ -32,6 +32,11 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
      * user? Deliberately native and deliberately blind to {@code is_deleted} — a candidate the
      * user rejected is soft-deleted, and a JPA finder (which {@code @SQLRestriction} filters)
      * would report the night as unprocessed and resurrect the same rejected guess every night.
+     *
+     * <p>The literal {@code 'extractor'} below MUST stay equal to {@code
+     * LifeEventExtractionService.SOURCE_EXTRACTOR} — a native query can't reference the Java
+     * constant, so a rename on one side silently breaks the gate on the other;
+     * {@code LifeEventExtractionServiceIT} pins the two together.
      */
     @Query(value = """
         select count(*) from knowledge_node

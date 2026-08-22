@@ -42,6 +42,14 @@ class LifeEventExtractionServiceIT extends AbstractIntegrationTest {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
     }
 
+    @Test
+    void testSourceExtractor_shouldMatchTheLiteralTheDayGateNativeQueryHardcodes() {
+        // GraphNodeRepository.countExtractorNodesOnDay can't reference this Java constant from
+        // its native query, so this pins the two together — a rename on one side without the
+        // other would silently break the day gate.
+        assertThat(LifeEventExtractionService.SOURCE_EXTRACTOR).isEqualTo("extractor");
+    }
+
     /** The scripted answer is planted in the narrative itself (the FakeCompanionLlm sentinel idiom):
      *  index 0 is the single existing active node the prompt lists. */
     private String scripted(String json) {
@@ -147,5 +155,28 @@ class LifeEventExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(extractionService.extractFor(owner, DAY)).isZero();
         assertThat(nodeRepository.findAll()).isEmpty();
+    }
+
+    /** IDENT-3 / the night-atomicity fix (mezo-b3pp.8 review finding #1): a suggestion set where
+     *  ONE candidate cannot be persisted (a NUL byte, which Postgres rejects at INSERT) must leave
+     *  ZERO candidates for the day — not the earlier suggestions committed and the later one lost —
+     *  extractFor must return 0 rather than let the exception escape, and the day gate must not
+     *  consider the night processed, so a later run for the same day can still extract. */
+    @Test
+    void testExtractFor_shouldLeaveZeroCandidatesAndStayReprocessable_whenOneSuggestionFailsToPersist() {
+        UUID owner = ownerId();
+        createEntry(owner, DAY, scripted(
+            "[{\"title\":\"Elsőnek jó lenne\",\"summary\":\"Ez sikerülne.\",\"edges\":[]},"
+                + "{\"title\":\"Ez viszont nem\\u0000\",\"summary\":null,\"edges\":[]}]"));
+        int callsBefore = fakeCompanionLlm.completeCallCount();
+
+        assertThat(extractionService.extractFor(owner, DAY)).isZero();
+
+        // the whole night is gone, not just the failing suggestion — atomicity, not partial credit
+        assertThat(nodeRepository.findAll()).isEmpty();
+        // ... and the day gate does not consider this night processed: a later run still attempts
+        // extraction (a real LLM call) rather than silently no-op-ing forever on a half-write.
+        assertThat(extractionService.extractFor(owner, DAY)).isZero();
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsBefore + 2);
     }
 }

@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GraphPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ class GraphCandidateApiIT extends ApiIntegrationTest {
     @Autowired private GraphPopulator graphPopulator;
     @Autowired private GraphNodeRepository nodeRepository;
     @Autowired private GraphEdgeRepository edgeRepository;
+    @Autowired private UserPopulator userPopulator;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -108,6 +110,61 @@ class GraphCandidateApiIT extends ApiIntegrationTest {
 
         assertThat(decided.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.ACTIVE);
         assertThat(edgeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldAcceptButCreateNoEdges_whenProposedEdgesAreMalformed() {
+        // review finding #2 (mezo-b3pp.8): the confirm boundary must not trust stored meta JSON —
+        // an out-of-range confidence, an unknown kind, and a self-loop must each be dropped rather
+        // than reaching GraphService.upsertEdge (where they would violate a DB CHECK and turn an
+        // accept into a 500 rollback).
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = graphPopulator.createCandidateNode(owner, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Gyanús javaslatok", LocalDate.of(2026, 8, 21), Map.of("proposedEdges", List.of(
+                Map.of("toNodeId", active.getId().toString(), "kind", "TRIGGERS", "confidence", 5),
+                Map.of("toNodeId", active.getId().toString(), "kind", "UNKNOWN_KIND", "confidence", 0.5))));
+        // a proposal pointing back at the candidate's own (not-yet-assigned) id can't be set up
+        // ahead of time, so add it once the id is known, directly on the persisted row's meta.
+        GraphNodeEntity selfLoop = nodeRepository.findById(candidate.getId()).orElseThrow();
+        selfLoop.setMeta(Map.of("proposedEdges", List.of(
+            Map.of("toNodeId", active.getId().toString(), "kind", "TRIGGERS", "confidence", 5),
+            Map.of("toNodeId", active.getId().toString(), "kind", "UNKNOWN_KIND", "confidence", 0.5),
+            Map.of("toNodeId", candidate.getId().toString(), "kind", "TRIGGERS", "confidence", 0.8))));
+        nodeRepository.saveAndFlush(selfLoop);
+
+        GraphNodeResponse decided = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(decided.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.ACTIVE);
+        assertThat(edgeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldReturn404_whenNotOwnCandidate() {
+        UUID otherUser = userPopulator.createUser().getId();
+        GraphNodeEntity candidate = graphPopulator.createCandidateNode(otherUser, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Nem az enyém.", LocalDate.of(2026, 8, 21), Map.of("proposedEdges", List.of()));
+
+        String body = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "GRAPH_NODE_NOT_FOUND");
+    }
+
+    @Test
+    void testListGraphCandidates_shouldNotIncludeAnotherUsersCandidate() {
+        UUID owner = ownerId();
+        UUID otherUser = userPopulator.createUser().getId();
+        graphPopulator.createCandidateNode(otherUser, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Nem az enyém.", LocalDate.of(2026, 8, 21), Map.of("proposedEdges", List.of()));
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        candidateWithEdgeTo(owner, active, 0.8);
+
+        List<GraphNodeResponse> candidates = getForList(CANDIDATE, ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(candidates).extracting(GraphNodeResponse::getTitle).containsExactly("Új munkahely első hete");
     }
 
     @Test

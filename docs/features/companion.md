@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-22
+updated: 2026-08-23
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1523,6 +1523,16 @@ idiom transplanted onto the graph.
     that fails to deserialize into `LifeEventSuggestion[]`, degrades to **zero candidates** — logged
     (`log.warn`) and swallowed, never an exception out of `extractFor`, never a half-written night.
     Suggestions with a blank/missing `title` are filtered before the per-day limit is applied.
+  - **The persistence side is atomic too.** `extractFor` itself carries no `@Transactional` (it is
+    called once per user/day, with no wider transaction to join), so the night's candidate writes
+    are pulled into their own `@Transactional persistCandidates(...)` method, invoked through a
+    self-injected `ObjectProvider<LifeEventExtractionService>` proxy — the same idiom
+    `GraphPromotionService.reconcile`'s javadoc explains (plain `this` self-invocation would bypass
+    the proxy and get no transactional advice at all). One failing suggestion (a NUL byte Postgres
+    rejects, a transient `DataAccessException`, ...) rolls back every candidate the night proposed,
+    and `extractFor` degrades to `0` instead of letting the exception escape — so
+    `countExtractorNodesOnDay` still finds nothing for the day, and a later run can retry it
+    cleanly instead of a half-written night wedging the day gate shut forever.
   - Titles are truncated the `GraphPromotionService.truncateTitle` way (117 chars + `…`) —
     `knowledge_node.title varchar(120)`.
 - **`GraphService.createCandidate(...)`** (new, alongside W2.1's `upsertNode`/`upsertEdge`) —
@@ -1554,6 +1564,16 @@ idiom transplanted onto the graph.
     isn't a `List<Map>`, or a map entry with a missing field or a non-UUID `toNodeId`, is dropped
     rather than thrown — a confirmed life event with one unreadable proposal is still a confirmed
     life event.
+  - **`accept` re-validates every survivor before materialising it** — `decide` is the trust
+    boundary (the ONLY path to durable graph structure), so it never assumes the extractor's own
+    validation still holds for whatever is sitting in `meta` by confirm time. Each proposal is
+    re-checked against the SAME rule the extractor applies (`kind` ∈
+    `LifeEventExtractionService.ALLOWED_KINDS`, `confidence` ∈ `[edgeConfidenceFloor, 1.0]`), plus a
+    self-loop guard (`toNodeId` equal to the candidate's own id). A proposal failing any of these is
+    dropped, never clamped, and logged — the same reasoning as the extractor's own drop rule: an
+    out-of-range confidence would compute a weight `ck_knowledge_edge_weight` rejects, and an
+    unknown kind would violate `ck_knowledge_edge_kind`, either of which would otherwise turn an
+    accept into a 500 that rolls back the whole decision.
 - **`GraphMapper.proposedEdgeCount`** — a new `GraphNodeResponse` field: the size of
   `meta.proposedEdges` for a candidate node, `0` for every non-candidate node and for a candidate
   whose meta carries no (or a malformed) list. Lets the FE render "accept → N new links" without a

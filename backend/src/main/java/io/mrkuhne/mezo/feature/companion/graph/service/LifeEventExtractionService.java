@@ -22,8 +22,10 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -43,7 +45,19 @@ import tools.jackson.databind.ObjectMapper;
  * re-proposed; (2) an empty narrative — a day with nothing written costs no LLM call at all.
  *
  * <p>IDENT-3: a failed, empty or unparseable MODEL ANSWER means zero candidates, logged and
- * swallowed — never an exception out of {@code extractFor} and never a half-written night.
+ * swallowed — never an exception out of {@code extractFor} and never a half-written night. The
+ * same holds for the PERSISTENCE side: {@code extractFor} itself carries no {@code @Transactional}
+ * (each nightly call for a given user/day is its own unit of work, and there is no wider
+ * transaction to join), so the suggestion-to-candidate writes are pulled into their own
+ * {@link #persistCandidates} method and invoked through {@link #self}, the injected proxy — the
+ * same idiom {@link GraphPromotionService#reconcile}'s javadoc explains (plain {@code this}
+ * self-invocation bypasses the proxy and gets no transactional advice at all). That one
+ * transaction covers every candidate the night proposes: a persistence failure on suggestion N
+ * (a NUL byte Postgres rejects, a transient {@code DataAccessException}, ...) rolls back
+ * suggestions 1..N too, so the night ends with zero candidates rather than a half-written one, and
+ * {@code extractFor} degrades to {@code 0} instead of letting the exception escape — the day gate
+ * ({@code countExtractorNodesOnDay}) then still finds nothing for the day, so a later run can
+ * retry it cleanly.
  */
 @Slf4j
 @Service
@@ -59,8 +73,10 @@ public class LifeEventExtractionService {
     /** {@code knowledge_node.source_kind} for everything this service writes. */
     public static final String SOURCE_EXTRACTOR = "extractor";
 
-    /** The extractor may only propose the two temporal/causal kinds (spec §6.3). */
-    private static final Set<String> ALLOWED_KINDS =
+    /** The extractor may only propose the two temporal/causal kinds (spec §6.3).
+     *  {@link LifeEventCandidateService#decide} reuses this same set to re-validate a stored
+     *  proposal at the confirm boundary rather than trusting the persisted JSON. */
+    public static final Set<String> ALLOWED_KINDS =
         Set.of(GraphEdgeEntity.KIND_TRIGGERS, GraphEdgeEntity.KIND_PRECEDED_BY);
 
     /** Same bound as the W2.2 structurer: the model sees a small multiple of top-K existing
@@ -94,9 +110,14 @@ public class LifeEventExtractionService {
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
+    // Self-injected proxy (ObjectProvider defers resolution, so this is safe despite the apparent
+    // circularity) — see GraphPromotionService.reconcile's javadoc for why persistCandidates is
+    // invoked through this proxy instead of `this`.
+    private final ObjectProvider<LifeEventExtractionService> self;
 
-    /** @return how many LIFE_EVENT candidates were created for {@code day} (0 on either gate,
-     *  on an empty answer, or on any model/parse failure). */
+    /** @return how many LIFE_EVENT candidates were created for {@code day} (0 on either gate, on
+     *  an empty answer, on any model/parse failure, or — atomically, see {@link #persistCandidates}
+     *  — on any candidate-persistence failure). */
     public int extractFor(UUID userId, LocalDate day) {
         if (nodeRepository.countExtractorNodesOnDay(userId, day) > 0) {
             return 0;   // already processed (accepted, pending, or rejected) — never re-proposed
@@ -122,6 +143,25 @@ public class LifeEventExtractionService {
             log.warn("Life-event extraction failed for {} on {}", userId, day, e);
             return 0;
         }
+        if (suggestions.isEmpty()) {
+            return 0;
+        }
+        try {
+            return self.getObject().persistCandidates(userId, day, suggestions, existing);
+        } catch (Exception e) {
+            log.warn("Life-event candidate persistence failed for {} on {} — degrading to zero "
+                + "candidates so the night stays reprocessable", userId, day, e);
+            return 0;
+        }
+    }
+
+    /** The whole night's candidate writes, in ONE transaction (see the class javadoc): either every
+     *  suggestion becomes a candidate, or (on any persistence failure) none of them do. Called only
+     *  through {@link #self} — see the class javadoc and {@link GraphPromotionService#reconcile}'s
+     *  for why plain {@code this} self-invocation would not get this transactional advice at all. */
+    @Transactional
+    public int persistCandidates(UUID userId, LocalDate day, List<LifeEventSuggestion> suggestions,
+            List<GraphNodeEntity> existing) {
         int created = 0;
         for (LifeEventSuggestion suggestion : suggestions) {
             graphService.createCandidate(userId, GraphNodeEntity.KIND_LIFE_EVENT,
