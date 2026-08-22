@@ -27,13 +27,15 @@ export function TimePicker({
   label: string
   val: string
   onChange: (next: string) => void
-  hours: number[]
+  hours?: number[]
 }) {
   const [h, m] = val.split(':')
+  const hourList = hours ?? [...Array(24).keys()]
   // Screenshot drafts carry exact times (e.g. 00:42) — inject the current value as an
   // option when it's outside the preset lists, so the select can display it (mezo-66ab).
-  const hourOptions = hours.includes(parseInt(h)) ? hours : [...hours, parseInt(h)].sort((a, b) => a - b)
-  const minuteOptions = [0, 30].includes(parseInt(m)) ? [0, 30] : [0, parseInt(m), 30].sort((a, b) => a - b)
+  const hourOptions = hourList.includes(parseInt(h)) ? hourList : [...hourList, parseInt(h)].sort((a, b) => a - b)
+  const minuteList = [0, 15, 30, 45]
+  const minuteOptions = minuteList.includes(parseInt(m)) ? minuteList : [0, 15, 30, 45, parseInt(m)].sort((a, b) => a - b)
   return (
     <div className="col" style={{ alignItems: 'center' }}>
       <span style={SECTION_LABEL}>{label}</span>
