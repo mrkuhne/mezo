@@ -589,6 +589,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7` | Phase 5 W2.2 — confirmed patterns, non-pattern-sourced knowledge facts and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. |
+| Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → *(W2.4 Összefüggések slot)* → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
@@ -1481,6 +1482,88 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
   - Each handler wraps its call in its own try/catch + `log.warn` — a promotion failure is logged,
     never rethrown into the async executor.
 
+### W2.3 life-event extraction + confirm inbox (✅ `mezo-b3pp.8`)
+
+A day's own words become 0..N `LIFE_EVENT` **candidates** (spec §6.3) — the first graph writer that
+requires an explicit L2 decision before anything durable exists, the `FactCandidateService.decide`
+idiom transplanted onto the graph.
+
+- **`LifeEventExtractionService.extractFor(userId, day)`** — one cheap-LLM pass per day, gated on
+  **both** `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. **Nothing schedules it**: no cron, no
+  REST trigger; W2.5's `GraphMaintenanceJob` will call it exactly as it will call W2.2's
+  `reconcile(userId)` — the sweep exists, the cron arrives with the job.
+  - **Two gates, both BEFORE any spend.** (1) `GraphNodeRepository.countExtractorNodesOnDay`
+    (native, `source_kind = 'extractor' and occurred_on = :day`, deliberately blind to
+    `is_deleted`) — a day already processed (accepted, still-pending, OR rejected) is never
+    re-proposed; a rejected night must not resurrect itself every subsequent run. (2) the
+    emptiness gate — `gatherNarrative` concatenates `journal_entry` (all of the day's entries) +
+    `ritual_day.reflection_text` (the Napzárás reflection) + `daily_summary.narrative`, in that
+    prompt order; a day with nothing written in any of the three costs no LLM call at all.
+  - **The prompt**: system prompt tagged `EXTRACTOR_MARKER = "[life-event-extractor]"` (the
+    `GraphEdgeStructurer.STRUCTURER_MARKER` `FakeCompanionLlm` dispatch idiom) asks for **at most
+    3** life events as a bare JSON array (`[{"title", "summary", "edges":[{"index","kind","confidence"}]}]`,
+    empty array `[]` if the day brought none); the user message lists the day's narrative followed
+    by a **numbered, index-based** list of the user's existing active nodes (`top-k × 3` newest
+    first, the W2.2 `GraphEdgeStructurer` pool-multiplier idiom — index, never title, so nothing
+    depends on the model echoing Hungarian text back verbatim). Tagged for the audit log via
+    `LlmCallContextHolder.runWith(new LlmCallContext("companion_graph", "extract_life_events",
+    "day", null), …)` — `refId` is `null`: the call is scoped to a day, not to one existing entity.
+  - **Allowed edge kinds**: only `TRIGGERS`/`PRECEDED_BY` (the two temporal/causal kinds; an event
+    can trigger or follow an existing node, never `SUPPORTS`/`CONFLICTS`/`RELATES_TO`). A
+    suggestion whose `index` is out of range, whose `kind` isn't one of the two, or whose
+    `confidence` falls outside `[edgeConfidenceFloor, 1.0]` is **dropped, never clamped** — reusing
+    the same `mezo.companion.graph.edge-confidence-floor` + `topK` config the W2.2 structurer
+    already validates against, and the same reason: an out-of-range confidence must never survive
+    to the confirm path, where `weight = confidence × 0.5` would threaten
+    `ck_knowledge_edge_weight`. Survivors are packed into the typed **`GraphProposedEdge`**
+    envelope (`toNodeId`, `kind`, `confidence`) and stored as a plain list under
+    `knowledge_node.meta.proposedEdges` (`GraphProposedEdge.META_KEY`) — extraction never writes a
+    `knowledge_edge` row itself, so a rejected candidate leaves no residue anywhere.
+  - **IDENT-3**: a failed LLM call, or a response `parse()` can't find a `[...]` array in, or one
+    that fails to deserialize into `LifeEventSuggestion[]`, degrades to **zero candidates** — logged
+    (`log.warn`) and swallowed, never an exception out of `extractFor`, never a half-written night.
+    Suggestions with a blank/missing `title` are filtered before the per-day limit is applied.
+  - Titles are truncated the `GraphPromotionService.truncateTitle` way (117 chars + `…`) —
+    `knowledge_node.title varchar(120)`.
+- **`GraphService.createCandidate(...)`** (new, alongside W2.1's `upsertNode`/`upsertEdge`) —
+  deliberately **not** an upsert: extractor candidates carry `sourceId = null`, so
+  `uq_knowledge_node_source` (partial, `source_id is not null`) doesn't apply and there is no key
+  to UPSERT against; the per-day probe above is what keeps a re-run from proposing the same night
+  twice. Writes `status = candidate` directly (IDENT-6: nothing the AI derives becomes durable
+  without an explicit decision). `GraphService.listCandidates(userId)` is the paired read —
+  `status = candidate`, not-deleted, newest first.
+- **`LifeEventCandidateService`** (`graph/service/`) — the ONLY path from a `candidate` node to
+  durable structure:
+  - `listPending(userId)` → `graphService.listCandidates` mapped to `GraphNodeResponse`.
+  - `decide(userId, nodeId, GraphCandidateDecisionRequest)` — 404 `GRAPH_NODE_NOT_FOUND` for a
+    missing or foreign node (owned lookup, no existence leak); 400
+    `GRAPH_CANDIDATE_ALREADY_DECIDED` when the node's `status` isn't `candidate` any more — **one
+    decision per candidate**, never a silent second activation.
+    - `reject` — a plain soft delete (`nodeRepository.delete`, `@SQLDelete`), **not** `archived`:
+      an un-confirmed guess must leave no residue at all (the spec's own wording); `archived` stays
+      reserved for nodes that WERE true and are being retired later (W2.6).
+    - `accept` — flips `status` to `active`, flushes, then materialises every entry in the node's
+      `meta.proposedEdges` envelope via `GraphService.upsertEdge` at `weight = confidence × 0.5`
+      (edges start humble, same as W2.2 — W2.5 reinforcement is what raises them), evidence
+      `{sourceKind: EVIDENCE_SOURCE = "extractor", sourceId: <the new node's id>, note:
+      "life-event confirm confidence=…", at: now}`. **Vanished-target skip**: a proposed edge whose
+      `toNodeId` no longer resolves to an OWNED, `active`, not-deleted node (archived or
+      soft-deleted between extraction and the decision) is silently skipped and logged — a stale
+      proposal must never block confirming an otherwise good life event.
+  - The typed envelope is read back out of the generic `meta` jsonb map defensively: anything that
+    isn't a `List<Map>`, or a map entry with a missing field or a non-UUID `toNodeId`, is dropped
+    rather than thrown — a confirmed life event with one unreadable proposal is still a confirmed
+    life event.
+- **`GraphMapper.proposedEdgeCount`** — a new `GraphNodeResponse` field: the size of
+  `meta.proposedEdges` for a candidate node, `0` for every non-candidate node and for a candidate
+  whose meta carries no (or a malformed) list. Lets the FE render "accept → N new links" without a
+  second round-trip.
+- **`FakeCompanionLlm`** dispatch (test-only): `[fake-life-events:[…]]` planted anywhere in the
+  narrative is echoed back verbatim as the model's JSON array (a missing sentinel ⇒ `[]`, the
+  un-scripted "quiet day" path); `[fake-life-events-broken]` returns matching-bracket-but-invalid
+  JSON to exercise the catch-and-log parse-failure path specifically, distinct from the
+  empty-answer path.
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -1647,6 +1730,17 @@ W2.1 (`mezo-b3pp.6`) — gated `KNOWLEDGE_GRAPH_SWITCH`:
 - `GET /api/companion/graph/node` — active nodes for the current user, newest first.
 - `POST /api/companion/graph/node/{id}/archive` — archive a node (200 + the archived node body;
   404 `GRAPH_NODE_NOT_FOUND` if not owned).
+
+W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the surface (switch off
+⇒ both routes 404, `GraphSwitchOffIT`):
+
+- `GET /api/companion/graph/node/candidate` — pending (undecided) `LIFE_EVENT` candidates, newest
+  first.
+- `POST /api/companion/graph/node/{id}/decision` — `GraphCandidateDecisionRequest {decision:
+  accept|reject}` → the decided node (`active` on accept, the soft-deleted row's last shape on
+  reject); 400 `GRAPH_CANDIDATE_ALREADY_DECIDED`; 404 `GRAPH_NODE_NOT_FOUND`.
+- `GraphNodeResponse.proposedEdgeCount` — how many edges accepting this candidate would create
+  (`0` for every non-candidate node).
 
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
