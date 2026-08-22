@@ -105,4 +105,15 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.tools().maxTrendWeeks()).isEqualTo(26);
         assertThat(properties.tools().maxRefsPerTurn()).isEqualTo(10);
     }
+
+    @Test
+    void testAmbientRecallConfig_shouldBindCapsAndBudgetFromYaml_whenContextStarts() {
+        assertThat(properties.ambientRecall().enabled()).isTrue();
+        assertThat(properties.ambientRecall().capDailySummary()).isEqualTo(2);
+        assertThat(properties.ambientRecall().capJournal()).isEqualTo(2);
+        assertThat(properties.ambientRecall().capChatTurn()).isEqualTo(1);
+        assertThat(properties.ambientRecall().capOther()).isEqualTo(1);
+        assertThat(properties.ambientRecall().minSimilarity()).isEqualTo(0.55);
+        assertThat(properties.ambientRecall().maxTokens()).isEqualTo(1200);
+    }
 }

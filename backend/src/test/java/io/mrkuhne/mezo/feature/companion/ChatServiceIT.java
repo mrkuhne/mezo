@@ -357,4 +357,23 @@ class ChatServiceIT extends AbstractIntegrationTest {
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
     }
+
+    /**
+     * The seedless half of the W3.1 coverage — a message with nothing to recall changes nothing.
+     * The seed-dependent ambient tests live in {@link ChatServiceAmbientRecallIT}: they assert that
+     * the turn COMMITS (both message rows on disk after a failed ANN statement, the Memory refs on
+     * the persisted row), which a {@code @Transactional} test — always rolled back — cannot observe.
+     * Visibility is not the reason: the ANN query runs on the caller's own connection and does see
+     * uncommitted test-transaction rows.
+     */
+    @Test
+    void testSendMessage_shouldOmitMemoriesBlock_whenNothingSimilar() {
+        UUID userId = databasePopulator.populateUser("chat-memories-none@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        assertThat(answer.getContent()).doesNotContain("[Emlékek]");
+        assertThat(answer.getRefs()).isEmpty();
+    }
 }

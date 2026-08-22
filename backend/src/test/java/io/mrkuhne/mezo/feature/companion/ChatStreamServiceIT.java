@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
@@ -8,19 +9,23 @@ import io.mrkuhne.mezo.api.dto.StreamError;
 import io.mrkuhne.mezo.api.dto.StreamToolCall;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ChatStreamService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
+import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
+import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.codec.ServerSentEvent;
@@ -53,6 +58,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private KnowledgeFactPopulator factPopulator;
+    @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
@@ -243,6 +249,60 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+    }
+
+    @Test
+    void testStreamMessage_shouldInjectMemoriesBlockAndCarryMemoryRefsOnDone_whenSimilarMemoriesExist() {
+        UUID userId = databasePopulator.populateUser("stream-memories@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
+        memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
+                "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(), request("[fake-embed:1] hogy aludtam futás után?"))
+                .collectList().block();
+
+        // prepareTurn is the STREAMED assembly site — it must carry the same block as sendMessage
+        String streamed = events.stream()
+                .filter(e -> "delta".equals(e.event()))
+                .map(e -> ((StreamDelta) e.data()).getText())
+                .reduce("", String::concat);
+        String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
+        assertThat(systemBlock.indexOf(PromptMemoryAssembler.MEMORIES_HEADER))
+                .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
+        assertThat(systemBlock).contains("(napló): futás után jobban aludtam");
+        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+
+        MessageResponse done = (MessageResponse) events.getLast().data();
+        assertThat(done.getRefs()).extracting(MessageRef::getKind, MessageRef::getId)
+                .contains(Tuple.tuple("Memory", LocalDate.now().minusDays(3).toString()));
+        AiMessageEntity assistant = messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId)
+                .getLast();
+        assertThat(assistant.getRefs().refs()).extracting(r -> r.kind()).contains("Memory");
+    }
+
+    @Test
+    void testStreamMessage_shouldKeepToolRefsAheadOfMemoryRefs_whenBothPresent() {
+        UUID userId = databasePopulator.populateUser("stream-memories-order@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
+                "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("[fake-embed:1] aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"))
+                .collectList().block();
+
+        // the streamed twin of ChatServiceAmbientRecallIT's ordering test: the ambient refs are
+        // added after the tool loop AND the advisor review, so tool refs keep the cap priority
+        MessageResponse done = (MessageResponse) events.getLast().data();
+        List<String> kinds = done.getRefs().stream().map(MessageRef::getKind).toList();
+        assertThat(kinds).contains("Sleep", "Memory");
+        assertThat(kinds.indexOf("Memory")).isGreaterThan(kinds.lastIndexOf("Sleep"));
+        assertThat(kinds.getLast()).isEqualTo("Memory");
     }
 
     /** The delta text, concatenated in order — the same map+reduce the happy-path test above uses,

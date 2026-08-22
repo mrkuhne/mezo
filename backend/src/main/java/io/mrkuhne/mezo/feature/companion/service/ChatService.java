@@ -123,6 +123,8 @@ public class ChatService {
     private final ConversationService conversationService;
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
+    /** W3.1 — the always-on [Emlékek] block (mezo-b3pp.12). */
+    private final PromptMemoryAssembler promptMemoryAssembler;
     private final CompanionLlm companionLlm;
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
@@ -132,9 +134,10 @@ public class ChatService {
     private final ApplicationEventPublisher eventPublisher;
     private final LlmCallContextHolder llmCallContextHolder;
 
-    /** One prepared chat turn — everything the LLM call needs, produced inside one transaction. */
+    /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
+     *  {@code recalledRefs} (W3.1) are the ambient-recall Memory refs the stream path adds to its audit. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
-                               List<Turn> history, String userContent) {}
+                               List<Turn> history, String userContent, List<RefsEnvelope.Ref> recalledRefs) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -146,16 +149,16 @@ public class ChatService {
     @Transactional
     public PreparedTurn prepareTurn(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-        String systemPrompt = SYSTEM_PROMPT
-                + contextSnapshotAssembler.render(userId, LocalDate.now())
-                + knowledgeFactService.renderPromptBlock(userId)
-                + knowledgeFactService.renderNewPatternFactsBlock(userId)
-                + TONE_REMINDER;
+        LocalDate today = LocalDate.now();
+        PromptMemoryAssembler.AmbientRecall recalled =
+                promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block());
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
         touchConversation(conversation, request.getContent());
-        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent());
+        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent(),
+                recalled.refs());
     }
 
     /**
@@ -181,15 +184,13 @@ public class ChatService {
     public MessageResponse sendMessage(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
 
+        // Prompt order: see assembleSystemPrompt. The history travels as real prior messages
+        // (mezo-q71s), not a transcript inside the system prompt.
+        LocalDate today = LocalDate.now();
+        PromptMemoryAssembler.AmbientRecall recalled =
+                promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block());
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        // Prompt order: voice -> snapshot (V0.3) -> top-N facts (V1.1) -> fresh pattern-facts
-        // acknowledgment (V3.3). The history travels as real prior messages (mezo-q71s), not a
-        // transcript inside the system prompt.
-        String systemPrompt = SYSTEM_PROMPT
-                + contextSnapshotAssembler.render(userId, LocalDate.now())
-                + knowledgeFactService.renderPromptBlock(userId)
-                + knowledgeFactService.renderNewPatternFactsBlock(userId)
-                + TONE_REMINDER;
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(
@@ -215,6 +216,9 @@ public class ChatService {
                     () -> companionLlm.complete(systemPrompt, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
+        // W3.1: ambient Memory refs join the audit AFTER the LLM round — tool refs are the answer's
+        // own provenance and win the per-turn ref cap; the recalled days fill what is left.
+        recalled.refs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
 
@@ -223,6 +227,21 @@ public class ChatService {
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
                 assistant.getId(), answer));
         return mapper.toMessageResponse(assistant);
+    }
+
+    /**
+     * The canonical system prompt: voice → snapshot (V0.3) → top-N facts (V1.1) → fresh
+     * pattern-facts acknowledgment (V3.3) → [Emlékek] ambient recall (W3.1) → [the W2.4
+     * Összefüggések block slots in here when the graph gate opens] → TONE_REMINDER (mezo-q71s,
+     * always last). The history travels as real prior messages, not a transcript in here.
+     */
+    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock) {
+        return SYSTEM_PROMPT
+                + contextSnapshotAssembler.render(userId, today)
+                + knowledgeFactService.renderPromptBlock(userId)
+                + knowledgeFactService.renderNewPatternFactsBlock(userId)
+                + memoriesBlock
+                + TONE_REMINDER;
     }
 
     private List<AiMessageEntity> loadWindow(UUID userId, UUID conversationId) {

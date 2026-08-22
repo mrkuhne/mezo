@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -19,7 +21,8 @@ import java.util.regex.Pattern;
  *
  * <p>Scripted vectors: a {@code [fake-embed:0.6 0.8]} sentinel anywhere in the text sets the
  * leading dimensions explicitly (rest zero, then normalized), so ITs can stage exact cosine
- * relationships through the port instead of hand-seeding rows.
+ * relationships through the port instead of hand-seeding rows. A {@code [fake-embed-fail]}
+ * sentinel makes the port throw instead (failure-path ITs).
  */
 @Component
 @Profile("companion-fake")
@@ -29,6 +32,21 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
     /** Scripted vector: {@code [fake-embed:0.6 0.8]} → [0.6, 0.8, 0, …] normalized. */
     public static final Pattern EMBED_SENTINEL =
             Pattern.compile("\\[fake-embed:([-0-9. ]+)]");
+
+    /**
+     * Failure sentinel (W3.1): a text containing it makes the port throw the same
+     * {@code SystemRuntimeErrorException} the real adapter raises on a malformed provider response —
+     * ITs stage "the embed hop is down" without Mockito. Distinct from the fake LLM's
+     * {@code [fake-fail]} (which fails the TURN, not the embed).
+     */
+    public static final String FAIL_EMBED = "[fake-embed-fail]";
+
+    /**
+     * ANN failure sentinel (W3.1): the returned vector is deliberately 3-dimensional instead of
+     * {@link EmbeddingPort#DIMENSIONS}, so the embed hop SUCCEEDS and the ANN query then fails at
+     * the database ("different vector dimensions") — the staged DB-level half of the failure path.
+     */
+    public static final String FAIL_ANN = "[fake-embed-shortvec]";
 
     @Override
     public List<float[]> embedDocuments(List<String> texts) {
@@ -41,6 +59,13 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
     }
 
     private float[] vectorFor(String text) {
+        if (text.contains(FAIL_EMBED)) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("COMPANION_EMBEDDING_INVALID_RESPONSE").build());
+        }
+        if (text.contains(FAIL_ANN)) {
+            return normalize(new float[] {1f, 0f, 0f});
+        }
         Matcher m = EMBED_SENTINEL.matcher(text);
         if (m.find()) {
             return normalize(scripted(m.group(1)));

@@ -348,8 +348,8 @@ Mezo: …`, ref = assistant message id).
   noise, not a memory); an empty result renders `nincs adat`, never a fabricated resemblance.
 - **Chips carry the recalled days** — each recalled day adds a `Memory`/date ref to the turn's
   audit, so the FE shows what got remembered (no FE change — the `MessageRef` envelope flows).
-- Tool-only recall for now: auto-recall-on-every-turn stays deferred until it earns its latency
-  (roadmap decision).
+- **Ambient recall is always-on since W3.1 (`mezo-b3pp.12`)** — see the Phase 5 row in the status
+  table below; the tool stays for deep, targeted recall on demand.
 
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
@@ -589,6 +589,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
+| Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → *(W2.4 Összefüggések slot)* → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
@@ -787,9 +788,12 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
   → ChatStreamService.streamMessage            service/ChatStreamService.java:59
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
-         prompt = voice + snapshot + facts + pattern-ack + TONE_REMINDER (mezo-q71s: history is
-         NOT in here — loadWindow()'s Turns ride PreparedTurn.history separately), persist USER
-         row, title-once + lastMessageAt
+         prompt = voice + snapshot + facts + pattern-ack + [Emlékek] (W3.1) + TONE_REMINDER
+         (mezo-q71s: history is NOT in here — loadWindow()'s Turns ride PreparedTurn.history
+         separately) — the SAME private assembleSystemPrompt(userId, today, memoriesBlock) helper
+         the sync path uses, with ONE LocalDate.now() per turn shared by the snapshot and the
+         recall; persist USER row, title-once + lastMessageAt. The recalled Memory refs ride
+         PreparedTurn.recalledRefs to step 5
       2. audit = toolRegistry.newTurnAudit()          ── V0.5: per-turn budget + call/ref collector
          toolSink = Sinks.many().unicast().onBackpressureBuffer(); audit.onCall(call ->
          toolSink.tryEmitNext(toolEvent(call)))       ── mezo-280: registered BEFORE step 3, because
@@ -812,9 +816,13 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          mezo.companion.advisors.enabled): clinical regex → LLM verdict; violation → ONE
          corrective re-prompt (AdvisorRetry.block appended; same tools+audit) → re-check;
          still violating ⇒ degraded=true. The done row carries the FINAL (possibly retried) text.
+      4b. turn.recalledRefs().forEach(audit::addRef)   ── W3.1: the ambient Memory refs join the
+         audit AFTER the tool loop AND the advisor review, immediately before step 5 — the tool
+         refs are the answer's own provenance and win the tools.max-refs-per-turn cap (first-wins)
       5. chatService.completeTurn(userId, id, answer, audit, degraded) ── TX #2: persist ASSISTANT
          row WITH tool_calls/refs envelopes + degraded → terminal event:done, data: MessageResponse
-         (tools[] = "name(args)" chips, refs[] = tool-contributed data refs, degraded flag)
+         (tools[] = "name(args)" chips, refs[] = tool-contributed data refs + the W3.1 Memory/date
+         refs, degraded flag)
       onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
   → FE: deltas AND tool events append into the optimistic draft bubble (chips render live through
     ToolChipRow — mezo-280); done → the persisted pair is written into the ['chat'] query cache (no
@@ -833,12 +841,19 @@ covers slow LLM streams. Pre-stream failures (400/401/404) are ordinary JSON
 POST /api/companion/conversation/{id}/message   (sync JSON)
   → CompanionController.sendMessage            controller/CompanionController.java:42  (implements CompanionApi)
       currentUserId.get()  (JWT subject → UUID; techcore/security/CurrentUserId)
-  → ChatService.sendMessage(userId, id, req)   service/ChatService.java:90
+  → ChatService.sendMessage(userId, id, req)   service/ChatService.java:184
       1. conversationService.getOwned(userId, id)          → 404 RESOURCE_NOT_FOUND if missing/foreign
-      2. systemPrompt = SYSTEM_PROMPT (incl. the V0.5 tool-usage line)
-                      + contextSnapshotAssembler.render(userId, LocalDate.now())    ── V0.3 ──
+      2. today = LocalDate.now()                     ── W3.1: ONE clock read per turn, shared by
+                                                         the snapshot and the ambient recall
+         recalled = promptMemoryAssembler.recall(userId, id, req.content, today)   ── W3.1 ──
+         systemPrompt = assembleSystemPrompt(userId, today, recalled.block())  ── the ONE private
+                        helper both paths call (mezo-b3pp.12); it returns:
+                        SYSTEM_PROMPT (incl. the V0.5 tool-usage line)
+                      + contextSnapshotAssembler.render(userId, today)             ── V0.3 ──
                       + knowledgeFactService.renderPromptBlock(userId)              ── V1.1 ──
                       + knowledgeFactService.renderNewPatternFactsBlock(userId)     ── V3.3 ──
+                      + memoriesBlock  ── W3.1: the [Emlékek] block ("" when nothing was recalled;
+                        the W2.4 Összefüggések block slots in right after it, comment-only today) ──
                       + TONE_REMINDER                                              ── mezo-q71s ──
          history = toTurns(loadWindow(userId, id))    ── mezo-q71s: List<Turn>, travels SEPARATELY
                                                           from systemPrompt (not rendered into it)
@@ -849,8 +864,12 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
          (real: GeminiCompanionLlm → Gemini tool loop · tests: FakeCompanionLlm echoes
           system/history/user (mezo-q71s) + executes [fake-tool:…] sentinels through the REAL
           callbacks + answers verdict calls via the [fake-violate…] sentinels)
+      4b. recalled.refs().forEach(audit::addRef)     ── W3.1: the ambient Memory refs join the audit
+          AFTER the LLM round, so the tool refs (the answer's own provenance) take the
+          tools.max-refs-per-turn cap first — the streamed twin does the same before completeTurn
       5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope() + degraded
-         (null envelopes when no tool ran — the V0.2 steady state is unchanged)
+         (tool_calls stays null when no tool ran — the V0.2 steady state is unchanged; refs is null
+          only when NEITHER a tool nor the ambient recall contributed one)
       6. touchConversation → lastMessageAt = now; title = first user msg (once)
       6b. publish ChatTurnCompleted ── V1.2: AFTER_COMMIT → @Async FactExtractionListener
           → FactExtractionService.extractFromTurn (cheap-tier LLM, JSON parse, dedupe, cap)
@@ -1524,7 +1543,30 @@ maps it, so the response is always server truth.
 - `mezo.companion.recall.candidate-pool` = **20** (`@Min(1) @Max(100)`) — ANN candidates fetched
   before the decay re-rank.
 - `mezo.companion.recall.render-max-chars` = **300** (`@Min(50) @Max(2000)`) — per-memory render
-  cap in the tool result (gist over full re-quote; token budget).
+  cap in the tool result (gist over full re-quote; token budget). **Since W3.1 the ambient
+  `[Emlékek]` block reuses it** for its per-item first-line cap.
+- `mezo.companion.ambient-recall.enabled` = **true** — W3.1 runtime kill-switch (off ⇒ no embed
+  call, no ANN query, no block; the turn is otherwise identical). A blank user message short-circuits
+  the same way.
+- `mezo.companion.ambient-recall.cap-daily-summary` / `cap-journal` / `cap-chat-turn` / `cap-other` =
+  **2 / 2 / 1 / 1** (`@Min(0) @Max(10)`) — per kind-group caps on the `[Emlékek]` block (journal =
+  `journal_entry`+`reflection`+`gratitude`+`decision`; other = `activity_note`+`checkin_note`).
+  **A cap of 0 skips that group's query entirely** — not "query then drop" (and `kind in ()` is a
+  SQL error, so the skip is load-bearing).
+- `mezo.companion.ambient-recall.min-similarity` = **0.55** (0..1) — raw-cosine floor for ambient
+  items, deliberately stricter than the tool's **0.25**: the tool was ASKED for a memory, the
+  ambient block volunteers one.
+- `mezo.companion.ambient-recall.max-tokens` = **1200** (`@Min(100) @Max(6000)`) — hard cap on the
+  rendered block in ESTIMATED tokens (`ceil(chars / 3)`, conservative for accented Hungarian);
+  the render loop stops at the first item that would overflow. **Under the shipped defaults this
+  never binds** — 6 items × ≤300 chars ≈ 700 tokens worst case — it is a safety net for someone
+  raising the caps or `render-max-chars`. At the validated extremes it becomes a real gag: the
+  102-char `MEMORIES_HEADER` alone is 34 estimated tokens, so `max-tokens` at its 100 minimum leaves
+  ~198 chars for lines — about one short memory — and an item rendered at the 2000-char
+  `render-max-chars` maximum can never fit at all.
+- τ (`recall.decay-days`), the ANN candidate pool (`recall.candidate-pool`) and the per-item render
+  cap (`recall.render-max-chars`) are **reused** from `mezo.companion.recall.*` — W3.1 added no
+  duplicates of them (W3.3 is the slice that makes the floor and τ per-kind).
 - `mezo.companion.patterns.cron` = `"0 40 2 * * *"` — the V3.1 nightly correlation job (after the
   summary job by convention); switch `mezo.techcore.cron.pattern-detection-job.enabled`
   (`PATTERN_DETECTION_JOB_SWITCH`).
@@ -1702,7 +1744,10 @@ is in [`habit.md`](habit.md) §2/§4/§5.
 talks to the Google GenAI SDK `Client` bean directly (Spring AI 2.0.0 has no Gemini
 EmbeddingModel — the SDK call is the slice's provider decision, hidden by the port; same key as
 chat); fake `FakeEmbeddingAdapter` under `companion-fake` (seeded-random unit vectors +
-`[fake-embed:…]` sentinel).
+`[fake-embed:…]` sentinel; since **`mezo-b3pp.12`** also `FAIL_EMBED` = `[fake-embed-fail]` — the
+port throws — and `FAIL_ANN` = `[fake-embed-shortvec]`, which returns a 3-dimension vector so the
+embed SUCCEEDS and the DB rejects the ANN query instead: the two failure halves of the W3.1 path
+are separately testable).
 
 **LLM call audit log (✅ wired, [ADR 0014](../decisions/0014-llm-call-audit-log.md), mezo-2zyu).**
 Every provider call in the app — companion chat (sync, streamed, tool rounds), the smart tier, the
@@ -1722,11 +1767,15 @@ audit domain stays self-contained and never calls back. `LlmCallRecorder` publis
 `REQUIRES_NEW` transaction, so the audit never blocks (or fails) the user's call. **WHO/WHY comes
 from the call site**, not the adapter: `LlmActorResolver` reads the principal on the calling thread
 (null on cron threads — deliberately, it never throws) and `LlmCallContextHolder.runWith(new
-LlmCallContext(feature, operation, entityKind, entityId), …)` wraps each of the **32 tagged call
-sites across 29 classes** (companion chat/summary/extraction/hypotheses/recall/embedding/advisor/
+LlmCallContext(feature, operation, entityKind, entityId), …)` wraps each of the **37 tagged call
+sites across 30 classes** (companion chat/summary/extraction/hypotheses/recall/**ambient
+recall**/embedding/advisor/
 smoke-test + meal draft & coach, pantry scrape & photo, sleep shot, recipe prose, activity classify,
 quest flavor, habit-suggest, fuel stack-placement & slot-template, voice transcription, and the
-proactive generators). An untagged site records `feature = 'unknown'`. Switch
+proactive generators). The W3.1 ambient recall is the newest of them (`mezo-b3pp.12`): its
+per-turn embed is tagged `companion_recall`/`recall_embed` — **its own feature name, not
+`companion_chat`** — so `/me/ai-usage` can show recall's cost share as its own row (the design
+spec's §7.3 requirement, satisfied early). An untagged site records `feature = 'unknown'`. Switch
 `mezo.feature.llm-log.enabled` off ⇒ the injected recorder is the no-op ⇒ nothing happens; the
 adapters never branch on the switch.
 
@@ -1796,6 +1845,14 @@ precedent). The nightly job iterates `AppUserRepository.findAll()` (companion �
 
 **V2.3 recall seam (✅ wired).** `find_similar_past_days` is companion-internal (tools →
 `MemoryRecallService` → the V2.1 repository + V2.1 `EmbeddingPort`) — no new cross-feature reads.
+
+**W3.1 ambient-recall seam (✅ wired, `mezo-b3pp.12`).** Also entirely companion-internal
+(`ChatService` → `PromptMemoryAssembler` → `MemoryEmbeddingAnnQuery` + the V2.1 `EmbeddingPort`) —
+no new cross-feature reads, no contract change (the `MessageRef` envelope already carries free
+`kind`/`id` strings and `Memory` was already an emitted kind), no frontend change: the recalled days
+render through the SAME generic ref chips the V2.3 tool has been feeding since then. The kinds it
+searches are exactly the ones the W1.x embedding seams above populate, which is why W3.1 could ship
+without touching any of them.
 
 **V3.1 patterns seam (✅ wired — read-only, one-way).** `MetricSeriesService` composes the
 owning features' existing reads date-scoped (sleep/sport/run/workout+sets/meal/FuelDay/medication
@@ -2298,6 +2355,55 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`feedback/FeedbackLearningJobSwitchOffIT`** — `mezo.techcore.cron.feedback-learning-job.enabled=false`
   ⇒ no `FeedbackLearningJob` bean.
 
+**W3.1 ambient-recall test additions (`mezo-b3pp.12`) — the LLM and the embedding port are both
+fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
+
+- **`PromptMemoryAssemblerTest`** (8, pure unit — no Spring, no DB): `renderBlock` renders
+  `- <date> (<HU forrás>): <gist>`, stops at the FIRST overflowing item (a later, shorter item never
+  jumps ahead of a more relevant one), returns empty when even the first item overflows, **skips a
+  whitespace-only gist without spending a ref or leaving a dangling line** and keeps scanning
+  (a blank gist is not a budget stop), falls back to the raw kind for an unlabelled kind; plus
+  `oneLine` (first line + `…` truncation) and `estimateTokens` (ceil at 3 chars/token).
+- **`PromptMemoryAssemblerIT`** (10, `@Transactional`, `companion-fake`): a relevant episode renders
+  with its date and HU source tag; **two episodes of the SAME day render two lines but yield ONE
+  `Memory`/date ref** (refs carry the date, not the row id — a dense day cannot eat the turn's ref
+  budget); each kind group is capped independently; **the floor is pinned BETWEEN the two
+  thresholds** — a similarity-0.4 row passes the tool's `recall.min-similarity`
+  (0.25) and must still fail the ambient 0.55, so a `recall.minSimilarity()`/`ambient.minSimilarity()`
+  typo fails here first; today's episodes are skipped (the snapshot already carries the day); equal
+  similarity orders by the decayed score; an empty store, a blank message, `FakeEmbeddingAdapter.FAIL_EMBED`
+  (`[fake-embed-fail]` — the port throws) and `FAIL_ANN` (`[fake-embed-shortvec]` — the embed
+  SUCCEEDS but returns a 3-dim vector, so Postgres rejects the query with "different vector
+  dimensions") each return `AmbientRecall.EMPTY` **without throwing**.
+- **`MemoryEmbeddingAnnQueryIT`** (3, deliberately NOT `@Transactional` — the savepoint test needs a
+  real outer transaction that actually COMMITS, which a test-managed always-rolled-back one cannot
+  give): kind restriction + distance ordering, the `k` limit + other-user exclusion, and **the
+  savepoint proof** — a failing ANN inside a live transaction, then a JPA write AND a second, good
+  ANN read on that same transaction, then a clean commit. Without the savepoint the failed statement
+  would leave Postgres's "current transaction is aborted" state and Hibernate's rollback-only mark.
+- **`ChatServiceAmbientRecallIT`** (4, deliberately NOT `@Transactional` — these assert the turn
+  COMMITS): the block sits strictly between the pattern-ack block and `TONE_REMINDER` in the real
+  assembled prompt, the rendered item's `Memory`/date ref appears BOTH on the wire and on the
+  persisted row, `FAIL_EMBED` and `FAIL_ANN` each omit the block while the turn still answers with
+  `degraded=false`, and tool refs precede the ambient `Memory` refs in the envelope.
+- **`PromptMemoryAssemblerSwitchOffIT`** — `mezo.companion.ambient-recall.enabled=false` ⇒ empty
+  even with seeded, matching vectors (short-circuits before the embed — by construction, not
+  observable through the return value).
+- **Extended:** `ChatServiceIT` keeps the seedless case (no `[Emlékek]` when there is nothing to
+  recall — the V0.2 steady state is untouched); `ChatStreamServiceIT` gained the streamed block +
+  `Memory`-refs-on-`done` test and the streamed twin of the tool-refs-before-Memory-refs ordering;
+  `CompanionPropertiesIT` gained the `ambient-recall.*` binding case (all seven keys from
+  `application.yml`); `FakeEmbeddingAdapterIT` pins BOTH new sentinels (`FAIL_EMBED` throws from
+  `embedQuery` and `embedDocuments`; `FAIL_ANN` returns a unit-norm 3-dim vector) — without that,
+  a sentinel that quietly stopped failing would turn every "the block is omitted" assertion above
+  into a vacuous truth.
+- **Support:** no new populator — the V2.1 `support/populator/MemoryEmbeddingPopulator` already
+  stages exact cosine geometry (`axisVector`/`blendVector`), which is what makes the floor/cap/order
+  assertions deterministic without any embedding provider.
+- **House rule this slice added:** an ambient test that seeds vectors AND asserts a COMMIT must live
+  in a non-`@Transactional` class. Inside a test-managed transaction the turn never commits, so a
+  `done`-row/refs-envelope assertion would be asserting nothing.
+
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
@@ -2310,7 +2416,7 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 1. **Window = config, in messages not turns.** `mezo.companion.chat.history-window` = 20 (≈10
    turns); `title-max-chars` = 80. Tunable, `@Validated`, never `@Value`.
 2. **Auto-titling deferred.** `title` = first user message truncated to `title-max-chars`, **set
-   once, never regenerated** (`ChatService.touchConversation`, `ChatService.java:97`).
+   once, never regenerated** (`ChatService.touchConversation`, `ChatService.java:277`).
 3. **No `started_at` column.** `OwnedEntity.created_at` is the conversation start; the contract's
    `startedAt` maps from it (`CompanionMapper.toConversationResponse`). A duplicate column would
    only drift — the spec §3 field list is "essence", not DDL.
@@ -2573,7 +2679,48 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   add `mezo.feature.feedback.*`; a surface whose chips work while the companion is dark would be
   collecting opinions about nothing.
 
+**W3.1 ambient-recall gotchas (`mezo-b3pp.12`, spec §7.1):**
+
+- **The ANN runs on raw JDBC under a HAND-TAKEN savepoint, not through JPA — and not through
+  `PROPAGATION_NESTED` either.** `MemoryEmbeddingAnnQuery` executes on the *caller's own*
+  connection and wraps the statement in `connection.setSavepoint(...)`, so a failed query rolls
+  back to that savepoint and the turn's transaction stays usable. A JPA query would poison it
+  twice over: Postgres would leave the transaction in its "current transaction is aborted,
+  commands ignored until end of transaction block" state, and Hibernate marks the session
+  rollback-only on **any** query `PersistenceException`. `PROPAGATION_NESTED` was tried and does
+  NOT work here — `JpaTransactionManager` throws `NestedTransactionNotSupportedException: JpaDialect
+  does not support savepoints` even with `setNestedTransactionAllowed(true)`, because
+  `HibernateJpaDialect` exposes no `SavepointManager`. **Do not "simplify" this back into a
+  `@Query` finder or a `REQUIRES_NEW`/`NESTED` annotation.** Same-connection also means the query
+  sees the caller's uncommitted rows and never waits on a second connection's lock — which is what
+  lets the `@Transactional` ITs work at all (the house idiom keeps `ResetDatabase`'s TRUNCATE lock
+  inside the test transaction). Outside a transaction (auto-commit) no savepoint is taken; a
+  savepoint would be illegal there.
+- **The test split is not stylistic.** Assembler behavior (caps, floor, today-skip, decay order,
+  failure paths) is asserted in `@Transactional` ITs; anything that asserts the turn COMMITS — the
+  persisted refs envelope, the `done` row, the savepoint surviving a real commit — must live in a
+  NON-`@Transactional` class (`ChatServiceAmbientRecallIT`, `ChatStreamServiceIT`,
+  `MemoryEmbeddingAnnQueryIT`). A commit assertion inside a test-managed, always-rolled-back
+  transaction asserts nothing. Any future ambient test that seeds vectors and checks a commit
+  belongs in the non-transactional class.
+- **`ambient-recall.max-tokens` is a safety net, not a working limit.** Under the shipped defaults
+  (6 items × ≤300 chars) the block tops out around 700 estimated tokens against a 1200 cap, so the
+  render loop never truncates in practice. It exists so that raising the caps or
+  `recall.render-max-chars` cannot silently blow the prompt budget — see the §4 config bullet for
+  what happens at the validated extremes.
+- **Weekly/monthly summaries have HU labels but no kind group yet.** `KIND_LABELS` already maps
+  `weekly_summary`/`monthly_summary` (`heti összefoglaló` / `havi összefoglaló`), but neither kind
+  is in any of the four query groups — nothing writes those rows today. **W3.2** (`mezo-b3pp.13`,
+  spec §7.2 consolidation ladder) generates them and adds the coverage filter that shadows old
+  daily hits with their covering weekly row; the labels are the seam left ready for it.
+
 **Deferred (with bd ids):**
+- **W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)** — per-kind `min-similarity`/τ in config (W3.1
+  ships ONE shared floor and reuses `recall.decay-days`), plus the deterministic eval harness.
+  Follow-up **`mezo-b3pp.27`** feeds into it: ambient recall can re-surface the **active
+  conversation's own recent `chat_turn` rows**, which the history window already carries — the
+  tuning pass should exclude the current conversation's turns (or the window's days) from the
+  ambient query.
 - **W4.2 — what the captured verdicts are FOR.** W4.1 only records; nothing reads `message_feedback`
   yet (no prompt influence, no ranking, no aggregate surface). That is the point — it starts the
   data collecting now so the personalization slice has history instead of a cold start.
@@ -2618,10 +2765,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionVoiceController.java` + `service/TranscriptionService.java` — **`mezo-at8x.4`** the stateless voice-note → transcript surface (`implements CompanionVoiceApi`, switch-gated; size/mime validation + the transcription system prompt).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + snapshot/facts prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock)` that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/ChatHistory.java` — **mezo-q71s** the `List<Turn>` → "Daniel: … / Mezo: …" text renderer, the sole source for the three non-model consumers (advisor judge payload, fake LLM echo, `llm_log_history.conversation_history`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PromptMemoryAssembler.java` — **`mezo-b3pp.12`** W3.1 ambient recall: embed-once → four kind-group ANN queries → floor/decay/cap → `(kind, ref_id)` dedupe → the `MEMORIES_HEADER` (`[Emlékek]`) render under the token cap, plus the `Memory`/date refs. **Never throws** — any `RuntimeException` becomes a `log.warn` + `AmbientRecall.EMPTY`, so the block is optional and the turn is not (IDENT-3). Not `@Transactional` (the ANN carries its own savepoint, §9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/TodayQuestSource.java` — the companion-owned port for `[Napi gyakorlat]`'s quest count, implemented by `feature/quest/service/TodayQuestAdapter.java` (keeps the quest↔companion dependency one-directional; the `progression.QuestLedgerSource` precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (top-N injection, `FACTS_HEADER`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactExtractionService.java` — V1.2 post-turn extraction (`EXTRACTION_MARKER`, parse/dedupe/cap).
@@ -2706,7 +2854,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above); **`mezo-b3pp.2`** added `findByKindAndRefIdIncludingDeleted` (native — `@SQLRestriction` applies to JPQL too — the revive lookup `upsert` now reads through).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingAnnQuery.java` — **`mezo-b3pp.12`** the W3.1 kind-set ANN search, deliberately OUTSIDE Hibernate: a `NamedParameterJdbcTemplate` query on the CALLER's connection under a hand-taken JDBC savepoint, so a failed statement never poisons the turn's transaction (§9 — not a `@Query` finder, and `PROPAGATION_NESTED` does not work on Hibernate). Returns `Hit(id, kind, refId, content, occurredOn, distance)`; `kinds` must be non-empty.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.12`** added the nested `AmbientRecall` record (`enabled`, the four `@Min(0) @Max(10)` caps, `minSimilarity` 0..1, `maxTokens` `@Min(100) @Max(6000)`) on `mezo.companion.ambient-recall.*`. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; see above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned port for the reverse (companion→journal) context-snapshot read (ADR 0029).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side adapter implementing `DecisionContextPort` (ADR 0029), gated `COMPANION_SWITCH`.
@@ -2730,6 +2879,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/MesoReviewGeneratorIT.java` — the `mezo-meyc.3` §5.6 batch (7 tests, `companion-fake`, deliberately NOT `@Transactional`): per-week/totals context numbers incl. the honest-absence nulls of a data-less W2 **plus the contract round-trip through `getReport`**, the metric **legend** asserted on the real prompt via the `[fake-meso-review-echo]` channel (content + ordering before the JSON), `markReady`'s **fresh-row** write (a concurrent `selfEval` survives), the title-planted sentinel proving the assembled payload reached the port, pending-only idempotency (a `ready` row's narrative AND null context both survive), `[fake-fail]` → `failed` **with the context still persisted**, and the real `closeMesocycle` → AFTER_COMMIT → `@Async` path awaited with Awaitility. The switch-off half lives in `feature/train/MesoReviewSwitchOffIT.java` (own `@TestPropertySource` context: `aiEvalEnabled` false + context written/status left `pending`, and it now **awaits** the listener's write so the async thread cannot collide with the next class's `ResetDatabase` TRUNCATE). Note `feature/train/MesocycleCloseReportIT.java` runs with `mezo.feature.companion.enabled=false` so the deterministic close report is asserted without this listener racing it from another thread; its regenerate test also pins that `computeAndStore` clears `context`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/service/PromptMemoryAssemblerTest.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{PromptMemoryAssemblerIT,PromptMemoryAssemblerSwitchOffIT,MemoryEmbeddingAnnQueryIT,ChatServiceAmbientRecallIT}.java` — the `mezo-b3pp.12` W3.1 batch (§8): pure render/cap unit tests, the `@Transactional` assembler ITs (caps, the floor pinned between 0.25 and 0.55, today-skip, decay order, `FAIL_EMBED`/`FAIL_ANN`), and the two deliberately NON-`@Transactional` classes that need a real commit (the savepoint proof; the block position + `Memory` refs on wire and row + tool-refs-first ordering). `FakeEmbeddingAdapter` gained the `FAIL_EMBED`/`FAIL_ANN` sentinels these drive.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionMemoryOverviewApiIT,CompanionMemorySummaryApiIT,CompanionMemorySimilarDaysApiIT,CompanionMemoryLlmUsageApiIT,CompanionMemoryLlmUsageDisabledIT,CompanionMemorySwitchOffIT}.java` — the `mezo-al1i` memory-observatory batch: populated + empty overview, range-filtered summaries, the deterministic fake-embedding similar-days path, the LLM-usage rollup + its `enabled:false` disabled-audit branch, and the switch-off 404 across all 4 endpoints; `CompanionApiSwitchOffIT` extended to assert the memory/overview route (one of the four), with `CompanionMemorySwitchOffIT` proving bean absence covers all four.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator,KnowledgeFactPopulator,LearnedFactPopulator}.java` + `support/ResetDatabase.java` (companion tables in the TRUNCATE list).
 - `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception) + the V0.5 `companion_tools_are_internal_sphere_only` rule.
