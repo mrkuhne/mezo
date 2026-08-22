@@ -444,6 +444,9 @@ mezo:
       decay-factor: 0.99
       prune-floor: 0.05
       render-max-tokens: 800
+      # W2.2 (mezo-b3pp.7): the edge structurer drops suggestions below this confidence; the ones
+      # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
+      edge-confidence-floor: 0.4
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron

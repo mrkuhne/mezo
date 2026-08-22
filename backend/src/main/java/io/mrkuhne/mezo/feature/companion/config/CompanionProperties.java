@@ -145,7 +145,9 @@ public record CompanionProperties(
         /** Edges below this weight are soft-deleted on the nightly pass (W2.5). */
         @DecimalMin("0.0") @DecimalMax("1.0") double pruneFloor,
         /** Hard cap on the rendered [Összefüggések] block (estimated tokens, W2.4). */
-        @Min(1) int renderMaxTokens
+        @Min(1) int renderMaxTokens,
+        /** W2.2 edge structurer: suggestions below this confidence are dropped (edges start humble). */
+        @DecimalMin("0.0") @DecimalMax("1.0") double edgeConfidenceFloor
     ) {}
 
     /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */

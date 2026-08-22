@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
@@ -286,6 +287,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUGGEST_COUNT_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
+    /** Scripted graph edge structuring (W2.2): [fake-graph-edges:[…]] planted in the node title. */
+    public static final Pattern GRAPH_EDGES_SENTINEL =
+            Pattern.compile("\\[fake-graph-edges:(\\[.*?])]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -412,6 +417,11 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(HypothesisPipelineService.REVISE_MARKER)) {
             Matcher m = REVISE_SENTINEL.matcher(userMessage.split("KONTEXTUS:", 2)[0]);
             return m.find() ? m.group(1) : "{}";
+        }
+        if (systemPrompt.startsWith(GraphEdgeStructurer.STRUCTURER_MARKER)) {
+            Matcher m = GRAPH_EDGES_SENTINEL.matcher(userMessage);
+            // default = no edges: the un-scripted happy path promotes the node and links nothing
+            return m.find() ? m.group(1) : "[]";
         }
         // Scrape extraction (mezo-8vum): the served product-page text embeds [fake-scrape:{json}];
         // returning the JSON verbatim runs the real fetch->strip->prompt->parse path. A page WITHOUT

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,14 +44,31 @@ public class GraphPromotionService {
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final GoalRepository goalRepository;
+    // ObjectProvider, not a direct dependency: the companion switch can be off while the graph
+    // switch is on, so GraphEdgeStructurer's bean may not exist (see its @ConditionalOnProperty).
+    private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
 
-    /** Confirmed pattern -> PATTERN node. Empty when the pattern is gone, not this user's, or not confirmed. */
+    /** Confirmed pattern -> PATTERN node. Empty when the pattern is gone, not this user's, or not confirmed.
+     *  Only a genuinely NEW node pays for the LLM edge structurer — re-confirming a pattern is a pure UPSERT. */
     @Transactional
     public Optional<GraphNodeEntity> promotePattern(UUID userId, UUID patternId) {
-        return patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
-            .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()))
-            .map(p -> graphService.upsertNode(userId, GraphNodeEntity.KIND_PATTERN,
-                truncateTitle(p.getTitle()), p.getMechanism(), SOURCE_PATTERN, p.getId(), null, patternMeta(p)));
+        Optional<PatternEntity> found = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+            .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()));
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        PatternEntity pattern = found.get();
+        boolean isNew = graphService.findBySource(userId, SOURCE_PATTERN, patternId).isEmpty();
+        GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PATTERN,
+            truncateTitle(pattern.getTitle()), pattern.getMechanism(),
+            SOURCE_PATTERN, pattern.getId(), null, patternMeta(pattern));
+        if (isNew) {
+            GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
+            if (structurer != null) {
+                structurer.structureEdges(userId, node, SOURCE_PATTERN, patternId);
+            }
+        }
+        return Optional.of(node);
     }
 
     /** Active (non-pattern-sourced) knowledge fact -> PREFERENCE node. */

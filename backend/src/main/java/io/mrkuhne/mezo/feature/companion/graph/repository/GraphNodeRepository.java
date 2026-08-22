@@ -15,4 +15,8 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
 
     List<GraphNodeEntity> findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
         UUID createdBy, String status);
+
+    /** W2.2 edge structurer's candidate list — every OTHER active node the new node could link to. */
+    List<GraphNodeEntity> findByCreatedByAndStatusAndIdNotAndDeletedFalseOrderByCreatedAtDesc(
+        UUID createdBy, String status, UUID excludedId);
 }
