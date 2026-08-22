@@ -748,3 +748,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608221200_mezo-b3pp.16_create_feedback_rollup.sql
+  - changeSet:
+      id: "1.0.0:202608221600_mezo-b3pp.6_create_knowledge_graph"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608221600_mezo-b3pp.6_create_knowledge_graph.sql
