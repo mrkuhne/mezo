@@ -8,12 +8,15 @@ import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnve
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 class FeedbackRollupPersistenceIT extends AbstractIntegrationTest {
 
     @Autowired private FeedbackRollupRepository feedbackRollupRepository;
@@ -51,8 +54,9 @@ class FeedbackRollupPersistenceIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         FeedbackRollupEntity bad = newRow(owner, "nonsense");
 
+        // the entity's @Pattern guard fires before the DB CHECK
         assertThatThrownBy(() -> feedbackRollupRepository.saveAndFlush(bad))
-            .isInstanceOf(DataIntegrityViolationException.class);
+            .isInstanceOf(ConstraintViolationException.class);
     }
 
     @Test

@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.UUID;
@@ -46,6 +47,7 @@ public class FeedbackRollupEntity extends OwnedEntity {
     /** Mirrors ck_feedback_rollup_scope: {@code style} | {@code surface:<artifact_kind>} | {@code feed:<kind>}. */
     @NotNull
     @Size(max = 40)
+    @Pattern(regexp = "style|surface:.+|feed:.+")
     @Column(nullable = false, length = 40)
     private String scope;
 
