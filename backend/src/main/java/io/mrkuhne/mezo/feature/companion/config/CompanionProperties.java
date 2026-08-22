@@ -30,7 +30,8 @@ public record CompanionProperties(
     @NotNull @Valid Patterns patterns,
     @NotNull @Valid Hypotheses hypotheses,
     @NotNull @Valid HabitSuggest habitSuggest,
-    @NotNull @Valid Transcription transcription
+    @NotNull @Valid Transcription transcription,
+    @NotNull @Valid AmbientRecall ambientRecall
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -108,6 +109,28 @@ public record CompanionProperties(
         @Min(1) @Max(100) int candidatePool,
         /** Per-memory render cap in the tool result (chars) — gist over full re-quote (token budget). */
         @Min(50) @Max(2000) int renderMaxChars
+    ) {}
+
+    /**
+     * W3.1 always-on ambient recall (mezo-b3pp.12, spec §7.1) — the {@code [Emlékek]} block every
+     * chat turn opens with. τ ({@code recall.decayDays}), the ANN candidate pool and the per-item
+     * render cap ({@code recall.renderMaxChars}) are REUSED from {@link Recall}; only what the block
+     * itself needs lives here.
+     */
+    public record AmbientRecall(
+        /** Runtime kill-switch — off ⇒ no embed call and no block; the turn is otherwise unchanged. */
+        boolean enabled,
+        /** Per kind-group caps: items allowed into the block (0 = the group is not even queried). */
+        @Min(0) @Max(10) int capDailySummary,
+        /** journal_entry + reflection + gratitude + decision share this cap. */
+        @Min(0) @Max(10) int capJournal,
+        @Min(0) @Max(10) int capChatTurn,
+        /** activity_note + checkin_note share this cap. */
+        @Min(0) @Max(10) int capOther,
+        /** Raw-cosine floor for ambient items — stricter than the tool's: a broad block must not carry noise. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
+        /** Hard cap on the rendered block in ESTIMATED tokens (part of the ~6k memory budget). */
+        @Min(100) @Max(6000) int maxTokens
     ) {}
 
     /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */

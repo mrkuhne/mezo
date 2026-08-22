@@ -416,6 +416,21 @@ mezo:
       candidate-pool: 20
       # Per-memory render cap in the tool result (chars) — gist over full re-quote
       render-max-chars: 300
+    ambient-recall:
+      # W3.1 (mezo-b3pp.12, spec §7.1): always-on episodic recall — every chat turn embeds the user
+      # message once (operation=recall_embed) and the prompt opens with an [Emlékek] block of similar
+      # past episodes (journal family, daily summaries, chat turns, notes). τ, the ANN candidate pool
+      # and the per-item render cap reuse mezo.companion.recall.*; a failed embed/ANN just omits the block.
+      enabled: true
+      # Per kind-group caps (items in the block): daily_summary | journal family | chat_turn | notes
+      cap-daily-summary: 2
+      cap-journal: 2
+      cap-chat-turn: 1
+      cap-other: 1
+      # Raw cosine floor — stricter than the tool's 0.25: a broad ambient block must not carry noise
+      min-similarity: 0.55
+      # Hard cap on the rendered block (estimated tokens; ~3 chars/token for Hungarian prose)
+      max-tokens: 1200
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
