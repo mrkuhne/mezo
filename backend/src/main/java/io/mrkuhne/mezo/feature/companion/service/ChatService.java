@@ -266,7 +266,7 @@ public class ChatService {
 
     /** Memory refs first (W3.1), GraphNode refs after (W2.4) — one list so the stream path stays unchanged. */
     private static List<RefsEnvelope.Ref> ambientRefs(PromptMemoryAssembler.AmbientRecall recalled,
-                                                     GraphPromptAssembler.GraphContext graph) {
+                                                      GraphPromptAssembler.GraphContext graph) {
         if (graph.refs().isEmpty()) {
             return recalled.refs();
         }
