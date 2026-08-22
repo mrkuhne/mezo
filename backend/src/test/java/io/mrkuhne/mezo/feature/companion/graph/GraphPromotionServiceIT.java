@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.graph;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
@@ -10,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -19,6 +21,10 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.GraphPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +49,8 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private GraphPopulator graphPopulator;
+    @Autowired private FakeCompanionLlm fakeCompanionLlm;
+    @Autowired private CompanionProperties companionProperties;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -207,33 +215,88 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
 
         GraphNodeEntity first = promotionService.promotePattern(owner, pattern.getId()).orElseThrow();
         var afterFirst = edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(owner, first.getId());
-        // re-promotion is a pure UPSERT — no second structurer run, no extra edges
+        int callsAfterFirst = fakeCompanionLlm.completeCallCount();
+        assertThat(callsAfterFirst).isPositive();   // sanity: the first promotion DID call the LLM
+
+        // re-promotion is a pure UPSERT — no second structurer run, no extra edges, no extra call
         promotionService.promotePattern(owner, pattern.getId());
 
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsAfterFirst);
         assertThat(edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(owner, first.getId()))
             .hasSameSizeAs(afterFirst);
         assertThat(afterFirst).hasSize(1);
     }
 
+    /** The emptiness gate promises NO LLM CALL (not just no edges) — proven via the fake's call
+     *  counter, since {@code llm_log_history} is only written by the real Gemini adapter, never by
+     *  the fake, so it cannot serve as the oracle here. */
     @Test
-    void testPromotePattern_shouldCreateNoEdges_whenNoOtherNodeExists() {
+    void testPromotePattern_shouldMakeNoLlmCall_whenNoOtherNodeExists() {
         UUID owner = ownerId();
         PatternEntity pattern = confirmedPattern(owner);
+        int callsBefore = fakeCompanionLlm.completeCallCount();
 
         GraphNodeEntity node = promotionService.promotePattern(owner, pattern.getId()).orElseThrow();
 
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsBefore);
         assertThat(edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(owner, node.getId())).isEmpty();
     }
 
+    /** {@code FakeCompanionLlm.GRAPH_EDGES_BROKEN} forces genuinely malformed JSON (matching
+     *  brackets, invalid content) rather than relying on the "no sentinel" default of {@code "[]"}
+     *  — which is valid-but-empty JSON and would never exercise the catch-and-log path at all. */
     @Test
     void testPromotePattern_shouldStillCreateTheNode_whenStructurerAnswerIsUnparseable() {
         UUID owner = ownerId();
         graphPopulator.createNode(owner, GraphNodeEntity.KIND_PREFERENCE, "Alvásminőség");
-        PatternEntity pattern = confirmedPattern(owner);   // no sentinel -> the fake echoes the prompt
+        PatternEntity pattern = confirmedPattern(owner);
+        pattern.setMechanism("Késői evés rontja az alvást. " + FakeCompanionLlm.GRAPH_EDGES_BROKEN);
+        pattern = patternPopulator.save(pattern);
 
         GraphNodeEntity node = promotionService.promotePattern(owner, pattern.getId()).orElseThrow();
 
         assertThat(node.getId()).isNotNull();
         assertThat(edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(owner, node.getId())).isEmpty();
+    }
+
+    /** Plan's locked cap decision: no new confidence-floor-adjacent knob — {@code
+     *  mezo.companion.graph.top-k} (the same cap W2.4's traversal uses) bounds how many edges one
+     *  promotion may create, highest confidence first, even when every suggestion clears the floor. */
+    @Test
+    void testPromotePattern_shouldCapEdgesAtTopK_whenMoreFloorPassingSuggestionsThanTopK() {
+        UUID owner = ownerId();
+        int topK = companionProperties.graph().topK();
+        int total = topK + 3;   // strictly more floor-passing suggestions than the cap allows
+        List<BigDecimal> confidences = new ArrayList<>();
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < total; i++) {
+            graphPopulator.createNode(owner, GraphNodeEntity.KIND_PREFERENCE, "Jelölt " + i);
+            // descending, clean two-decimal steps — stays comfortably above the 0.4 floor
+            BigDecimal confidence = new BigDecimal("0.90").subtract(new BigDecimal("0.05").multiply(BigDecimal.valueOf(i)));
+            confidences.add(confidence);
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append("{\"index\":").append(i).append(",\"kind\":\"TRIGGERS\",\"confidence\":")
+                .append(confidence.toPlainString()).append('}');
+        }
+        json.append(']');
+        PatternEntity pattern = confirmedPattern(owner);
+        pattern.setMechanism("Késői evés rontja az alvást. [fake-graph-edges:" + json + "]");
+        pattern = patternPopulator.save(pattern);
+
+        GraphNodeEntity node = promotionService.promotePattern(owner, pattern.getId()).orElseThrow();
+
+        var edges = edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(owner, node.getId());
+        assertThat(edges).hasSize(topK);
+        List<BigDecimal> expectedWeights = confidences.subList(0, topK).stream()
+            .map(c -> c.multiply(new BigDecimal("0.5")).setScale(3, RoundingMode.HALF_UP))
+            .sorted(Comparator.reverseOrder())
+            .toList();
+        List<BigDecimal> actualWeights = edges.stream()
+            .map(GraphEdgeEntity::getWeight)
+            .sorted(Comparator.reverseOrder())
+            .toList();
+        assertThat(actualWeights).usingElementComparator(BigDecimal::compareTo).isEqualTo(expectedWeights);
     }
 }

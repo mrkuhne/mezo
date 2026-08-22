@@ -49,7 +49,13 @@ public class GraphPromotionService {
     private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
 
     /** Confirmed pattern -> PATTERN node. Empty when the pattern is gone, not this user's, or not confirmed.
-     *  Only a genuinely NEW node pays for the LLM edge structurer — re-confirming a pattern is a pure UPSERT. */
+     *  Only a genuinely NEW node pays for the LLM edge structurer — re-confirming a pattern is a pure UPSERT.
+     *
+     *  <p>{@link GraphEdgeStructurer#structureEdges} runs inside THIS method's transaction (see its
+     *  javadoc for why it is deliberately not {@code REQUIRES_NEW}): node + edges commit or roll
+     *  back together. A DB failure here loses this promotion entirely, but promotion is idempotent
+     *  (keyed on {@code (createdBy, sourceKind, sourceId)}), so a later re-confirm or the nightly
+     *  reconciler (W2.5) heals it without any special-casing. */
     @Transactional
     public Optional<GraphNodeEntity> promotePattern(UUID userId, UUID patternId) {
         Optional<PatternEntity> found = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
