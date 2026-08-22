@@ -11,10 +11,10 @@ source of truth — Hermes discovers `./.agents/skills` natively; never edit cop
 hermes skills trust /Users/mrkuhne/Applications/Personal/Mezo/mezo
 ```
 
-Verify with `hermes skills list` (the ten mezo skills must appear as project skills).
+Verify with `hermes skills list` (the eleven mezo skills must appear as project skills).
 
 - **Process skills** (superpowers ports, deliberately short and prescriptive):
-  `brainstorming`, `writing-plans`, `executing-plans`, `tdd`, `verification-before-completion`.
+  `brainstorming`, `writing-plans`, `executing-plans`, `fixing-bugs` (bug reports / small behaviour fixes: worktree → bd → failing test → minimal fix → PR), `tdd`, `verification-before-completion`.
 - **Domain skills** (thin routers to `docs/references/`): `mezo-backend`, `mezo-frontend`,
   `mezo-api-contract`, `mezo-testing`, `mezo-deploy`.
 

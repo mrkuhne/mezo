@@ -164,8 +164,8 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 
 - Skills live in `.agents/skills/` (repo = source of truth; Hermes discovers repo-local
   skills there natively after a one-time `hermes skills trust`). Process skills:
-  `brainstorming`, `writing-plans`, `executing-plans`, `tdd`,
-  `verification-before-completion`. Domain skills: `mezo-backend`, `mezo-frontend`,
+  `brainstorming`, `writing-plans`, `executing-plans`, `fixing-bugs` (small fixes — no spec/plan),
+  `tdd`, `verification-before-completion`. Domain skills: `mezo-backend`, `mezo-frontend`,
   `mezo-api-contract`, `mezo-testing`, `mezo-deploy`. Invoke the process skill FIRST
   (it tells you when to pull a domain skill).
 - Work in a git worktree (Hermes worktree mode) on a `feat/<topic>` branch; never on main.
