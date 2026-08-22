@@ -29,8 +29,6 @@ const EMPTY_ENTRY_SHAPE: Omit<SleepEntry, 'awakeMin' | 'lightMin' | 'remMin' | '
 type Mode = 'manual' | 'shot'
 type ShotPhase = 'pick' | 'drafting' | 'review'
 
-const HOURS_24 = [...Array(24).keys()]
-
 export function SleepLogSheet({
   onClose,
   onSave,
@@ -198,8 +196,8 @@ export function SleepLogSheet({
                   <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>h</span>
                 </div>
                 <div className="row gap-lg mt-lg" style={{ justifyContent: 'center' }}>
-                  <TimePicker label="Lefekvés" val={bedtime} onChange={setBedtime} hours={isShot ? HOURS_24 : [22, 23, 0, 1]} />
-                  <TimePicker label="Ébredés" val={wakeup} onChange={setWakeup} hours={isShot ? HOURS_24 : [5, 6, 7, 8]} />
+                  <TimePicker label="Lefekvés" val={bedtime} onChange={setBedtime} />
+                  <TimePicker label="Ébredés" val={wakeup} onChange={setWakeup} />
                 </div>
               </div>
 
