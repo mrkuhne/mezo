@@ -85,7 +85,7 @@ public class PromptMemoryAssembler {
             Map.entry(MemoryEmbeddingEntity.KIND_GRATITUDE, "hála"),
             Map.entry(MemoryEmbeddingEntity.KIND_DECISION, "döntés"),
             Map.entry(MemoryEmbeddingEntity.KIND_CHAT_TURN, "korábbi beszélgetés"),
-            Map.entry(MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, "aktivitás-jegyzet"),
+            Map.entry(MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, "aktivitásjegyzet"),
             Map.entry(MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, "check-in jegyzet"));
 
     /** Conservative chars-per-token for accented, agglutinative Hungarian prose (Gemini ≈ 3–3.5). */

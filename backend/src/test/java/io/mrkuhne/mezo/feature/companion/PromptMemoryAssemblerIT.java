@@ -1,6 +1,5 @@
 package io.mrkuhne.mezo.feature.companion;
 
-import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
@@ -61,12 +60,34 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         assertThat(recalled.block()).contains("- " + TODAY.minusDays(10) + " (napi összefoglaló): Kemény nap volt.\n");
         assertThat(recalled.block()).doesNotContain("Második sor");
         assertThat(recalled.block()).contains("(korábbi beszélgetés): Daniel: alvás?");
-        assertThat(recalled.block()).contains("(aktivitás-jegyzet): hosszú esti séta");
+        assertThat(recalled.block()).contains("(aktivitásjegyzet): hosszú esti séta");
         assertThat(recalled.refs()).containsExactlyInAnyOrder(
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(2).toString()),
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(3).toString()),
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(5).toString()),
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(10).toString()));
+    }
+
+    /**
+     * Memory refs carry the DATE, not the row id — so two episodes of the same day render as two
+     * lines but claim ONE ref. This is what keeps a dense day from eating the turn's ref budget.
+     */
+    @Test
+    void testRecall_shouldCollapseSameDayItemsToOneMemoryRef_whenTwoEpisodesShareADay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate sharedDay = TODAY.minusDays(4);
+        seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "reggel futottam", sharedDay,
+                MemoryEmbeddingPopulator.axisVector(0));
+        seed(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, "jó nap volt", sharedDay,
+                MemoryEmbeddingPopulator.axisVector(0));
+
+        AmbientRecall recalled = assembler.recall(owner, UUID.randomUUID(), AXIS0_QUERY, TODAY);
+
+        // both rendered…
+        assertThat(recalled.block()).contains("- " + sharedDay + " (napló): reggel futottam\n");
+        assertThat(recalled.block()).contains("- " + sharedDay + " (napi összefoglaló): jó nap volt\n");
+        // …but the day is ONE ref
+        assertThat(recalled.refs()).containsExactly(new RefsEnvelope.Ref("Memory", sharedDay.toString()));
     }
 
     @Test

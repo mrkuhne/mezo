@@ -1,13 +1,14 @@
 package io.mrkuhne.mezo.feature.companion.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.stereotype.Repository;
 
+import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -23,13 +24,27 @@ import java.util.UUID;
  * PersistenceException. Same connection also means no second-connection lock waits against a
  * test-managed transaction's TRUNCATE.
  *
+ * <p><b>The same-connection guarantee holds by construction, in BOTH states.</b> The outer
+ * {@code execute(ConnectionCallback)} goes through {@code DataSourceUtils}, so the callback is
+ * handed the transaction-bound connection when there is a transaction, and a plain pooled one when
+ * there is not. The statement is then run on THAT connection — through a
+ * {@code NamedParameterJdbcTemplate} over a close-suppressing {@link SingleConnectionDataSource}
+ * wrapping it — instead of re-resolving a connection from the pool. Inside a transaction the
+ * savepoint scopes the failure to this one statement; outside one the connection is in auto-commit,
+ * where savepoints are illegal, so none is taken and none is needed (nothing else is at stake).
+ *
  * <p>The savepoint is taken by hand rather than through {@code PROPAGATION_NESTED}: Spring's
  * {@code JpaTransactionManager} refuses nested transactions on Hibernate
  * ({@code NestedTransactionNotSupportedException: JpaDialect does not support savepoints}) even
  * with {@code setNestedTransactionAllowed(true)}, since {@code HibernateJpaDialect} exposes no
- * {@code SavepointManager}. Outside a transaction (auto-commit) no savepoint is needed and the
- * query simply runs. {@code kinds} must be non-empty ({@code in ()} is a SQL error) — callers skip
- * groups whose cap is 0.
+ * {@code SavepointManager}. {@code kinds} must be non-empty ({@code in ()} is a SQL error) —
+ * callers skip groups whose cap is 0.
+ *
+ * <p><b>Caveat of going around Hibernate:</b> a raw JDBC read does NOT trigger the session's
+ * auto-flush, so pending, unflushed entity changes would be invisible to it. That is harmless
+ * today — no in-transaction writer precedes {@code recall} on either chat path (the assembler runs
+ * before the turn's own rows are written), and the ITs' populators {@code saveAndFlush}. A future
+ * caller that writes memory rows and then recalls in the same transaction must flush first.
  */
 @Repository
 @RequiredArgsConstructor
@@ -69,18 +84,30 @@ public class MemoryEmbeddingAnnQuery {
                 .addValue("queryVector", queryVector)
                 .addValue("k", k);
         return jdbc.getJdbcTemplate().execute((ConnectionCallback<List<Hit>>) connection -> {
+            // the statement runs on THIS connection — the one the savepoint is taken on — rather
+            // than on whatever the pool would hand back; suppressClose so the template cannot
+            // close a connection it does not own
+            NamedParameterJdbcTemplate onThisConnection =
+                    new NamedParameterJdbcTemplate(new SingleConnectionDataSource(connection, true));
             // auto-commit ⇒ no surrounding transaction to protect (and savepoints are illegal there)
             Savepoint savepoint = connection.getAutoCommit() ? null : connection.setSavepoint(SAVEPOINT_NAME);
             try {
-                List<Hit> hits = jdbc.query(SQL, params, ROW_MAPPER);
+                List<Hit> hits = onThisConnection.query(SQL, params, ROW_MAPPER);
                 if (savepoint != null) {
                     connection.releaseSavepoint(savepoint);
                 }
                 return hits;
-            } catch (DataAccessException e) {
+            } catch (RuntimeException e) {
+                // RuntimeException, not just DataAccessException: a row-mapper failure must unwind
+                // the savepoint too. The ORIGINAL failure is always the one thrown; a failing
+                // rollback rides along suppressed rather than masking it.
                 if (savepoint != null) {
-                    // undo ONLY the failed statement — the caller's transaction stays usable
-                    connection.rollback(savepoint);
+                    try {
+                        // undo ONLY the failed statement — the caller's transaction stays usable
+                        connection.rollback(savepoint);
+                    } catch (SQLException rollbackFailure) {
+                        e.addSuppressed(rollbackFailure);
+                    }
                 }
                 throw e;
             }

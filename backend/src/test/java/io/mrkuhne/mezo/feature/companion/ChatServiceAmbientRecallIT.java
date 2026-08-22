@@ -37,6 +37,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Split out of {@link ChatServiceIT} and deliberately NOT {@code @Transactional}: these tests
  * assert that a turn COMMITS — both message rows on disk after a failed ANN statement — which a
  * test-managed (always rolled back) transaction cannot show. The per-test ResetDatabase cleans up.
+ *
+ * <p>Because these turns really commit, the {@code AFTER_COMMIT} {@code @Async} listeners
+ * ({@code TurnEmbeddingListener}, {@code FactExtractionListener}) actually fire here — so the
+ * sentinel-carrying turn's OWN post-turn embed fails too, harmlessly, in its own transaction and
+ * shows up as a warn line in the build log. That noise is expected; it lands after the assertions,
+ * on another thread and another transaction, and cannot affect this or any other test.
  */
 @ActiveProfiles("companion-fake")
 class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
@@ -64,6 +70,10 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("chat-memories@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
+        // a freshly promoted pattern-fact (createdAt = now) sits inside the ack window (3 days), so
+        // the pattern-ack block is really present — otherwise "between pattern-ack and tone" would
+        // only be pinning "after the facts block"
+        factPopulator.fact(userId, "Stressz rontja az alvást", "health", 0, true, "pattern");
         memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
                 "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
 
@@ -73,10 +83,12 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         String echoed = answer.getContent();
         String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
         int facts = systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK");
+        int ack = systemBlock.indexOf("ÚJ FELISMERÉSEK");
         int memories = systemBlock.indexOf(PromptMemoryAssembler.MEMORIES_HEADER);
         int tone = systemBlock.indexOf(ChatService.TONE_REMINDER);
         assertThat(facts).isPositive();
-        assertThat(memories).isGreaterThan(facts);
+        assertThat(ack).isGreaterThan(facts);
+        assertThat(memories).isGreaterThan(ack);
         assertThat(tone).isGreaterThan(memories);
         assertThat(systemBlock).contains("(napló): futás után jobban aludtam");
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);

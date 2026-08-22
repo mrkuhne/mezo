@@ -360,8 +360,11 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
     /**
      * The seedless half of the W3.1 coverage — a message with nothing to recall changes nothing.
-     * The seed-dependent ambient tests live in {@link ChatServiceAmbientRecallIT}: the ANN query
-     * runs REQUIRES_NEW and cannot see this class's uncommitted test-transaction rows.
+     * The seed-dependent ambient tests live in {@link ChatServiceAmbientRecallIT}: they assert that
+     * the turn COMMITS (both message rows on disk after a failed ANN statement, the Memory refs on
+     * the persisted row), which a {@code @Transactional} test — always rolled back — cannot observe.
+     * Visibility is not the reason: the ANN query runs on the caller's own connection and does see
+     * uncommitted test-transaction rows.
      */
     @Test
     void testSendMessage_shouldOmitMemoriesBlock_whenNothingSimilar() {

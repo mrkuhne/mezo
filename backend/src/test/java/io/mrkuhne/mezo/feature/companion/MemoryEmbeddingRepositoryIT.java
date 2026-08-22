@@ -185,5 +185,4 @@ class MemoryEmbeddingRepositoryIT extends AbstractIntegrationTest {
                 MemoryEmbeddingPopulator.axisVector(1)))
             .isInstanceOf(DataIntegrityViolationException.class);
     }
-
 }

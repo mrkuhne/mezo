@@ -73,7 +73,8 @@ class MemoryEmbeddingAnnQueryIT extends AbstractIntegrationTest {
     void testNearestInKinds_shouldLimitToKAndExcludeOtherUsers_whenManyRows() {
         UUID owner = userPopulator.createUser().getId();
         UUID stranger = userPopulator.createUser().getId();
-        for (int i = 0; i < 2; i++) {
+        // MORE owner rows than k, so `limit :k` is actually exercised (2 rows and k=3 would not)
+        for (int i = 0; i < 4; i++) {
             memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY.minusDays(i), 0);
         }
         MemoryEmbeddingEntity strangerRow = memoryEmbeddingPopulator.embedding(
@@ -82,7 +83,7 @@ class MemoryEmbeddingAnnQueryIT extends AbstractIntegrationTest {
         List<Hit> hits = annQuery.nearestInKinds(owner,
             List.of(MemoryEmbeddingEntity.KIND_CHAT_TURN), literal(0), 3);
 
-        assertThat(hits).hasSize(2);
+        assertThat(hits).hasSize(3);
         assertThat(hits).allSatisfy(h -> assertThat(h.kind()).isEqualTo(MemoryEmbeddingEntity.KIND_CHAT_TURN));
         assertThat(hits).extracting(Hit::id).doesNotContain(strangerRow.getId());
     }
