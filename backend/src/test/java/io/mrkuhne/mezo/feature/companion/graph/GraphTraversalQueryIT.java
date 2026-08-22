@@ -103,4 +103,27 @@ class GraphTraversalQueryIT extends AbstractIntegrationTest {
 
         assertThat(edges).extracting(NeighborEdge::toTitle).containsExactly("Élő");
     }
+
+    @Test
+    void testNeighborhood_shouldNotWalkThroughInactiveIntermediateNode() {
+        UUID userId = databasePopulator.populateUser("graph-trav-inactive-hub@test.local");
+        GraphNodeEntity s = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "S");
+        GraphNodeEntity x = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "X");
+        GraphNodeEntity y = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "Y");
+        GraphNodeEntity z = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "Z");
+        graphPopulator.createEdge(userId, s.getId(), x.getId(), GraphEdgeEntity.KIND_RELATES_TO, "0.500");
+        graphPopulator.createEdge(userId, x.getId(), y.getId(), GraphEdgeEntity.KIND_RELATES_TO, "0.500");
+        graphPopulator.createEdge(userId, y.getId(), z.getId(), GraphEdgeEntity.KIND_RELATES_TO, "0.500");
+        x.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
+        nodeRepository.saveAndFlush(x);
+
+        // S–X is dropped by the final endpoint join (X archived); X–Y likewise. Y–Z has two
+        // active endpoints but is reachable only by walking through archived X — must not surface.
+        assertThat(query.neighborhood(userId, List.of(s.getId()), 3, 20)).isEmpty();
+
+        // mirror: X soft-deleted (on top of archived) reaches the same dead end
+        nodeRepository.delete(x);
+        nodeRepository.flush();
+        assertThat(query.neighborhood(userId, List.of(s.getId()), 3, 20)).isEmpty();
+    }
 }

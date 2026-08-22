@@ -42,7 +42,11 @@ public class GraphTraversalQuery {
 
     private static final String SAVEPOINT_NAME = "graph_traversal";
 
-    /** The frontier ends at the far end of the last edge; {@code path} is the cycle guard. */
+    /** The frontier ends at the far end of the last edge; {@code path} is the cycle guard. The
+     *  recursive term only extends FROM an active, non-deleted frontier — an inactive node may
+     *  still be reported as an edge's endpoint (the final join below drops those), but the walk
+     *  never uses it as a hub to reach further edges. The base term is exempt: a seed's own
+     *  incident edges surface at hop 1 regardless of the seed's own status. */
     private static final String SQL = """
         with recursive walk as (
             select e.id as edge_id, e.from_node_id, e.to_node_id, e.kind, e.weight, 1 as hops,
@@ -56,6 +60,7 @@ public class GraphTraversalQuery {
                    case when e.from_node_id = w.frontier then e.to_node_id else e.from_node_id end,
                    w.path || case when e.from_node_id = w.frontier then e.to_node_id else e.from_node_id end
             from walk w
+            join knowledge_node n on n.id = w.frontier and n.is_deleted = false and n.status = 'active'
             join knowledge_edge e on e.created_by = :userId and e.is_deleted = false
                  and (e.from_node_id = w.frontier or e.to_node_id = w.frontier)
                  and not (case when e.from_node_id = w.frontier then e.to_node_id else e.from_node_id end = any(w.path))
