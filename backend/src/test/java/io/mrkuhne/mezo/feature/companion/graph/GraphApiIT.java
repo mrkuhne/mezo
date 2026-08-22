@@ -33,12 +33,19 @@ class GraphApiIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív csomópont.");
         GraphNodeEntity toArchive = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PREFERENCE, "Archiválandó.");
-        toArchive.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
+        // Archive via the real endpoint so the status change is genuinely persisted, not just
+        // mutated on a detached entity (toArchive was returned by GraphPopulator's own saveAndFlush,
+        // and GraphApiIT talks to a separately-threaded Tomcat, so an in-memory setter here would
+        // never reach the DB).
+        postForBody("/api/companion/graph/node/" + toArchive.getId() + "/archive", null,
+            ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
 
         List<GraphNodeResponse> nodes = getForList("/api/companion/graph/node", ownerAuthHeaders(),
             HttpStatus.OK, GraphNodeResponse.class);
 
-        assertThat(nodes).extracting(GraphNodeResponse::getTitle).contains("Aktív csomópont.");
+        assertThat(nodes).extracting(GraphNodeResponse::getTitle)
+            .contains("Aktív csomópont.")
+            .doesNotContain("Archiválandó.");
     }
 
     @Test
