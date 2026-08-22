@@ -35,6 +35,17 @@ public class GraphPopulator {
         return edgeRepository.saveAndFlush(e);
     }
 
+    /** W2.4 (mezo-b3pp.9): an edge with an explicit weight — traversal tests pin weight ordering. */
+    public GraphEdgeEntity createEdge(UUID owner, UUID fromNodeId, UUID toNodeId, String kind, String weight) {
+        GraphEdgeEntity e = new GraphEdgeEntity();
+        e.setCreatedBy(owner);
+        e.setFromNodeId(fromNodeId);
+        e.setToNodeId(toNodeId);
+        e.setKind(kind);
+        e.setWeight(new java.math.BigDecimal(weight));
+        return edgeRepository.saveAndFlush(e);
+    }
+
     /** W2.3 (mezo-b3pp.8): a pending LIFE_EVENT candidate exactly as the extractor writes it —
      *  status=candidate, source_kind=extractor, occurred_on set, proposals parked in meta. */
     public GraphNodeEntity createCandidateNode(UUID owner, String kind, String title,
