@@ -741,3 +741,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608211500_mezo-b3pp.2_ritual_day_reflection.sql
+  - changeSet:
+      id: "1.0.0:202608221200_mezo-b3pp.16_create_feedback_rollup"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608221200_mezo-b3pp.16_create_feedback_rollup.sql
