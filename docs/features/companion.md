@@ -590,8 +590,9 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7` | Phase 5 W2.2 — confirmed patterns, non-pattern-sourced knowledge facts and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
+| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (recursive CTE, undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode`/node-id ref per rendered node after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
-| Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → *(W2.4 Összefüggések slot)* → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
+| Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
@@ -866,14 +867,17 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
       2. today = LocalDate.now()                     ── W3.1: ONE clock read per turn, shared by
                                                          the snapshot and the ambient recall
          recalled = promptMemoryAssembler.recall(userId, id, req.content, today)   ── W3.1 ──
-         systemPrompt = assembleSystemPrompt(userId, today, recalled.block())  ── the ONE private
-                        helper both paths call (mezo-b3pp.12); it returns:
+         graph = graphContext(userId, req.content)   ── W2.4: GraphPromptAssembler.GraphContext,
+                 EMPTY when the switch is off (no bean, ObjectProvider) or nothing matched ──
+         systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block())  ── the
+                        ONE private helper both paths call (mezo-b3pp.12/mezo-b3pp.9); it returns:
                         SYSTEM_PROMPT (incl. the V0.5 tool-usage line)
                       + contextSnapshotAssembler.render(userId, today)             ── V0.3 ──
                       + knowledgeFactService.renderPromptBlock(userId)              ── V1.1 ──
                       + knowledgeFactService.renderNewPatternFactsBlock(userId)     ── V3.3 ──
-                      + memoriesBlock  ── W3.1: the [Emlékek] block ("" when nothing was recalled;
-                        the W2.4 Összefüggések block slots in right after it, comment-only today) ──
+                      + memoriesBlock  ── W3.1: the [Emlékek] block ("" when nothing was recalled) ──
+                      + graphBlock  ── W2.4: the [Összefüggések] block ("" when the graph switch is
+                        off or nothing matched) ──
                       + TONE_REMINDER                                              ── mezo-q71s ──
          history = toTurns(loadWindow(userId, id))    ── mezo-q71s: List<Turn>, travels SEPARATELY
                                                           from systemPrompt (not rendered into it)
@@ -1388,12 +1392,11 @@ build was chosen after living with W3.1's always-on recall.
   index so re-promoting the same source row never duplicates. `archive(userId, nodeId)` flips
   `status` only.
 - **Switch** `mezo.feature.knowledge-graph.enabled` (`FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH`)
-  — off ⇒ no graph beans exist, `/api/companion/graph/*` 404s, and every graph hook elsewhere (W3.1
+  — off ⇒ no graph beans exist, `/api/companion/graph/*` 404s, and every graph hook elsewhere (W2.4
   `[Összefüggések]` block, W4.2 reinforcement, RECOVERY profile input) stays silently absent.
 - **`CompanionProperties.Graph`** (prefix `mezo.companion.graph`): `maxHops` (1..3, default 2),
   `topK` (1..20, default 8), `decayFactor` (0.9..1, default 0.99), `pruneFloor` (0..1, default 0.05),
-  `renderMaxTokens` (default 800) — declared now, consumed starting W2.4 (traversal) and W2.5
-  (maintenance job); unused until then.
+  `renderMaxTokens` (default 800) — consumed by W2.4's `GraphPromptAssembler`.
 - **Scope, explicitly**: this slice is schema + CRUD + the two REST operations the spec commits to
   now (list active nodes, archive a node). No node-*creation* REST endpoint (nodes are written only
   by internal promotion/extraction pipelines, W2.2/W2.3); no `GraphEdgeResponse` REST DTO yet
@@ -1583,6 +1586,48 @@ idiom transplanted onto the graph.
   un-scripted "quiet day" path); `[fake-life-events-broken]` returns matching-bracket-but-invalid
   JSON to exercise the catch-and-log parse-failure path specifically, distinct from the
   empty-answer path.
+
+### W2.4 graph traversal + `[Összefüggések]` block (✅ `mezo-b3pp.9`)
+
+The graph's first READ surface (spec §6.4): the part of the knowledge graph that touches what the
+user just said, rendered into the chat prompt. No LLM anywhere in the slice.
+
+- **`GraphTraversalQuery`** (`graph/repository/`) — ONE recursive CTE over `knowledge_edge`, walked
+  **undirected** from the seed ids (`from_node_id in seeds or to_node_id in seeds`), frontier =
+  the far end of the last edge, `path uuid[]` as the cycle guard (a node is never re-entered),
+  `hops < :maxHops`. The recursive term additionally requires the FRONTIER node itself to be
+  active and non-deleted before it extends through it — an archived node can still surface as an
+  edge's endpoint (the final join drops those rows), but the walk never steps THROUGH it to reach
+  further edges; the base term (seeds' own incident edges, hop 1) carries no such check, so a seed
+  itself may be archived and its edges still surface. `distinct on (edge_id) … order by hops` keeps
+  each edge once at its shortest hop; both endpoints are joined to `knowledge_node` with
+  `is_deleted = false and status = 'active'` (an archived node — W2.6 — drops out of every line
+  immediately); final `order by weight desc, hops asc limit :topK`. Raw JDBC under a savepoint —
+  the `MemoryEmbeddingAnnQuery` idiom (§9): a failed statement can't abort the chat turn's
+  transaction. Gated `KNOWLEDGE_GRAPH_SWITCH`.
+- **`GraphTraversalService`** (`graph/service/`) — `seedsFor(userId, message)`: the message's folded
+  search tokens (`ToolText.searchTokens`; tokens under 3 chars dropped so "ma"/"az" can't seed half
+  the graph) matched by folded containment against every active node's title **or summary**;
+  `neighborhood(userId, seeds, maxHops, topK)` — empty seeds ⇒ empty, no SQL.
+- **`GraphPromptAssembler`** (`graph/service/`) — `assemble(userId, message)` →
+  `GraphContext(block, refs)`. Lines: `- <from.title> → <verb> → <to.title> · <erős|közepes|gyenge>`
+  (verbs: TRIGGERS *kiváltja*, PRECEDED_BY *előzménye*, SUPPORTS *támogatja*, CONFLICTS *ütközik
+  vele*, RELATES_TO *kapcsolódik*; strength ≥0.7 / ≥0.35 / below), header `[Összefüggések] (…)`,
+  cap `mezo.companion.graph.render-max-tokens` (≈3 chars/token, stop at the first overflowing line
+  — weight order is the relevance statement). One `GraphNode`/node-id ref per rendered node,
+  first-appearance order. Never throws (IDENT-3: warn + `GraphContext.EMPTY`). Conditional on
+  **both** `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`.
+- **`ChatService`** holds the assembler through an `ObjectProvider` — switch off ⇒ no bean ⇒ the
+  prompt simply has no block. Order: … → `[Emlékek]` → **`[Összefüggések]`** → `TONE_REMINDER`,
+  assembled once for both paths; the GraphNode refs ride `PreparedTurn.recalledRefs` after the
+  Memory refs and join the audit AFTER the LLM round (tool refs keep priority under the per-turn
+  ref cap). FE: the generic `RefTag` shows `[GraphNode] <uuid>` — a readable label is a W2.6
+  follow-up.
+- **Tests:** `GraphTraversalQueryIT` (3-hop chain ⇒ ≤2 hops in weight order, undirected walk +
+  top-K, cycle termination, archived/soft-deleted/foreign excluded), `GraphPromptAssemblerIT`
+  (seed matching, block + refs, empty cases), `GraphPromptAssemblerTest` (render + cap),
+  `ChatServiceGraphBlockIT` (position, refs on wire + row, stream-path refs),
+  `ChatServiceGraphBlockSwitchOffIT`.
 
 ### Entities
 
@@ -1912,9 +1957,10 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.graph.prune-floor` = **0.05** (0..1) — W2.1: edges below this weight are
   soft-deleted on the nightly pass; consumed starting W2.5.
 - `mezo.companion.graph.render-max-tokens` = **800** (`@Min(1)`) — W2.1: hard cap on the rendered
-  `[Összefüggések]` block in estimated tokens; consumed starting W2.4. Four of these five W2.1
-  fields are declared now and unused until their consuming slice lands (`top-k` is the exception —
-  W2.2's edge structurer already consumes it, below).
+  `[Összefüggések]` block in estimated tokens; consumed by W2.4's `GraphPromptAssembler`. Of these
+  five W2.1 fields, `max-hops`/`top-k`/`render-max-tokens` are now consumed (`top-k` earliest —
+  W2.2's edge structurer already used it, below; the other two since W2.4's traversal + render);
+  `decay-factor`/`prune-floor` stay declared-but-unused until W2.5's maintenance job lands.
 - `mezo.companion.graph.edge-confidence-floor` = **0.4** (0..1) — W2.2: the edge structurer drops
   suggestions below this confidence; survivors are created at `weight = confidence × 0.5`.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
