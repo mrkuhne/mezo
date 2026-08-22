@@ -1,0 +1,139 @@
+package io.mrkuhne.mezo.feature.companion.graph;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.api.dto.GraphNodeResponse;
+import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
+import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.GraphPopulator;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+
+/**
+ * HTTP-level contract IT for the W2.3 L2 confirm inbox (bd mezo-b3pp.8, spec §6.3) — the
+ * generated {@code KnowledgeGraphApi} candidate list + decision endpoints: extraction only ever
+ * proposes ({@code status=candidate}, edges parked in {@code meta.proposedEdges}); accept
+ * activates the node and creates its proposed edges, reject leaves no residue anywhere.
+ */
+class GraphCandidateApiIT extends ApiIntegrationTest {
+
+    private static final String CANDIDATE = "/api/companion/graph/node/candidate";
+
+    @Autowired private OwnerProperties ownerProperties;
+    @Autowired private GraphPopulator graphPopulator;
+    @Autowired private GraphNodeRepository nodeRepository;
+    @Autowired private GraphEdgeRepository edgeRepository;
+
+    private UUID ownerId() {
+        return databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
+
+    private GraphNodeEntity candidateWithEdgeTo(UUID owner, GraphNodeEntity target, double confidence) {
+        return graphPopulator.createCandidateNode(owner, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Új munkahely első hete", LocalDate.of(2026, 8, 21),
+            Map.of("proposedEdges", List.of(Map.of(
+                "toNodeId", target.getId().toString(), "kind", "TRIGGERS", "confidence", confidence))));
+    }
+
+    @Test
+    void testListGraphCandidates_shouldReturnOnlyCandidates_whenActiveNodesAlsoExist() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        candidateWithEdgeTo(owner, active, 0.8);
+
+        List<GraphNodeResponse> candidates = getForList(CANDIDATE, ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(candidates).hasSize(1);
+        GraphNodeResponse candidate = candidates.getFirst();
+        assertThat(candidate.getTitle()).isEqualTo("Új munkahely első hete");
+        assertThat(candidate.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.CANDIDATE);
+        assertThat(candidate.getOccurredOn()).isEqualTo(LocalDate.of(2026, 8, 21));
+        assertThat(candidate.getProposedEdgeCount()).isEqualTo(1);
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldActivateNodeAndCreateProposedEdges_whenAccepted() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+
+        GraphNodeResponse decided = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(decided.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.ACTIVE);
+        assertThat(nodeRepository.findById(candidate.getId()).orElseThrow().getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+        List<GraphEdgeEntity> edges = edgeRepository.findAll();
+        assertThat(edges).hasSize(1);
+        assertThat(edges.getFirst().getFromNodeId()).isEqualTo(candidate.getId());
+        assertThat(edges.getFirst().getToNodeId()).isEqualTo(active.getId());
+        assertThat(edges.getFirst().getKind()).isEqualTo(GraphEdgeEntity.KIND_TRIGGERS);
+        // edges start humble: weight = confidence x 0.5 (the W2.2 structurer rule)
+        assertThat(edges.getFirst().getWeight()).isEqualByComparingTo("0.400");
+        assertThat(edges.getFirst().getEvidence()).singleElement()
+            .satisfies(e -> assertThat(e.sourceKind()).isEqualTo("extractor"));
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldSkipProposedEdge_whenTargetNodeIsGone() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+        nodeRepository.delete(active);   // soft-delete: the target vanished before the decision
+
+        GraphNodeResponse decided = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(decided.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.ACTIVE);
+        assertThat(edgeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldLeaveNoResidue_whenRejected() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+
+        postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "reject"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(nodeRepository.findById(candidate.getId())).isEmpty();   // @SQLRestriction hides it
+        assertThat(edgeRepository.findAll()).isEmpty();
+        List<GraphNodeResponse> candidates = getForList(CANDIDATE, ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+        assertThat(candidates).isEmpty();
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldReturn400_whenAlreadyDecided() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+        String url = "/api/companion/graph/node/" + candidate.getId() + "/decision";
+
+        postForBody(url, Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+        String body = postForBody(url, Map.of("decision", "accept"), ownerAuthHeaders(),
+            HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "GRAPH_CANDIDATE_ALREADY_DECIDED");
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldReturn404_whenNodeIsUnknown() {
+        ownerId();
+        String body = postForBody("/api/companion/graph/node/" + UUID.randomUUID() + "/decision",
+            Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "GRAPH_NODE_NOT_FOUND");
+    }
+}
