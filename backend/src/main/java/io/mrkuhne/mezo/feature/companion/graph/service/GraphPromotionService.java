@@ -144,6 +144,11 @@ public class GraphPromotionService {
      * to interrupt, cheap to retry, and consistent with the fact that each promote/sync method is
      * independently idempotent.
      *
+     * <p>Not a single bulk pass either: each row costs its own {@code findBySource} lookup (the
+     * new-node check inside {@link #promotePattern}) plus its own upsert, so the sweep is O(rows)
+     * round trips rather than one query per entity type — acceptable for a nightly job, but worth
+     * knowing before pointing this at a very large backlog.
+     *
      * @return how many nodes were upserted (created or updated) this run
      */
     public int reconcile(UUID userId) {

@@ -318,12 +318,13 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
         fromPattern.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
         knowledgeFactRepository.saveAndFlush(fromPattern);
         goalPopulator.createGoal(owner, "active");
+        goalPopulator.createGoal(owner, "planned");    // never promoted, not active — must stay skipped
 
         int first = promotionService.reconcile(owner);
         int second = promotionService.reconcile(owner);
 
-        // confirmed pattern + manual fact + active goal = 3; the unconfirmed pattern and the
-        // pattern-sourced fact are deliberately skipped
+        // confirmed pattern + manual fact + active goal = 3; the unconfirmed pattern, the
+        // pattern-sourced fact, and the never-promoted planned goal are deliberately skipped
         assertThat(first).isEqualTo(3);
         assertThat(second).isEqualTo(3);           // idempotent: same rows, updated in place
         assertThat(nodeRepository.findAll()).hasSize(3);
