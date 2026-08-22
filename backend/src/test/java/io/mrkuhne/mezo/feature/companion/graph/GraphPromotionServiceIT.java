@@ -68,6 +68,21 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testPromotePattern_shouldTruncateTitle_whenPatternTitleExceeds120Chars() {
+        UUID owner = ownerId();
+        String longTitle = "Nagyon hosszú mintacím, amely messze túllépi a knowledge_node title mezőjének korlátját, "
+            + "hiszen jóval több, mint száztizenhúsz karakterből áll, hogy a levágás logikáját tesztelje.";
+        assertThat(longTitle.length()).isGreaterThan(120);
+        PatternEntity pattern = patternPopulator.createPattern(owner, "long_title_pair", longTitle);
+        pattern.setStatus(PatternEntity.STATUS_CONFIRMED);
+        pattern = patternPopulator.save(pattern);
+
+        GraphNodeEntity node = promotionService.promotePattern(owner, pattern.getId()).orElseThrow();
+
+        assertThat(node.getTitle()).hasSizeLessThanOrEqualTo(120);
+    }
+
+    @Test
     void testPromotePattern_shouldReturnEmpty_whenPatternIsNotConfirmed() {
         UUID owner = ownerId();
         PatternEntity proposed = patternPopulator.createPattern(owner, "weight_vs_mood", "Súlyingadozás rontja a hangulatot.");

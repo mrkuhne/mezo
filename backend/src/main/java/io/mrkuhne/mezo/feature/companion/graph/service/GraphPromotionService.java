@@ -50,7 +50,7 @@ public class GraphPromotionService {
         return patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
             .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()))
             .map(p -> graphService.upsertNode(userId, GraphNodeEntity.KIND_PATTERN,
-                p.getTitle(), p.getMechanism(), SOURCE_PATTERN, p.getId(), null, patternMeta(p)));
+                truncateTitle(p.getTitle()), p.getMechanism(), SOURCE_PATTERN, p.getId(), null, patternMeta(p)));
     }
 
     /** Active (non-pattern-sourced) knowledge fact -> PREFERENCE node. */
@@ -95,7 +95,8 @@ public class GraphPromotionService {
         return meta;
     }
 
-    /** knowledge_node.title is varchar(120); fact texts and goal titles can be longer. */
+    /** knowledge_node.title is varchar(120); pattern titles (up to 200, LLM-generated hypotheses),
+     *  fact texts, and goal titles can all be longer. */
     private static String truncateTitle(String text) {
         return text.length() <= 120 ? text : text.substring(0, 117) + "…";
     }
