@@ -104,7 +104,7 @@ class GeminiCompanionLlmPromptOrderTest {
                 new HabitSuggest(5),
                 new Transcription(5_242_880, List.of("audio/wav")),
                 new AmbientRecall(true, 2, 2, 1, 1, 0.55, 1200),
-                new Graph(2, 8, 0.99, 0.05, 800));
+                new Graph(2, 8, 0.99, 0.05, 800, 0.4));
     }
 
     private static PatternPair minimalPatternPair() {

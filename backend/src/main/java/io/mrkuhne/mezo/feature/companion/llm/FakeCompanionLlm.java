@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
@@ -286,9 +287,32 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUGGEST_COUNT_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
+    /** Scripted graph edge structuring (W2.2): [fake-graph-edges:[…]] planted in the node title. */
+    public static final Pattern GRAPH_EDGES_SENTINEL =
+            Pattern.compile("\\[fake-graph-edges:(\\[.*?])]", Pattern.DOTALL);
+
+    /** Scripted BROKEN graph edge answer (W2.2): unlike a plain missing sentinel (which degrades
+     *  to the valid-but-empty {@code "[]"}), this forces {@link GraphEdgeStructurer} to genuinely
+     *  fail JSON parsing — the answer has matching brackets (so the caller's bracket-slice finds a
+     *  candidate substring) but invalid syntax inside them, so ITs can exercise the catch-and-log
+     *  path instead of the "empty answer" path. */
+    public static final String GRAPH_EDGES_BROKEN = "[fake-graph-edges-broken]";
+
+    /** Call counter (W2.2): lets ITs assert the LLM-call guarantees (emptiness gate, no re-call on
+     *  re-confirm) rather than only their edge-count side effects — {@code llm_log_history} is
+     *  written only by the REAL {@code GeminiCompanionLlm} adapter's {@code recorded(...)} wrapper,
+     *  never by this fake, so it cannot serve as the call-count oracle under {@code companion-fake}. */
+    private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+    public int completeCallCount() {
+        return completeCallCount.get();
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
+        completeCallCount.incrementAndGet();
         if (userMessage.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
         }
@@ -412,6 +436,16 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(HypothesisPipelineService.REVISE_MARKER)) {
             Matcher m = REVISE_SENTINEL.matcher(userMessage.split("KONTEXTUS:", 2)[0]);
             return m.find() ? m.group(1) : "{}";
+        }
+        if (systemPrompt.startsWith(GraphEdgeStructurer.STRUCTURER_MARKER)) {
+            if (userMessage.contains(GRAPH_EDGES_BROKEN)) {
+                // matching brackets, invalid JSON inside — exercises the catch-and-log path, not
+                // the "empty answer" path a missing sentinel would take
+                return "[{\"index\":0,\"kind\":\"TRIGGERS\",\"confidence\":}]";
+            }
+            Matcher m = GRAPH_EDGES_SENTINEL.matcher(userMessage);
+            // default = no edges: the un-scripted happy path promotes the node and links nothing
+            return m.find() ? m.group(1) : "[]";
         }
         // Scrape extraction (mezo-8vum): the served product-page text embeds [fake-scrape:{json}];
         // returning the JSON verbatim runs the real fetch->strip->prompt->parse path. A page WITHOUT

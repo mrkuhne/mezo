@@ -39,4 +39,28 @@ public class PatternPopulator {
         entity.setStatus(status);
         return patternRepository.saveAndFlush(entity);
     }
+
+    /** Proposed pattern with a caller-chosen pair key/title (W2.2 promotion tests) — status/r/n
+     *  default to {@code statistical}'s and are mutated + re-{@link #save} by the caller. */
+    public PatternEntity createPattern(UUID createdBy, String pairKey, String title) {
+        PatternEntity entity = new PatternEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setKind(PatternEntity.KIND_STATISTICAL);
+        entity.setPairKey(pairKey);
+        entity.setCategory("physiology");
+        entity.setCategoryLabel("Fiziológia");
+        entity.setTitle(title);
+        entity.setMechanism(title);
+        entity.setEvidence(new PatternEvidenceEnvelope(List.of("r=-0.55", "n=12 nap")));
+        entity.setR(new BigDecimal("-0.5500"));
+        entity.setN(12);
+        entity.setP(new BigDecimal("0.064000"));
+        entity.setStatus(PatternEntity.STATUS_PROPOSED);
+        return patternRepository.saveAndFlush(entity);
+    }
+
+    /** Re-persists a caller-mutated pattern (W2.2: flip status/r/n after {@link #createPattern}). */
+    public PatternEntity save(PatternEntity entity) {
+        return patternRepository.saveAndFlush(entity);
+    }
 }

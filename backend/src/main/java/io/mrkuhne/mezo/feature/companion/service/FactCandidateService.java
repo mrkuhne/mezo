@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class FactCandidateService {
     private final LearnedFactRepository learnedFactRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<FactCandidateResponse> listPending(UUID userId) {
         return learnedFactRepository
@@ -65,6 +67,11 @@ public class FactCandidateService {
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
         candidate.setUserDecision(request.getDecision());
+        if (candidate.getPromotedFactId() != null) {
+            // W2.2 (mezo-b3pp.7): accept/refine just minted (or re-confirmed) a knowledge_fact —
+            // promote it into a PREFERENCE node. Reject never sets promotedFactId, so no event fires.
+            eventPublisher.publishEvent(new KnowledgeFactPromotedEvent(userId, candidate.getPromotedFactId()));
+        }
         return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));
     }
 

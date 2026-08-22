@@ -588,6 +588,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Gratitude embedding seam | ✅ `mezo-b3pp.3` | A SIXTH `memory_embedding` kind, `gratitude`: 1–3 short lines a day from `gratitude_entry` (`feature/journal`, [`journal.md`](journal.md) §5). `GratitudeEmbeddingListener` is the journal-shaped twin of the journal listener (`COMPANION_SWITCH` + `JOURNAL_SWITCH`, AFTER_COMMIT/`@Async`), calling `MemoryEmbeddingWriter.writeGratitude` / `.deleteGratitudeEmbedding` over the shared `upsert`; no edit endpoint, so only the create-then-delete liveness re-check. Short texts embed fine — they carry disproportionate emotional signal (spec §5.3). |
 | Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
+| Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7` | Phase 5 W2.2 — confirmed patterns, non-pattern-sourced knowledge facts and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → *(W2.4 Összefüggések slot)* → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
@@ -1398,6 +1399,88 @@ build was chosen after living with W3.1's always-on recall.
   (nothing consumes edges over HTTP until W2.4 traversal / W2.6 FE surface) — edges are exercised at
   the service/repository layer directly (`GraphEntityPersistenceIT`).
 
+### W2.2 graph promotion pipelines (✅ `mezo-b3pp.7`)
+
+Existing knowledge starts flowing INTO the graph (spec §6.2) — still no REST surface; promotion is
+internal, driven by async event hooks and (from W2.5) a nightly reconciler.
+
+- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — three promotion
+  entries, each `@Transactional` and idempotent on `GraphNodeEntity`'s
+  `(createdBy, sourceKind, sourceId)` unique index (re-promoting the same row UPSERTs, never
+  duplicates):
+  - `promotePattern(userId, patternId)` — a `confirmed` pattern (own, not deleted) → a
+    `KIND_PATTERN` node, `sourceKind="pattern"`, meta `{r, n, direction}`. Anything else
+    (missing/foreign/not-confirmed) returns empty.
+  - `promoteFact(userId, factId)` — an active (own, not deleted) `knowledge_fact` →
+    `KIND_PREFERENCE`, `sourceKind="knowledge_fact"`. **Deliberately skips rows whose
+    `source='pattern'`**: those facts are the V3.3 shadow of a pattern that is ALREADY a PATTERN
+    node via `promotePattern`, so promoting them too would put the same sentence in the graph
+    twice under two different node kinds.
+  - `syncGoal(userId, goalId)` — a goal → `KIND_GOAL`, `sourceKind="goal"`. Status mapping: `active`
+    ⇒ node `status="active"`; anything else (`planned`/`archived`) ⇒ node `status="archived"` (the
+    graph shadows a goal's whole lifecycle, it never forgets one). A goal that is **not** active and
+    has never been promoted (`findBySource` empty) is skipped entirely — nothing to archive yet.
+  - All three titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
+    fact texts and goal titles can all exceed `knowledge_node.title varchar(120)`; truncation cuts
+    to 117 chars + `…`.
+  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals the write-path hooks could have
+    missed: pre-graph confirmations, manually created facts, drifted titles). Pure UPSERT, so
+    running it twice in a row is a no-op on the second pass. **Exists in this slice but nothing
+    schedules it yet** — no cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it in.
+  - **Deliberate transaction shape**: `promotePattern`/`promoteFact`/`syncGoal` are each
+    all-or-nothing (node + any structured edges commit or roll back together, one DB transaction).
+    A failure mid-promotion loses that one promotion, but promotion is idempotent, so the next
+    re-confirm/re-save or the future nightly reconciler heals it with no special-casing needed. The
+    user-facing safety net — a graph hiccup must never break the pattern/fact/goal write itself —
+    is NOT this method's job; it comes from the async, AFTER_COMMIT listener below running outside
+    the user's own write transaction entirely. **The honesty of "loses that one promotion" depends
+    on `GraphEdgeStructurer` never swallowing a real persistence failure** (see below) — only the
+    model-answer half of edge structuring is best-effort; a `DataAccessException` from the edge
+    upsert propagates out of `promotePattern` so the transaction that rolls back and the caller
+    that gets told about it agree.
+- **`GraphEdgeStructurer`** (`graph/service/GraphEdgeStructurer.java`) — runs ONLY for a genuinely
+  NEW node (re-promotion is a pure UPSERT, no LLM call), inside `GraphPromotionService`'s own
+  transaction (tried `REQUIRES_NEW` once — reverted, since the new node isn't committed yet in the
+  outer transaction, so a second transaction inserting edges against it always fails the
+  `knowledge_edge` FK under read-committed isolation). Cheap tier (`CompanionLlm`), tagged via
+  `LlmCallContextHolder.runWith(new LlmCallContext("companion_graph", "structure_edges",
+  evidenceSourceKind, evidenceSourceId), …)` for the audit log. The prompt lists the newly promoted
+  node plus a **numbered, index-based** candidate list (never titles — nothing depends on the model
+  echoing Hungarian text back verbatim) of up to `top-k × 3` of the user's other active nodes,
+  newest first, so the prompt stays flat as the graph grows instead of scaling with total node
+  count. **Emptiness gate**: with no other active node there is nothing to link to and no LLM call
+  is made at all. Suggestions below `mezo.companion.graph.edge-confidence-floor` **or above `1.0`**
+  are dropped — never clamped, so a cheap model answering percent-style (`85`) or otherwise
+  out-of-range can never reach `weight = confidence × 0.5` and threaten `knowledge_edge.weight
+  numeric(4,3)` / `ck_knowledge_edge_weight`. Of the survivors, at most `top-k` are created (highest
+  confidence first — the plan's locked decision to reuse W2.4's traversal cap rather than add a
+  second knob) at `weight = confidence × 0.5` — edges start humble and only W2.5 reinforcement
+  raises them. **IDENT-3, narrowly scoped to the model's answer**: a failed LLM call or an
+  unparseable/empty response degrades to NO edges, logged and swallowed — never a failed promotion;
+  the node the caller already persisted stands on its own. A `DataAccessException` out of the edge
+  upsert itself is a DIFFERENT failure mode and is deliberately **not** swallowed: it propagates out
+  of `structureEdges` and `promotePattern` so the caller's transaction actually rolls back and the
+  caller is told the promotion failed, instead of the transaction silently going rollback-only while
+  a "successful" node is returned.
+- **`GraphPromotionListener`** (`graph/service/GraphPromotionListener.java`) — the
+  `JournalEmbeddingListener` idiom: `@Async` + `@TransactionalEventListener(phase =
+  TransactionPhase.AFTER_COMMIT)`, so promotion (LLM-bearing, via the structurer) never sits inside
+  the user's own write transaction and a graph failure can never break a pattern decision, a fact
+  accept or a goal save. Gated on **both** `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH` — either
+  off and the listener bean does not exist, so the hooks are simply absent. Consumes three events,
+  each published inside the writer's own transaction (so an AFTER_COMMIT listener only ever sees a
+  durable write):
+  - `PatternConfirmedEvent(userId, patternId)` — published by `PatternService.decide` when a
+    pattern lands in `confirmed` → `promotePattern`.
+  - `KnowledgeFactPromotedEvent(userId, factId)` — published by `FactCandidateService` right after
+    an accept/refine promotes a candidate into a `knowledge_fact` → `promoteFact`.
+  - `GoalSavedEvent(userId, goalId)` — published by `GoalService` on every write that can change a
+    goal's title or status (create/update/activate/archive) → `syncGoal`. The event record lives in
+    `feature/goal/service/`, not `feature/companion/`: **the goal feature never imports companion**,
+    it just publishes a plain Spring event and knows nothing about who (if anyone) is listening.
+  - Each handler wraps its call in its own try/catch + `log.warn` — a promotion failure is logged,
+    never rethrown into the async executor.
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -1715,8 +1798,11 @@ W2.1 (`mezo-b3pp.6`) — gated `KNOWLEDGE_GRAPH_SWITCH`:
 - `mezo.companion.graph.prune-floor` = **0.05** (0..1) — W2.1: edges below this weight are
   soft-deleted on the nightly pass; consumed starting W2.5.
 - `mezo.companion.graph.render-max-tokens` = **800** (`@Min(1)`) — W2.1: hard cap on the rendered
-  `[Összefüggések]` block in estimated tokens; consumed starting W2.4. All five fields are
-  declared now and unused until their consuming slice lands.
+  `[Összefüggések]` block in estimated tokens; consumed starting W2.4. Four of these five W2.1
+  fields are declared now and unused until their consuming slice lands (`top-k` is the exception —
+  W2.2's edge structurer already consumes it, below).
+- `mezo.companion.graph.edge-confidence-floor` = **0.4** (0..1) — W2.2: the edge structurer drops
+  suggestions below this confidence; survivors are created at `weight = confidence × 0.5`.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
