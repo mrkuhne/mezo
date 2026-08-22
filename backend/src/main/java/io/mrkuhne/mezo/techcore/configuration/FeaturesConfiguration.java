@@ -183,4 +183,9 @@ public class FeaturesConfiguration {
     /** Phase 5 W1.1 journal (bd mezo-b3pp.1) — off ⇒ the /api/journal surface 404s and no journal
      *  beans exist. */
     public static final String JOURNAL_SWITCH = "mezo.feature.journal.enabled";
+
+    /** Phase 5 W2.1 knowledge graph (bd mezo-b3pp.6) — off ⇒ no graph beans exist, the graph API
+     *  404s, and every graph hook elsewhere (W3.1 [Összefüggések] block, W4.2 reinforcement,
+     *  RECOVERY profile input) stays silently absent. */
+    public static final String KNOWLEDGE_GRAPH_SWITCH = "mezo.feature.knowledge-graph.enabled";
 }

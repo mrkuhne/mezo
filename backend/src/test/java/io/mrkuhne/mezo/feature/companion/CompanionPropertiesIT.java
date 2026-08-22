@@ -116,4 +116,13 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.ambientRecall().minSimilarity()).isEqualTo(0.55);
         assertThat(properties.ambientRecall().maxTokens()).isEqualTo(1200);
     }
+
+    @Test
+    void testGraphConfig_shouldBindTraversalAndMaintenanceKnobsFromYaml_whenContextStarts() {
+        assertThat(properties.graph().maxHops()).isEqualTo(2);
+        assertThat(properties.graph().topK()).isEqualTo(8);
+        assertThat(properties.graph().decayFactor()).isEqualTo(0.99);
+        assertThat(properties.graph().pruneFloor()).isEqualTo(0.05);
+        assertThat(properties.graph().renderMaxTokens()).isEqualTo(800);
+    }
 }

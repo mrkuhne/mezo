@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Chat;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Embedding;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Extraction;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Facts;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Graph;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.HabitSuggest;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Hypotheses;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Llm;
@@ -102,7 +103,8 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Hypotheses("0 0 3 * * SUN", 3, 0.75, 0.50),
                 new HabitSuggest(5),
                 new Transcription(5_242_880, List.of("audio/wav")),
-                new AmbientRecall(true, 2, 2, 1, 1, 0.55, 1200));
+                new AmbientRecall(true, 2, 2, 1, 1, 0.55, 1200),
+                new Graph(2, 8, 0.99, 0.05, 800));
     }
 
     private static PatternPair minimalPatternPair() {

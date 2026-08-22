@@ -31,7 +31,8 @@ public record CompanionProperties(
     @NotNull @Valid Hypotheses hypotheses,
     @NotNull @Valid HabitSuggest habitSuggest,
     @NotNull @Valid Transcription transcription,
-    @NotNull @Valid AmbientRecall ambientRecall
+    @NotNull @Valid AmbientRecall ambientRecall,
+    @NotNull @Valid Graph graph
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -131,6 +132,20 @@ public record CompanionProperties(
         @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
         /** Hard cap on the rendered block in ESTIMATED tokens (part of the ~6k memory budget). */
         @Min(100) @Max(6000) int maxTokens
+    ) {}
+
+    /** W2.1 knowledge-graph tuning (spec §6.1) — traversal bounds + nightly maintenance knobs. */
+    public record Graph(
+        /** Neighborhood traversal depth from a seed node (W2.4). */
+        @Min(1) @Max(3) int maxHops,
+        /** Top-K neighbors returned by weight (W2.4). */
+        @Min(1) @Max(20) int topK,
+        /** Nightly edge-weight multiplicative decay (W2.5) — e.g. 0.99 = 1%/day fade. */
+        @DecimalMin("0.9") @DecimalMax("1.0") double decayFactor,
+        /** Edges below this weight are soft-deleted on the nightly pass (W2.5). */
+        @DecimalMin("0.0") @DecimalMax("1.0") double pruneFloor,
+        /** Hard cap on the rendered [Összefüggések] block (estimated tokens, W2.4). */
+        @Min(1) int renderMaxTokens
     ) {}
 
     /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */
