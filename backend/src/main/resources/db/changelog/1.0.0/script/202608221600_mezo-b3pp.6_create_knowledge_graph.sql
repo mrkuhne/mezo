@@ -37,8 +37,12 @@ create table knowledge_edge (
     evidence           jsonb,
     last_reinforced_at timestamptz,
     constraint ck_knowledge_edge_kind check (kind in ('TRIGGERS', 'PRECEDED_BY', 'SUPPORTS', 'CONFLICTS', 'RELATES_TO')),
-    constraint ck_knowledge_edge_weight check (weight >= 0 and weight <= 1),
-    constraint uq_knowledge_edge_pair unique (created_by, from_node_id, to_node_id, kind)
+    constraint ck_knowledge_edge_weight check (weight >= 0 and weight <= 1)
 );
 create index idx_knowledge_edge_from on knowledge_edge (from_node_id);
 create index idx_knowledge_edge_to   on knowledge_edge (to_node_id);
+-- Partial unique index (not a soft-delete-blind table constraint): a later slice (W2.5) will
+-- soft-delete low-weight edges, and re-upserting the same (created_by, from, to, kind) pair must
+-- not collide with the deleted row. Mirrors uq_knowledge_node_source above.
+create unique index uq_knowledge_edge_pair on knowledge_edge (created_by, from_node_id, to_node_id, kind)
+    where is_deleted = false;

@@ -1326,12 +1326,15 @@ build was chosen after living with W3.1's always-on recall.
   `title varchar(120)`, `summary text`, `status varchar(10)` default `active`
   (`candidate|active|archived`), `source_kind varchar(20)`, `source_id uuid`, `occurred_on date`,
   `meta jsonb`. **`uq_knowledge_node_source (created_by, source_kind, source_id)`** (partial, where
-  `source_id is not null`) is the idempotent promotion anchor W2.2/W2.3 UPSERT against.
+  `source_id is not null and is_deleted = false`) is the idempotent promotion anchor W2.2/W2.3
+  UPSERT against.
 - **`knowledge_edge`** — `id uuid pk`, `created_by uuid fk`, `from_node_id`/`to_node_id uuid
   fk→knowledge_node(id) ON DELETE CASCADE`, `kind varchar(12)`
   (`TRIGGERS|PRECEDED_BY|SUPPORTS|CONFLICTS|RELATES_TO`), `weight numeric(4,3)` default `0.500`
   (`ck_knowledge_edge_weight` 0..1), `evidence jsonb`, `last_reinforced_at timestamptz`.
-  `uq_knowledge_edge_pair (created_by, from_node_id, to_node_id, kind)` — same UPSERT idiom.
+  **`uq_knowledge_edge_pair (created_by, from_node_id, to_node_id, kind)`** (partial, where
+  `is_deleted = false`) — same UPSERT idiom, so a later soft-delete (W2.5) doesn't block
+  re-upserting the same pair.
 - **`status` vs `is_deleted`** — the two are independent: `is_deleted` is the inherited
   `OwnedEntity` soft-delete; `status='archived'` is the visible L2 lifecycle state (the `GoalEntity`
   `planned/active/archived` idiom). Archiving a node keeps the row, just out of active
