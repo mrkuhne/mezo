@@ -42,6 +42,59 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/graph/node/candidate:
+    get:
+      tags: [KnowledgeGraph]
+      operationId: listGraphCandidates
+      summary: Pending (undecided) LIFE_EVENT candidates from the nightly extractor, newest first (W2.3)
+      responses:
+        '200':
+          description: Candidate nodes awaiting an explicit L2 decision
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GraphNodeResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/graph/node/{id}/decision:
+    post:
+      tags: [KnowledgeGraph]
+      operationId: decideGraphCandidate
+      summary: >-
+        Decide a candidate (W2.3) — accept activates the node and creates its proposed edges,
+        reject soft-deletes it. One decision per candidate; confirm is an explicit L2 action.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GraphCandidateDecisionRequest' }
+      responses:
+        '200':
+          description: The decided node (status active on accept; the soft-deleted row on reject)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GraphNodeResponse' }
+        '400':
+          description: GRAPH_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     GraphNodeResponse:
@@ -58,3 +111,9 @@ components:
         occurredOn: { type: string, format: date, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        proposedEdgeCount: { type: integer, description: 'W2.3 candidates: how many edges accepting this node would create (0 otherwise).' }
+    GraphCandidateDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, pattern: '^(accept|reject)$' }

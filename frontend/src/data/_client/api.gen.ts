@@ -2986,6 +2986,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/graph/node/candidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending (undecided) LIFE_EVENT candidates from the nightly extractor, newest first (W2.3) */
+        get: operations["listGraphCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a candidate (W2.3) — accept activates the node and creates its proposed edges, reject soft-deletes it. One decision per candidate; confirm is an explicit L2 action. */
+        post: operations["decideGraphCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6554,6 +6588,11 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /** @description W2.3 candidates: how many edges accepting this node would create (0 otherwise). */
+            proposedEdgeCount?: number;
+        };
+        GraphCandidateDecisionRequest: {
+            decision: string;
         };
     };
     responses: never;
@@ -14889,6 +14928,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GraphNodeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GRAPH_NODE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGraphCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidate nodes awaiting an explicit L2 decision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideGraphCandidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GraphCandidateDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided node (status active on accept; the soft-deleted row on reject) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"];
+                };
+            };
+            /** @description GRAPH_CANDIDATE_ALREADY_DECIDED / validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

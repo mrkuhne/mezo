@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.companion.graph.controller;
 
 import io.mrkuhne.mezo.api.controller.KnowledgeGraphApi;
+import io.mrkuhne.mezo.api.dto.GraphCandidateDecisionRequest;
 import io.mrkuhne.mezo.api.dto.GraphNodeResponse;
 import io.mrkuhne.mezo.feature.companion.graph.mapper.GraphMapper;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
+import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventCandidateService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
@@ -22,6 +24,7 @@ public class GraphController implements KnowledgeGraphApi {
     private final GraphService graphService;
     private final GraphMapper graphMapper;
     private final CurrentUserId currentUserId;
+    private final LifeEventCandidateService candidateService;
 
     @Override
     public List<GraphNodeResponse> listGraphNodes() {
@@ -31,5 +34,15 @@ public class GraphController implements KnowledgeGraphApi {
     @Override
     public GraphNodeResponse archiveGraphNode(UUID id) {
         return graphMapper.toResponse(graphService.archive(currentUserId.get(), id));
+    }
+
+    @Override
+    public List<GraphNodeResponse> listGraphCandidates() {
+        return candidateService.listPending(currentUserId.get());
+    }
+
+    @Override
+    public GraphNodeResponse decideGraphCandidate(UUID id, GraphCandidateDecisionRequest graphCandidateDecisionRequest) {
+        return candidateService.decide(currentUserId.get(), id, graphCandidateDecisionRequest);
     }
 }

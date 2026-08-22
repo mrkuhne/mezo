@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
+import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
@@ -298,6 +299,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  path instead of the "empty answer" path. */
     public static final String GRAPH_EDGES_BROKEN = "[fake-graph-edges-broken]";
 
+    /** Scripted life-event extraction (W2.3): [fake-life-events:[…]] planted in the day's narrative. */
+    public static final Pattern LIFE_EVENTS_SENTINEL =
+            Pattern.compile("\\[fake-life-events:(\\[.*])]", Pattern.DOTALL);
+
+    /** Scripted BROKEN life-event answer (W2.3) — matching brackets, invalid JSON inside, so ITs
+     *  exercise the catch-and-log degrade instead of the "empty answer" path. */
+    public static final String LIFE_EVENTS_BROKEN = "[fake-life-events-broken]";
+
     /** Call counter (W2.2): lets ITs assert the LLM-call guarantees (emptiness gate, no re-call on
      *  re-confirm) rather than only their edge-count side effects — {@code llm_log_history} is
      *  written only by the REAL {@code GeminiCompanionLlm} adapter's {@code recorded(...)} wrapper,
@@ -445,6 +454,16 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             Matcher m = GRAPH_EDGES_SENTINEL.matcher(userMessage);
             // default = no edges: the un-scripted happy path promotes the node and links nothing
+            return m.find() ? m.group(1) : "[]";
+        }
+        if (systemPrompt.startsWith(LifeEventExtractionService.EXTRACTOR_MARKER)) {
+            if (userMessage.contains(LIFE_EVENTS_BROKEN)) {
+                // matching brackets, invalid JSON inside — exercises the catch-and-log path, not
+                // the "empty answer" path a missing sentinel would take
+                return "[{\"title\":\"Törött\",\"edges\":}]";
+            }
+            Matcher m = LIFE_EVENTS_SENTINEL.matcher(userMessage);
+            // default = no life events: an un-scripted narrative proposes nothing
             return m.find() ? m.group(1) : "[]";
         }
         // Scrape extraction (mezo-8vum): the served product-page text embeds [fake-scrape:{json}];

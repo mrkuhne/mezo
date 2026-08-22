@@ -66,6 +66,33 @@ public class GraphService {
             userId, GraphNodeEntity.STATUS_ACTIVE);
     }
 
+    /** W2.3 (spec §6.3): a LIFE_EVENT candidate the extractor proposed. Deliberately NOT an
+     *  upsert — extractor candidates carry {@code sourceId = null}, so {@code
+     *  uq_knowledge_node_source} does not apply and there is no key to update on; a later slice's
+     *  own day-scoped dedupe probe is what keeps a re-run from proposing the same night twice.
+     *  Status is {@code candidate}: IDENT-6 says nothing the AI derives becomes durable without
+     *  an explicit decision. */
+    @Transactional
+    public GraphNodeEntity createCandidate(UUID userId, String kind, String title, String summary,
+            String sourceKind, LocalDate occurredOn, Map<String, Object> meta) {
+        GraphNodeEntity node = new GraphNodeEntity();
+        node.setCreatedBy(userId);
+        node.setKind(kind);
+        node.setTitle(title);
+        node.setSummary(summary);
+        node.setStatus(GraphNodeEntity.STATUS_CANDIDATE);
+        node.setSourceKind(sourceKind);
+        node.setOccurredOn(occurredOn);
+        node.setMeta(meta);
+        return nodeRepository.saveAndFlush(node);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GraphNodeEntity> listCandidates(UUID userId) {
+        return nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
+            userId, GraphNodeEntity.STATUS_CANDIDATE);
+    }
+
     @Transactional
     public GraphNodeEntity archive(UUID userId, UUID nodeId) {
         GraphNodeEntity node = findOwnedNode(userId, nodeId);

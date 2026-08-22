@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
-import { useKnowledge, useKnowledgeActions } from '@/data/hooks'
+import { useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions } from '@/data/hooks'
 import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
 import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
 import { KnowledgeExplainer } from '@/features/insights/components/KnowledgeExplainer'
 import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
+import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
 import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
 import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
 import type { FactCategory, KnowledgeFact } from '@/data/types'
@@ -14,6 +15,8 @@ import type { FactCategory, KnowledgeFact } from '@/data/types'
 export function KnowledgeListPage() {
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
   const { toggle, decide } = useKnowledgeActions()
+  const { candidates: lifeEvents } = useLifeEventCandidates()
+  const { decide: decideLifeEvent } = useLifeEventActions()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<FactCategory | 'all'>('all')
 
@@ -88,6 +91,21 @@ export function KnowledgeListPage() {
               key={c.id}
               candidate={c}
               onDecide={(decision, refinedText) => decide(c.id, decision, refinedText)}
+            />
+          ))}
+        </div>
+      )}
+
+      {lifeEvents.length > 0 && (
+        <div className="col gap-sm">
+          <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
+            Életesemény-jelöltek · {lifeEvents.length}
+          </span>
+          {lifeEvents.map((c) => (
+            <LifeEventCandidateCard
+              key={c.id}
+              candidate={c}
+              onDecide={(decision) => decideLifeEvent(c.id, decision)}
             />
           ))}
         </div>
