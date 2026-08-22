@@ -41,6 +41,13 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
      */
     public static final String FAIL_EMBED = "[fake-embed-fail]";
 
+    /**
+     * ANN failure sentinel (W3.1): the returned vector is deliberately 3-dimensional instead of
+     * {@link EmbeddingPort#DIMENSIONS}, so the embed hop SUCCEEDS and the ANN query then fails at
+     * the database ("different vector dimensions") — the staged DB-level half of the failure path.
+     */
+    public static final String FAIL_ANN = "[fake-embed-shortvec]";
+
     @Override
     public List<float[]> embedDocuments(List<String> texts) {
         return texts.stream().map(this::vectorFor).toList();
@@ -55,6 +62,9 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
         if (text.contains(FAIL_EMBED)) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_EMBEDDING_INVALID_RESPONSE").build());
+        }
+        if (text.contains(FAIL_ANN)) {
+            return normalize(new float[] {1f, 0f, 0f});
         }
         Matcher m = EMBED_SENTINEL.matcher(text);
         if (m.find()) {

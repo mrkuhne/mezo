@@ -184,13 +184,13 @@ public class ChatService {
     public MessageResponse sendMessage(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
 
-        // Window BEFORE persisting the new message — the current content travels as the user param.
         // Prompt order: see assembleSystemPrompt. The history travels as real prior messages
         // (mezo-q71s), not a transcript inside the system prompt.
         LocalDate today = LocalDate.now();
         PromptMemoryAssembler.AmbientRecall recalled =
                 promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
         String systemPrompt = assembleSystemPrompt(userId, today, recalled.block());
+        // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(

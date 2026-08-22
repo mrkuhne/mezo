@@ -186,45 +186,4 @@ class MemoryEmbeddingRepositoryIT extends AbstractIntegrationTest {
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    @Test
-    void testFindNearestInKinds_shouldRestrictToGivenKindsAndOrderByDistance_whenMixedKindsSeeded() {
-        UUID owner = userPopulator.createUser().getId();
-        MemoryEmbeddingEntity journal = memoryEmbeddingPopulator.embedding(
-            owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(), "napló", DAY,
-            MemoryEmbeddingPopulator.axisVector(0));
-        MemoryEmbeddingEntity gratitude = memoryEmbeddingPopulator.embedding(
-            owner, MemoryEmbeddingEntity.KIND_GRATITUDE, UUID.randomUUID(), "hála", DAY.minusDays(1),
-            MemoryEmbeddingPopulator.blendVector(0, 1));
-        // same geometry, but a kind OUTSIDE the requested set — must not appear
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, DAY, 0);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY, 0);
-
-        List<MemoryMatch> matches = memoryEmbeddingRepository.findNearestInKinds(owner,
-            List.of(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, MemoryEmbeddingEntity.KIND_GRATITUDE,
-                    MemoryEmbeddingEntity.KIND_REFLECTION, MemoryEmbeddingEntity.KIND_DECISION),
-            MemoryEmbeddingRepository.toVectorLiteral(MemoryEmbeddingPopulator.axisVector(0)), 10);
-
-        assertThat(matches).extracting(MemoryMatch::getId).containsExactly(journal.getId(), gratitude.getId());
-        assertThat(matches.get(0).getDistance()).isCloseTo(0.0, within(1e-6));
-        assertThat(matches.get(1).getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_GRATITUDE);
-    }
-
-    @Test
-    void testFindNearestInKinds_shouldLimitToKAndExcludeOtherUsers_whenManyRows() {
-        UUID owner = userPopulator.createUser().getId();
-        UUID stranger = userPopulator.createUser().getId();
-        for (int i = 0; i < 2; i++) {
-            memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY.minusDays(i), 0);
-        }
-        MemoryEmbeddingEntity strangerRow = memoryEmbeddingPopulator.embedding(
-            stranger, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY, 0);
-
-        List<MemoryMatch> matches = memoryEmbeddingRepository.findNearestInKinds(owner,
-            List.of(MemoryEmbeddingEntity.KIND_CHAT_TURN),
-            MemoryEmbeddingRepository.toVectorLiteral(MemoryEmbeddingPopulator.axisVector(0)), 3);
-
-        assertThat(matches).hasSize(2);
-        assertThat(matches).allSatisfy(m -> assertThat(m.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_CHAT_TURN));
-        assertThat(matches).extracting(MemoryMatch::getId).doesNotContain(strangerRow.getId());
-    }
 }

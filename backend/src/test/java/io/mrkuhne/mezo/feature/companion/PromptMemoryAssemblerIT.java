@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler;
 import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler.AmbientRecall;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -22,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * W3.1 ambient recall over hand-seeded vectors + the fake embedder's {@code [fake-embed:…]}
  * scripted query: per-group caps, the similarity floor, today-skip, decayed ordering, Memory
- * refs, and the failure path — all provider-free.
+ * refs, and both failure paths (embed hop, ANN query) — all provider-free.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
@@ -34,6 +35,7 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
 
     @Autowired private PromptMemoryAssembler assembler;
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
+    @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
     @Autowired private UserPopulator userPopulator;
 
     private void seed(UUID owner, String kind, String content, LocalDate day, float[] vector) {
@@ -153,6 +155,22 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
                 FakeEmbeddingAdapter.FAIL_EMBED + " hogy aludtam?", TODAY);
 
         assertThat(recalled).isSameAs(AmbientRecall.EMPTY);
+    }
+
+    @Test
+    void testRecall_shouldReturnEmptyAndNotThrow_whenAnnQueryFails() {
+        UUID owner = userPopulator.createUser().getId();
+        seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "lenne mit felidézni", TODAY.minusDays(1),
+                MemoryEmbeddingPopulator.axisVector(0));
+
+        // the embed hop SUCCEEDS but returns a 3-dim vector — the ANN statement dies at the DB
+        AmbientRecall recalled = assembler.recall(owner, UUID.randomUUID(),
+                FakeEmbeddingAdapter.FAIL_ANN + " hogy aludtam?", TODAY);
+
+        assertThat(recalled).isSameAs(AmbientRecall.EMPTY);
+        // …and the savepoint rollback left THIS (test-managed) transaction healthy — a poisoned
+        // one would fail here with "current transaction is aborted" instead of counting the seed
+        assertThat(memoryEmbeddingRepository.count()).isEqualTo(1);
     }
 
     @Test

@@ -283,6 +283,28 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         assertThat(assistant.getRefs().refs()).extracting(r -> r.kind()).contains("Memory");
     }
 
+    @Test
+    void testStreamMessage_shouldKeepToolRefsAheadOfMemoryRefs_whenBothPresent() {
+        UUID userId = databasePopulator.populateUser("stream-memories-order@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        memoryEmbeddingPopulator.embedding(userId, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
+                "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("[fake-embed:1] aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"))
+                .collectList().block();
+
+        // the streamed twin of ChatServiceAmbientRecallIT's ordering test: the ambient refs are
+        // added after the tool loop AND the advisor review, so tool refs keep the cap priority
+        MessageResponse done = (MessageResponse) events.getLast().data();
+        List<String> kinds = done.getRefs().stream().map(MessageRef::getKind).toList();
+        assertThat(kinds).contains("Sleep", "Memory");
+        assertThat(kinds.indexOf("Memory")).isGreaterThan(kinds.lastIndexOf("Sleep"));
+        assertThat(kinds.getLast()).isEqualTo("Memory");
+    }
+
     /** The delta text, concatenated in order — the same map+reduce the happy-path test above uses,
      *  filtered by event type instead of by index so a scripted 'tool' event never sneaks in. */
     private String collectDeltas(UUID userId, UUID conversationId, String content) {

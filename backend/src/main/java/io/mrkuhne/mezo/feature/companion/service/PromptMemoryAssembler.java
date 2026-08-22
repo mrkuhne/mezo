@@ -4,8 +4,8 @@ import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingAnnQuery;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
-import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository.MemoryMatch;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -35,10 +35,10 @@ import java.util.UUID;
  * <p>Failure honesty (IDENT-3): an embed/ANN failure is logged and the block is simply omitted —
  * the turn itself is fine, so the caller's {@code degraded} flag is NOT touched.
  *
- * <p>No {@code @Transactional} here (the {@code MemoryRecallService} precedent): the class joins
- * whatever transaction the caller holds — {@code ChatService}'s turn transaction today — so the
- * embed hop and the four ANN queries run inside it; the realistic failure is the embed network
- * hop, outside the DB.
+ * <p>No {@code @Transactional} here: the embed hop runs before any DB work, and each kind-group
+ * ANN query runs through {@code MemoryEmbeddingAnnQuery} on the caller's connection under a JDBC
+ * savepoint, so a failed statement can never poison the turn's transaction — the {@code [Emlékek]}
+ * block is optional, the turn is not (IDENT-3).
  *
  * <p>Dedupe: today's episodes are skipped (the context snapshot already carries the day), and
  * items are keyed by {@code (kind, ref_id)} so no unit enters the block twice.
@@ -92,7 +92,7 @@ public class PromptMemoryAssembler {
     static final int CHARS_PER_TOKEN = 3;
 
     private final EmbeddingPort embeddingPort;
-    private final MemoryEmbeddingRepository memoryEmbeddingRepository;
+    private final MemoryEmbeddingAnnQuery annQuery;
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
 
@@ -154,23 +154,23 @@ public class PromptMemoryAssembler {
         if (cap == 0) {
             return List.of();
         }
-        return memoryEmbeddingRepository.findNearestInKinds(userId, kinds, literal, recall.candidatePool())
+        return annQuery.nearestInKinds(userId, kinds, literal, recall.candidatePool())
                 .stream()
                 // the snapshot already carries today — and a future-dated unit is not a memory yet
-                .filter(match -> match.getOccurredOn().isBefore(today))
-                .map(match -> toItem(match, today, recall.decayDays()))
+                .filter(hit -> hit.occurredOn().isBefore(today))
+                .map(hit -> toItem(hit, today, recall.decayDays()))
                 .filter(item -> item.similarity() >= ambient.minSimilarity())
                 .sorted(Comparator.comparingDouble(RecalledItem::score).reversed())
                 .limit(cap)
                 .toList();
     }
 
-    private static RecalledItem toItem(MemoryMatch match, LocalDate today, int decayDays) {
-        double similarity = 1.0 - match.getDistance();
-        long ageDays = Math.max(0, ChronoUnit.DAYS.between(match.getOccurredOn(), today));
+    private static RecalledItem toItem(MemoryEmbeddingAnnQuery.Hit hit, LocalDate today, int decayDays) {
+        double similarity = 1.0 - hit.distance();
+        long ageDays = Math.max(0, ChronoUnit.DAYS.between(hit.occurredOn(), today));
         double score = similarity * Math.exp(-(double) ageDays / decayDays);
-        return new RecalledItem(match.getKind(), match.getRefId(), match.getOccurredOn(),
-                match.getContent(), similarity, score);
+        return new RecalledItem(hit.kind(), hit.refId(), hit.occurredOn(),
+                hit.content(), similarity, score);
     }
 
     /**

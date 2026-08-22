@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,25 +41,6 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
         """, nativeQuery = true)
     List<MemoryMatch> findNearest(@Param("userId") UUID userId, @Param("kind") String kind,
                                   @Param("queryVector") String queryVector, @Param("k") int k);
-
-    /**
-     * W3.1 (mezo-b3pp.12): the same ANN search restricted to a SET of kinds — one query per
-     * kind-group of the ambient {@code [Emlékek]} block ({@code PromptMemoryAssembler}). Nearest
-     * first. {@code kinds} must be non-empty (an empty {@code in ()} is a SQL error) — callers
-     * skip groups whose cap is 0 instead of passing an empty set.
-     */
-    @Query(value = """
-        select id, kind, ref_id as "refId", content, occurred_on as "occurredOn",
-               (embedding <=> cast(:queryVector as vector)) as distance
-        from memory_embedding
-        where created_by = :userId
-          and is_deleted = false
-          and kind in (:kinds)
-        order by embedding <=> cast(:queryVector as vector)
-        limit :k
-        """, nativeQuery = true)
-    List<MemoryMatch> findNearestInKinds(@Param("userId") UUID userId, @Param("kinds") Collection<String> kinds,
-                                         @Param("queryVector") String queryVector, @Param("k") int k);
 
     /** The embed pipeline's idempotence probe (V2.2) — one live embedding per source unit. */
     boolean existsByKindAndRefId(String kind, UUID refId);
