@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -50,6 +51,13 @@ public class GraphService {
         node.setOccurredOn(occurredOn);
         node.setMeta(meta);
         return nodeRepository.saveAndFlush(node);
+    }
+
+    /** Read-only twin of {@link #upsertNode}'s idempotency key — W2.2 uses it to tell a freshly
+     *  created node from a re-promotion (only a NEW node pays for the LLM edge structurer). */
+    @Transactional(readOnly = true)
+    public Optional<GraphNodeEntity> findBySource(UUID userId, String sourceKind, UUID sourceId) {
+        return nodeRepository.findByCreatedByAndSourceKindAndSourceIdAndDeletedFalse(userId, sourceKind, sourceId);
     }
 
     @Transactional(readOnly = true)

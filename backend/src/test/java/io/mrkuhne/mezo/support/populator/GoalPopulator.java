@@ -38,6 +38,11 @@ public class GoalPopulator {
         return goalRepository.saveAndFlush(g);
     }
 
+    /** Cut-trajectory goal with a caller-chosen status only (W2.2 graph-sync tests). */
+    public GoalEntity createGoal(UUID owner, String status) {
+        return createGoal(owner, "cut", status);
+    }
+
     /** Active cut goal with explicit dates, prescription and day-planner fields — snapshot tests. */
     public GoalEntity createGoalFull(UUID owner, LocalDate startDate, LocalDate targetDate,
         GoalPrescriptionJson prescription, Integer mealsPerDay, String wakeTime, String bedTime) {
