@@ -34,15 +34,31 @@ public class FeedbackPopulator {
         return repository.saveAndFlush(e);
     }
 
-    /** A verdict with a controlled {@code created_at}, for deterministic rollup-window tests
-     *  (W4.2, mezo-b3pp.16) — the {@code WeightLogPopulator.createWeightLogAt} precedent. */
+    /** A verdict with a controlled timestamp, for deterministic rollup-window tests (W4.2,
+     *  mezo-b3pp.16) — the {@code WeightLogPopulator.createWeightLogAt} precedent. Backdates
+     *  {@code updated_at} TOO, not just {@code created_at}: a row voted once and never touched
+     *  since has both stamps equal (that is exactly what {@code upsertVerdict}'s insert branch
+     *  writes), and {@code FeedbackLearningService} windows on {@code updated_at}. */
     @Transactional
     public MessageFeedbackEntity createVerdictAt(
         UUID owner, String kind, UUID artifactId, String verdict, String reason, Instant createdAt) {
         MessageFeedbackEntity e = createVerdict(owner, kind, artifactId, verdict, reason);
-        em.createNativeQuery("update message_feedback set created_at = :at where id = :id")
+        em.createNativeQuery("update message_feedback set created_at = :at, updated_at = :at where id = :id")
             .setParameter("at", createdAt).setParameter("id", e.getId()).executeUpdate();
         em.clear();
         return repository.findById(e.getId()).orElseThrow();
+    }
+
+    /** Re-votes on an existing artifact through the REAL write path
+     *  ({@code MessageFeedbackRepository.upsertVerdict}'s {@code on conflict do update}), which
+     *  bumps {@code updated_at} to {@code now()} while leaving {@code created_at} untouched —
+     *  {@link #createVerdict} is a plain insert and would collide on
+     *  {@code uq_message_feedback_artifact} instead. */
+    @Transactional
+    public MessageFeedbackEntity revote(UUID owner, String kind, UUID artifactId, String verdict, String reason) {
+        repository.upsertVerdict(owner, kind, artifactId, verdict, reason);
+        em.clear();
+        return repository.findByCreatedByAndArtifactKindAndArtifactIdAndDeletedFalse(owner, kind, artifactId)
+            .orElseThrow();
     }
 }

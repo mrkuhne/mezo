@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnve
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.UUID;
@@ -21,6 +23,11 @@ class FeedbackRollupPersistenceIT extends AbstractIntegrationTest {
 
     @Autowired private FeedbackRollupRepository feedbackRollupRepository;
     @Autowired private UserPopulator userPopulator;
+
+    /** JPA-managed shared EntityManager — the DB-CHECK case needs a native insert to get around
+     *  the entity's {@code @Pattern}; field-injected {@code @PersistenceContext} is the house
+     *  exception to constructor DI (see {@code ResetDatabase}/{@code FeedbackPopulator}). */
+    @PersistenceContext private EntityManager em;
 
     private FeedbackRollupEntity newRow(UUID owner, String scope) {
         FeedbackRollupEntity e = new FeedbackRollupEntity();
@@ -57,6 +64,23 @@ class FeedbackRollupPersistenceIT extends AbstractIntegrationTest {
         // the entity's @Pattern guard fires before the DB CHECK
         assertThatThrownBy(() -> feedbackRollupRepository.saveAndFlush(bad))
             .isInstanceOf(ConstraintViolationException.class);
+    }
+
+    /** The entity's {@code @Pattern} short-circuits every JPA write, so the DB CHECK itself is only
+     *  reachable by going around bean validation with raw SQL — this is the case that proves the
+     *  constraint really is in the schema and not just in the entity. */
+    @Test
+    void testNativeInsert_shouldViolateScopeCheck_whenBeanValidationIsBypassed() {
+        UUID owner = userPopulator.createUser().getId();
+
+        assertThatThrownBy(() -> em.createNativeQuery("""
+                insert into feedback_rollup (created_by, scope, window_days, stats, computed_at)
+                values (:owner, 'nonsense', 30, cast(:stats as jsonb), now())
+                """)
+            .setParameter("owner", owner)
+            .setParameter("stats", "{\"up\": 3, \"down\": 1}")
+            .executeUpdate())
+            .hasStackTraceContaining("ck_feedback_rollup_scope");
     }
 
     @Test

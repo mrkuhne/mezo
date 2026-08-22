@@ -1261,8 +1261,9 @@ nightly, rollup-only aggregation layer over `message_feedback` (spec §4.4/§8.2
 - **Eleven scopes per user, always** — `surface:chat_message`, `surface:feed_message`,
   `surface:weekly_suggestion`, `surface:memoir`, `surface:prediction` (per-artifact-kind
   up/down/total); `feed:morning`, `feed:sleep`, `feed:weight`, `feed:midday`, `feed:evening`
-  (feed-kind resolved by joining `feed_message` artifact ids to `companion_message.kind` — no
-  FK, spec §8.1's dangling-id precedent); and one `style` row (a per-surface down-reason
+  (feed-kind resolved by looking `feed_message` artifact ids up against `companion_message.kind`
+  through the `FeedMessageKindSource` port — no FK, spec §8.1's dangling-id precedent, and the
+  lookup is user-scoped so a foreign row can never leak in); and one `style` row (a per-surface down-reason
   histogram, `FeedbackRollupStatsEnvelope.bySurface`). Every scope is written even at zero counts
   — a missing row never means "no data", so W4.3/W5.2 don't need to special-case absence.
 - **`FeedbackRollupEntity`** (`feedback/entity/FeedbackRollupEntity.java`, W4.2)
@@ -1277,6 +1278,19 @@ nightly, rollup-only aggregation layer over `message_feedback` (spec §4.4/§8.2
   `PatternDetectionJob`/`PatternDetectionService` idiom: a thin `@Scheduled` per-user loop
   (own switch `mezo.techcore.cron.feedback-learning-job.enabled`) delegating to a directly
   testable `computeRollups(UUID): int`. Pure code — **no LLM/embed call anywhere in this path**.
+- **`FeedMessageKindSource`** (`feedback/service/`, W4.2) — the companion-owned inversion port for
+  the `feed_message artifact id → companion_message.kind` batch lookup, implemented by
+  `feature.proactive.service.FeedMessageKindService` (same `COMPANION_SWITCH` only). `feed:*`
+  bucketing needs proactive data, and `feature.proactive` already imports `feature.companion`
+  everywhere, so the direct repository import would close a NEW companion↔proactive cycle that
+  ArchUnit's frozen `feature_slices_are_cycle_free` rejects — the `PatternImpactSource` precedent
+  exactly. The port also owns the five feed-slot constants (literal mirrors of
+  `CompanionMessageEntity.KIND_*`), so the service never imports a proactive entity either.
+- **Window keys on `updated_at`, not `created_at`** — `MessageFeedbackRepository.upsertVerdict`'s
+  `on conflict do update` bumps `updated_at` and deliberately leaves `created_at` at the FIRST
+  vote, so a `created_at` window would silently drop a 👍→👎 flip (or a retract-and-re-vote) on an
+  artifact first rated outside the window — the freshest signal there is. `updated_at` is written
+  on the insert branch too, so nothing is lost by the swap.
 - **Scope, explicitly**: this is the rollup layer ONLY. The reinforcement layer (a 👍/👎 walking
   `ai_message.refs` into knowledge-graph edge weights) activates only once W2 is live and ships as
   a separate, later, switch-guarded slice (design spec §8.2/§10) — not built here.
@@ -1926,8 +1940,10 @@ The FE side is a single page-level hook + one shared controlled component
 
 Every finished night, `FeedbackLearningJob` walks every user and calls
 `FeedbackLearningService.computeRollups(userId)`, which reads the last `window-days` (default 30)
-of `message_feedback` and overwrites 11 `feedback_rollup` rows in place: per-surface
-effectiveness, per-feed-kind effectiveness (joined through `companion_message.kind`), and one
+of `message_feedback` (by **`updated_at`**, so an edited or re-cast verdict re-enters the window)
+and overwrites 11 `feedback_rollup` rows in place: per-surface
+effectiveness, per-feed-kind effectiveness (resolved through the `FeedMessageKindSource` port to
+`companion_message.kind`), and one
 `style` row with a per-surface down-reason histogram. No prompt, no UI, and no consumer yet reads
 this table — W4.3's `ProfileAssembler` (`mezo-b3pp.17`) and W5.2's intervention weighting
 (`mezo-b3pp.19`) are its first readers, once those slices ship.
@@ -2264,16 +2280,21 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
 **W4.2 feedback-rollup test additions (`mezo-b3pp.16`) — all integration-first, no LLM in the path:**
 
-- **`feedback/FeedbackRollupPersistenceIT`** — entity round-trip for the effectiveness shape;
-  `ck_feedback_rollup_scope` fires on a scope matching neither `style` nor a `surface:`/`feed:`
-  prefix; `uq_feedback_rollup_scope` fires on a second row with the same
+- **`feedback/FeedbackRollupPersistenceIT`** — entity round-trip for the effectiveness shape; a
+  scope matching neither `style` nor a `surface:`/`feed:` prefix is rejected by the entity's
+  `@Pattern` mirror (a `ConstraintViolationException` in-JVM, before any SQL leaves the process —
+  bean validation always beats the DB CHECK to it on the JPA path), while a **native** insert that
+  bypasses bean validation proves `ck_feedback_rollup_scope` really is in the schema too;
+  `uq_feedback_rollup_scope` fires on a second row with the same
   `(created_by, scope, window_days)`.
 - **`feedback/FeedbackLearningPropertiesIT`** — `mezo.companion.feedback-learning.{cron,
   window-days}` bind from `application.yml`.
 - **`feedback/FeedbackLearningServiceIT`** — always upserts all 11 scopes (zero-filled when
-  unseen); per-surface up/down counts; feed-kind bucketing via the `companion_message` join;
+  unseen); per-surface up/down counts; feed-kind bucketing via `FeedMessageKindSource`;
   the style histogram counts only down-verdicts with a reason; a verdict older than the window is
-  excluded; a second run overwrites in place rather than duplicating rows.
+  excluded; a verdict first cast 40 days ago but **re-voted through `upsertVerdict` today IS
+  counted** (the `updated_at` window, above — the case a `created_at` window loses); a second run
+  overwrites in place rather than duplicating rows.
 - **`feedback/FeedbackLearningJobSwitchOffIT`** — `mezo.techcore.cron.feedback-learning-job.enabled=false`
   ⇒ no `FeedbackLearningJob` bean.
 

@@ -7,8 +7,6 @@ import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnve
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.MessageFeedbackRepository;
-import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
-import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -39,24 +37,33 @@ public class FeedbackLearningService {
         MessageFeedbackEntity.KIND_PREDICTION);
 
     private static final List<String> FEED_KINDS = List.of(
-        CompanionMessageEntity.KIND_MORNING, CompanionMessageEntity.KIND_SLEEP,
-        CompanionMessageEntity.KIND_WEIGHT, CompanionMessageEntity.KIND_MIDDAY,
-        CompanionMessageEntity.KIND_EVENING);
+        FeedMessageKindSource.KIND_MORNING, FeedMessageKindSource.KIND_SLEEP,
+        FeedMessageKindSource.KIND_WEIGHT, FeedMessageKindSource.KIND_MIDDAY,
+        FeedMessageKindSource.KIND_EVENING);
 
     private final MessageFeedbackRepository messageFeedbackRepository;
-    private final CompanionMessageRepository companionMessageRepository;
+    private final FeedMessageKindSource feedMessageKindSource;
     private final FeedbackRollupRepository feedbackRollupRepository;
     private final FeedbackLearningProperties properties;
 
     /** Recomputes and overwrites (in place) all 11 rollup scopes for one user; returns the count
      *  upserted (always 11 — every known surface/feed-kind scope is written, zero-filled when
-     *  unseen, so a downstream reader never has to distinguish "no row" from "no signal"). */
+     *  unseen, so a downstream reader never has to distinguish "no row" from "no signal").
+     *
+     *  <p>The trailing window keys on {@code updated_at}, NOT {@code created_at} — do not "fix"
+     *  this back. A verdict's ONLY write path is {@code MessageFeedbackRepository.upsertVerdict},
+     *  whose {@code on conflict do update} bumps {@code updated_at} but deliberately leaves
+     *  {@code created_at} at the FIRST vote; windowing on {@code created_at} would therefore drop
+     *  a 👍→👎 flip (or a retract-and-re-vote) on an artifact first rated outside the window — the
+     *  freshest signal there is. {@code updated_at} is set to {@code now()} on the insert branch
+     *  too (and by {@code @UpdateTimestamp} on the JPA path, plus the column's own DB default), so
+     *  it is never older than {@code created_at} and no first-time verdict is lost by the swap. */
     @Transactional
     public int computeRollups(UUID userId) {
         int windowDays = properties.windowDays();
         Instant since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
         List<MessageFeedbackEntity> window = messageFeedbackRepository
-            .findByCreatedByAndCreatedAtAfterAndDeletedFalse(userId, since);
+            .findByCreatedByAndUpdatedAtAfterAndDeletedFalse(userId, since);
 
         int upserted = 0;
         for (String kind : SURFACE_KINDS) {
@@ -64,7 +71,7 @@ public class FeedbackLearningService {
                 windowDays, filterByKind(window, kind));
         }
 
-        Map<UUID, String> feedMessageKindById = feedMessageKindById(window);
+        Map<UUID, String> feedMessageKindById = feedMessageKindById(userId, window);
         for (String feedKind : FEED_KINDS) {
             List<MessageFeedbackEntity> feedVerdicts = window.stream()
                 .filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
@@ -86,22 +93,17 @@ public class FeedbackLearningService {
         return f -> kind.equals(f.getArtifactKind());
     }
 
-    /** Resolves each feed_message artifact's companion_message.kind via a single batch read —
-     *  the artifact table join is a plain lookup (no FK; spec §8.1 names the dangling-id case as
-     *  harmless in a single-user app). */
-    private Map<UUID, String> feedMessageKindById(List<MessageFeedbackEntity> window) {
+    /** Resolves each feed_message artifact's companion_message.kind via a single batch read
+     *  through {@link FeedMessageKindSource} — that data lives in {@code feature.proactive}, which
+     *  this slice must NOT import (see the port's javadoc). The artifact "join" is a plain lookup
+     *  (no FK; spec §8.1 names the dangling-id case as harmless in a single-user app), and the port
+     *  contract scopes it to {@code userId}, so a foreign row can never leak into a rollup. */
+    private Map<UUID, String> feedMessageKindById(UUID userId, List<MessageFeedbackEntity> window) {
         List<UUID> feedArtifactIds = window.stream()
             .filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
             .map(MessageFeedbackEntity::getArtifactId)
             .toList();
-        if (feedArtifactIds.isEmpty()) {
-            return Map.of();
-        }
-        Map<UUID, String> result = new java.util.HashMap<>();
-        for (CompanionMessageEntity message : companionMessageRepository.findAllById(feedArtifactIds)) {
-            result.put(message.getId(), message.getKind());
-        }
-        return result;
+        return feedMessageKindSource.kindsByIds(userId, feedArtifactIds);
     }
 
     private int upsertEffectiveness(UUID userId, String scope, int windowDays, List<MessageFeedbackEntity> verdicts) {

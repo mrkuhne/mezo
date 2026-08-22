@@ -134,6 +134,33 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testComputeRollups_shouldIncludeReVotedVerdict_whenOnlyUpdatedAtIsInsideTheWindow() {
+        UUID owner = userPopulator.createUser().getId();
+        UUID artifactId = UUID.randomUUID();
+        Instant longBeforeTheWindow = Instant.now().minus(40, ChronoUnit.DAYS);
+        feedbackPopulator.createVerdictAt(owner, MessageFeedbackEntity.KIND_CHAT_MESSAGE, artifactId,
+            MessageFeedbackEntity.VERDICT_UP, null, longBeforeTheWindow);
+
+        // the real write path: on-conflict-do-update bumps updated_at but leaves created_at at the
+        // 40-day-old first vote — the rollup must still see this fresh 👍→👎 flip
+        MessageFeedbackEntity reVoted = feedbackPopulator.revote(owner, MessageFeedbackEntity.KIND_CHAT_MESSAGE,
+            artifactId, MessageFeedbackEntity.VERDICT_DOWN, MessageFeedbackEntity.REASON_INACCURATE);
+        assertThat(reVoted.getCreatedAt()).isBefore(Instant.now().minus(35, ChronoUnit.DAYS));
+        assertThat(reVoted.getUpdatedAt()).isAfter(Instant.now().minus(1, ChronoUnit.DAYS));
+
+        feedbackLearningService.computeRollups(owner);
+
+        FeedbackRollupEntity chatRollup = feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:chat_message", 30)
+            .orElseThrow();
+        assertThat(chatRollup.getStats().down()).isEqualTo(1);
+        assertThat(chatRollup.getStats().up()).isZero();
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "style", 30)
+            .orElseThrow().getStats().bySurface().get("chat_message").inaccurate()).isEqualTo(1);
+    }
+
+    @Test
     void testComputeRollups_shouldOverwriteInPlace_whenRunTwice() {
         UUID owner = userPopulator.createUser().getId();
         feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(),
