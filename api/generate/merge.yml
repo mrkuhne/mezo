@@ -33,4 +33,5 @@ inputs:
   - inputFile: ../feature/needs/needs.yml
   - inputFile: ../feature/journal/journal.yml
   - inputFile: ../feature/companion-feedback/companion-feedback.yml
+  - inputFile: ../feature/knowledge-graph/knowledge-graph.yml
 output: ../openapi.yml
