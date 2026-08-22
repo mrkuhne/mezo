@@ -105,7 +105,7 @@ public class ChatStreamService {
                     turn.recalledRefs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
                     return ServerSentEvent.<Object>builder(
                                     chatService.completeTurn(userId, conversationId, turn.userMessageId(),
-                                            turn.userContent(), finalAnswer, audit, degraded))
+                                            turn.userContent(), finalAnswer, audit, degraded, turn.recalled()))
                             .event(EVENT_DONE).build();
                 }))
                 .onErrorResume(e -> {

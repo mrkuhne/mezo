@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingAnnQuery;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
@@ -53,9 +54,14 @@ public class PromptMemoryAssembler {
     public static final String MEMORIES_HEADER = "\n\n[Emlékek] (hasonló korábbi epizódok — nyersanyag,"
             + " nem felolvasandó lista; dátum (forrás): kivonat):\n";
 
-    /** What one turn's ambient recall produced: the rendered block ("" when nothing) + the Memory refs. */
-    public record AmbientRecall(String block, List<RefsEnvelope.Ref> refs) {
-        public static final AmbientRecall EMPTY = new AmbientRecall("", List.of());
+    /**
+     * What one turn's ambient recall produced: the rendered block ("" when nothing), the Memory
+     * refs, and (W3.1b, mezo-b3pp.28) the disclosable items themselves — same order as the block,
+     * so the answer can show exactly what it was given. Refs collapse a day, items do not.
+     */
+    public record AmbientRecall(String block, List<RefsEnvelope.Ref> refs,
+                                List<RecalledMemoriesEnvelope.Item> items) {
+        public static final AmbientRecall EMPTY = new AmbientRecall("", List.of(), List.of());
     }
 
     /** One recalled unit after re-ranking (package-private: the render tests build these by hand). */
@@ -137,10 +143,16 @@ public class PromptMemoryAssembler {
             // Memory refs carry the DATE (the V2.3 tool's convention — the FE chip is generic);
             // two items of one day collapse to one ref.
             LinkedHashSet<RefsEnvelope.Ref> refs = new LinkedHashSet<>();
+            // W3.1b: the disclosure is per EPISODE (no day collapse) and reuses oneLine, so the
+            // gist on the wire is byte-identical to the line the model actually read.
+            List<RecalledMemoriesEnvelope.Item> disclosed = new ArrayList<>();
             for (RecalledItem item : rendered.rendered()) {
                 refs.add(new RefsEnvelope.Ref("Memory", item.occurredOn().toString()));
+                disclosed.add(new RecalledMemoriesEnvelope.Item(item.kind(), item.refId(),
+                        item.occurredOn(), KIND_LABELS.getOrDefault(item.kind(), item.kind()),
+                        oneLine(item.content(), recall.renderMaxChars()), item.similarity()));
             }
-            return new AmbientRecall(rendered.block(), List.copyOf(refs));
+            return new AmbientRecall(rendered.block(), List.copyOf(refs), List.copyOf(disclosed));
         } catch (RuntimeException e) {
             log.warn("Ambient recall skipped for conversation {} — the turn continues without [Emlékek]",
                     conversationId, e);

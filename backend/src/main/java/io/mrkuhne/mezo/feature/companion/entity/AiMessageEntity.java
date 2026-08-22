@@ -62,6 +62,11 @@ public class AiMessageEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private RefsEnvelope refs;
 
+    /** W3.1b: the memories ambient recall injected into this answer's prompt — null when none. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "recalled_memories", columnDefinition = "jsonb")
+    private RecalledMemoriesEnvelope recalledMemories;
+
     /** V1.3: true when the advisor chain rejected the answer even after the corrective retry. */
     @Column(nullable = false)
     private boolean degraded;
