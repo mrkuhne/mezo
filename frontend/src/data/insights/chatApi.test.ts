@@ -8,6 +8,7 @@ test('maps a wire MessageResponse to the FE ChatMessage shape', () => {
     id: 'm1', role: 'assistant', content: 'Szia!', createdAt: '2026-07-03T06:32:00Z',
     tools: [{ type: 'read', name: 'get_sleep(days=7)' }],
     refs: [{ kind: 'SleepLog', id: 'sl-1' }],
+    recalled: [],
     degraded: false,
   })
   expect(mapped.role).toBe('assistant')
@@ -20,6 +21,7 @@ test('maps a wire MessageResponse to the FE ChatMessage shape', () => {
 test('omits empty tools/refs so user bubbles stay lean', () => {
   const mapped = toChatMessage({
     id: 'm2', role: 'user', content: 'hello', createdAt: '2026-07-03T06:34:00Z', tools: [], refs: [],
+    recalled: [],
     degraded: false,
   })
   expect(mapped.tools).toBeUndefined()
@@ -31,7 +33,7 @@ test('omits empty tools/refs so user bubbles stay lean', () => {
 test('maps a degraded answer so the bubble can render the flag (V1.3)', () => {
   const mapped = toChatMessage({
     id: 'm3', role: 'assistant', content: 'bizonytalan válasz', createdAt: '2026-07-03T06:35:00Z',
-    tools: [], refs: [], degraded: true,
+    tools: [], refs: [], recalled: [], degraded: true,
   })
   expect(mapped.degraded).toBe(true)
 })
@@ -56,7 +58,7 @@ test('transcribe posts the clip as multipart and returns the text (mezo-at8x.4)'
 test('carries the persisted row id — the W4.1 feedback artifactId (mezo-b3pp.15)', () => {
   const mapped = toChatMessage({
     id: '0b4f6c1e-0000-4000-8000-000000000001', role: 'assistant', content: 'Szia!',
-    createdAt: '2026-07-03T06:32:00Z', tools: [], refs: [], degraded: false,
+    createdAt: '2026-07-03T06:32:00Z', tools: [], refs: [], recalled: [], degraded: false,
   })
   // Without the id the answer has nothing to vote on — the chips simply would not render.
   expect(mapped.id).toBe('0b4f6c1e-0000-4000-8000-000000000001')
