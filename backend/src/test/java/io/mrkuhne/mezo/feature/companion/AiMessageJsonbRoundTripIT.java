@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,5 +75,43 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
         AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
         assertThat(reloaded.getToolCalls()).isNull();
         assertThat(reloaded.getRefs()).isNull();
+        assertThat(reloaded.getRecalledMemories()).isNull();
+    }
+
+    /**
+     * W3.1b (mezo-b3pp.28): the recall disclosure envelope. Worth its own case because it carries
+     * the FIRST temporal in an ai_message envelope — a {@code LocalDate} has no native jsonb type,
+     * so it travels as an ISO string and a serializer misconfiguration would surface here (as an
+     * epoch-day array or an off-by-one date) rather than silently in the UI.
+     */
+    @Test
+    void testPersist_shouldRoundTripRecalledMemories_whenAmbientRecallDisclosed() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-recalled@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        UUID refId = UUID.randomUUID();
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz emlékekkel");
+        message.setRecalledMemories(new RecalledMemoriesEnvelope(List.of(
+                new RecalledMemoriesEnvelope.Item("journal_entry", refId, LocalDate.of(2026, 8, 10),
+                        "napló", "futás után jobban aludtam", 0.92))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getRecalledMemories().items()).singleElement().satisfies(item -> {
+            assertThat(item.kind()).isEqualTo("journal_entry");
+            assertThat(item.refId()).isEqualTo(refId);
+            assertThat(item.occurredOn()).isEqualTo(LocalDate.of(2026, 8, 10));
+            assertThat(item.label()).isEqualTo("napló");
+            assertThat(item.gist()).isEqualTo("futás után jobban aludtam");
+            assertThat(item.similarity()).isEqualTo(0.92);
+        });
+        assertThat(jdbcTemplate.queryForObject(
+                "select jsonb_typeof(recalled_memories) from ai_message where id = ?", String.class, id))
+                .isEqualTo("object");
     }
 }

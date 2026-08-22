@@ -3,14 +3,20 @@ package io.mrkuhne.mezo.feature.companion;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,6 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CompanionStreamApiIT extends ApiIntegrationTest {
 
     private static final String CONVERSATION_URI = "/api/companion/conversation";
+
+    @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
+    @Autowired private AppUserRepository appUserRepository;
+    @Autowired private OwnerProperties ownerProperties;
+
+    private UUID ownerId() {
+        return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+    }
 
     private HttpHeaders sseHeaders() {
         HttpHeaders headers = ownerAuthHeaders();
@@ -129,6 +143,28 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
                 .filteredOn(c -> c.getId().equals(conversation.getId()))
                 .singleElement()
                 .satisfies(c -> assertThat(c.getTitle()).isEqualTo("mi a mai terv?"));
+    }
+
+    /**
+     * W3.1b (mezo-b3pp.28): the 'done' frame's JSON really carries the {@code recalled} array over
+     * the SSE writer — ChatStreamServiceIT proves the object, this proves the serialized wire.
+     */
+    @Test
+    void testStreamMessage_shouldCarryRecalledMemoriesInDoneEvent_whenSimilarMemoriesExist() {
+        memoryEmbeddingPopulator.embedding(ownerId(), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
+                UUID.randomUUID(), "futás után jobban aludtam", LocalDate.now().minusDays(3),
+                MemoryEmbeddingPopulator.axisVector(0));
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        String sse = postForBody(streamUri(conversation.getId()),
+                SendMessageRequest.builder().content("[fake-embed:1] hogy aludtam futás után?").build(),
+                sseHeaders(), HttpStatus.OK, String.class);
+
+        assertThat(sse).contains("event:done")
+                .contains("\"recalled\":[{")
+                .contains("\"label\":\"napló\"")
+                .contains("\"gist\":\"futás után jobban aludtam\"");
     }
 
     @Test

@@ -755,3 +755,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608221600_mezo-b3pp.6_create_knowledge_graph.sql
+  - changeSet:
+      id: "1.0.0:202608221700_mezo-b3pp.28_ai_message_recalled_memories"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608221700_mezo-b3pp.28_ai_message_recalled_memories.sql

@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
@@ -135,9 +136,12 @@ public class ChatService {
     private final LlmCallContextHolder llmCallContextHolder;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
-     *  {@code recalledRefs} (W3.1) are the ambient-recall Memory refs the stream path adds to its audit. */
+     *  {@code recalledRefs} (W3.1) are the ambient-recall Memory refs the stream path adds to its audit;
+     *  {@code recalled} (W3.1b) is the disclosure envelope the assistant row persists — null when
+     *  the turn recalled nothing. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
-                               List<Turn> history, String userContent, List<RefsEnvelope.Ref> recalledRefs) {}
+                               List<Turn> history, String userContent, List<RefsEnvelope.Ref> recalledRefs,
+                               RecalledMemoriesEnvelope recalled) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -155,10 +159,10 @@ public class ChatService {
         String systemPrompt = assembleSystemPrompt(userId, today, recalled.block());
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent(),
-                recalled.refs());
+                recalled.refs(), RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
     }
 
     /**
@@ -169,10 +173,10 @@ public class ChatService {
     @Transactional
     public MessageResponse completeTurn(
             UUID userId, UUID conversationId, UUID userMessageId, String userContent,
-            String answer, ToolCallAudit audit, boolean degraded) {
+            String answer, ToolCallAudit audit, boolean degraded, RecalledMemoriesEnvelope recalled) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded, recalled);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
@@ -194,7 +198,7 @@ public class ChatService {
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer;
@@ -219,8 +223,10 @@ public class ChatService {
         // W3.1: ambient Memory refs join the audit AFTER the LLM round — tool refs are the answer's
         // own provenance and win the per-turn ref cap; the recalled days fill what is left.
         recalled.refs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
+        // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
+                RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
@@ -261,7 +267,8 @@ public class ChatService {
     }
 
     private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,
-            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded) {
+            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded,
+            RecalledMemoriesEnvelope recalled) {
         AiMessageEntity message = new AiMessageEntity();
         message.setConversation(conversation);
         message.setCreatedBy(userId);
@@ -269,6 +276,7 @@ public class ChatService {
         message.setContent(content);
         message.setToolCalls(toolCalls);
         message.setRefs(refs);
+        message.setRecalledMemories(recalled);
         message.setDegraded(degraded);
         // saveAndFlush so the two rows of a turn get distinct created_at (history ordering key)
         return messageRepository.saveAndFlush(message);

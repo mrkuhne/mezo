@@ -1085,6 +1085,7 @@ export const handlers = [
         createdAt: `2026-07-03T06:3${i}:00Z`,
         tools: m.tools ?? [],
         refs: m.refs ?? [],
+        recalled: m.recalled ?? [],
         degraded: false,
       })),
     ),
@@ -1217,6 +1218,11 @@ export const handlers = [
           createdAt: '2026-07-03T07:00:05Z',
           tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+          // W3.1b: the persisted row also carries what ambient recall fed the prompt
+          recalled: [{
+            occurredOn: '2026-07-01', kind: 'journal_entry', label: 'napló',
+            gist: 'korábban is rosszul aludtál edzés után', similarity: 0.88,
+          }],
           degraded: false,
         })))
         controller.close()

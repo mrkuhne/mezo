@@ -12644,6 +12644,7 @@ components:
         - createdAt
         - tools
         - refs
+        - recalled
         - degraded
       properties:
         id:
@@ -12680,6 +12681,48 @@ components:
             tools.
           items:
             $ref: '#/components/schemas/MessageRef'
+        recalled:
+          type: array
+          description: >-
+            W3.1b (mezo-b3pp.28): the memories ambient recall injected into this
+            answer's prompt (the [Emlékek] block), in prompt order — date +
+            source + one-line gist + raw cosine similarity. Empty on user rows,
+            on pre-W3.1 rows, and when recall found nothing or failed (the turn
+            is never degraded by a failed recall).
+          items:
+            $ref: '#/components/schemas/RecalledMemory'
+    RecalledMemory:
+      type: object
+      required:
+        - occurredOn
+        - kind
+        - label
+        - gist
+        - similarity
+      properties:
+        occurredOn:
+          type: string
+          format: date
+          description: The day the remembered episode happened
+        kind:
+          type: string
+          description: >-
+            memory_embedding.kind (journal_entry | daily_summary | chat_turn |
+            …)
+        label:
+          type: string
+          description: >-
+            Hungarian source tag as rendered in the prompt (napló, napi
+            összefoglaló, …)
+        gist:
+          type: string
+          description: 'The one-line excerpt that was injected (first line, capped)'
+        similarity:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Raw cosine similarity to the user message
     MessageTool:
       type: object
       required:

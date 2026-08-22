@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.StreamToolCall;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
@@ -281,6 +282,16 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
                 .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId)
                 .getLast();
         assertThat(assistant.getRefs().refs()).extracting(r -> r.kind()).contains("Memory");
+        // W3.1b (mezo-b3pp.28): the streamed twin of the sync disclosure — the terminal 'done' row
+        // carries the recalled memories, and the same envelope is on the committed assistant row
+        assertThat(done.getRecalled()).singleElement().satisfies(item -> {
+            assertThat(item.getOccurredOn()).isEqualTo(LocalDate.now().minusDays(3));
+            assertThat(item.getLabel()).isEqualTo("napló");
+            assertThat(item.getGist()).isEqualTo("futás után jobban aludtam");
+        });
+        assertThat(assistant.getRecalledMemories().items())
+                .extracting(RecalledMemoriesEnvelope.Item::label, RecalledMemoriesEnvelope.Item::gist)
+                .containsExactly(Tuple.tuple("napló", "futás után jobban aludtam"));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
@@ -18,6 +19,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * W3.1 ambient recall over hand-seeded vectors + the fake embedder's {@code [fake-embed:…]}
@@ -66,6 +69,23 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(3).toString()),
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(5).toString()),
                 new RefsEnvelope.Ref("Memory", TODAY.minusDays(10).toString()));
+        // W3.1b (mezo-b3pp.28): the same items, disclosable — in PROMPT order (decayed score, so
+        // freshest first here) with the rendered label and the byte-identical one-line gist.
+        assertThat(recalled.items()).extracting(
+                        RecalledMemoriesEnvelope.Item::occurredOn, RecalledMemoriesEnvelope.Item::kind,
+                        RecalledMemoriesEnvelope.Item::label, RecalledMemoriesEnvelope.Item::gist)
+                .containsExactly(
+                        tuple(TODAY.minusDays(2), MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE,
+                                "aktivitásjegyzet", "hosszú esti séta a parton"),
+                        tuple(TODAY.minusDays(3), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
+                                "napló", "futás után jobban aludtam"),
+                        tuple(TODAY.minusDays(5), MemoryEmbeddingEntity.KIND_CHAT_TURN,
+                                "korábbi beszélgetés", "Daniel: alvás?"),
+                        tuple(TODAY.minusDays(10), MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
+                                "napi összefoglaló", "Kemény nap volt."));
+        // similarity is the RAW cosine (not the decayed score) — every seed is axis-0, so 1.0
+        assertThat(recalled.items()).allSatisfy(item ->
+                assertThat(item.similarity()).isCloseTo(1.0, within(1e-6)));
     }
 
     /**
@@ -88,6 +108,9 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         assertThat(recalled.block()).contains("- " + sharedDay + " (napi összefoglaló): jó nap volt\n");
         // …but the day is ONE ref
         assertThat(recalled.refs()).containsExactly(new RefsEnvelope.Ref("Memory", sharedDay.toString()));
+        // W3.1b: the disclosure is per EPISODE, not per day — the collapse is a ref-budget device
+        assertThat(recalled.items()).extracting(RecalledMemoriesEnvelope.Item::gist)
+                .containsExactlyInAnyOrder("reggel futottam", "jó nap volt");
     }
 
     @Test
@@ -176,6 +199,8 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
                 FakeEmbeddingAdapter.FAIL_EMBED + " hogy aludtam?", TODAY);
 
         assertThat(recalled).isSameAs(AmbientRecall.EMPTY);
+        // W3.1b: nothing to disclose either — a failed recall is silent, not a half-filled row
+        assertThat(recalled.items()).isEmpty();
     }
 
     @Test
@@ -189,6 +214,7 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
                 FakeEmbeddingAdapter.FAIL_ANN + " hogy aludtam?", TODAY);
 
         assertThat(recalled).isSameAs(AmbientRecall.EMPTY);
+        assertThat(recalled.items()).isEmpty();
         // …and the savepoint rollback left THIS (test-managed) transaction healthy — a poisoned
         // one would fail here with "current transaction is aborted" instead of counting the seed
         assertThat(memoryEmbeddingRepository.count()).isEqualTo(1);
