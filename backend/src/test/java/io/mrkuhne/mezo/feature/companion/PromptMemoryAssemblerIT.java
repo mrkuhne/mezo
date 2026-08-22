@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
@@ -95,12 +96,22 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "ortogonális zaj", TODAY.minusDays(1),
                 MemoryEmbeddingPopulator.axisVector(1));                       // similarity 0.0
+        // similarity 0.4: pins the floor to (0.4, 0.707] — passes the TOOL's 0.25 floor
+        // (recall.min-similarity) but must fail the ambient 0.55 one (ambient.min-similarity);
+        // a `recall.minSimilarity()` vs `ambient.minSimilarity()` typo in the assembler would
+        // let this row through and this assertion would catch it.
+        float[] weak = new float[EmbeddingPort.DIMENSIONS];
+        weak[0] = 0.4f;
+        weak[1] = (float) Math.sqrt(1 - 0.4 * 0.4);
+        seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "gyenge egyezés", TODAY.minusDays(1), weak);
         seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "félig hasonló", TODAY.minusDays(1),
                 MemoryEmbeddingPopulator.blendVector(0, 1));                   // similarity 0.707 ≥ 0.55
 
         AmbientRecall recalled = assembler.recall(owner, UUID.randomUUID(), AXIS0_QUERY, TODAY);
 
-        assertThat(recalled.block()).contains("félig hasonló").doesNotContain("ortogonális zaj");
+        assertThat(recalled.block()).contains("félig hasonló")
+                .doesNotContain("ortogonális zaj")
+                .doesNotContain("gyenge egyezés");
     }
 
     @Test

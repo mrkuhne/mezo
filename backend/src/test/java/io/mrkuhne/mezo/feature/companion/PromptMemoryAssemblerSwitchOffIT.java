@@ -17,7 +17,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Ambient recall off ⇒ no block even with a perfect match on disk (the embed hop is skipped too). */
+/** Ambient recall off ⇒ no block even with a perfect match on disk (the pre-embed short-circuit itself is by construction — see PromptMemoryAssembler.recall — not observable here). */
 @Transactional
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = "mezo.companion.ambient-recall.enabled=false")
