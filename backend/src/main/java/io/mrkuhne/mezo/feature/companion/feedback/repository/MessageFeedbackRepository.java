@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.feedback.repository;
 
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,10 @@ public interface MessageFeedbackRepository extends JpaRepository<MessageFeedback
 
     List<MessageFeedbackEntity> findByCreatedByAndArtifactKindAndArtifactIdInAndDeletedFalse(
         UUID createdBy, String artifactKind, Collection<UUID> artifactIds);
+
+    /** The trailing-window read for {@code FeedbackLearningService} (W4.2, mezo-b3pp.16). */
+    List<MessageFeedbackEntity> findByCreatedByAndCreatedAtAfterAndDeletedFalse(
+        UUID createdBy, Instant since);
 
     /** The single write path for a verdict (spec §4.4: ONE updatable verdict per artifact).
      *
