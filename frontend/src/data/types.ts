@@ -687,6 +687,19 @@ export interface FactCandidate { id: string; text: string; category: FactCategor
 export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
+/** W2.3 (mezo-b3pp.8): egy éjszakai kivonatoló által javasolt életesemény-jelölt (L2 inbox). */
+export interface LifeEventCandidate {
+  id: string
+  title: string
+  summary: string | null
+  /** A nap, amiről az esemény szól (ISO date). */
+  occurredOn: string | null
+  /** Hány kapcsolat jönne létre, ha elfogadod. */
+  proposedEdgeCount: number
+}
+
+export type LifeEventDecision = 'accept' | 'reject'
+
 // --- Insights (AI-memory surface) ---
 export type PatternCategory = 'physiology' | 'trigger' | 'response'
 /** The decision verbs of the L2 surface (wire PatternDecisionRequest). */
