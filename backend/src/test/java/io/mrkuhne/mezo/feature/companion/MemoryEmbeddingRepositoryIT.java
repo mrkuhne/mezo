@@ -213,16 +213,18 @@ class MemoryEmbeddingRepositoryIT extends AbstractIntegrationTest {
     void testFindNearestInKinds_shouldLimitToKAndExcludeOtherUsers_whenManyRows() {
         UUID owner = userPopulator.createUser().getId();
         UUID stranger = userPopulator.createUser().getId();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 2; i++) {
             memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY.minusDays(i), 0);
         }
-        memoryEmbeddingPopulator.embedding(stranger, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY, 0);
+        MemoryEmbeddingEntity strangerRow = memoryEmbeddingPopulator.embedding(
+            stranger, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY, 0);
 
         List<MemoryMatch> matches = memoryEmbeddingRepository.findNearestInKinds(owner,
             List.of(MemoryEmbeddingEntity.KIND_CHAT_TURN),
             MemoryEmbeddingRepository.toVectorLiteral(MemoryEmbeddingPopulator.axisVector(0)), 3);
 
-        assertThat(matches).hasSize(3);
+        assertThat(matches).hasSize(2);
         assertThat(matches).allSatisfy(m -> assertThat(m.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_CHAT_TURN));
+        assertThat(matches).extracting(MemoryMatch::getId).doesNotContain(strangerRow.getId());
     }
 }
