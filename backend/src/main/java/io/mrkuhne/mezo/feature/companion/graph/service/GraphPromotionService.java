@@ -47,6 +47,10 @@ public class GraphPromotionService {
     // ObjectProvider, not a direct dependency: the companion switch can be off while the graph
     // switch is on, so GraphEdgeStructurer's bean may not exist (see its @ConditionalOnProperty).
     private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
+    // Self-injected proxy (ObjectProvider defers resolution, so this is safe despite the
+    // apparent circularity). See reconcile()'s javadoc for why it is called through this proxy
+    // instead of `this`.
+    private final ObjectProvider<GraphPromotionService> self;
 
     /** Confirmed pattern -> PATTERN node. Empty when the pattern is gone, not this user's, or not confirmed.
      *  Only a genuinely NEW node pays for the LLM edge structurer — re-confirming a pattern is a pure UPSERT.
@@ -107,6 +111,56 @@ public class GraphPromotionService {
             node.setStatus(status);
         }
         return Optional.of(node);
+    }
+
+    /**
+     * The nightly sweep (spec §6.2) — everything the write-path hooks could have missed: patterns
+     * confirmed before the graph existed, manually created facts (no promote hook), goals whose
+     * title drifted since they were last synced. Pure UPSERT (every write is keyed on
+     * {@code (createdBy, sourceKind, sourceId)}), so running it every night — or twice in a row —
+     * is free of side effects: {@code reconcile(userId)} called back-to-back returns the same
+     * count and leaves the same rows. W2.5 wires it into {@code GraphMaintenanceJob}; nothing
+     * schedules it in this slice, and it is not exposed over REST.
+     *
+     * <p>Deliberately reuses {@link #promotePattern}/{@link #promoteFact}/{@link #syncGoal}
+     * rather than re-deriving their skip rules here: this method fetches confirmed patterns, all
+     * (non-deleted) facts, and all (non-deleted) goals for the user, and lets each promote/sync
+     * method's own filter decide whether a given row actually produces a node (unconfirmed
+     * patterns are excluded at the query level since the repository already has a
+     * status-scoped finder; pattern-sourced facts and never-promoted/inactive goals are excluded
+     * by {@link #promoteFact} and {@link #syncGoal} respectively).
+     *
+     * <p><b>Deliberately NOT {@code @Transactional} itself.</b> Each promote/sync call below goes
+     * through {@link #self}, the injected proxy, so it runs inside its OWN transaction — the one
+     * {@code @Transactional} already puts on {@link #promotePattern}/{@link #promoteFact}/
+     * {@link #syncGoal}. Calling them on {@code this} instead (ordinary Spring self-invocation)
+     * would bypass the proxy entirely: no new transactional advice would apply, and if reconcile
+     * itself carried {@code @Transactional}, every promotion in the sweep would silently merge
+     * into that one outer transaction. For a large first sweep over a backlog — where every
+     * confirmed pattern is a NEW node and therefore pays for a {@link GraphEdgeStructurer} LLM
+     * call (cheap-tier, but potentially many calls back-to-back) — that would mean one DB
+     * connection held open across the entire sweep, and one bad row rolling back every other
+     * promotion that already succeeded. Per-item transactions (via the proxy) keep the sweep safe
+     * to interrupt, cheap to retry, and consistent with the fact that each promote/sync method is
+     * independently idempotent.
+     *
+     * @return how many nodes were upserted (created or updated) this run
+     */
+    public int reconcile(UUID userId) {
+        GraphPromotionService proxy = self.getObject();
+        int count = 0;
+        for (PatternEntity pattern : patternRepository
+                .findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(userId, PatternEntity.STATUS_CONFIRMED)) {
+            count += proxy.promotePattern(userId, pattern.getId()).isPresent() ? 1 : 0;
+        }
+        for (KnowledgeFactEntity fact : knowledgeFactRepository
+                .findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)) {
+            count += proxy.promoteFact(userId, fact.getId()).isPresent() ? 1 : 0;
+        }
+        for (GoalEntity goal : goalRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(userId)) {
+            count += proxy.syncGoal(userId, goal.getId()).isPresent() ? 1 : 0;
+        }
+        return count;
     }
 
     /** {r, n, direction} — the spec's PATTERN meta envelope; direction is the sign of r, prompt-renderable. */

@@ -299,4 +299,38 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
             .toList();
         assertThat(actualWeights).usingElementComparator(BigDecimal::compareTo).isEqualTo(expectedWeights);
     }
+
+    @Test
+    void testReconcile_shouldPromoteEverythingMissed_andStayIdempotent() {
+        UUID owner = ownerId();
+        PatternEntity confirmed = confirmedPattern(owner);
+        patternPopulator.createPattern(owner, "unconfirmed", "Nem megerősített minta.");
+        KnowledgeFactEntity manual = new KnowledgeFactEntity();
+        manual.setCreatedBy(owner);
+        manual.setFactText("Kézzel rögzített preferencia.");
+        manual.setCategory("life");
+        manual.setSource(KnowledgeFactEntity.SOURCE_MANUAL);
+        knowledgeFactRepository.saveAndFlush(manual);
+        KnowledgeFactEntity fromPattern = new KnowledgeFactEntity();
+        fromPattern.setCreatedBy(owner);
+        fromPattern.setFactText("Minta-árnyék tény.");
+        fromPattern.setCategory("health");
+        fromPattern.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
+        knowledgeFactRepository.saveAndFlush(fromPattern);
+        goalPopulator.createGoal(owner, "active");
+
+        int first = promotionService.reconcile(owner);
+        int second = promotionService.reconcile(owner);
+
+        // confirmed pattern + manual fact + active goal = 3; the unconfirmed pattern and the
+        // pattern-sourced fact are deliberately skipped
+        assertThat(first).isEqualTo(3);
+        assertThat(second).isEqualTo(3);           // idempotent: same rows, updated in place
+        assertThat(nodeRepository.findAll()).hasSize(3);
+        assertThat(nodeRepository.findAll())
+            .extracting(GraphNodeEntity::getKind)
+            .containsExactlyInAnyOrder(GraphNodeEntity.KIND_PATTERN,
+                GraphNodeEntity.KIND_PREFERENCE, GraphNodeEntity.KIND_GOAL);
+        assertThat(confirmed.getId()).isNotNull();
+    }
 }
