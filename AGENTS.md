@@ -178,5 +178,10 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
   implementation (12-min plan vs no plan from the 27B); Qwen3.8-27B only for short-context
   work (review of a diff, a single file) — its thinking runs away past ~60K context and trips
   the stream watchdog; chat: 35B-A3B at effort Low.
+- **Hermes never merges.** Every unit of work ends with a pushed branch and an open pull
+  request (`gh pr create`) whose body lists commits, gate output and deviations from the
+  plan; Daniel reviews and performs the `--no-ff` merge. Skill/memory improvements are
+  proposed in the PR body or a bd comment, not written into the repo silently
+  (background self-review is disabled for this reason).
 - Escalation rule: if you stall twice on the same slice, or CI goes red twice from the
   same mistake, STOP and report — the slice escalates to Claude. Log it as a bd comment.
