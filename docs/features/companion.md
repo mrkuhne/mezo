@@ -590,7 +590,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7` | Phase 5 W2.2 — confirmed patterns, non-pattern-sourced knowledge facts and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
-| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (recursive CTE, undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode`/node-id ref per rendered node after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
+| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode`/node-id ref per rendered node after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
@@ -1512,7 +1512,10 @@ idiom transplanted onto the graph.
     `LlmCallContextHolder.runWith(new LlmCallContext("companion_graph", "extract_life_events",
     "day", null), …)` — `refId` is `null`: the call is scoped to a day, not to one existing entity.
   - **Allowed edge kinds**: only `TRIGGERS`/`PRECEDED_BY` (the two temporal/causal kinds; an event
-    can trigger or follow an existing node, never `SUPPORTS`/`CONFLICTS`/`RELATES_TO`). A
+    can trigger or follow an existing node, never `SUPPORTS`/`CONFLICTS`/`RELATES_TO`). Edges run
+    from the new event toward the listed node, and `PRECEDED_BY` reads literally along that
+    direction — *the event was preceded by the listed node* (the listed node happened first),
+    stated in the prompt since W2.4 pinned the convention. A
     suggestion whose `index` is out of range, whose `kind` isn't one of the two, or whose
     `confidence` falls outside `[edgeConfidenceFloor, 1.0]` is **dropped, never clamped** — reusing
     the same `mezo.companion.graph.edge-confidence-floor` + `topK` config the W2.2 structurer
@@ -1592,27 +1595,43 @@ idiom transplanted onto the graph.
 The graph's first READ surface (spec §6.4): the part of the knowledge graph that touches what the
 user just said, rendered into the chat prompt. No LLM anywhere in the slice.
 
-- **`GraphTraversalQuery`** (`graph/repository/`) — ONE recursive CTE over `knowledge_edge`, walked
-  **undirected** from the seed ids (`from_node_id in seeds or to_node_id in seeds`), frontier =
-  the far end of the last edge, `path uuid[]` as the cycle guard (a node is never re-entered),
-  `hops < :maxHops`. The recursive term additionally requires the FRONTIER node itself to be
-  active and non-deleted before it extends through it — an archived node can still surface as an
-  edge's endpoint (the final join drops those rows), but the walk never steps THROUGH it to reach
-  further edges; the base term (seeds' own incident edges, hop 1) carries no such check, so a seed
-  itself may be archived and its edges still surface. `distinct on (edge_id) … order by hops` keeps
-  each edge once at its shortest hop; both endpoints are joined to `knowledge_node` with
-  `is_deleted = false and status = 'active'` (an archived node — W2.6 — drops out of every line
-  immediately); final `order by weight desc, hops asc limit :topK`. Raw JDBC under a savepoint —
-  the `MemoryEmbeddingAnnQuery` idiom (§9): a failed statement can't abort the chat turn's
-  transaction. Gated `KNOWLEDGE_GRAPH_SWITCH`.
+- **`GraphTraversalQuery`** (`graph/repository/`) — BOTH statements the block needs, both raw JDBC
+  under the same savepoint helper (`underSavepoint`) — the `MemoryEmbeddingAnnQuery` idiom (§9): a
+  failed statement can't abort the chat turn's transaction. Gated `KNOWLEDGE_GRAPH_SWITCH`.
+  - `activeNodes(userId)` → `ActiveNode(id, title, summary)`, the owner's active non-deleted nodes,
+    `created_at desc` — the seed candidates. It is **raw JDBC and not a JPA finder on purpose**: a
+    Hibernate query failure marks the turn's transaction rollback-only, after which
+    `GraphPromptAssembler`'s catch → EMPTY could no longer save the turn (IDENT-3).
+  - `neighborhood(...)` → ONE recursive CTE over `knowledge_edge`, walked **undirected** from the
+    seed ids (`from_node_id in seeds or to_node_id in seeds`), frontier = the far end of the last
+    edge, `path uuid[]` as the cycle guard (a node is never re-entered), `hops < :maxHops`. The
+    recursive term additionally requires the FRONTIER node itself to be active, non-deleted **and
+    owned by the caller** before it extends through it — an archived node can still surface as an
+    edge's endpoint (the final join drops those rows), but the walk never steps THROUGH it to reach
+    further edges; the base term (seeds' own incident edges, hop 1) carries no such check, so a seed
+    itself may be archived and its edges still surface. `distinct on (edge_id) … order by hops` keeps
+    each edge once at its shortest hop; both endpoints are joined to `knowledge_node` with
+    `created_by = :userId and is_deleted = false and status = 'active'` — the **owner scope on the
+    node joins matters independently of the edge filter**: an owned edge may point at a foreign node
+    (nothing in the schema forbids it) and that title must never reach the prompt; an archived node
+    (W2.6) drops out of every line immediately. Final `order by weight desc, hops asc limit :topK`.
 - **`GraphTraversalService`** (`graph/service/`) — `seedsFor(userId, message)`: the message's folded
-  search tokens (`ToolText.searchTokens`; tokens under 3 chars dropped so "ma"/"az" can't seed half
-  the graph) matched by folded containment against every active node's title **or summary**;
-  `neighborhood(userId, seeds, maxHops, topK)` — empty seeds ⇒ empty, no SQL.
+  search tokens (`ToolText.searchTokens`) with the **leading/trailing non-letter/digit run stripped**
+  (that splitter only breaks on whitespace/comma/semicolon, so `"alvás?"` would fold to the
+  never-matching `alvas?`; the shared `ToolText` is deliberately left alone), then tokens under 3
+  chars dropped so "ma"/"az" can't seed half the graph — matched by folded containment against every
+  active node's title **or summary**; `neighborhood(userId, seeds, maxHops, topK)` — empty seeds ⇒
+  empty, no SQL. Injects **no JPA repository at all** (see `activeNodes` above).
 - **`GraphPromptAssembler`** (`graph/service/`) — `assemble(userId, message)` →
   `GraphContext(block, refs)`. Lines: `- <from.title> → <verb> → <to.title> · <erős|közepes|gyenge>`
-  (verbs: TRIGGERS *kiváltja*, PRECEDED_BY *előzménye*, SUPPORTS *támogatja*, CONFLICTS *ütközik
-  vele*, RELATES_TO *kapcsolódik*; strength ≥0.7 / ≥0.35 / below), header `[Összefüggések] (…)`,
+  (verbs: TRIGGERS *kiváltja*, PRECEDED_BY *megelőzte*, SUPPORTS *támogatja*, CONFLICTS *ütközik
+  vele*, RELATES_TO *kapcsolódik*; strength ≥0.7 / ≥0.35 / below). **`PRECEDED_BY` is the one kind
+  rendered with SWAPPED endpoints** — `- <to.title> → megelőzte → <from.title>` — because the edge
+  reads literally along its direction (`from PRECEDED_BY to` = the FROM-node was preceded by the
+  TO-node, i.e. the TO-node happened first; pinned in `GraphEdgeEntity.KIND_PRECEDED_BY`'s javadoc
+  and stated in both producer prompts, W2.2's `GraphEdgeStructurer` and W2.3's
+  `LifeEventExtractionService`), and the header promises every line reads cause-first. Header
+  `[Összefüggések] (…)`,
   cap `mezo.companion.graph.render-max-tokens` (≈3 chars/token, stop at the first overflowing line
   — weight order is the relevance statement). One `GraphNode`/node-id ref per rendered node,
   first-appearance order. Never throws (IDENT-3: warn + `GraphContext.EMPTY`). Conditional on
@@ -1624,10 +1643,13 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   ref cap). FE: the generic `RefTag` shows `[GraphNode] <uuid>` — a readable label is a W2.6
   follow-up.
 - **Tests:** `GraphTraversalQueryIT` (3-hop chain ⇒ ≤2 hops in weight order, undirected walk +
-  top-K, cycle termination, archived/soft-deleted/foreign excluded), `GraphPromptAssemblerIT`
-  (seed matching, block + refs, empty cases), `GraphPromptAssemblerTest` (render + cap),
-  `ChatServiceGraphBlockIT` (position, refs on wire + row, stream-path refs),
-  `ChatServiceGraphBlockSwitchOffIT`.
+  top-K, cycle termination, archived/soft-deleted excluded, **and both foreign shapes**: a foreign
+  edge, plus an OWNED edge pointing at a foreign node), `GraphPromptAssemblerIT` (seed matching
+  incl. punctuation-hugged tokens, block + refs, empty cases), `GraphPromptAssemblerTest` (render +
+  cap + the `PRECEDED_BY` endpoint swap), `ChatServiceGraphBlockIT` (position, refs on wire + row,
+  stream-path refs), `ChatServiceGraphBlockFailureIT` (IDENT-3: `@MockitoSpyBean` makes the seed
+  read throw ⇒ block absent, `degraded` false, **both message rows still committed** — own IT class
+  so the spy's forked context can't leak into the others), `ChatServiceGraphBlockSwitchOffIT`.
 
 ### Entities
 
