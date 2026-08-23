@@ -188,4 +188,8 @@ public class FeaturesConfiguration {
      *  404s, and every graph hook elsewhere (W3.1 [Összefüggések] block, W4.2 reinforcement,
      *  RECOVERY profile input) stays silently absent. */
     public static final String KNOWLEDGE_GRAPH_SWITCH = "mezo.feature.knowledge-graph.enabled";
+
+    /** Phase 5 W2.5 (mezo-b3pp.10) nightly graph-maintenance job — techcore cron zone. */
+    public static final String GRAPH_MAINTENANCE_JOB_SWITCH =
+        "mezo.techcore.cron.graph-maintenance-job.enabled";
 }
