@@ -89,6 +89,7 @@ public class GraphEdgeStructurer {
         [{"index": 0, "kind": "TRIGGERS", "confidence": 0.0}]
 
         - kind ∈ TRIGGERS | PRECEDED_BY | SUPPORTS | CONFLICTS | RELATES_TO
+        - PRECEDED_BY = a forrás-csomópontot megelőzte a cél-csomópont (a cél volt előbb)
         - confidence 0.0–1.0: mennyire vagy biztos a kapcsolatban
         - Csak valódi kapcsolatot javasolj; ha nincs ilyen, a válasz üres tömb: []
         - Ne találj ki új csomópontot, és ne hivatkozz a listán kívüli indexre.

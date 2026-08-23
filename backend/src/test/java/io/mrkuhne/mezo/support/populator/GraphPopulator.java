@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +33,17 @@ public class GraphPopulator {
         e.setFromNodeId(fromNodeId);
         e.setToNodeId(toNodeId);
         e.setKind(kind);
+        return edgeRepository.saveAndFlush(e);
+    }
+
+    /** W2.4 (mezo-b3pp.9): an edge with an explicit weight — traversal tests pin weight ordering. */
+    public GraphEdgeEntity createEdge(UUID owner, UUID fromNodeId, UUID toNodeId, String kind, String weight) {
+        GraphEdgeEntity e = new GraphEdgeEntity();
+        e.setCreatedBy(owner);
+        e.setFromNodeId(fromNodeId);
+        e.setToNodeId(toNodeId);
+        e.setKind(kind);
+        e.setWeight(new BigDecimal(weight));
         return edgeRepository.saveAndFlush(e);
     }
 

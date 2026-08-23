@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromptAssembler;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -126,6 +128,8 @@ public class ChatService {
     private final KnowledgeFactService knowledgeFactService;
     /** W3.1 — the always-on [Emlékek] block (mezo-b3pp.12). */
     private final PromptMemoryAssembler promptMemoryAssembler;
+    /** W2.4 — the [Összefüggések] block (mezo-b3pp.9); absent (null) when the graph switch is off. */
+    private final ObjectProvider<GraphPromptAssembler> graphPromptAssembler;
     private final CompanionLlm companionLlm;
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
@@ -136,7 +140,8 @@ public class ChatService {
     private final LlmCallContextHolder llmCallContextHolder;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
-     *  {@code recalledRefs} (W3.1) are the ambient-recall Memory refs the stream path adds to its audit;
+     *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
+     *  refs the stream path adds to its audit;
      *  {@code recalled} (W3.1b) is the disclosure envelope the assistant row persists — null when
      *  the turn recalled nothing. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
@@ -156,13 +161,14 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         PromptMemoryAssembler.AmbientRecall recalled =
                 promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
-        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block());
+        GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block());
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent(),
-                recalled.refs(), RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
+                ambientRefs(recalled, graph), RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
     }
 
     /**
@@ -193,7 +199,8 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         PromptMemoryAssembler.AmbientRecall recalled =
                 promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
-        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block());
+        GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block());
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
@@ -220,9 +227,9 @@ public class ChatService {
                     () -> companionLlm.complete(systemPrompt, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
-        // W3.1: ambient Memory refs join the audit AFTER the LLM round — tool refs are the answer's
-        // own provenance and win the per-turn ref cap; the recalled days fill what is left.
-        recalled.refs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
+        // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
+        // refs are the answer's own provenance and win the per-turn ref cap.
+        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id()));
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
@@ -237,17 +244,35 @@ public class ChatService {
 
     /**
      * The canonical system prompt: voice → snapshot (V0.3) → top-N facts (V1.1) → fresh
-     * pattern-facts acknowledgment (V3.3) → [Emlékek] ambient recall (W3.1) → [the W2.4
-     * Összefüggések block slots in here when the graph gate opens] → TONE_REMINDER (mezo-q71s,
-     * always last). The history travels as real prior messages, not a transcript in here.
+     * pattern-facts acknowledgment (V3.3) → [Emlékek] ambient recall (W3.1) → [Összefüggések]
+     * graph context (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER
+     * (mezo-q71s, always last). The history travels as real prior messages, not a transcript in here.
      */
-    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock) {
+    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock) {
         return SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, today)
                 + knowledgeFactService.renderPromptBlock(userId)
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + memoriesBlock
+                + graphBlock
                 + TONE_REMINDER;
+    }
+
+    /** W2.4: the graph's contribution — EMPTY when the switch is off (no bean) or nothing matched. */
+    private GraphPromptAssembler.GraphContext graphContext(UUID userId, String userMessage) {
+        GraphPromptAssembler assembler = graphPromptAssembler.getIfAvailable();
+        return assembler == null ? GraphPromptAssembler.GraphContext.EMPTY : assembler.assemble(userId, userMessage);
+    }
+
+    /** Memory refs first (W3.1), GraphNode refs after (W2.4) — one list so the stream path stays unchanged. */
+    private static List<RefsEnvelope.Ref> ambientRefs(PromptMemoryAssembler.AmbientRecall recalled,
+                                                      GraphPromptAssembler.GraphContext graph) {
+        if (graph.refs().isEmpty()) {
+            return recalled.refs();
+        }
+        List<RefsEnvelope.Ref> refs = new ArrayList<>(recalled.refs());
+        refs.addAll(graph.refs());
+        return List.copyOf(refs);
     }
 
     private List<AiMessageEntity> loadWindow(UUID userId, UUID conversationId) {

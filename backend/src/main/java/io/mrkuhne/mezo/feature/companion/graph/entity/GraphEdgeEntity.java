@@ -39,6 +39,15 @@ import org.hibernate.type.SqlTypes;
 public class GraphEdgeEntity extends OwnedEntity {
 
     public static final String KIND_TRIGGERS = "TRIGGERS";
+
+    /**
+     * Temporal order, read LITERALLY along the edge: {@code from PRECEDED_BY to} = "the FROM-node
+     * was preceded by the TO-node", i.e. <b>the TO-node happened first</b> (W2.4, mezo-b3pp.9 —
+     * the direction was undefined until then). Both producers state this in their prompts
+     * ({@code GraphEdgeStructurer}, {@code LifeEventExtractionService}), and {@code
+     * GraphPromptAssembler} renders it with SWAPPED endpoints ({@code - <to> → megelőzte →
+     * <from>}) so the {@code [Összefüggések]} line stays cause-first like every other kind.
+     */
     public static final String KIND_PRECEDED_BY = "PRECEDED_BY";
     public static final String KIND_SUPPORTS = "SUPPORTS";
     public static final String KIND_CONFLICTS = "CONFLICTS";

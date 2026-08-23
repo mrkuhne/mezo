@@ -97,6 +97,7 @@ public class LifeEventExtractionService {
 
         - Legfeljebb 3 eseményt javasolj; ha a nap nem hozott ilyet, a válasz üres tömb: []
         - kind ∈ TRIGGERS | PRECEDED_BY (az eseménytől a listás csomópont felé)
+        - PRECEDED_BY = a forrás-csomópontot megelőzte a cél-csomópont (a cél volt előbb)
         - confidence 0.0–1.0; ha nincs valódi kapcsolat, az edges üres tömb
         - Ne találj ki csomópontot, és ne hivatkozz a listán kívüli indexre.
         """;
