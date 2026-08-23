@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromptAssembler;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.profile.service.ProfilePromptAssembler;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
@@ -134,6 +135,8 @@ public class ChatService {
     private final PromptMemoryAssembler promptMemoryAssembler;
     /** W2.4 — the [Összefüggések] block (mezo-b3pp.9); absent (null) when the graph switch is off. */
     private final ObjectProvider<GraphPromptAssembler> graphPromptAssembler;
+    /** W4.3 — the [Rólad tanultam] block (mezo-b3pp.17); absent (null) when the graph switch is off. */
+    private final ObjectProvider<ProfilePromptAssembler> profilePromptAssembler;
     private final CompanionLlm companionLlm;
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
@@ -255,15 +258,17 @@ public class ChatService {
 
     /**
      * The canonical system prompt: voice → snapshot (V0.3) → top-N facts (V1.1) → fresh
-     * pattern-facts acknowledgment (V3.3) → [Emlékek] ambient recall (W3.1) → [Összefüggések]
-     * graph context (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER
-     * (mezo-q71s, always last). The history travels as real prior messages, not a transcript in here.
+     * pattern-facts acknowledgment (V3.3) → [Rólad tanultam] pragmatic profile (W4.3, "" when the
+     * profile is archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph context
+     * (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER (mezo-q71s, always
+     * last). The history travels as real prior messages, not a transcript in here.
      */
     private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock) {
         return SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, today)
                 + knowledgeFactService.renderPromptBlock(userId)
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
+                + profileBlock(userId)
                 + memoriesBlock
                 + graphBlock
                 + TONE_REMINDER;
@@ -273,6 +278,12 @@ public class ChatService {
     private GraphPromptAssembler.GraphContext graphContext(UUID userId, String userMessage) {
         GraphPromptAssembler assembler = graphPromptAssembler.getIfAvailable();
         return assembler == null ? GraphPromptAssembler.GraphContext.EMPTY : assembler.assemble(userId, userMessage);
+    }
+
+    /** W4.3: the profile's contribution — "" when the bean is absent or nothing is stored. */
+    private String profileBlock(UUID userId) {
+        ProfilePromptAssembler assembler = profilePromptAssembler.getIfAvailable();
+        return assembler == null ? "" : assembler.render(userId);
     }
 
     /** Memory refs first (W3.1), GraphNode refs after (W2.4) — one list so the stream path stays unchanged. */
