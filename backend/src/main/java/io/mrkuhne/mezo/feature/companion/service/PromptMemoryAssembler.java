@@ -49,6 +49,10 @@ import java.util.UUID;
  *
  * <p>Dedupe: today's episodes are skipped (the context snapshot already carries the day), and
  * items are keyed by {@code (kind, ref_id)} so no unit enters the block twice.
+ *
+ * <p>W3.3 (mezo-b3pp.27): the chat_turn query skips the conversation being answered
+ * ({@code ambient-recall.exclude-current-conversation}) — those turns are already in the history
+ * window.
  */
 @Slf4j
 @Service
@@ -134,12 +138,13 @@ public class PromptMemoryAssembler {
             // shadow window — beyond it the ladder's weekly/monthly rungs (queried WITHOUT a floor)
             // speak for the stretch. The daily rows themselves are never touched (spec §12).
             LocalDate dailyCutoff = today.minusDays(ambient.weeklyShadowDays());
+            UUID excluded = ambient.excludeCurrentConversation() ? conversationId : null;
             List<Group> groups = List.of(
-                    new Group(KINDS_DAILY_SUMMARY, ambient.dailySummary(), dailyCutoff),
-                    new Group(KINDS_PERIOD_SUMMARY, ambient.periodSummary(), null),
-                    new Group(KINDS_JOURNAL, ambient.journal(), null),
-                    new Group(KINDS_CHAT_TURN, ambient.chatTurn(), null),
-                    new Group(KINDS_OTHER, ambient.other(), null));
+                    new Group(KINDS_DAILY_SUMMARY, ambient.dailySummary(), dailyCutoff, null),
+                    new Group(KINDS_PERIOD_SUMMARY, ambient.periodSummary(), null, null),
+                    new Group(KINDS_JOURNAL, ambient.journal(), null, null),
+                    new Group(KINDS_CHAT_TURN, ambient.chatTurn(), null, excluded),
+                    new Group(KINDS_OTHER, ambient.other(), null, null));
             Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
             for (Group group : groups) {
                 for (RecalledItem item : recallGroup(userId, group, literal, today, recall)) {
@@ -173,9 +178,12 @@ public class PromptMemoryAssembler {
         }
     }
 
-    /** One ANN query's shape: which kinds, the group's tuning, and the date floor. */
+    /**
+     * One ANN query's shape: which kinds, the group's tuning, the date floor, and (W3.3) the
+     * conversation whose own chat turns to skip.
+     */
     private record Group(List<String> kinds, CompanionProperties.AmbientRecall.Group tuning,
-                         LocalDate notBefore) {}
+                         LocalDate notBefore, UUID excludeConversationId) {}
 
     private List<RecalledItem> recallGroup(UUID userId, Group group, String literal,
                                            LocalDate today, CompanionProperties.Recall recall) {
@@ -184,7 +192,7 @@ public class PromptMemoryAssembler {
             return List.of();
         }
         return annQuery.nearestInKinds(userId, group.kinds(), literal, recall.candidatePool(),
-                        group.notBefore())
+                        group.notBefore(), group.excludeConversationId())
                 .stream()
                 // the snapshot already carries today — and a future-dated unit is not a memory yet
                 .filter(hit -> hit.occurredOn().isBefore(today))

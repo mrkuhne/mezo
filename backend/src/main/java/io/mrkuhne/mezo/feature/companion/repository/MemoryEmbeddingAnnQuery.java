@@ -55,32 +55,32 @@ public class MemoryEmbeddingAnnQuery {
 
     private static final String SAVEPOINT_NAME = "ambient_recall_ann";
 
-    private static final String SQL = """
+    private static final String SQL_HEAD = """
         select id, kind, ref_id, content, occurred_on,
                (embedding <=> cast(:queryVector as vector)) as distance
         from memory_embedding
         where created_by = :userId
           and is_deleted = false
           and kind in (:kinds)
-        order by embedding <=> cast(:queryVector as vector)
-        limit :k
         """;
 
     /**
-     * W3.2 (mezo-b3pp.13) coverage-filtered twin: the same ANN search with a metadata floor on
-     * {@code occurred_on}, so ambient recall can stop asking for fine-grained rows that a
-     * consolidation rung already covers. A separate constant rather than a nullable parameter —
+     * W3.2 (mezo-b3pp.13) coverage floor: ambient recall can stop asking for fine-grained rows
+     * that a consolidation rung already covers. Appended only when {@code notBefore != null} —
      * an {@code (:notBefore is null or …)} predicate would be an untyped-parameter cast headache
      * for no gain, and the planner sees a cleaner statement this way.
      */
-    private static final String SQL_SINCE = """
-        select id, kind, ref_id, content, occurred_on,
-               (embedding <=> cast(:queryVector as vector)) as distance
-        from memory_embedding
-        where created_by = :userId
-          and is_deleted = false
-          and kind in (:kinds)
-          and occurred_on >= :notBefore
+    private static final String SQL_NOT_BEFORE = "  and occurred_on >= :notBefore\n";
+
+    /**
+     * W3.3 (mezo-b3pp.27): {@code chat_turn} rows are keyed by the assistant {@code ai_message}
+     * id — skip the turns of the conversation being answered, they are already in the history
+     * window.
+     */
+    private static final String SQL_EXCLUDE_CONVERSATION =
+            "  and ref_id not in (select m.id from ai_message m where m.conversation_id = :excludeConversationId)\n";
+
+    private static final String SQL_TAIL = """
         order by embedding <=> cast(:queryVector as vector)
         limit :k
         """;
@@ -97,7 +97,7 @@ public class MemoryEmbeddingAnnQuery {
 
     /** Nearest-first hits of the given kinds; a failure rolls back to the savepoint and rethrows. */
     public List<Hit> nearestInKinds(UUID userId, Collection<String> kinds, String queryVector, int k) {
-        return nearestInKinds(userId, kinds, queryVector, k, null);
+        return nearestInKinds(userId, kinds, queryVector, k, null, null);
     }
 
     /**
@@ -107,17 +107,31 @@ public class MemoryEmbeddingAnnQuery {
      */
     public List<Hit> nearestInKinds(UUID userId, Collection<String> kinds, String queryVector, int k,
                                     LocalDate notBefore) {
+        return nearestInKinds(userId, kinds, queryVector, k, notBefore, null);
+    }
+
+    /**
+     * Nearest-first hits of the given kinds; {@code notBefore} (W3.2 coverage floor) and
+     * {@code excludeConversationId} (W3.3, skip that conversation's own chat turns) are optional
+     * predicates — {@code null} means "no filter". Same savepoint contract as the plain call.
+     */
+    public List<Hit> nearestInKinds(UUID userId, Collection<String> kinds, String queryVector, int k,
+                                    LocalDate notBefore, UUID excludeConversationId) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("kinds", kinds)
                 .addValue("queryVector", queryVector)
                 .addValue("k", k);
-        String sql = SQL;
+        StringBuilder sql = new StringBuilder(SQL_HEAD);
         if (notBefore != null) {
             params.addValue("notBefore", notBefore);
-            sql = SQL_SINCE;
+            sql.append(SQL_NOT_BEFORE);
         }
-        String statement = sql;
+        if (excludeConversationId != null) {
+            params.addValue("excludeConversationId", excludeConversationId);
+            sql.append(SQL_EXCLUDE_CONVERSATION);
+        }
+        String statement = sql.append(SQL_TAIL).toString();
         return jdbc.getJdbcTemplate().execute((ConnectionCallback<List<Hit>>) connection -> {
             // the statement runs on THIS connection — the one the savepoint is taken on — rather
             // than on whatever the pool would hand back; suppressClose so the template cannot

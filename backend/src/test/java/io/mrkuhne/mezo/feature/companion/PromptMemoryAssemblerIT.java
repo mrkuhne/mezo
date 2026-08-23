@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
@@ -8,6 +10,8 @@ import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler;
 import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler.AmbientRecall;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
@@ -39,6 +43,8 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private AiConversationPopulator aiConversationPopulator;
+    @Autowired private AiMessagePopulator aiMessagePopulator;
 
     private void seed(UUID owner, String kind, String content, LocalDate day, float[] vector) {
         memoryEmbeddingPopulator.embedding(owner, kind, UUID.randomUUID(), content, day, vector);
@@ -227,5 +233,24 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
 
         assertThat(assembler.recall(owner, UUID.randomUUID(), "   ", TODAY)).isSameAs(AmbientRecall.EMPTY);
+    }
+
+    @Test
+    void testRecall_shouldSkipOwnConversationsChatTurns_whenTheyAreAlreadyInTheHistoryWindow() {
+        UUID owner = userPopulator.createUser().getId();
+        AiConversationEntity current = aiConversationPopulator.conversation(owner);
+        AiConversationEntity older = aiConversationPopulator.conversation(owner);
+        AiMessageEntity ownTurn = aiMessagePopulator.message(current, AiMessageEntity.ROLE_ASSISTANT, "saját válasz");
+        AiMessageEntity otherTurn = aiMessagePopulator.message(older, AiMessageEntity.ROLE_ASSISTANT, "régi válasz");
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, ownTurn.getId(),
+                "Daniel: ma\nMezo: saját", TODAY.minusDays(1), MemoryEmbeddingPopulator.axisVector(0));
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, otherTurn.getId(),
+                "Daniel: régen\nMezo: régi", TODAY.minusDays(2), MemoryEmbeddingPopulator.axisVector(0));
+
+        AmbientRecall recalled = assembler.recall(owner, current.getId(), AXIS0_QUERY, TODAY);
+
+        // cap-chat-turn is 1 and the own turn is fresher (higher decayed score) — only the
+        // exclusion can make the older conversation's turn win
+        assertThat(recalled.block()).contains("Daniel: régen").doesNotContain("Daniel: ma");
     }
 }
