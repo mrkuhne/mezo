@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.feedback.service.FeedbackLearningServic
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.profile.entity.ProfileMetaEnvelope;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -16,6 +17,7 @@ import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -87,6 +89,18 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         assertThat(node.getTitle()).isEqualTo(ProfileAssembler.PROFILE_TITLE);
         assertThat(node.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
         assertThat(node.getSummary()).isNotBlank();
+        // Review fix (mezo-b3pp.17): the meta envelope written at ProfileAssembler:112-113 was the
+        // slice's only behaviour nothing would catch if broken — nothing reads meta.profile back
+        // in production or tests. Pin it directly: one up + one down verdict roll up to a single
+        // "surface:chat_message" effectiveness row (total = 2), seedSignal() reviews exactly one
+        // decision, and no graph nodes are seeded here.
+        @SuppressWarnings("unchecked")
+        Map<String, Object> meta = (Map<String, Object>) node.getMeta().get(ProfileMetaEnvelope.META_KEY);
+        assertThat(meta).isNotNull();
+        assertThat(meta.get("feedbackSignals")).isEqualTo(2);
+        assertThat(meta.get("reviewedDecisions")).isEqualTo(1);
+        assertThat(meta.get("graphNodes")).isEqualTo(0);
+        assertThat(meta.get("generatedAt")).isNotNull();
     }
 
     @Test
@@ -149,9 +163,26 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
                 .isLessThanOrEqualTo(400 * 3);
     }
 
+    /**
+     * Review fix (mezo-b3pp.17): the old version of this test only pinned {@link
+     * ProfileAssembler#PROFILE_MARKER} against the literal, never touching {@code
+     * FakeCompanionLlm}'s private {@code PROFILE_MARKER_MIRROR}. If the mirror drifted, the fake's
+     * fallthrough would return a non-blank prompt ECHO instead of the scripted profile prose, and
+     * {@code assertThat(node.getSummary()).isNotBlank()} in the test above would still pass on
+     * garbage. Asserting a distinctive fragment of the fake's known profile answer makes mirror
+     * drift fail loudly instead of silently.
+     */
     @Test
     void the_fake_llm_mirror_still_matches_the_marker() {
         assertThat(ProfileAssembler.PROFILE_MARKER).isEqualTo("ROLAD-TANULTAM");
+
+        UUID owner = seedOwner();
+        seedSignal(owner);
+
+        UUID nodeId = assembler.rebuild(owner).orElseThrow();
+
+        assertThat(nodeRepository.findById(nodeId).orElseThrow().getSummary())
+                .contains("rövid, konkrét reggeli üzenet válik be nálad");
     }
 
     /**

@@ -6,9 +6,11 @@ import java.util.Map;
 
 /**
  * W4.3 (mezo-b3pp.17): the profile node's typed {@code meta} payload — what the synthesis was
- * built from, so a surprising profile can be explained without re-running the job. Written as a
- * plain map under {@link #META_KEY} (the {@code GraphProposedEdge} idiom: the envelope owns its
- * own meta key, and read-back is hand-rolled rather than {@code ObjectMapper.convertValue}).
+ * built from, so a surprising profile can be explained without re-running the job. {@link
+ * #toMeta()} writes it as a plain map keyed by {@link #META_KEY} (the {@code GraphProposedEdge}
+ * idiom: the envelope owns its own meta key inside the node's {@code meta} JSON). There is no
+ * read-back method — nothing in production or tests reads {@code meta.profile} back out yet; a
+ * caller that needs it decodes the map by hand at the {@link #META_KEY} entry.
  */
 public record ProfileMetaEnvelope(
         Instant generatedAt, int feedbackSignals, int reviewedDecisions, int graphNodes) {
