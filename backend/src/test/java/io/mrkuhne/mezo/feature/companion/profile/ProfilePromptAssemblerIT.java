@@ -86,8 +86,9 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
         UUID owner = databasePopulator.populateUser("profile-prompt-cap@test.local");
         seedProfile(owner, "szó ".repeat(2000));
 
-        assertThat(assembler.render(owner).length()).isLessThanOrEqualTo(
-                ProfilePromptAssembler.PROFILE_HEADER.length() + 400 * 3);
+        // Spec §8.3: the WHOLE block — header included — must fit under 400 tokens, not the header
+        // plus a full 400-token prose on top of it (review fix, mezo-b3pp.17).
+        assertThat(assembler.render(owner).length()).isLessThanOrEqualTo(400 * 3);
     }
 
     /**

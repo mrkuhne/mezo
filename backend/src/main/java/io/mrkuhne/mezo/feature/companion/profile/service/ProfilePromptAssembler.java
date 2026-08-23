@@ -47,12 +47,24 @@ public class ProfilePromptAssembler {
                             userId, ProfileAssembler.SOURCE_PROFILE, userId)
                     .filter(n -> GraphNodeEntity.STATUS_ACTIVE.equals(n.getStatus()))
                     .filter(n -> n.getSummary() != null && !n.getSummary().isBlank());
-            return node.map(n -> PROFILE_HEADER
-                            + ProfileAssembler.cap(n.getSummary().strip(), properties.renderMaxTokens()))
-                    .orElse("");
+            return node.map(n -> renderBlock(n.getSummary().strip())).orElse("");
         } catch (RuntimeException e) {
             log.warn("Profile block skipped for user {} — the turn continues without it", userId, e);
             return "";
         }
+    }
+
+    /**
+     * Header + prose, with the WHOLE block (header included) kept under {@code renderMaxTokens} —
+     * the same house accounting as the sibling blocks: {@code GraphPromptAssembler.renderBlock}
+     * seeds its {@code StringBuilder} with the header before measuring, and {@code
+     * PromptMemoryAssembler} does the same. The header's own token cost is charged first (ceiling
+     * estimate, so it can never be undercounted), and the prose gets whatever budget remains.
+     */
+    private String renderBlock(String summary) {
+        int headerTokens = (PROFILE_HEADER.length() + ProfileAssembler.CHARS_PER_TOKEN - 1)
+                / ProfileAssembler.CHARS_PER_TOKEN;
+        int proseMaxTokens = Math.max(0, properties.renderMaxTokens() - headerTokens);
+        return PROFILE_HEADER + ProfileAssembler.cap(summary, proseMaxTokens);
     }
 }

@@ -16,9 +16,11 @@ import org.springframework.validation.annotation.Validated;
  *
  * @param cron           weekly run, AFTER the Monday 03:30 consolidation rung and the 03:10
  *                       feedback rollups — the profile reads both, so it must run last.
- * @param renderMaxTokens hard cap on the injected {@code [Rólad tanultam]} block (spec §8.3:
- *                       ≤400 tokens). Applied at STORE time as well, so Tudástár shows exactly
- *                       the text the model gets — never more.
+ * @param renderMaxTokens hard cap on the injected {@code [Rólad tanultam]} block, header included
+ *                       (spec §8.3: the WHOLE block ≤400 tokens). Also applied at STORE time to
+ *                       the prose alone (no header there), so the stored summary can be marginally
+ *                       longer than what a turn actually renders — Tudástár may show a little more
+ *                       than the model was given, never less.
  * @param maxDecisions   how many reviewed decisions (newest first) enter the LLM payload.
  * @param maxGraphNodes  how many active PATTERN/PREFERENCE node titles enter the payload.
  */
