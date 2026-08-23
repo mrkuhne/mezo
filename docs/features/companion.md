@@ -1719,8 +1719,8 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so the rest of the
   Tudástár page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4` stays
   parked, spec §12).
-- **Acceptance:** `GraphApiIT` pins `topEdges` in the node-listing response (weight-desc, capped
-  at 3, edges to archived nodes excluded); `GraphServiceIT` covers the bucketing; FE
+- **Acceptance:** `GraphApiIT` confirms `topEdges` is wired through HTTP; `GraphServiceIT` covers
+  the bucketing (weight-desc, capped at 3, edges to archived nodes excluded); FE
   `graphHooks.test.tsx`/`KnowledgePage.test.tsx` cover mock, real, 404, and
   archive-removes-from-list.
 
