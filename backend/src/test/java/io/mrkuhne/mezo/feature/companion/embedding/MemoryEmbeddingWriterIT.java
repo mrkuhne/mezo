@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
@@ -17,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
+import io.mrkuhne.mezo.support.populator.PeriodSummaryPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
     @Autowired private AiConversationPopulator aiConversationPopulator;
     @Autowired private AiMessagePopulator aiMessagePopulator;
     @Autowired private JournalPopulator journalPopulator;
+    @Autowired private PeriodSummaryPopulator periodSummaryPopulator;
 
     @Test
     void testEmbedTurnByMessageId_shouldPersistTurnUnit_whenNewTurn() {
@@ -288,5 +291,55 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
 
         assertThat(memoryEmbeddingRepository.findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId()))
                 .isEmpty();
+    }
+
+    @Test
+    void testWritePeriodSummary_shouldEmbedWeeklyUnitAtPeriodStart_whenGranularityIsWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate monday = LocalDate.of(2026, 8, 17);
+        PeriodSummaryEntity week = periodSummaryPopulator.periodSummary(
+                owner, PeriodSummaryEntity.GRANULARITY_WEEK, monday, "Három edzés, stabil alvás.");
+
+        memoryEmbeddingWriter.writePeriodSummary(week);
+
+        MemoryEmbeddingEntity row = memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY, week.getId())
+                .orElseThrow();
+        assertThat(row.getCreatedBy()).isEqualTo(owner);
+        assertThat(row.getOccurredOn()).isEqualTo(monday);
+        assertThat(row.getContent()).isEqualTo("Három edzés, stabil alvás.");
+        assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+    }
+
+    @Test
+    void testWritePeriodSummary_shouldEmbedMonthlyUnit_whenGranularityIsMonth() {
+        UUID owner = userPopulator.createUser().getId();
+        PeriodSummaryEntity month = periodSummaryPopulator.periodSummary(
+                owner, PeriodSummaryEntity.GRANULARITY_MONTH, LocalDate.of(2026, 7, 1), "Júliusi ív.");
+
+        memoryEmbeddingWriter.writePeriodSummary(month);
+
+        assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
+                MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY, month.getId())).isTrue();
+        assertThat(memoryEmbeddingRepository.countByCreatedByAndKind(
+                owner, MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY)).isZero();
+    }
+
+    @Test
+    void testWritePeriodSummary_shouldRefreshVectorInPlace_whenPeriodTextChanged() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate monday = LocalDate.of(2026, 8, 17);
+        PeriodSummaryEntity week = periodSummaryPopulator.periodSummary(
+                owner, PeriodSummaryEntity.GRANULARITY_WEEK, monday, "Első változat.");
+        memoryEmbeddingWriter.writePeriodSummary(week);
+
+        week.setSummaryText("Javított változat.");
+        memoryEmbeddingWriter.writePeriodSummary(week);
+
+        assertThat(memoryEmbeddingRepository.countByCreatedByAndKind(
+                owner, MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY)).isEqualTo(1);
+        assertThat(memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY, week.getId())
+                .orElseThrow().getContent()).isEqualTo("Javított változat.");
     }
 }

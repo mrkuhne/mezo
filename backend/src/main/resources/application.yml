@@ -287,6 +287,11 @@ mezo:
       # off = the GraphMaintenanceJob bean does not exist
       graph-maintenance-job:
         enabled: true
+      # W3.2 (mezo-b3pp.13) consolidation ladder: Monday weekly + 1st-of-month monthly rungs
+      # (schedules: mezo.companion.consolidation.*-cron); off = the ConsolidationJob bean does not
+      # exist (the ladder simply stops growing; nothing else changes, nothing is deleted)
+      consolidation-job:
+        enabled: true
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
@@ -436,6 +441,11 @@ mezo:
       cap-journal: 2
       cap-chat-turn: 1
       cap-other: 1
+      # W3.2 (mezo-b3pp.13): the ladder's rungs (weekly + monthly) share this cap
+      cap-period-summary: 2
+      # Coverage cutoff: daily summaries older than this are no longer asked for — the covering
+      # weekly/monthly rung answers for that stretch. Nothing is deleted, only shadowed.
+      weekly-shadow-days: 30
       # Raw cosine floor — stricter than the tool's 0.25: a broad ambient block must not carry noise
       min-similarity: 0.55
       # Hard cap on the rendered block (estimated tokens; ~3 chars/token for Hungarian prose)
@@ -470,6 +480,16 @@ mezo:
       # V3.4 digest-gazdagitas: minosegi mezonkenti karakter-cap (jegyzetek, emlites-kivonat,
       # reflexio) - a digest ossz-merete tovabbra is konstrukcio szerint korlatos
       note-max-chars: 200
+    consolidation:
+      # W3.2 (mezo-b3pp.13, spec §7.2): the ladder's crons — 03:30 Monday (weekly rung, after the
+      # 02:20 daily summaries of the same dawn) and 03:50 on the 1st (monthly rung, after that
+      # dawn's weekly one). Free dawn slots: 02:20/02:40/03:00 SUN/03:10/03:20/03:40 are taken.
+      weekly-cron: "0 30 3 * * MON"
+      monthly-cron: "0 50 3 1 * *"
+      # Finished weeks/months each run re-offers — the idempotent catch-up doubles as the backfill
+      # of existing history (a period whose rung exists is returned untouched, no LLM call)
+      backfill-weeks: 8
+      backfill-months: 3
     hypotheses:
       # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
       cron: "0 0 3 * * SUN"

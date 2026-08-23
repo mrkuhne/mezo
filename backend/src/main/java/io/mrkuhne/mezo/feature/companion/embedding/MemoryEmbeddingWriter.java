@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
@@ -175,6 +176,33 @@ public class MemoryEmbeddingWriter {
         }
         upsert(day.getCreatedBy(), MemoryEmbeddingEntity.KIND_REFLECTION, day.getId(), text,
                 day.getRitualDate());
+    }
+
+    /**
+     * W3.2 consolidation ladder (spec §7.2): a {@code period_summary} row becomes a
+     * {@code weekly_summary} / {@code monthly_summary} vector. {@code occurred_on} is the period's
+     * START (its identity — the ISO Monday / first of the month), so the block renders the period
+     * a reader can name and the recency decay treats the whole period as that one date. The write
+     * goes through {@link #upsert}: a regenerated period text refreshes the vector IN PLACE
+     * instead of leaving a stale one behind on the same {@code (kind, ref_id)} key — but an
+     * UNCHANGED text short-circuits before the provider call, because the nightly job re-offers
+     * every period in its backfill window on every run.
+     */
+    @Transactional
+    public void writePeriodSummary(PeriodSummaryEntity summary) {
+        String kind = PeriodSummaryEntity.GRANULARITY_MONTH.equals(summary.getGranularity())
+                ? MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY
+                : MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY;
+        String capped = cap(summary.getSummaryText());
+        boolean unchanged = memoryEmbeddingRepository.findByKindAndRefId(kind, summary.getId())
+                .filter(existing -> capped.equals(existing.getContent()))
+                .isPresent();
+        if (unchanged) {
+            // the nightly job re-offers every period in its backfill window; re-embedding an
+            // unchanged text would burn a provider call per period per night for nothing
+            return;
+        }
+        upsert(summary.getCreatedBy(), kind, summary.getId(), capped, summary.getPeriodStart());
     }
 
     /**

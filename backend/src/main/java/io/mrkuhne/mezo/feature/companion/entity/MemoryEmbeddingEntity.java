@@ -44,6 +44,8 @@ public class MemoryEmbeddingEntity extends OwnedEntity {
     public static final String KIND_CHAT_TURN = "chat_turn";
     public static final String KIND_DAILY_SUMMARY = "daily_summary";
     public static final String KIND_WEEKLY_SUMMARY = "weekly_summary";
+    /** W3.2 (mezo-b3pp.13): the consolidation ladder's monthly rung. */
+    public static final String KIND_MONTHLY_SUMMARY = "monthly_summary";
     public static final String KIND_JOURNAL_ENTRY = "journal_entry";
     public static final String KIND_DECISION = "decision";
     public static final String KIND_GRATITUDE = "gratitude";
