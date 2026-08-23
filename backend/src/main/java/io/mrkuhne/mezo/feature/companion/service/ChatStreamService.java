@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -48,6 +50,8 @@ public class ChatStreamService {
     static final String EVENT_ERROR = "error";
     static final String EVENT_TOOL = "tool";
     static final String STREAM_FAILED_CODE = "COMPANION_STREAM_FAILED";
+    /** mezo-8z79 — the round technically succeeded and produced no text; the turn is dropped. */
+    static final String EMPTY_ANSWER_CODE = "COMPANION_EMPTY_ANSWER";
 
     private final ChatService chatService;
     private final CompanionLlm companionLlm;
@@ -101,6 +105,14 @@ public class ChatStreamService {
                         finalAnswer = advised.answer();
                         degraded = advised.degraded();
                     }
+                    // mezo-8z79: a blank final answer is a FAILED turn, not an empty message. Gemini
+                    // can return a candidate with no text parts at all (thinking-only rounds that hit
+                    // the output cap, an empty candidate), the deltas then carry nothing and the
+                    // advisor happily passes "" — the 2026-08-23 incident. Persisting it produced a
+                    // blank card AND an empty AssistantMessage in the next turn's history.
+                    if (finalAnswer == null || finalAnswer.isBlank()) {
+                        throw new SystemRuntimeErrorException(SystemMessage.error(EMPTY_ANSWER_CODE).build());
+                    }
                     // W3.1: ambient Memory refs after the tool loop + review — tool refs keep cap priority
                     turn.recalledRefs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
                     return ServerSentEvent.<Object>builder(
@@ -109,11 +121,26 @@ public class ChatStreamService {
                             .event(EVENT_DONE).build();
                 }))
                 .onErrorResume(e -> {
+                    // An empty answer is a known, expected provider outcome — logged as its own
+                    // one-liner rather than a stack trace, so it stays greppable and countable.
+                    if (isEmptyAnswer(e)) {
+                        log.warn("Companion answered with NO text for conversation {} — turn dropped",
+                                conversationId);
+                        return Mono.just(errorEvent(EMPTY_ANSWER_CODE));
+                    }
                     log.warn("Companion stream failed for conversation {}", conversationId, e);
-                    return Mono.just(ServerSentEvent.<Object>builder(
-                                    StreamError.builder().code(STREAM_FAILED_CODE).build())
-                            .event(EVENT_ERROR).build());
+                    return Mono.just(errorEvent(STREAM_FAILED_CODE));
                 });
+    }
+
+    private static boolean isEmptyAnswer(Throwable failure) {
+        return failure instanceof SystemRuntimeErrorException system
+                && system.getMessages().stream().anyMatch(m -> m != null && EMPTY_ANSWER_CODE.equals(m.getCode()));
+    }
+
+    private static ServerSentEvent<Object> errorEvent(String code) {
+        return ServerSentEvent.<Object>builder(StreamError.builder().code(code).build())
+                .event(EVENT_ERROR).build();
     }
 
     /** The live twin of {@code CompanionMapper.toTools}: same pre-baked "name(args)" chip label. */

@@ -39,6 +39,7 @@ public interface LlmLogMapper {
             .streamed(e.isStreamed())
             .toolRounds(e.getToolRounds())
             .serviceTier(e.getServiceTier())
+            .finishReason(e.getFinishReason())
             .promptTokens(e.getPromptTokens())
             .candidatesTokens(e.getCandidatesTokens())
             .thoughtsTokens(e.getThoughtsTokens())

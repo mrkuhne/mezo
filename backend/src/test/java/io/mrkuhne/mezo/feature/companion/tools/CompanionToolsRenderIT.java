@@ -133,6 +133,46 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetWeightLog_shouldRenderNincsAdat_whenNoWeighInsInWindow() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(40), new BigDecimal("88.0"));
+        String out = biometricsTools.getWeightLog(7, ctx(owner));
+        assertThat(out).isEqualTo("Napi súlymérések (utolsó 7 nap): nincs adat");
+        assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testGetWeightLog_shouldListRawDailyRowsNewestFirst_andClampDays_whenHistoryExists() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.4"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(2), new BigDecimal("86.1"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(40), new BigDecimal("88.0"));
+
+        String out = biometricsTools.getWeightLog(90, ctx(owner)); // clamps to max-window-days=30
+
+        assertThat(out).startsWith("Napi súlymérések (utolsó 30 nap):")
+                .contains(LocalDate.now().minusDays(1) + ": 85.4 kg")
+                .contains(LocalDate.now().minusDays(2) + ": 86.1 kg")
+                .doesNotContain("88 kg");
+        // newest first — the day-1 line precedes the day-2 line
+        assertThat(out.indexOf(LocalDate.now().minusDays(1).toString()))
+                .isLessThan(out.indexOf(LocalDate.now().minusDays(2).toString()));
+        assertThat(audit.toRefsEnvelope().refs()).extracting(r -> r.kind()).containsOnly("Weight");
+    }
+
+    @Test
+    void testGetWeightLog_shouldRenderDayOverDayDelta_whenConsecutiveDaysExist() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.4"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(2), new BigDecimal("86.1"));
+
+        String out = biometricsTools.getWeightLog(7, ctx(owner));
+
+        // the newest row's delta against the row below it: 85.4 - 86.1 = -0.7
+        assertThat(out).contains("-0.7 kg");
+    }
+
+    @Test
     void testGetRecovery_shouldListWindowedRowsNewestFirst_andClampDays_whenScopeSleep() {
         UUID owner = userPopulator.createUser().getId();
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("7.5"), 4);

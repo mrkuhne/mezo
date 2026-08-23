@@ -45,6 +45,16 @@
     "expectedTools": ["get_weight_trend"]
   },
   {
+    "id": "weight-daily-1",
+    "question": "Nézd meg kérlek a heti súlyom alakulását, ez hogy lehetséges hogy ekkora ingadozás van benne?",
+    "expectedTools": ["get_weight_log"]
+  },
+  {
+    "id": "weight-daily-2",
+    "question": "Kérd le ezen a héten minden napra a súlyomat.",
+    "expectedTools": ["get_weight_log"]
+  },
+  {
     "id": "weight-2",
     "question": "Ha így haladok, nagyjából mennyi idő alatt érek majd le egy kilóval kevesebbre?",
     "expectedTools": ["get_weight_trend"]

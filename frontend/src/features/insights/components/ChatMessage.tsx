@@ -57,8 +57,18 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
       </div>
       {m.tools && <ToolChipRow tools={m.tools} />}
       <div className="card" style={{ padding: 14 }}>
-        {/* Model prose — blocks, not one <p>: the answer carries real markdown (mezo-at8x.1). */}
-        <div className="md-prose"><Markdown text={m.text} /></div>
+        {/* mezo-8z79: a blank answer can no longer be persisted, but rows written BEFORE the guard
+            are still in history — and an empty card reads as a rendering bug. Name what happened
+            instead of showing nothing. Gated on `m.id` (i.e. PERSISTED): the in-flight streaming
+            bubble is legitimately empty while its tool chips run, and must not say this. */}
+        {m.text.trim() || !m.id ? (
+          /* Model prose — blocks, not one <p>: the answer carries real markdown (mezo-at8x.1). */
+          <div className="md-prose"><Markdown text={m.text} /></div>
+        ) : (
+          <p className="text-tertiary" style={{ fontSize: 12.5, fontStyle: 'italic' }}>
+            Erre a körre nem érkezett válasz.
+          </p>
+        )}
         {m.refs && (
           <div
             className="row gap-xs flex-wrap mt-md"

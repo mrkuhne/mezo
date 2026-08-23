@@ -146,6 +146,27 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testStreamMessage_shouldEmitEmptyAnswerErrorAndKeepOnlyUserRow_whenModelReturnsNoText() {
+        UUID userId = databasePopulator.populateUser("stream-empty@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("mennyi a súlyom " + FakeCompanionLlm.EMPTY_ANSWER))
+                .collectList().block();
+
+        ServerSentEvent<Object> last = events.getLast();
+        assertThat(last.event()).isEqualTo("error");
+        assertThat(((StreamError) last.data()).getCode()).isEqualTo("COMPANION_EMPTY_ANSWER");
+
+        // The blank answer is NOT a row: it would render as an empty card and then poison the
+        // next turn's history as an empty AssistantMessage (mezo-8z79).
+        List<MessageResponse> messages = conversationService.listMessages(userId, conversation.getId());
+        assertThat(messages).hasSize(1);
+        assertThat(messages.getFirst().getRole()).isEqualTo("user");
+    }
+
+    @Test
     void testStreamMessage_shouldThrow404BeforeStreaming_whenConversationForeign() {
         UUID userId = databasePopulator.populateUser("stream-foreign@test.local");
 

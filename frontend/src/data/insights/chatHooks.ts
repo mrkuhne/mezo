@@ -74,6 +74,10 @@ const nowIso = () => new Date().toISOString()
 /** The switch-off 404 is an honest "companion unavailable" (IDENT-3), never a retried error. */
 const isSwitchedOff = (err: unknown) => err instanceof ApiError && err.status === 404
 
+/** mezo-8z79: the stream ended with a technically-successful round that produced no text. */
+const isEmptyAnswer = (err: unknown) =>
+  err instanceof ApiError && err.messages.some((m) => m.code === 'COMPANION_EMPTY_ANSWER')
+
 /**
  * The conversation list — the picker's source and the single place the degraded state is
  * detected (the list endpoint is the one call every chat surface makes).
@@ -233,8 +237,13 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
         )
         append(conversationId, [{ role: 'user', ts: nowTs(), text }, toChatMessage(done)])
         refreshConversations()
-      } catch {
-        setError('Nem sikerült válaszolni — próbáld újra.')
+      } catch (err) {
+        // mezo-8z79: the backend now REFUSES to persist a blank answer, so this is a real outcome
+        // the user must be able to tell apart from a transport failure — nothing was saved either
+        // way, but "the model said nothing" is worth retrying immediately.
+        setError(isEmptyAnswer(err)
+          ? 'A társ nem adott választ erre a körre — próbáld újra.'
+          : 'Nem sikerült válaszolni — próbáld újra.')
         // the user message may have persisted server-side; refetch keeps history honest
         void queryClient.invalidateQueries({ queryKey: chatKey(selection) })
         if (conversationId) void queryClient.invalidateQueries({ queryKey: chatKey(conversationId) })

@@ -45,6 +45,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String FAIL_COMPLETE = "[fake-fail]";
     public static final String FAIL_STREAM = "[fake-stream-fail]";
 
+    /** mezo-8z79: the provider answered with NO text at all — a candidate with zero text parts (the
+     *  2026-08-23 live incident). Streams as an empty Flux and completes as "", so ITs can drive the
+     *  blank-answer guard without a model. Deliberately NOT an exception: the whole point is that
+     *  the turn succeeds technically and yields nothing. */
+    public static final String EMPTY_ANSWER = "[fake-empty]";
+
     /** Scripted verdicts (V1.3): violate only until the retry header appears in the checked answer. */
     public static final String VIOLATE_ONCE = "[fake-violate]";
     /** Scripted verdicts (V1.3): violate every round — exercises the degraded path. */
@@ -466,6 +472,12 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = no life events: an un-scripted narrative proposes nothing
             return m.find() ? m.group(1) : "[]";
         }
+        // mezo-8z79: a scripted empty CHAT answer. Placed AFTER every marker branch on purpose —
+        // the advisor's own verdict call carries the user message inside its payload, and it must
+        // keep answering JSON rather than inheriting this emptiness.
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return "";
+        }
         // Scrape extraction (mezo-8vum): the served product-page text embeds [fake-scrape:{json}];
         // returning the JSON verbatim runs the real fetch->strip->prompt->parse path. A page WITHOUT
         // the sentinel falls through to the prompt echo below (unparseable -> 502), as ITs assert.
@@ -612,6 +624,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             return Flux.concat(
                 Flux.just(PREFIX),
                 Flux.error(new IllegalStateException("FAKE-LLM forced stream failure")));
+        }
+        // mezo-8z79: a candidate with no text parts — the stream simply completes with nothing.
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return Flux.empty();
         }
         List<String> chunks = new ArrayList<>(List.of(
             PREFIX,

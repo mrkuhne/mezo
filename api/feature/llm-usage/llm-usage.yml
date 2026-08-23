@@ -204,6 +204,7 @@ components:
         streamed: { type: boolean }
         toolRounds: { type: integer, format: int32, nullable: true }
         serviceTier: { type: string, nullable: true }
+        finishReason: { type: string, nullable: true, description: "provider finish reason of the final generation (STOP / MAX_TOKENS / SAFETY / ...); null = none reported or the call never reached a generation" }
         promptTokens: { type: integer, format: int32, nullable: true, description: "RAW provider count — INCLUDES cachedTokens" }
         candidatesTokens: { type: integer, format: int32, nullable: true }
         thoughtsTokens: { type: integer, format: int32, nullable: true }
