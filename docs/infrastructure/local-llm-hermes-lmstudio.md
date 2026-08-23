@@ -12,14 +12,14 @@ Driver: `mezo-zjtm`. Facts verified 2026-08-21.
 | LM Studio | ≥0.3.31, mlx-engine **1.11.0 (nax)** selected (`lms runtime ls`) |
 | Hermes agent | **v0.20.4**, native install (`~/.hermes/hermes-agent`), Python 3.11; surfaces: TUI (`hermes`), desktop app (`/Applications/Hermes.app`, shares `~/.hermes`), Discord gateway (launchd), web dashboard (`hermes dashboard`, `127.0.0.1:9119`) |
 | Work model | `qwen/qwen3.6-35b-a3b` — MLX 8bit (37.8 GB, 3B active): spec/plan writing, implementation, chat (A/B 2026-08-21: 12-min plan, 0 hallucinated files) |
-| Review / short-context model | `qwen/qwen3.8-27b` — **MLX 8bit** (29.5 GB): diff review, single-file tasks; thinking runs away past ~60K ctx (2 failed plan runs) |
-| Auxiliary model | `google/gemma-4-e4b` (4bit, 6.9 GB): memory query-rewrite only |
+| Brainstorm / review model | `qwen/qwen3.8-27b` — **MLX 8bit** (29.5 GB), JIT-only (not resident): C1 spec dialogue, diff review, one hard question; thinking runs away past ~60K ctx (2 failed plan runs) |
+| Auxiliary + memory model | `google/gemma-4-26b-a4b` — MLX 8bit (28 GB, MoE 3.8B active, thinking OFF): Hindsight extraction (9 s/retain, causal facts), titles, vision, query-rewrite. Gemma E4B retired (flat facts, drifted to Turkish) |
 | Fallback | `qwen/qwen3.6-27b` MLX 8bit (downloaded, standing by) |
 | Phase-2 model (planned) | `qwen/qwen3-coder-next` — on disk at 4bit; **re-download at 6-bit before use** |
 | Memory provider | **Hindsight local_embedded** (§7) on a pgvector container `hindsight-pg` (`127.0.0.1:15433`) |
 | Server | `http://localhost:1234/v1` (`lms server start --port 1234`) |
 
-Typical RAM with work + chat models loaded: ~75 GB (~60%). `lms ps` shows what is loaded;
+Resident set: 35B-A3B (38 GB) + Gemma 26B-A4B (28 GB) ≈ 66 GB; Qwen3.8 JIT on demand. `lms ps` shows what is loaded;
 JIT loading can silently load a third model if any client asks for it — check after surprises.
 
 ## 2. LM Studio settings
@@ -57,7 +57,9 @@ terminal:
   cwd: /Users/mrkuhne/Applications/Personal/Mezo/mezo   # every surface starts in the repo
   shell_init_files: ["~/.hermes/shell-init.sh"]        # exports ~/.local/bin (bd) + ~/.lmstudio/bin
 auxiliary:
-  memory_query_rewrite: { provider: lmstudio, model: google/gemma-4-e4b }
+  memory_query_rewrite: { provider: lmstudio, model: google/gemma-4-26b-a4b }
+  title_generation:     { provider: lmstudio, model: google/gemma-4-26b-a4b }
+  vision:               { provider: lmstudio, model: google/gemma-4-26b-a4b }
   background_review: { enabled: false }               # (c) decision 2026-08-22: no silent skill/memory patching; /refine is manual
 memory:
   provider: hindsight
@@ -137,8 +139,19 @@ extraction endpoint (LM Studio), local embeddings + rerank, knowledge-graph reca
 ADR 0029. Built-in MEMORY.md/USER.md stay active alongside.
 
 - Configured by `hermes memory setup` → `~/.hermes/hindsight/config.json`
-  (`mode: local_embedded`, `llm_provider: lmstudio`, `llm_model: qwen/qwen3.6-35b-a3b`,
-  `bank_id: hermes`, `recall_budget: mid`); `HINDSIGHT_LLM_API_KEY=lm-studio` in `.env`.
+  (`mode: local_embedded`, `llm_provider: lmstudio`, `llm_model: google/gemma-4-26b-a4b`,
+  `bank_id: hermes`, `recall_budget: low`, `memory_mode: tools` — auto-retain on for desktop
+  sessions, recall only on demand); in `.env`: `HINDSIGHT_LLM_API_KEY=lm-studio`,
+  `HINDSIGHT_API_LLM_EXTRA_BODY={"reasoning_effort":"none"}` (thinking OFF — LM Studio accepts
+  `off` for Gemma, rejects it for Qwen3.8), `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=en`,
+  `HINDSIGHT_API_(RETAIN_)LLM_MAX_CONCURRENT=2`, `HINDSIGHT_IDLE_TIMEOUT=1800`.
+- **Why this model (measured 2026-08-22/23):** the 35B in thinking mode never finished an
+  extraction within the timeout → retry storm (33 killed generations/hour, zero memories for
+  a day); Qwen3.8 thinking-off gave richer facts but 75 s/call and stalled at Hindsight's 300 s
+  stage ceiling; Gemma E4B was fast but flat and drifted into Turkish; Gemma 26B-A4B: 9 s per
+  retain, 3 causal facts. Stuck ops live in `async_operations` (status pending/processing) —
+  requeue by resetting `status`/`retry_count`; the 8 session retains lost on 08-21/22 were
+  backfilled this way.
 - **Database:** the embedded pg0 Postgres is broken on this machine (`libpq` linked against a
   missing Homebrew `openssl@3`), so the daemon uses an external container:
   `docker run -d --name hindsight-pg --restart unless-stopped -p 127.0.0.1:15433:5432
