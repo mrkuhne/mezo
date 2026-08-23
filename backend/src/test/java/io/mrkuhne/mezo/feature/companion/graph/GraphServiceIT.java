@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,6 +99,57 @@ class GraphServiceIT extends AbstractIntegrationTest {
             new BigDecimal("0.500"), null))
             .doesNotThrowAnyException();
         assertThat(edgeRepository.count()).isEqualTo(1); // the one active row post re-upsert
+    }
+
+    @Test
+    void testListActiveWithTopEdges_shouldRenderTop3EdgesByWeightDesc_perNode() {
+        UUID owner = ownerId();
+        GraphNodeEntity lateEating = nodeRepository.saveAndFlush(newNode(owner, "Késői evés"));
+        GraphNodeEntity badSleep = nodeRepository.saveAndFlush(newNode(owner, "Rossz alvás"));
+        GraphNodeEntity weakWorkout = nodeRepository.saveAndFlush(newNode(owner, "Gyenge edzés"));
+        GraphNodeEntity unrelated = nodeRepository.saveAndFlush(newNode(owner, "Független csomópont"));
+        service.upsertEdge(owner, lateEating.getId(), badSleep.getId(), GraphEdgeEntity.KIND_TRIGGERS,
+            new BigDecimal("0.800"), null);
+        service.upsertEdge(owner, badSleep.getId(), weakWorkout.getId(), GraphEdgeEntity.KIND_SUPPORTS,
+            new BigDecimal("0.400"), null);
+
+        List<GraphService.NodeWithTopEdges> result = service.listActiveWithTopEdges(owner);
+
+        GraphService.NodeWithTopEdges badSleepResult = result.stream()
+            .filter(nwe -> nwe.node().getId().equals(badSleep.getId())).findFirst().orElseThrow();
+        // badSleep touches BOTH edges (incoming from lateEating, outgoing to weakWorkout) —
+        // weight-desc order.
+        assertThat(badSleepResult.topEdgeLines()).containsExactly(
+            "Késői evés → kiváltja → Rossz alvás · erős",
+            "Rossz alvás → támogatja → Gyenge edzés · közepes");
+
+        GraphService.NodeWithTopEdges unrelatedResult = result.stream()
+            .filter(nwe -> nwe.node().getId().equals(unrelated.getId())).findFirst().orElseThrow();
+        assertThat(unrelatedResult.topEdgeLines()).isEmpty();
+    }
+
+    @Test
+    void testListActiveWithTopEdges_shouldCapAtThreeLines_andExcludeEdgesToArchivedNodes() {
+        UUID owner = ownerId();
+        GraphNodeEntity hub = nodeRepository.saveAndFlush(newNode(owner, "Központ"));
+        GraphNodeEntity archived = service.upsertNode(owner, GraphNodeEntity.KIND_PATTERN,
+            "Archivált szomszéd.", null, null, null, null, null);
+        service.archive(owner, archived.getId());
+        for (int i = 0; i < 4; i++) {
+            GraphNodeEntity neighbor = nodeRepository.saveAndFlush(newNode(owner, "Szomszéd " + i));
+            service.upsertEdge(owner, hub.getId(), neighbor.getId(), GraphEdgeEntity.KIND_RELATES_TO,
+                new BigDecimal("0." + (100 * (i + 1))), null);
+        }
+        service.upsertEdge(owner, hub.getId(), archived.getId(), GraphEdgeEntity.KIND_RELATES_TO,
+            new BigDecimal("0.999"), null);
+
+        GraphService.NodeWithTopEdges hubResult = service.listActiveWithTopEdges(owner).stream()
+            .filter(nwe -> nwe.node().getId().equals(hub.getId())).findFirst().orElseThrow();
+
+        assertThat(hubResult.topEdgeLines()).hasSize(3);
+        assertThat(hubResult.topEdgeLines()).noneMatch(line -> line.contains("Archivált szomszéd"));
+        // strongest surviving 3 of the 4 non-archived edges (weights .400/.300/.200), weight-desc.
+        assertThat(hubResult.topEdgeLines().get(0)).contains("Szomszéd 3");
     }
 
     private GraphNodeEntity newNode(UUID owner, String title) {

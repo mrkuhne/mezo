@@ -44,9 +44,10 @@ public class GraphEdgeEntity extends OwnedEntity {
      * Temporal order, read LITERALLY along the edge: {@code from PRECEDED_BY to} = "the FROM-node
      * was preceded by the TO-node", i.e. <b>the TO-node happened first</b> (W2.4, mezo-b3pp.9 —
      * the direction was undefined until then). Both producers state this in their prompts
-     * ({@code GraphEdgeStructurer}, {@code LifeEventExtractionService}), and {@code
-     * GraphPromptAssembler} renders it with SWAPPED endpoints ({@code - <to> → megelőzte →
-     * <from>}) so the {@code [Összefüggések]} line stays cause-first like every other kind.
+     * ({@code GraphEdgeStructurer}, {@code LifeEventExtractionService}), and {@link
+     * io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeLineRenderer#renderLine} renders it
+     * with SWAPPED endpoints ({@code - <to> → megelőzte → <from>}) so the {@code [Összefüggések]}
+     * line stays cause-first like every other kind.
      */
     public static final String KIND_PRECEDED_BY = "PRECEDED_BY";
     public static final String KIND_SUPPORTS = "SUPPORTS";

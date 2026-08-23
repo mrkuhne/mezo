@@ -28,7 +28,13 @@ public class GraphController implements KnowledgeGraphApi {
 
     @Override
     public List<GraphNodeResponse> listGraphNodes() {
-        return graphService.listActive(currentUserId.get()).stream().map(graphMapper::toResponse).toList();
+        return graphService.listActiveWithTopEdges(currentUserId.get()).stream()
+            .map(nwe -> {
+                GraphNodeResponse response = graphMapper.toResponse(nwe.node());
+                response.setTopEdges(nwe.topEdgeLines());
+                return response;
+            })
+            .toList();
     }
 
     @Override

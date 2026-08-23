@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { LifeEventCandidate, LifeEventDecision } from '@/data/types'
+import type { KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '@/data/types'
 
 export type GraphNodeResponse = components['schemas']['GraphNodeResponse']
 export type GraphCandidateDecisionRequest = components['schemas']['GraphCandidateDecisionRequest']
@@ -18,6 +18,17 @@ export function toLifeEventCandidate(n: GraphNodeResponse): LifeEventCandidate {
   }
 }
 
+/** Wire → FE domain (W2.6): the Tudástár "Kapcsolatok" card shape. */
+export function toKnowledgeGraphNode(n: GraphNodeResponse): KnowledgeGraphNode {
+  return {
+    id: n.id,
+    kind: n.kind,
+    title: n.title,
+    summary: n.summary ?? null,
+    topEdges: n.topEdges ?? [],
+  }
+}
+
 export const graphApi = {
   listCandidates: async () =>
     (await apiFetch<GraphNodeResponse[]>(`${NODE}/candidate`)).map(toLifeEventCandidate),
@@ -26,4 +37,6 @@ export const graphApi = {
       method: 'POST',
       body: JSON.stringify({ decision } satisfies GraphCandidateDecisionRequest),
     }),
+  listNodes: async () => (await apiFetch<GraphNodeResponse[]>(NODE)).map(toKnowledgeGraphNode),
+  archiveNode: (id: string) => apiFetch<GraphNodeResponse>(`${NODE}/${id}/archive`, { method: 'POST' }),
 }

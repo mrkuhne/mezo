@@ -10,10 +10,14 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -64,6 +68,54 @@ public class GraphService {
     public List<GraphNodeEntity> listActive(UUID userId) {
         return nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
             userId, GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    /** Fixed UI display cap — not a {@code CompanionProperties.Graph} tuning knob, this is
+     *  presentation, not graph behavior. */
+    private static final int TOP_EDGES_PER_NODE = 3;
+
+    /** W2.6 (mezo-b3pp.11, spec §6.6): one active node + its strongest touching edges,
+     *  pre-rendered as Hungarian text lines for the Tudástár "Kapcsolatok" surface. */
+    public record NodeWithTopEdges(GraphNodeEntity node, List<String> topEdgeLines) {
+    }
+
+    /**
+     * Active nodes plus each node's top-{@value #TOP_EDGES_PER_NODE} touching edges (both
+     * directions), rendered via {@link GraphEdgeLineRenderer} — the same renderer {@code
+     * GraphPromptAssembler} uses for the {@code [Összefüggések]} prompt block. An edge whose
+     * OTHER endpoint is archived/candidate/deleted is dropped entirely: a line that names a node
+     * no longer in "current knowledge" would confuse the surface, not inform it.
+     */
+    @Transactional(readOnly = true)
+    public List<NodeWithTopEdges> listActiveWithTopEdges(UUID userId) {
+        List<GraphNodeEntity> nodes = listActive(userId);
+        if (nodes.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, String> titleById = nodes.stream()
+            .collect(Collectors.toMap(GraphNodeEntity::getId, GraphNodeEntity::getTitle));
+        Map<UUID, List<GraphEdgeEntity>> touchingByNode = new HashMap<>();
+        for (GraphEdgeEntity edge : edgeRepository.findByCreatedByAndDeletedFalse(userId)) {
+            if (!titleById.containsKey(edge.getFromNodeId()) || !titleById.containsKey(edge.getToNodeId())) {
+                continue;
+            }
+            touchingByNode.computeIfAbsent(edge.getFromNodeId(), k -> new ArrayList<>()).add(edge);
+            touchingByNode.computeIfAbsent(edge.getToNodeId(), k -> new ArrayList<>()).add(edge);
+        }
+        return nodes.stream()
+            .map(node -> new NodeWithTopEdges(node, topEdgeLines(node.getId(), touchingByNode, titleById)))
+            .toList();
+    }
+
+    private List<String> topEdgeLines(UUID nodeId, Map<UUID, List<GraphEdgeEntity>> touchingByNode,
+            Map<UUID, String> titleById) {
+        return touchingByNode.getOrDefault(nodeId, List.of()).stream()
+            .sorted(Comparator.comparing(GraphEdgeEntity::getWeight).reversed()
+                .thenComparing(GraphEdgeEntity::getId))
+            .limit(TOP_EDGES_PER_NODE)
+            .map(e -> GraphEdgeLineRenderer.renderLine(e.getKind(),
+                titleById.get(e.getFromNodeId()), titleById.get(e.getToNodeId()), e.getWeight()))
+            .toList();
     }
 
     /** W2.3 (spec §6.3): a LIFE_EVENT candidate the extractor proposed. Deliberately NOT an
