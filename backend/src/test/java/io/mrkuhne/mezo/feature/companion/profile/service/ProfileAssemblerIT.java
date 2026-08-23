@@ -1,23 +1,36 @@
-package io.mrkuhne.mezo.feature.companion.profile;
+package io.mrkuhne.mezo.feature.companion.profile.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
+import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
+import io.mrkuhne.mezo.feature.companion.feedback.service.FeedbackLearningService;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
-import io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssembler;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.test.context.ActiveProfiles;
 
-/** W4.3 (mezo-b3pp.17, spec §8.3): the weekly profile synthesis. */
+/**
+ * W4.3 (mezo-b3pp.17, spec §8.3): the weekly profile synthesis.
+ *
+ * <p>Package-scoped alongside {@link ProfileAssembler} (not {@code ...profile}, where the sibling
+ * {@code ProfileSourceFindersIT} lives) deliberately: the review-fix pass (mezo-b3pp.17 review)
+ * needs a DIRECT assertion on {@link ProfileAssembler#renderPayload}, which is package-private on
+ * purpose so a test can call it without a public seam existing only for tests.
+ */
 @ActiveProfiles("companion-fake")
 class ProfileAssemblerIT extends AbstractIntegrationTest {
 
@@ -26,11 +39,17 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     @Autowired
     private GraphNodeRepository nodeRepository;
     @Autowired
+    private FeedbackRollupRepository rollupRepository;
+    @Autowired
+    private DecisionEntryRepository decisionRepository;
+    @Autowired
     private FeedbackPopulator feedbackPopulator;
     @Autowired
     private JournalPopulator journalPopulator;
     @Autowired
     private UserPopulator userPopulator;
+    @Autowired
+    private FeedbackLearningService feedbackLearningService;
     @Autowired
     private FakeCompanionLlm fakeCompanionLlm;
 
@@ -38,10 +57,19 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         return userPopulator.createUser("profile-assembler@test.local").getId();
     }
 
+    /**
+     * Seeds one up verdict AND one down-with-reason verdict, then runs the REAL {@code
+     * FeedbackLearningService} rollup job — the assembler reads {@code feedback_rollup}, never
+     * {@code message_feedback} directly, so a test that only writes verdicts and skips this call
+     * leaves {@code feedbackSignals()} permanently at zero (review finding: this was previously the
+     * case, and the whole VISSZAJELZÉSEK / ELUTASÍTÁS OKAI payload rendering went untested).
+     */
     private void seedSignal(UUID owner) {
         feedbackPopulator.createVerdict(owner, "chat_message", UUID.randomUUID(), "up", null);
+        feedbackPopulator.createVerdict(owner, "chat_message", UUID.randomUUID(), "down", "too_much");
         journalPopulator.createReviewedDecision(
                 owner, LocalDate.of(2026, 6, 1), "Heti 3 edzés", 4, "Bevált.");
+        feedbackLearningService.computeRollups(owner);
     }
 
     @Test
@@ -103,6 +131,13 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
                 owner, ProfileAssembler.SOURCE_PROFILE, owner)).isEmpty();
     }
 
+    /**
+     * The IT-level cap assertion below only proves the SIZE of what got stored — the fake's
+     * profile answer is a fixed ~130-char string, so it would pass even if {@link
+     * ProfileAssembler#cap} were deleted entirely (review finding). The cap logic itself
+     * (boundary, no-space text) is unit-tested directly in {@link ProfileAssemblerCapTest}; this
+     * test only pins that the STORED summary never exceeds the configured budget end to end.
+     */
     @Test
     void the_stored_prose_is_capped_at_the_configured_token_budget() {
         UUID owner = seedOwner();
@@ -117,5 +152,27 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     @Test
     void the_fake_llm_mirror_still_matches_the_marker() {
         assertThat(ProfileAssembler.PROFILE_MARKER).isEqualTo("ROLAD-TANULTAM");
+    }
+
+    /**
+     * Review fix (mezo-b3pp.17): a DIRECT assertion on the package-private {@link
+     * ProfileAssembler#renderPayload}, fed the REAL rollup rows a completed {@code
+     * computeRollups(...)} run wrote — proving the VISSZAJELZÉSEK and ELUTASÍTÁS OKAI blocks are
+     * genuinely wired to {@code feedback_rollup}, not just structurally present with dead inputs.
+     */
+    @Test
+    void renderPayload_carries_real_effectiveness_and_style_lines_from_computed_rollups() {
+        UUID owner = seedOwner();
+        seedSignal(owner);
+        List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc(owner);
+        List<DecisionEntryEntity> decisions = decisionRepository
+                .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
+
+        String payload = assembler.renderPayload(rollups, decisions, List.of());
+
+        assertThat(payload).contains("VISSZAJELZÉSEK (utolsó 30 nap):");
+        assertThat(payload).contains("surface:chat_message: 1 tetszik / 1 nem tetszik");
+        assertThat(payload).contains("ELUTASÍTÁS OKAI:");
+        assertThat(payload).contains("chat_message: pontatlan 0 · túl sok 1 · rossz időzítés 0 · nem rólam szól 0");
     }
 }
