@@ -41,6 +41,11 @@ import java.util.UUID;
  * savepoint, so a failed statement can never poison the turn's transaction — the {@code [Emlékek]}
  * block is optional, the turn is not (IDENT-3).
  *
+ * <p>W3.2 (mezo-b3pp.13): the daily-summary query carries a coverage floor
+ * ({@code today - ambient-recall.weekly-shadow-days}) and a weekly/monthly rung group is queried
+ * unfiltered, so an old stretch is remembered through its consolidation rung instead of a stray
+ * single day. Shadowing only changes what recall ASKS for — no row is ever deleted (spec §12).
+ *
  * <p>Dedupe: today's episodes are skipped (the context snapshot already carries the day), and
  * items are keyed by {@code (kind, ref_id)} so no unit enters the block twice.
  */
@@ -74,6 +79,9 @@ public class PromptMemoryAssembler {
     }
 
     static final List<String> KINDS_DAILY_SUMMARY = List.of(MemoryEmbeddingEntity.KIND_DAILY_SUMMARY);
+    /** W3.2 (mezo-b3pp.13): the consolidation ladder's rungs — queried WITHOUT a date floor. */
+    static final List<String> KINDS_PERIOD_SUMMARY = List.of(MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY,
+            MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY);
     static final List<String> KINDS_JOURNAL = List.of(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY,
             MemoryEmbeddingEntity.KIND_REFLECTION, MemoryEmbeddingEntity.KIND_GRATITUDE,
             MemoryEmbeddingEntity.KIND_DECISION);
@@ -85,7 +93,7 @@ public class PromptMemoryAssembler {
     static final Map<String, String> KIND_LABELS = Map.ofEntries(
             Map.entry(MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, "napi összefoglaló"),
             Map.entry(MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY, "heti összefoglaló"),
-            Map.entry("monthly_summary", "havi összefoglaló"),
+            Map.entry(MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY, "havi összefoglaló"),
             Map.entry(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "napló"),
             Map.entry(MemoryEmbeddingEntity.KIND_REFLECTION, "esti reflexió"),
             Map.entry(MemoryEmbeddingEntity.KIND_GRATITUDE, "hála"),
@@ -121,15 +129,19 @@ public class PromptMemoryAssembler {
             // (kind, ref_id)-keyed so a unit can never enter twice; groups are disjoint today, the
             // map is the cheap guarantee that they stay so. Order matters only for the dedupe
             // tie-break — the final sort below is by score.
-            List<Map.Entry<List<String>, Integer>> groups = List.of(
-                    Map.entry(KINDS_DAILY_SUMMARY, ambient.capDailySummary()),
-                    Map.entry(KINDS_JOURNAL, ambient.capJournal()),
-                    Map.entry(KINDS_CHAT_TURN, ambient.capChatTurn()),
-                    Map.entry(KINDS_OTHER, ambient.capOther()));
+            // W3.2 (mezo-b3pp.13) coverage filter: fine-grained days are only asked for inside the
+            // shadow window — beyond it the ladder's weekly/monthly rungs (queried WITHOUT a floor)
+            // speak for the stretch. The daily rows themselves are never touched (spec §12).
+            LocalDate dailyCutoff = today.minusDays(ambient.weeklyShadowDays());
+            List<Group> groups = List.of(
+                    new Group(KINDS_DAILY_SUMMARY, ambient.capDailySummary(), dailyCutoff),
+                    new Group(KINDS_PERIOD_SUMMARY, ambient.capPeriodSummary(), null),
+                    new Group(KINDS_JOURNAL, ambient.capJournal(), null),
+                    new Group(KINDS_CHAT_TURN, ambient.capChatTurn(), null),
+                    new Group(KINDS_OTHER, ambient.capOther(), null));
             Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
-            for (Map.Entry<List<String>, Integer> group : groups) {
-                for (RecalledItem item : recallGroup(userId, group.getKey(), group.getValue(),
-                        literal, today, ambient, recall)) {
+            for (Group group : groups) {
+                for (RecalledItem item : recallGroup(userId, group, literal, today, ambient, recall)) {
                     byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
                 }
             }
@@ -160,20 +172,24 @@ public class PromptMemoryAssembler {
         }
     }
 
-    private List<RecalledItem> recallGroup(UUID userId, List<String> kinds, int cap, String literal,
+    /** One ANN query's shape: which kinds, how many may enter the block, and the date floor. */
+    private record Group(List<String> kinds, int cap, LocalDate notBefore) {}
+
+    private List<RecalledItem> recallGroup(UUID userId, Group group, String literal,
                                            LocalDate today, CompanionProperties.AmbientRecall ambient,
                                            CompanionProperties.Recall recall) {
-        if (cap == 0) {
+        if (group.cap() == 0) {
             return List.of();
         }
-        return annQuery.nearestInKinds(userId, kinds, literal, recall.candidatePool())
+        return annQuery.nearestInKinds(userId, group.kinds(), literal, recall.candidatePool(),
+                        group.notBefore())
                 .stream()
                 // the snapshot already carries today — and a future-dated unit is not a memory yet
                 .filter(hit -> hit.occurredOn().isBefore(today))
                 .map(hit -> toItem(hit, today, recall.decayDays()))
                 .filter(item -> item.similarity() >= ambient.minSimilarity())
                 .sorted(Comparator.comparingDouble(RecalledItem::score).reversed())
-                .limit(cap)
+                .limit(group.cap())
                 .toList();
     }
 

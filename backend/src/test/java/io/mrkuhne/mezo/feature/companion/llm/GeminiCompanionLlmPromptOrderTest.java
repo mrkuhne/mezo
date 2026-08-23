@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Advisors;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.AmbientRecall;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Chat;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Consolidation;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Embedding;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Extraction;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Facts;
@@ -98,12 +99,13 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Advisors(true, 1, List.of("teszt-anyag")),
                 new Embedding("gemini-embedding-001", true, 2000, true, 80, 200),
                 new Summary("0 20 2 * * *", 7, 200),
+                new Consolidation("0 30 3 * * MON", "0 50 3 1 * *", 8, 3),
                 new Recall(90, 5, 0.25, 20, 300),
                 new Patterns("0 40 2 * * *", 60, 8, 7, 100, List.of(minimalPatternPair())),
                 new Hypotheses("0 0 3 * * SUN", 3, 0.75, 0.50),
                 new HabitSuggest(5),
                 new Transcription(5_242_880, List.of("audio/wav")),
-                new AmbientRecall(true, 2, 2, 1, 1, 0.55, 1200),
+                new AmbientRecall(true, 2, 2, 1, 1, 2, 30, 0.55, 1200),
                 new Graph(2, 8, 0.99, 0.05, 800, 0.4, "0 20 3 * * *", 30, 0.05));
     }
 

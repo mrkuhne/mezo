@@ -66,6 +66,25 @@ public class MemoryEmbeddingAnnQuery {
         limit :k
         """;
 
+    /**
+     * W3.2 (mezo-b3pp.13) coverage-filtered twin: the same ANN search with a metadata floor on
+     * {@code occurred_on}, so ambient recall can stop asking for fine-grained rows that a
+     * consolidation rung already covers. A separate constant rather than a nullable parameter —
+     * an {@code (:notBefore is null or …)} predicate would be an untyped-parameter cast headache
+     * for no gain, and the planner sees a cleaner statement this way.
+     */
+    private static final String SQL_SINCE = """
+        select id, kind, ref_id, content, occurred_on,
+               (embedding <=> cast(:queryVector as vector)) as distance
+        from memory_embedding
+        where created_by = :userId
+          and is_deleted = false
+          and kind in (:kinds)
+          and occurred_on >= :notBefore
+        order by embedding <=> cast(:queryVector as vector)
+        limit :k
+        """;
+
     private static final RowMapper<Hit> ROW_MAPPER = (rs, rowNum) -> new Hit(
             rs.getObject("id", UUID.class),
             rs.getString("kind"),
@@ -78,11 +97,27 @@ public class MemoryEmbeddingAnnQuery {
 
     /** Nearest-first hits of the given kinds; a failure rolls back to the savepoint and rethrows. */
     public List<Hit> nearestInKinds(UUID userId, Collection<String> kinds, String queryVector, int k) {
+        return nearestInKinds(userId, kinds, queryVector, k, null);
+    }
+
+    /**
+     * Nearest-first hits of the given kinds, optionally floored at {@code notBefore} (W3.2's
+     * coverage filter — {@code null} means no floor). Same savepoint contract as the unfiltered
+     * call.
+     */
+    public List<Hit> nearestInKinds(UUID userId, Collection<String> kinds, String queryVector, int k,
+                                    LocalDate notBefore) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("kinds", kinds)
                 .addValue("queryVector", queryVector)
                 .addValue("k", k);
+        String sql = SQL;
+        if (notBefore != null) {
+            params.addValue("notBefore", notBefore);
+            sql = SQL_SINCE;
+        }
+        String statement = sql;
         return jdbc.getJdbcTemplate().execute((ConnectionCallback<List<Hit>>) connection -> {
             // the statement runs on THIS connection — the one the savepoint is taken on — rather
             // than on whatever the pool would hand back; suppressClose so the template cannot
@@ -92,7 +127,7 @@ public class MemoryEmbeddingAnnQuery {
             // auto-commit ⇒ no surrounding transaction to protect (and savepoints are illegal there)
             Savepoint savepoint = connection.getAutoCommit() ? null : connection.setSavepoint(SAVEPOINT_NAME);
             try {
-                List<Hit> hits = onThisConnection.query(SQL, params, ROW_MAPPER);
+                List<Hit> hits = onThisConnection.query(statement, params, ROW_MAPPER);
                 if (savepoint != null) {
                     connection.releaseSavepoint(savepoint);
                 }

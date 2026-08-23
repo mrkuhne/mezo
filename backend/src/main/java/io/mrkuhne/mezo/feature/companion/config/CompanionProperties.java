@@ -26,6 +26,7 @@ public record CompanionProperties(
     @NotNull @Valid Advisors advisors,
     @NotNull @Valid Embedding embedding,
     @NotNull @Valid Summary summary,
+    @NotNull @Valid Consolidation consolidation,
     @NotNull @Valid Recall recall,
     @NotNull @Valid Patterns patterns,
     @NotNull @Valid Hypotheses hypotheses,
@@ -128,6 +129,13 @@ public record CompanionProperties(
         @Min(0) @Max(10) int capChatTurn,
         /** activity_note + checkin_note share this cap. */
         @Min(0) @Max(10) int capOther,
+        /** W3.2 (mezo-b3pp.13): weekly_summary + monthly_summary share this cap — the ladder rungs
+         *  that take over beyond the coverage cutoff (0 = the group is not even queried). */
+        @Min(0) @Max(10) int capPeriodSummary,
+        /** W3.2 coverage cutoff: a daily_summary hit older than this many days is not asked for at
+         *  all — its covering weekly/monthly rung speaks for that stretch instead. The fine-grained
+         *  rows and vectors stay in the store untouched (spec §12); only recall's reach changes. */
+        @Min(1) @Max(3650) int weeklyShadowDays,
         /** Raw-cosine floor for ambient items — stricter than the tool's: a broad block must not carry noise. */
         @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
         /** Hard cap on the rendered block in ESTIMATED tokens (part of the ~6k memory budget). */
@@ -239,6 +247,23 @@ public record CompanionProperties(
         /** V3.4 digest-gazdagítás: minőségi mezőnkénti karakter-cap (check-in/alvás/futás jegyzet,
          *  említés-kivonat, intention-reflexió). */
         @Min(0) @Max(1000) int noteMaxChars
+    ) {}
+
+    /**
+     * W3.2 consolidation ladder (mezo-b3pp.13, spec §7.2) — the weekly/monthly rung generator's
+     * schedules and how far back each run re-offers periods. The backfill windows double as the
+     * self-heal: a period whose rung is missing (job off, LLM down, brand-new history) is picked
+     * up by the next run instead of needing a one-off backfill command.
+     */
+    public record Consolidation(
+        /** Weekly rung cron (server zone) — Monday dawn, after the nightly daily-summary job. */
+        @NotBlank String weeklyCron,
+        /** Monthly rung cron (server zone) — the 1st, after the weekly rung of the same dawn. */
+        @NotBlank String monthlyCron,
+        /** Finished weeks back each weekly run checks and fills (idempotent catch-up = backfill). */
+        @Min(1) @Max(520) int backfillWeeks,
+        /** Finished months back each monthly run checks and fills. */
+        @Min(1) @Max(120) int backfillMonths
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

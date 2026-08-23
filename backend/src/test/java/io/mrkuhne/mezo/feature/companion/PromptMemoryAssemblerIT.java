@@ -174,7 +174,9 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
     @Test
     void testRecall_shouldOrderByDecayedScore_whenSameSimilarityDifferentAge() {
         UUID owner = userPopulator.createUser().getId();
-        seed(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, "régi nap", TODAY.minusDays(60), MemoryEmbeddingPopulator.axisVector(0));
+        // 20 days: inside the W3.2 coverage window (ambient-recall.weekly-shadow-days = 30), so
+        // this day is still asked for directly instead of through its weekly rung
+        seed(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, "régi nap", TODAY.minusDays(20), MemoryEmbeddingPopulator.axisVector(0));
         seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "friss napló", TODAY.minusDays(2), MemoryEmbeddingPopulator.axisVector(0));
 
         AmbientRecall recalled = assembler.recall(owner, UUID.randomUUID(), AXIS0_QUERY, TODAY);
