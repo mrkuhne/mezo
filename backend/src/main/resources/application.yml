@@ -444,10 +444,12 @@ mezo:
       # W3.3 input (mezo-b3pp.27): the current conversation's own chat turns are already in the
       # history window — do not recall them as memories
       exclude-current-conversation: true
-      # W3.3 (mezo-b3pp.14, spec §7.3): PER KIND-GROUP tuning — the eval harness
-      # (AmbientRecallEvalIT) is the regression net when these move. cap = items in the block
+      # W3.3 (mezo-b3pp.14, spec §7.3): PER KIND-GROUP tuning — cap = items in the block
       # (0 = group not queried); min-similarity = raw cosine floor; decay-days = τ of the
       # similarity × exp(-age/τ) re-rank.
+      # Moving any of these is expected to turn AmbientRecallEvalIT red: its corpus is built so
+      # every cap, the daily/journal floors and the period τ each have a row that moves. Re-derive
+      # that table's geometry by hand — its javadoc lists exactly what it does and does not pin.
       daily-summary:
         cap: 2
         min-similarity: 0.55
