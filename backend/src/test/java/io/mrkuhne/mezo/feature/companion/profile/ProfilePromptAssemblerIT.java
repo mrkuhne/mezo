@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.GraphPopulator;
+import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -42,6 +43,8 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
     private AiConversationPopulator conversationPopulator;
     @Autowired
     private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
+    @Autowired
+    private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired
     private ChatService chatService;
 
@@ -96,6 +99,7 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
     void the_chat_prompt_carries_the_block_after_the_fact_blocks_and_before_memories() {
         UUID owner = databasePopulator.populateUser("profile-prompt-order@test.local");
         seedProfile(owner, "A rövid reggeli üzenet válik be nálad.");
+        knowledgeFactPopulator.fact(owner, "Reggel fut, ha teheti.", "train", 3);
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
         memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, UUID.randomUUID(),
                 "futás után jobban aludtam", LocalDate.now().minusDays(3), MemoryEmbeddingPopulator.axisVector(0));
@@ -105,6 +109,10 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
 
         String prompt = turn.systemPrompt();
         assertThat(prompt).contains(ProfilePromptAssembler.PROFILE_HEADER);
+        // Guard (review fix): both ends of the ordering comparison must be real hits, not -1 —
+        // an unseeded facts/memories block would make isGreaterThan/isLessThan vacuously true.
+        assertThat(prompt.indexOf(KnowledgeFactService.FACTS_HEADER)).isPositive();
+        assertThat(prompt.indexOf(PromptMemoryAssembler.MEMORIES_HEADER)).isPositive();
         assertThat(prompt.indexOf(ProfilePromptAssembler.PROFILE_HEADER))
                 .isGreaterThan(prompt.indexOf(KnowledgeFactService.FACTS_HEADER))
                 .isLessThan(prompt.indexOf(PromptMemoryAssembler.MEMORIES_HEADER));
