@@ -115,32 +115,43 @@ public record CompanionProperties(
 
     /**
      * W3.1 always-on ambient recall (mezo-b3pp.12, spec §7.1) — the {@code [Emlékek]} block every
-     * chat turn opens with. τ ({@code recall.decayDays}), the ANN candidate pool and the per-item
-     * render cap ({@code recall.renderMaxChars}) are REUSED from {@link Recall}; only what the block
-     * itself needs lives here.
+     * chat turn opens with. The ANN candidate pool and the per-item render cap are REUSED from
+     * {@link Recall}; since W3.3 (mezo-b3pp.14, spec §7.3) the raw-cosine floor and the recency τ
+     * are PER KIND-GROUP ({@link Group}) so the block is tuned from yml alone — no number lives in code.
      */
     public record AmbientRecall(
         /** Runtime kill-switch — off ⇒ no embed call and no block; the turn is otherwise unchanged. */
         boolean enabled,
-        /** Per kind-group caps: items allowed into the block (0 = the group is not even queried). */
-        @Min(0) @Max(10) int capDailySummary,
-        /** journal_entry + reflection + gratitude + decision share this cap. */
-        @Min(0) @Max(10) int capJournal,
-        @Min(0) @Max(10) int capChatTurn,
-        /** activity_note + checkin_note share this cap. */
-        @Min(0) @Max(10) int capOther,
-        /** W3.2 (mezo-b3pp.13): weekly_summary + monthly_summary share this cap — the ladder rungs
-         *  that take over beyond the coverage cutoff (0 = the group is not even queried). */
-        @Min(0) @Max(10) int capPeriodSummary,
         /** W3.2 coverage cutoff: a daily_summary hit older than this many days is not asked for at
          *  all — its covering weekly/monthly rung speaks for that stretch instead. The fine-grained
          *  rows and vectors stay in the store untouched (spec §12); only recall's reach changes. */
         @Min(1) @Max(3650) int weeklyShadowDays,
-        /** Raw-cosine floor for ambient items — stricter than the tool's: a broad block must not carry noise. */
-        @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
         /** Hard cap on the rendered block in ESTIMATED tokens (part of the ~6k memory budget). */
-        @Min(100) @Max(6000) int maxTokens
-    ) {}
+        @Min(100) @Max(6000) int maxTokens,
+        /** W3.3 input (mezo-b3pp.27): skip the CURRENT conversation's own chat turns — they are
+         *  already in the history window, recalling them is a duplicate. */
+        boolean excludeCurrentConversation,
+        /** daily_summary (inside the coverage window). */
+        @NotNull @Valid Group dailySummary,
+        /** weekly_summary + monthly_summary — the ladder rungs (W3.2), queried without a date floor. */
+        @NotNull @Valid Group periodSummary,
+        /** journal_entry + reflection + gratitude + decision. */
+        @NotNull @Valid Group journal,
+        /** chat_turn. */
+        @NotNull @Valid Group chatTurn,
+        /** activity_note + checkin_note. */
+        @NotNull @Valid Group other
+    ) {
+        /** One kind-group's tuning: how many items may enter the block, the raw-cosine floor, and τ. */
+        public record Group(
+            /** Items allowed into the block (0 = the group is not even queried). */
+            @Min(0) @Max(10) int cap,
+            /** Raw-cosine floor — below it a match is noise, not a memory (0..1). */
+            @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
+            /** τ: the recency scale in days — rank = similarity × exp(-age/τ). */
+            @Min(1) @Max(3650) int decayDays
+        ) {}
+    }
 
     /** W2.1 knowledge-graph tuning (spec §6.1) — traversal bounds + nightly maintenance knobs. */
     public record Graph(

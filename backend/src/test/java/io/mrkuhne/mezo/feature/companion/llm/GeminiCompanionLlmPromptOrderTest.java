@@ -105,7 +105,12 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Hypotheses("0 0 3 * * SUN", 3, 0.75, 0.50),
                 new HabitSuggest(5),
                 new Transcription(5_242_880, List.of("audio/wav")),
-                new AmbientRecall(true, 2, 2, 1, 1, 2, 30, 0.55, 1200),
+                new AmbientRecall(true, 30, 1200, true,
+                        new AmbientRecall.Group(2, 0.55, 90),
+                        new AmbientRecall.Group(2, 0.55, 180),
+                        new AmbientRecall.Group(2, 0.60, 90),
+                        new AmbientRecall.Group(1, 0.55, 90),
+                        new AmbientRecall.Group(1, 0.55, 90)),
                 new Graph(2, 8, 0.99, 0.05, 800, 0.4, "0 20 3 * * *", 30, 0.05));
     }
 

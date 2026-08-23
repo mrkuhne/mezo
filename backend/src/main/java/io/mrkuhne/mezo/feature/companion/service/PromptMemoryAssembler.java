@@ -28,8 +28,9 @@ import java.util.UUID;
 /**
  * W3.1 always-on ambient recall (mezo-b3pp.12, spec §7.1): every chat turn opens already grounded
  * in relevant past. The incoming user message is embedded ONCE (RETRIEVAL_QUERY), four kind-group
- * ANN searches run over {@code memory_embedding} with per-group caps, the raw-similarity floor and
- * the same {@code similarity × exp(-age/τ)} re-rank the V2.3 tool uses, and the survivors render
+ * ANN searches run over {@code memory_embedding} with per-group caps, a PER-GROUP raw-similarity
+ * floor and τ (W3.3, {@code ambient-recall.<group>.*}) in the V2.3 {@code similarity × exp(-age/τ)}
+ * re-rank, and the survivors render
  * as the {@code [Emlékek]} block under a hard token cap. Broad ambient recall — the
  * {@code find_similar_past_days} tool stays for deep, targeted recall on demand.
  *
@@ -134,14 +135,14 @@ public class PromptMemoryAssembler {
             // speak for the stretch. The daily rows themselves are never touched (spec §12).
             LocalDate dailyCutoff = today.minusDays(ambient.weeklyShadowDays());
             List<Group> groups = List.of(
-                    new Group(KINDS_DAILY_SUMMARY, ambient.capDailySummary(), dailyCutoff),
-                    new Group(KINDS_PERIOD_SUMMARY, ambient.capPeriodSummary(), null),
-                    new Group(KINDS_JOURNAL, ambient.capJournal(), null),
-                    new Group(KINDS_CHAT_TURN, ambient.capChatTurn(), null),
-                    new Group(KINDS_OTHER, ambient.capOther(), null));
+                    new Group(KINDS_DAILY_SUMMARY, ambient.dailySummary(), dailyCutoff),
+                    new Group(KINDS_PERIOD_SUMMARY, ambient.periodSummary(), null),
+                    new Group(KINDS_JOURNAL, ambient.journal(), null),
+                    new Group(KINDS_CHAT_TURN, ambient.chatTurn(), null),
+                    new Group(KINDS_OTHER, ambient.other(), null));
             Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
             for (Group group : groups) {
-                for (RecalledItem item : recallGroup(userId, group, literal, today, ambient, recall)) {
+                for (RecalledItem item : recallGroup(userId, group, literal, today, recall)) {
                     byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
                 }
             }
@@ -172,13 +173,14 @@ public class PromptMemoryAssembler {
         }
     }
 
-    /** One ANN query's shape: which kinds, how many may enter the block, and the date floor. */
-    private record Group(List<String> kinds, int cap, LocalDate notBefore) {}
+    /** One ANN query's shape: which kinds, the group's tuning, and the date floor. */
+    private record Group(List<String> kinds, CompanionProperties.AmbientRecall.Group tuning,
+                         LocalDate notBefore) {}
 
     private List<RecalledItem> recallGroup(UUID userId, Group group, String literal,
-                                           LocalDate today, CompanionProperties.AmbientRecall ambient,
-                                           CompanionProperties.Recall recall) {
-        if (group.cap() == 0) {
+                                           LocalDate today, CompanionProperties.Recall recall) {
+        CompanionProperties.AmbientRecall.Group tuning = group.tuning();
+        if (tuning.cap() == 0) {
             return List.of();
         }
         return annQuery.nearestInKinds(userId, group.kinds(), literal, recall.candidatePool(),
@@ -186,10 +188,10 @@ public class PromptMemoryAssembler {
                 .stream()
                 // the snapshot already carries today — and a future-dated unit is not a memory yet
                 .filter(hit -> hit.occurredOn().isBefore(today))
-                .map(hit -> toItem(hit, today, recall.decayDays()))
-                .filter(item -> item.similarity() >= ambient.minSimilarity())
+                .map(hit -> toItem(hit, today, tuning.decayDays()))
+                .filter(item -> item.similarity() >= tuning.minSimilarity())
                 .sorted(Comparator.comparingDouble(RecalledItem::score).reversed())
-                .limit(group.cap())
+                .limit(tuning.cap())
                 .toList();
     }
 
