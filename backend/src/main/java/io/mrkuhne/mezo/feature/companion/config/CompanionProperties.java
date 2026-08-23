@@ -147,7 +147,16 @@ public record CompanionProperties(
         /** Hard cap on the rendered [Összefüggések] block (estimated tokens, W2.4). */
         @Min(1) int renderMaxTokens,
         /** W2.2 edge structurer: suggestions below this confidence are dropped (edges start humble). */
-        @DecimalMin("0.0") @DecimalMax("1.0") double edgeConfidenceFloor
+        @DecimalMin("0.0") @DecimalMax("1.0") double edgeConfidenceFloor,
+        /** W2.5 (mezo-b3pp.10): cron for the nightly GraphMaintenanceJob (server zone). */
+        @NotBlank String cron,
+        /** W2.5: candidate nodes (never confirmed/rejected) older than this many days are
+         *  soft-deleted — the stale L2 inbox item gets swept off the list. */
+        @Min(1) @Max(365) int candidateMaxAgeDays,
+        /** W2.5: fresh pattern evidence (a same-night pattern_event snapshot for a promoted
+         *  pattern) bumps that node's edges by this much, capped at 1.0 — decay's counterweight
+         *  for evidence still arriving. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double reinforcementBump
     ) {}
 
     /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */

@@ -282,6 +282,11 @@ mezo:
       # off = the FeedbackLearningJob bean does not exist
       feedback-learning-job:
         enabled: true
+      # W2.5 (mezo-b3pp.10) nightly graph maintenance: edge decay/prune + reinforcement, plus the
+      # W2.2 reconciler and W2.3 extraction (schedule: mezo.companion.graph.cron);
+      # off = the GraphMaintenanceJob bean does not exist
+      graph-maintenance-job:
+        enabled: true
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
@@ -447,6 +452,15 @@ mezo:
       # W2.2 (mezo-b3pp.7): the edge structurer drops suggestions below this confidence; the ones
       # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
       edge-confidence-floor: 0.4
+      # W2.5 (mezo-b3pp.10): nightly maintenance cron — 03:20, a free dawn slot (02:20 daily-summary,
+      # 02:40 patterns, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:40 llm-log retention).
+      cron: "0 20 3 * * *"
+      # Candidate nodes (never confirmed/rejected by the L2 inbox) older than this many days are
+      # soft-deleted — a stale extractor guess stops sitting in the list forever.
+      candidate-max-age-days: 30
+      # Fresh pattern evidence (a same-night pattern_event snapshot for an already-promoted
+      # pattern) bumps that node's edges by this much, capped at 1.0.
+      reinforcement-bump: 0.05
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron

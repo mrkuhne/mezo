@@ -4,12 +4,16 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Test data factory for GraphNodeEntity/GraphEdgeEntity — persists via {@code saveAndFlush} so DB CHECKs fire. */
 @TestComponent
@@ -18,6 +22,12 @@ public class GraphPopulator {
 
     private final GraphNodeRepository nodeRepository;
     private final GraphEdgeRepository edgeRepository;
+
+    /** JPA-managed shared EntityManager — the {@code @CreationTimestamp} backdate needs a native
+     *  update; field-injected {@code @PersistenceContext} is the house exception to constructor DI
+     *  (the {@code FeedbackPopulator} precedent). */
+    @PersistenceContext
+    private EntityManager em;
 
     public GraphNodeEntity createNode(UUID owner, String kind, String title) {
         GraphNodeEntity n = new GraphNodeEntity();
@@ -60,5 +70,30 @@ public class GraphPopulator {
         n.setOccurredOn(occurredOn);
         n.setMeta(meta);
         return nodeRepository.saveAndFlush(n);
+    }
+
+    /** W2.5 (mezo-b3pp.10): a candidate node with a controlled {@code created_at}, for
+     *  deterministic stale-candidate-prune window tests — the {@code FeedbackPopulator
+     *  .createVerdictAt} precedent. */
+    @Transactional
+    public GraphNodeEntity createCandidateNodeAt(UUID owner, String kind, String title,
+            LocalDate occurredOn, Map<String, Object> meta, Instant createdAt) {
+        GraphNodeEntity n = createCandidateNode(owner, kind, title, occurredOn, meta);
+        em.createNativeQuery("update knowledge_node set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", n.getId()).executeUpdate();
+        em.clear();
+        return nodeRepository.findById(n.getId()).orElseThrow();
+    }
+
+    /** W2.5 (mezo-b3pp.10) final-review fix: an ACTIVE node with a controlled {@code created_at},
+     *  so a stale-candidate-prune test can prove the survivor differs from the pruned node ONLY
+     *  in status — {@link #createCandidateNodeAt}'s sibling. */
+    @Transactional
+    public GraphNodeEntity createNodeAt(UUID owner, String kind, String title, Instant createdAt) {
+        GraphNodeEntity n = createNode(owner, kind, title);
+        em.createNativeQuery("update knowledge_node set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", n.getId()).executeUpdate();
+        em.clear();
+        return nodeRepository.findById(n.getId()).orElseThrow();
     }
 }

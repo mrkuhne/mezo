@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Callers are (from later slices) async promotion hooks and the nightly reconciler — never a
  * controller: promotion is internal, there is no REST surface for it.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH, havingValue = "true")
@@ -149,21 +151,45 @@ public class GraphPromotionService {
      * round trips rather than one query per entity type — acceptable for a nightly job, but worth
      * knowing before pointing this at a very large backlog.
      *
+     * <p>Per-row isolation (mezo-b3pp.32): a single row's promotion/sync failure is caught,
+     * logged, and skipped — it does not abort the rest of the sweep for this user. This matters
+     * once W2.5's {@code GraphMaintenanceJob} calls this nightly across every user: one corrupt
+     * pattern must not silently stop that user's facts and goals from reconciling too.
+     *
      * @return how many nodes were upserted (created or updated) this run
      */
     public int reconcile(UUID userId) {
         GraphPromotionService proxy = self.getObject();
         int count = 0;
+        int skipped = 0;
         for (PatternEntity pattern : patternRepository
                 .findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(userId, PatternEntity.STATUS_CONFIRMED)) {
-            count += proxy.promotePattern(userId, pattern.getId()).isPresent() ? 1 : 0;
+            try {
+                count += proxy.promotePattern(userId, pattern.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: pattern {} promotion failed for user {}", pattern.getId(), userId, e);
+            }
         }
         for (KnowledgeFactEntity fact : knowledgeFactRepository
                 .findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)) {
-            count += proxy.promoteFact(userId, fact.getId()).isPresent() ? 1 : 0;
+            try {
+                count += proxy.promoteFact(userId, fact.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: fact {} promotion failed for user {}", fact.getId(), userId, e);
+            }
         }
         for (GoalEntity goal : goalRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(userId)) {
-            count += proxy.syncGoal(userId, goal.getId()).isPresent() ? 1 : 0;
+            try {
+                count += proxy.syncGoal(userId, goal.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: goal {} sync failed for user {}", goal.getId(), userId, e);
+            }
+        }
+        if (skipped > 0) {
+            log.warn("Reconcile skipped {} row(s) for user {} due to per-row failures", skipped, userId);
         }
         return count;
     }

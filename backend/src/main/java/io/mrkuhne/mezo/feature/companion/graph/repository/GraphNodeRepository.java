@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.graph.repository;
 
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,11 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
      *  stays flat as the graph grows instead of scaling with the user's total active node count. */
     List<GraphNodeEntity> findByCreatedByAndStatusAndIdNotAndDeletedFalseOrderByCreatedAtDesc(
         UUID createdBy, String status, UUID excludedId, Limit limit);
+
+    /** W2.5 (mezo-b3pp.10): candidate nodes (never confirmed/rejected) sitting in the L2 inbox
+     *  longer than {@code graph.candidate-max-age-days} — the nightly prune target. */
+    List<GraphNodeEntity> findByCreatedByAndStatusAndCreatedAtBeforeAndDeletedFalse(
+        UUID createdBy, String status, Instant cutoff);
 
     /**
      * W2.3's per-day idempotence probe: has the extractor ALREADY processed this day for this
