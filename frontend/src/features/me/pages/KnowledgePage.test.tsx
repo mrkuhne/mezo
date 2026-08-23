@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 
@@ -26,4 +26,20 @@ test('renders category headers in order with counts', () => {
 test('renders 15 fact cards', () => {
   const { container } = renderPage()
   expect(container.querySelectorAll('[data-fact-card]')).toHaveLength(15)
+})
+
+test('renders the Kapcsolatok section grouped by kind with strongest-edge lines', () => {
+  renderPage()
+  expect(screen.getByText(/Kapcsolatok/)).toBeInTheDocument()
+  expect(screen.getByText('Minták · 1')).toBeInTheDocument()
+  expect(screen.getByText('Késői evés rontja az alvást')).toBeInTheDocument()
+  expect(screen.getByText('Késői evés → kiváltja → Rossz alvás · erős')).toBeInTheDocument()
+})
+
+test('archiving a graph node removes it from the Kapcsolatok section (mock mode)', async () => {
+  renderPage()
+  const archiveButtons = screen.getAllByRole('button', { name: 'Archivál' })
+  fireEvent.click(archiveButtons[0])
+  await waitFor(() =>
+    expect(screen.queryByText('Késői evés rontja az alvást')).not.toBeInTheDocument())
 })
