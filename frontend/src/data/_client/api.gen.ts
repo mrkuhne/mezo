@@ -6592,6 +6592,8 @@ export interface components {
             updatedAt: string;
             /** @description W2.3 candidates: how many edges accepting this node would create (0 otherwise). */
             proposedEdgeCount?: number;
+            /** @description Up to 3 Hungarian text lines for this node's strongest touching edges, weight-desc (W2.6, mezo-b3pp.11) — "<cause> → <verb> → <effect> · <erős|közepes|gyenge>", the same renderer the [Összefüggések] prompt block uses. Empty for candidates and nodes with no edges. */
+            topEdges?: string[];
         };
         GraphCandidateDecisionRequest: {
             decision: string;

@@ -112,6 +112,14 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
         proposedEdgeCount: { type: integer, description: 'W2.3 candidates: how many edges accepting this node would create (0 otherwise).' }
+        topEdges:
+          type: array
+          items: { type: string }
+          description: >-
+            Up to 3 Hungarian text lines for this node's strongest touching edges, weight-desc
+            (W2.6, mezo-b3pp.11) — "<cause> → <verb> → <effect> · <erős|közepes|gyenge>", the same
+            renderer the [Összefüggések] prompt block uses. Empty for candidates and nodes with no
+            edges.
     GraphCandidateDecisionRequest:
       type: object
       required: [decision]
