@@ -37,6 +37,20 @@ public class GraphPopulator {
         return nodeRepository.saveAndFlush(n);
     }
 
+    /** W4.3 (mezo-b3pp.17): a node carrying the (sourceKind, sourceId) idempotency key — the
+     *  profile singleton's shape, which {@link #createNode} cannot express. */
+    public GraphNodeEntity createSourcedNode(UUID owner, String kind, String title,
+            String summary, String sourceKind, UUID sourceId) {
+        GraphNodeEntity n = new GraphNodeEntity();
+        n.setCreatedBy(owner);
+        n.setKind(kind);
+        n.setTitle(title);
+        n.setSummary(summary);
+        n.setSourceKind(sourceKind);
+        n.setSourceId(sourceId);
+        return nodeRepository.saveAndFlush(n);
+    }
+
     public GraphEdgeEntity createEdge(UUID owner, UUID fromNodeId, UUID toNodeId, String kind) {
         GraphEdgeEntity e = new GraphEdgeEntity();
         e.setCreatedBy(owner);

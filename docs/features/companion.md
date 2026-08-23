@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-23
+updated: 2026-08-24
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -807,9 +807,10 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
   → ChatStreamService.streamMessage            service/ChatStreamService.java:59
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
-         prompt = voice + snapshot + facts + pattern-ack + [Emlékek] (W3.1) + TONE_REMINDER
+         prompt = voice + snapshot + facts + pattern-ack + [Rólad tanultam] (W4.3) + [Emlékek]
+         (W3.1) + [Összefüggések] (W2.4) + TONE_REMINDER
          (mezo-q71s: history is NOT in here — loadWindow()'s Turns ride PreparedTurn.history
-         separately) — the SAME private assembleSystemPrompt(userId, today, memoriesBlock) helper
+         separately) — the SAME private assembleSystemPrompt(userId, today, memoriesBlock, graphBlock) helper
          the sync path uses, with ONE LocalDate.now() per turn shared by the snapshot and the
          recall; persist USER row, title-once + lastMessageAt. The recalled Memory refs ride
          PreparedTurn.recalledRefs to step 5 — and since W3.1b (mezo-b3pp.28) so do the RENDERED
@@ -881,6 +882,8 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
                       + contextSnapshotAssembler.render(userId, today)             ── V0.3 ──
                       + knowledgeFactService.renderPromptBlock(userId)              ── V1.1 ──
                       + knowledgeFactService.renderNewPatternFactsBlock(userId)     ── V3.3 ──
+                      + profileBlock(userId)  ── W4.3: the [Rólad tanultam] block ("" when the
+                        profile is archived/absent or the graph switch is off) ──
                       + memoriesBlock  ── W3.1: the [Emlékek] block ("" when nothing was recalled) ──
                       + graphBlock  ── W2.4: the [Összefüggések] block ("" when the graph switch is
                         off or nothing matched) ──
@@ -1774,6 +1777,71 @@ memory's second and third rungs above `daily_summary` (spec §4.3/§7.2).
   sentinel (planted in a source narrative, the memoir-sentinel channel) or the defaults
   `FAKE-HETI-KONSZOLIDACIO` / `FAKE-HAVI-KONSZOLIDACIO`.
 
+### W4.3 pragmatic profile node + injection (✅ `mezo-b3pp.17`)
+
+Spec §8.3 — one weekly smart-tier synthesis of "hogyan érdemes Daniellel beszélni" (how it is
+worth talking to Daniel), injected into every turn as its own prompt block.
+
+- **Not a new table** — the singleton `knowledge_node(kind=INSIGHT, source_kind='profile',
+  source_id=userId)` (spec §4.2: "not a separate table"). **The user id as `source_id` is
+  load-bearing:** `uq_knowledge_node_source` (W2.1) is a PARTIAL unique index (`where source_id is
+  not null and is_deleted = false`) — a null `source_id` would silently drop the DB-level singleton
+  guarantee, letting a second profile row slip in. No migration; no API contract change
+  (`GraphNodeResponse.sourceKind` already existed since W2.1).
+- **`ProfileAssembler.rebuild(userId)`** (`profile/service/`) gathers, in pure code: all 11 W4.2
+  feedback-rollup scopes (`FeedbackRollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc`),
+  the 👎-reason (style) histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
+  reviewed `decision_entry` rows newest-review-first (`DecisionEntryRepository
+  .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc`), and up to
+  `maxGraphNodes` active PATTERN/PREFERENCE node titles (`GraphService.listActive`, the profile
+  node itself excluded — it must never eat its own output). ONE smart-tier
+  `CompanionLlm.completeSmart` call, tagged `LlmCallContext("companion_profile", "assemble", null,
+  null)`, prompt marker `ROLAD-TANULTAM` (`FakeCompanionLlm` dispatch key in tests).
+- **Spec interpretation (recorded explicitly, not a silent deviation):** §8.3 asks the assembler to
+  distil "(+ RECOVERY-related graph nodes when W2 live)". There is **no `RECOVERY` node kind** in
+  the shipped graph (kinds: `PATTERN`/`PREFERENCE`/`GOAL`/`LIFE_EVENT`/`SEASON`/`INSIGHT` — W2.1).
+  The faithful reading taken here is "what the graph already knows about how he works" = the active
+  PATTERN and PREFERENCE node titles, profile node excluded. Reasoning: PATTERN/PREFERENCE are the
+  two kinds the graph promotes from repeated behavior and stated likes/dislikes — the closest thing
+  to "how he works" the shipped taxonomy has — while GOAL/LIFE_EVENT/SEASON describe WHAT is
+  happening to him, not HOW to talk to him, and INSIGHT is the profile's own kind.
+- **Honest absence** — zero feedback signal AND zero reviewed decisions AND zero graph nodes ⇒ no
+  LLM call, no node write, any existing profile left untouched (`ProfileAssembler.rebuild` returns
+  `Optional.empty()` before the payload is even rendered). A blank model answer is the same
+  no-op — never a node overwritten with an invention.
+- **The cap applies twice** — `ProfileProperties.renderMaxTokens` (**400**, spec §8.3) caps the
+  prose at STORE time (`ProfileAssembler.cap`, `CHARS_PER_TOKEN = 3`, same estimate as
+  `[Emlékek]`/`[Összefüggések]`) and again, redundantly, at RENDER time
+  (`ProfilePromptAssembler.render`) — so Tudástár's "Rólad tanultam" card can never show more prose
+  than the model was actually given, even if the config value changes between a write and a read.
+  The cut lands on a word boundary with a trailing `…`.
+- **`upsertNode` does not touch status** (W2.2 owns its own status rules), so the assembler
+  explicitly re-activates the node after the upsert: an archived profile is revived by the very
+  next weekly run — the "reset what you think of me" recovery path spec §8.3 promises, without a
+  dedicated endpoint.
+- **`ProfileAssemblerJob`** (`profile/service/`) — one `@Scheduled` method, weekly **Monday 03:45**
+  (`0 45 3 * * MON`), deliberately AFTER the 03:10 feedback rollups and the 03:30 weekly
+  consolidation rung — it reads both, so it must run last in that dawn window. Gated on
+  `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧
+  `mezo.techcore.cron.profile-assembler-job.enabled` (`PROFILE_ASSEMBLER_JOB_SWITCH`); per-user
+  try/catch (the `GraphMaintenanceJob`/`DailySummaryJob` idiom — one bad user never kills the run).
+  Direct injection of `ProfileAssembler` into the job is safe because the job requires the same two
+  feature switches the assembler does, plus its own cron switch.
+- **`ProfilePromptAssembler.render(userId)`** — renders the `[Rólad tanultam]` block, positioned
+  in the canonical prompt order right after the fact blocks (top-N facts + the pattern-facts
+  acknowledgment) and BEFORE `[Emlékek]` — see the updated `assembleSystemPrompt` order in §3. Reads
+  the ACTIVE node only (an archived one renders `""`, the explicit "forget what you think of me"
+  lever), is capped, and **never throws** (IDENT-3): a `RuntimeException` logs a warn and yields
+  `""`, so a profile-block failure never breaks a turn. `""` also when the bean is absent
+  (`COMPANION_SWITCH`/`KNOWLEDGE_GRAPH_SWITCH` off — `ChatService` holds it via `ObjectProvider`,
+  the `GraphPromptAssembler` idiom).
+- **`ProfileMetaEnvelope`** (`profile/entity/`) — the node's typed `meta.profile` payload
+  (`generatedAt`, `feedbackSignals`, `reviewedDecisions`, `graphNodes`): what the synthesis was
+  built from, so a surprising profile can be explained without re-running the job. Hand-rolled
+  `toMeta()`/read-back under its own `META_KEY`, the `GraphProposedEdge` idiom.
+- **W5.3 (`mezo-b3pp.20`) calls `ProfileAssembler.rebuild` too**, after the quarterly pass — the
+  public method is deliberately reusable, not job-private.
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -2157,6 +2225,20 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.graph.reinforcement-bump` = **0.05** (0..1) — W2.5: fresh pattern evidence
   (a same-night `pattern_event` snapshot for a promoted pattern) bumps that node's touching edges
   by this much, capped at 1.0.
+- `mezo.companion.profile.cron` = **`0 45 3 * * MON`** (`@NotBlank`) — W4.3 (`mezo-b3pp.17`):
+  weekly, AFTER the 03:10 feedback rollups and the 03:30 weekly consolidation rung (both read by
+  the assembler, so it must run last in the dawn window). Job switch
+  `mezo.techcore.cron.profile-assembler-job.enabled` (`PROFILE_ASSEMBLER_JOB_SWITCH`) — off ⇒ the
+  `ProfileAssemblerJob` bean does not exist.
+- `mezo.companion.profile.render-max-tokens` = **400** (`@Min(50) @Max(2000)`, spec §8.3) — the
+  hard cap on the WHOLE `[Rólad tanultam]` block (header included) at render time; the same budget
+  is applied at STORE time to the prose alone (no header there), so the stored summary can be
+  marginally longer than what a turn actually renders — Tudástár may show a little more than the
+  model was given, never less.
+- `mezo.companion.profile.max-decisions` = **10** (`@Min(0) @Max(100)`) — how many reviewed
+  decisions (newest-review-first) enter the synthesis payload.
+- `mezo.companion.profile.max-graph-nodes` = **12** (`@Min(0) @Max(100)`) — how many active
+  PATTERN/PREFERENCE node titles enter the synthesis payload.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
@@ -2923,6 +3005,32 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`feedback/FeedbackLearningJobSwitchOffIT`** — `mezo.techcore.cron.feedback-learning-job.enabled=false`
   ⇒ no `FeedbackLearningJob` bean.
 
+**W4.3 pragmatic-profile test additions (`mezo-b3pp.17`, spec §8.3):**
+
+- **`profile/service/ProfileAssemblerIT`** — writes the singleton node keyed by `(kind=INSIGHT,
+  source_kind='profile', source_id=userId)`, status `ACTIVE`, non-blank summary; rerunning updates
+  the SAME row rather than adding a second one; an archived profile is revived by the next run
+  (status flipped back to `ACTIVE`); no feedback signal / no reviewed decisions / no graph nodes ⇒
+  no LLM call AND no node (`FakeCompanionLlm.completeCallCount()` unchanged); the stored summary
+  never exceeds `renderMaxTokens * 3` chars end to end; the package-private `renderPayload` is
+  asserted DIRECTLY against real `feedback_rollup` rows a completed `FeedbackLearningService
+  .computeRollups` run wrote — proving the VISSZAJELZÉSEK/ELUTASÍTÁS OKAI sections are genuinely
+  wired to the rollup table, not structurally present with dead inputs (review finding).
+- **`profile/service/ProfileAssemblerCapTest`** (pure unit) — the word-boundary cap: unchanged
+  under the limit, unchanged exactly at the boundary, a space-free run over the cap hard-cut with
+  an ellipsis.
+- **`profile/ProfilePromptAssemblerIT`** — renders the header + prose for an active node; no
+  profile row ⇒ `""`; an archived node ⇒ `""`; an oversized stored row still renders under the
+  token cap (defense in depth alongside the store-time cap); the full chat prompt carries the
+  block AFTER the fact blocks and BEFORE `[Emlékek]` (the canonical order pinned end to end).
+- **`profile/ProfileAssemblerJobIT`** — the weekly sweep writes a profile for a user with signal.
+- **`profile/ProfileAssemblerJobSwitchOffIT`** — `mezo.techcore.cron.profile-assembler-job
+  .enabled=false` ⇒ no `ProfileAssemblerJob` bean (the house cron idiom).
+- **`profile/ProfilePropertiesIT`** — pins the shipped defaults (Monday 03:45, 400/10/12).
+- **`profile/ProfileSourceFindersIT`** — the two read-side finders in isolation: reviewed decisions
+  come back newest-first with unreviewed rows excluded; all rollup scopes for a user come back in
+  one read.
+
 **W3.1 ambient-recall test additions (`mezo-b3pp.12`) — the LLM and the embedding port are both
 fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
 
@@ -3464,6 +3572,17 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/feedback/{CompanionFeedbackApiIT,MessageFeedbackPersistenceIT,CompanionFeedbackSwitchOffIT}.java` + `support/populator/FeedbackPopulator.java` (+ `message_feedback` in `ResetDatabase`) — §8.
 - **FE side** (documented in [`insights.md` §10](insights.md)): `frontend/src/data/feedback/` (`feedbackTypes`/`feedbackApi`/`feedbackMock`/`feedbackHooks`, exported through the `@/data/hooks` barrel) + `frontend/src/features/insights/components/FeedbackChips.tsx`.
 
+**Backend — pragmatic profile (W4.3, `mezo-b3pp.17` — §4/§5, spec §8.3)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/config/ProfileProperties.java` — the four `mezo.companion.profile.*` knobs (`cron`, `renderMaxTokens`, `maxDecisions`, `maxGraphNodes`), a feature-scoped record (`@ConfigurationPropertiesScan`) rather than another `CompanionProperties` nested component — the `FeedbackLearningProperties` precedent.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/entity/ProfileMetaEnvelope.java` — the profile node's typed `meta.profile` payload (`generatedAt`/`feedbackSignals`/`reviewedDecisions`/`graphNodes`), hand-rolled under its own `META_KEY` (the `GraphProposedEdge` idiom).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssembler.java` — `rebuild(userId)`: pure-code gather (feedback rollups, style histogram, reviewed decisions, active PATTERN/PREFERENCE titles) → ONE smart-tier `completeSmart` call → `GraphService.upsertNode` into the singleton `(kind=INSIGHT, source_kind='profile', source_id=userId)` row, explicitly re-activated after the upsert. Honest absence: no signal ⇒ `Optional.empty()`, no LLM call, no write.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssemblerJob.java` — the weekly sweep (Monday 03:45, after the 03:10 rollups and 03:30 consolidation rung), per-user try/catch, `PROFILE_ASSEMBLER_JOB_SWITCH`-gated. Calls `ProfileAssembler.rebuild` — which is what W5.3 (`mezo-b3pp.20`) reuses after the quarterly pass, per that class's own javadoc.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfilePromptAssembler.java` — the `[Rólad tanultam]` block: `render(userId)` reads the ACTIVE node, caps it again at render time, never throws (IDENT-3), `""` when the bean is absent or nothing is stored.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROFILE_ASSEMBLER_JOB_SWITCH` (`mezo.techcore.cron.profile-assembler-job.enabled`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
+- **FE side** — `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx` + `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`me.md` §2](me.md).
+
 **Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/service/GraphService.java` — `upsertNode`/`upsertEdge` are the ONLY write paths later slices use; `archive` flips `status` only.
@@ -3474,7 +3593,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionVoiceController.java` + `service/TranscriptionService.java` — **`mezo-at8x.4`** the stateless voice-note → transcript surface (`implements CompanionVoiceApi`, switch-gated; size/mime validation + the transcription system prompt).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock)` that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock, graphBlock)` that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/ChatHistory.java` — **mezo-q71s** the `List<Turn>` → "Daniel: … / Mezo: …" text renderer, the sole source for the three non-model consumers (advisor judge payload, fake LLM echo, `llm_log_history.conversation_history`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).

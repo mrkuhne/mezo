@@ -282,6 +282,9 @@ mezo:
       # off = the FeedbackLearningJob bean does not exist
       feedback-learning-job:
         enabled: true
+      # W4.3 (mezo-b3pp.17): weekly pragmatic-profile synthesis (smart tier, one LLM call/user/week)
+      profile-assembler-job:
+        enabled: true
       # W2.5 (mezo-b3pp.10) nightly graph maintenance: edge decay/prune + reinforcement, plus the
       # W2.2 reconciler and W2.3 extraction (schedule: mezo.companion.graph.cron);
       # off = the GraphMaintenanceJob bean does not exist
@@ -532,6 +535,14 @@ mezo:
       cron: "0 10 3 * * *"
       # Trailing window (days) the rollups are computed over
       window-days: 30
+    # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
+    profile:
+      # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,
+      # both of which are this job's inputs.
+      cron: "0 45 3 * * MON"
+      render-max-tokens: 400
+      max-decisions: 10
+      max-graph-nodes: 12
     patterns:
       # V3.1 nightly Pearson correlation over the pair catalog — 02:40, after the summary job
       cron: "0 40 2 * * *"

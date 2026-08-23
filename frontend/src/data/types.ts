@@ -712,6 +712,9 @@ export interface KnowledgeGraphNode {
   title: string
   summary: string | null
   topEdges: string[]
+  /** W4.3 (mezo-b3pp.17): `'profile'` marks the singleton pragmatic-profile node, which the
+   *  Tudástár renders in its own section instead of the kind groups. */
+  sourceKind: string | null
 }
 
 // --- Insights (AI-memory surface) ---
