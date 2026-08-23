@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.GraphNodeResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GraphPopulator;
@@ -72,5 +73,20 @@ class GraphApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "GRAPH_NODE_NOT_FOUND");
+    }
+
+    @Test
+    void testListGraphNodes_shouldIncludeTopEdges_forNodesWithEdges() {
+        UUID owner = ownerId();
+        GraphNodeEntity from = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Késői evés");
+        GraphNodeEntity to = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Rossz alvás");
+        graphPopulator.createEdge(owner, from.getId(), to.getId(), GraphEdgeEntity.KIND_TRIGGERS, "0.800");
+
+        List<GraphNodeResponse> nodes = getForList("/api/companion/graph/node", ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+
+        GraphNodeResponse fromResponse = nodes.stream()
+            .filter(n -> n.getId().equals(from.getId())).findFirst().orElseThrow();
+        assertThat(fromResponse.getTopEdges()).containsExactly("Késői evés → kiváltja → Rossz alvás · erős");
     }
 }
