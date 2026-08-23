@@ -43,8 +43,10 @@ public class MemoryRecallService {
     // traversal), and skipping the tx keeps the connection free during the embed network call.
     public List<RecalledMemory> recallSimilarDays(UUID userId, String query, int k) {
         CompanionProperties.Recall recall = properties.recall();
+        // W3.3 (mezo-b3pp.14): tagged like the ambient path so `/me/ai-usage`'s `companion_recall`
+        // row is recall's whole cost share.
         float[] queryVector = llmCallContextHolder.runWith(
-                new LlmCallContext("embed_memory", "query", null, null),
+                new LlmCallContext("companion_recall", "recall_embed", "tool", null),
                 () -> embeddingPort.embedQuery(query));
         List<MemoryMatch> candidates = memoryEmbeddingRepository.findNearest(userId,
                 MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,

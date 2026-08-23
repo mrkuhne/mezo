@@ -3,9 +3,14 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.service.MemoryRecallService;
 import io.mrkuhne.mezo.feature.companion.service.MemoryRecallService.RecalledMemory;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -17,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * V2.3 recall ranking over hand-seeded vectors + the fake embedder's {@code [fake-embed:…]}
@@ -33,6 +39,28 @@ class MemoryRecallServiceIT extends AbstractIntegrationTest {
     @Autowired private MemoryRecallService memoryRecallService;
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private FakeEmbeddingAdapter fake;
+    @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
+    @Autowired private CompanionProperties properties;
+    @Autowired private LlmCallContextHolder contextHolder;
+
+    @Test
+    void testRecallSimilarDays_shouldTagTheQueryEmbedAsCompanionRecall_whenCalled() {
+        UUID owner = userPopulator.createUser().getId();
+        AtomicReference<LlmCallContext> seen = new AtomicReference<>();
+        EmbeddingPort probe = new EmbeddingPort() {
+            @Override public List<float[]> embedDocuments(List<String> texts) { return fake.embedDocuments(texts); }
+            @Override public float[] embedQuery(String text) {
+                seen.set(contextHolder.get());
+                return fake.embedQuery(text);
+            }
+        };
+        MemoryRecallService service = new MemoryRecallService(probe, memoryEmbeddingRepository, properties, contextHolder);
+
+        service.recallSimilarDays(owner, "[fake-embed:1] alvás", 3);
+
+        assertThat(seen.get()).isEqualTo(new LlmCallContext("companion_recall", "recall_embed", "tool", null));
+    }
 
     @Test
     void testRecall_shouldOrderBySimilarity_whenSameAge() {
