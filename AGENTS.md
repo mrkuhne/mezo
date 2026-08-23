@@ -176,10 +176,11 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
   `~/.local/bin` (bd) on PATH for desktop-spawned shells.
 - Memory = facts, skills = procedures: durable environment/project facts go to `bd remember`
   (and Hermes MEMORY.md/Hindsight pick them up); a repeated 5+ step procedure becomes a skill.
-- Model roles (A/B 2026-08-21): **Qwen3.6-35B-A3B, effort Medium** for spec/plan writing and
-  implementation (12-min plan vs no plan from the 27B); Qwen3.8-27B only for short-context
-  work (review of a diff, a single file) — its thinking runs away past ~60K context and trips
-  the stream watchdog; chat: 35B-A3B at effort Low.
+- Model roles (measured 2026-08-21/23): **Qwen3.6-35B-A3B, effort Medium** for plan writing,
+  implementation and fixes (Low for chat); **Qwen3.8-27B** only for short-context work —
+  brainstorming/spec dialogue and diff review (its thinking runs away past ~60K context);
+  **Gemma 4 26B-A4B, thinking off**, for every auxiliary task (memory extraction, titles,
+  vision, query rewrite) — never run those on the work model or on a thinking model.
 - **Hermes never merges.** Every unit of work ends with a pushed branch and an open pull
   request (`gh pr create`) whose body lists commits, gate output and deviations from the
   plan; Daniel reviews and performs the `--no-ff` merge. Skill/memory improvements are

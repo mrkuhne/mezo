@@ -22,7 +22,7 @@ Operator's manual for Daniel. Setup facts live in
 
 | Check | Command / place | Expect |
 |---|---|---|
-| Models loaded | `lms ps` | `qwen/qwen3.6-35b-a3b` (+ `google/gemma-4-e4b` for aux) |
+| Models loaded | `lms ps` | `qwen/qwen3.6-35b-a3b` + `google/gemma-4-26b-a4b` (aux/memory); `qwen3.8-27b` loads on demand |
 | Desktop picker | composer → model | **Qwen3.6 35B A3B** · effort **Medium** (Low for chat) |
 | Skills alive | `hermes skills list` (from the repo) | 11 project skills; none missing |
 | Main checkout clean | `git -C ~/Applications/Personal/Mezo/mezo status -sb` | `## main…origin/main`, no changes |
@@ -50,7 +50,7 @@ runs both FE modes / the ITs, pushes and opens the PR. Expect 10–30 min. You r
 
 ### C. New feature from zero — the four-session chain
 
-**C1 · Brainstorm → spec** (`brainstorming`, Medium; High only if the design is genuinely hard)
+**C1 · Brainstorm → spec** (`brainstorming`, **Qwen3.8 27B**, Medium — short context, quality over speed)
 ```
 Using the brainstorming skill: I want <one-paragraph idea>. Ask me one question at a time, then propose approaches. When I approve, write the spec to docs/superpowers/specs/<date>-<topic>-design.md and create the bd epic/issue for it (bd create … -t feature). Do not write code.
 ```
@@ -110,16 +110,21 @@ repo. If a session instead checked out a branch in the main repo (happens withou
 stop it: move the work with `git stash` → `git worktree add .worktrees/<topic> <branch>` →
 `stash pop` there, and put the main checkout back on `main`.
 
-## 4. Model and effort per session
+## 4. Model and effort per session (as of 2026-08-23)
 
-| Session | Model | Effort |
-|---|---|---|
-| A chat | Qwen3.6 35B A3B | Low |
-| B fix, C2 plan, C3 execute, D continue, F docs | Qwen3.6 35B A3B | Medium |
-| C1 brainstorm | Qwen3.6 35B A3B | Medium (High for one hard design question, not the session) |
-| E review | Qwen3.8 27B | Medium (keep the context small — one diff) |
+| Session | Model | Effort / thinking | Why |
+|---|---|---|---|
+| B fix · C2 plan · C3 execute · D continue · F docs | **Qwen3.6 35B A3B** | Medium | 3B active → fast tool loops; shipped W1.3 with 0 escalations; 12-min plan |
+| A chat, rubber duck | Qwen3.6 35B A3B | Low | fast enough; Gemma 26B A4B (thinking off) is a valid alternative for conversation |
+| C1 brainstorm → spec | **Qwen3.8 27B** (loads on demand) | Medium | short context, few tool calls, quality matters — the smartest dense model earns its keep here |
+| E review · one hard question | Qwen3.8 27B (loads on demand) | Medium | one diff, one answer; never long agent loops (tool-call buffering + thinking runaway) |
+| Hindsight memory extraction | **Gemma 4 26B A4B** | thinking OFF | 9 s per retain, 3 causal facts — Qwen3.8 quality at E4B speed; thinking models jam the pipeline |
+| Titles, vision, memory query rewrite | Gemma 4 26B A4B | thinking OFF | never on the work model — aux retries starved real sessions |
 
-Auxiliary work (titles, vision, memory query rewrite) runs on Gemma 4 E4B automatically.
+Resident in RAM: 35B A3B (38 GB) + Gemma 26B A4B (28 GB) ≈ 66 GB; Qwen3.8 loads in ~10 s
+when a session picks it and unloads after an hour idle. Three rules behind the table: **MoE
+for agent loops** · **thinking only for short, decision-shaped work** · **auxiliary tasks never
+on the work model and never on a thinking model**.
 
 ## 5. What you check, when
 
