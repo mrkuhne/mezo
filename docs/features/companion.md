@@ -591,6 +591,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7` | Phase 5 W2.2 — confirmed patterns, non-pattern-sourced knowledge facts and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
 | Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode`/node-id ref per rendered node after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
+| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, three phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside), then W2.3's `LifeEventExtractionService.extractFor(yesterday)`. A failure in any phase for any user never skips the rest. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs four kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter `ambient-recall.min-similarity` floor, today-and-later dates skipped (the snapshot already carries the day), `ambient-recall.cap-*` items kept (a cap of 0 skips the query entirely). Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
@@ -1650,6 +1651,43 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   stream-path refs), `ChatServiceGraphBlockFailureIT` (IDENT-3: `@MockitoSpyBean` makes the seed
   read throw ⇒ block absent, `degraded` false, **both message rows still committed** — own IT class
   so the spy's forked context can't leak into the others), `ChatServiceGraphBlockSwitchOffIT`.
+
+### W2.5 graph maintenance job (✅ `mezo-b3pp.10`)
+
+- **`GraphMaintenanceService`** (`graph/service/GraphMaintenanceService.java`) — pure arithmetic,
+  no LLM call, one `@Transactional runMaintenance(userId)` per user:
+  1. **Decay + floor-prune** — every active edge's weight ×= `graph.decay-factor` (default 0.99);
+     an edge that decays under `graph.prune-floor` (default 0.05) is soft-deleted in the SAME pass
+     (one `findByCreatedByAndDeletedFalse` load, not a second re-query).
+  2. **Stale-candidate prune** — candidate nodes (never confirmed/rejected by the W2.3 L2 inbox)
+     older than `graph.candidate-max-age-days` (default 30, keyed on `created_at`) are soft-deleted.
+  3. **Reinforcement** — a PATTERN node with a `pattern_event` `snapshot` row from the last 24h
+     (the nightly `PatternDetectionJob`'s own cadence — "fresh evidence") has EVERY edge touching
+     it (both `from` and `to`) bumped by `graph.reinforcement-bump` (default 0.05), capped at 1.0,
+     stamping `last_reinforced_at`. An edge pruned earlier in the SAME run is gone from the
+     `@SQLRestriction`-filtered edge finders already, so it simply isn't reinforced.
+  Returns `GraphMaintenanceResult(edgesDecayed, edgesPruned, candidatesPruned, edgesReinforced)`,
+  logged per user by the job.
+- **`GraphMaintenanceJob`** (`graph/service/GraphMaintenanceJob.java`) — the `FeedbackLearningJob`
+  per-user-isolation idiom, cron `mezo.companion.graph.cron` (03:20, a free dawn slot). Per user,
+  THREE independently try/caught phases, in order: `GraphMaintenanceService.runMaintenance` →
+  `GraphPromotionService.reconcile` (W2.2) → `LifeEventExtractionService.extractFor(yesterday)`
+  (W2.3) — a failure in one phase never skips the other two for that user, and never skips the
+  next user. Gated on `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own
+  `mezo.techcore.cron.graph-maintenance-job.enabled` switch; the three collaborators it calls all
+  already require at least `KNOWLEDGE_GRAPH_SWITCH`, so direct constructor injection is safe.
+- **`GraphPromotionService.reconcile` per-row isolation (mezo-b3pp.32, fixed alongside this
+  slice)** — a single pattern/fact/goal's promotion failure is now caught, logged, and skipped
+  rather than aborting the rest of that user's sweep; a skip count is logged when any row failed.
+  This was flagged as a W2.5 prerequisite during W2.2's review: harmless while nothing scheduled
+  `reconcile`, no longer harmless once this job calls it nightly across every user.
+- **Config** — `CompanionProperties.Graph` gains `cron` (`@NotBlank`), `candidateMaxAgeDays`
+  (`@Min(1) @Max(365)`, default 30), `reinforcementBump` (`@DecimalMin/Max(0,1)`, default 0.05),
+  alongside the existing `maxHops`/`topK`/`decayFactor`/`pruneFloor`/`renderMaxTokens`
+  /`edgeConfidenceFloor`.
+- **Tests:** `GraphMaintenanceServiceIT` (decay math, floor-prune, stale-candidate-prune vs.
+  active-node survival, reinforcement on fresh evidence, no reinforcement on stale evidence),
+  `GraphMaintenanceJobSwitchOffIT`, plus the new `GraphPromotionServiceReconcileIsolationIT`.
 
 ### Entities
 
