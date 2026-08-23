@@ -12,8 +12,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -94,7 +95,13 @@ public class GraphMaintenanceService {
      *  pattern's node (both directions) — the counterweight to this same run's decay. Edges that
      *  were just pruned above are gone from {@code findByCreatedByAndFromNodeIdAndDeletedFalse}/
      *  {@code ...ToNodeIdAndDeletedFalse} already (both are {@code @SQLRestriction}-filtered), so
-     *  a dead relationship simply isn't reinforced — it stays gone until re-evidenced fresh. */
+     *  a dead relationship simply isn't reinforced — it stays gone until re-evidenced fresh.
+     *
+     * <p>Edges are collected into a {@code Map<UUID, GraphEdgeEntity>} keyed by edge id across ALL
+     * fresh pattern ids BEFORE any bump is applied — an edge directly between two simultaneously
+     * fresh, promoted PATTERN nodes (e.g. a structured {@code A --SUPPORTS--> B} edge where both A
+     * and B got a fresh snapshot the same night) would otherwise surface from both pattern A's
+     * {@code from}-query and pattern B's {@code to}-query and get double-bumped. */
     private int reinforceFreshPatterns(UUID userId, double bump) {
         Instant since = Instant.now().minus(REINFORCEMENT_FRESHNESS_HOURS, ChronoUnit.HOURS);
         Set<UUID> freshPatternIds = patternEventRepository
@@ -103,9 +110,7 @@ public class GraphMaintenanceService {
         if (freshPatternIds.isEmpty()) {
             return 0;
         }
-        BigDecimal bumpAmount = BigDecimal.valueOf(bump);
-        Instant now = Instant.now();
-        int reinforced = 0;
+        Map<UUID, GraphEdgeEntity> touching = new LinkedHashMap<>();
         for (UUID patternId : freshPatternIds) {
             Optional<GraphNodeEntity> node = nodeRepository
                 .findByCreatedByAndSourceKindAndSourceIdAndDeletedFalse(userId, GraphPromotionService.SOURCE_PATTERN, patternId);
@@ -113,14 +118,19 @@ public class GraphMaintenanceService {
                 continue;   // pattern confirmed but never promoted — nothing to reinforce
             }
             UUID nodeId = node.get().getId();
-            List<GraphEdgeEntity> touching = new ArrayList<>(edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(userId, nodeId));
-            touching.addAll(edgeRepository.findByCreatedByAndToNodeIdAndDeletedFalse(userId, nodeId));
-            for (GraphEdgeEntity edge : touching) {
-                BigDecimal bumped = edge.getWeight().add(bumpAmount).min(BigDecimal.ONE).setScale(3, RoundingMode.HALF_UP);
-                edge.setWeight(bumped);
-                edge.setLastReinforcedAt(now);
-                reinforced++;
-            }
+            edgeRepository.findByCreatedByAndFromNodeIdAndDeletedFalse(userId, nodeId)
+                .forEach(edge -> touching.put(edge.getId(), edge));
+            edgeRepository.findByCreatedByAndToNodeIdAndDeletedFalse(userId, nodeId)
+                .forEach(edge -> touching.put(edge.getId(), edge));
+        }
+        BigDecimal bumpAmount = BigDecimal.valueOf(bump);
+        Instant now = Instant.now();
+        int reinforced = 0;
+        for (GraphEdgeEntity edge : touching.values()) {
+            BigDecimal bumped = edge.getWeight().add(bumpAmount).min(BigDecimal.ONE).setScale(3, RoundingMode.HALF_UP);
+            edge.setWeight(bumped);
+            edge.setLastReinforcedAt(now);
+            reinforced++;
         }
         return reinforced;
     }

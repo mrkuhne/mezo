@@ -134,6 +134,34 @@ class GraphMaintenanceServiceIT extends AbstractIntegrationTest {
         assertThat(result.edgesReinforced()).isZero();
     }
 
+    @Test
+    void testRunMaintenance_shouldReinforceASharedEdge_onlyOnce_whenBothEndpointsAreFreshPatterns() {
+        UUID owner = ownerId();
+        PatternEntity patternA = patternPopulator.createPattern(owner, "sleep_vs_energy", "Alvás -> energia");
+        patternA.setStatus(PatternEntity.STATUS_CONFIRMED);
+        patternPopulator.save(patternA);
+        PatternEntity patternB = patternPopulator.createPattern(owner, "energy_vs_mood", "Energia -> hangulat");
+        patternB.setStatus(PatternEntity.STATUS_CONFIRMED);
+        patternPopulator.save(patternB);
+        GraphNodeEntity nodeA = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Alvás -> energia");
+        setSource(nodeA, GraphPromotionService.SOURCE_PATTERN, patternA.getId());
+        GraphNodeEntity nodeB = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Energia -> hangulat");
+        setSource(nodeB, GraphPromotionService.SOURCE_PATTERN, patternB.getId());
+        // one edge directly between the two pattern nodes -- surfaces from A's from-query AND B's to-query
+        graphPopulator.createEdge(owner, nodeA.getId(), nodeB.getId(), GraphEdgeEntity.KIND_SUPPORTS, "0.600");
+        // both patterns get a fresh snapshot this run
+        patternEventPopulator.snapshot(owner, patternA.getId(), -0.55, 15, 0.03, Instant.now().minus(1, ChronoUnit.HOURS));
+        patternEventPopulator.snapshot(owner, patternB.getId(), 0.50, 12, 0.04, Instant.now().minus(2, ChronoUnit.HOURS));
+
+        GraphMaintenanceResult result = maintenanceService.runMaintenance(owner);
+
+        // must be bumped ONCE, not twice: decayed first (0.600 * 0.99 = 0.594), then +0.05 = 0.644
+        assertThat(result.edgesReinforced()).isEqualTo(1);
+        List<GraphEdgeEntity> edges = edgeRepository.findByCreatedByAndDeletedFalse(owner);
+        assertThat(edges).hasSize(1);
+        assertThat(edges.get(0).getWeight()).isEqualByComparingTo(new BigDecimal("0.644"));
+    }
+
     /** Test-only: sets the source anchor directly via the repository (bypasses the LLM edge
      *  structurer that {@code GraphPromotionService.promotePattern} would trigger for a new node —
      *  reinforcement only needs the anchor, not real structured edges). */
