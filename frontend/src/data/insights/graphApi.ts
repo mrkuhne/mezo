@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { GraphNodeKind, KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '@/data/types'
+import type { KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '@/data/types'
 
 export type GraphNodeResponse = components['schemas']['GraphNodeResponse']
 export type GraphCandidateDecisionRequest = components['schemas']['GraphCandidateDecisionRequest']
@@ -22,7 +22,7 @@ export function toLifeEventCandidate(n: GraphNodeResponse): LifeEventCandidate {
 export function toKnowledgeGraphNode(n: GraphNodeResponse): KnowledgeGraphNode {
   return {
     id: n.id,
-    kind: n.kind as GraphNodeKind,
+    kind: n.kind,
     title: n.title,
     summary: n.summary ?? null,
     topEdges: n.topEdges ?? [],

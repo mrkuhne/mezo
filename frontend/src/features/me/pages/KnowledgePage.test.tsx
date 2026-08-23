@@ -2,8 +2,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 
-// The knowledge graph is a mock-only prototype surface (edges exist only in the seed) —
-// the dual-mode useKnowledge serves it the seed synchronously in mock mode.
+// The useKnowledge() fact-edges mock field is a mock-only prototype surface (edges exist
+// only in the seed) — the dual-mode useKnowledge serves it the seed synchronously in mock
+// mode. This does NOT describe the real graph-node "Kapcsolatok" section below, which is
+// backed by the live knowledge-graph API (see graphHooks.ts / graphApi.ts).
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 

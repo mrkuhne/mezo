@@ -110,7 +110,8 @@ public class GraphService {
     private List<String> topEdgeLines(UUID nodeId, Map<UUID, List<GraphEdgeEntity>> touchingByNode,
             Map<UUID, String> titleById) {
         return touchingByNode.getOrDefault(nodeId, List.of()).stream()
-            .sorted(Comparator.comparing(GraphEdgeEntity::getWeight).reversed())
+            .sorted(Comparator.comparing(GraphEdgeEntity::getWeight).reversed()
+                .thenComparing(GraphEdgeEntity::getId))
             .limit(TOP_EDGES_PER_NODE)
             .map(e -> GraphEdgeLineRenderer.renderLine(e.getKind(),
                 titleById.get(e.getFromNodeId()), titleById.get(e.getToNodeId()), e.getWeight()))

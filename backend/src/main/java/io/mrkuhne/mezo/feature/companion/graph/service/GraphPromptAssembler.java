@@ -92,7 +92,8 @@ public class GraphPromptAssembler {
      * <p>Every line reads cause-first, as the header promises ({@code ok → viszony → okozat}).
      * {@code PRECEDED_BY} stores the opposite direction — {@code from PRECEDED_BY to} means the
      * TO-node happened first (see {@link GraphEdgeEntity#KIND_PRECEDED_BY}) — so its endpoints are
-     * SWAPPED here: {@code - <to> → megelőzte → <from>}. No other kind is swapped.
+     * SWAPPED by {@link GraphEdgeLineRenderer#renderLine}, which this method calls: {@code
+     * - <to> → megelőzte → <from>}. No other kind is swapped.
      */
     static Rendered renderBlock(List<NeighborEdge> edges, int maxTokens) {
         if (edges.isEmpty()) {
