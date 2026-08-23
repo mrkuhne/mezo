@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.journal.repository.GratitudeEntryRepository;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -40,6 +41,21 @@ public class JournalPopulator {
         e.setDecisionText(decisionText);
         e.setContextSnapshot(new DecisionContextEnvelope(snapshotText, Instant.parse("2026-08-20T06:00:00Z")));
         e.setReviewDue(reviewDue);
+        return decisionRepository.saveAndFlush(e);
+    }
+
+    /** W4.3 (mezo-b3pp.17): a decision that has already been through the review loop. */
+    public DecisionEntryEntity createReviewedDecision(UUID owner, LocalDate decidedOn,
+            String decisionText, int outcomeRating, String outcomeText) {
+        DecisionEntryEntity e = new DecisionEntryEntity();
+        e.setCreatedBy(owner);
+        e.setDecidedOn(decidedOn);
+        e.setDecisionText(decisionText);
+        e.setContextSnapshot(new DecisionContextEnvelope(null, Instant.parse("2026-08-20T06:00:00Z")));
+        e.setReviewDue(decidedOn.plusDays(14));
+        e.setReviewedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        e.setOutcomeRating((short) outcomeRating);
+        e.setOutcomeText(outcomeText);
         return decisionRepository.saveAndFlush(e);
     }
 
