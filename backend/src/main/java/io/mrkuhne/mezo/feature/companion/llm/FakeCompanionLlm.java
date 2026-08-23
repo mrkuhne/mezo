@@ -301,6 +301,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUGGEST_COUNT_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest-count:(\\d+)]");
 
+    /** W4.3 (mezo-b3pp.17): literal mirror of {@code ProfileAssembler.PROFILE_MARKER} — importing
+     *  the constant would be a boundary-crossing import from the llm package into a feature
+     *  subpackage's service; {@code ProfileAssemblerIT} pins the two strings together. */
+    private static final String PROFILE_MARKER_MIRROR = "ROLAD-TANULTAM";
+
     /** Scripted graph edge structuring (W2.2): [fake-graph-edges:[…]] planted in the node title. */
     public static final Pattern GRAPH_EDGES_SENTINEL =
             Pattern.compile("\\[fake-graph-edges:(\\[.*?])]", Pattern.DOTALL);
@@ -466,6 +471,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(HypothesisPipelineService.REVISE_MARKER)) {
             Matcher m = REVISE_SENTINEL.matcher(userMessage.split("KONTEXTUS:", 2)[0]);
             return m.find() ? m.group(1) : "{}";
+        }
+        if (systemPrompt.startsWith(PROFILE_MARKER_MIRROR)) {
+            return "A rövid, konkrét reggeli üzenet válik be nálad; a hosszabb elemzést délben"
+                    + " olvasod el, a bőséges tipplistát pedig rendre elutasítod.";
         }
         if (systemPrompt.startsWith(GraphEdgeStructurer.STRUCTURER_MARKER)) {
             if (userMessage.contains(GRAPH_EDGES_BROKEN)) {
