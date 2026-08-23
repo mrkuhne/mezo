@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 
@@ -40,8 +40,19 @@ test('renders the Kapcsolatok section grouped by kind with strongest-edge lines'
 
 test('archiving a graph node removes it from the Kapcsolatok section (mock mode)', async () => {
   renderPage()
-  const archiveButtons = screen.getAllByRole('button', { name: 'Archivál' })
-  fireEvent.click(archiveButtons[0])
+  // Scope to the Kapcsolatok node card (not the separate profile card, which also has an
+  // "Archivál" button) so this only exercises the "Kapcsolatok" archive path.
+  const card = screen.getByText('Késői evés rontja az alvást').closest('[data-graph-node-card]')
+  const { getByRole } = within(card as HTMLElement)
+  fireEvent.click(getByRole('button', { name: 'Archivál' }))
   await waitFor(() =>
     expect(screen.queryByText('Késői evés rontja az alvást')).not.toBeInTheDocument())
+})
+
+test('lifts the profile node out of the Kapcsolatok groups into its own section', async () => {
+  renderPage()
+
+  expect(await screen.findByText('Rólad tanultam')).toBeInTheDocument()
+  // exactly once: it must not ALSO appear under the "Belátások" group
+  expect(screen.getAllByText('Rólad tanultam')).toHaveLength(1)
 })

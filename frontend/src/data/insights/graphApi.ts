@@ -26,6 +26,7 @@ export function toKnowledgeGraphNode(n: GraphNodeResponse): KnowledgeGraphNode {
     title: n.title,
     summary: n.summary ?? null,
     topEdges: n.topEdges ?? [],
+    sourceKind: n.sourceKind ?? null,
   }
 }
 
