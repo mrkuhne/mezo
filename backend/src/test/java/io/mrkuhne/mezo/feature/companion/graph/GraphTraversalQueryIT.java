@@ -98,10 +98,14 @@ class GraphTraversalQueryIT extends AbstractIntegrationTest {
         nodeRepository.flush();
         GraphNodeEntity foreign = graphPopulator.createNode(other, GraphNodeEntity.KIND_PATTERN, "Idegen");
         graphPopulator.createEdge(other, foreign.getId(), foreign.getId(), GraphEdgeEntity.KIND_RELATES_TO, "0.900");
+        // an OWNED edge pointing at a FOREIGN node: the edge passes the created_by filter, the
+        // node join must still reject it — otherwise another user's title leaks into the prompt
+        graphPopulator.createEdge(userId, seed.getId(), foreign.getId(), GraphEdgeEntity.KIND_TRIGGERS, "0.950");
 
         List<NeighborEdge> edges = query.neighborhood(userId, List.of(seed.getId()), 2, 8);
 
         assertThat(edges).extracting(NeighborEdge::toTitle).containsExactly("Élő");
+        assertThat(edges).extracting(NeighborEdge::toNodeId).doesNotContain(foreign.getId());
     }
 
     @Test

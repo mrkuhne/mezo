@@ -43,6 +43,12 @@ class GraphPromptAssemblerIT extends AbstractIntegrationTest {
         assertThat(seeds).containsExactlyInAnyOrder(byTitle.getId(), bySummary.getId());
         assertThat(traversalService.seedsFor(userId, "")).isEmpty();
         assertThat(traversalService.seedsFor(userId, "ab")).isEmpty();
+        // W2.4 review fix: ToolText.searchTokens splits on whitespace/comma/semicolon only, so
+        // sentence punctuation used to ride along ("alvás?" → "alvas?") and match nothing
+        assertThat(traversalService.seedsFor(userId, "alvás?"))
+                .containsExactlyInAnyOrder(byTitle.getId(), bySummary.getId());
+        assertThat(traversalService.seedsFor(userId, "(rossz alvás!)"))
+                .containsExactlyInAnyOrder(byTitle.getId(), bySummary.getId());
     }
 
     @Test

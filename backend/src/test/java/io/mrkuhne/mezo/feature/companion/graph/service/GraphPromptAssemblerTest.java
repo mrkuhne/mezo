@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.companion.graph.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
-import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphTraversalQuery.NeighborEdge;
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,8 +12,8 @@ import org.junit.jupiter.api.Test;
 class GraphPromptAssemblerTest {
 
     private static NeighborEdge edge(String from, String to, String kind, String weight) {
-        return new NeighborEdge(UUID.randomUUID(), UUID.randomUUID(), from, GraphNodeEntity.KIND_PATTERN,
-                UUID.randomUUID(), to, GraphNodeEntity.KIND_PATTERN, kind, new BigDecimal(weight), 1);
+        return new NeighborEdge(UUID.randomUUID(), UUID.randomUUID(), from,
+                UUID.randomUUID(), to, kind, new BigDecimal(weight), 1);
     }
 
     @Test

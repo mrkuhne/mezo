@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class GraphPopulator {
         e.setFromNodeId(fromNodeId);
         e.setToNodeId(toNodeId);
         e.setKind(kind);
-        e.setWeight(new java.math.BigDecimal(weight));
+        e.setWeight(new BigDecimal(weight));
         return edgeRepository.saveAndFlush(e);
     }
 
