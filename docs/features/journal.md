@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-08-21
+updated: 2026-08-23
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -327,11 +327,14 @@ ranged list, newest-first by day then by creation time within a day — same sha
 Migration [`202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql)
 widens `ck_memory_embedding_kind` from the V2.2-era `chat_turn|daily_summary|weekly_summary` to ten
 values: `chat_turn, daily_summary, weekly_summary, monthly_summary, journal_entry, reflection,
-gratitude, decision, activity_note, checkin_note`. **`journal_entry` (W1.1), `decision` (W1.4),
-`reflection` (W1.2) and — since `mezo-b3pp.5` — `activity_note`/`checkin_note` (W1.5) are populated**;
-`gratitude` (W1.3), `monthly_summary` and `weekly_summary` are the schema headroom that is left.
-Neither W1.4 nor W1.5 needed **a migration of its own** — the CHECK already permitted `'decision'`,
-`'activity_note'` and `'checkin_note'`, which is the entire point of landing all ten in one batch.
+gratitude, decision, activity_note, checkin_note`. **All ten are populated today**: `journal_entry`
+(W1.1), `reflection` (W1.2), `gratitude` (W1.3), `decision` (W1.4), `activity_note`/`checkin_note`
+(W1.5, `mezo-b3pp.5`) and — since W3.2 (`mezo-b3pp.13`) — `weekly_summary`/`monthly_summary`, written
+by `MemoryEmbeddingWriter.writePeriodSummary` from the consolidation ladder's `period_summary` rungs
+(see [`companion.md`](companion.md) §4 W3.2).
+Neither W1.4, W1.5 nor W3.2 needed **a migration of its own** — the CHECK already permitted
+`'decision'`, `'activity_note'`, `'checkin_note'`, `'weekly_summary'` and `'monthly_summary'`, which
+is the entire point of landing all ten in one batch.
 The `(kind, ref_id)` uniqueness and the single `MemoryEmbeddingWriter`
 write path are unchanged by design — see [`companion.md`](companion.md) §4 for the full
 `memory_embedding` table shape.
