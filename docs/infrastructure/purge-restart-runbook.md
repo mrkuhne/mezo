@@ -8,28 +8,52 @@ Deletes: everything else. Design:
 
 The script is safe by default: without `purge.dry_run=off` it only reports.
 
-## 1. Fresh backup (mandatory)
+## 1. Stop writes
+
+1. Pause ArgoCD auto-sync for the `mezo` Application (namespace `argocd`) so
+   it can't scale the backend back up mid-purge:
+
+   ```bash
+   kubectl patch application mezo -n argocd --type merge -p '{"spec":{"syncPolicy":null}}'
+   ```
+
+2. Scale the backend to zero:
+
+   ```bash
+   kubectl scale -n mezo deploy/backend --replicas=0
+   ```
+
+## 2. Fresh backup (mandatory)
 
 ```bash
 ./scripts/backup-live-db.sh
 ```
 
-Verify the newest dump is readable:
+Verify the newest dump is readable — list its contents with the in-pod
+`pg_restore` (a local client may be a different major version than the
+in-cluster server and refuse to read the dump):
 
 ```bash
-ls -1t ~/MrKuhne/mezo-live-backups/mezo-*.dump | head -1
-pg_restore --list "$(ls -1t ~/MrKuhne/mezo-live-backups/mezo-*.dump | head -1)" | head
+LATEST=$(ls -1t ~/MrKuhne/mezo-live-backups/mezo-*.dump | head -1)
+kubectl exec -i -n mezo postgres-0 -- pg_restore --list < "$LATEST" | head
 ```
 
-## 2. Stop writes
+### Rehearse the restore (do this before a live purge)
+
+Prove the dump actually restores before you need it, into a scratch DB
+inside the pod — never touches `mezo`:
 
 ```bash
-kubectl scale -n mezo deploy/backend --replicas=0
+kubectl exec -i -n mezo postgres-0 -- createdb -U mezo mezo_restore_test
+kubectl exec -i -n mezo postgres-0 -- pg_restore -U mezo -d mezo_restore_test --exit-on-error < "$LATEST"
+kubectl exec -i -n mezo postgres-0 -- dropdb -U mezo mezo_restore_test
 ```
 
-ArgoCD self-heal may scale it back within minutes — either pause auto-sync for
-the app in the ArgoCD UI first, or simply proceed immediately (the script runs
-in seconds) and keep the PWA closed meanwhile.
+Note: under `--exit-on-error`, restoring the `vector` extension's objects
+into a fresh scratch DB can fail if the extension isn't pre-installed there —
+if the rehearsal aborts on a `CREATE EXTENSION`/vector-type statement, that's
+an extension-availability issue in the scratch DB, not proof the dump itself
+is bad.
 
 ## 3. Dry run
 
@@ -52,9 +76,18 @@ transaction rolled back and nothing changed.
 
 ## 5. Restart + smoke-check
 
-```bash
-kubectl scale -n mezo deploy/backend --replicas=1
-```
+1. Resume ArgoCD auto-sync, restoring the original `syncPolicy` exactly as
+   the manifest (`argocd/application.yaml`) defines it:
+
+   ```bash
+   kubectl patch application mezo -n argocd --type merge -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+   ```
+
+2. Scale the backend back up:
+
+   ```bash
+   kubectl scale -n mezo deploy/backend --replicas=1
+   ```
 
 In the PWA, open each surface and expect (spec §4):
 
@@ -71,10 +104,10 @@ Any 500 → file its own bd issue (first-run bug, not a purge bug).
 
 ## 6. Rollback (if needed)
 
-Restore the §1 dump (full overwrite, drops what was written since):
+Restore the §2 dump (full overwrite, drops what was written since):
 
 ```bash
 kubectl scale -n mezo deploy/backend --replicas=0
-kubectl exec -i -n mezo postgres-0 -- pg_restore -U mezo -d mezo --clean --if-exists < ~/MrKuhne/mezo-live-backups/mezo-<STAMP>.dump
+kubectl exec -i -n mezo postgres-0 -- pg_restore -U mezo -d mezo --clean --if-exists --exit-on-error < ~/MrKuhne/mezo-live-backups/mezo-<STAMP>.dump
 kubectl scale -n mezo deploy/backend --replicas=1
 ```

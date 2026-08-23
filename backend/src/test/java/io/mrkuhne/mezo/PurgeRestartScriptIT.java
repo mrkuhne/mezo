@@ -2,10 +2,12 @@ package io.mrkuhne.mezo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -30,6 +32,7 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
     @Autowired private JdbcTemplate jdbc;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
+    @Autowired private RecipePopulator recipePopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitPopulator habitPopulator;
 
@@ -37,7 +40,8 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
 
     private UUID seed() {
         UUID owner = databasePopulator.populateUser("purge@test.local");
-        pantryItemPopulator.createFood(owner, "purge-keep-food", LocalDate.parse("2027-01-01"));
+        PantryItemEntity food = pantryItemPopulator.createFood(owner, "purge-keep-food", LocalDate.parse("2027-01-01"));
+        recipePopulator.createRecipe(owner, food.getId()); // seeds recipe + 2 recipe_ingredient lines
         weightLogPopulator.createWeightLog(owner, LocalDate.parse("2026-08-01"), new BigDecimal("80.00"));
         habitPopulator.pendingDay(owner, LocalDate.parse("2026-08-01")); // seeds chains+defs+day rows
         return owner;
@@ -56,8 +60,13 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
                 if (live) {
                     st.execute("SET purge.dry_run = 'off'");
                 }
-                st.execute(sql);
-                st.execute("RESET purge.dry_run");
+                try {
+                    st.execute(sql);
+                } finally {
+                    // Always reset, even if the script raised — otherwise a failure hands the
+                    // pool back a connection stuck in live mode for whichever test runs next.
+                    st.execute("RESET purge.dry_run");
+                }
             }
             return null;
         });
@@ -67,6 +76,8 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
     void testDryRun_shouldDeleteNothing_whenGucUnset() throws IOException {
         seed();
         long pantry = count("pantry_item");
+        long recipes = count("recipe");
+        long recipeIngredients = count("recipe_ingredient");
         long weight = count("weight_log");
         long habitDays = count("habit_day");
         assertThat(weight).isPositive();
@@ -74,6 +85,8 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         runScript(false);
 
         assertThat(count("pantry_item")).isEqualTo(pantry);
+        assertThat(count("recipe")).isEqualTo(recipes);
+        assertThat(count("recipe_ingredient")).isEqualTo(recipeIngredients);
         assertThat(count("weight_log")).isEqualTo(weight);
         assertThat(count("habit_day")).isEqualTo(habitDays);
     }
@@ -83,6 +96,8 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         seed();
         long users = count("app_user");
         long pantry = count("pantry_item");
+        long recipes = count("recipe");
+        long recipeIngredients = count("recipe_ingredient");
         long chains = count("habit_chain");
         long defs = count("habit_def");
         assertThat(count("weight_log")).isPositive();
@@ -93,9 +108,11 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         // purged side: logs gone, routine day-ticks gone
         assertThat(count("weight_log")).isZero();
         assertThat(count("habit_day")).isZero();
-        // kept side: identity, pantry, routine definitions untouched
+        // kept side: identity, pantry, recipes (+ ingredients), routine definitions untouched
         assertThat(count("app_user")).isEqualTo(users);
         assertThat(count("pantry_item")).isEqualTo(pantry);
+        assertThat(count("recipe")).isEqualTo(recipes);
+        assertThat(count("recipe_ingredient")).isEqualTo(recipeIngredients);
         assertThat(count("habit_chain")).isEqualTo(chains);
         assertThat(count("habit_def")).isEqualTo(defs);
         assertThat(count("databasechangelog")).isPositive(); // Liquibase history intact
