@@ -91,7 +91,7 @@ class PromptMemoryAssemblerShadowIT extends AbstractIntegrationTest {
 
         AmbientRecall recalled = assembler.recall(owner, UUID.randomUUID(), AXIS0_QUERY, TODAY);
 
-        // cap-period-summary = 2: the two freshest rungs win (decayed score)
+        // period-summary.cap = 2: the two freshest rungs win (decayed score)
         assertThat(recalled.items()).extracting(RecalledMemoriesEnvelope.Item::gist)
                 .containsExactly("Hét #1", "Hét #2");
     }

@@ -43,8 +43,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the RAW similarity; the block is one global score-ordered list across groups. Live tuning
  * (application.yml): daily-summary 2 / 0.55 / τ90, period-summary 2 / 0.55 / τ180, journal
  * 2 / 0.60 / τ90, chat-turn 1 / 0.55 / τ90, other 1 / 0.55 / τ90, {@code weekly-shadow-days: 30}
- * (older daily summaries are not even asked for), {@code candidate-pool: 20} (> this corpus, so the
- * pool never truncates). Every ordering decision below has ≥0.021 of headroom and every
+ * (older daily summaries are not even asked for), {@code candidate-pool: 20} — applied per
+ * kind-group, and the largest group here is 7 rows, so the pool never truncates. Every ordering
+ * decision below has ≥0.021 of headroom and every
  * floor/cap decision ≥0.017 — orders of magnitude above float4 noise (~1e-7).
  *
  * <p><b>What this table pins.</b> Every entry below was verified by MUTATION: the knob was moved

@@ -441,8 +441,10 @@ mezo:
       weekly-shadow-days: 30
       # Hard cap on the rendered block (estimated tokens; ~3 chars/token for Hungarian prose)
       max-tokens: 1200
-      # W3.3 input (mezo-b3pp.27): the current conversation's own chat turns are already in the
-      # history window — do not recall them as memories
+      # W3.3 input (mezo-b3pp.27): excludes the WHOLE conversation from ambient chat_turn recall, not
+      # just what fits in mezo.companion.chat.history-window (20 messages ≈ 10 turns) — beyond the
+      # window this is a deliberate trade: a long thread's own early turns drop out of ambient
+      # recall, but the thread is still the conversation being answered.
       exclude-current-conversation: true
       # W3.3 (mezo-b3pp.14, spec §7.3): PER KIND-GROUP tuning — cap = items in the block
       # (0 = group not queried); min-similarity = raw cosine floor; decay-days = τ of the

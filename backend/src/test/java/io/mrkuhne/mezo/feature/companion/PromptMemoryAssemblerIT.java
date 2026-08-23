@@ -135,12 +135,12 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         AmbientRecall recalled = assembler.recall(owner, UUID.randomUUID(), AXIS0_QUERY, TODAY);
 
         String block = recalled.block();
-        assertThat(block.split("\\(napi összefoglaló\\)", -1).length - 1).isEqualTo(2);   // cap-daily-summary
+        assertThat(block.split("\\(napi összefoglaló\\)", -1).length - 1).isEqualTo(2);   // daily-summary.cap
         assertThat(block).contains("összefoglaló 1").contains("összefoglaló 2").doesNotContain("összefoglaló 3");
-        // the journal FAMILY shares cap-journal=2: the two fresher journal rows win over the older gratitude
+        // the journal FAMILY shares journal.cap=2: the two fresher journal rows win over the older gratitude
         assertThat(block.split("\\(napló\\)", -1).length - 1 + block.split("\\(hála\\)", -1).length - 1).isEqualTo(2);
         assertThat(block).doesNotContain("hála 1");
-        assertThat(block.split("\\(korábbi beszélgetés\\)", -1).length - 1).isEqualTo(1);      // cap-chat-turn
+        assertThat(block.split("\\(korábbi beszélgetés\\)", -1).length - 1).isEqualTo(1);      // chat-turn.cap
     }
 
     @Test
@@ -149,9 +149,10 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "ortogonális zaj", TODAY.minusDays(1),
                 MemoryEmbeddingPopulator.axisVector(1));                       // similarity 0.0
         // similarity 0.4: pins the floor to (0.4, 0.707] — passes the TOOL's 0.25 floor
-        // (recall.min-similarity) but must fail the ambient 0.55 one (ambient.min-similarity);
-        // a `recall.minSimilarity()` vs `ambient.minSimilarity()` typo in the assembler would
-        // let this row through and this assertion would catch it.
+        // (recall.min-similarity) but must fail the journal group's 0.60 floor
+        // (ambient-recall.journal.min-similarity); a typo that read `recall.minSimilarity()`
+        // instead of `ambient.journal().minSimilarity()` in the assembler would let this row
+        // through and this assertion would catch it.
         float[] weak = new float[EmbeddingPort.DIMENSIONS];
         weak[0] = 0.4f;
         weak[1] = (float) Math.sqrt(1 - 0.4 * 0.4);
@@ -249,7 +250,7 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
 
         AmbientRecall recalled = assembler.recall(owner, current.getId(), AXIS0_QUERY, TODAY);
 
-        // cap-chat-turn is 1 and the own turn is fresher (higher decayed score) — only the
+        // chat-turn.cap is 1 and the own turn is fresher (higher decayed score) — only the
         // exclusion can make the older conversation's turn win
         assertThat(recalled.block()).contains("Daniel: régen").doesNotContain("Daniel: ma");
     }

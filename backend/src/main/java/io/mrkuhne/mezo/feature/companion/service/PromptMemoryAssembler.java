@@ -30,9 +30,9 @@ import java.util.UUID;
  * in relevant past. The incoming user message is embedded ONCE (RETRIEVAL_QUERY), four kind-group
  * ANN searches run over {@code memory_embedding} with per-group caps, a PER-GROUP raw-similarity
  * floor and τ (W3.3, {@code ambient-recall.<group>.*}) in the V2.3 {@code similarity × exp(-age/τ)}
- * re-rank, and the survivors render
- * as the {@code [Emlékek]} block under a hard token cap. Broad ambient recall — the
- * {@code find_similar_past_days} tool stays for deep, targeted recall on demand.
+ * re-rank, and the survivors render as the {@code [Emlékek]} block under a hard token cap. Broad
+ * ambient recall — the {@code find_similar_past_days} tool stays for deep, targeted recall on
+ * demand.
  *
  * <p>Failure honesty (IDENT-3): an embed/ANN failure is logged and the block is simply omitted —
  * the turn itself is fine, so the caller's {@code degraded} flag is NOT touched.
@@ -51,8 +51,9 @@ import java.util.UUID;
  * items are keyed by {@code (kind, ref_id)} so no unit enters the block twice.
  *
  * <p>W3.3 (mezo-b3pp.27): the chat_turn query skips the conversation being answered
- * ({@code ambient-recall.exclude-current-conversation}) — those turns are already in the history
- * window.
+ * ({@code ambient-recall.exclude-current-conversation}) — this drops the WHOLE conversation from
+ * ambient recall, not just the part inside {@code chat.history-window}; beyond the window it is a
+ * deliberate trade, since the thread is still the conversation being answered.
  */
 @Slf4j
 @Service
