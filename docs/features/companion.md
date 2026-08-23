@@ -810,7 +810,7 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          prompt = voice + snapshot + facts + pattern-ack + [Rólad tanultam] (W4.3) + [Emlékek]
          (W3.1) + [Összefüggések] (W2.4) + TONE_REMINDER
          (mezo-q71s: history is NOT in here — loadWindow()'s Turns ride PreparedTurn.history
-         separately) — the SAME private assembleSystemPrompt(userId, today, memoriesBlock) helper
+         separately) — the SAME private assembleSystemPrompt(userId, today, memoriesBlock, graphBlock) helper
          the sync path uses, with ONE LocalDate.now() per turn shared by the snapshot and the
          recall; persist USER row, title-once + lastMessageAt. The recalled Memory refs ride
          PreparedTurn.recalledRefs to step 5 — and since W3.1b (mezo-b3pp.28) so do the RENDERED
@@ -2231,8 +2231,10 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   `mezo.techcore.cron.profile-assembler-job.enabled` (`PROFILE_ASSEMBLER_JOB_SWITCH`) — off ⇒ the
   `ProfileAssemblerJob` bean does not exist.
 - `mezo.companion.profile.render-max-tokens` = **400** (`@Min(50) @Max(2000)`, spec §8.3) — the
-  hard cap on the `[Rólad tanultam]` block, applied at STORE time as well as render time, so
-  Tudástár never shows more than the model was given.
+  hard cap on the WHOLE `[Rólad tanultam]` block (header included) at render time; the same budget
+  is applied at STORE time to the prose alone (no header there), so the stored summary can be
+  marginally longer than what a turn actually renders — Tudástár may show a little more than the
+  model was given, never less.
 - `mezo.companion.profile.max-decisions` = **10** (`@Min(0) @Max(100)`) — how many reviewed
   decisions (newest-review-first) enter the synthesis payload.
 - `mezo.companion.profile.max-graph-nodes` = **12** (`@Min(0) @Max(100)`) — how many active
@@ -3574,7 +3576,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/config/ProfileProperties.java` — the four `mezo.companion.profile.*` knobs (`cron`, `renderMaxTokens`, `maxDecisions`, `maxGraphNodes`), a feature-scoped record (`@ConfigurationPropertiesScan`) rather than another `CompanionProperties` nested component — the `FeedbackLearningProperties` precedent.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/entity/ProfileMetaEnvelope.java` — the profile node's typed `meta.profile` payload (`generatedAt`/`feedbackSignals`/`reviewedDecisions`/`graphNodes`), hand-rolled under its own `META_KEY` (the `GraphProposedEdge` idiom).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssembler.java` — `rebuild(userId)`: pure-code gather (feedback rollups, style histogram, reviewed decisions, active PATTERN/PREFERENCE titles) → ONE smart-tier `completeSmart` call → `GraphService.upsertNode` into the singleton `(kind=INSIGHT, source_kind='profile', source_id=userId)` row, explicitly re-activated after the upsert. Honest absence: no signal ⇒ `Optional.empty()`, no LLM call, no write.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssemblerJob.java` — the weekly sweep (Monday 03:45, after the 03:10 rollups and 03:30 consolidation rung), per-user try/catch, `PROFILE_ASSEMBLER_JOB_SWITCH`-gated. Reused by W5.3 (`mezo-b3pp.20`) after the quarterly pass.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssemblerJob.java` — the weekly sweep (Monday 03:45, after the 03:10 rollups and 03:30 consolidation rung), per-user try/catch, `PROFILE_ASSEMBLER_JOB_SWITCH`-gated. Calls `ProfileAssembler.rebuild` — which is what W5.3 (`mezo-b3pp.20`) reuses after the quarterly pass, per that class's own javadoc.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfilePromptAssembler.java` — the `[Rólad tanultam]` block: `render(userId)` reads the ACTIVE node, caps it again at render time, never throws (IDENT-3), `""` when the bean is absent or nothing is stored.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROFILE_ASSEMBLER_JOB_SWITCH` (`mezo.techcore.cron.profile-assembler-job.enabled`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
@@ -3591,7 +3593,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionVoiceController.java` + `service/TranscriptionService.java` — **`mezo-at8x.4`** the stateless voice-note → transcript surface (`implements CompanionVoiceApi`, switch-gated; size/mime validation + the transcription system prompt).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock)` that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock, graphBlock)` that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/ChatHistory.java` — **mezo-q71s** the `List<Turn>` → "Daniel: … / Mezo: …" text renderer, the sole source for the three non-model consumers (advisor judge payload, fake LLM echo, `llm_log_history.conversation_history`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).

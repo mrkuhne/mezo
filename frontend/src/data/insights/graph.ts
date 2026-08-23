@@ -14,15 +14,15 @@ export const lifeEventCandidateSeed: LifeEventCandidate[] = [
   },
 ]
 
+/** W4.3 (mezo-b3pp.17): the singleton profile node's `source_kind` (backend
+ *  `ProfileAssembler.SOURCE_PROFILE`) — the Tudástár splits it out of the kind groups by this. */
+export const PROFILE_SOURCE_KIND = 'profile'
+
 /**
  * Mock-mód seed (W2.6): négy csomópont különböző kind-ekből, néhány kapcsolattal — ugyanazt a
  * Hungarian sorformátumot használva, amit a backend `GraphEdgeLineRenderer` (és a régi
  * `[Összefüggések]` prompt blokk) renderel, hogy a demó és az éles felület sose térjen el.
  */
-/** W4.3 (mezo-b3pp.17): the singleton profile node's `source_kind` (backend
- *  `ProfileAssembler.SOURCE_PROFILE`) — the Tudástár splits it out of the kind groups by this. */
-export const PROFILE_SOURCE_KIND = 'profile'
-
 export const graphNodeSeed: KnowledgeGraphNode[] = [
   {
     id: 'gn-1',
