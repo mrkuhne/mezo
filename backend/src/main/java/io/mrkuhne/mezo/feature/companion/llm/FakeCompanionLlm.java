@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
+import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -123,6 +124,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
     public static final Pattern SUMMARY_SENTINEL =
             Pattern.compile("\\[fake-summary:([^\\]]*)]", Pattern.DOTALL);
+
+    /** Scripted consolidation prose (W3.2): {@code [fake-period:…]} planted in a source narrative
+     *  (a daily-summary text for the weekly rung, a weekly rung's text for the monthly one — the
+     *  same "plant it in what the gather renders" channel the memoir sentinel uses). */
+    public static final Pattern PERIOD_SENTINEL =
+            Pattern.compile("\\[fake-period:([^\\]]*)]", Pattern.DOTALL);
 
     /** Scripted hypotheses (V3.2): {@code [fake-hypotheses:<json-array>]} in the weekly context. */
     public static final Pattern HYPOTHESES_SENTINEL =
@@ -339,6 +346,14 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
             return summaryAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PeriodSummaryService.WEEKLY_MARKER)) {
+            Matcher m = PERIOD_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "FAKE-HETI-KONSZOLIDACIO";
+        }
+        if (systemPrompt.startsWith(PeriodSummaryService.MONTHLY_MARKER)) {
+            Matcher m = PERIOD_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "FAKE-HAVI-KONSZOLIDACIO";
         }
         if (systemPrompt.startsWith(MORNING_MARKER_MIRROR)) {
             Matcher m = MORNING_SENTINEL.matcher(userMessage);
