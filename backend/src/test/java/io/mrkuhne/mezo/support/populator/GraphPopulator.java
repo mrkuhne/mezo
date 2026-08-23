@@ -84,4 +84,16 @@ public class GraphPopulator {
         em.clear();
         return nodeRepository.findById(n.getId()).orElseThrow();
     }
+
+    /** W2.5 (mezo-b3pp.10) final-review fix: an ACTIVE node with a controlled {@code created_at},
+     *  so a stale-candidate-prune test can prove the survivor differs from the pruned node ONLY
+     *  in status — {@link #createCandidateNodeAt}'s sibling. */
+    @Transactional
+    public GraphNodeEntity createNodeAt(UUID owner, String kind, String title, Instant createdAt) {
+        GraphNodeEntity n = createNode(owner, kind, title);
+        em.createNativeQuery("update knowledge_node set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", n.getId()).executeUpdate();
+        em.clear();
+        return nodeRepository.findById(n.getId()).orElseThrow();
+    }
 }

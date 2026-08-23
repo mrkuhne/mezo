@@ -82,7 +82,8 @@ class GraphMaintenanceServiceIT extends AbstractIntegrationTest {
             owner, GraphNodeEntity.KIND_LIFE_EVENT, "Régi jelölt", null, Map.of(), old);
         GraphNodeEntity freshCandidate = graphPopulator.createCandidateNode(
             owner, GraphNodeEntity.KIND_LIFE_EVENT, "Friss jelölt", null, Map.of());
-        GraphNodeEntity activeOldNode = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PREFERENCE, "Aktív");
+        GraphNodeEntity activeOldNode = graphPopulator.createNodeAt(
+            owner, GraphNodeEntity.KIND_PREFERENCE, "Aktív", old);
 
         GraphMaintenanceResult result = maintenanceService.runMaintenance(owner);
 

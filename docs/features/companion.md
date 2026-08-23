@@ -2013,16 +2013,26 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.graph.top-k` = **8** (`@Min(1) @Max(20)`) — W2.1: top-K neighbors returned by
   weight; consumed starting W2.4.
 - `mezo.companion.graph.decay-factor` = **0.99** (0.9..1) — W2.1: nightly edge-weight
-  multiplicative decay (e.g. 0.99 = 1%/day fade); consumed starting W2.5.
+  multiplicative decay (e.g. 0.99 = 1%/day fade); consumed by W2.5's `GraphMaintenanceService`.
 - `mezo.companion.graph.prune-floor` = **0.05** (0..1) — W2.1: edges below this weight are
-  soft-deleted on the nightly pass; consumed starting W2.5.
+  soft-deleted on the nightly pass; consumed by W2.5's `GraphMaintenanceService`.
 - `mezo.companion.graph.render-max-tokens` = **800** (`@Min(1)`) — W2.1: hard cap on the rendered
-  `[Összefüggések]` block in estimated tokens; consumed by W2.4's `GraphPromptAssembler`. Of these
-  five W2.1 fields, `max-hops`/`top-k`/`render-max-tokens` are now consumed (`top-k` earliest —
-  W2.2's edge structurer already used it, below; the other two since W2.4's traversal + render);
-  `decay-factor`/`prune-floor` stay declared-but-unused until W2.5's maintenance job lands.
+  `[Összefüggések]` block in estimated tokens; consumed by W2.4's `GraphPromptAssembler`. Of the
+  original five W2.1 fields, all are now consumed: `top-k` earliest (W2.2's edge structurer), then
+  `max-hops`/`render-max-tokens` (W2.4's traversal + render), then `decay-factor`/`prune-floor`
+  (W2.5's maintenance job).
 - `mezo.companion.graph.edge-confidence-floor` = **0.4** (0..1) — W2.2: the edge structurer drops
   suggestions below this confidence; survivors are created at `weight = confidence × 0.5`.
+- `mezo.companion.graph.cron` = **"0 20 3 * * *"** (`@NotBlank`) — W2.5 (mezo-b3pp.10): the nightly
+  `GraphMaintenanceJob` cron (03:20, a free dawn slot). Job switch
+  `mezo.techcore.cron.graph-maintenance-job.enabled`
+  (`FeaturesConfiguration.GRAPH_MAINTENANCE_JOB_SWITCH`).
+- `mezo.companion.graph.candidate-max-age-days` = **30** (`@Min(1) @Max(365)`) — W2.5: candidate
+  nodes (never confirmed/rejected by the L2 inbox) older than this many days are soft-deleted on
+  the nightly pass.
+- `mezo.companion.graph.reinforcement-bump` = **0.05** (0..1) — W2.5: fresh pattern evidence
+  (a same-night `pattern_event` snapshot for a promoted pattern) bumps that node's touching edges
+  by this much, capped at 1.0.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
