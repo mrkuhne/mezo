@@ -233,6 +233,43 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldThrowAndPersistNothing_whenModelReturnsNoText() {
+        UUID userId = databasePopulator.populateUser("chat-empty@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        assertThatThrownBy(() -> chatService.sendMessage(userId, conversation.getId(),
+                request("mennyi a súlyom " + FakeCompanionLlm.EMPTY_ANSWER)))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .hasMessageContaining("COMPANION_EMPTY_ANSWER");
+
+        // No assistant row: the blank answer never becomes history. (In production the throw also
+        // rolls the user row back — sendMessage is ONE transaction — but this IT is @Transactional,
+        // so the enclosing test transaction is merely marked rollback-only and the row stays
+        // visible here. The streamed path, which is what the app actually uses, is asserted
+        // end-to-end in ChatStreamServiceIT.)
+        assertThat(messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(
+                        conversation.getId(), userId))
+                .extracting(AiMessageEntity::getRole)
+                .containsExactly(AiMessageEntity.ROLE_USER);
+    }
+
+    @Test
+    void testSendMessage_shouldSkipBlankRowsInHistory_whenAnEmptyAnswerWasPersistedBefore() {
+        UUID userId = databasePopulator.populateUser("chat-blank-history@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+        // A pre-mezo-8z79 blank assistant row: it must never travel as an empty AssistantMessage.
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_ASSISTANT, "");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+
+        String history = answer.getContent()
+                .substring(answer.getContent().indexOf("history=["), answer.getContent().indexOf("] user=["));
+        assertThat(history).contains("Daniel: korábbi kérdés").doesNotContain("Mezo: ");
+    }
+
+    @Test
     void testSendMessage_shouldWindowHistoryIntoPrompt_whenPriorTurnsExist() {
         UUID userId = databasePopulator.populateUser("chat-window@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);

@@ -22,6 +22,8 @@ import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -100,7 +102,9 @@ public class ChatService {
             [Eszköz-útmutató] — kérdéstípus → tool (ne találgass, hívd meg a megfelelőt):
             - PR / rekord / „megdöntöm?" → get_exercise_records
             - mai/holnapi/heti edzésterv, mezociklus → get_training_plan
-            - múltbeli edzés/sport/futás → get_training_log | súlytrend, fogyás ütem → get_weight_trend
+            - múltbeli edzés/sport/futás → get_training_log
+            - súlytrend, fogyás ÜTEME (simított) → get_weight_trend
+            - napi súlyok, egy-egy nap súlya, INGADOZÁS/kilengés → get_weight_log
             - alvás, alvási cél, közérzet (energia/stressz) → get_recovery
             - gyógyszer, gyógyszer-ciklus → get_medication
             - recept, mit főzzek → get_recipes | mi van a kamrában → get_pantry
@@ -227,6 +231,13 @@ public class ChatService {
                     () -> companionLlm.complete(systemPrompt, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
+        // mezo-8z79: same guard as the streamed path — a blank answer is a failed turn. Here the
+        // whole method is ONE transaction, so throwing also rolls the user row back; the FE's
+        // catch-and-refetch then leaves the thread exactly as it was before the send.
+        if (answer == null || answer.isBlank()) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error(ChatStreamService.EMPTY_ANSWER_CODE).build());
+        }
         // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
         // refs are the answer's own provenance and win the per-turn ref cap.
         ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id()));
@@ -282,9 +293,17 @@ public class ChatService {
                 .reversed();
     }
 
-    /** Az ablak entitásai -> a port provider-független Turn-jei, legrégebbitől a legújabbig. */
+    /**
+     * Az ablak entitásai -> a port provider-független Turn-jei, legrégebbitől a legújabbig.
+     *
+     * <p>mezo-8z79: üres tartalmú sorok KIMARADNAK. A blank-guard óta ilyen sor már nem keletkezik,
+     * de a 2026-08-23 előtt bekerültek ott vannak az adatbázisban — és egy üres {@code
+     * AssistantMessage} part-ot a Gemini elutasíthat, ami visszamenőleg megmérgezné az egész szálat.
+     * A szűrés ezért nem a guard duplikálása, hanem a MÁR meglévő sorok elleni védelem.
+     */
     private static List<Turn> toTurns(List<AiMessageEntity> window) {
         return window.stream()
+                .filter(message -> message.getContent() != null && !message.getContent().isBlank())
                 .map(message -> new Turn(
                         AiMessageEntity.ROLE_USER.equals(message.getRole()) ? Role.USER : Role.ASSISTANT,
                         message.getContent()))

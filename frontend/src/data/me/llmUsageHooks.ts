@@ -126,7 +126,7 @@ function mockCalls(filters: LlmCallFilters, limit: number): LlmCallListResponse 
 export const LLM_CALL_DETAIL_EMPTY: LlmCallDetailResponse = {
   id: '', createdAt: '', createdBy: null, feature: '', operation: null, entityKind: null, entityId: null,
   callKind: 'CHAT', status: 'SUCCESS', requestedModel: '', servedModel: null, errorCode: null, errorClass: null,
-  latencyMs: 0, streamed: false, toolRounds: null, serviceTier: null,
+  latencyMs: 0, streamed: false, toolRounds: null, serviceTier: null, finishReason: null,
   promptTokens: null, candidatesTokens: null, thoughtsTokens: null, cachedTokens: null, totalTokens: null,
   embedInputCount: null, embedDimensions: null, embedBillableChars: null,
   imageCount: null, imageBytesTotal: null, imageMime: null,
@@ -143,7 +143,7 @@ export const LLM_CALL_DETAIL_MOCK: LlmCallDetailResponse = {
   entityId: '8f2acccc-cccc-4ccc-8ccc-cccccccccc41',
   callKind: 'TOOL', status: 'SUCCESS',
   requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash',
-  latencyMs: 7812, streamed: false, toolRounds: 2, serviceTier: 'standard',
+  latencyMs: 7812, streamed: false, toolRounds: 2, serviceTier: 'standard', finishReason: 'STOP',
   promptTokens: 5826, candidatesTokens: 1008, thoughtsTokens: 3474, cachedTokens: 896, totalTokens: 11204,
   systemPrompt: 'Te vagy Mezo, Daniel személyes egészség- és teljesítmény-társa.',
   userMessage: 'most ettem egy nagy adag rizses csirkét, írd be kb 600 kcal-nak',

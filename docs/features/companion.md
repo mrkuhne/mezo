@@ -838,6 +838,9 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
       4b. turn.recalledRefs().forEach(audit::addRef)   ── W3.1: the ambient Memory refs join the
          audit AFTER the tool loop AND the advisor review, immediately before step 5 — the tool
          refs are the answer's own provenance and win the tools.max-refs-per-turn cap (first-wins)
+      4c. blank-answer guard (mezo-8z79) ── a null/blank finalAnswer NEVER reaches step 5: the
+         turn terminates with event:error, code=COMPANION_EMPTY_ANSWER and no assistant row, the
+         same "partial answers are never persisted" rule the mid-stream failure path follows
       5. chatService.completeTurn(userId, id, answer, audit, degraded, turn.recalled()) ── TX #2:
          persist ASSISTANT row WITH tool_calls/refs/recalled_memories envelopes + degraded →
          terminal event:done, data: MessageResponse
@@ -1836,6 +1839,7 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 | `get_training_log(scope, days)` (mezo-xixu, merged from `get_recent_workouts`+`get_sport_sessions`) | scope=gym: `WorkoutSessionRepository.findDoneInstancesBetween` + per-instance sets → date, dayLabel, set count, Σ volume kg; scope=sport/run: sport + run since-date finders → sport/duration/intensity/RPE or run week/rounds | `Workout`/date (≤5) or `Sport`/date (≤3) or `Run`/date (≤3) |
 | `get_training_plan(scope, date)` (mezo-xixu, sport added mezo-ajp) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `SportService.getSchedule` (recurring slots matched on the date's weekday) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
+| `get_weight_log(days)` (mezo-8z79) | `WeightLogRepository` since-date finder → the RAW daily weigh-ins, newest first: date, kg, day-over-day delta vs the previous row, note. The companion piece to `get_weight_trend`: the trend is EWMA-smoothed and therefore CANNOT answer "why does it fluctuate so much" — that question needs the unsmoothed points | `Weight`/date (≤5) |
 | `get_fuel_log(range, date, days)` (mezo-xixu, merged from `get_recent_meals`) | range=day: `FuelDayService.getDay` looped per day (from `date`, default today) → kcal/F vs targets, meal count + titles (≤3), plus `WaterLogService.sumForDay` for the anchor day's water vs target; range=week: `FuelDayService.getWeek` (Monday-anchored ISO week containing `date`) → per-day kcal/F/water vs targets | `FuelDay`/date (≤5) |
 | `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
@@ -3140,6 +3144,39 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   is in any of the four query groups — nothing writes those rows today. **W3.2** (`mezo-b3pp.13`,
   spec §7.2 consolidation ladder) generates them and adds the coverage filter that shadows old
   daily hits with their covering weekly row; the labels are the seam left ready for it.
+
+**The empty-answer guard (`mezo-8z79`, 2026-08-23 live incident):**
+
+- **A blank final answer is a FAILED turn, not an empty message.** Gemini can end a streamed round
+  having emitted **no text at all** — no tool call, no error, a candidate with zero text parts (a
+  thinking-only round that hits the output cap is the usual cause). The deltas then carry nothing,
+  `answer.toString()` is `""`, and — this is the part that made it silent — **the advisor chain
+  PASSES an empty answer**: the clinical regex finds nothing to object to and the LLM verdict
+  returns `false/false` on an empty "MEZO VÁLASZA" block, so `retries=0, degraded=false`. The
+  observed live signature was exactly that: `Advisor chain took 6316 ms (retries=0,
+  degraded=false)` on a turn that persisted an empty row.
+- **What the user saw:** an answer card with no prose, carrying only the `Hivatkozott · L3` strip
+  and the `Emlékek` row — because the ambient Memory refs are added to the audit **after** the LLM
+  round (step 4b of the stream flow), so they exist even when the answer does not.
+- **The guard:** `ChatStreamService` rejects a null/blank `finalAnswer` before `completeTurn` and
+  terminates the stream with `event:error, code=COMPANION_EMPTY_ANSWER` — the assistant row is
+  never written, exactly like the mid-stream failure path. `ChatService.sendMessage` throws the
+  same code (one transaction ⇒ the user row rolls back too). The FE gives that code its own
+  message rather than the generic one, since an immediate retry is the right move.
+- **`toTurns` filters blank rows — and that is NOT a duplicate of the guard.** The rows written
+  before the guard existed are still in the database, and an empty `AssistantMessage` part can be
+  rejected by the provider, which would poison **every later turn of that thread**. The filter is
+  the retroactive half; the guard only stops new ones.
+- **`llm_log_history.finish_reason` exists because this was undiagnosable without it.** An empty
+  `response_text` alone cannot distinguish "the model chose to stop" (`STOP`) from "the model was
+  cut off mid-thinking" (`MAX_TOKENS`) or a blocked candidate (`SAFETY`). Read off the FINAL
+  generation's `ChatGenerationMetadata` in `GeminiUsageExtractor.finishReason` — the one place
+  allowed to touch provider metadata — and surfaced on the `/me/ai-usage` detail page.
+- **Related, still open: the verdict judge cannot see tool RESULTS.** The same incident's *first*
+  turn was degraded with a plausible-looking but unverifiable complaint about a weight number,
+  because `TurnVerdictCheck` gets the tool call NAMES but not their output (documented v1 limitation
+  in its javadoc). A judge that must reason about a number it was never shown will keep producing
+  this class of false positive.
 
 **Deferred (with bd ids):**
 - **W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)** — per-kind `min-similarity`/τ in config (W3.1

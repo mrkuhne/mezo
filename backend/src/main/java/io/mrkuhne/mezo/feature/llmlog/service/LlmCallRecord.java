@@ -34,6 +34,9 @@ public record LlmCallRecord(
     boolean streamed,
     Integer toolRounds,
     String serviceTier,
+    /** mezo-8z79: the provider's finish reason for the final generation (STOP / MAX_TOKENS /
+     *  SAFETY / ...). Null when none was reported or the call never produced a generation. */
+    String finishReason,
     TokenUsage tokens,
     EmbedUsage embed,
     String systemPrompt,

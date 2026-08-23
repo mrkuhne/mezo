@@ -762,3 +762,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608221700_mezo-b3pp.28_ai_message_recalled_memories.sql
+  - changeSet:
+      id: "1.0.0:202608231100_mezo-8z79_llm_log_finish_reason"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608231100_mezo-8z79_llm_log_finish_reason.sql

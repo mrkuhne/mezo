@@ -17,9 +17,11 @@ const TONE_COLOR: Record<'ok' | 'error' | 'cancelled', string> = {
   cancelled: 'var(--warning-deep)',
 }
 
-function Cell({ label, value }: { label: string; value: string }) {
+function Cell({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
-    <div style={{ background: 'var(--surface-1)', padding: '8px 10px' }}>
+    // `wide` spans both columns — an ODD cell count would otherwise leave the grid's own
+    // background showing as a phantom half-cell at the end.
+    <div style={{ background: 'var(--surface-1)', padding: '8px 10px', ...(wide ? { gridColumn: '1 / -1' } : null) }}>
       <div className="text-tertiary" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 800 }}>{label}</div>
       <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
@@ -76,6 +78,10 @@ export function AiCallDetailPage() {
           {/* A cron/stream call has no security context on its thread — say so, don't leave it blank. */}
           <Cell label="Hívó" value={data.createdBy ? 'te' : 'háttérfolyamat'} />
           <Cell label="Szolgáltatási szint" value={data.serviceTier ?? '—'} />
+          {/* mezo-8z79: az utolsó generálás lezárási oka. Ez különbözteti meg az ÜRES választ
+              („MAX_TOKENS" — a gondolkodás elvitte a kimeneti keretet) attól, hogy a modell
+              magától fejezte be („STOP"). Egy üres válaszmezőnél ez az egyetlen támpont. */}
+          <Cell label="Lezárás oka" value={data.finishReason ?? '—'} wide />
         </div>
 
         {/* WHY it failed — the same strip the list row that led here shows. An ERROR row has no

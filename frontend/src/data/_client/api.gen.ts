@@ -6386,6 +6386,8 @@ export interface components {
             /** Format: int32 */
             toolRounds?: number | null;
             serviceTier?: string | null;
+            /** @description provider finish reason of the final generation (STOP / MAX_TOKENS / SAFETY / ...); null = none reported or the call never reached a generation */
+            finishReason?: string | null;
             /**
              * Format: int32
              * @description RAW provider count — INCLUDES cachedTokens

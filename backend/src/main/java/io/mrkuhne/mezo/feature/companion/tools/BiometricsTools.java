@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepGoalService;
+import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -19,6 +21,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
@@ -41,6 +44,9 @@ public class BiometricsTools {
     private static final List<String> RECOVERY_SCOPES = List.of("sleep", "sleep-goal", "checkins");
 
     private final WeightTrendService weightTrendService;
+    /** mezo-8z79: the RAW daily weigh-ins behind get_weight_log — the trend service only exposes
+     *  the smoothed EWMA series, which is precisely what hides the day-to-day fluctuation. */
+    private final WeightLogRepository weightLogRepository;
     private final SleepLogRepository sleepLogRepository;
     /** The single wake/bed derivation (spec D1/D4) — ungated, the HabitTargets/RitualService/
      *  ContextSnapshotAssembler precedent — so scope=sleep-goal keeps resolving even if SleepGoalService
@@ -91,6 +97,43 @@ public class BiometricsTools {
             b.append("\nHeti trendpontok: ").append(String.join("; ", weekly.values()));
         }
         ToolContexts.audit(toolContext).addRef("WeightTrend", w + "h");
+        return b.toString();
+    }
+
+    @Tool(name = "get_weight_log", description = "Napi NYERS súlymérések egy időablakban: dátum, "
+            + "mért kg, és az előző méréshez képesti változás. Ezt használd, amikor a user a napi "
+            + "súlyokról, a mérések INGADOZÁSÁRÓL, kilengéséről vagy egy-egy konkrét nap súlyáról "
+            + "kérdez — a get_weight_trend simított trendsúlyt ad, amiből a napi kilengés nem látszik.")
+    public String getWeightLog(
+            @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
+            ToolContext toolContext) {
+        UUID userId = ToolContexts.userId(toolContext);
+        int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
+        LocalDate from = LocalDate.now().minusDays(d - 1L);
+        List<WeightLogEntity> rows =
+                weightLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from);
+        String header = "Napi súlymérések (utolsó " + d + " nap):";
+        if (rows.isEmpty()) {
+            return header + " " + ToolText.NO_DATA;
+        }
+        StringBuilder b = new StringBuilder(header);
+        for (int i = 0; i < rows.size(); i++) {
+            WeightLogEntity row = rows.get(i);
+            b.append('\n').append(row.getDate()).append(": ")
+                    .append(ToolText.num(row.getWeightKg())).append(" kg");
+            // Day-over-day delta against the NEXT row (the list is newest-first), i.e. the previous
+            // weigh-in — this is the fluctuation the trend tool smooths away. The oldest row in the
+            // window has no predecessor here, so it gets no delta rather than a fabricated zero.
+            if (i + 1 < rows.size()) {
+                BigDecimal delta = row.getWeightKg().subtract(rows.get(i + 1).getWeightKg());
+                b.append(" (").append(delta.signum() > 0 ? "+" : "").append(ToolText.num(delta)).append(" kg)");
+            }
+            if (row.getNote() != null && !row.getNote().isBlank()) {
+                b.append(" — ").append(row.getNote());
+            }
+        }
+        rows.stream().limit(5).forEach(r ->
+                ToolContexts.audit(toolContext).addRef("Weight", r.getDate().toString()));
         return b.toString();
     }
 
