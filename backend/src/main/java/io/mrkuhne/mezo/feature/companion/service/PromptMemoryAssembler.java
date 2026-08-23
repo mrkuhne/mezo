@@ -28,10 +28,11 @@ import java.util.UUID;
 /**
  * W3.1 always-on ambient recall (mezo-b3pp.12, spec §7.1): every chat turn opens already grounded
  * in relevant past. The incoming user message is embedded ONCE (RETRIEVAL_QUERY), four kind-group
- * ANN searches run over {@code memory_embedding} with per-group caps, the raw-similarity floor and
- * the same {@code similarity × exp(-age/τ)} re-rank the V2.3 tool uses, and the survivors render
- * as the {@code [Emlékek]} block under a hard token cap. Broad ambient recall — the
- * {@code find_similar_past_days} tool stays for deep, targeted recall on demand.
+ * ANN searches run over {@code memory_embedding} with per-group caps, a PER-GROUP raw-similarity
+ * floor and τ (W3.3, {@code ambient-recall.<group>.*}) in the V2.3 {@code similarity × exp(-age/τ)}
+ * re-rank, and the survivors render as the {@code [Emlékek]} block under a hard token cap. Broad
+ * ambient recall — the {@code find_similar_past_days} tool stays for deep, targeted recall on
+ * demand.
  *
  * <p>Failure honesty (IDENT-3): an embed/ANN failure is logged and the block is simply omitted —
  * the turn itself is fine, so the caller's {@code degraded} flag is NOT touched.
@@ -48,6 +49,11 @@ import java.util.UUID;
  *
  * <p>Dedupe: today's episodes are skipped (the context snapshot already carries the day), and
  * items are keyed by {@code (kind, ref_id)} so no unit enters the block twice.
+ *
+ * <p>W3.3 (mezo-b3pp.27): the chat_turn query skips the conversation being answered
+ * ({@code ambient-recall.exclude-current-conversation}) — this drops the WHOLE conversation from
+ * ambient recall, not just the part inside {@code chat.history-window}; beyond the window it is a
+ * deliberate trade, since the thread is still the conversation being answered.
  */
 @Slf4j
 @Service
@@ -133,15 +139,16 @@ public class PromptMemoryAssembler {
             // shadow window — beyond it the ladder's weekly/monthly rungs (queried WITHOUT a floor)
             // speak for the stretch. The daily rows themselves are never touched (spec §12).
             LocalDate dailyCutoff = today.minusDays(ambient.weeklyShadowDays());
+            UUID excluded = ambient.excludeCurrentConversation() ? conversationId : null;
             List<Group> groups = List.of(
-                    new Group(KINDS_DAILY_SUMMARY, ambient.capDailySummary(), dailyCutoff),
-                    new Group(KINDS_PERIOD_SUMMARY, ambient.capPeriodSummary(), null),
-                    new Group(KINDS_JOURNAL, ambient.capJournal(), null),
-                    new Group(KINDS_CHAT_TURN, ambient.capChatTurn(), null),
-                    new Group(KINDS_OTHER, ambient.capOther(), null));
+                    new Group(KINDS_DAILY_SUMMARY, ambient.dailySummary(), dailyCutoff, null),
+                    new Group(KINDS_PERIOD_SUMMARY, ambient.periodSummary(), null, null),
+                    new Group(KINDS_JOURNAL, ambient.journal(), null, null),
+                    new Group(KINDS_CHAT_TURN, ambient.chatTurn(), null, excluded),
+                    new Group(KINDS_OTHER, ambient.other(), null, null));
             Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
             for (Group group : groups) {
-                for (RecalledItem item : recallGroup(userId, group, literal, today, ambient, recall)) {
+                for (RecalledItem item : recallGroup(userId, group, literal, today, recall)) {
                     byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
                 }
             }
@@ -172,24 +179,28 @@ public class PromptMemoryAssembler {
         }
     }
 
-    /** One ANN query's shape: which kinds, how many may enter the block, and the date floor. */
-    private record Group(List<String> kinds, int cap, LocalDate notBefore) {}
+    /**
+     * One ANN query's shape: which kinds, the group's tuning, the date floor, and (W3.3) the
+     * conversation whose own chat turns to skip.
+     */
+    private record Group(List<String> kinds, CompanionProperties.AmbientRecall.Group tuning,
+                         LocalDate notBefore, UUID excludeConversationId) {}
 
     private List<RecalledItem> recallGroup(UUID userId, Group group, String literal,
-                                           LocalDate today, CompanionProperties.AmbientRecall ambient,
-                                           CompanionProperties.Recall recall) {
-        if (group.cap() == 0) {
+                                           LocalDate today, CompanionProperties.Recall recall) {
+        CompanionProperties.AmbientRecall.Group tuning = group.tuning();
+        if (tuning.cap() == 0) {
             return List.of();
         }
         return annQuery.nearestInKinds(userId, group.kinds(), literal, recall.candidatePool(),
-                        group.notBefore())
+                        group.notBefore(), group.excludeConversationId())
                 .stream()
                 // the snapshot already carries today — and a future-dated unit is not a memory yet
                 .filter(hit -> hit.occurredOn().isBefore(today))
-                .map(hit -> toItem(hit, today, recall.decayDays()))
-                .filter(item -> item.similarity() >= ambient.minSimilarity())
+                .map(hit -> toItem(hit, today, tuning.decayDays()))
+                .filter(item -> item.similarity() >= tuning.minSimilarity())
                 .sorted(Comparator.comparingDouble(RecalledItem::score).reversed())
-                .limit(group.cap())
+                .limit(tuning.cap())
                 .toList();
     }
 

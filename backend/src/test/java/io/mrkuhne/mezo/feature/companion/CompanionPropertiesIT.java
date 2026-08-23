@@ -107,14 +107,17 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testAmbientRecallConfig_shouldBindCapsAndBudgetFromYaml_whenContextStarts() {
-        assertThat(properties.ambientRecall().enabled()).isTrue();
-        assertThat(properties.ambientRecall().capDailySummary()).isEqualTo(2);
-        assertThat(properties.ambientRecall().capJournal()).isEqualTo(2);
-        assertThat(properties.ambientRecall().capChatTurn()).isEqualTo(1);
-        assertThat(properties.ambientRecall().capOther()).isEqualTo(1);
-        assertThat(properties.ambientRecall().minSimilarity()).isEqualTo(0.55);
-        assertThat(properties.ambientRecall().maxTokens()).isEqualTo(1200);
+    void testAmbientRecallConfig_shouldBindPerGroupFloorsAndDecayFromYaml_whenContextStarts() {
+        CompanionProperties.AmbientRecall ambient = properties.ambientRecall();
+        assertThat(ambient.enabled()).isTrue();
+        assertThat(ambient.weeklyShadowDays()).isEqualTo(30);
+        assertThat(ambient.maxTokens()).isEqualTo(1200);
+        assertThat(ambient.dailySummary()).isEqualTo(new CompanionProperties.AmbientRecall.Group(2, 0.55, 90));
+        assertThat(ambient.periodSummary()).isEqualTo(new CompanionProperties.AmbientRecall.Group(2, 0.55, 180));
+        // W3.3 (mezo-b3pp.14): lived-with 2026-08-22 — the journal family wants a higher floor
+        assertThat(ambient.journal()).isEqualTo(new CompanionProperties.AmbientRecall.Group(2, 0.60, 90));
+        assertThat(ambient.chatTurn()).isEqualTo(new CompanionProperties.AmbientRecall.Group(1, 0.55, 90));
+        assertThat(ambient.other()).isEqualTo(new CompanionProperties.AmbientRecall.Group(1, 0.55, 90));
     }
 
     @Test

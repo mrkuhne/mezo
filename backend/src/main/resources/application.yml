@@ -432,24 +432,49 @@ mezo:
       render-max-chars: 300
     ambient-recall:
       # W3.1 (mezo-b3pp.12, spec §7.1): always-on episodic recall — every chat turn embeds the user
-      # message once (operation=recall_embed) and the prompt opens with an [Emlékek] block of similar
-      # past episodes (journal family, daily summaries, chat turns, notes). τ, the ANN candidate pool
-      # and the per-item render cap reuse mezo.companion.recall.*; a failed embed/ANN just omits the block.
+      # message once (feature=companion_recall, operation=recall_embed) and the prompt opens with an
+      # [Emlékek] block of similar past episodes. The ANN candidate pool and the per-item render cap
+      # reuse mezo.companion.recall.*; a failed embed/ANN just omits the block.
       enabled: true
-      # Per kind-group caps (items in the block): daily_summary | journal family | chat_turn | notes
-      cap-daily-summary: 2
-      cap-journal: 2
-      cap-chat-turn: 1
-      cap-other: 1
-      # W3.2 (mezo-b3pp.13): the ladder's rungs (weekly + monthly) share this cap
-      cap-period-summary: 2
-      # Coverage cutoff: daily summaries older than this are no longer asked for — the covering
+      # Coverage cutoff (W3.2): daily summaries older than this are no longer asked for — the covering
       # weekly/monthly rung answers for that stretch. Nothing is deleted, only shadowed.
       weekly-shadow-days: 30
-      # Raw cosine floor — stricter than the tool's 0.25: a broad ambient block must not carry noise
-      min-similarity: 0.55
       # Hard cap on the rendered block (estimated tokens; ~3 chars/token for Hungarian prose)
       max-tokens: 1200
+      # W3.3 input (mezo-b3pp.27): excludes the WHOLE conversation from ambient chat_turn recall, not
+      # just what fits in mezo.companion.chat.history-window (20 messages ≈ 10 turns) — beyond the
+      # window this is a deliberate trade: a long thread's own early turns drop out of ambient
+      # recall, but the thread is still the conversation being answered.
+      exclude-current-conversation: true
+      # W3.3 (mezo-b3pp.14, spec §7.3): PER KIND-GROUP tuning — cap = items in the block
+      # (0 = group not queried); min-similarity = raw cosine floor; decay-days = τ of the
+      # similarity × exp(-age/τ) re-rank.
+      # Moving any of these is expected to turn AmbientRecallEvalIT red: its corpus is built so
+      # every cap, the daily/journal floors and the period τ each have a row that moves. Re-derive
+      # that table's geometry by hand — its javadoc lists exactly what it does and does not pin.
+      daily-summary:
+        cap: 2
+        min-similarity: 0.55
+        decay-days: 90
+      # Ladder rungs stand for whole stretches — they fade slower than single days
+      period-summary:
+        cap: 2
+        min-similarity: 0.55
+        decay-days: 180
+      # Lived-with 2026-08-22: journal hits at 0.59–0.62 were only weakly related → stricter floor
+      journal:
+        cap: 2
+        min-similarity: 0.60
+        decay-days: 90
+      chat-turn:
+        cap: 1
+        min-similarity: 0.55
+        decay-days: 90
+      # activity_note + checkin_note
+      other:
+        cap: 1
+        min-similarity: 0.55
+        decay-days: 90
     graph:
       # W2.1 (mezo-b3pp.6, spec §6.1): traversal bounds consumed by W2.4's GraphTraversalService
       # and nightly maintenance knobs consumed by W2.5's GraphMaintenanceJob. Declared here now so

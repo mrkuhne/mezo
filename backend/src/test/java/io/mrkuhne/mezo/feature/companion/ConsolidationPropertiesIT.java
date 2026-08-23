@@ -22,7 +22,7 @@ class ConsolidationPropertiesIT extends AbstractIntegrationTest {
 
     @Test
     void testConfig_shouldBindShadowingKnobs_whenContextStarts() {
-        assertThat(properties.ambientRecall().capPeriodSummary()).isEqualTo(2);
+        assertThat(properties.ambientRecall().periodSummary().cap()).isEqualTo(2);
         assertThat(properties.ambientRecall().weeklyShadowDays()).isEqualTo(30);
     }
 }
