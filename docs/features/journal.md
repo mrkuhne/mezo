@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-08-23
+updated: 2026-08-24
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -301,9 +301,15 @@ Migration [`202608201200_mezo-b3pp.4_create_decision_entry.sql`](../../backend/s
 
 `DecisionEntryEntity` (`entity/DecisionEntryEntity.java`) `extends OwnedEntity`, `@SQLDelete`/
 `@SQLRestriction` soft delete, `@JdbcTypeCode(SqlTypes.JSON)` on `contextSnapshot`, `@Min(1)`/`@Max(5)`
-mirroring the DB CHECK. Repository (`repository/DecisionEntryRepository.java`) three finders: the
-owned-lookup-or-404 idiom, newest-first list, and a `review_due` finder `AnchorResolver` reads
-directly (§5, [`_platform-notifications.md`](_platform-notifications.md) §4).
+mirroring the DB CHECK. Repository (`repository/DecisionEntryRepository.java`) four finders: the
+owned-lookup-or-404 idiom, newest-first list, a `review_due` finder `AnchorResolver` reads
+directly (§5, [`_platform-notifications.md`](_platform-notifications.md) §4), and — **added W4.3
+(`mezo-b3pp.17`)** — `findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(
+UUID, Limit)`: reviewed decisions (`reviewedAt != null`) newest-review-first, caller-capped via
+Spring Data `Limit` rather than a `Pageable`/manual `LIMIT` (no need for a total count or further
+pages — the caller decides the cap up front). This is a companion read, not a journal one: the
+W4.3 pragmatic-profile synthesis (`companion/profile/service/ProfileAssembler.rebuild`) reads
+reviewed decision text + outcome rating as one of its inputs directly off this repository (§5).
 
 ### Backend table — `gratitude_entry` (W1.3, `mezo-b3pp.3`)
 
@@ -451,6 +457,18 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   there is no delete endpoint for decisions (§4), so there is no analogue of a racing delete to guard
   against; if a future slice ever adds decision deletion, this listener needs that guard added at
   that time.
+- **→ Companion (direct repository read, wired, one-way OUT — W4.3 `mezo-b3pp.17`):** the
+  pragmatic-profile synthesis (`companion/profile/service/ProfileAssembler.rebuild`,
+  [`companion.md`](companion.md) §4) reads `DecisionEntryRepository
+  .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc` directly — reviewed
+  decisions feed the weekly profile prose alongside the W4.2 feedback rollups and active graph
+  nodes. Unlike every OTHER seam in this section, there is **no event, no listener, no port** —
+  `feature/companion` simply imports the journal repository and calls a finder, the same
+  `companion → journal` compile-time edge the two embed listeners above already establish (the
+  direction `feature_slices_are_cycle_free` allows); `feature/journal` has no knowledge of this
+  read and no dependency back. No new finder-shaped contract was needed because the read is
+  read-only and journal-internal state (`reviewedAt`, `outcomeRating`, `outcomeText`) is exactly
+  what the entity already exposes.
 - **← Companion (context-snapshot read, wired, ADR 0029): the ONE place `feature/journal` needs
   something FROM the companion, kept one-way via a journal-owned port.** `DecisionService.create`
   needs the companion's rendered context-snapshot text at write time (§4's `context_snapshot`); a
