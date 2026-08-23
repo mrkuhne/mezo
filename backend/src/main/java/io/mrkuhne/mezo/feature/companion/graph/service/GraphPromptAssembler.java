@@ -54,10 +54,11 @@ public class GraphPromptAssembler {
         static final Rendered EMPTY = new Rendered("", List.of());
     }
 
-    /** Hungarian relation verb per edge kind — unknown kinds fall back to the raw kind. */
+    /** Hungarian relation verb per edge kind — unknown kinds fall back to the raw kind. The
+     *  PRECEDED_BY verb reads the edge BACKWARDS on purpose; see {@link #renderBlock}. */
     static final Map<String, String> KIND_VERBS = Map.of(
             GraphEdgeEntity.KIND_TRIGGERS, "kiváltja",
-            GraphEdgeEntity.KIND_PRECEDED_BY, "előzménye",
+            GraphEdgeEntity.KIND_PRECEDED_BY, "megelőzte",
             GraphEdgeEntity.KIND_SUPPORTS, "támogatja",
             GraphEdgeEntity.KIND_CONFLICTS, "ütközik vele",
             GraphEdgeEntity.KIND_RELATES_TO, "kapcsolódik");
@@ -98,6 +99,11 @@ public class GraphPromptAssembler {
      * Renders weight-ordered edges under the token cap; stops at the FIRST overflowing line (the
      * order IS the relevance statement — a shorter later line never jumps ahead). Empty when
      * nothing fits.
+     *
+     * <p>Every line reads cause-first, as the header promises ({@code ok → viszony → okozat}).
+     * {@code PRECEDED_BY} stores the opposite direction — {@code from PRECEDED_BY to} means the
+     * TO-node happened first (see {@link GraphEdgeEntity#KIND_PRECEDED_BY}) — so its endpoints are
+     * SWAPPED here: {@code - <to> → megelőzte → <from>}. No other kind is swapped.
      */
     static Rendered renderBlock(List<NeighborEdge> edges, int maxTokens) {
         if (edges.isEmpty()) {
@@ -106,8 +112,11 @@ public class GraphPromptAssembler {
         StringBuilder block = new StringBuilder(CONNECTIONS_HEADER);
         List<NeighborEdge> rendered = new ArrayList<>();
         for (NeighborEdge edge : edges) {
-            String line = "- " + edge.fromTitle() + " → " + KIND_VERBS.getOrDefault(edge.kind(), edge.kind())
-                    + " → " + edge.toTitle() + " · " + strength(edge.weight()) + '\n';
+            boolean swap = GraphEdgeEntity.KIND_PRECEDED_BY.equals(edge.kind());
+            String cause = swap ? edge.toTitle() : edge.fromTitle();
+            String effect = swap ? edge.fromTitle() : edge.toTitle();
+            String line = "- " + cause + " → " + KIND_VERBS.getOrDefault(edge.kind(), edge.kind())
+                    + " → " + effect + " · " + strength(edge.weight()) + '\n';
             if (estimateTokens(block.length() + line.length()) > maxTokens) {
                 break;
             }

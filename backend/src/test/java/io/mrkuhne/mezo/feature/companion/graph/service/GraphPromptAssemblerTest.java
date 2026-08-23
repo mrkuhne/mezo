@@ -30,6 +30,18 @@ class GraphPromptAssemblerTest {
         assertThat(r.rendered()).hasSize(3);
     }
 
+    /** W2.4 review fix: `from PRECEDED_BY to` means the TO-node happened FIRST, so the rendered
+     *  line swaps the endpoints — the header promises cause → viszony → okozat for every line. */
+    @Test
+    void testRenderBlock_shouldSwapEndpointsForPrecededBy_soTheLineReadsCauseFirst() {
+        GraphPromptAssembler.Rendered r = GraphPromptAssembler.renderBlock(List.of(
+                edge("Stressz", "Költözés", GraphEdgeEntity.KIND_PRECEDED_BY, "0.800")), 800);
+
+        // stored: Stressz PRECEDED_BY Költözés ⇒ Költözés was first ⇒ it leads the line
+        assertThat(r.block()).contains("- Költözés → megelőzte → Stressz · erős\n");
+        assertThat(r.block()).doesNotContain("- Stressz → megelőzte → Költözés");
+    }
+
     @Test
     void testRenderBlock_shouldStopAtFirstOverflowingEdge_andBeEmptyWhenNothingFits() {
         List<NeighborEdge> edges = List.of(
