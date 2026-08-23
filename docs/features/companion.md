@@ -1403,9 +1403,11 @@ build was chosen after living with W3.1's always-on recall.
   `renderMaxTokens` (default 800) — consumed by W2.4's `GraphPromptAssembler`.
 - **Scope, explicitly**: this slice is schema + CRUD + the two REST operations the spec commits to
   now (list active nodes, archive a node). No node-*creation* REST endpoint (nodes are written only
-  by internal promotion/extraction pipelines, W2.2/W2.3); no `GraphEdgeResponse` REST DTO yet
-  (nothing consumes edges over HTTP until W2.4 traversal / W2.6 FE surface) — edges are exercised at
-  the service/repository layer directly (`GraphEntityPersistenceIT`).
+  by internal promotion/extraction pipelines, W2.2/W2.3); `GraphEdgeResponse` never shipped as its
+  own DTO — W2.6 (`mezo-b3pp.11`) exposes edges pre-rendered as `GraphNodeResponse.topEdges` text
+  lines instead of raw rows, since the only two HTTP consumers (the `[Összefüggések]` prompt block
+  and the Tudástár "Kapcsolatok" UI) both want Hungarian lines, never structured edge data — edges
+  are otherwise exercised at the service/repository layer directly (`GraphEntityPersistenceIT`).
 
 ### W2.2 graph promotion pipelines (✅ `mezo-b3pp.7`)
 
@@ -1692,6 +1694,36 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   active-node survival, reinforcement on fresh evidence, no reinforcement on stale evidence),
   `GraphMaintenanceJobSwitchOffIT`, plus the new `GraphPromotionServiceReconcileIsolationIT`.
 
+### W2.6 Tudástár Kapcsolatok surface (✅ `mezo-b3pp.11`)
+
+- **`GraphEdgeLineRenderer`** (`graph/service/GraphEdgeLineRenderer.java`, new) — the Hungarian
+  `cause → verb → effect · strength` line format, extracted out of `GraphPromptAssembler` so the
+  prompt block (W2.4) and this REST surface render identically off one source of truth. Holds
+  `KIND_VERBS` + `strength(weight)` + `renderLine(kind, fromTitle, toTitle, weight)` (the
+  `PRECEDED_BY` endpoint-swap lives here now); `GraphPromptAssembler.renderBlock` calls it instead
+  of keeping its own copy — behavior unchanged, `GraphPromptAssemblerTest` untouched.
+- **`GraphService.listActiveWithTopEdges(userId)`** (new) — loads the user's active nodes + every
+  active edge once (`GraphEdgeRepository.findByCreatedByAndDeletedFalse`, the W2.5 precedent),
+  buckets edges by each touching node (both `from` and `to`), and renders the top-3-by-weight
+  lines per node via `GraphEdgeLineRenderer`. An edge whose OTHER endpoint is archived/candidate
+  is silently dropped — a line naming a node no longer in "current knowledge" would confuse the
+  surface. Top-3 is a fixed UI constant (`GraphService.TOP_EDGES_PER_NODE`), not a tuning knob —
+  a display concern, not graph behavior.
+- **`GraphController.listGraphNodes()`** now calls this instead of the plain `listActive`, setting
+  `GraphNodeResponse.topEdges` per node; `listGraphCandidates()` is untouched (default `[]`).
+- **FE** — `frontend/src/features/me/pages/KnowledgePage.tsx` gains a "Kapcsolatok" section: the
+  new dual-mode `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`) lists active nodes
+  grouped by `GRAPH_KIND_GROUPS` (`data/insights/graph.ts` — the 6 kind labels), each rendered as
+  a `KnowledgeGraphNodeCard` (title + optional summary + `topEdges` lines + an "Archivál" button
+  wired to `useKnowledgeGraphActions().archive`, `POST .../archive`). Real-mode 404 (graph switch
+  off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so the rest of the
+  Tudástár page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4` stays
+  parked, spec §12).
+- **Acceptance:** `GraphApiIT` pins `topEdges` in the node-listing response (weight-desc, capped
+  at 3, edges to archived nodes excluded); `GraphServiceIT` covers the bucketing; FE
+  `graphHooks.test.tsx`/`KnowledgePage.test.tsx` cover mock, real, 404, and
+  archive-removes-from-list.
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -1855,7 +1887,12 @@ maps it, so the response is always server truth.
 
 W2.1 (`mezo-b3pp.6`) — gated `KNOWLEDGE_GRAPH_SWITCH`:
 
-- `GET /api/companion/graph/node` — active nodes for the current user, newest first.
+- `GET /api/companion/graph/node` — active nodes for the current user, newest first; each carries
+  `topEdges` (W2.6, `mezo-b3pp.11`) — up to 3 Hungarian text lines for its strongest touching
+  edges (both directions), pre-rendered by the shared `GraphEdgeLineRenderer` (the same renderer
+  `GraphPromptAssembler` uses for the `[Összefüggések]` block, so the UI and the model never
+  disagree on phrasing); `[]` when the node has no edges. Candidates (`GET .../candidate`) always
+  carry `topEdges: []` — the field is active-listing-only.
 - `POST /api/companion/graph/node/{id}/archive` — archive a node (200 + the archived node body;
   404 `GRAPH_NODE_NOT_FOUND` if not owned).
 
