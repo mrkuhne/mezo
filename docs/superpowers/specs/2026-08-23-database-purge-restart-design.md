@@ -87,24 +87,29 @@ first-run bug, not a purge bug.
 
 ## 5. Deliverables
 
-1. **`scripts/purge-restart.sql`** — single transaction:
-   1. `SET LOCAL` a `purge.dry_run` setting (default `on`).
-   2. Build the whitelist as a `VALUES` list; snapshot `count(*)` per whitelist table.
-   3. Emit `RAISE NOTICE` with per-table row counts for every non-whitelist table
-      (this is the dry-run report).
-   4. If not dry-run: `TRUNCATE <all non-whitelist tables> CASCADE` in one statement
+1. **`scripts/purge-restart.sql`** — one pure-SQL `DO $$` block (no psql meta-commands,
+   so both psql and the IT's JDBC connection can run it; a DO block is one implicit
+   transaction, so any raised exception aborts everything):
+   1. Dry-run flag from the session GUC `purge.dry_run` — anything but exactly `'off'`
+      (including unset) means dry run.
+   2. Whitelist as a hard-coded `text[]`; guard: every listed table must exist
+      (schema-drift check), else `RAISE EXCEPTION`.
+   3. Snapshot `count(*)` per whitelist table; `RAISE NOTICE` a KEEP/PURGE report with
+      row counts for every `public` table (this is the dry-run report).
+   4. Dry run: `RETURN` after the report — nothing touched.
+   5. Live: `TRUNCATE <all non-whitelist tables> CASCADE` in one statement
       (one statement ⇒ no FK ordering concerns).
-   5. Re-count whitelist tables; `RAISE EXCEPTION` (⇒ rollback) on any difference.
-   6. `COMMIT` only when not dry-run; dry-run always ends in `ROLLBACK`.
+   6. Re-count whitelist tables; `RAISE EXCEPTION` (⇒ transaction abort) on any difference.
 2. **`docs/infrastructure/purge-restart-runbook.md`** — steps:
    1. fresh offsite dump via `scripts/backup-live-db.sh`; confirm the file exists and
       `pg_restore --list` reads it;
    2. stop traffic: scale the backend deployment to 0 (`kubectl scale -n mezo deploy/backend --replicas=0`)
       so no write races the purge (ArgoCD self-heal may scale it back — pause auto-sync for the
       app first, or just keep the PWA closed during the few seconds the script runs);
-   3. dry run: `kubectl exec -i -n mezo postgres-0 -- psql -U mezo -d mezo -v ON_ERROR_STOP=1 < scripts/purge-restart.sql`;
+   3. dry run: `kubectl exec -i -n mezo postgres-0 -- psql -U mezo -d mezo -v ON_ERROR_STOP=1 -f - < scripts/purge-restart.sql`;
       read the notice report, check whitelist counts look right;
-   4. live run: same with `-v dry_run=off`;
+   4. live run: same with `PGOPTIONS="-c purge.dry_run=off"` in the pod env
+      (`kubectl exec -i -n mezo postgres-0 -- env PGOPTIONS="-c purge.dry_run=off" psql ...`);
    5. scale backend back up; smoke-check every surface in §4 in the PWA;
    6. rollback recipe: `pg_restore -U mezo -d mezo --clean --if-exists <dump>` (documented, not executed).
 3. bd issue **mezo-rcsy** tracks the work; close after the live run + smoke-check.
