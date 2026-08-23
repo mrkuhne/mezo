@@ -700,6 +700,20 @@ export interface LifeEventCandidate {
 
 export type LifeEventDecision = 'accept' | 'reject'
 
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+
+/** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
+ *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same
+ *  renderer the `[Összefüggések]` prompt block uses, so the UI and the model never disagree on
+ *  phrasing. */
+export interface KnowledgeGraphNode {
+  id: string
+  kind: GraphNodeKind
+  title: string
+  summary: string | null
+  topEdges: string[]
+}
+
 // --- Insights (AI-memory surface) ---
 export type PatternCategory = 'physiology' | 'trigger' | 'response'
 /** The decision verbs of the L2 surface (wire PatternDecisionRequest). */
