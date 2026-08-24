@@ -20,7 +20,7 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
-import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
@@ -142,11 +142,7 @@ function TemplateDayEditor({ template, onPersist }: {
   }
 
   const addExercise = (dayKey: string, item: ExerciseLibraryItem) => {
-    apply(days.map((d) => {
-      if (d.day !== dayKey) return d
-      const exercises = [...d.exercises, libraryToGymExercise(item)]
-      return { ...d, exercises, exerciseCount: exercises.length }
-    }))
+    apply(days.map((d) => (d.day === dayKey ? addExerciseWithDefaults(d, item, template.goalPreset) : d)))
   }
 
   const reorderExercises = (dayKey: string, ids: string[]) => {

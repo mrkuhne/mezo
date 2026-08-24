@@ -30,7 +30,7 @@ import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, step
 import type { PlannerDay } from '@/features/train/logic/planner'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
-import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { toDayInputs } from '@/features/train/logic/mesoDays'
 import { MiniStat } from '@/features/train/components/MiniStat'
 
@@ -136,11 +136,7 @@ export function MesocyclePlannerPage() {
 
   const addExercise = (dayName: string, item: ExerciseLibraryItem) => {
     setProgram((prev) =>
-      (prev ?? []).map((d) => {
-        if (d.day !== dayName) return d
-        const exercises = [...d.exercises, libraryToGymExercise(item)]
-        return { ...d, exercises, exerciseCount: exercises.length }
-      }),
+      (prev ?? []).map((d) => (d.day === dayName ? addExerciseWithDefaults(d, item, goal?.id) : d)),
     )
   }
 

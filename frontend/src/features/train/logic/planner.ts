@@ -57,7 +57,7 @@ export const SCHEMES: Record<string, GoalScheme> = {
 
 // Plyometric seeds are prescribed weightless by the P3 engine: fixed low-rep,
 // no warm-up, no scheme lookup (plyo isn't a GoalScheme key).
-const PLYO_SCHEME = { reps: 5, sets: 3 }
+export const PLYO_SCHEME = { reps: 5, sets: 3 }
 
 // --- HU month helpers (meso-planner.jsx:883-902) ---
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']

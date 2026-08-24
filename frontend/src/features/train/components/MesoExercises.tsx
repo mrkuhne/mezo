@@ -14,7 +14,7 @@ import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
-import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
@@ -70,11 +70,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
   }
 
   const addExercise = (dayKey: string, item: ExerciseLibraryItem) => {
-    const next = days.map((d) => {
-      if (d.day !== dayKey) return d
-      const exercises = [...d.exercises, libraryToGymExercise(item)]
-      return { ...d, exercises, exerciseCount: exercises.length }
-    })
+    const next = days.map((d) => (d.day === dayKey ? addExerciseWithDefaults(d, item, meso.goalPreset) : d))
     setDays(next)
     persistDay(next.find((d) => d.day === dayKey))
   }
