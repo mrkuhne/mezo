@@ -201,4 +201,10 @@ public class FeaturesConfiguration {
     /** Phase 5 W2.5 (mezo-b3pp.10) nightly graph-maintenance job — techcore cron zone. */
     public static final String GRAPH_MAINTENANCE_JOB_SWITCH =
         "mezo.techcore.cron.graph-maintenance-job.enabled";
+
+    /** W5.2 JITAI-lite interventions (bd mezo-b3pp.19) — flag-raise → config-library feed card
+     *  (+ optional push). Off ⇒ no InterventionService/listener beans: flags keep logging
+     *  (W5.1 is independent), but nothing is ever delivered. Needs COMPANION_SWITCH and
+     *  PROACTIVE_SWITCH too (the card is a companion_message row). */
+    public static final String INTERVENTION_SWITCH = "mezo.feature.intervention.enabled";
 }

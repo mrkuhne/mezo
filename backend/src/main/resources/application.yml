@@ -268,6 +268,10 @@ mezo:
     # beans exist, and every graph hook elsewhere stays silently absent.
     knowledge-graph:
       enabled: true
+    # Phase 5 W5.2 (bd mezo-b3pp.19) — JITAI-lite: flag raise -> best-weighted intervention card
+    # (+ optional push). Off ⇒ no delivery beans; W5.1 flag logging is unaffected.
+    intervention:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -587,6 +591,48 @@ mezo:
         momentum-at-risk: 48
         recovery-needed: 24
         all-healthy: 168
+    # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
+    # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
+    # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
+    # feed = card only; push/both = card + push (push ≡ both — the card is the push anchor and
+    # the „Segített?" home, so it always exists; user decision 2026-08-24).
+    interventions:
+      - key: stress_reset
+        flag: sustained_stress
+        channel: both
+        text-hu: "Több napja magas a stressz-szinted. Ma este tarts egy tudatos lezárást: tíz perc séta vagy légzőgyakorlat, képernyő nélkül."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
+      - key: stress_talk
+        flag: sustained_stress
+        channel: feed
+        text-hu: "Ha szeretnéd, írd ki magadból, mi nyomaszt mostanában — néha a kimondás már felezi a terhet."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      - key: sleep_recover_tonight
+        flag: sleep_debt
+        channel: both
+        text-hu: "Az elmúlt éjszakák alváshiánya összeadódott. Ma este told előre a villanyoltást fél órával — a hétvégi pótalvás nem váltja ki."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
+      - key: momentum_small_win
+        flag: momentum_at_risk
+        channel: both
+        text-hu: "Megtorpant a lendület. Válassz mára egyetlen apró, biztosan teljesíthető szokást — egy kis győzelem újraindítja a sorozatot."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      - key: recovery_rest_day
+        flag: recovery_needed
+        channel: both
+        text-hu: "Kevés alvás, kemény edzés, magas stressz — a tested most regenerációt kér. A mai nap legyen pihenő vagy egészen könnyű mozgás."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
+      - key: healthy_celebrate
+        flag: all_healthy
+        channel: feed
+        text-hu: "Egy hete minden mutatód rendben — alvás, stressz, lendület. Ez nem szerencse: a rendszered működik. Vedd észre, és élvezd."
+        cooldown-hours: 168
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -33,7 +35,8 @@ public record CompanionProperties(
     @NotNull @Valid HabitSuggest habitSuggest,
     @NotNull @Valid Transcription transcription,
     @NotNull @Valid AmbientRecall ambientRecall,
-    @NotNull @Valid Graph graph
+    @NotNull @Valid Graph graph,
+    @NotNull List<@Valid Intervention> interventions
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -177,6 +180,24 @@ public record CompanionProperties(
          *  for evidence still arriving. */
         @DecimalMin("0.0") @DecimalMax("1.0") double reinforcementBump
     ) {}
+
+    /**
+     * One W5.2 intervention library entry (bd mezo-b3pp.19, spec §9.2) — the library is CONFIG,
+     * not DB. {@code channel}: {@code feed} = card only; {@code push} and {@code both} are
+     * synonyms (user decision 2026-08-24) — every entry writes the feed card (it is the push
+     * anchor and the „Segített?" home), the channel only decides whether a push also fires.
+     * {@code key} feeds the {@code feedback_rollup} scope {@code intervention:<key>} (varchar(40)
+     * minus the 13-char prefix ⇒ max 27).
+     */
+    public record Intervention(
+        @NotBlank @Pattern(regexp = "[a-z0-9_]{1,27}") String key,
+        @NotBlank @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy") String flag,
+        @NotBlank @Pattern(regexp = "feed|push|both") String channel,
+        @NotBlank @Size(max = 500) String textHu,
+        @Min(1) @Max(8760) int cooldownHours,
+        boolean quietHoursExempt
+    ) {
+    }
 
     /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */
     public record Hypotheses(

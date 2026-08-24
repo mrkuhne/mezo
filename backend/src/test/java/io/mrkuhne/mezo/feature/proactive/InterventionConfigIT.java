@@ -1,0 +1,29 @@
+package io.mrkuhne.mezo.feature.proactive;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+/** W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library binds from YAML and covers every
+ *  W5.1 flag — a raised flag must never be undeliverable. Config + binding only; nothing consumes
+ *  the library yet (Tasks 4-6). */
+class InterventionConfigIT extends AbstractIntegrationTest {
+
+    @Autowired CompanionProperties companionProperties;
+
+    @Test
+    void libraryBindsCoversEveryFlagAndKeysAreUnique() {
+        var lib = companionProperties.interventions();
+        assertThat(lib).isNotEmpty();
+        assertThat(lib.stream().map(CompanionProperties.Intervention::key))
+            .doesNotHaveDuplicates();
+        // every W5.1 flag has at least one entry — a raised flag must never be undeliverable
+        assertThat(lib.stream().map(CompanionProperties.Intervention::flag).distinct())
+            .containsExactlyInAnyOrder(FlagKey.SUSTAINED_STRESS, FlagKey.SLEEP_DEBT,
+                FlagKey.MOMENTUM_AT_RISK, FlagKey.RECOVERY_NEEDED, FlagKey.ALL_HEALTHY);
+    }
+}
