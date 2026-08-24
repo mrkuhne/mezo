@@ -10,6 +10,7 @@ const ex = (muscle: string, workingSets: number, targetRIR: number) => ({
   warmupSets: 1, workingSets, repMin: 8, repMax: 10, targetRIR, type: 'compound' as const,
 })
 const plyoEx = (muscle: string, workingSets: number) => ({ ...ex(muscle, workingSets, 0), type: 'plyo' as const })
+const exemptEx = (muscle: string, workingSets: number) => ({ ...ex(muscle, workingSets, 0), countsTowardVolume: false })
 const day = (dayKey: string, muscle: string, exercises: GymExercise[]): MesoDay =>
   ({ day: dayKey, type: 'Push', muscle, exerciseCount: exercises.length, exercises })
 
@@ -141,6 +142,18 @@ describe('leastLoadedDayFor', () => {
     ]
     expect(leastLoadedDayFor(days, 'shoulder', 'H')).toBe('Sze')
     expect(leastLoadedDayFor([days[0], days[2]], 'shoulder', 'H')).toBeNull()
+  })
+
+  it('treats a day dominated by exempt (countsTowardVolume: false) work as lightly loaded (mezo-gbo7)', () => {
+    // 'Sze' carries 10 exempt sets on top of 2 real ones — under the old plyo-only guard those
+    // 10 sets are ordinary 'compound' type, so they'd count as load and make 'Sze' look heavier
+    // than 'Cs' (5 real sets). If the guard reverts to `ex.type === 'plyo'`, this flips to 'Cs'.
+    const days = [
+      day('H', 'shoulder', [ex('shoulder-side', 20, 0)]),
+      day('Sze', 'shoulder', [ex('shoulder-front', 2, 0), exemptEx('shoulder-front', 10)]),
+      day('Cs', 'shoulder', [ex('shoulder-front', 5, 0)]),
+    ]
+    expect(leastLoadedDayFor(days, 'shoulder', 'H')).toBe('Sze')
   })
 })
 

@@ -51,7 +51,7 @@ export function DayBreakdownCard({ rows, warnings }: DayBreakdownCardProps) {
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 700, fontSize: 12.5 }}>{row.label}</span>
                   {plyoOnly ? (
-                    <span className="label-mono" style={{ fontSize: 10 }}>{row.exemptSets} plyo</span>
+                    <span className="label-mono" style={{ fontSize: 10 }}>{row.exemptSets} kiegészítő</span>
                   ) : (
                     <span
                       className="label-mono"

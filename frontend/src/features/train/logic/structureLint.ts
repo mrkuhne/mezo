@@ -30,7 +30,7 @@ export interface StructureFinding {
 // Exercises per muscle group per session (RP: 1–3; hams/traps stricter).
 export const MAX_EXERCISES_PER_MUSCLE_SESSION_DEFAULT = 3
 export const MAX_EXERCISES_PER_MUSCLE_SESSION: Record<string, number> = { ham: 2, traps: 2 }
-// Working-set band per exercise kind (plyo exempt).
+// Working-set band per exercise kind (exempt work excluded).
 export const SETS_PER_EXERCISE = { compound: { min: 2, max: 4 }, isolation: { min: 2, max: 3 } } as const
 // The frequency rule fires only at/above this weekly set count (splitting less is noise).
 export const FREQUENCY_MIN_WEEKLY_SETS = 4
@@ -38,7 +38,7 @@ export const FREQUENCY_MIN_WEEKLY_SETS = 4
 export const VARIETY_MAX = 5
 export const VARIETY_MIN = 2
 export const VARIETY_MIN_WEEKLY_SETS = 6
-// Exercises per training day — plyo counts, it is a real session slot.
+// Exercises per training day — exempt work counts, it is a real session slot.
 export const SESSION_SIZE = { min: 5, max: 9 } as const
 // Estimated session-length band, minutes (research: 20 min too short, 3 h counterproductive).
 export const SESSION_LENGTH_BAND = { min: 45, max: 90 } as const

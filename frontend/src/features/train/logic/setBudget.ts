@@ -90,7 +90,7 @@ export interface MuscleBudgetRow {
   mev: number | null
   /** Green-zone start on the budget scale (same 0..1 unit as budget); null when mev is. */
   zoneStart: number | null
-  /** Non-plyo sets still missing to reach MEV; 0 when in zone or no lower bound. */
+  /** Non-exempt sets still missing to reach MEV; 0 when in zone or no lower bound. */
   setsToZone: number
   /** Least-loaded training day to add the missing sets on; only set for under rows. */
   suggestedDay: string | null
@@ -136,7 +136,7 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
 
 export interface SessionCapWarning { day: string; group: string; label: string; sets: number }
 
-/** Days where one muscle group exceeds SESSION_MUSCLE_CAP working sets in a single session (plyo excluded). */
+/** Days where one muscle group exceeds SESSION_MUSCLE_CAP working sets in a single session (exempt work excluded). */
 export function sessionCapWarnings(days: MesoDay[]): SessionCapWarning[] {
   const out: SessionCapWarning[] = []
   for (const d of days) {
@@ -184,8 +184,8 @@ export function daySessionBreakdown(day: MesoDay): DayGroupRow[] {
 }
 
 /**
- * Non-off training day with the fewest non-plyo working sets for `group`, excluding `excludeDay`.
- * Ties broken by fewest total (non-plyo) sets that day, then original day order. Null when no
+ * Non-off training day with the fewest non-exempt working sets for `group`, excluding `excludeDay`.
+ * Ties broken by fewest total (non-exempt) sets that day, then original day order. Null when no
  * other training day exists.
  */
 export function leastLoadedDayFor(days: MesoDay[], group: string, excludeDay: string): string | null {

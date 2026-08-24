@@ -14,9 +14,9 @@ describe('DayBreakdownCard', () => {
     expect(screen.getByText(/⚠/)).toBeInTheDocument()
   })
 
-  it('renders a plyo-only row as "n plyo" instead of the set count', () => {
+  it('renders an exempt-only row as "n kiegészítő" instead of the set count', () => {
     render(<DayBreakdownCard rows={[plyoOnly]} warnings={[]} />)
-    expect(screen.getByText('4 plyo')).toBeInTheDocument()
+    expect(screen.getByText('4 kiegészítő')).toBeInTheDocument()
   })
 
   it('renders an ok row as "n / 11" without the warning mark', () => {
