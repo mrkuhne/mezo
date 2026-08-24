@@ -34,7 +34,7 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
 - **Byte-identical default:** `getRecovery(scope, days, null, null, null)` on scope=sleep must
   produce exactly the current compact output — including the `Alvás (utolsó N nap):` header.
   Existing `CompanionToolsRenderIT` **assertions** stay green unmodified — its five
-  `getRecovery(...)` call sites (lines 180/190/200/215/226) gain `null, null` before `ctx(...)`
+  `getRecovery(...)` call sites (lines 180/190/200/215/226) gain `null, null, null` before `ctx(...)`
   as a compile-level param addition (Task 2, Step 3). No other direct call site exists (verified
   by grep — elsewhere the tool is reached via the fake-tool sentinel).
 - **Null-guarded rendering:** every detail field is optional; absent fields are omitted, never
@@ -75,7 +75,7 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/SleepLogPopulator.java` — one
   tracker-grade overload (stage minutes + source + hypnogram).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolsRenderIT.java` —
-  the five existing `getRecovery(...)` call sites gain `null, null` before `ctx(...)` so they
+  the five existing `getRecovery(...)` call sites gain `null, null, null` before `ctx(...)` so they
   compile against the new signature (assertions untouched).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ChatServiceIT.java` — one fake-tool
   turn test proving the `List<LocalDate>` arg reaches the tool (Spring AI's JSON→param
@@ -114,7 +114,7 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
   `SleepLogPopulator.createTrackerSleepLog(UUID owner, LocalDate date, String bedtime, String wakeup, BigDecimal durationH, Integer quality, Integer awakenings, Integer inBedMin, Integer awakeMin, Integer lightMin, Integer remMin, Integer deepMin, Integer sourceQualityPct, String source, SleepHypnogram hypnogram, String notes) → SleepLogEntity`.
 - Consumes: `SleepLogEntity` setters (Lombok `@Setter`), `SleepHypnogram(Integer bucketMin, String stages)`.
 
-- [ ] **Step 1: Add the finder (production code, no test yet — it is exercised by the IT in Step 3)**
+- [x] **Step 1: Add the finder (production code, no test yet — it is exercised by the IT in Step 3)**
 
 `SleepLogRepository.java`, below the existing `DateGreaterThanEqual` finder:
 
@@ -125,7 +125,7 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
             UUID createdBy, LocalDate from, LocalDate to);
 ```
 
-- [ ] **Step 2: Add the tracker-grade populator overload**
+- [x] **Step 2: Add the tracker-grade populator overload**
 
 `SleepLogPopulator.java`, append (after the 5-arg `createSleepLog` overload). Every field explicit
 so the IT can seed both fully-enriched screenshot rows and sparse manual rows from one factory:
@@ -160,7 +160,7 @@ so the IT can seed both fully-enriched screenshot rows and sparse manual rows fr
 
 Import `io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram` in the populator.
 
-- [ ] **Step 3: Create `SleepLogDetailRenderIT` with scaffolding + finder smoke test (expect PASS)**
+- [x] **Step 3: Create `SleepLogDetailRenderIT` with scaffolding + finder smoke test (expect PASS)**
 
 `SleepLogDetailRenderIT.java`:
 
@@ -224,13 +224,13 @@ class SleepLogDetailRenderIT extends AbstractIntegrationTest {
 (Also import `java.util.Map`; no `@BeforeEach`/`setUp` needed — `ctx()` creates a fresh audit per
 call, exactly as `CompanionToolsRenderIT` does.)
 
-- [ ] **Step 4: Run (expect PASS)**
+- [x] **Step 4: Run (expect PASS)**
 
 ```bash
 cd backend && ./mvnw clean test -Dtest='SleepLogDetailRenderIT' -Dmezo.test.use-testcontainers=true
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java \
@@ -246,7 +246,7 @@ git commit -m "feat(companion): sleep_log between-finder + tracker populator for
 **Files:**
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/BiometricsTools.java`
 - Modify: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolsRenderIT.java`
-  (five call sites gain `null, null` — compile fix only, see Step 3)
+  (five call sites gain `null, null, null` — compile fix only, see Step 3)
 - Test: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/SleepLogDetailRenderIT.java`
 
 **Interfaces:**
@@ -266,7 +266,7 @@ One line per requested day, newest first. Fields in fixed order; **a field rende
 non-null** (notes: only when non-blank) — absent fields are omitted, never rendered as zero:
 
 ```
-<date>: lefkévés 23:15, ébredés 06:45; 7h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; minőség 4/5; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDL…; megjegyzés: …
+<date>: lefekvés 23:15, ébredés 06:45; 7h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; minőség 4/5; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDL…; megjegyzés: …
 ```
 
 - Clock parts: `lefekvés <bedtime>` / `ébredés <wakeup>` — stored `HH:MM` strings, rendered as-is
@@ -299,7 +299,7 @@ set), the header carries the `visszavágva` suffix. After clamping the set is �
 days (≤30 in the test env) — one `DateBetween` read over `[min of set, max of set]`, in-memory
 filter to the set (no N+1).
 
-- [ ] **Step 1: Write the failing ITs (spec §6.1–6.6) in `SleepLogDetailRenderIT`**
+- [x] **Step 1: Write the failing ITs (spec §6.1–6.6) in `SleepLogDetailRenderIT`**
 
 Append to the class from Task 1 (imports: `SleepHypnogram`, `java.util.List`):
 
@@ -317,7 +317,7 @@ Append to the class from Task 1 (imports: `SleepHypnogram`, `java.util.List`):
         String out = biometricsTools.getRecovery("sleep", null, List.of(d), null, null, ctx(owner));
 
         assertThat(out).isEqualTo("Alvás — részletes nézet:\n"
-                + d + ": lefkévés 23:15, ébredés 06:45; 7h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; "
+                + d + ": lefekvés 23:15, ébredés 06:45; 7h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; "
                 + "minőség 4/5; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDLRA; megjegyzés: korán keltem");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Sleep", d.toString()));
@@ -424,13 +424,13 @@ Append to the class from Task 1 (imports: `SleepHypnogram`, `java.util.List`):
     void testRenderDetailManualRow_shouldOmitAbsentFields_whenSparse() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate d = LocalDate.now().minusDays(1);
-        // duration + quality + awakenings only; the 8-arg populator leaves the rest null
+        // duration + quality + awakenings; source keeps the entity's "manual" default, other fields stay null
         sleepLogPopulator.createSleepLog(owner, d, "23:40", "07:05", new BigDecimal("7.4"), 3, 1, null);
 
         String out = biometricsTools.getRecovery("sleep", null, List.of(d), null, null, ctx(owner));
 
         assertThat(out).isEqualTo("Alvás — részletes nézet:\n"
-                + d + ": lefkévés 23:40, ébredés 07:05; 7h 24p; minőség 3/5; ébredések 1");
+                + d + ": lefekvés 23:40, ébredés 07:05; 7h 24p; minőség 3/5; ébredések 1; forrás: manual");
         assertThat(out).doesNotContain("ágyban").doesNotContain("hypnogram")
                 .doesNotContain("megjegyzés").doesNotContain("forrás: screenshot");
     }
@@ -440,7 +440,7 @@ Append to the class from Task 1 (imports: `SleepHypnogram`, `java.util.List`):
 > `io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope` (same import as
 > `CompanionToolsRenderIT:8`) and `io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram`.
 
-- [ ] **Step 2: Run — expect FAIL**
+- [x] **Step 2: Run — expect FAIL**
 
 ```bash
 cd backend && ./mvnw clean test -Dtest='SleepLogDetailRenderIT' -Dmezo.test.use-testcontainers=true
@@ -448,7 +448,7 @@ cd backend && ./mvnw clean test -Dtest='SleepLogDetailRenderIT' -Dmezo.test.use-
 
 (Compile failure: `getRecovery` has no 6-arg overload yet. That is the expected RED.)
 
-- [ ] **Step 3: Add the params + routing + `renderSleepDetail` to `BiometricsTools`**
+- [x] **Step 3: Add the params + routing + `renderSleepDetail` to `BiometricsTools`**
 
 In `BiometricsTools.java`:
 1. `getRecovery` — add the three `@ToolParam`s after `days` (param descriptions carry the
@@ -524,7 +524,7 @@ In `BiometricsTools.java`:
             //  nothing is added; `clamped` already reflects the edge trim above)
         }
 
-        java.util.Set<LocalDate> days = new java.util.TreeSet<>();
+        java.util.NavigableSet<LocalDate> days = new java.util.TreeSet<>();
         for (LocalDate d : requested) {
             if (d.isBefore(windowFrom) || d.isAfter(today)) {
                 clamped = true;
@@ -669,18 +669,18 @@ In `BiometricsTools.java`:
 ```
 
 5. **Compile fix for the existing tests** — in `CompanionToolsRenderIT`, the five `getRecovery(...)`
-   calls (lines 180, 190, 200, 215, 226) gain `null, null` before `ctx(...)`, e.g.
-   `biometricsTools.getRecovery("sleep", 90, null, null, ctx(owner))`. **Do not touch any
+   calls (lines 180, 190, 200, 215, 226) gain `null, null, null` before `ctx(...)`, e.g.
+   `biometricsTools.getRecovery("sleep", 90, null, null, null, ctx(owner))`. **Do not touch any
    assertion.** (If more call sites fail to compile — there are none by grep — fix them the same
    way.)
 
-- [ ] **Step 4: Run (expect PASS)**
+- [x] **Step 4: Run (expect PASS)**
 
 ```bash
 cd backend && ./mvnw clean test -Dtest='SleepLogDetailRenderIT,CompanionToolsRenderIT' -Dmezo.test.use-testcontainers=true
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/BiometricsTools.java \
@@ -701,7 +701,7 @@ git commit -m "feat(companion): get_recovery(scope=sleep) full sleep-log detail 
 **Interfaces:**
 - Consumes: `BiometricsTools.getRecovery(scope, days, date, from, to, toolContext)` (Task 2).
 
-- [ ] **Step 1: Write the failing ITs (spec §6.7–6.8)**
+- [x] **Step 1: Write the failing ITs (spec §6.7–6.8)**
 
 Append to `SleepLogDetailRenderIT`:
 
@@ -757,7 +757,7 @@ Append to `SleepLogDetailRenderIT`:
 > `createCheckIn(owner, date, "08:00", energy, stress, null)` hardcodes body/mental to 3;
 > `sleepGoalPopulator.goal(owner)` gives the 7h30m/06:45 fixture the sleep-goal IT there relies on).
 
-- [ ] **Step 2: Run (expect PASS)**
+- [x] **Step 2: Run (expect PASS)**
 
 The routing is already in place (Task 2) — these tests should pass immediately. If any FAILS, the
 routing regressed: fix `BiometricsTools`, not the test.
@@ -766,13 +766,13 @@ routing regressed: fix `BiometricsTools`, not the test.
 cd backend && ./mvnw clean test -Dtest='SleepLogDetailRenderIT' -Dmezo.test.use-testcontainers=true
 ```
 
-- [ ] **Step 3: Run the whole render+registry+chat suite (expect PASS)**
+- [x] **Step 3: Run the whole render+registry+chat suite (expect PASS)**
 
 ```bash
 cd backend && ./mvnw clean test -Dtest='SleepLogDetailRenderIT,CompanionToolsRenderIT,CompanionToolRegistryIT,ChatServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/SleepLogDetailRenderIT.java
@@ -797,7 +797,7 @@ git commit -m "test(companion): pin get_recovery detail-mode scope isolation + c
   wiring (reads the tool definitions Spring AI generated from the `@Tool`/`@ToolParam` annotations);
   `ChatServiceIT`'s fake-tool recipe (`ChatServiceIT:64-76`).
 
-- [ ] **Step 1: Write the failing wiring tests**
+- [x] **Step 1: Write the failing wiring tests**
 
 `CompanionToolRegistryIT` — append (proves the generated schema carries the new params, so the
 LLM can actually pass them):
@@ -861,7 +861,7 @@ REAL param binding, not a direct method call):
 > classpath when this IT is written, write this step AFTER Task 1's commit (the tasks are ordered
 > that way already).
 
-- [ ] **Step 2: Run — expect FAIL**
+- [x] **Step 2: Run — expect FAIL**
 
 ```bash
 cd backend && ./mvnw clean test -Dtest='CompanionToolRegistryIT,ChatServiceIT' -Dmezo.test.use-testcontainers=true
@@ -870,7 +870,7 @@ cd backend && ./mvnw clean test -Dtest='CompanionToolRegistryIT,ChatServiceIT' -
 (The schema/description tests fail on the missing param names/trigger text; the ChatServiceIT one
 fails on the unrendered detail.)
 
-- [ ] **Step 3: Update the `@Tool` description and the system prompt**
+- [x] **Step 3: Update the `@Tool` description and the system prompt**
 
 `BiometricsTools.getRecovery` `@Tool` description — insert the scope=sleep detail sentence +
 trigger clause **after** the existing scope=sleep sentence (keep the existing text, add to it):
@@ -897,13 +897,13 @@ add the detail trigger):
             - konkrét nap alvási adata / fázisai / hypnogram → get_recovery (date vagy from/to)
 ```
 
-- [ ] **Step 4: Run (expect PASS)**
+- [x] **Step 4: Run (expect PASS)**
 
 ```bash
 cd backend && ./mvnw clean test -Dtest='CompanionToolRegistryIT,ChatServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/BiometricsTools.java \
@@ -926,7 +926,7 @@ git commit -m "feat(companion): get_recovery detail schema + system-prompt routi
 
 **Interfaces:** none (docs only).
 
-- [ ] **Step 1: Update the §4 tool-catalog row**
+- [x] **Step 1: Update the §4 tool-catalog row**
 
 In `docs/features/companion.md` §4, the `get_recovery(scope, days)` catalog row (line ~2083 —
 "scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings"). Extend
@@ -939,7 +939,7 @@ the scope=sleep cell and the input/output cells:
 (Keep the sleep-goal and checkins cells of the row verbatim — only the scope=sleep portion
 changes; the row is one long markdown table line, edit it in place.)
 
-- [ ] **Step 2: Update the §5.5 tools-seam paragraph**
+- [x] **Step 2: Update the §5.5 tools-seam paragraph**
 
 In §5.5, the "V0.5 tools seam" paragraph (line ~2552: "V0.5 added **three plain finders** to the
 owning features' repos"). Append a sentence:
@@ -949,7 +949,7 @@ mezo-ohce added a fourth — `SleepLogRepository.findByCreatedByAndDeletedFalseA
 (inclusive window, newest first) for `get_recovery`'s detail mode.
 ```
 
-- [ ] **Step 3: Fix the spec typo**
+- [x] **Step 3: Fix the spec typo**
 
 `docs/superpowers/specs/2026-08-24-sleep-log-detail-tool-design.md` line ~61:
 `ébredések k; forrás: screenshot (87%)` block — replace `feheres B p` with `könnyű B p`
@@ -965,7 +965,7 @@ node scripts/gen-codemap.mjs && node scripts/lint-docs.mjs
 should pick it up; the plan file itself is not CODEMAP-tracked. If the codemap diff is only the
 new IT + this plan, commit it; otherwise keep the codemap as-is and note why in the PR body.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/features/companion.md docs/superpowers/specs/2026-08-24-sleep-log-detail-tool-design.md docs/CODEMAP.md docs/superpowers/plans/2026-08-24-sleep-log-detail-tool.md

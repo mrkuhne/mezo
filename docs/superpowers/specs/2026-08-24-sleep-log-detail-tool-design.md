@@ -57,7 +57,7 @@ One line per requested day, newest first:
 
 - **Row present** — every field null-guarded, absent fields simply omitted (manual rows stay
   sparse; never a fabricated value), Hungarian labels consistent with the rest of the tool:
-  `lefkévés HH:MM, ébredés HH:MM; Xh Yp; ágyban Zp; ébren A p · feheres B p · REM C p ·
+  `lefkévés HH:MM, ébredés HH:MM; Xh Yp; ágyban Zp; ébren A p · könnyű B p · REM C p ·
   mély D p; minőség n/5; ébredések k; forrás: screenshot (87%); hypnogram: DDLR…;
   megjegyzés: …`
   - `hypnogram` renders as `bucketMin` + the **raw stage-letter string** (display-only
