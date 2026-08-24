@@ -13,15 +13,15 @@ afterEach(() => {
 })
 
 describe('useNotificationPrefs', () => {
-  it('returns all 21 categories with the spec defaults (17 ON, gym leads 30) — +6 feed families +1 decision_review, all ON', async () => {
+  it('returns all 22 categories with the spec defaults (18 ON, gym leads 30) — +6 feed families +1 decision_review +1 intervention, all ON', async () => {
     // Registered unconditionally: harmless in mock mode (never reached), the read source of
     // truth in real mode (no default handler exists for this endpoint yet).
     server.use(http.get(`${API_BASE}/api/notification/pref`, () => HttpResponse.json({ prefs: notificationPrefSeed })))
     const { result } = renderHook(() => useNotificationPrefs(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.prefs).toHaveLength(21))
+    await waitFor(() => expect(result.current.prefs).toHaveLength(22))
     expect(result.current.prefs).toEqual(notificationPrefSeed)
     const enabledCount = result.current.prefs.filter((p) => p.enabled).length
-    expect(enabledCount).toBe(17)
+    expect(enabledCount).toBe(18)
     expect(result.current.prefs.find((p) => p.category === 'gym')?.leadMinutes).toBe(30)
   })
 
@@ -29,7 +29,7 @@ describe('useNotificationPrefs', () => {
     if (!isMockMode()) return
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const { result } = renderHook(() => useNotificationPrefs(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.prefs).toHaveLength(21))
+    await waitFor(() => expect(result.current.prefs).toHaveLength(22))
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -37,7 +37,7 @@ describe('useNotificationPrefs', () => {
     if (!isMockMode()) return
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const { result } = renderHook(() => useNotificationPrefs(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.prefs).toHaveLength(21))
+    await waitFor(() => expect(result.current.prefs).toHaveLength(22))
 
     await act(async () => { await result.current.setPref('midday', { enabled: true }) })
 
@@ -62,7 +62,7 @@ describe('useNotificationPrefs', () => {
       }),
     )
     const { result } = renderHook(() => useNotificationPrefs(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.prefs).toHaveLength(21))
+    await waitFor(() => expect(result.current.prefs).toHaveLength(22))
 
     const before = result.current.prefs.find((p) => p.category === 'gym')
     expect(before?.enabled).toBe(true)
@@ -85,7 +85,7 @@ describe('useNotificationPrefs', () => {
       http.put(`${API_BASE}/api/notification/pref`, () => new HttpResponse(null, { status: 500 })),
     )
     const { result } = renderHook(() => useNotificationPrefs(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.prefs).toHaveLength(21))
+    await waitFor(() => expect(result.current.prefs).toHaveLength(22))
 
     await act(async () => {
       await result.current.setPref('midday', { enabled: true }).catch(() => {})

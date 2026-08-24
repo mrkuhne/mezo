@@ -26,6 +26,12 @@ const feedMsg: MezoMessageItem = {
 }
 const feedMsg2: MezoMessageItem = { ...feedMsg, id: 'evening', artifactId: 'fm-2', eyebrow: 'Esti jegyzet' }
 
+// W5.2 (mezo-b3pp.19) — a „Segített?" kártya-változat: intervention kindű feed-sor.
+const interventionMsg: MezoMessageItem = {
+  id: 'intervention', artifactId: 'fm-3', kind: 'intervention', eyebrow: 'Mezo · észrevétel', time: '15:00',
+  paragraphs: ['Két napja alszol keveset — ma korábban lefeküdhetnél.'], refs: [], meta: null,
+}
+
 const stored = (over: Partial<ArtifactFeedback> = {}): ArtifactFeedback => ({
   artifactKind: 'feed_message', artifactId: 'fm-1', verdict: 'up', reason: null,
   updatedAt: '2026-08-21T12:00:00Z', ...over,
@@ -81,6 +87,19 @@ describe('MezoMessagesSheet — visszajelzés-chipek (mezo-b3pp.15)', () => {
     )
     await userEvent.click(screen.getAllByRole('button', { name: /Nem talált/ })[0])
     expect(screen.getAllByRole('button', { name: 'pontatlan' })).toHaveLength(1)
+  })
+
+  // W5.2 (mezo-b3pp.19) — a „Segített?" kártya-változat intervention kindre.
+  test('intervention kártyán megjelenik a „Segített?" felirat és a chipsor, a közbelépésről szóló felirattal', () => {
+    render(<MezoMessagesSheet messages={[interventionMsg]} onClose={() => {}} feedback={handle()} />)
+    expect(screen.getByText('Segített?')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Visszajelzés a közbelépésről' })).toBeInTheDocument()
+  })
+
+  test('nem-intervention (pl. morning) feed-elemen NEM jelenik meg a „Segített?" felirat', () => {
+    render(<MezoMessagesSheet messages={[feedMsg]} onClose={() => {}} feedback={handle()} />)
+    expect(screen.queryByText('Segített?')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: FEEDBACK_GROUP })).toBeInTheDocument()
   })
 })
 
