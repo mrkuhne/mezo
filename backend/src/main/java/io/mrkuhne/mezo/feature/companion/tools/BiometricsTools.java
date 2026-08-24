@@ -139,10 +139,14 @@ public class BiometricsTools {
 
     @Tool(name = "get_recovery", description = "Regeneráció: alvás, alvási cél és napi közérzet. "
             + "scope=sleep (alapértelmezés) — alvásnapló az elmúlt napokra: dátum, óra, minőség (1-5), "
-            + "ébredések. scope=sleep-goal — az alvási cél: cél alvásidő (óra/perc), ébredés/lefekvés "
-            + "időpontja, szabályossági sáv (± perc). scope=checkins — bejelentkezések az elmúlt napokra: "
-            + "energia/stressz/testi/mentális állapot (1-10) minden rögzített időpontra. Használd, amikor "
-            + "a user alvásról, alvás-céljáról/ritmusáról, vagy közérzetéről (energia/stressz) kérdez. "
+            + "ébredések. scope=sleep részletes nézet — a date (max 3 nap) vagy from/to paraméterekkel "
+            + "a kért napok teljes adatai: lefekvés/ébredés időpont, alvási idő, ágyban/ébren/könnyű/REM/"
+            + "mély percek, minőség, ébredések, forrás (minőséggel), hypnogram, megjegyzés. scope=sleep-goal "
+            + "— az alvási cél: cél alvásidő (óra/perc), ébredés/lefekvés időpontja, szabályossági sáv "
+            + "(± perc). scope=checkins — bejelentkezések az elmúlt napokra: energia/stressz/testi/mentális "
+            + "állapot (1-10) minden rögzített időpontra. Használd, amikor a user alvásról, alvás-céljáról/"
+            + "ritmusáról, vagy közérzetéről (energia/stressz) kérdez — vagy amikor a user konkrét nap "
+            + "alvási adatait / fázisait kérdezi (akkor a date vagy from/to paraméterrel). "
             + "scope: sleep (alapértelmezés), sleep-goal, checkins.")
     public String getRecovery(
             @ToolParam(required = false, description = "sleep|sleep-goal|checkins (alapértelmezés: sleep).")
