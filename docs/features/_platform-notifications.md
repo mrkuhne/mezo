@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-08-21
+updated: 2026-08-25
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -18,21 +18,24 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291500_mezo-h4wp.6.3_create_notification_schedule.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202608181400_mezo-gzhp.1_create_app_notification.sql
-related: [proactive, today, ritual, me, fuel, insights, journal, _platform-api-backend]
+related: [proactive, today, ritual, me, fuel, insights, journal, companion, _platform-api-backend]
 ---
 
 # Push Notifications Platform — Feature Documentation
 
 > Cross-cutting delivery layer, no route/tab of its own (the FE surface lives at `/me/ertesitesek`,
 > documented from Me's side in [`me.md`](me.md)). **Push (N1/N2/N3): DONE** — N1 delivery spine + N2
-> dispatcher/prefs + N3 FE-schedule/preview are all shipped; all 21 categories are live (11 at N3
+> dispatcher/prefs + N3 FE-schedule/preview are all shipped; all 22 categories are live (11 at N3
 > ship, +3 companion-feed categories — `evening`/`sleep_reaction`/`weight_reaction` — once
 > `AnchorResolver`'s five prose anchors moved onto the unified `companion_message` table,
 > mezo-gst9; +6 feed-anchored categories — `pattern`/`knowledge`/`prediction`/`experiment`/
 > `challenge`/`memory` — once the in-app feed was wired as a push source, mezo-gzhp.3; +1
 > backend-anchored category — `decision_review` — once the Journal domain's decision journal + review
 > loop shipped, mezo-b3pp.4, §3c/§4; **not** a feed-anchored category despite sharing §3b's dedup
-> shape, see §3c). A real Web Push
+> shape, see §3c; +1 backend-anchored category — `intervention` — once the JITAI-lite composite-flag
+> intervention slice shipped, mezo-b3pp.19, §3d/§4 — likewise not feed-anchored, and the first
+> category to consult a do-not-disturb window: `mezo.notification.quiet-hours` defers, never drops,
+> a non-exempt fire to the window's end, §3d). A real Web Push
 > reached Daniel's iPhone from the k3s backend on 2026-07-29 (N1's exit criterion, confirmed by
 > Daniel — bd `mezo-h4wp.6.1`) — real-world delivery is proven, not just unit-tested. This is the
 > slice that completes the `mezo-h4wp` proactive epic's long-deferred **H2** item — see
@@ -87,13 +90,17 @@ shipped; the epic is complete.
   `aes128gcm` encryption, the outbound HTTP client. Zero new Maven dependencies.
 - **Backend `feature/notification`:** done — three tables beyond N1's `push_subscription`:
   `notification_pref` + `push_log` (N2), `notification_schedule` (N3). The `NotificationCategory`
-  enum (§4) is the **21-key catalog** (11 at N3 ship, +`evening`/`sleep_reaction`/`weight_reaction`
+  enum (§4) is the **22-key catalog** (11 at N3 ship, +`evening`/`sleep_reaction`/`weight_reaction`
   mezo-gst9, +6 feed-anchored categories mezo-gzhp.3 — `pattern`/`knowledge`/`prediction`/
   `experiment`/`challenge`/`memory`, +1 backend-anchored category mezo-b3pp.4 — `decision_review`,
-  reading `decision_entry` directly, §3c). **`DueEvaluator`** (pure) + **`AnchorResolver`** (impure, reads
-  three anchor sources — `AnchorResolver.feedAnchors(...)`, F3's `app_notification` reader, folds
-  into `backendAnchors` rather than adding a fourth list; `decisionReviewAnchors(...)`, W1.4's
-  `decision_entry` reader, also folds into `backendAnchors`, §3c) feed **`NotificationDispatchJob`**, a
+  reading `decision_entry` directly, §3c; +1 backend-anchored category mezo-b3pp.19 —
+  `intervention`, reading `companion_message` directly, quiet-hours-deferred, §3d). **`DueEvaluator`**
+  (pure) + **`AnchorResolver`** (impure, reads
+  four anchor sources — `AnchorResolver.feedAnchors(...)`, F3's `app_notification` reader, folds
+  into `backendAnchors` rather than adding its own list; `decisionReviewAnchors(...)`, W1.4's
+  `decision_entry` reader, also folds into `backendAnchors`, §3c; `interventionAnchors(...)`, W5.2's
+  `companion_message` reader, likewise folds into `backendAnchors` rather than adding a fourth
+  `AnchorSet` list, §3d) feed **`NotificationDispatchJob`**, a
   per-minute cron that hands the actual
   send to **`PushDispatchExecutor`**'s `@Async` method (§9 — the single most important gotcha in
   this feature). One `NotificationController` implements all six operations (subscribe/unsubscribe/
@@ -140,30 +147,37 @@ settings list beside it that cannot work.
    land within 15 minutes of each other. Needs no endpoint — the FE already knows today's anchors.
 2. **The N1 master toggle + dev "Teszt értesítés küldése" button** — unchanged.
 3. **The category list**, now **three sections** (mockup direction C, extended by F3 bd
-   `mezo-gzhp.3`, then by W1.4 bd `mezo-b3pp.4`), rendered in this order: **"Mezo megszólal"** (the
+   `mezo-gzhp.3`, then by W1.4 bd `mezo-b3pp.4`, then by W5.2 bd `mezo-b3pp.19`), rendered in this
+   order: **"Mezo megszólal"** (the
    prose categories — `briefing`/`midday`/`evening`/`weekly`/`memoir`/`sleep_reaction`/`weight_reaction`,
    mezo-gst9 added the last three), **"Az agy eseményei"** (F3's 6 feed-anchored, family-level
    categories — `pattern`/`knowledge`/`prediction`/`experiment`/`challenge`/`memory` — one toggle per
-   `AppNotificationKind` family, **plus W1.4's `decision_review`** appended last — all 7 share
+   `AppNotificationKind` family, **plus W1.4's `decision_review` and W5.2's `intervention`** appended
+   last, in that order — all 8 share
    `NOTIFICATION_CATEGORY_META`'s `section: 'brain'` grouping, matching the shape `NotificationsPage.tsx`
    already uses for every backend/companion-derived event with no FE-forecastable anchor, even though
-   `decision_review` is resolved by a **different** backend path than the other 6 (§3c — grouped by FE
+   `decision_review` and `intervention` are each resolved by their OWN **different** backend path
+   than the 6 feed-anchored ones — and than each other (§3c/§3d — grouped by FE
    section for UI consistency, not by anchor mechanism), and
    **"Emlékeztetők"** (the reminder
    categories — `gym`/`medication`/`ritual`/`lights_out`/`wind_down`/`checkin`/`fuel_slot`). Each row
    (`NotificationCategoryRow.tsx`) is a toggle + a live, per-day sub-line derived from data the page
    already holds (e.g. `"ma 17:00 · Láb nap"` for `gym`, `"szerda · D3"` for `medication`) — falling
    back to the static `NOTIFICATION_CATEGORY_META` description when the day genuinely has no anchor
-   (no session today, not a dose day). The 7 "Az agy eseményei" rows have no per-day derivation (an
-   in-app-feed event, or a decision's `review_due`, has no daily schedule to preview the way `gym`
-   does), so they always show the static description — `decision_review`'s
-   `backendAnchorMinute` case in `notificationForecast.ts` honestly returns `null`, the same contract
-   `sleep_reaction`/`weight_reaction` already use. **Only `gym` shows a lead-minute chip** (`"−30 perc"`) — it is
+   (no session today, not a dose day). The 8 "Az agy eseményei" rows have no per-day derivation (an
+   in-app-feed event, a decision's `review_due`, or a flag raise, has no daily schedule to preview
+   the way `gym` does), so they always show the static description — `decision_review`'s AND
+   `intervention`'s
+   `backendAnchorMinute` cases in `notificationForecast.ts` both honestly return `null`, the same
+   contract
+   `sleep_reaction`/`weight_reaction` already use (`intervention`'s reason is a compound one: the
+   anchor is BOTH event-born — a flag raise the FE cannot predict — AND, once it exists,
+   quiet-hours-deferrable — neither fact is knowable client-side, §3d). **Only `gym` shows a lead-minute chip** (`"−30 perc"`) — it is
    the sole category with a non-zero `leadMinutes`; a chip on any other row would expose a number the
    backend ignores (dishonest control, spec §6/§9).
 
 **Honest limits, stated plainly:** the mockup's single "Heti terv + memoir" settings row is actually
-**two independent rows/categories** (`weekly`, `memoir`) in the real 21-key catalog — the mockup
+**two independent rows/categories** (`weekly`, `memoir`) in the real 22-key catalog — the mockup
 compressed them for space, the catalog does not. `midday` and `memoir` keep the mockup's **fixed
 static sub-lines** (their anchors are not per-day data, so there is nothing to derive). **Known
 15-minute drift in that FE copy:** since the prose-generation grace (§9 trap #6) moved the real
@@ -221,7 +235,7 @@ read endpoint** — opening the panel is the only "read" action, by design (§9)
                               there is no generator cron to collide with
          c) FE snapshot       today's live notification_schedule rows (weekday match or NULL=every day),
                               each row's category + time individually guarded (§9 trap #7)
-    2. NotificationPrefService.effectiveFor(owner)  → all 21 categories, stored row or code default
+    2. NotificationPrefService.effectiveFor(owner)  → all 22 categories, stored row or code default
     3. DueEvaluator.due(nowMinute, prefs, anchors, catchUpMinutes)   — PURE, no collaborators
          fires when nowMinute − (anchorMinute − leadMinutes) ∈ [0, catchUpMinutes)
          — a BACKWARD window: on time, plus (catchUpMinutes − 1) recovered LATE minutes
@@ -385,9 +399,10 @@ for each decision_entry row owned by the user, unreviewed, with review_due == da
 
 The dedup suffix shape is identical to §3b's, but the *reason* to reach for it is the same collision
 class re-derived independently — not a re-use of `feedAnchors`. `AnchorSet`'s own javadoc on
-`AnchoredEvent.dedupSuffix` names all 7 categories (the 6 feed-anchored ones **and** `decision_review`)
-that need the `HH:mm:{id8}` shape; only `decision_review` gets there via a direct `decision_entry`
-read rather than an `app_notification` row.
+`AnchoredEvent.dedupSuffix` names all **8** categories (the 6 feed-anchored ones, `decision_review`,
+**and, since W5.2, `intervention`**) that need the `HH:mm:{id8}` shape; `decision_review` and
+`intervention` each get there via their own direct read (`decision_entry` / `companion_message`)
+rather than an `app_notification` row.
 
 **Gotcha — `decisionReviewAnchors` is gated on `NOTIFICATION_SWITCH` alone, not `JOURNAL_SWITCH`.**
 With `mezo.feature.journal.enabled=false` but notifications on, `DecisionEntryRepository` is still a
@@ -396,6 +411,67 @@ existing unreviewed decision whose `review_due` lands on today still produces a 
 push — whose `/me/naplo` deeplink then 404s (journal disabled). Honest in the sense that the anchor
 data itself is real, not fabricated, but worth naming: this is the one push category that can point
 at a currently-unreachable page.
+
+### 3d. `intervention` + quiet hours — a backend-native anchor over `companion_message` (bd `mezo-b3pp.19`)
+
+**Also not part of §3b's `feedAnchors(...)` pipeline** — like `decision_review` (§3c), `intervention`
+folds into `backendAnchors` via its own resolver method, `AnchorResolver.interventionAnchors(owner,
+date)`, reading `CompanionMessageRepository` directly (kind = `intervention`, [`proactive.md`](proactive.md)
+§3/§4) rather than `app_notification`. Two things set it apart from every other backend-native
+category, though: **the anchor is event-born** (a flag raise fires the card — [companion.md](companion.md)
+§4/§5.8 — there is no fixed clock time the way `decision-review-time`/`medication-time` are), and
+**it is the first (and, today, only) category `AnchorResolver` defers rather than simply anchors**:
+
+```
+interventionAnchors(owner, date):
+    for cardDate in [date - 1, date]:                    # a deferred-from-yesterday card can land
+                                                            # on TODAY — see below
+        card = companion_message row, owner, cardDate, kind=intervention   (at most one, the
+                                                                              partial-unique index)
+        if no card, or card's library entry is gone, or entry.channel == "feed":
+            skip                                          # channel gate — honest absence, no push
+                                                            # for a feed-only or retired entry
+        minute = interventionFireMinute(card.generatedAt, date,
+                                         entry.quietHoursExempt, quietStart, quietEnd)
+        if minute present:
+            emit AnchoredEvent(INTERVENTION, minute, "HH:mm:" + card.id[0:8],
+                                "Mezo · észrevétel", excerptProse(card.body), "/today?n=" + card.id[0:8])
+```
+
+**`interventionFireMinute` (`AnchorResolver`, pure, no Spring — `InterventionFireMinuteTest`) — defer,
+never drop:**
+
+- Not exempt AND generated inside `[quietStart, quietEnd)` (wrap-aware — the default 22:00→07:00
+  window crosses midnight) ⇒ the fire minute becomes `quietEnd`, on the day the window ends (the
+  NEXT calendar day when the window itself wraps past midnight and generation landed before
+  midnight; the SAME day when generation landed after midnight, already inside the wrapped window).
+  Every other combination fires at the card's own `generatedAt` minute, unchanged — the
+  `sleep_reaction`/`weight_reaction` precedent.
+- The boundary is asymmetric BY DESIGN: `quietStart` itself is INSIDE the window (a card generated
+  at exactly 22:00 defers), `quietEnd` itself is OUTSIDE it (a card generated at exactly 07:00 fires
+  immediately) — the `[start, end)` half-open convention, pinned by
+  `InterventionFireMinuteTest`'s two boundary cases.
+- `quietHoursExempt` (per library entry, `mezo.companion.interventions[].quiet-hours-exempt`) skips
+  the whole check — an exempt entry always fires on its own generation minute.
+- `quietStart == quietEnd` (an operator setting `mezo.notification.quiet-hours` to a zero-width
+  window) disables deferral entirely — never a division-by-zero or an all-day defer.
+- Because a deferral can push the fire minute onto the NEXT calendar day, `interventionAnchors`
+  resolves for BOTH yesterday's and today's card — a card generated at 23:10 yesterday, deferred to
+  07:00, must still surface when `AnchorResolver.resolve` is asked for TODAY.
+
+**`mezo.notification.quiet-hours` (`NotificationProperties.QuietHours`, `{start, end}`, default
+`22:00`/`07:00`) — the platform's first do-not-disturb window, and, deliberately, a NARROW one.**
+Every other push category already has an implicit "quiet enough" property (a `gym` reminder fires
+30 minutes before a real slot, `medication` at a fixed 08:00, prose categories on their own
+generation minute during the day) — `intervention` is the first category whose trigger (a flag
+raise) can land at ANY hour, so it is the first to need an explicit window. **Widening quiet hours
+to every category is a later, deliberate decision, not a drive-by** (`NotificationProperties`'s own
+class javadoc says so) — today `DueEvaluator` and every other `AnchorResolver` method are entirely
+unaware quiet hours exist. **Defer, never drop** is the load-bearing design choice: a suppressed
+push is a silently lost intervention (the whole point of a JITAI-lite nudge is timeliness, but a
+LATE nudge that arrives at 07:00 is still worth more than one that never arrives at all) — contrast
+this with `decision_review`'s "arrived at its day or didn't, no urgency window" (§3c) and `gym`'s
+lead-minute EARLY nudge; `intervention` is the one category that reschedules LATE.
 
 ## 4. Data model & API
 
@@ -418,25 +494,31 @@ Migration: [`202607291400_..._create_notification_pref_and_push_log.sql`](../../
 
 `uq_notification_pref_created_by_category` (partial, live rows only). **A missing row is never
 "off"** — `NotificationPrefService.effectiveFor` reports the category's code default
-(`NotificationCategory.defaultEnabled()`/`defaultLeadMinutes()`) for every one of the 21 keys, always
+(`NotificationCategory.defaultEnabled()`/`defaultLeadMinutes()`) for every one of the 22 keys, always
 — so a fresh install needs no seed data and a future 22nd category ships with its intended default
 instead of silently arriving OFF (`feature/notification/service/NotificationPrefService.java:32-44`,
-javadoc: "All 21 categories" — `decision_review` was the 21st to land, mezo-b3pp.4).
+javadoc: "All 22 categories" — `decision_review` was the 21st to land (mezo-b3pp.4) and
+  `intervention` the 22nd (mezo-b3pp.19)).
 
 ### `push_log` (N2)
 
 Same migration as above. `log_date date`, `dedup_key varchar(80)` (`"{category}:{anchorHHmm}"`, e.g.
 `gym:10:00` — built from the **anchor** time, never the fire time, so changing a category's lead
-cannot re-fire something already sent today for the same anchor), `category`, `sent_at`. **7**
+cannot re-fire something already sent today for the same anchor), `category`, `sent_at`. **8**
 categories key off a different, more specific form of the same shape instead —
-`"{category}:{HHmm}:{id8}"` (e.g. `pattern:06:00:3f9a1c02`, `decision_review:09:00:7c1e02aa`): the 6
+`"{category}:{HHmm}:{id8}"` (e.g. `pattern:06:00:3f9a1c02`, `decision_review:09:00:7c1e02aa`,
+`intervention:07:00:3f9a1c02`): the 6
 feed-anchored categories (F3, bd `mezo-gzhp.3`) append the source `app_notification` row's id, so two
 same-family events wake-deferred onto the same minute never collapse into one push (§3b/§9);
 `decision_review` (W1.4, bd `mezo-b3pp.4`) appends the source `decision_entry` row's id for the exact
 same reason at a fixed anchor instead of a wake-deferred one — two decisions can share a `review_due`
 day, and both land on the same fixed `decision-review-time` minute, so a bare `HH:mm` suffix would
-collapse them into one push (§3c/§9). `decision_review` is **not** feed-anchored (§3c) — it merely
-needed the identical collision fix independently.
+collapse them into one push (§3c/§9); `intervention` (W5.2, bd `mezo-b3pp.19`) appends the source
+`companion_message` row's id for a THIRD independently-derived instance of the same collision — a
+quiet-hours-deferred card generated YESTERDAY can land on the exact same target-day minute as
+today's own card once both resolve through `interventionFireMinute` (§3d), so the bare `HH:mm` form
+would collapse the two into one push. Neither `decision_review` nor `intervention` is feed-anchored
+(§3c/§3d) — each merely needed the identical collision fix independently.
 `uq_push_log_created_by_log_date_dedup_key` (partial, live rows only). **Written before the send**
 (§9). No pruning job in v1 (~7 rows/day, single user — spec §5 retention note).
 
@@ -461,16 +543,18 @@ both the `categories` list and every entry, in `NotificationScheduleService.requ
 backend-native category's schedule (`gym`, `ritual`, …) would create a second source of truth for a
 minute the backend already owns.
 
-### `NotificationCategory` — the 21-key catalog (`feature/notification/domain/NotificationCategory.java`)
+### `NotificationCategory` — the 22-key catalog (`feature/notification/domain/NotificationCategory.java`)
 
 The single source of truth for which categories exist, their default enabled/lead, and which are
 FE-written — pinned by `NotificationCategoryTest` against spec §6. Rows 15–20 (bd
 `mezo-gzhp.3`) are the feed-anchored, family-level categories: they carry no anchor of their own in
 `AnchorResolver`'s backend-native sense — their "anchor" is whichever `app_notification` row of that
-family occurred today, wake-deferred (`AnchorResolver.feedAnchors(...)`, §3b). **Row 21,
-`decision_review` (bd `mezo-b3pp.4`), is genuinely backend-native** — it reads `decision_entry`
-directly (§3c), not `app_notification` — but is listed here after the feed-anchored rows because it
-landed after them and shares no mechanism with rows 15–20 beyond the dedup-suffix shape:
+family occurred today, wake-deferred (`AnchorResolver.feedAnchors(...)`, §3b). **Rows 21–22,
+`decision_review` (bd `mezo-b3pp.4`) and `intervention` (bd `mezo-b3pp.19`), are each genuinely
+backend-native** — they read `decision_entry` / `companion_message` directly (§3c/§3d), not
+`app_notification` — but are listed here after the feed-anchored rows because they landed after
+them and share no mechanism with rows 15–20 beyond the dedup-suffix shape (nor, beyond that shape,
+with each other — §3d):
 
 | # | Key | Default | Lead | FE-written | Anchor |
 |---|---|---|---|---|---|
@@ -495,6 +579,7 @@ landed after them and shares no mechanism with rows 15–20 beyond the dedup-suf
 | 19 | `challenge` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.CHALLENGE_EVENT`'s `app_notification` rows (mezo-gzhp.3) |
 | 20 | `memory` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.MEMORY_NOTE`'s `app_notification` rows (mezo-gzhp.3) |
 | 21 | `decision_review` | ON | 0 | no | `mezo.notification.decision-review-time` (09:00) on an unreviewed decision's own `review_due` day — never `<=` (mezo-b3pp.4, §3c) |
+| 22 | `intervention` | ON | 0 | no | the `companion_message` kind=`intervention` row's OWN `generatedAt` minute — no cron/grace, it fires off a flag raise; non-exempt fires inside `mezo.notification.quiet-hours` DEFER to the window's end (never dropped); `channel: feed` (or a retired key) yields no anchor at all (mezo-b3pp.19, §3d) |
 
 **`memoir_ready` deliberately has no row here** — its `familyKey()` is `null`, so it never reaches
 `feedAnchors(...)`; the existing `memoir` category (row 7) already covers that event as a push, and
@@ -512,9 +597,9 @@ does; it either has arrived at its `review_due` day or it hasn't.
 
 | Class | Responsibility |
 |---|---|
-| `NotificationCategory` | the 21-key catalog enum (above) |
+| `NotificationCategory` | the 22-key catalog enum (above) |
 | `DueEvaluator` | **pure**, no collaborators — a **backward** window: `nowMinute − (anchorMinute − lead) ∈ [0, catchUpMinutes)`, i.e. on time plus one recovered late minute at the default width 2 (§9). Deliberately does not normalize a negative fire minute into the previous evening — the honest answer for such a combination is that it never fires |
-| `AnchorResolver` | the impure half — resolves all 21 categories' anchors for one owner+day into an `AnchorSet`; see §9 for its seven documented traps |
+| `AnchorResolver` | the impure half — resolves all 22 categories' anchors for one owner+day into an `AnchorSet`; see §9 for its seven documented traps |
 | `NotificationDispatchJob` | the per-minute `@Scheduled` cron — DB-only on the scheduler thread, hands the send to `PushDispatchExecutor` |
 | `PushDispatchExecutor` | the `@Async` send handoff — a **separate bean** (§9) |
 | `NotificationPrefService` | `effectiveFor` (all 21, code-default fallback) + `upsert` (per-category, blind-insert-safe) |
@@ -582,7 +667,7 @@ deeplink base — pinned by `AppNotificationKindTest`. **All 12 rows are wired t
 |---|---|---|---|
 | `POST`/`DELETE` | `/api/notification/subscription` | N1 | unchanged |
 | `POST` | `/api/notification/test` | N1, dev-only | unchanged |
-| `GET` | `/api/notification/pref` | N2 | all 21 categories, always complete — a category with no stored row reports its code default |
+| `GET` | `/api/notification/pref` | N2 | all 22 categories, always complete — a category with no stored row reports its code default |
 | `PUT` | `/api/notification/pref` | N2 | upsert one or more; `400 NOTIFICATION_UNKNOWN_CATEGORY` on an unrecognized key |
 | `PUT` | `/api/notification/schedule` | N3 | replaces the named categories' live rows; `400 NOTIFICATION_UNKNOWN_CATEGORY` on an unrecognized key **or a known-but-backend-native one** |
 | `GET` | `/api/notification/feed?limit=` | F1 | `limit` 1..100, default 50; newest first; items `id`/`kind`/`title`/`body`/`deeplink`/`occurredAt`/`readAt` |
@@ -596,7 +681,7 @@ separate tag/controller pair, since the feed is a different resource (`/api/noti
 `/api/notification/{pref,schedule}`) with its own switch (`NOTIFICATION_FEED_SWITCH`).
 
 **`NOTIFICATION_UNKNOWN_CATEGORY` (400) is a single message code doing two jobs, deliberately.** On
-`pref`, any of the 21 keys is valid (every category — backend-native or FE-written — has a
+`pref`, any of the 22 keys is valid (every category — backend-native or FE-written — has a
 preference), so the code fires only on a genuinely unrecognized string
 (`NotificationController.toCategoryPref`). On `schedule`, the code fires on an unrecognized string
 **or** a recognized-but-not-`feWritten` one (`gym`, `ritual`, …) — the security boundary that stops a
@@ -632,6 +717,15 @@ the OpenAPI schema itself (1..100).
   `Ritual`/`Train`/`Fuel`/`Medication`. `feature/journal` has no knowledge of `feature/notification` —
   the dependency runs the usual direction, `AnchorResolver` reading the owning feature's repository,
   same shape as the gym/medication/ritual reads above it.
+- **Companion + Proactive (intervention delivery, W5.2 bd `mezo-b3pp.19`)** —
+  **new, wired, one-way IN.** `intervention` reads `CompanionMessageRepository` directly (§3d) — a
+  FIFTH backend-native anchor source, and the first one whose upstream trigger is itself an
+  event chain across two OTHER features: a companion `FlagRaisedEvent` ([companion.md](companion.md)
+  §4/§5.8) is turned into a `proactive`-owned `companion_message` row by
+  `feature.proactive.service.InterventionService` ([`proactive.md`](proactive.md) §3/§4) BEFORE
+  `AnchorResolver` ever sees it — this platform never touches `FlagRaisedEvent` or
+  `feature.companion.flags` at all, only the resulting card. `mezo.notification.quiet-hours` (§3d) is
+  this platform's own config, read by nobody outside `feature/notification`.
 - **Fuel** ([`fuel.md`](fuel.md)) — **new seam, both directions; re-platformed onto the living-occurrence Stack (mezo-vx9v Task 9).** Fuel's own `frontend/src/features/fuel/logic/buildProtocol.ts` exports `deriveBlocks` (today's gym/sport/run blocks; moved out of `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) and `PRE_WORKOUT_STACK_LEAD_MIN` — the **one canonical** "40 minutes before today's first training block" offset. Three callers now share the SAME `projectStackDay({occurrences, stash, intakes, wake, bed, mealsPerDay, blocks})` projection (each composing its own hooks inline, not via `useStackDay()` — the writer needs `useSleepGoal().isPending` plus `useStack()`/`useProtocol()`'s `pending`/`error` flags for its fire-once gate (§9 trap #8, `mezo-b6q0`), `NotificationsPage` needs the raw `blocks[]` for its gym sub-line): Fuel's own `useFuelTimeline`, this platform's `useScheduleSnapshotWriter` (the `fuel_slot` schedule rows), and `NotificationsPage`'s preview header — so the pre-workout stack time the Fuel/Stack page shows, the time persisted to `notification_schedule`, and the time the settings preview forecasts can never quietly disagree (a fix-round decision, `mezo-h4wp.6.3`, superseded onto occurrences by Task 9). The retired selection-based `buildProtocol()` builder and its `deriveProtocolAnchors`-mediated anchor derivation are gone from this path; `FUEL_WINDOW_LABEL` (`notificationScheduleWriter.ts`) is now keyed by the 8 `StackZoneKey` zone keys, not the old label set. Since the stim-aware split (mezo-j6c9) a day with ≥2 distinct-time training blocks can project TWO `pre_workout` slots (stim-free-named items anchor to the LAST block), so the writer emits up to two `fuel_slot` "edzés előtti" entries at their own times — per-slot emission handles this with no writer change.
 - **Me** ([`me.md`](me.md) §2 "`Értesítés`") — the FE consumer: the settings page owns no
   notification data itself beyond composing `usePushSubscription()` + `useNotificationPrefs()` +
@@ -674,7 +768,7 @@ function Example() {
 
 **`useNotificationPrefs()` (`data/notification/notificationPrefHooks.ts`) IS a `useDualQuery`** —
 unlike N1's `usePushSubscription()`. The prefs are **server-owned** data (mock seeds the
-deterministic `notificationPrefSeed`, all 21 at spec defaults, synchronously; real fetches
+deterministic `notificationPrefSeed`, all 22 at spec defaults, synchronously; real fetches
 `GET /api/notification/pref` and returns the same seed as the honest pre-resolve ghost, since the
 backend's own "no stored row = code default" rule means the seed already IS the correct fallback).
 `setPref` is a **per-category** upsert (mirrors the backend's own per-category PUT semantics — never
@@ -712,7 +806,7 @@ IT test carries a class-level `@Transactional`, remove it** — `emit`'s `REQUIR
 will FK-deadlock against the test's own not-yet-committed rows otherwise (§9's F1/F2 gotcha; every
 one of the 12 current producer IT classes had to have this annotation dropped).
 
-## 7. How to extend it (adding a 22nd category)
+## 7. How to extend it (adding a 23rd category)
 
 1. **Catalog first** — add the key to `NotificationCategory` (`defaultEnabled`/`defaultLeadMinutes`/
    `feWritten`) and to spec §6's table; `NotificationCategoryTest` pins the catalog against the spec,
@@ -741,7 +835,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   forward-window bug (`testDue_shouldStillFire_whenTheTickWasMissedAndNowIsOneMinutePastTheFireMinute`,
   `testDue_shouldNotFire_whenNowIsOneMinuteBeforeTheFireMinute`), disabled category, lead applied,
   empty day, the negative-fire-minute non-wraparound.
-- `NotificationCategoryTest` — pins the 21-key catalog (keys, defaults, leads, `feWritten`) against
+- `NotificationCategoryTest` — pins the 22-key catalog (keys, defaults, leads, `feWritten`) against
   spec §6.
 - `AnchorResolverIT` + `AnchorResolverRitualSwitchOffIT` — per-category anchor resolution against a
   real Postgres, including the ritual-family absence when `RITUAL_SWITCH` is off. Trap #6 is covered
@@ -764,6 +858,22 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   fixtures the other categories don't touch: fires on the `review_due` day, suppressed once already
   reviewed, suppressed once the due day has passed (`review_due < today`, never `<=`), and two
   decisions due on the same day produce two anchors with distinct `HH:mm:{id8}` dedup suffixes.
+- `AnchorResolverInterventionIT` (W5.2, bd `mezo-b3pp.19`, §3d) — `intervention`'s own case, kept
+  separate for the same reason as `AnchorResolverDecisionIT`: it drives
+  `CompanionMessagePopulator`'s explicit-`generatedAt` seeding (avoids `Instant.now()` flakiness at
+  a minute boundary), not the other categories' fixtures. A `both`-channel card anchors on its own
+  generation minute in daytime; a `both`-channel card generated in quiet hours DEFERS ACROSS THE DAY
+  BOUNDARY (asserted by resolving for TOMORROW, the case §3d calls out); a `feed`-channel card's
+  library entry yields no anchor; a card whose key has been retired from the library also yields
+  none. `AnchorResolverIT`/`AnchorResolverFeedIT` are re-run alongside it in this slice's Task 9
+  gate as a REGRESSION guard on the shared `AnchorResolver.resolve` entry point — neither gained new
+  W5.2 cases; they simply must stay green after the `interventionAnchors`/`backendAnchors` edit.
+- `service/InterventionFireMinuteTest` (W5.2, bd `mezo-b3pp.19`, pure, no Spring, §3d) —
+  `interventionFireMinute` as a table: same-day fire in daytime; defer to the NEXT day's quiet-end
+  when generated late evening; defer to the SAME day's quiet-end when generated early morning
+  (already inside the wrapped window); the quiet-start boundary is INSIDE the window, the quiet-end
+  boundary is OUTSIDE it (`[start, end)`, asymmetric by design); immediate fire when
+  `quietHoursExempt`; never defers when `start == end`.
 - `service/AnchorResolverExcerptTest` — the word-boundary + surrogate-safe prose-excerpt cut, as a
   plain unit test (package-private `excerptProse(text, maxChars)` needs no Spring context).
 - `NotificationDispatchJobIT` — driven directly through `runOnce(date, minute)`, never a real cron
@@ -783,7 +893,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 - Data via `support/populator/NotificationPopulator.java` — gained `pref`/`pushLog`/`schedule`
   factory methods alongside N1's `subscription`. New tables joined the `ResetDatabase` TRUNCATE list
   (`notification_pref`, `push_log`, `notification_schedule`).
-- Commands: `cd backend && ./mvnw clean test -Dtest='*Notification*,DueEvaluator*,AnchorResolver*'`.
+- Commands: `cd backend && ./mvnw clean test -Dtest='*Notification*,DueEvaluator*,AnchorResolver*,InterventionFireMinuteTest'` (the last is added by name — its `service/` package doesn't match the other three globs).
 
 **Frontend (Vitest + RTL + MSW, both modes) — N2/N3 add:**
 - `data/notification/notificationPrefHooks.test.tsx` — the optimistic per-category upsert + rollback,
@@ -1121,7 +1231,8 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   drop the second decision's push. **Do not read this as "reuse `feedAnchors`'s dedup logic"** —
   `decisionReviewAnchors` (§3c) builds its own suffix the same way, independently, because it has no
   `app_notification` row to key off of; `AnchorSet`'s own `AnchoredEvent.dedupSuffix` javadoc names
-  all 7 categories that need this shape (the 6 feed-anchored ones **and** `decision_review`) precisely
+  all 8 categories that need this shape (the 6 feed-anchored ones, `decision_review`, **and**, since
+  W5.2, `intervention`) precisely
   so a future reader doesn't assume the shape is F3-only.
 - **The `review_due == date` firing rule is `==`, never `<=`, by deliberate product decision — do not
   "fix" it to also catch overdue decisions.** An unreviewed decision whose `review_due` has already
@@ -1136,6 +1247,36 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   `section: 'brain'`), not a claim that it shares a resolution mechanism with `pattern`/`knowledge`/
   etc. — see §3c for why it's actually a fourth `AnchorResolver.backendAnchors` source, alongside gym/
   medication/ritual, not a `feedAnchors(...)` consumer.
+
+**W5.2 (bd `mezo-b3pp.19`) — `intervention` + quiet hours gotchas:**
+- **Quiet hours is scoped to ONE category on purpose — not a placeholder for "not done yet."**
+  `NotificationProperties`'s own class javadoc says the widening is "a later, deliberate decision,
+  not a drive-by" (§3d). `DueEvaluator` (the backward catch-up window) and every OTHER
+  `AnchorResolver` method are entirely unaware `mezo.notification.quiet-hours` exists — a `gym`
+  reminder at 22:30 or a `briefing` at 05:45 fires exactly as it always has. Do not read
+  `intervention`'s deferral as evidence the platform is "moving toward" a global quiet window;
+  widening it is its own future decision with its own tradeoffs (e.g. `gym`'s lead-minute EARLY
+  nudges have no analogous "defer" concept).
+- **Defer, never drop, is the opposite instinct from `decision_review`'s `==`-not-`<=` rule right
+  above, and deliberately so — they're solving different problems.** `decision_review` suppresses a
+  RECURRING nag (an overdue review would otherwise re-fire daily forever); `intervention` defers a
+  ONE-SHOT card that only ever fires once, on the day it was generated (§4's partial-unique index
+  already guarantees at most one `intervention` row per user per day) — there is no "forever" to
+  suppress, only a single push to reschedule into an allowed window. Applying `decision_review`'s
+  "just don't fire it" instinct to `intervention` would silently discard the day's only nudge.
+- **`interventionFireMinute` resolves the SAME card for two different `date` arguments across a
+  midnight boundary — this is not a bug in the `for cardDate in [date-1, date]` loop, it is the
+  point.** A card generated at 23:10 that defers to 07:00 the next morning does not "belong" to
+  either calendar day in the usual sense (`message_date`/`generatedAt` both still say yesterday);
+  `AnchorResolver.resolve(owner, TODAY)` must still surface it, which is why `interventionAnchors`
+  is the one resolver method in this class that reads yesterday's row as well as today's. Every
+  other backend-native/prose anchor in this doc resolves strictly within the day it's asked about.
+- **The channel gate (`channel: feed` ⇒ no anchor) reads `mezo.companion.interventions` LIVE, at
+  resolve time, not from anything frozen on the card.** A library entry's `channel` can change
+  between when a card was generated and when `AnchorResolver` resolves today's push (a config
+  redeploy) — the card's `interventionKey` is the only thing persisted; the channel decision is
+  always the CURRENT config's. A key removed from the library entirely (`entry.isEmpty()`) is
+  treated identically to `channel: feed` — honest absence, never a stale push for a retired entry.
 
 ### The §6 copy rules (verbatim from the design spec — the guardrail a later slice must not regress)
 
@@ -1165,11 +1306,11 @@ These rules are enforced by convention + this doc, not by a runtime check — a 
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/entity/{PushSubscriptionEntity,NotificationPrefEntity,PushLogEntity,NotificationScheduleEntity}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/repository/{PushSubscriptionRepository,NotificationPrefRepository,PushLogRepository,NotificationScheduleRepository}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/controller/NotificationController.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/config/NotificationProperties.java` — `mezo.notification.{body-max-chars,medication-time,decision-review-time,prose-excerpt-chars,dispatch-cron,catch-up-minutes,prose-generation-grace-min}` (`decision-review-time` is W1.4, bd `mezo-b3pp.4`, default 09:00, §3c/§4; `prose-generation-grace-min` reads the generator crons from `mezo.proactive.*` — see §9 trap #6)
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/config/NotificationProperties.java` — `mezo.notification.{body-max-chars,medication-time,decision-review-time,prose-excerpt-chars,dispatch-cron,catch-up-minutes,prose-generation-grace-min,quiet-hours.{start,end}}` (`decision-review-time` is W1.4, bd `mezo-b3pp.4`, default 09:00, §3c/§4; `prose-generation-grace-min` reads the generator crons from `mezo.proactive.*` — see §9 trap #6; `quiet-hours` is W5.2, bd `mezo-b3pp.19`, default `22:00`/`07:00`, the nested `QuietHours` record, §3d/§4 — today only `intervention` consults it)
 - Migrations: `202607291000_mezo-h4wp.6.1_create_push_subscription.sql`, `202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql`, `202607291500_mezo-h4wp.6.3_create_notification_schedule.sql` (all under `db/changelog/1.0.0/script/`, registered in `1.0.0/1.0.0_master.yml`)
 - `backend/src/main/resources/messages.properties` — `WEBPUSH_KEY_INVALID`/`WEBPUSH_SIGN_FAILED`/`WEBPUSH_ENCRYPT_FAILED`/`NOTIFICATION_UNKNOWN_CATEGORY`
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_SWITCH`, `NOTIFICATION_DISPATCH_JOB_SWITCH`
-- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{AnchorResolverIT,AnchorResolverRitualSwitchOffIT,AnchorResolverDecisionIT,DueEvaluatorTest,NotificationApiIT,NotificationCategoryTest,NotificationDispatchJobIT,NotificationPrefApiIT,NotificationPrefRepositoryIT,NotificationScheduleApiIT,PushSenderIT,PushSubscriptionRepositoryIT,PushSubscriptionServiceIT}.java` (`AnchorResolverDecisionIT` is W1.4, bd `mezo-b3pp.4`, §3c/§8 — the only file in this list owned by the decision-journal slice, not the N/F slices), `feature/notification/service/{AnchorResolverExcerptTest,PushSenderTruncationTest}.java`; `support/populator/NotificationPopulator.java`; `support/ResetDatabase.java` (`notification_pref`/`push_log`/`notification_schedule` in the TRUNCATE list)
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{AnchorResolverIT,AnchorResolverRitualSwitchOffIT,AnchorResolverDecisionIT,AnchorResolverInterventionIT,DueEvaluatorTest,NotificationApiIT,NotificationCategoryTest,NotificationDispatchJobIT,NotificationPrefApiIT,NotificationPrefRepositoryIT,NotificationScheduleApiIT,PushSenderIT,PushSubscriptionRepositoryIT,PushSubscriptionServiceIT}.java` (`AnchorResolverDecisionIT` is W1.4, bd `mezo-b3pp.4`, §3c/§8; `AnchorResolverInterventionIT` is W5.2, bd `mezo-b3pp.19`, §3d/§8 — each is the only file in this list owned by its own driving slice, not the N/F slices), `feature/notification/service/{AnchorResolverExcerptTest,InterventionFireMinuteTest,PushSenderTruncationTest}.java`; `support/populator/NotificationPopulator.java`; `support/ResetDatabase.java` (`notification_pref`/`push_log`/`notification_schedule` in the TRUNCATE list)
 
 **Backend — `feature/appnotification` in-app feed (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`; moved
 out of `feature/notification` in F2 to break a `companion`↔`notification`↔`proactive` package
@@ -1197,7 +1338,7 @@ cycle, §9)**
 **Frontend — data layer**
 - `frontend/src/data/notification/{notificationApi,notificationMock,notificationHooks,notificationPrefHooks,notificationScheduleWriter}.ts` — `usePushSubscription()` (N1) + `useNotificationPrefs()` (N2) + `useScheduleSnapshotWriter()`/`buildScheduleEntries()` (N3), all re-exported from `frontend/src/data/hooks.ts`
 - `frontend/src/data/notification/{feedApi,feedMock,feedHooks}.ts` (F1) — `useNotificationFeed()` + `useNotificationFeedActions()`, re-exported from `frontend/src/data/hooks.ts` (§6)
-- `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 21-key HU copy catalog — `decision_review` appended last, mezo-b3pp.4); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (F1, the 12-key catalog)
+- `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 22-key HU copy catalog — `decision_review` appended, mezo-b3pp.4, then `intervention` last, mezo-b3pp.19); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (F1, the 12-key catalog)
 - `frontend/src/app/AppLayout.tsx` — calls `useScheduleSnapshotWriter()` once per app-session mount
 
 **Frontend — Me surface (documented from Me's side in [`me.md`](me.md) §2/§10)**
@@ -1225,3 +1366,4 @@ cycle, §9)**
 - Epic: [`docs/features/proactive.md`](proactive.md) — the `mezo-h4wp` epic-status table's H2 row
 - Integration: [`docs/features/insights.md`](insights.md) §5 — the pattern engine's F1 emit sites
 - Integration: [`docs/features/journal.md`](journal.md) §5 — the decision journal (W1.4, bd `mezo-b3pp.4`) that sources `decision_review` (§3c/§4); plan: [`docs/superpowers/plans/2026-08-20-w1-4-decision-journal.md`](../superpowers/plans/2026-08-20-w1-4-decision-journal.md)
+- Integration: [`docs/features/companion.md`](companion.md) §4/§5.8/§9 — the W5.1 composite-flag evaluator + `FlagRaisedEvent` that trigger `intervention` (§3d/§4), and the selection/config side (`mezo.companion.interventions`); [`docs/features/proactive.md`](proactive.md) §3/§4/§10 — the sixth `companion_message` kind `intervention` sources this platform's row read (§3d)
