@@ -1293,6 +1293,12 @@ mezo:
     # crons themselves via CronExpression — those minutes are NOT duplicated here. morning needs
     # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
     prose-generation-grace-min: 15
+    # W5.2 (bd mezo-b3pp.19): do-not-disturb window — a non-exempt intervention push generated
+    # inside it is DEFERRED to quiet-hours end (possibly next morning), never dropped. Only the
+    # intervention category consults this today; widening it is a separate decision.
+    quiet-hours:
+      start: "22:00"
+      end: "07:00"
     # In-app notification feed (bd mezo-gzhp.1). The two inbox-* values MUST mirror the FE
     # STRONG_SIGNAL constant, the two band-* values the FE strengthWord bands — pinned by
     # AppNotificationServiceIT and the FE insights tests on both sides.
