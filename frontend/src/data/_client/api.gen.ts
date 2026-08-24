@@ -5668,8 +5668,11 @@ export interface components {
             id: string;
             /** Format: date */
             date: string;
-            /** @enum {string} */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening";
+            /**
+             * @description Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @enum {string}
+             */
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];

@@ -7,7 +7,7 @@ info:
     See docs/references/api_contract_conventions.md.
   version: 0.5.0
 servers:
-  - url: 'http://localhost:8090'
+  - url: http://localhost:8090
     description: Local dev backend (MEZO_PORT)
 security:
   - bearerAuth: []
@@ -99,20 +99,20 @@ tags:
   - name: FuelSettings
     description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
   - name: Gamification
-    description: 'User progression system — XP, levels, coins, titles, and daily streaks'
+    description: User progression system — XP, levels, coins, titles, and daily streaks
   - name: LlmUsage
     description: >-
       Read-only rollups of the llm_log_history audit table (mezo-2zyu) — LLM
       call count + cost per calendar period
   - name: Needs
-    description: 'Életjel-ringek — day-close snapshot, bonus XP, "Életben tartva" streak'
+    description: Életjel-ringek — day-close snapshot, bonus XP, "Életben tartva" streak
 paths:
   /api/auth/login:
     post:
       tags:
         - Auth
       operationId: login
-      summary: 'Login with the owner credentials, returns a JWT'
+      summary: Login with the owner credentials, returns a JWT
       security: []
       requestBody:
         required: true
@@ -144,10 +144,10 @@ paths:
       tags:
         - Weight
       operationId: listWeightLogs
-      summary: 'All weight logs of the current user, date ascending'
+      summary: All weight logs of the current user, date ascending
       responses:
         '200':
-          description: 'Weight logs, ordered by date ascending'
+          description: Weight logs, ordered by date ascending
           content:
             application/json:
               schema:
@@ -214,10 +214,10 @@ paths:
       tags:
         - Sleep
       operationId: listSleepLogs
-      summary: 'All sleep logs of the current user, date ascending'
+      summary: All sleep logs of the current user, date ascending
       responses:
         '200':
-          description: 'Sleep logs, ordered by date ascending'
+          description: Sleep logs, ordered by date ascending
           content:
             application/json:
               schema:
@@ -301,7 +301,7 @@ paths:
               $ref: '#/components/schemas/SaveCheckInRequest'
       responses:
         '200':
-          description: 'Saved (upsert — 200, not 201)'
+          description: Saved (upsert — 200, not 201)
           content:
             application/json:
               schema:
@@ -341,7 +341,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/activate':
+  /api/train/mesocycles/{id}/activate:
     post:
       tags:
         - Train
@@ -373,7 +373,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/close':
+  /api/train/mesocycles/{id}/close:
     post:
       tags:
         - Train
@@ -413,7 +413,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/report':
+  /api/train/mesocycles/{id}/report:
     get:
       tags:
         - Train
@@ -442,12 +442,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
-          description: 'No report exists yet, or the mesocycle is not found/not owned'
+          description: No report exists yet, or the mesocycle is not found/not owned
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/report/regenerate':
+  /api/train/mesocycles/{id}/report/regenerate:
     post:
       tags:
         - Train
@@ -481,7 +481,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/volume-arc':
+  /api/train/mesocycles/{id}/volume-arc:
     get:
       tags:
         - Train
@@ -515,7 +515,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/days/{dayId}/exercises':
+  /api/train/mesocycles/{id}/days/{dayId}/exercises:
     put:
       tags:
         - Train
@@ -569,7 +569,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/mesocycles/{id}/rerun':
+  /api/train/mesocycles/{id}/rerun:
     post:
       tags:
         - Train
@@ -584,7 +584,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: 'The originating template id, for starting a fresh run'
+          description: The originating template id, for starting a fresh run
           content:
             application/json:
               schema:
@@ -654,12 +654,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/meso-templates/{id}':
+  /api/train/meso-templates/{id}:
     put:
       tags:
         - Train
       operationId: updateMesoTemplate
-      summary: 'Update a mesocycle template''s fields, days and exercises (full replace)'
+      summary: Update a mesocycle template's fields, days and exercises (full replace)
       parameters:
         - name: id
           in: path
@@ -725,7 +725,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/meso-templates/{id}/start':
+  /api/train/meso-templates/{id}/start:
     post:
       tags:
         - Train
@@ -774,7 +774,7 @@ paths:
       tags:
         - Train
       operationId: listCustomWorkouts
-      summary: 'The owner''s saved custom (saját) workout templates, oldest first'
+      summary: The owner's saved custom (saját) workout templates, oldest first
       responses:
         '200':
           description: Custom workout templates
@@ -820,7 +820,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/custom-workouts/{id}':
+  /api/train/custom-workouts/{id}:
     put:
       tags:
         - Train
@@ -896,7 +896,7 @@ paths:
       tags:
         - Train
       operationId: getExerciseCatalog
-      summary: 'Curated exercise catalog (master data), muscle then name ascending'
+      summary: Curated exercise catalog (master data), muscle then name ascending
       responses:
         '200':
           description: Catalog items
@@ -942,7 +942,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/exercises/{id}':
+  /api/train/exercises/{id}:
     put:
       tags:
         - Train
@@ -1025,7 +1025,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/exercises/{id}/video':
+  /api/train/exercises/{id}/video:
     put:
       tags:
         - Train
@@ -1069,7 +1069,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/exercises/{id}/images':
+  /api/train/exercises/{id}/images:
     put:
       tags:
         - Train
@@ -1141,7 +1141,7 @@ paths:
       tags:
         - Train
       operationId: getMedals
-      summary: 'The owner''s full medal history, newest first (derived from logged sets)'
+      summary: The owner's full medal history, newest first (derived from logged sets)
       responses:
         '200':
           description: Medals
@@ -1160,7 +1160,7 @@ paths:
       tags:
         - Train
       operationId: listSportSessions
-      summary: 'Sport (volleyball) sessions of the current user, date descending'
+      summary: Sport (volleyball) sessions of the current user, date descending
       responses:
         '200':
           description: Sport sessions
@@ -1272,7 +1272,7 @@ paths:
       tags:
         - Train
       operationId: listSportEvents
-      summary: 'One-off (non-recurring) sport events, date then time ascending'
+      summary: One-off (non-recurring) sport events, date then time ascending
       parameters:
         - name: from
           in: query
@@ -1331,7 +1331,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/sport-events/{id}':
+  /api/train/sport-events/{id}:
     delete:
       tags:
         - Train
@@ -1364,7 +1364,7 @@ paths:
       tags:
         - Train
       operationId: getGymSchedule
-      summary: 'The recurring weekly gym time slots, day-of-week then time ascending'
+      summary: The recurring weekly gym time slots, day-of-week then time ascending
       responses:
         '200':
           description: Weekly gym time slots (empty array when none set)
@@ -1513,7 +1513,7 @@ paths:
               $ref: '#/components/schemas/WorkoutStartRequest'
       responses:
         '201':
-          description: 'The active instance (created, or the resumed open one)'
+          description: The active instance (created, or the resumed open one)
           content:
             application/json:
               schema:
@@ -1545,7 +1545,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}':
+  /api/train/workouts/{id}:
     get:
       tags:
         - Train
@@ -1574,12 +1574,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
-          description: 'Not found, not owned, or a template row'
+          description: Not found, not owned, or a template row
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/sets':
+  /api/train/workouts/{id}/sets:
     post:
       tags:
         - Train
@@ -1629,7 +1629,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/sets/{setId}':
+  /api/train/workouts/{id}/sets/{setId}:
     put:
       tags:
         - Train
@@ -1676,7 +1676,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
-          description: 'Set not found, not owned, not in this instance, or a skip marker'
+          description: Set not found, not owned, not in this instance, or a skip marker
           content:
             application/json:
               schema:
@@ -1717,7 +1717,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
-          description: 'Set not found, not owned, not in this instance, or a skip marker'
+          description: Set not found, not owned, not in this instance, or a skip marker
           content:
             application/json:
               schema:
@@ -1728,7 +1728,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/feedback':
+  /api/train/workouts/{id}/feedback:
     post:
       tags:
         - Train
@@ -1770,7 +1770,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/skip':
+  /api/train/workouts/{id}/skip:
     post:
       tags:
         - Train
@@ -1816,7 +1816,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/exercises/{exerciseId}/note':
+  /api/train/exercises/{exerciseId}/note:
     put:
       tags:
         - Train
@@ -1856,7 +1856,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/finish':
+  /api/train/workouts/{id}/finish:
     post:
       tags:
         - Train
@@ -1941,7 +1941,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/running-blocks/{id}':
+  /api/train/running-blocks/{id}:
     put:
       tags:
         - Train
@@ -1994,7 +1994,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/running-blocks/{id}/activate':
+  /api/train/running-blocks/{id}/activate:
     post:
       tags:
         - Train
@@ -2020,7 +2020,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/running-blocks/{id}/close':
+  /api/train/running-blocks/{id}/close:
     post:
       tags:
         - Train
@@ -2051,7 +2051,7 @@ paths:
       tags:
         - Train
       operationId: listRunSessions
-      summary: 'Logged run-session actuals of the current user, newest first'
+      summary: Logged run-session actuals of the current user, newest first
       responses:
         '200':
           description: Run sessions
@@ -2181,7 +2181,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}':
+  /api/goals/{id}:
     get:
       tags:
         - Goal
@@ -2280,7 +2280,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}/activate':
+  /api/goals/{id}/activate:
     post:
       tags:
         - Goal
@@ -2311,7 +2311,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}/archive':
+  /api/goals/{id}/archive:
     post:
       tags:
         - Goal
@@ -2342,7 +2342,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}/timeline':
+  /api/goals/{id}/timeline:
     get:
       tags:
         - Goal
@@ -2374,7 +2374,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}/evaluate':
+  /api/goals/{id}/evaluate:
     post:
       tags:
         - Goal
@@ -2408,7 +2408,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}/plans':
+  /api/goals/{id}/plans:
     post:
       tags:
         - Goal
@@ -2452,7 +2452,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/goals/{id}/plans/{linkId}':
+  /api/goals/{id}/plans/{linkId}:
     delete:
       tags:
         - Goal
@@ -2545,7 +2545,7 @@ paths:
       tags:
         - Pantry
       operationId: getPantry
-      summary: 'The owner''s pantry, projected by kind into ingredients + stash'
+      summary: The owner's pantry, projected by kind into ingredients + stash
       responses:
         '200':
           description: Pantry
@@ -2589,7 +2589,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/pantry/{id}':
+  /api/pantry/{id}:
     put:
       tags:
         - Pantry
@@ -2884,7 +2884,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/recipe/{id}':
+  /api/recipe/{id}:
     get:
       tags:
         - Recipe
@@ -2982,7 +2982,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/recipe/{id}/breakdown':
+  /api/recipe/{id}/breakdown:
     get:
       tags:
         - Recipe
@@ -3016,7 +3016,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/fuel/day/{date}':
+  /api/fuel/day/{date}:
     get:
       tags:
         - Meal
@@ -3044,7 +3044,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/fuel/week/{start}':
+  /api/fuel/week/{start}:
     get:
       tags:
         - Meal
@@ -3061,7 +3061,7 @@ paths:
             format: date
       responses:
         '200':
-          description: 'Fuel week (7 rollups, start..start+6)'
+          description: Fuel week (7 rollups, start..start+6)
           content:
             application/json:
               schema:
@@ -3103,7 +3103,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/meal/{id}':
+  /api/meal/{id}:
     put:
       tags:
         - Meal
@@ -3200,7 +3200,7 @@ paths:
                   format: binary
       responses:
         '200':
-          description: 'Editable draft (empty items = nothing recognized, honest empty)'
+          description: Editable draft (empty items = nothing recognized, honest empty)
           content:
             application/json:
               schema:
@@ -3229,7 +3229,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/recipe/{id}/logs':
+  /api/recipe/{id}/logs:
     get:
       tags:
         - Meal
@@ -3294,7 +3294,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/meal/{id}/coach':
+  /api/meal/{id}/coach:
     get:
       tags:
         - Meal
@@ -3361,7 +3361,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/water-log/{id}':
+  /api/water-log/{id}:
     delete:
       tags:
         - Meal
@@ -3410,7 +3410,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/medication/{id}':
+  /api/medication/{id}:
     put:
       tags:
         - Medication
@@ -3454,7 +3454,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/medication/{id}/dose':
+  /api/medication/{id}/dose:
     post:
       tags:
         - Medication
@@ -3498,7 +3498,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/medication/{id}/dose/{doseId}':
+  /api/medication/{id}/dose/{doseId}:
     delete:
       tags:
         - Medication
@@ -3553,7 +3553,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/progression/growth-week/{date}':
+  /api/progression/growth-week/{date}:
     get:
       tags:
         - Progression
@@ -3675,12 +3675,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/fuel/protocol/items/{id}':
+  /api/fuel/protocol/items/{id}:
     patch:
       tags:
         - Fuel
       operationId: patchProtocolItem
-      summary: 'Move (pin), re-dose or unpin (engine re-places) one occurrence'
+      summary: Move (pin), re-dose or unpin (engine re-places) one occurrence
       parameters:
         - name: id
           in: path
@@ -3752,7 +3752,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/fuel/intake/{date}':
+  /api/fuel/intake/{date}:
     get:
       tags:
         - Fuel
@@ -3819,7 +3819,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/fuel/intake/entry/{id}':
+  /api/fuel/intake/entry/{id}:
     delete:
       tags:
         - Fuel
@@ -3852,7 +3852,7 @@ paths:
       tags:
         - Fuel
       operationId: listSlotTemplates
-      summary: 'All meal-slot templates of the owner (0-3 rows, one per day type)'
+      summary: All meal-slot templates of the owner (0-3 rows, one per day type)
       responses:
         '200':
           description: OK
@@ -3866,7 +3866,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/fuel/slot-templates/{dayType}':
+  /api/fuel/slot-templates/{dayType}:
     put:
       tags:
         - Fuel
@@ -3973,7 +3973,7 @@ paths:
       tags:
         - Companion
       operationId: listConversations
-      summary: 'List the owner''s conversations, most recently active first'
+      summary: List the owner's conversations, most recently active first
       responses:
         '200':
           description: Conversations ordered by last activity (newest first)
@@ -3993,7 +3993,7 @@ paths:
       tags:
         - Companion
       operationId: createConversation
-      summary: 'Start a new, empty conversation (title is set by the first message)'
+      summary: Start a new, empty conversation (title is set by the first message)
       responses:
         '201':
           description: The created conversation
@@ -4007,12 +4007,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/conversation/{conversationId}/messages':
+  /api/companion/conversation/{conversationId}/messages:
     get:
       tags:
         - Companion
       operationId: listMessages
-      summary: 'Full message history of one conversation, oldest first'
+      summary: Full message history of one conversation, oldest first
       parameters:
         - name: conversationId
           in: path
@@ -4041,7 +4041,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/conversation/{conversationId}/message':
+  /api/companion/conversation/{conversationId}/message:
     post:
       tags:
         - Companion
@@ -4097,7 +4097,7 @@ paths:
         first (V1.1)
       responses:
         '200':
-          description: 'Facts ordered by reinforcement count (desc), then newest first'
+          description: Facts ordered by reinforcement count (desc), then newest first
           content:
             application/json:
               schema:
@@ -4140,7 +4140,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/fact/{factId}':
+  /api/companion/fact/{factId}:
     patch:
       tags:
         - Companion
@@ -4191,7 +4191,7 @@ paths:
       tags:
         - Companion
       operationId: listFactCandidates
-      summary: 'Pending (undecided) extraction candidates, newest first (V1.2)'
+      summary: Pending (undecided) extraction candidates, newest first (V1.2)
       responses:
         '200':
           description: Pending candidates awaiting an explicit L2 decision
@@ -4207,7 +4207,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/fact/candidate/{candidateId}/decision':
+  /api/companion/fact/candidate/{candidateId}/decision:
     post:
       tags:
         - Companion
@@ -4259,7 +4259,7 @@ paths:
       tags:
         - Companion
       operationId: listPatterns
-      summary: 'The pattern inbox (V3.1) — detected correlations, strongest/newest first'
+      summary: The pattern inbox (V3.1) — detected correlations, strongest/newest first
       responses:
         '200':
           description: All live patterns (proposed + monitoring + confirmed + rejected)
@@ -4275,7 +4275,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/pattern/{patternId}/decision':
+  /api/companion/pattern/{patternId}/decision:
     post:
       tags:
         - Companion
@@ -4345,7 +4345,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/pattern/pair/{pairKey}':
+  /api/companion/pattern/pair/{pairKey}:
     get:
       tags:
         - Companion
@@ -4381,7 +4381,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/conversation/{conversationId}/message/stream':
+  /api/companion/conversation/{conversationId}/message/stream:
     post:
       tags:
         - CompanionStream
@@ -4607,7 +4607,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SimilarDaysResponse'
         '400':
-          description: 'Validation error (üres q, k a határokon kívül)'
+          description: Validation error (üres q, k a határokon kívül)
           content:
             application/json:
               schema:
@@ -4687,7 +4687,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/people/{personId}/mentions':
+  /api/people/{personId}/mentions:
     post:
       tags:
         - People
@@ -4875,7 +4875,7 @@ paths:
       tags:
         - Proactive
       operationId: getExperiments
-      summary: 'All live N=1 experiments (proposed/active/completed), newest first (P2)'
+      summary: All live N=1 experiments (proposed/active/completed), newest first (P2)
       description: >-
         Returns the user's live experiments (dismissed excluded). An empty array
         is the honest empty state (never a 404). Lazily proposes when the user
@@ -4920,7 +4920,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/proactive/experiment/{id}/decision':
+  /api/proactive/experiment/{id}/decision:
     post:
       tags:
         - Proactive
@@ -5011,7 +5011,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/proactive/challenge/{id}/decision':
+  /api/proactive/challenge/{id}/decision:
     post:
       tags:
         - Proactive
@@ -5061,7 +5061,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/quest/day/{date}':
+  /api/quest/day/{date}:
     get:
       tags:
         - Quest
@@ -5095,7 +5095,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/quest/{id}/reroll':
+  /api/quest/{id}/reroll:
     post:
       tags:
         - Quest
@@ -5142,7 +5142,7 @@ paths:
       tags:
         - Quest
       operationId: getQuestHistory
-      summary: 'Quest history in an inclusive date range, newest first (Quests)'
+      summary: Quest history in an inclusive date range, newest first (Quests)
       description: >-
         Non-rerolled quests of the range for the Growth journal. Honest empty
         array — never a 404. from must not be after to (400
@@ -5221,12 +5221,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/activity/day/{date}':
+  /api/activity/day/{date}:
     get:
       tags:
         - Activity
       operationId: getActivityDay
-      summary: 'The day''s activity-log entries, newest first (Activity log)'
+      summary: The day's activity-log entries, newest first (Activity log)
       parameters:
         - name: date
           in: path
@@ -5249,7 +5249,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/activity/{id}/category':
+  /api/activity/{id}/category:
     post:
       tags:
         - Activity
@@ -5346,7 +5346,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/habit/day/{date}':
+  /api/habit/day/{date}:
     get:
       tags:
         - Habit
@@ -5374,7 +5374,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/habit/{key}/check':
+  /api/habit/{key}/check:
     post:
       tags:
         - Habit
@@ -5471,7 +5471,7 @@ paths:
       tags:
         - Habit
       operationId: getHabitCatalog
-      summary: 'Full catalog for the editor — chains with their defs, inactive included'
+      summary: Full catalog for the editor — chains with their defs, inactive included
       responses:
         '200':
           description: The catalog
@@ -5497,7 +5497,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitChainAdmin'
-  '/api/habit/chain/{id}':
+  /api/habit/chain/{id}:
     patch:
       tags:
         - Habit
@@ -5536,7 +5536,7 @@ paths:
       responses:
         '204':
           description: Soft-deleted
-  '/api/habit/chain/{id}/order':
+  /api/habit/chain/{id}/order:
     put:
       tags:
         - Habit
@@ -5580,7 +5580,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitDefAdmin'
-  '/api/habit/def/{id}':
+  /api/habit/def/{id}:
     patch:
       tags:
         - Habit
@@ -5640,7 +5640,7 @@ paths:
                 $ref: '#/components/schemas/HabitSuggestResponse'
         '503':
           description: Suggester unavailable (switch off / companion off)
-  '/api/intention/day/{date}':
+  /api/intention/day/{date}:
     get:
       tags:
         - Intention
@@ -5722,7 +5722,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/intention/focus/{id}':
+  /api/intention/focus/{id}:
     delete:
       tags:
         - Intention
@@ -5803,7 +5803,7 @@ paths:
               $ref: '#/components/schemas/SetSleepGoalRequest'
       responses:
         '200':
-          description: 'Saved goal, derived ends recomposed'
+          description: Saved goal, derived ends recomposed
           content:
             application/json:
               schema:
@@ -5840,7 +5840,7 @@ paths:
                 photo:
                   type: string
                   format: binary
-                  description: 'The Sleep Cycle screenshot (jpeg/png/webp, max 5 MB)'
+                  description: The Sleep Cycle screenshot (jpeg/png/webp, max 5 MB)
       responses:
         '200':
           description: >-
@@ -5884,7 +5884,7 @@ paths:
         (FuelSettings)
       responses:
         '200':
-          description: 'The settings (ghost 4 / 14:00 before the first save)'
+          description: The settings (ghost 4 / 14:00 before the first save)
           content:
             application/json:
               schema:
@@ -5925,7 +5925,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/ritual/day/{date}':
+  /api/ritual/day/{date}:
     get:
       tags:
         - Ritual
@@ -6014,7 +6014,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationProfileResponse'
-  '/api/gamification/day/{date}':
+  /api/gamification/day/{date}:
     get:
       tags:
         - Gamification
@@ -6031,12 +6031,12 @@ paths:
             format: date
       responses:
         '200':
-          description: 'Day aggregate (honest zeros, never 404)'
+          description: Day aggregate (honest zeros, never 404)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationDayResponse'
-  '/api/gamification/title/{key}/buy':
+  /api/gamification/title/{key}/buy:
     post:
       tags:
         - Gamification
@@ -6069,7 +6069,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/gamification/title/{key}/equip':
+  /api/gamification/title/{key}/equip:
     post:
       tags:
         - Gamification
@@ -6105,7 +6105,7 @@ paths:
       tags:
         - Gamification
       operationId: buyStreakSaver
-      summary: 'Buy a streak saver (200 coins, max 2 held) (Gamification)'
+      summary: Buy a streak saver (200 coins, max 2 held) (Gamification)
       responses:
         '200':
           description: Updated profile
@@ -6241,7 +6241,7 @@ paths:
       tags:
         - NotificationFeed
       operationId: getNotificationFeed
-      summary: 'The in-app notification feed, newest first (NotificationFeed)'
+      summary: The in-app notification feed, newest first (NotificationFeed)
       parameters:
         - name: limit
           in: query
@@ -6343,7 +6343,7 @@ paths:
             pattern: ^(DAY|WEEK|MONTH)$
       responses:
         '200':
-          description: 'Totals plus the feature and model rollups, cost-descending'
+          description: Totals plus the feature and model rollups, cost-descending
           content:
             application/json:
               schema:
@@ -6372,7 +6372,7 @@ paths:
         - name: feature
           in: query
           required: false
-          description: 'exact feature slug, e.g. companion_chat'
+          description: exact feature slug, e.g. companion_chat
           schema:
             type: string
             maxLength: 100
@@ -6407,12 +6407,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/LlmCallListResponse'
         '400':
-          description: 'Unknown period, status or call kind'
+          description: Unknown period, status or call kind
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/llm-usage/calls/{id}':
+  /api/llm-usage/calls/{id}:
     get:
       tags:
         - LlmUsage
@@ -6456,7 +6456,7 @@ paths:
               $ref: '#/components/schemas/NeedsCloseRequest'
       responses:
         '200':
-          description: 'Stored (idempotent — 200 on repeat, no double award)'
+          description: Stored (idempotent — 200 on repeat, no double award)
           content:
             application/json:
               schema:
@@ -6491,7 +6491,7 @@ paths:
       tags:
         - Journal
       operationId: listJournalEntries
-      summary: 'Journal entries in a date range, newest first (Journal)'
+      summary: Journal entries in a date range, newest first (Journal)
       parameters:
         - name: from
           in: query
@@ -6507,7 +6507,7 @@ paths:
             format: date
       responses:
         '200':
-          description: 'Entries with occurred_on in [from, to], newest first'
+          description: Entries with occurred_on in [from, to], newest first
           content:
             application/json:
               schema:
@@ -6539,12 +6539,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/JournalEntryResponse'
         '400':
-          description: 'Validation error (empty text, bad source)'
+          description: Validation error (empty text, bad source)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/journal/{id}':
+  /api/journal/{id}:
     put:
       tags:
         - Journal
@@ -6608,10 +6608,10 @@ paths:
       tags:
         - Journal
       operationId: listDecisionEntries
-      summary: 'All decisions, newest first (Journal)'
+      summary: All decisions, newest first (Journal)
       responses:
         '200':
-          description: 'Every non-deleted decision, newest first by decidedOn'
+          description: Every non-deleted decision, newest first by decidedOn
           content:
             application/json:
               schema:
@@ -6648,7 +6648,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/journal/decision/{id}/review':
+  /api/journal/decision/{id}/review:
     put:
       tags:
         - Journal
@@ -6707,7 +6707,7 @@ paths:
             format: date
       responses:
         '200':
-          description: 'Entries, newest first'
+          description: Entries, newest first
           content:
             application/json:
               schema:
@@ -6744,7 +6744,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/journal/gratitude/{id}':
+  /api/journal/gratitude/{id}:
     delete:
       tags:
         - Journal
@@ -6808,7 +6808,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/MessageFeedbackResponse'
         '400':
-          description: 'Validation error (unknown kind, empty/oversized id list)'
+          description: Validation error (unknown kind, empty/oversized id list)
           content:
             application/json:
               schema:
@@ -6857,7 +6857,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/feedback/{artifactKind}/{artifactId}':
+  /api/companion/feedback/{artifactKind}/{artifactId}:
     delete:
       tags:
         - CompanionFeedback
@@ -6901,7 +6901,7 @@ paths:
       summary: Active knowledge-graph nodes for the current user (KnowledgeGraph)
       responses:
         '200':
-          description: 'Active nodes, newest first'
+          description: Active nodes, newest first
           content:
             application/json:
               schema:
@@ -6914,7 +6914,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/graph/node/{id}/archive':
+  /api/companion/graph/node/{id}/archive:
     post:
       tags:
         - KnowledgeGraph
@@ -6971,7 +6971,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/companion/graph/node/{id}/decision':
+  /api/companion/graph/node/{id}/decision:
     post:
       tags:
         - KnowledgeGraph
@@ -7089,9 +7089,9 @@ components:
             migration)
         stages:
           type: string
-          pattern: '^[DLRA]+$'
+          pattern: ^[DLRA]+$
           maxLength: 200
-          description: 'One letter per bucket, chronological from bedtime'
+          description: One letter per bucket, chronological from bedtime
     LoginRequest:
       type: object
       required:
@@ -7203,11 +7203,11 @@ components:
           format: date
         bedtime:
           type: string
-          description: 'Bedtime as HH:mm'
+          description: Bedtime as HH:mm
           example: '23:10'
         wakeup:
           type: string
-          description: 'Wake-up time as HH:mm'
+          description: Wake-up time as HH:mm
           example: '06:45'
         durationH:
           type: number
@@ -7332,7 +7332,7 @@ components:
         slotTime:
           type: string
           minLength: 1
-          description: 'Slot identifier as shown in the UI (e.g. "08:00")'
+          description: Slot identifier as shown in the UI (e.g. "08:00")
         state:
           type: string
           pattern: ^(done|now|skipped|pending)$
@@ -7464,7 +7464,7 @@ components:
           $ref: '#/components/schemas/VolumeRecompute'
         volumePerMuscle:
           type: object
-          description: 'Per-muscle volume profile keyed by muscle id (chest, back, ...)'
+          description: Per-muscle volume profile keyed by muscle id (chest, back, ...)
           additionalProperties:
             $ref: '#/components/schemas/VolumeProfile'
         days:
@@ -7517,7 +7517,7 @@ components:
         volumePerMuscle:
           type: object
           nullable: true
-          description: 'Per-muscle volume baseline keyed by muscle id (chest, back, ...)'
+          description: Per-muscle volume baseline keyed by muscle id (chest, back, ...)
           additionalProperties:
             $ref: '#/components/schemas/VolumeBaseline'
         days:
@@ -7884,7 +7884,7 @@ components:
         volumePerMuscle:
           type: object
           nullable: true
-          description: 'Per-muscle volume baseline keyed by muscle id (chest, back, ...)'
+          description: Per-muscle volume baseline keyed by muscle id (chest, back, ...)
           additionalProperties:
             $ref: '#/components/schemas/VolumeBaseline'
         days:
@@ -8424,12 +8424,12 @@ components:
           type: string
           nullable: true
           maxLength: 500
-          description: 'Start-position still, or null to clear'
+          description: Start-position still, or null to clear
         imageEndUrl:
           type: string
           nullable: true
           maxLength: 500
-          description: 'End-position still, or null to clear'
+          description: End-position still, or null to clear
     RecordSetRef:
       type: object
       description: One logged set as a record reference; weightKg absent on bodyweight sets
@@ -8452,7 +8452,7 @@ components:
       properties:
         value:
           type: number
-          description: 'Epley estimate weight×(1+reps/30), 1 decimal'
+          description: Epley estimate weight×(1+reps/30), 1 decimal
         set:
           $ref: '#/components/schemas/RecordSetRef'
     SessionVolumeRecord:
@@ -8503,7 +8503,7 @@ components:
           $ref: '#/components/schemas/SessionVolumeRecord'
         totalVolume:
           type: number
-          description: 'Σ weight×reps all-time, whole kg (0 for bodyweight-only exercises)'
+          description: Σ weight×reps all-time, whole kg (0 for bodyweight-only exercises)
         totalSets:
           type: integer
         totalReps:
@@ -8512,7 +8512,7 @@ components:
           type: integer
         repRecords:
           type: array
-          description: 'Max reps at the top 3 distinct weights, weight descending'
+          description: Max reps at the top 3 distinct weights, weight descending
           items:
             $ref: '#/components/schemas/RecordSetRef'
         recentTopSets:
@@ -8613,7 +8613,7 @@ components:
           description: '''Hét''..''Vas'''
         title:
           type: string
-          description: 'The day type, e.g. ''Pull Day'''
+          description: The day type, e.g. 'Pull Day'
         durationEst:
           type: integer
         exercises:
@@ -8857,7 +8857,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Medal'
-          description: 'Medals earned across the session, including SESSION_VOLUME'
+          description: Medals earned across the session, including SESSION_VOLUME
     WorkoutSummaryResponse:
       type: object
       required:
@@ -8927,7 +8927,7 @@ components:
             - skipped
         title:
           type: string
-          description: 'The day type, e.g. ''Pull Day'''
+          description: The day type, e.g. 'Pull Day'
         dayLabel:
           type: string
           description: '''Hét''..''Vas'''
@@ -8980,7 +8980,7 @@ components:
           description: A skip-marker set exists for this exercise in this instance
         sets:
           type: array
-          description: 'Non-skipped logged sets, setIndex ascending'
+          description: Non-skipped logged sets, setIndex ascending
           items:
             $ref: '#/components/schemas/ExerciseSetResponse'
     LevelUpResult:
@@ -9171,7 +9171,7 @@ components:
             only
         side:
           type: string
-          pattern: '^[LBR]$'
+          pattern: ^[LBR]$
         note:
           type: string
           maxLength: 500
@@ -9224,7 +9224,7 @@ components:
             working-set-only
         side:
           type: string
-          pattern: '^[LBR]$'
+          pattern: ^[LBR]$
         note:
           type: string
           maxLength: 500
@@ -9287,7 +9287,7 @@ components:
           format: date
         time:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: ^\d{2}:\d{2}$
         duration:
           type: integer
           minimum: 1
@@ -9330,7 +9330,7 @@ components:
           description: 0=Hét .. 6=Vas
         time:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: ^\d{2}:\d{2}$
         durationMin:
           type: integer
           minimum: 15
@@ -9395,7 +9395,7 @@ components:
           format: date
         time:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: ^\d{2}:\d{2}$
         durationMin:
           type: integer
           minimum: 15
@@ -9434,7 +9434,7 @@ components:
           format: date
         time:
           type: string
-          description: 'HH:mm'
+          description: HH:mm
         durationMin:
           type: integer
         kind:
@@ -9466,8 +9466,8 @@ components:
           description: 0=Hét .. 6=Vas
         time:
           type: string
-          pattern: '^\d{2}:\d{2}$'
-          description: 'HH:mm'
+          pattern: ^\d{2}:\d{2}$
+          description: HH:mm
     GymScheduleSlotInput:
       type: object
       required:
@@ -9481,8 +9481,8 @@ components:
           description: 0=Hét .. 6=Vas
         time:
           type: string
-          pattern: '^\d{2}:\d{2}$'
-          description: 'HH:mm'
+          pattern: ^\d{2}:\d{2}$
+          description: HH:mm
     SportSessionResponse:
       type: object
       required:
@@ -9504,7 +9504,7 @@ components:
           format: date
         time:
           type: string
-          description: 'HH:mm'
+          description: HH:mm
           example: '18:15'
         duration:
           type: integer
@@ -9570,9 +9570,9 @@ components:
         timeOfDay:
           type: string
           nullable: true
-          pattern: '^\d{2}:\d{2}$'
+          pattern: ^\d{2}:\d{2}$
           example: '18:00'
-          description: 'HH:mm, plan-level start time'
+          description: HH:mm, plan-level start time
         label:
           type: string
         kind:
@@ -9826,12 +9826,12 @@ components:
           description: 'Day-planner: eating occasions per day'
         wakeTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'Day-planner wake anchor, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Day-planner wake anchor, HH:mm
         bedTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'Day-planner bed anchor, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Day-planner bed anchor, HH:mm
         tdeeBootstrap:
           allOf:
             - $ref: '#/components/schemas/TdeeBootstrap'
@@ -9880,7 +9880,7 @@ components:
           enum:
             - MSJ
             - KATCH
-          description: 'MSJ = Mifflin-St Jeor, KATCH = Katch-McArdle'
+          description: MSJ = Mifflin-St Jeor, KATCH = Katch-McArdle
         computedAt:
           type: string
           format: date-time
@@ -10064,12 +10064,12 @@ components:
           description: 'Day-planner: eating occasions per day'
         wakeTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'Day-planner wake anchor, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Day-planner wake anchor, HH:mm
         bedTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'Day-planner bed anchor, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Day-planner bed anchor, HH:mm
     FeasibilityPreviewRequest:
       type: object
       description: >-
@@ -11378,7 +11378,7 @@ components:
       properties:
         ratioP:
           type: number
-          description: 'Protein kcal-share of the meal, %'
+          description: Protein kcal-share of the meal, %
         ratioC:
           type: number
         ratioF:
@@ -11408,7 +11408,7 @@ components:
           type: string
         value:
           type: string
-          description: 'Display value, e.g. "9.5 g"'
+          description: Display value, e.g. "9.5 g"
         pct:
           type: integer
           description: >-
@@ -11446,10 +11446,10 @@ components:
           type: integer
         pct:
           type: integer
-          description: 'kcal share of this NOVA group, %'
+          description: kcal share of this NOVA group, %
         label:
           type: string
-          description: 'Item names of the group joined, or "—" at 0%'
+          description: Item names of the group joined, or "—" at 0%
     MealNovaItemRow:
       type: object
       required:
@@ -12162,7 +12162,7 @@ components:
           $ref: '#/components/schemas/ProfileHighlights'
         life:
           type: array
-          description: 'All 8 LIFE skills in taxonomy order (missing row → level 1, 0 XP)'
+          description: All 8 LIFE skills in taxonomy order (missing row → level 1, 0 XP)
           items:
             $ref: '#/components/schemas/SkillLevel'
         traits:
@@ -12314,10 +12314,10 @@ components:
       properties:
         axis:
           type: string
-          description: 'HU axis label (Erő, Robbanékonyság, …)'
+          description: HU axis label (Erő, Robbanékonyság, …)
         value:
           type: number
-          description: 'aggregated level, 1-decimal'
+          description: aggregated level, 1-decimal
     ProfileHighlights:
       type: object
       properties:
@@ -12413,7 +12413,7 @@ components:
           description: '''skip'' or a zone key; absent = FE default'
         dailyTotalHint:
           type: string
-          description: 'Rule-table daily-total hint (derived, not stored)'
+          description: Rule-table daily-total hint (derived, not stored)
     ProtocolItemCreateRequest:
       type: object
       required:
@@ -12441,7 +12441,7 @@ components:
           maxLength: 60
         pinned:
           type: boolean
-          description: 'false = unpin, the engine re-places; true only alongside slotKey'
+          description: false = unpin, the engine re-places; true only alongside slotKey
     ProtocolViewResponse:
       type: object
       required:
@@ -12530,13 +12530,13 @@ components:
           pattern: ^(fixed|wake|training_start|training_end|bed)$
         time:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
           description: Required when anchorType=fixed
         offsetMin:
           type: integer
           minimum: -720
           maximum: 720
-          description: 'Required for relative anchors, signed'
+          description: Required for relative anchors, signed
         budgetPct:
           type: integer
           minimum: 1
@@ -12588,7 +12588,7 @@ components:
           maxLength: 200
         time:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
     SlotPlanBudget:
       type: object
       required:
@@ -12615,7 +12615,7 @@ components:
           type: string
         time:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
         durationMin:
           type: integer
           nullable: true
@@ -12788,7 +12788,7 @@ components:
             összefoglaló, …)
         gist:
           type: string
-          description: 'The one-line excerpt that was injected (first line, capped)'
+          description: The one-line excerpt that was injected (first line, capped)
         similarity:
           type: number
           format: double
@@ -12978,7 +12978,7 @@ components:
             'read'
         name:
           type: string
-          description: 'Tool name carrying its args, e.g. ''get_training_plan(scope=today)''.'
+          description: Tool name carrying its args, e.g. 'get_training_plan(scope=today)'.
     StreamError:
       type: object
       required:
@@ -13033,7 +13033,7 @@ components:
           type: array
           items:
             type: string
-          description: 'Deterministic evidence chips (r=…, n=… nap, p=…, window).'
+          description: Deterministic evidence chips (r=…, n=… nap, p=…, window).
         confidence:
           type: number
           format: double
@@ -13112,7 +13112,7 @@ components:
           description: mezo.companion.patterns.min-n — a felszínre-engedő kapu.
         cron:
           type: string
-          description: 'A nyers cron-kifejezés (a FE nem parse-olja, csak megjeleníti).'
+          description: A nyers cron-kifejezés (a FE nem parse-olja, csak megjeleníti).
         lastRunAt:
           type: string
           format: date-time
@@ -13179,17 +13179,17 @@ components:
           description: Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx).
         questionHu:
           type: string
-          description: 'Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g).'
+          description: Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g).
         expectedDirection:
           type: string
           pattern: ^(positive|negative)$
           description: A mechanizmus által várt korreláció-irány (mezo-fj1g).
         whenPositiveHu:
           type: string
-          description: 'Pozitív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).'
+          description: Pozitív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).
         whenNegativeHu:
           type: string
-          description: 'Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).'
+          description: Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).
         metricADomain:
           type: string
           pattern: ^(sleep|train|fuel|mind|body|other)$
@@ -13242,7 +13242,7 @@ components:
       properties:
         key:
           type: string
-          description: 'kebab-case metrika-kulcs, egyezően a pairs katalógussal.'
+          description: kebab-case metrika-kulcs, egyezően a pairs katalógussal.
         label:
           type: string
           description: Magyar metrika-címke.
@@ -13285,12 +13285,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PatternEventResponse'
-          description: 'Append-only történet, occurred_at szerint növekvő.'
+          description: Append-only történet, occurred_at szerint növekvő.
         days:
           type: array
           items:
             $ref: '#/components/schemas/AlignedDayResponse'
-          description: 'Az AKTUÁLIS ablak illesztett napjai — élőben számolva, sosem tárolt.'
+          description: Az AKTUÁLIS ablak illesztett napjai — élőben számolva, sosem tárolt.
         impact:
           $ref: '#/components/schemas/PatternImpactResponse'
     PatternEventResponse:
@@ -13523,7 +13523,7 @@ components:
       properties:
         summaryCron:
           type: string
-          description: 'mezo.companion.summary.cron — nyers cron, a FE csak megjeleníti.'
+          description: mezo.companion.summary.cron — nyers cron, a FE csak megjeleníti.
         patternCron:
           type: string
         hypothesisCron:
@@ -13628,11 +13628,11 @@ components:
         calls:
           type: integer
           format: int64
-          description: 'Minden hívás, a hibásak is (az audit hívást számol).'
+          description: Minden hívás, a hibásak is (az audit hívást számol).
         inputTokens:
           type: integer
           format: int64
-          description: 'prompt_tokens összege — a nyers szám, a cached rész is benne.'
+          description: prompt_tokens összege — a nyers szám, a cached rész is benne.
         outputTokens:
           type: integer
           format: int64
@@ -13742,7 +13742,7 @@ components:
             type: integer
         mentionCount:
           type: integer
-          description: 'Count of live mention rows — computed, never seeded'
+          description: Count of live mention rows — computed, never seeded
         mentionsThisWeek:
           type: integer
           description: Mentions in the rolling last 7 days
@@ -13831,12 +13831,17 @@ components:
           format: date
         kind:
           type: string
+          description: >-
+            Feed message kind — morning, sleep, weight, midday, or evening
+            LLM-generated messages; intervention is config text
+            (mezo.companion.interventions), never LLM output.
           enum:
             - morning
             - sleep
             - weight
             - midday
             - evening
+            - intervention
         eyebrow:
           type: string
         body:
@@ -13936,7 +13941,7 @@ components:
           format: uuid
         title:
           type: string
-          description: 'The forecast statement (HU prose, model-written)'
+          description: The forecast statement (HU prose, model-written)
         basis:
           type: string
           description: >-
@@ -14290,7 +14295,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/QuestResponse'
           nullable: true
-          description: 'The activity-mode quest this write completed, if any'
+          description: The activity-mode quest this write completed, if any
         levelUps:
           type: array
           description: 0–2 payloads — the activity award and/or the completed quest's award
@@ -14345,7 +14350,7 @@ components:
         strengthPct:
           type: integer
           nullable: true
-          description: 'trailing-28d done ratio, null under min-sample'
+          description: trailing-28d done ratio, null under min-sample
         linkUrl:
           type: string
           nullable: true
@@ -14778,17 +14783,17 @@ components:
           description: Which end is fixed — the other end is derived
         anchorTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'The fixed end, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: The fixed end, HH:mm
         wakeTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
           description: >-
             Wake anchor, HH:mm — derived when anchor=BED; equals anchorTime when
             anchor=WAKE
         bedTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
           description: >-
             Bed anchor, HH:mm — derived when anchor=WAKE; equals anchorTime when
             anchor=BED
@@ -14814,8 +14819,8 @@ components:
           description: Which end is fixed
         anchorTime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'The fixed end, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: The fixed end, HH:mm
         regularityBandMin:
           type: integer
           minimum: 1
@@ -14828,12 +14833,12 @@ components:
       properties:
         bedtime:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'Went-to-bed time, HH:mm (normalized zero-padded)'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Went-to-bed time, HH:mm (normalized zero-padded)
         wakeup:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
-          description: 'Woke-up time, HH:mm'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Woke-up time, HH:mm
         durationH:
           type: number
           description: >-
@@ -14842,7 +14847,7 @@ components:
         inBedMin:
           type: integer
           minimum: 1
-          description: 'Total time in bed, minutes'
+          description: Total time in bed, minutes
         awakeMin:
           type: integer
           minimum: 0
@@ -14870,7 +14875,7 @@ components:
           type: number
           minimum: 0
           maximum: 1
-          description: 'Deterministic consistency score (validator, never the LLM)'
+          description: Deterministic consistency score (validator, never the LLM)
         needsReview:
           type: boolean
           description: confidence <= threshold or a key field missing
@@ -14887,7 +14892,7 @@ components:
           description: Eating occasions per day — drives the planner's meal windows
         caffeineCutoff:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
           description: >-
             Last caffeine time, HH:mm — the Mai chip, day plan and habit metric
             all read this
@@ -14903,7 +14908,7 @@ components:
           maximum: 6
         caffeineCutoff:
           type: string
-          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
     RitualWindow:
       type: object
       required:
@@ -14914,15 +14919,15 @@ components:
         opensAt:
           type: string
           example: '21:15'
-          description: 'bed − lead-min, HH:mm'
+          description: bed − lead-min, HH:mm
         prepStartsAt:
           type: string
           example: '21:45'
-          description: 'bed − prep-lead-min, HH:mm'
+          description: bed − prep-lead-min, HH:mm
         bedTime:
           type: string
           example: '22:30'
-          description: 'the sleep anchor''s bed time, HH:mm'
+          description: the sleep anchor's bed time, HH:mm
     RitualDayResponse:
       type: object
       required:
@@ -15073,17 +15078,17 @@ components:
           type: string
           minLength: 1
           maxLength: 1000
-          example: 'https://web.push.apple.com/QF...'
+          example: https://web.push.apple.com/QF...
         p256dh:
           type: string
           minLength: 1
           maxLength: 120
-          description: 'subscription public key, base64url'
+          description: subscription public key, base64url
         auth:
           type: string
           minLength: 1
           maxLength: 40
-          description: 'subscription auth secret, base64url'
+          description: subscription auth secret, base64url
         userAgent:
           type: string
           maxLength: 300
@@ -15292,7 +15297,7 @@ components:
           $ref: '#/components/schemas/LlmUsageTotals'
         features:
           type: array
-          description: 'one entry per feature slug, cost-descending (unpriced last)'
+          description: one entry per feature slug, cost-descending (unpriced last)
           items:
             $ref: '#/components/schemas/LlmUsageGroup'
         models:
@@ -15315,7 +15320,7 @@ components:
         callCount:
           type: integer
           format: int64
-          description: 'every audited call in the period, all statuses'
+          description: every audited call in the period, all statuses
         successCount:
           type: integer
           format: int64
