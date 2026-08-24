@@ -56,14 +56,34 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void sustained_stress_ignores_days_outside_the_window() {
+    void sustained_stress_ignores_the_day_just_outside_the_window() {
+        // window-days=4 ⇒ window is [today-3, today]; today-4 is one day OUTSIDE it. With only
+        // today and today-1 counted, over=2 < minDays(3) — a window widened by one day (from =
+        // today.minusDays(windowDays) instead of windowDays - 1) would pull today-4 in, make
+        // over=3, and wrongly raise: this assertion is load-bearing on that exact boundary.
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         checkInPopulator.createCheckIn(owner, today, "08:00", 4, 9, null);
+        checkInPopulator.createCheckIn(owner, today.minusDays(1), "08:00", 4, 9, null);
         checkInPopulator.createCheckIn(owner, today.minusDays(4), "08:00", 4, 9, null);
-        checkInPopulator.createCheckIn(owner, today.minusDays(5), "08:00", 4, 9, null);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.SUSTAINED_STRESS);
+    }
+
+    @Test
+    void sustained_stress_includes_the_day_just_inside_the_window() {
+        // Same shape as the "just outside" case, but the third stressed day is moved one day
+        // later, to today-3 — the earliest day still INSIDE the [today-3, today] window. Now
+        // over=3 meets minDays(3) and the flag raises. A window narrowed by one day (from =
+        // today.minusDays(windowDays - 2)) would drop today-3, leave over=2, and wrongly stay
+        // quiet: this assertion is load-bearing on that same boundary from the other side.
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 9, null);
+        checkInPopulator.createCheckIn(owner, today.minusDays(1), "08:00", 4, 9, null);
+        checkInPopulator.createCheckIn(owner, today.minusDays(3), "08:00", 4, 9, null);
+
+        assertThat(keys(owner)).contains(FlagKey.SUSTAINED_STRESS);
     }
 
     @Test
@@ -134,6 +154,38 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("6.0"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("6.0"), 3);
         // 8.0 default goal ⇒ deficit 2.0 + 2.0 = 4.0 >= 3.0
+
+        assertThat(keys(owner)).contains(FlagKey.SLEEP_DEBT);
+    }
+
+    @Test
+    void sleep_debt_never_counts_tonight_which_is_logged_tomorrow_morning() {
+        // today's row alone would push the deficit well past the 3.0 threshold if the window
+        // wrongly ran through "today" (to = today instead of today.minusDays(1)); today-1 and
+        // today-2 alone sit far below the threshold. If this stays quiet, today was excluded.
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15); // 8.0 h
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("1.0"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.9"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("7.9"), 3);
+        // window ending yesterday: deficit = 0.1 + 0.1 = 0.2 < 3.0 (today's 7.0h deficit excluded)
+        // window wrongly ending today: deficit = 7.0 + 0.1 + 0.1 = 7.2 >= 3.0 (would wrongly raise)
+
+        assertThat(keys(owner)).doesNotContain(FlagKey.SLEEP_DEBT);
+    }
+
+    @Test
+    void sleep_debt_raises_when_the_deficit_lands_exactly_on_the_threshold() {
+        // Pins >= rather than > : the cumulative deficit is exactly deficit-hours (3.0), not a
+        // hair above it.
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15); // 8.0 h
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.0"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("7.0"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(3), new BigDecimal("7.0"), 3);
+        // deficit = 1.0 + 1.0 + 1.0 = 3.0 == 3.0
 
         assertThat(keys(owner)).contains(FlagKey.SLEEP_DEBT);
     }
