@@ -183,12 +183,12 @@ public class WorkoutService {
             && phaseIdx >= 0
             && phaseIdx < activeMeso.getPhaseCurve().size()
             && "Deload".equalsIgnoreCase(activeMeso.getPhaseCurve().get(phaseIdx));
-        // Effective per-exercise working sets (DA6): when the volume switch is on and the active
-        // meso carries volume-log rows, each exercise's working-set count is its muscle group's
-        // currentSets distributed across today's same-group exercises (proportional to template
-        // workingSets, remainder to the largest, never below 1). Groups without a log row — and
-        // every exercise when the switch is off or there are no log rows at all — keep the
-        // template workingSets (unchanged Plan-1 behavior).
+        // Effective per-exercise working sets (DA6, mezo-gbo7): when the volume switch is on and
+        // the active meso carries volume-log rows, each exercise's working-set count is its
+        // muscle group's currentSets distributed across the whole meso template WEEK's counting
+        // exercises of that group (see effectiveWorkingSets for the exact mechanics). Exempt
+        // exercises, groups without a log row, and every exercise when the switch is off keep
+        // the template workingSets (unchanged Plan-1 behavior).
         Map<UUID, Integer> effectiveSets = Map.of();
         if (activeMeso != null && volumeGate.getIfAvailable() != null) {
             List<MuscleGroupVolumeLogEntity> logs = muscleGroupVolumeLogRepository
