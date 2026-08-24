@@ -16,6 +16,8 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMesoTemplates } from '@/data/hooks'
 import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate } from '@/data/types'
+import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
+import { GOAL_PRESETS } from '@/data/train/train'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -23,6 +25,27 @@ import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
+
+// The Cél select's options — the six wizard presets plus an empty "unset" one.
+const GOAL_PRESET_OPTIONS = [{ value: '', label: '—' }, ...GOAL_PRESETS.map((p) => ({ value: p.id, label: p.label }))]
+
+// Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
+// shared here so the Cél select persists through the identical upsert helper.
+function toUpsert(template: MesoTemplate, days: MesoDay[], goalPreset = template.goalPreset): MesoTemplateUpsertRequest {
+  return {
+    title: template.title,
+    shortTitle: template.shortTitle,
+    goal: template.goal,
+    goalPreset,
+    weeks: template.weeks,
+    split: template.split,
+    style: template.style,
+    phaseCurve: template.phaseCurve,
+    notes: template.notes,
+    volumePerMuscle: template.volumePerMuscle,
+    days: toDayInputs(days),
+  }
+}
 
 export function MesoTemplateEditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -84,29 +107,29 @@ export function MesoTemplateEditorPage() {
           <span className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>{template.goal}</span>
         </div>
       ) : null}
-      <div className="row gap-md" style={{ padding: '4px 24px 8px' }}>
+      <div className="row gap-md" style={{ padding: '4px 24px 8px', alignItems: 'center' }}>
         <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.weeks} hét</span>
         {template.split ? (
           <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.split}</span>
         ) : null}
+        <select
+          aria-label="Cél"
+          value={template.goalPreset ?? ''}
+          onChange={(e) => updateTemplate(template.id, toUpsert(template, template.days ?? [], e.target.value || null))
+            // Failed mutations are toasted globally (§7a); the select falls back to the
+            // template's last-known value on the next render.
+            .catch(() => {})}
+          style={{ fontSize: 9, color: 'var(--text-primary)', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '3px 6px' }}
+        >
+          {GOAL_PRESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
 
       {/* Remounts (and reseeds) only when the route points at another template. */}
-      <TemplateDayEditor key={template.id} template={template} onPersist={(days) => updateTemplate(template.id, {
-        title: template.title,
-        shortTitle: template.shortTitle,
-        goal: template.goal,
-        goalPreset: template.goalPreset,
-        weeks: template.weeks,
-        split: template.split,
-        style: template.style,
-        phaseCurve: template.phaseCurve,
-        notes: template.notes,
-        volumePerMuscle: template.volumePerMuscle,
-        days: toDayInputs(days),
+      <TemplateDayEditor key={template.id} template={template} onPersist={(days) => updateTemplate(template.id, toUpsert(template, days))
       // Failed mutations are toasted globally (§7a); the local edit stands and the
       // next change retries the whole document.
-      }).catch(() => {})} />
+      .catch(() => {})} />
     </div>
   )
 }

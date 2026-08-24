@@ -193,6 +193,7 @@ export function MesocyclePlannerPage() {
       title: name || `${goal?.label ?? 'Mesociklus'} · ${getSeason(startDate)}`,
       shortTitle: goal?.label,
       goal: goal?.description,
+      goalPreset: goal?.id,
       weeks,
       split: split ? `${split.label} · ${days}×/hét` : `${days}×/hét`,
       style: goal?.style ?? `${weeks} hét`,

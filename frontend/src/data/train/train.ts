@@ -418,6 +418,7 @@ export const mesoTemplatesMock: MesoTemplate[] = [
     title: 'Upper/Lower Power',
     shortTitle: 'Power Block',
     goal: 'Erő + hypertrophy kombinált blokk',
+    goalPreset: 'strength',
     weeks: 5,
     split: 'Upper / Lower · 4×/hét',
     style: 'Linear · 5 hét',
