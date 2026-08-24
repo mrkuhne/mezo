@@ -494,6 +494,75 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border-top: 1px solid var(--border-subtle);
 }
 
+/* ===== FloatingReturnLayer (mezo-78sd) — session⇄chat quick-return chrome =====
+   Mounted once in AppLayout. z 45: above the tab-bar capsule (40), below sheets
+   (200+) so any open sheet's backdrop covers it. */
+.float-stack {
+  position: absolute; right: 14px;
+  bottom: 92px; /* recipe-save-bar's clearance: tab-bar top edge ≈78px + 14px */
+  display: flex; flex-direction: column; /* bottom-anchored container: the chat bubble (last child) keeps its spot, the train FAB grows upward above it */
+  align-items: center; gap: 10px;
+  z-index: 45;
+}
+/* The session screen has no tab bar and no docked bottom chrome (the "Szett kész"
+   CTA and the .restbar are inline in the card flow) — the bubble drops to the corner. */
+.float-stack-session { bottom: 24px; }
+.float-fab {
+  position: relative;
+  width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+/* Lavender = the companion's voice (--lav ramp). Literal gradient stops on purpose —
+   like --gradient-cta — so the bubble reads identically in light and dark (the
+   dark-theme --lav-deep flip is a TEXT-contrast stop, not a surface color). */
+.float-fab-chat {
+  background: linear-gradient(135deg, #9B8FC4, #7A6DA8);
+  box-shadow: 0 10px 24px color-mix(in srgb, #7A6DA8 40%, transparent);
+}
+.float-fab-train { background: var(--gradient-cta); box-shadow: var(--shadow-cta); }
+.float-fab-badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 999px; background: var(--surface-card); color: var(--coral-deep);
+  font: 800 11px/20px var(--ff-body); text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+}
+/* Chat route: the return-to-workout bar floats just above the sticky composer.
+   The offset is empirical (browser-measured): the composer's sticky `bottom` resolves
+   inside the scroller, not against .phone-screen, so pad + composer-height is not enough
+   — pad + 88px lands the bar ~10px above the COLLAPSED composer's top edge.
+   z 19, deliberately UNDER the composer (20), off the floating-bar 45 tier: the auto-grow
+   textarea (mezo-a837) raises the composer up to ~104px tall while typing, and the opaque
+   composer sliding OVER the bar beats the bar covering the text being typed. */
+.float-return {
+  position: absolute; left: 14px; right: 14px;
+  bottom: calc(var(--screen-bottom-pad) + 88px);
+  z-index: 19; height: 52px; border-radius: 999px; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; padding: 0 8px 0 18px;
+  background: var(--gradient-cta); color: #fff; box-shadow: var(--shadow-cta);
+  font-family: inherit; text-align: left;
+}
+.float-return-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.float-return-title { font-size: 13.5px; font-weight: 700; }
+.float-return-meta {
+  font-size: 11px; font-weight: 500; opacity: .85;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.float-return-go {
+  flex: none; width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255, 255, 255, .22);
+  display: flex; align-items: center; justify-content: center;
+}
+@keyframes float-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .float-fab-train, .float-return { animation: float-pop var(--duration-normal) var(--np-ease-spring); }
+}
+/* Real device / installed PWA: track the lifted tab bar the way .recipe-save-bar does. */
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .float-stack { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .float-stack-session { bottom: calc(24px + env(safe-area-inset-bottom)); }
+}
+
 /* Home indicator */
 .home-indicator {
   position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);

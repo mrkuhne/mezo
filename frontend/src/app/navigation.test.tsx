@@ -53,3 +53,7 @@ test('the tab bar hides on the full-screen Napzárás ritual flow (mezo-ilsj)', 
   const { container } = renderApp('/ritual')
   expect(container.querySelector('.tab-bar')).toBeNull()
 })
+test('the floating chat bubble is mounted app-wide (mezo-78sd)', async () => {
+  renderApp('/today')
+  expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
+})

@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { CircadianTheme } from '@/app/CircadianTheme'
+import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
 import { PhoneFrame } from '@/app/PhoneFrame'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
@@ -37,6 +38,7 @@ export function AppLayout() {
               </ErrorBoundary>
             </ScreenContent>
             {!hideTabBar && <TabBar />}
+            <FloatingReturnLayer />
           </LevelUpProvider>
         </ToastProvider>
       </PhoneFrame>
