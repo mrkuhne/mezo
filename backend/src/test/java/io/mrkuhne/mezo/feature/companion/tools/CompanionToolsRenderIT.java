@@ -177,7 +177,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("7.5"), 4);
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(40), new BigDecimal("6.0"), 2);
-        String out = biometricsTools.getRecovery("sleep", 90, ctx(owner)); // clamps to max-window-days=30
+        String out = biometricsTools.getRecovery("sleep", 90, null, null, null, ctx(owner));
+        // clamps to max-window-days=30
         assertThat(out).startsWith("Alvás (utolsó 30 nap):")
                 .contains(LocalDate.now().minusDays(1) + ": 7.5 h, minőség 4/5")
                 .doesNotContain(LocalDate.now().minusDays(40).toString());
@@ -187,7 +188,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetRecovery_shouldRenderNincsAdat_whenScopeAndDaysNullAndNoSleepLogs() {
         // null scope defaults to "sleep", null days defaults to 7 — both defaults exercised at once.
-        String out = biometricsTools.getRecovery(null, null, ctx(userPopulator.createUser().getId()));
+        String out = biometricsTools.getRecovery(
+                null, null, null, null, null, ctx(userPopulator.createUser().getId()));
         assertThat(out).isEqualTo("Alvás (utolsó 7 nap): nincs adat");
     }
 
@@ -197,7 +199,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // 450 min (7h30m) target, WAKE-anchored at 06:45 -> derived bed 23:15, ±15 min regularity band.
         sleepGoalPopulator.goal(owner);
 
-        String out = biometricsTools.getRecovery("sleep-goal", null, ctx(owner));
+        String out = biometricsTools.getRecovery("sleep-goal", null, null, null, null, ctx(owner));
 
         assertThat(out).isEqualTo(
                 "Alvási cél: 7ó 30p alvás, ébredés 06:45, lefekvés 23:15; szabályosság ±15 perc");
@@ -212,7 +214,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(1), "08:00", 7, 3, null);
         checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(40), "08:00", 9, 1, null);
 
-        String out = biometricsTools.getRecovery("checkins", null, ctx(owner)); // default window: 7 days
+        String out = biometricsTools.getRecovery("checkins", null, null, null, null, ctx(owner));
+        // default window: 7 days
 
         assertThat(out).startsWith("Bejelentkezések (utolsó 7 nap):")
                 .contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10, stressz 3/10, testi 3/10, mentális 3/10")
@@ -223,7 +226,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
     @Test
     void testGetRecovery_shouldRenderNincsAdat_whenScopeCheckinsAndEmpty() {
-        assertThat(biometricsTools.getRecovery("checkins", null, ctx(userPopulator.createUser().getId())))
+        assertThat(biometricsTools.getRecovery(
+                "checkins", null, null, null, null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Bejelentkezések (utolsó 7 nap): nincs adat");
     }
 

@@ -107,6 +107,7 @@ public class ChatService {
             - súlytrend, fogyás ÜTEME (simított) → get_weight_trend
             - napi súlyok, egy-egy nap súlya, INGADOZÁS/kilengés → get_weight_log
             - alvás, alvási cél, közérzet (energia/stressz) → get_recovery
+            - konkrét nap alvási adata / fázisai / hypnogram → get_recovery (date vagy from/to)
             - gyógyszer, gyógyszer-ciklus → get_medication
             - recept, mit főzzek → get_recipes | mi van a kamrában → get_pantry
             - napi/heti étkezés, makró, víz → get_fuel_log

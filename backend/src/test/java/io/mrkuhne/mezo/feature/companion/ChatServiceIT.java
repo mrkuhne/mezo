@@ -77,6 +77,24 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldBindListDates_whenFakeToolPassesDateArray() {
+        UUID userId = databasePopulator.populateUser("chat-tools-detail@test.local");
+        LocalDate d = LocalDate.now().minusDays(1);
+        sleepLogPopulator.createTrackerSleepLog(userId, d, "23:00", "06:30", new BigDecimal("7.5"),
+                4, 1, 450, 10, 200, 80, 60, 87, "screenshot",
+                new io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram(10, "DRL"), null);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(),
+                request("miért fáradt vagyok? [fake-tool:get_recovery {\"scope\":\"sleep\",\"date\":[\""
+                        + d + "\"]}]"));
+
+        assertThat(resp.getContent()).contains("tool:get_recovery=[\"Alvás — részletes nézet");
+        assertThat(resp.getContent()).contains("lefekvés 23:00").contains("hypnogram: 10 DRL");
+        assertThat(resp.getRefs()).extracting(MessageRef::getKind).contains("Sleep");
+    }
+
+    @Test
     void testSendMessage_shouldMentionToolsInSystemPrompt_whenSending() {
         UUID userId = databasePopulator.populateUser("chat-tool-hint@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
