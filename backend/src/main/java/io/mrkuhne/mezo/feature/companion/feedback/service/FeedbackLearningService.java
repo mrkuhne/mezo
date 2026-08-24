@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.feedback.service;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.config.FeedbackLearningProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnvelope;
@@ -25,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
  * (down-reason) histogram row. NOT the reinforcement layer (graph-node edge weighting) — that
  * activates only once W2 is live and is a separate, later, switch-guarded slice (spec §10).
  * Single-user data volumes throughout (spec §12): windowed rows are grouped in memory, not SQL.
+ *
+ * <p>W5.2 (bd mezo-b3pp.19) rides the same nightly pass: one additional {@code intervention:<key>}
+ * scope per configured library entry ({@link CompanionProperties#interventions()}), joined through
+ * {@link FeedMessageKindSource} the same way the {@code feed:<kind>} scopes are.
  */
 @Service
 @RequiredArgsConstructor
@@ -45,10 +50,12 @@ public class FeedbackLearningService {
     private final FeedMessageKindSource feedMessageKindSource;
     private final FeedbackRollupRepository feedbackRollupRepository;
     private final FeedbackLearningProperties properties;
+    private final CompanionProperties companionProperties;
 
-    /** Recomputes and overwrites (in place) all 11 rollup scopes for one user; returns the count
-     *  upserted (always 11 — every known surface/feed-kind scope is written, zero-filled when
-     *  unseen, so a downstream reader never has to distinguish "no row" from "no signal").
+    /** Recomputes and overwrites (in place) all rollup scopes for one user; returns the count
+     *  upserted (always 11 + one per configured intervention key — every known surface/feed-kind/
+     *  intervention-key scope is written, zero-filled when unseen, so a downstream reader never has
+     *  to distinguish "no row" from "no signal").
      *
      *  <p>The trailing window keys on {@code updated_at}, NOT {@code created_at} — do not "fix"
      *  this back. A verdict's ONLY write path is {@code MessageFeedbackRepository.upsertVerdict},
@@ -79,6 +86,23 @@ public class FeedbackLearningService {
                 .toList();
             upserted += upsertEffectiveness(userId, FeedbackRollupEntity.SCOPE_FEED_PREFIX + feedKind,
                 windowDays, feedVerdicts);
+        }
+
+        // W5.2 (bd mezo-b3pp.19): one intervention:<key> scope per configured library entry. An
+        // intervention verdict ALSO counts in surface:feed_message above (it IS a feed_message
+        // artifact) — deliberate, not double-counted signal: the per-key scope here is the
+        // selection signal a `feed:intervention` aggregate would only duplicate, so FEED_KINDS
+        // deliberately stays the five prose kinds.
+        Map<UUID, String> interventionKeyById = feedMessageKindSource.interventionKeysByIds(userId,
+            window.stream().filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
+                .map(MessageFeedbackEntity::getArtifactId).toList());
+        for (CompanionProperties.Intervention entry : companionProperties.interventions()) {
+            List<MessageFeedbackEntity> verdicts = window.stream()
+                .filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
+                .filter(f -> entry.key().equals(interventionKeyById.get(f.getArtifactId())))
+                .toList();
+            upserted += upsertEffectiveness(userId,
+                FeedbackRollupEntity.SCOPE_INTERVENTION_PREFIX + entry.key(), windowDays, verdicts);
         }
 
         upserted += upsertStyle(userId, windowDays, window);

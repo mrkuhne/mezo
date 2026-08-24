@@ -42,4 +42,17 @@ public class FeedMessageKindService implements FeedMessageKindSource {
             .filter(m -> userId.equals(m.getCreatedBy()))
             .collect(Collectors.toMap(CompanionMessageEntity::getId, CompanionMessageEntity::getKind));
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<UUID, String> interventionKeysByIds(UUID userId, Collection<UUID> feedMessageIds) {
+        if (feedMessageIds.isEmpty()) {
+            return Map.of();
+        }
+        return companionMessageRepository.findAllById(feedMessageIds).stream()
+            .filter(m -> userId.equals(m.getCreatedBy()))
+            .filter(m -> CompanionMessageEntity.KIND_INTERVENTION.equals(m.getKind()))
+            .filter(m -> m.getContent().interventionKey() != null)
+            .collect(Collectors.toMap(CompanionMessageEntity::getId, m -> m.getContent().interventionKey()));
+    }
 }
