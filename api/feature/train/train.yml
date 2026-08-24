@@ -1560,6 +1560,10 @@ components:
           enum: [active, planned, archived]
         goal:
           type: string
+        goalPreset:
+          type: string
+          nullable: true
+          description: Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60)
         startDate:
           type: string
           format: date
@@ -1624,6 +1628,10 @@ components:
         goal:
           type: string
           nullable: true
+        goalPreset:
+          type: string
+          nullable: true
+          description: Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60)
         weeks:
           type: integer
           minimum: 1
@@ -1965,6 +1973,10 @@ components:
         goal:
           type: string
           nullable: true
+        goalPreset:
+          type: string
+          nullable: true
+          description: Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60)
         weeks:
           type: integer
           minimum: 1

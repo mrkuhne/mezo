@@ -97,8 +97,8 @@ public class MesoTemplateService {
     public MesocycleResponse start(UUID createdBy, UUID templateId, MesoTemplateStartRequest req) {
         MesoTemplateEntity t = ownedTemplateOrThrow(createdBy, templateId);
         return trainService.stampRun(createdBy, new TrainService.StampSource(
-            t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), req.getStartDate(), t.getWeeks(),
-            t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
+            t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), t.getGoalPreset(), req.getStartDate(),
+            t.getWeeks(), t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle())));
     }
 
@@ -121,6 +121,7 @@ public class MesoTemplateService {
         template.setTitle(run.getTitle());
         template.setShortTitle(run.getShortTitle());
         template.setGoal(run.getGoal());
+        template.setGoalPreset(run.getGoalPreset());
         template.setWeeks(run.getWeeks());
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
@@ -146,6 +147,7 @@ public class MesoTemplateService {
         template.setTitle(req.getTitle());
         template.setShortTitle(req.getShortTitle());
         template.setGoal(req.getGoal());
+        template.setGoalPreset(req.getGoalPreset());
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());

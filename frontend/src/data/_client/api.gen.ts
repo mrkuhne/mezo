@@ -3205,6 +3205,8 @@ export interface components {
             /** @enum {string} */
             status: "active" | "planned" | "archived";
             goal?: string;
+            /** @description Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60) */
+            goalPreset?: string | null;
             /** Format: date */
             startDate: string;
             /** Format: date */
@@ -3239,6 +3241,8 @@ export interface components {
             title: string;
             shortTitle?: string | null;
             goal?: string | null;
+            /** @description Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60) */
+            goalPreset?: string | null;
             weeks: number;
             split?: string | null;
             style?: string | null;
@@ -3378,6 +3382,8 @@ export interface components {
             title: string;
             shortTitle?: string | null;
             goal?: string | null;
+            /** @description Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60) */
+            goalPreset?: string | null;
             weeks: number;
             split?: string | null;
             style?: string | null;
