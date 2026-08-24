@@ -1138,6 +1138,24 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 `JpaRepository` with `…OrderByCreatedAtAsc` (history) and `…OrderByCreatedAtDesc(…, Pageable)`
 (the window) finders, both `ConversationIdAndCreatedByAndDeletedFalse` (owner + soft-delete scoped).
 
+**W5.1 composite flags (bd `mezo-b3pp.18`, spec §9.1) — deterministic, LLM-free.**
+`FlagEvaluator.evaluate(userId)` (`feature/companion/flags/service/FlagEvaluator.java`) is pure
+arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
+is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
+tag. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
+@TransactionalEventListener(phase = AFTER_COMMIT)` on the NEW `CheckInSavedEvent` — published by
+`CheckInService.save` alongside the existing `SleepLogSavedEvent`) and the hourly sweep
+(`FlagSweepJob`, `@Scheduled(cron = "${mezo.companion.flags.sweep-cron}")`, gated on
+`COMPANION_SWITCH` ∧ `mezo.techcore.cron.flag-sweep-job.enabled`, per-user try/catch — the
+`PatternDetectionJob`/`GraphMaintenanceJob` idiom). Both call `FlagService.evaluateAndLog(userId,
+source)`, which re-runs the evaluator, drops every raise still inside its own
+`cooldownHours.<flag>` window (`CompanionFlagLogRepository.existsRaiseSince`), and appends what
+survives to `companion_flag_log` with the inputs frozen in `payload` — **the ONLY difference
+between the two triggers is the `source` string** (`FlagKey.SOURCE_WRITE`/`SOURCE_SWEEP`) on the
+row. The write path never fails its caller: the listener catches and logs, the sweep isolates
+per user. Nothing reads these raises yet — **W5.2 is the consumer** that will turn a raise into a
+companion-facing intervention.
+
 ## 4. Data model & API
 
 ### Backend tables (V0.2, ✅)
@@ -1842,6 +1860,33 @@ worth talking to Daniel), injected into every turn as its own prompt block.
 - **W5.3 (`mezo-b3pp.20`) calls `ProfileAssembler.rebuild` too**, after the quarterly pass — the
   public method is deliberately reusable, not job-private.
 
+### Backend tables (W5.1 flag log, ✅ `mezo-b3pp.18`)
+
+Migration `202608241200_mezo-b3pp.18_create_companion_flag_log.sql` (in `1.0.0_master.yml`) — the
+append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1).
+
+- **`companion_flag_log`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON
+  DELETE CASCADE`, `is_deleted`, `created_at timestamptz`, `flag_key varchar(24)`, `source
+  varchar(6)`, `payload jsonb` (nullable). Constraints: `pk_companion_flag_log_id`,
+  `fk_companion_flag_log_created_by_app_user_id`, `ck_companion_flag_log_flag_key`
+  (`sustained_stress | sleep_debt | momentum_at_risk | recovery_needed | all_healthy`),
+  `ck_companion_flag_log_source` (`write | sweep`). Index `idx_companion_flag_log_user_key_at
+  (created_by, flag_key, created_at desc)` — the cooldown gate's key.
+- **One row per RAISE, never per evaluation.** The evaluator is deterministic, so `FlagService`
+  appends only when a flag is both TRUE and past its own cooldown; a quiet evaluation (nothing
+  true, or everything still cooling down) writes nothing. Nothing ever updates a row — no history
+  to amend, only new raises to append.
+- **`payload` is the typed jsonb `FlagPayloadEnvelope`** (`flags/entity/FlagPayloadEnvelope.java`
+  — the `FeedbackRollupStatsEnvelope` precedent: one record, five all-nullable nested-record
+  fields, a static factory per shape). Exactly one of `sustainedStress`/`sleepDebt`
+  /`momentumAtRisk`/`recoveryNeeded`/`allHealthy` is non-null per row, carrying BOTH the rule's
+  config thresholds and the observed values at raise time (day-keyed maps, `LocalDate.toString()`
+  keys — jsonb object keys are text), so the raise is reproducible from the log alone without
+  re-running the evaluator.
+- **No FK from `payload` to anything** — it freezes values read from other features' tables at
+  raise time; those source rows can later change or be deleted without touching this row (the
+  `message_feedback`/`feedback_rollup` dangling-reference precedent, spec §8.1).
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -2240,6 +2285,57 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.profile.max-graph-nodes` = **12** (`@Min(0) @Max(100)`) — how many active
   PATTERN/PREFERENCE node titles enter the synthesis payload.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
+
+### Config keys (`mezo.companion.flags.*` — `FlagProperties`, `@Validated`)
+
+W5.1 (bd `mezo-b3pp.18`) — a feature-scoped `@ConfigurationProperties(prefix =
+"mezo.companion.flags")` record, not a `CompanionProperties` field (§9). EVERY threshold, window
+and cooldown below is config, never code — `FlagEvaluator` holds no numbers of its own.
+
+| key | default | meaning |
+|---|---|---|
+| `sweep-cron` | `"0 5 * * * *"` | the hourly sweep — `:05` past every hour, past no other dawn job |
+| `sustained-stress.threshold` | `7.0` | check-in stress (1–10 scale) at/above this counts as a "bad" day |
+| `sustained-stress.window-days` | `4` | the trailing window, TODAY included |
+| `sustained-stress.min-days` | `3` | bad days required inside the window to raise |
+| `sleep-debt.nights` | `3` | nights accumulated, ending YESTERDAY (tonight is logged tomorrow) |
+| `sleep-debt.min-nights` | `2` | logged nights required inside the window (honest small-n gate) |
+| `sleep-debt.deficit-hours` | `3.0` | cumulative `Σ max(0, goal − actual)` at/above which it raises |
+| `sleep-debt.default-goal-hours` | `8.0` | fallback goal used only when the user has no `sleep_goal` row |
+| `momentum.window-days` | `3` | the recent habit-completion window, ending YESTERDAY |
+| `momentum.baseline-days` | `14` | the baseline window immediately before the recent one |
+| `momentum.drop-ratio` | `0.5` | the recent average must fall to at most `baseline × (1 − ratio)` |
+| `momentum.min-baseline` | `1.0` | below this baseline average there is no momentum left to lose (no flag) |
+| `recovery.window-days` | `2` | the "same 48h" window, TODAY included, read as whole days |
+| `recovery.sleep-floor-hours` | `6.0` | a night at/below this counts as "poor sleep" |
+| `recovery.rpe-threshold` | `7.0` | a training RPE at/above this counts as "high effort" |
+| `recovery.stress-threshold` | `6.0` | a check-in stress at/above this counts as "high stress" |
+| `all-healthy.quiet-days` | `7` | no other flag raised for this many days ⇒ the quiet state itself is logged |
+| `cooldown-hours.sustained-stress` | `24` | re-raise floor, per flag |
+| `cooldown-hours.sleep-debt` | `24` | ″ |
+| `cooldown-hours.momentum-at-risk` | `48` | ″ |
+| `cooldown-hours.recovery-needed` | `24` | ″ |
+| `cooldown-hours.all-healthy` | `168` | ″ (one week) |
+
+Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
+(`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
+the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
+
+**The five rules** (source of truth: the W5.1 plan's "The rules" table — all windows are whole
+days computed from `LocalDate.now()`; missing days stay absent, never invented — the
+`MetricSeriesService` rule — except `HABITS_DONE`, where no `habit_day` row genuinely means zero
+completions):
+
+| flag | fires when | inputs |
+|---|---|---|
+| `sustained_stress` | per-day avg `CHECKIN_STRESS` ≥ `threshold` on ≥ `min-days` of the last `window-days` days (today included) | `MetricKey.CHECKIN_STRESS` |
+| `sleep_debt` | over the last `nights` nights (yesterday-anchored, today excluded — today's night is logged in the morning): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
+| `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
+| `all_healthy` | none of the four fire now, **and** no non-`all_healthy` row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+
+A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
+`cooldown-hours.<flag>` — identical for both sources.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
@@ -3031,6 +3127,41 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   come back newest-first with unreviewed rows excluded; all rollup scopes for a user come back in
   one read.
 
+**W5.1 composite-flag test additions (`mezo-b3pp.18`, spec §9.1) — no LLM anywhere in this path:**
+
+- **`flags/CompanionFlagLogPersistenceIT`** — entity round-trip with the typed jsonb payload; an
+  unknown `flag_key`/`source` is rejected by the entity's `@Pattern` in-JVM AND, via a native
+  insert that bypasses bean validation, by the DB CHECK too; `existsRaiseSince` sees only rows
+  inside its window.
+- **`flags/FlagPropertiesIT`** — every rule/window/cooldown key binds from `application.yml`, the
+  shipped defaults pinned one by one.
+- **`flags/FlagEvaluatorStressSleepIT`** — `sustained_stress`: raises at 3-of-4 bad days, stays
+  quiet at 2-of-4, the day just outside the window is ignored while the day just inside it counts,
+  multiple same-day check-ins average; `sleep_debt`: raises at the deficit threshold, stays quiet
+  just below it, a long night never credits against a short one, stays quiet below the
+  `min-nights` gate, falls back to the default goal without a `sleep_goal` row, **never counts
+  tonight** (logged tomorrow morning), and raises exactly AT the threshold (boundary); the payload
+  freezes the stress inputs (`the_payload_freezes_the_stress_inputs`).
+- **`flags/FlagEvaluatorMomentumRecoveryIT`** — `momentum_at_risk`: raises on a habit collapse plus
+  a missed planned gym day, stays quiet when every planned day was trained, with no planned gym day
+  at all, below the baseline floor, or when the habits held up; `recovery_needed`: raises on poor
+  sleep + high RPE + high stress inside the 48h window, stays quiet when one leg is missing or
+  falls outside the window (including exactly one day past the true edge — the boundary case);
+  `all_healthy`: raises after a quiet week WITH actual data, stays quiet on an EMPTY log (no
+  fabricated "all healthy" over nothing), stays quiet while a problem flag is still inside the
+  quiet window, and returns once that problem flag ages out of it.
+- **`flags/FlagServiceIT`** — writes one audit row per raised flag with the right `source`; the
+  cooldown blocks an immediate re-raise and lifts once it expires; a quiet evaluation writes
+  nothing; the on-write and sweep sources raise IDENTICALLY apart from `source`
+  (`write_and_sweep_raise_identically_apart_from_the_source`).
+- **`flags/FlagEvaluationListenerIT`** — a check-in save raises the flag with `source=write`
+  (deliberately NOT `@Transactional` — the `FlagServiceIT` precedent: the save must genuinely
+  COMMIT for `AFTER_COMMIT` to fire, Awaitility rides out the `@Async` hop, the
+  `CompanionMessageEventIT` idiom); a calm check-in save raises nothing.
+- **`flags/FlagSweepJobSwitchOffIT`** — `mezo.techcore.cron.flag-sweep-job.enabled=false` ⇒ no
+  `FlagSweepJob` bean (the house cron-switch idiom; the on-write listener is unaffected — a
+  separate switch).
+
 **W3.1 ambient-recall test additions (`mezo-b3pp.12`) — the LLM and the embedding port are both
 fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
 
@@ -3526,6 +3657,32 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   in its javadoc). A judge that must reason about a number it was never shown will keep producing
   this class of false positive.
 
+**W5.1 composite-flag decisions + gotchas (`mezo-b3pp.18`, spec §9.1):**
+
+- **`FlagProperties` is its own `@ConfigurationProperties(prefix = "mezo.companion.flags")`
+  record, not a `CompanionProperties` nested field.** The spec's own wording (written before W4.2/
+  W4.3 shipped) assumed the shared record; by the time this slice landed,
+  `FeedbackLearningProperties` (W4.2) and `ProfileProperties` (W4.3) had already established a
+  feature-scoped `@ConfigurationProperties` record as the house idiom for a slice's own tunables,
+  and `FlagProperties` follows that precedent rather than growing the already-large
+  `CompanionProperties` further. Recorded here as a deliberate deviation from the spec's literal
+  text, not a silent one.
+- **`sleep_debt` excludes today; `momentum_at_risk`'s recent window ends yesterday (its baseline
+  window sits entirely before that).** Tonight's sleep is logged tomorrow morning, so counting
+  today as a debt-free night — absence, not a real zero — would understate the deficit on every
+  single evaluation; today's habits are still in progress at whatever hour the evaluator runs, so
+  counting an unfinished day's zero completions as a collapse would flag every single morning.
+  `sustained_stress` and `recovery_needed` DO include today deliberately — a check-in or a workout
+  already logged today is real signal the moment it lands, and both rules read from series that go
+  stale rather than series that are inherently incomplete until the day ends.
+- **`all_healthy` never raises over an empty log.** The guard requires the quiet window to
+  actually contain at least one observed check-in-stress or sleep value, not merely the absence of
+  a problem flag — a brand-new user, or one who logged nothing for a week, has NO evidence either
+  way, and claiming "all healthy" there would be a claim about nothing. The same IDENT-3
+  honest-degradation identity every other companion surface holds to (contrast the `[Emlékek]`/
+  `[Összefüggések]` blocks above, which render `""` rather than fabricate) — a raised
+  `all_healthy` row is a positive claim, so it earns the same evidentiary bar as any other flag.
+
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
   `min-similarity`/τ/cap in config, the deterministic eval harness, and its follow-up
@@ -3582,6 +3739,22 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
 - **FE side** — `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx` + `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`me.md` §2](me.md).
+
+**Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + five per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the five flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — the five rules, pure arithmetic over `MetricSeriesService`, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/service/CheckInSavedEvent.java` — the NEW `CheckInService.save` AFTER_COMMIT event this slice consumes; the check-in feature itself knows nothing about flags.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. No FE — nothing consumes these raises yet (W5.2).
 
 **Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).
