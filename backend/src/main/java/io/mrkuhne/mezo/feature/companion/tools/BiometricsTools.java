@@ -149,6 +149,17 @@ public class BiometricsTools {
             String scope,
             @ToolParam(required = false, description = "Hány napra visszamenőleg — scope=sleep/checkins "
                     + "esetén (alapértelmezés 7); scope=sleep-goal esetén nincs hatása.") Integer days,
+            @ToolParam(required = false, description = "Konkrét alvásnapok teljes részlete "
+                    + "(YYYY-MM-DD), maximum 3 nap — csak scope=sleep, más scope-on nincs hatása. "
+                    + "pl. [\"2026-08-23\"])")
+            List<LocalDate> date,
+            @ToolParam(required = false, description = "Részletes nézet kezdő napja (YYYY-MM-DD), "
+                    + "tárgyilagos határ; elhagyva 'to': a mai napig — csak scope=sleep, más "
+                    + "scope-on nincs hatása.")
+            LocalDate from,
+            @ToolParam(required = false, description = "Részletes nézet záró napja (YYYY-MM-DD), "
+                    + "tárgyilagos; elhagyva: mai nap — csak scope=sleep, más scope-on nincs hatása.")
+            LocalDate to,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
         String s = normalizeRecoveryScope(scope);
@@ -158,7 +169,9 @@ public class BiometricsTools {
         if ("checkins".equals(s)) {
             return renderCheckIns(userId, days, toolContext);
         }
-        return renderSleep(userId, days, toolContext);
+        boolean detail = date != null && !date.isEmpty() || from != null || to != null;
+        return detail ? renderSleepDetail(userId, date, from, to, toolContext)
+                : renderSleep(userId, days, toolContext);
     }
 
     private static String normalizeRecoveryScope(String scope) {
@@ -192,6 +205,163 @@ public class BiometricsTools {
         rows.stream().limit(5).forEach(r ->
                 ToolContexts.audit(toolContext).addRef("Sleep", r.getDate().toString()));
         return b.toString();
+    }
+
+    /** scope=sleep detail mode (mezo-ohce) — full sleep_log rows for explicitly requested days.
+     *  One read over the clamped window, in-memory filter; every field null-guarded (absent =
+     *  omitted, never fabricated); a requested day without a row says "nincs rögzített alvás". */
+    private String renderSleepDetail(UUID userId, List<LocalDate> date, LocalDate from, LocalDate to,
+            ToolContext toolContext) {
+        LocalDate today = LocalDate.now();
+        LocalDate windowFrom = today.minusDays(properties.tools().maxWindowDays() - 1L);
+        boolean clamped = false;
+
+        java.util.Set<LocalDate> requested = new java.util.TreeSet<>();
+        if (date != null) {
+            requested.addAll(date);
+        }
+        if (from != null || to != null) {
+            LocalDate lo = from != null ? from : windowFrom;
+            LocalDate hi = to == null ? today : to;
+            if (hi.isAfter(today)) {
+                clamped = true;
+                hi = today;
+            }
+            if (lo.isBefore(windowFrom)) {
+                clamped = true;
+                lo = windowFrom;
+            }
+            if (!lo.isAfter(hi)) {
+                for (LocalDate d = lo; !d.isAfter(hi); d = d.plusDays(1)) {
+                    requested.add(d);
+                }
+            }
+        }
+
+        java.util.NavigableSet<LocalDate> days = new java.util.TreeSet<>();
+        for (LocalDate d : requested) {
+            if (d.isBefore(windowFrom) || d.isAfter(today)) {
+                clamped = true;
+            } else {
+                days.add(d);
+            }
+        }
+
+        String header = "Alvás — részletes nézet"
+                + (clamped ? ", visszavágva " + days.size() + " napra" : "") + ":";
+        if (days.isEmpty()) {
+            return header + " " + ToolText.NO_DATA;
+        }
+
+        List<SleepLogEntity> rows = sleepLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
+                        userId, days.first(), days.last());
+        java.util.Map<LocalDate, SleepLogEntity> byDate = new java.util.HashMap<>();
+        for (SleepLogEntity r : rows) {
+            byDate.putIfAbsent(r.getDate(), r);
+        }
+
+        StringBuilder b = new StringBuilder(header);
+        for (java.util.Iterator<LocalDate> it = days.descendingIterator(); it.hasNext(); ) {
+            LocalDate d = it.next();
+            SleepLogEntity row = byDate.get(d);
+            b.append('\n').append(d)
+                    .append(row == null ? ": nincs rögzített alvás" : ": " + renderDetailLine(row));
+        }
+        days.stream().sorted(java.util.Comparator.reverseOrder()).limit(5)
+                .forEach(d -> ToolContexts.audit(toolContext).addRef("Sleep", d.toString()));
+        return b.toString();
+    }
+
+    /** One detail line for a populated row — fixed field order, every field null-guarded
+     *  (absent fields omitted; spec §3). Clocks render as stored HH:MM strings. */
+    private String renderDetailLine(SleepLogEntity row) {
+        StringBuilder b = new StringBuilder();
+        if (row.getBedtime() != null) {
+            b.append("lefekvés ").append(row.getBedtime());
+        }
+        if (row.getWakeup() != null) {
+            if (b.length() > 0) {
+                b.append(", ");
+            }
+            b.append("ébredés ").append(row.getWakeup());
+        }
+        if (b.length() > 0) {
+            b.append("; ");
+        }
+        if (row.getDurationH() != null) {
+            b.append(hm(row.getDurationH()));
+        }
+        if (row.getInBedMin() != null) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append("ágyban ").append(row.getInBedMin()).append("p");
+        }
+        List<String> stages = new ArrayList<>();
+        if (row.getAwakeMin() != null) {
+            stages.add("ébren " + row.getAwakeMin() + "p");
+        }
+        if (row.getLightMin() != null) {
+            stages.add("könnyű " + row.getLightMin() + "p");
+        }
+        if (row.getRemMin() != null) {
+            stages.add("REM " + row.getRemMin() + "p");
+        }
+        if (row.getDeepMin() != null) {
+            stages.add("mély " + row.getDeepMin() + "p");
+        }
+        if (!stages.isEmpty()) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append(String.join(" · ", stages));
+        }
+        if (row.getQuality() != null) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append("minőség ").append(row.getQuality()).append("/5");
+        }
+        if (row.getAwakenings() != null) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append("ébredések ").append(row.getAwakenings());
+        }
+        if (row.getSource() != null) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append("forrás: ").append(row.getSource());
+            if (row.getSourceQualityPct() != null) {
+                b.append(" (").append(row.getSourceQualityPct()).append("%)");
+            }
+        }
+        if (row.getHypnogram() != null) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append("hypnogram: ").append(row.getHypnogram().bucketMin()).append(' ')
+                    .append(row.getHypnogram().stages());
+        }
+        if (row.getNotes() != null && !row.getNotes().isBlank()) {
+            if (b.length() > 0) {
+                b.append("; ");
+            }
+            b.append("megjegyzés: ").append(row.getNotes());
+        }
+        return b.toString();
+    }
+
+    /** 7.5 -> "7h 30p", 7.0 -> "7h" (house Hungarian compact hours). */
+    private static String hm(BigDecimal hours) {
+        int h = hours.intValue();
+        int p = (int) Math.round((hours.doubleValue() - h) * 60);
+        if (p == 60) {
+            return (h + 1) + "h";
+        }
+        return p == 0 ? h + "h" : h + "h " + p + "p";
     }
 
     /** scope=sleep-goal (mezo-xixu) — target + bed/wake anchor + regularity band. Bed/wake comes from
