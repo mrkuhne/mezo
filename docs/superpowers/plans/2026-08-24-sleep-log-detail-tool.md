@@ -62,8 +62,8 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
 
 **Create:**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/SleepLogDetailRenderIT.java` —
-  the eight spec §6 ITs (kept separate from `CompanionToolsRenderIT` — a 1 409-line file —
-  same package, same framework).
+  all spec §6 ITs (kept separate from `CompanionToolsRenderIT` — a 1 409-line file — same
+  package, same framework; §6.6a is covered by §6.1's full-line assert).
 
 **Modify:**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java`
