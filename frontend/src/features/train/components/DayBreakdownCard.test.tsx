@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type { DayGroupRow } from '@/features/train/logic/setBudget'
 import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 
-const over: DayGroupRow = { group: 'shoulder', label: 'Váll', colorMuscle: 'shoulder-front', sets: 12, plyoSets: 0, over: true }
-const ok: DayGroupRow = { group: 'back', label: 'Hát', colorMuscle: 'back-wide', sets: 8, plyoSets: 0, over: false }
-const plyoOnly: DayGroupRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', sets: 0, plyoSets: 4, over: false }
+const over: DayGroupRow = { group: 'shoulder', label: 'Váll', colorMuscle: 'shoulder-front', sets: 12, exemptSets: 0, over: true }
+const ok: DayGroupRow = { group: 'back', label: 'Hát', colorMuscle: 'back-wide', sets: 8, exemptSets: 0, over: false }
+const plyoOnly: DayGroupRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', sets: 0, exemptSets: 4, over: false }
 
 describe('DayBreakdownCard', () => {
   it('renders an over-cap row with the ⚠ mark', () => {

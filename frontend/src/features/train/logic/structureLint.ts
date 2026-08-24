@@ -9,7 +9,7 @@
 // exported tables below — one place to tune.
 // ============================================================
 import type { MesoDay } from '@/data/types'
-import { BUDGET_GROUP_LABELS, budgetGroup } from '@/features/train/logic/setBudget'
+import { BUDGET_GROUP_LABELS, budgetGroup, countsForVolume } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
@@ -94,7 +94,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
     const perGroupExercises = new Map<string, number>()
 
     for (const ex of d.exercises) {
-      if (ex.type === 'plyo') continue
+      if (!countsForVolume(ex)) continue
       const group = budgetGroup(ex.muscle)
       if (!group) continue
 

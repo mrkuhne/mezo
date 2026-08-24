@@ -80,10 +80,10 @@ describe('sessionCapWarnings', () => {
 })
 
 describe('plyo exclusion (mezo-0znc)', () => {
-  it('plyo sets leave budget math but are reported as plyoSets', () => {
+  it('plyo sets leave budget math but are reported as exemptSets', () => {
     const days = [day('H', 'quad', [ex('quad', 9, 0), plyoEx('quad', 10)])]
     const rows = muscleBudgets(days)
-    expect(rows[0]).toMatchObject({ group: 'quad', workingSets: 9, plyoSets: 10 })
+    expect(rows[0]).toMatchObject({ group: 'quad', workingSets: 9, exemptSets: 10 })
     expect(rows[0].budget).toBeCloseTo(9 / 12)
     expect(rows[0].level).toBe('ok')
   })
@@ -95,14 +95,40 @@ describe('plyo exclusion (mezo-0znc)', () => {
     const days = [day('H', 'quad', [plyoEx('quad', 6)])]
     expect(muscleBudgets(days)).toHaveLength(0)
   })
+
+  it('an exempt exercise is reported separately and never enters the budget', () => {
+    const days = [{
+      day: 'Hét', type: 'Pull', muscle: 'back', exerciseCount: 2,
+      exercises: [
+        { id: 'a', name: 'Pull-Up', muscle: 'back-wide', warmupSets: 2, workingSets: 3,
+          repMin: 6, repMax: 8, targetRIR: 0, type: 'compound' as const },
+        { id: 'b', name: '45° Back Extension', muscle: 'back-lower', warmupSets: 0, workingSets: 2,
+          repMin: 12, repMax: 15, targetRIR: 2, type: 'isolation' as const, countsTowardVolume: false },
+      ],
+    }]
+    const back = muscleBudgets(days)[0]
+    expect(back.workingSets).toBe(3)
+    expect(back.exemptSets).toBe(2)
+  })
+
+  it('a plyo exercise with no explicit flag still stays out of the budget', () => {
+    const days = [{
+      day: 'Kedd', type: 'Legs', muscle: 'quad', exerciseCount: 1,
+      exercises: [
+        { id: 'c', name: 'Box Jump', muscle: 'quad', warmupSets: 0, workingSets: 2,
+          repMin: 6, repMax: 10, targetRIR: 0, type: 'plyo' as const },
+      ],
+    }]
+    expect(muscleBudgets(days)).toHaveLength(0)
+  })
 })
 
 describe('daySessionBreakdown', () => {
-  it('aggregates the day per group with over flag and plyo split', () => {
+  it('aggregates the day per group with over flag and exempt split', () => {
     const d = day('H', 'shoulder', [ex('shoulder-side', 6, 0), ex('shoulder-front', 6, 0), plyoEx('quad', 4)])
     const rows = daySessionBreakdown(d)
     expect(rows[0]).toMatchObject({ group: 'shoulder', sets: 12, over: true })
-    expect(rows[1]).toMatchObject({ group: 'quad', sets: 0, plyoSets: 4, over: false })
+    expect(rows[1]).toMatchObject({ group: 'quad', sets: 0, exemptSets: 4, over: false })
   })
 })
 

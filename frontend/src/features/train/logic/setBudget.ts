@@ -9,8 +9,17 @@
 // Granularity is the coarse muscle group (chest/back/…): finer than the 6
 // color regions (Kar/Láb would over-merge), coarser than the 21 heads.
 // ============================================================
-import type { MesoDay } from '@/data/types'
+import type { ExerciseKind, MesoDay } from '@/data/types'
 import { isOffDay } from '@/features/train/logic/offDay'
+
+/**
+ * Does this exercise's work count as hypertrophy volume? The server sets the flag explicitly
+ * (false for the fix-zárás closing block and plyo). When it is absent — mock fixtures, plans
+ * written before mezo-gbo7 — fall back to the old rule so behaviour is unchanged.
+ */
+export function countsForVolume(ex: { countsTowardVolume?: boolean; type: ExerciseKind }): boolean {
+  return ex.countsTowardVolume ?? ex.type !== 'plyo'
+}
 
 export type SetStyle = 'failure' | 'volume'
 export const FAILURE_WEEKLY_CAP = 12
@@ -72,8 +81,8 @@ export interface MuscleBudgetRow {
   failureSets: number
   volumeSets: number
   workingSets: number
-  /** Plyo sets don't count toward the budget — reported separately for visibility. */
-  plyoSets: number
+  /** Sets that do not count toward the budget — reported separately for visibility. */
+  exemptSets: number
   /** 1 = 100% of the weekly budget. */
   budget: number
   level: BudgetLevel
@@ -95,10 +104,10 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
       if (!group) continue
       let row = acc.get(group)
       if (!row) {
-        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, plyoSets: 0, budget: 0, level: 'ok', mev: null, zoneStart: null, setsToZone: 0, suggestedDay: null }
+        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, exemptSets: 0, budget: 0, level: 'ok', mev: null, zoneStart: null, setsToZone: 0, suggestedDay: null }
         acc.set(group, row)
       }
-      if (ex.type === 'plyo') { row.plyoSets += ex.workingSets; continue }
+      if (!countsForVolume(ex)) { row.exemptSets += ex.workingSets; continue }
       if (setStyle(ex.targetRIR) === 'failure') row.failureSets += ex.workingSets
       else row.volumeSets += ex.workingSets
       row.workingSets += ex.workingSets
@@ -133,7 +142,7 @@ export function sessionCapWarnings(days: MesoDay[]): SessionCapWarning[] {
   for (const d of days) {
     const perGroup = new Map<string, number>()
     for (const ex of d.exercises) {
-      if (ex.type === 'plyo') continue
+      if (!countsForVolume(ex)) continue
       const group = budgetGroup(ex.muscle)
       if (!group) continue
       perGroup.set(group, (perGroup.get(group) ?? 0) + ex.workingSets)
@@ -151,11 +160,11 @@ export interface DayGroupRow {
   /** Representative catalog muscle key seen for the group on this day — feed muscleColor(). */
   colorMuscle: string
   sets: number
-  plyoSets: number
+  exemptSets: number
   over: boolean
 }
 
-/** Per-group set totals for a single day, plyo split out; includes plyo-only groups at sets: 0. */
+/** Per-group set totals for a single day, exempt work split out; includes exempt-only groups at sets: 0. */
 export function daySessionBreakdown(day: MesoDay): DayGroupRow[] {
   const acc = new Map<string, DayGroupRow>()
   for (const ex of day.exercises) {
@@ -163,10 +172,10 @@ export function daySessionBreakdown(day: MesoDay): DayGroupRow[] {
     if (!group) continue
     let row = acc.get(group)
     if (!row) {
-      row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, sets: 0, plyoSets: 0, over: false }
+      row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, sets: 0, exemptSets: 0, over: false }
       acc.set(group, row)
     }
-    if (ex.type === 'plyo') row.plyoSets += ex.workingSets
+    if (!countsForVolume(ex)) row.exemptSets += ex.workingSets
     else row.sets += ex.workingSets
   }
   return [...acc.values()]
@@ -189,7 +198,7 @@ export function leastLoadedDayFor(days: MesoDay[], group: string, excludeDay: st
     let groupSets = 0
     let totalSets = 0
     for (const ex of d.exercises) {
-      if (ex.type === 'plyo') continue
+      if (!countsForVolume(ex)) continue
       totalSets += ex.workingSets
       if (budgetGroup(ex.muscle) === group) groupSets += ex.workingSets
     }
