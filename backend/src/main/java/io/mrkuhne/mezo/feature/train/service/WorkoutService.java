@@ -194,7 +194,7 @@ public class WorkoutService {
             List<MuscleGroupVolumeLogEntity> logs = muscleGroupVolumeLogRepository
                 .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(activeMeso.getId()));
             if (!logs.isEmpty()) {
-                effectiveSets = effectiveWorkingSets(exercises, logs);
+                effectiveSets = effectiveWorkingSets(weekTemplateExercises(createdBy, activeMeso.getId()), logs);
             }
         }
         int weightUp = 0;
@@ -350,15 +350,32 @@ public class WorkoutService {
     }
 
     /**
+     * Every TEMPLATE day's exercises for the meso — the unit the weekly volume target is
+     * distributed over (mezo-gbo7). Instances are excluded (they carry a templateSessionId);
+     * exercises hang off the template row, never off the instance.
+     */
+    private List<ExerciseEntity> weekTemplateExercises(UUID createdBy, UUID mesocycleId) {
+        List<UUID> templateDayIds = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesocycleId)).stream()
+            .filter(s -> s.getTemplateSessionId() == null)
+            .map(WorkoutSessionEntity::getId)
+            .toList();
+        return templateDayIds.isEmpty()
+            ? List.of()
+            : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateDayIds);
+    }
+
+    /**
      * Each exercise's effective working-set count (DA6): a muscle group's volume-log
-     * {@code currentSets} distributed across today's exercises of that group, proportional to
-     * each exercise's template {@code workingSets}. Base-1 + largest-remainder: every exercise
-     * gets a floor of 1 set, then the rest of the target is handed out proportionally with
-     * largest-remainder rounding — so {@code sum(effective) == currentSets} exactly whenever
-     * {@code currentSets >= exerciseCount} (below that, every exercise still gets its floor of 1,
-     * so the sum can only exceed the target, never fall short). An exercise whose group carries
-     * no log row is absent from the returned map — the caller falls back to the template
-     * {@code workingSets} (DA5-style).
+     * {@code currentSets} distributed across the MESO WEEK's counting exercises of that group
+     * (mezo-gbo7 — distributing it per day multiplied weekly volume by training frequency),
+     * proportional to each exercise's template {@code workingSets}. Base-1 + largest-remainder:
+     * every counting exercise gets a floor of 1 set, then the rest of the target is handed out
+     * proportionally, so {@code sum(effective) == currentSets} exactly whenever {@code currentSets
+     * >= the week's counting-exercise count}. Below that every exercise still gets its floor of
+     * 1, so the weekly sum can only exceed the target, never fall short. Exempt exercises and
+     * groups with no log row are absent from the returned map — the caller falls back to the
+     * template {@code workingSets}.
      */
     private Map<UUID, Integer> effectiveWorkingSets(
             List<ExerciseEntity> exercises, List<MuscleGroupVolumeLogEntity> logs) {
@@ -366,6 +383,7 @@ public class WorkoutService {
             .collect(Collectors.toMap(MuscleGroupVolumeLogEntity::getMuscle,
                 MuscleGroupVolumeLogEntity::getCurrentSets, (a, b) -> a));
         Map<String, List<ExerciseEntity>> byGroup = exercises.stream()
+            .filter(ExerciseEntity::isCountsTowardVolume) // mezo-gbo7: posture/plyo work is not volume
             .collect(Collectors.groupingBy(e -> MuscleGroup.of(e.getMuscle())));
         Map<UUID, Integer> out = new java.util.HashMap<>();
         for (Map.Entry<String, List<ExerciseEntity>> entry : byGroup.entrySet()) {
