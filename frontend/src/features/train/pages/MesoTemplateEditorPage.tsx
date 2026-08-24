@@ -96,6 +96,7 @@ export function MesoTemplateEditorPage() {
         title: template.title,
         shortTitle: template.shortTitle,
         goal: template.goal,
+        goalPreset: template.goalPreset,
         weeks: template.weeks,
         split: template.split,
         style: template.style,

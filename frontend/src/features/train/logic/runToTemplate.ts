@@ -49,6 +49,7 @@ export function runToTemplate(meso: Mesocycle): MesoTemplateUpsertRequest {
     // template contract is nullable — an empty string is "not set", not a value.
     shortTitle: meso.shortTitle || null,
     goal: meso.goal || null,
+    goalPreset: meso.goalPreset ?? null,
     weeks: meso.weeks,
     split: meso.split || null,
     style: meso.style || null,
