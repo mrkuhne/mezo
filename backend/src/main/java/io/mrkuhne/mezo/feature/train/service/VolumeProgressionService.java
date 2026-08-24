@@ -86,6 +86,7 @@ public class VolumeProgressionService {
         }
         SortedSet<String> trained = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateIds).stream()
+            .filter(ExerciseEntity::isCountsTowardVolume) // mezo-gbo7: no target without volume work
             .map(e -> MuscleGroup.of(e.getMuscle()))
             .collect(Collectors.toCollection(TreeSet::new));
         Set<String> existing = volumeLogRepository
