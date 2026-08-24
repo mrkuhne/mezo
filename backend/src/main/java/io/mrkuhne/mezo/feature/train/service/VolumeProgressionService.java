@@ -196,8 +196,8 @@ public class VolumeProgressionService {
                     continue;
                 }
                 ExerciseEntity exercise = exercisesById.get(s.getExerciseId());
-                if (exercise == null) {
-                    continue;
+                if (exercise == null || !exercise.isCountsTowardVolume()) {
+                    continue; // mezo-gbo7: posture/plyo sets are not hypertrophy volume
                 }
                 loggedLastWeek.merge(MuscleGroup.of(exercise.getMuscle()), 1, Integer::sum);
                 if (s.getRir() != null) {
