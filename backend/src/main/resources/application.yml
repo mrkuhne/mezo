@@ -282,6 +282,10 @@ mezo:
       # off = the FeedbackLearningJob bean does not exist
       feedback-learning-job:
         enabled: true
+      # W5.1 (mezo-b3pp.18) hourly composite-flag sweep (schedule: mezo.companion.flags.sweep-cron);
+      # off = the FlagSweepJob bean does not exist (on-write evaluation still runs)
+      flag-sweep-job:
+        enabled: true
       # W4.3 (mezo-b3pp.17): weekly pragmatic-profile synthesis (smart tier, one LLM call/user/week)
       profile-assembler-job:
         enabled: true
@@ -535,6 +539,53 @@ mezo:
       cron: "0 10 3 * * *"
       # Trailing window (days) the rollups are computed over
       window-days: 30
+    flags:
+      # W5.1 (mezo-b3pp.18, spec §9.1): deterministic, LLM-free composite state flags. Every
+      # threshold below is config, never code. Two triggers, one code path: the on-write listener
+      # (check-in/sleep save) and this hourly sweep — the sweep exists for windows that are crossed
+      # by TIME alone (a third quiet day, a cooldown expiring), with no write to react to.
+      # :05 every hour — brushes past no dawn job (02:20 summary, 02:40 patterns, 03:00 SUN
+      # hypotheses, 03:10 feedback-learning, 03:20 graph, 03:40 llm-log retention).
+      sweep-cron: "0 5 * * * *"
+      sustained-stress:
+        # Check-in stress is 1–10; 7+ on 3 of the last 4 days is "this is not one bad day".
+        threshold: 7.0
+        window-days: 4
+        min-days: 3
+      sleep-debt:
+        # Cumulative deficit vs the sleep goal over the last 3 nights (today excluded — tonight is
+        # logged tomorrow morning).
+        nights: 3
+        # Honest small-n gate: with fewer logged nights than this the deficit is unknown, not zero.
+        min-nights: 2
+        deficit-hours: 3.0
+        # Only used when there is no sleep_goal row at all.
+        default-goal-hours: 8.0
+      momentum:
+        # Habit completions in the last 3 days vs the 14 days before them; a halving plus a missed
+        # PLANNED gym day (gym_schedule_slot day-of-week with no completed workout) is the signal.
+        window-days: 3
+        baseline-days: 14
+        drop-ratio: 0.5
+        # Below this baseline average there is no momentum to lose — no flag.
+        min-baseline: 1.0
+      recovery:
+        # "Poor sleep + high RPE + high stress inside the same 48h" as whole days (today included).
+        window-days: 2
+        sleep-floor-hours: 6.0
+        rpe-threshold: 7.0
+        stress-threshold: 6.0
+      all-healthy:
+        # Nothing else raised for a week ⇒ record the quiet state (W5.2 may celebrate it).
+        quiet-days: 7
+      cooldown-hours:
+        # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
+        # write + hourly), and without this the log would fill with the same day's state.
+        sustained-stress: 24
+        sleep-debt: 24
+        momentum-at-risk: 48
+        recovery-needed: 24
+        all-healthy: 168
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

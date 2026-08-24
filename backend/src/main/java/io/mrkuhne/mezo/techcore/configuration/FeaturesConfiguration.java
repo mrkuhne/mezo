@@ -31,6 +31,9 @@ public class FeaturesConfiguration {
     /** Phase 5 W4.2 (mezo-b3pp.16) nightly feedback-rollup job — techcore cron zone. */
     public static final String FEEDBACK_LEARNING_JOB_SWITCH = "mezo.techcore.cron.feedback-learning-job.enabled";
 
+    /** W5.1 (mezo-b3pp.18): hourly composite-flag sweep; off ⇒ the FlagSweepJob bean does not exist. */
+    public static final String FLAG_SWEEP_JOB_SWITCH = "mezo.techcore.cron.flag-sweep-job.enabled";
+
     /** Phase 5 W4.3 (mezo-b3pp.17) weekly profile assembler job — techcore cron zone. */
     public static final String PROFILE_ASSEMBLER_JOB_SWITCH = "mezo.techcore.cron.profile-assembler-job.enabled";
 
