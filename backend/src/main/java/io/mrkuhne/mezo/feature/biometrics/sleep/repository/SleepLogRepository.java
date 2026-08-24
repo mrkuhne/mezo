@@ -16,4 +16,9 @@ public interface SleepLogRepository extends OwnedRepository<SleepLogEntity> {
      *  finder, no companion dependency. */
     List<SleepLogEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
             UUID createdBy, LocalDate from);
+
+    /** Detail window for the companion get_recovery(scope=sleep) date/from/to params (mezo-ohce)
+     *  — plain derived finder, no companion dependency. Inclusive bounds, newest first. */
+    List<SleepLogEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

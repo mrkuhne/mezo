@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.support.populator;
 
+import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import java.math.BigDecimal;
@@ -27,6 +28,32 @@ public class SleepLogPopulator {
         e.setDate(date);
         e.setDurationH(durationH);
         e.setQuality(quality);
+        return sleepLogRepository.saveAndFlush(e);
+    }
+
+    /** Tracker-grade (screenshot) row — every enrichment field explicit (mezo-dbsr/mezo-fk9a);
+     *  nulls allowed so sparse manual rows seed from the same factory (mezo-ohce). */
+    public SleepLogEntity createTrackerSleepLog(UUID owner, LocalDate date, String bedtime, String wakeup,
+        BigDecimal durationH, Integer quality, Integer awakenings, Integer inBedMin, Integer awakeMin,
+        Integer lightMin, Integer remMin, Integer deepMin, Integer sourceQualityPct, String source,
+        SleepHypnogram hypnogram, String notes) {
+        SleepLogEntity e = new SleepLogEntity();
+        e.setCreatedBy(owner);
+        e.setDate(date);
+        e.setBedtime(bedtime);
+        e.setWakeup(wakeup);
+        e.setDurationH(durationH);
+        e.setQuality(quality);
+        e.setAwakenings(awakenings);
+        e.setInBedMin(inBedMin);
+        e.setAwakeMin(awakeMin);
+        e.setLightMin(lightMin);
+        e.setRemMin(remMin);
+        e.setDeepMin(deepMin);
+        e.setSourceQualityPct(sourceQualityPct);
+        e.setSource(source);
+        e.setHypnogram(hypnogram);
+        e.setNotes(notes);
         return sleepLogRepository.saveAndFlush(e);
     }
 
