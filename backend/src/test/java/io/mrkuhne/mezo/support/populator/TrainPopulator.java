@@ -509,6 +509,21 @@ public class TrainPopulator {
         return sportSessionRepository.saveAndFlush(s);
     }
 
+    /**
+     * A sport session on {@code date} carrying only an RPE — the recovery-needed flag's minimal
+     * training-load seam ({@code MetricSeriesService.trainingRpe} reads {@code sport_session.rpe},
+     * mezo-b3pp.18).
+     */
+    public SportSessionEntity createSportSessionWithRpe(UUID createdBy, LocalDate date, int rpe) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        s.setTime("18:00");
+        s.setDurationMin(60);
+        s.setRpe(BigDecimal.valueOf(rpe));
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
     public GymScheduleSlotEntity createGymSlot(UUID createdBy, int dayOfWeek, String time) {
         GymScheduleSlotEntity s = new GymScheduleSlotEntity();
         s.setCreatedBy(createdBy);

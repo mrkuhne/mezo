@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class CheckInService {
 
     private final CheckInRepository repository;
     private final CheckInMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<CheckInResponse> listForDay(UUID createdBy, LocalDate date) {
         return repository.findByCreatedByAndDateOrderBySlotTime(createdBy, date).stream()
@@ -43,6 +45,10 @@ public class CheckInService {
         e.setMental(req.getMental());
         e.setNote(req.getNote());
         e.setSavedAt(Instant.now());
-        return mapper.toResponse(repository.save(e));
+        CheckInResponse response = mapper.toResponse(repository.save(e));
+        // W5.1 (mezo-b3pp.18): the companion's flag evaluator reacts AFTER_COMMIT; a failure there
+        // can never fail or slow this write (the listener is @Async and swallows its own errors).
+        eventPublisher.publishEvent(new CheckInSavedEvent(createdBy, e.getDate()));
+        return response;
     }
 }
