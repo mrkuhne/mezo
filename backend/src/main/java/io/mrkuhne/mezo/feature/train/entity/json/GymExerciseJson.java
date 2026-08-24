@@ -25,5 +25,16 @@ public record GymExerciseJson(
     Double anchorWeightKg,
     String type,
     String warning,
-    UUID catalogId
-) {}
+    UUID catalogId,
+    Boolean countsTowardVolume
+) {
+    /**
+     * Documents written before mezo-gbo7 carry no {@code countsTowardVolume}; Jackson hands us null
+     * for them. Default it to TRUE here — on every construction path (mapper, hand-rolled rerun
+     * materialization, Jackson) — so the volume math never has to null-check, mirroring the
+     * coercion {@link MesoDayJson} applies to its own optional fields.
+     */
+    public GymExerciseJson {
+        countsTowardVolume = countsTowardVolume == null || countsTowardVolume;
+    }
+}
