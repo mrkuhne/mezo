@@ -88,4 +88,20 @@ class InterventionFireMinuteTest {
         assertThat(AnchorResolver.interventionFireMinute(generatedAt, D, false, noQuietHours, noQuietHours))
                 .hasValue(23 * 60 + 10);
     }
+
+    /** Non-wrapping window (quietStart < quietEnd, unlike the default 22:00→07:00 that wraps
+     *  midnight) — an operator could set a midday quiet window just as validly; the wraps-detection
+     *  branch in {@code interventionFireMinute} must handle both shapes. */
+    @Test
+    void testInterventionFireMinute_shouldDeferWithinSameDay_whenQuietWindowDoesNotWrapMidnight() {
+        LocalTime quietStart = LocalTime.of(12, 0);
+        LocalTime quietEnd = LocalTime.of(14, 0);
+
+        assertThat(AnchorResolver.interventionFireMinute(
+                on(D, 13, 0), D, false, quietStart, quietEnd))
+                .hasValue(14 * 60);
+        assertThat(AnchorResolver.interventionFireMinute(
+                on(D, 11, 0), D, false, quietStart, quietEnd))
+                .hasValue(11 * 60);
+    }
 }

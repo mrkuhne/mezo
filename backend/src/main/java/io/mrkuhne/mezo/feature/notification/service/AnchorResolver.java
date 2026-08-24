@@ -305,6 +305,9 @@ public class AnchorResolver {
                             quietStart, quietEnd)
                         .ifPresent(minute -> {
                             String idFragment = msg.getId().toString().substring(0, 8);
+                            // Deliberately mirrors InterventionService.EYEBROW as a literal — kept
+                            // literal to avoid a service-layer import into this notification-layer
+                            // resolver for a display string alone.
                             events.add(new AnchoredEvent(NotificationCategory.INTERVENTION, minute,
                                 hhmm(minute) + ":" + idFragment, "Mezo · észrevétel",
                                 excerptProse(String.join(" ", msg.getContent().body())),

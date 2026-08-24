@@ -9,8 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library binds from YAML and covers every
- *  W5.1 flag — a raised flag must never be undeliverable. Config + binding only; nothing consumes
- *  the library yet (Tasks 4-6). */
+ *  W5.1 flag — a raised flag must never be undeliverable. Config + binding only; {@code
+ *  InterventionService} (candidate selection) and {@code AnchorResolver} (push anchoring) are the
+ *  library's consumers, covered by their own IT/unit suites, not here. */
 class InterventionConfigIT extends AbstractIntegrationTest {
 
     @Autowired CompanionProperties companionProperties;

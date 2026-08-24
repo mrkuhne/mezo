@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.support.populator;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
+import io.mrkuhne.mezo.feature.proactive.service.InterventionService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
@@ -52,7 +53,7 @@ public class CompanionMessagePopulator {
         entity.setCreatedBy(owner);
         entity.setMessageDate(date);
         entity.setKind(CompanionMessageEntity.KIND_INTERVENTION);
-        entity.setContent(new CompanionMessageEnvelope("Mezo · észrevétel", List.of(text), List.of(), interventionKey));
+        entity.setContent(new CompanionMessageEnvelope(InterventionService.EYEBROW, List.of(text), List.of(), interventionKey));
         entity.setGeneratedAt(generatedAt);
         return companionMessageRepository.saveAndFlush(entity);
     }

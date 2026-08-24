@@ -12,9 +12,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -75,8 +78,15 @@ public class InterventionService {
             log.info("Intervention for {} skipped for user {}: no eligible library entry", flagKey, userId);
             return Optional.empty();
         }
+        // One DB read per distinct candidate key, up front — the comparator below then only reads
+        // from this map, never the DB, so Stream.max never re-queries per comparison.
+        Map<String, Double> effectivenessByKey = candidates.stream()
+            .map(CompanionProperties.Intervention::key)
+            .distinct()
+            .collect(Collectors.toMap(key -> key, key -> effectiveness(userId, key),
+                (a, b) -> a, LinkedHashMap::new));
         CompanionProperties.Intervention picked = candidates.stream()
-            .max(Comparator.comparingDouble(entry -> effectiveness(userId, entry.key())))
+            .max(Comparator.comparingDouble(entry -> effectivenessByKey.get(entry.key())))
             .orElseThrow();
         CompanionMessageEntity row = new CompanionMessageEntity();
         row.setCreatedBy(userId);

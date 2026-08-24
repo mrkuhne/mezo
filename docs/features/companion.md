@@ -2846,7 +2846,11 @@ currently 6): per-surface effectiveness, per-feed-kind effectiveness (resolved t
 down-reason histogram, and one `intervention:<key>` row per library entry (§4 above). No prompt,
 no UI — this is a rollup-only table. Its readers: W4.3's `ProfileAssembler` (`mezo-b3pp.17`, folds
 all scopes into the weekly profile synthesis) and, since W5.2, `InterventionService`'s selection
-math reads back the `intervention:<key>` rows to pick the best-weighted card (§4 above).
+math reads back the `intervention:<key>` rows to pick the best-weighted card (§4 above). **Known,
+harmless gap:** a key removed from `mezo.companion.interventions` leaves its `intervention:<key>`
+row behind in `feedback_rollup` forever — nothing prunes or zero-fills a retired key's row, because
+nothing reads it either (`InterventionService` only ever looks up keys still present in the live
+config).
 
 ### 5.8 Companion flags → Proactive interventions (✅ W5.2 wired, `mezo-b3pp.19`)
 
@@ -3285,9 +3289,13 @@ consumer side, in `feature.proactive`, and the push-anchor side, in `feature.not
   (`unseenKeyBeatsVotedKey`); a cooled-down key is skipped in favor of the next-best
   (`perKeyCooldownSkipsToNextBest`); every eligible entry in cooldown delivers nothing
   (`allKeysInCooldownDeliversNothing`); a second same-day card is skipped regardless of flag
-  (`secondCardSameDayIsSkipped`); the REAL `@TransactionalEventListener(AFTER_COMMIT)` +
-  `@Async` path delivers end to end (`listenerDeliversAfterCommit`, the `CompanionMessageEventIT`
-  idiom — a rolled-back raise must deliver nothing).
+  (`secondCardSameDayIsSkipped`); two unseen (unvoted, no rollups seeded) candidates are a genuine
+  tie and the FIRST in config order wins (`tieBreakKeepsConfigOrder_whenBothCandidatesAreUnseen`,
+  final-review addition — distinct from `unseenKeyBeatsVotedKey` above, which pins unseen-beats-
+  voted, not the unseen-vs-unseen tie-break itself); the REAL
+  `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` path delivers end to end
+  (`listenerDeliversAfterCommit`, the `CompanionMessageEventIT` idiom — a rolled-back raise must
+  deliver nothing).
 - **`proactive/InterventionConfigIT`** — the library binds and covers every one of the five flags,
   and every key is unique (`libraryBindsCoversEveryFlagAndKeysAreUnique`).
 - **`proactive/InterventionSwitchOffIT`** — `mezo.feature.intervention.enabled=false` ⇒ no
@@ -3301,7 +3309,10 @@ consumer side, in `feature.proactive`, and the push-anchor side, in `feature.not
   NEXT day's quiet-end when generated late evening; defers to the SAME day's quiet-end when
   generated early morning (already inside the window); the quiet-start boundary is INSIDE the
   window, the quiet-end boundary is OUTSIDE it (asymmetric, `[start, end)`); fires immediately when
-  `quietHoursExempt`; never defers when `start == end` (quiet hours off).
+  `quietHoursExempt`; never defers when `start == end` (quiet hours off); a non-wrapping window
+  (final-review addition — `quietStart < quietEnd`, e.g. a midday 12:00–14:00 window, unlike the
+  default's midnight-wrapping 22:00–07:00) defers within the SAME day, proving the wraps-detection
+  branch handles both window shapes.
 - **`notification/AnchorResolverInterventionIT`** — a `both`-channel card anchors on its own
   generation minute in daytime; a `both`-channel card generated in quiet hours defers ACROSS the
   day boundary (seeded via `CompanionMessagePopulator`'s explicit-`generatedAt` overload, the
@@ -3892,7 +3903,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **`InterventionService` runs `@Transactional` and reads `feedback_rollup` for every candidate
   synchronously** — fine at single-user, ≤6-entries-per-flag scale (spec §12), but a library grown
   to dozens of entries per flag would turn this into N rollup reads per raise; not a problem today,
-  worth knowing before the library grows much past its shipped 6.
+  worth knowing before the library grows much past its shipped 6. (Final-review fix, mezo-b3pp.19:
+  the N reads are precomputed into a `Map<key, effectiveness>` BEFORE `Stream.max`, not inside its
+  comparator — `Comparator.comparingDouble`'s key extractor would otherwise re-invoke the DB read
+  on every pairwise comparison, not just once per candidate; the map keeps it to exactly N reads and
+  leaves the config-order tie-break — first max under a strict comparator — untouched.)
 
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group

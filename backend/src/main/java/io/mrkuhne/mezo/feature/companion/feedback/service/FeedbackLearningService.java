@@ -93,6 +93,10 @@ public class FeedbackLearningService {
         // artifact) — deliberate, not double-counted signal: the per-key scope here is the
         // selection signal a `feed:intervention` aggregate would only duplicate, so FEED_KINDS
         // deliberately stays the five prose kinds.
+        // Known/harmless: a key removed from mezo.companion.interventions leaves its
+        // intervention:<key> rollup row behind forever — nothing prunes or zero-fills a retired
+        // key's row, because nothing reads it either (InterventionService only ever looks up keys
+        // still present in the live config).
         Map<UUID, String> interventionKeyById = feedMessageKindSource.interventionKeysByIds(userId,
             window.stream().filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
                 .map(MessageFeedbackEntity::getArtifactId).toList());

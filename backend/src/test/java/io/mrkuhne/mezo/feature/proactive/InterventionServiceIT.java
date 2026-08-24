@@ -99,6 +99,23 @@ class InterventionServiceIT extends AbstractIntegrationTest {
         assertThat(result.get().getContent().interventionKey()).isEqualTo("stress_reset");
     }
 
+    /** No rollups seeded for either candidate ⇒ both {@code stress_reset}/{@code stress_talk} get
+     *  the same {@code OPTIMISTIC_PRIOR} — a genuine tie, not "unseen beats voted" ({@link
+     *  #unseenKeyBeatsVotedKey}). {@code Stream.max}'s FIRST-max-under-a-strict-comparator
+     *  semantics must then fall through to config order (application.yml lists {@code
+     *  stress_reset} before {@code stress_talk}), not, say, insertion order into the effectiveness
+     *  map or any other incidental ordering. */
+    @Test
+    void tieBreakKeepsConfigOrder_whenBothCandidatesAreUnseen() {
+        UUID owner = ownerId();
+
+        Optional<CompanionMessageEntity> result =
+            interventionService.deliverForFlag(owner, FlagKey.SUSTAINED_STRESS);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getContent().interventionKey()).isEqualTo("stress_reset");
+    }
+
     @Test
     void perKeyCooldownSkipsToNextBest() {
         UUID owner = ownerId();

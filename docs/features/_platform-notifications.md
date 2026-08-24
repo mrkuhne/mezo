@@ -473,6 +473,29 @@ LATE nudge that arrives at 07:00 is still worth more than one that never arrives
 this with `decision_review`'s "arrived at its day or didn't, no urgency window" (§3c) and `gym`'s
 lead-minute EARLY nudge; `intervention` is the one category that reschedules LATE.
 
+**Known limitation — a cross-midnight-deferred card's deeplink can outlive the feed date it points
+into.** A card generated between `quietStart` and midnight (e.g. 22:30, inside the default
+22:00→07:00 window) defers its push to next-day `quietEnd` (07:00), but the card's own
+`message_date` stays the GENERATION day, not the day the push actually lands on. `GET
+/api/proactive/feed?date=` ([`proactive.md`](proactive.md) §5) only returns the caller's LOCAL
+`date` — so when the 07:00 push arrives and the user taps `/today?n=<id8>`, `/today` is showing
+TODAY's feed, and the card sits on YESTERDAY's, unreachable from it. The push's own title/body still
+read fine (they carry the text directly), but the „Segített?" feedback chips for that specific card
+are not reachable from `/today` that morning — no card in the visible feed carries a matching `?n=`
+id to scroll to. This is a known, undocumented-until-now gap, not a silent data loss (the card and
+its `interventionKey` are intact in `companion_message`, just not surfaced): mezo-b3pp.36 tracks a
+date-aware deeplink/feed-lookup fix.
+
+**Gotcha — `interventionAnchors` is gated on `NOTIFICATION_SWITCH` alone, not `INTERVENTION_SWITCH`
+(the `decision_review`/`JOURNAL_SWITCH` gap of §3c, re-derived here).** `AnchorResolver` is a single
+bean behind one `@ConditionalOnProperty(NOTIFICATION_SWITCH)`; `CompanionMessageRepository` has no
+switch of its own. With `mezo.feature.intervention.enabled=false` but notifications on, an
+already-existing `intervention`-kind card (delivered before the flip, or by any other still-running
+path) is still read by `interventionAnchors` and still pushes — `InterventionService` stops minting
+NEW cards the moment the switch is off, but `AnchorResolver` does not know the switch exists and
+keeps anchoring whatever rows are already there. Same shape as §3c's gap, same fix if it's ever
+worth closing: an explicit second switch check in `interventionAnchors` itself.
+
 ## 4. Data model & API
 
 ### `push_subscription` (N1 — unchanged)
@@ -495,7 +518,7 @@ Migration: [`202607291400_..._create_notification_pref_and_push_log.sql`](../../
 `uq_notification_pref_created_by_category` (partial, live rows only). **A missing row is never
 "off"** — `NotificationPrefService.effectiveFor` reports the category's code default
 (`NotificationCategory.defaultEnabled()`/`defaultLeadMinutes()`) for every one of the 22 keys, always
-— so a fresh install needs no seed data and a future 22nd category ships with its intended default
+— so a fresh install needs no seed data and a future 23rd category ships with its intended default
 instead of silently arriving OFF (`feature/notification/service/NotificationPrefService.java:32-44`,
 javadoc: "All 22 categories" — `decision_review` was the 21st to land (mezo-b3pp.4) and
   `intervention` the 22nd (mezo-b3pp.19)).
