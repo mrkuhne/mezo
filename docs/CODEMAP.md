@@ -888,7 +888,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-16, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-08-15, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-08-18, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-08-24, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -977,19 +977,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     sessionLength.ts, sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, structureLint.ts,
     summaryStats.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyLoad.ts, workoutCardMeta.ts, workoutState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 50 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 55 IT + 4 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
-    `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`,
-    `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `GymScheduleContractIT`, `GymSignalCalculatorIT`,
-    `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`, `MesocycleCloseReportIT`,
+    `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
+    `ExerciseCatalogLoaderIT`, `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseVolumeFlagIT`,
+    `GymScheduleContractIT`, `GymSignalCalculatorIT`, `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoReviewSwitchOffIT`,
+    `MesoTemplateIT`, `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesocycleCloseReportIT`,
     `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`,
     `RunningContractIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`,
     `SportSignalCalculatorIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `VolumeArcContractIT`,
-    `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`,
-    `VolumeProgressionServiceIT`, `VolumePropertiesIT`, `WarmupExclusionIT`, `WeeklyScheduledActivityServiceIT`,
-    `WorkoutAutoCloseIT`, `WorkoutContractIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
-    `WorkoutFinishLevelUpApiIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`,
-    `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWindowQueryServiceIT`
+    `VolumeArcVolumeFlagIT`, `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`,
+    `VolumeEffectiveSetsSwitchOffIT`, `VolumeProgressionServiceIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+    `WeeklyScheduledActivityServiceIT`, `WorkoutAutoCloseIT`, `WorkoutContractIT`, `WorkoutDetailContractIT`,
+    `WorkoutDoneSemanticsIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`,
+    `WorkoutSetMutationIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWindowQueryServiceIT`
   - **populators:** `DatabasePopulator`, `MesoTemplatePopulator`, `RunningPopulator`, `SleepLogPopulator`,
     `TrainPopulator`, `UserPopulator`
 

@@ -92,7 +92,7 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                     <span style={{ fontWeight: 700, fontSize: 13.5 }}>{row.label}</span>
                     <span className="label-mono" style={{ fontSize: 10.5 }}>
                       {p}% · {setStyleSummary(row.failureSets, row.volumeSets)}
-                      {row.plyoSets > 0 && <span style={{ color: 'var(--text-tertiary)' }}> +{row.plyoSets} plyo</span>}
+                      {row.exemptSets > 0 && <span style={{ color: 'var(--text-tertiary)' }}> +{row.exemptSets} kiegészítő</span>}
                     </span>
                   </div>
                   <ZoneTrack

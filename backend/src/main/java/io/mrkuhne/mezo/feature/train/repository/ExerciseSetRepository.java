@@ -94,6 +94,7 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
           AND s.kind = 'working'
           AND s.skipped = false
           AND s.reps IS NOT NULL
+          AND e.countsTowardVolume = true
         GROUP BY e.muscle, w.date
         """)
     List<MuscleWeekSetCount> aggregateWorkingSetsByMuscleAndDate(

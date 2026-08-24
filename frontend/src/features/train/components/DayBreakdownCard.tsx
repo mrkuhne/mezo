@@ -37,7 +37,7 @@ export function DayBreakdownCard({ rows, warnings }: DayBreakdownCardProps) {
       <div className="col" style={{ gap: 4, marginTop: 10 }}>
         {rows.map((row) => {
           const fam = muscleColor(row.colorMuscle)
-          const plyoOnly = row.sets === 0 && row.plyoSets > 0
+          const plyoOnly = row.sets === 0 && row.exemptSets > 0
           const fillWidth = Math.min(100, (row.sets / (SESSION_MUSCLE_CAP + 1)) * 100)
           const fillBackground = row.over ? `linear-gradient(90deg, ${fam.rail}, var(--error))` : fam.rail
           return (
@@ -51,7 +51,7 @@ export function DayBreakdownCard({ rows, warnings }: DayBreakdownCardProps) {
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 700, fontSize: 12.5 }}>{row.label}</span>
                   {plyoOnly ? (
-                    <span className="label-mono" style={{ fontSize: 10 }}>{row.plyoSets} plyo</span>
+                    <span className="label-mono" style={{ fontSize: 10 }}>{row.exemptSets} kiegészítő</span>
                   ) : (
                     <span
                       className="label-mono"

@@ -945,6 +945,7 @@ export interface GymExercise {
   type: ExerciseKind
   warning?: string
   catalogId?: string  // exercise_catalog row when picked from the API catalog (real mode)
+  countsTowardVolume?: boolean  // false = posture/plyo work, outside the hypertrophy budget (mezo-gbo7)
 }
 export interface MesoDay {
   id?: string            // template-day row id (real mode only; mock fixtures carry none)

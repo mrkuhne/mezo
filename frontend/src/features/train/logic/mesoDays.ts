@@ -33,6 +33,7 @@ export function toDayInputs(days: MesoDay[]): MesoDayInput[] {
       warmupSets: e.warmupSets, workingSets: e.workingSets,
       repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
       anchorWeightKg: e.anchorWeightKg, type: e.type, warning: e.warning, catalogId: e.catalogId,
+      countsTowardVolume: e.countsTowardVolume,
     })),
   }))
 }

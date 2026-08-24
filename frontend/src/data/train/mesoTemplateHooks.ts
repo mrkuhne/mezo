@@ -137,6 +137,7 @@ function toMockDays(days: MesoDayInput[]): MesoDay[] {
         type: e.type,
         warning: e.warning,
         catalogId: e.catalogId,
+        countsTowardVolume: e.countsTowardVolume,
       }),
     ),
   }))

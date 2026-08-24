@@ -3365,6 +3365,8 @@ export interface components {
             warning?: string;
             /** Format: uuid */
             catalogId?: string;
+            /** @description Whether this exercise's sets count as hypertrophy volume; false for the fix-zárás closing block and plyometrics (mezo-gbo7). Absent = true. */
+            countsTowardVolume?: boolean;
             /** @description Effective YouTube demo URL resolved from the linked catalog row (null when none) */
             videoUrl?: string | null;
             /** @description Demo still (start position) resolved from the linked catalog row (null when none) */
@@ -3524,6 +3526,8 @@ export interface components {
             warning?: string;
             /** Format: uuid */
             catalogId?: string;
+            /** @description Whether this exercise's sets count as hypertrophy volume; false for the fix-zárás closing block and plyometrics (mezo-gbo7). Absent = true. */
+            countsTowardVolume?: boolean;
         };
         CustomWorkoutResponse: {
             /** Format: uuid */

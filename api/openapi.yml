@@ -7823,6 +7823,12 @@ components:
         catalogId:
           type: string
           format: uuid
+        countsTowardVolume:
+          type: boolean
+          description: >-
+            Whether this exercise's sets count as hypertrophy volume; false for
+            the fix-zárás closing block and plyometrics (mezo-gbo7). Absent =
+            true.
         videoUrl:
           type: string
           nullable: true
@@ -8258,6 +8264,12 @@ components:
         catalogId:
           type: string
           format: uuid
+        countsTowardVolume:
+          type: boolean
+          description: >-
+            Whether this exercise's sets count as hypertrophy volume; false for
+            the fix-zárás closing block and plyometrics (mezo-gbo7). Absent =
+            true.
     CustomWorkoutResponse:
       type: object
       required:

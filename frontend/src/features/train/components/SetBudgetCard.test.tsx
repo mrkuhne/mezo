@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { MuscleBudgetRow, SessionCapWarning } from '@/features/train/logic/setBudget'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 
-const over: MuscleBudgetRow = { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', failureSets: 8, volumeSets: 8, workingSets: 16, plyoSets: 0, budget: 8 / 12 + 8 / 20, level: 'over', mev: 4, zoneStart: (8 / 12 + 8 / 20) * 4 / 16, setsToZone: 0, suggestedDay: null }
-const ok: MuscleBudgetRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', failureSets: 0, volumeSets: 8, workingSets: 8, plyoSets: 0, budget: 0.4, level: 'ok', mev: 4, zoneStart: 0.2, setsToZone: 0, suggestedDay: null }
+const over: MuscleBudgetRow = { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', failureSets: 8, volumeSets: 8, workingSets: 16, exemptSets: 0, budget: 8 / 12 + 8 / 20, level: 'over', mev: 4, zoneStart: (8 / 12 + 8 / 20) * 4 / 16, setsToZone: 0, suggestedDay: null }
+const ok: MuscleBudgetRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', failureSets: 0, volumeSets: 8, workingSets: 8, exemptSets: 0, budget: 0.4, level: 'ok', mev: 4, zoneStart: 0.2, setsToZone: 0, suggestedDay: null }
 const cap: SessionCapWarning = { day: 'H', group: 'shoulder', label: 'Váll', sets: 13 }
 
 describe('SetBudgetCard', () => {
@@ -24,10 +24,10 @@ describe('SetBudgetCard', () => {
     fireEvent.click(screen.getByRole('button', { name: /szet-büdzsé/i }))
     expect(screen.getByText(/0🔥\+8🌿|8🌿/)).toBeInTheDocument()
   })
-  it('expanded: a row with plyoSets shows the "+n plyo" suffix', () => {
-    const withPlyo: MuscleBudgetRow = { ...ok, plyoSets: 10 }
-    render(<SetBudgetCard budgets={[withPlyo]} capWarnings={[]} defaultOpen />)
-    expect(screen.getByText(/\+10 plyo/)).toBeInTheDocument()
+  it('expanded: a row with exemptSets shows the "+n kiegészítő" suffix', () => {
+    const withExempt: MuscleBudgetRow = { ...ok, exemptSets: 10 }
+    render(<SetBudgetCard budgets={[withExempt]} capWarnings={[]} defaultOpen />)
+    expect(screen.getByText(/\+10 kiegészítő/)).toBeInTheDocument()
   })
   it('expanded: shows the direct-only counting footnote (ADR 0021)', () => {
     render(<SetBudgetCard budgets={[ok]} capWarnings={[]} defaultOpen />)
@@ -39,7 +39,7 @@ describe('SetBudgetCard', () => {
   })
 })
 
-const under: MuscleBudgetRow = { group: 'ham', label: 'Hamstring', colorMuscle: 'ham', failureSets: 0, volumeSets: 1, workingSets: 1, plyoSets: 0, budget: 0.05, level: 'under', mev: 2, zoneStart: 0.1, setsToZone: 1, suggestedDay: 'Csü' }
+const under: MuscleBudgetRow = { group: 'ham', label: 'Hamstring', colorMuscle: 'ham', failureSets: 0, volumeSets: 1, workingSets: 1, exemptSets: 0, budget: 0.05, level: 'under', mev: 2, zoneStart: 0.1, setsToZone: 1, suggestedDay: 'Csü' }
 
 describe('optimal zone (mezo-oyhy.1)', () => {
   it('collapsed: under pill carries the ↓ prefix', () => {

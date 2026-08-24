@@ -10,6 +10,7 @@ const ex = (muscle: string, workingSets: number, targetRIR: number) => ({
   warmupSets: 1, workingSets, repMin: 8, repMax: 10, targetRIR, type: 'compound' as const,
 })
 const plyoEx = (muscle: string, workingSets: number) => ({ ...ex(muscle, workingSets, 0), type: 'plyo' as const })
+const exemptEx = (muscle: string, workingSets: number) => ({ ...ex(muscle, workingSets, 0), countsTowardVolume: false })
 const day = (dayKey: string, muscle: string, exercises: GymExercise[]): MesoDay =>
   ({ day: dayKey, type: 'Push', muscle, exerciseCount: exercises.length, exercises })
 
@@ -80,10 +81,10 @@ describe('sessionCapWarnings', () => {
 })
 
 describe('plyo exclusion (mezo-0znc)', () => {
-  it('plyo sets leave budget math but are reported as plyoSets', () => {
+  it('plyo sets leave budget math but are reported as exemptSets', () => {
     const days = [day('H', 'quad', [ex('quad', 9, 0), plyoEx('quad', 10)])]
     const rows = muscleBudgets(days)
-    expect(rows[0]).toMatchObject({ group: 'quad', workingSets: 9, plyoSets: 10 })
+    expect(rows[0]).toMatchObject({ group: 'quad', workingSets: 9, exemptSets: 10 })
     expect(rows[0].budget).toBeCloseTo(9 / 12)
     expect(rows[0].level).toBe('ok')
   })
@@ -95,14 +96,40 @@ describe('plyo exclusion (mezo-0znc)', () => {
     const days = [day('H', 'quad', [plyoEx('quad', 6)])]
     expect(muscleBudgets(days)).toHaveLength(0)
   })
+
+  it('an exempt exercise is reported separately and never enters the budget', () => {
+    const days = [{
+      day: 'Hét', type: 'Pull', muscle: 'back', exerciseCount: 2,
+      exercises: [
+        { id: 'a', name: 'Pull-Up', muscle: 'back-wide', warmupSets: 2, workingSets: 3,
+          repMin: 6, repMax: 8, targetRIR: 0, type: 'compound' as const },
+        { id: 'b', name: '45° Back Extension', muscle: 'back-lower', warmupSets: 0, workingSets: 2,
+          repMin: 12, repMax: 15, targetRIR: 2, type: 'isolation' as const, countsTowardVolume: false },
+      ],
+    }]
+    const back = muscleBudgets(days)[0]
+    expect(back.workingSets).toBe(3)
+    expect(back.exemptSets).toBe(2)
+  })
+
+  it('a plyo exercise with no explicit flag still stays out of the budget', () => {
+    const days = [{
+      day: 'Kedd', type: 'Legs', muscle: 'quad', exerciseCount: 1,
+      exercises: [
+        { id: 'c', name: 'Box Jump', muscle: 'quad', warmupSets: 0, workingSets: 2,
+          repMin: 6, repMax: 10, targetRIR: 0, type: 'plyo' as const },
+      ],
+    }]
+    expect(muscleBudgets(days)).toHaveLength(0)
+  })
 })
 
 describe('daySessionBreakdown', () => {
-  it('aggregates the day per group with over flag and plyo split', () => {
+  it('aggregates the day per group with over flag and exempt split', () => {
     const d = day('H', 'shoulder', [ex('shoulder-side', 6, 0), ex('shoulder-front', 6, 0), plyoEx('quad', 4)])
     const rows = daySessionBreakdown(d)
     expect(rows[0]).toMatchObject({ group: 'shoulder', sets: 12, over: true })
-    expect(rows[1]).toMatchObject({ group: 'quad', sets: 0, plyoSets: 4, over: false })
+    expect(rows[1]).toMatchObject({ group: 'quad', sets: 0, exemptSets: 4, over: false })
   })
 })
 
@@ -115,6 +142,18 @@ describe('leastLoadedDayFor', () => {
     ]
     expect(leastLoadedDayFor(days, 'shoulder', 'H')).toBe('Sze')
     expect(leastLoadedDayFor([days[0], days[2]], 'shoulder', 'H')).toBeNull()
+  })
+
+  it('treats a day dominated by exempt (countsTowardVolume: false) work as lightly loaded (mezo-gbo7)', () => {
+    // 'Sze' carries 10 exempt sets on top of 2 real ones — under the old plyo-only guard those
+    // 10 sets are ordinary 'compound' type, so they'd count as load and make 'Sze' look heavier
+    // than 'Cs' (5 real sets). If the guard reverts to `ex.type === 'plyo'`, this flips to 'Cs'.
+    const days = [
+      day('H', 'shoulder', [ex('shoulder-side', 20, 0)]),
+      day('Sze', 'shoulder', [ex('shoulder-front', 2, 0), exemptEx('shoulder-front', 10)]),
+      day('Cs', 'shoulder', [ex('shoulder-front', 5, 0)]),
+    ]
+    expect(leastLoadedDayFor(days, 'shoulder', 'H')).toBe('Sze')
   })
 })
 
