@@ -38,4 +38,31 @@ class CompanionToolRegistryIT extends AbstractIntegrationTest {
         assertThat(ctx).containsEntry(ToolContexts.USER_ID, owner)
                 .containsEntry(ToolContexts.AUDIT, audit);
     }
+
+    @Test
+    void testGetRecoverySchema_shouldExposeDateFromTo_andMaxThreeGuidance_whenV06DetailParams() {
+        List<ToolCallback> callbacks = registry.callbacks(registry.newTurnAudit());
+        String schema = callbacks.stream()
+                .filter(cb -> cb.getToolDefinition().name().equals("get_recovery"))
+                .findFirst().orElseThrow()
+                .getToolDefinition().inputSchema();
+
+        assertThat(schema).contains("\"date\"").contains("\"from\"").contains("\"to\"");
+        assertThat(schema).contains("array");
+        assertThat(schema).contains("YYYY-MM-DD");
+    }
+
+    @Test
+    void testGetRecoveryDescription_shouldCarryDetailFieldsAndTriggerClause_whenV06DetailParams() {
+        List<ToolCallback> callbacks = registry.callbacks(registry.newTurnAudit());
+        String description = callbacks.stream()
+                .filter(cb -> cb.getToolDefinition().name().equals("get_recovery"))
+                .findFirst().orElseThrow()
+                .getToolDefinition().description();
+
+        assertThat(description)
+                .contains("részletes")
+                .contains("konkrét nap")
+                .contains("hypnogram");
+    }
 }

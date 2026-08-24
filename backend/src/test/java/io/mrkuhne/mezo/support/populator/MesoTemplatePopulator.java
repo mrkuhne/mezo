@@ -52,6 +52,6 @@ public class MesoTemplatePopulator {
     /** A stored recipe with a server-synthesized id — what create/update mints for every exercise. */
     private static GymExerciseJson exercise(String name, String muscle, int warmupSets) {
         return new GymExerciseJson(UUID.randomUUID(), name, muscle, warmupSets, 3, 8, 12, 2, null,
-            "compound", null, null);
+            "compound", null, null, null);
     }
 }

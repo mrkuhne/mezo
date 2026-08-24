@@ -8,6 +8,7 @@
 // ============================================================
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
+import { countsForVolume } from '@/features/train/logic/setBudget'
 import { Icon } from '@/shared/ui/Icon'
 
 // One exercise line: header (name + muscle) + remove ✕, with the six recipe
@@ -59,6 +60,16 @@ export function ExerciseRecipeRow({ ex, onRemove, onChange }: {
         <AnchorStepper aria={`${ex.name} · Kiinduló súly`} value={ex.anchorWeightKg}
           onChange={(v) => onChange({ anchorWeightKg: v })} />
       </div>
+
+      <label className="row gap-xs mt-xs" style={{ alignItems: 'center', fontSize: 11, color: 'var(--text-secondary)' }}>
+        <input
+          type="checkbox"
+          aria-label={`${ex.name} · számít a volumenbe`}
+          checked={countsForVolume(ex)}
+          onChange={(e) => onChange({ countsTowardVolume: e.target.checked })}
+        />
+        Számít a volumenbe
+      </label>
     </div>
   )
 }

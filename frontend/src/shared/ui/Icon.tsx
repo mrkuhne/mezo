@@ -37,6 +37,8 @@ export type IconName =
   | 'voice-wave'
   | 'pencil'
   | 'trash'
+  | 'chat'
+  | 'play'
 
 export function Icon({
   name,
@@ -315,6 +317,19 @@ export function Icon({
           <path d="M6.5 7 L7.5 20 L16.5 20 L17.5 7" />
           <line x1="10" y1="10.5" x2="10" y2="16.5" />
           <line x1="14" y1="10.5" x2="14" y2="16.5" />
+        </svg>
+      )
+    case 'chat':
+      // Speech bubble with a bottom-left tail
+      return (
+        <svg {...props}>
+          <path d="M21 11.5 C21 15.6 17 19 12 19 C10.7 19 9.4 18.8 8.3 18.3 L3.5 20 L5.2 16.1 C3.8 14.8 3 13.2 3 11.5 C3 7.4 7 4 12 4 C17 4 21 7.4 21 11.5 Z" />
+        </svg>
+      )
+    case 'play':
+      return (
+        <svg {...props}>
+          <path d="M7.5 4.5 L19 12 L7.5 19.5 Z" fill={color} />
         </svg>
       )
     default:

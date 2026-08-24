@@ -7,11 +7,13 @@ import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
+import io.mrkuhne.mezo.feature.train.service.VolumeProgressionService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -35,9 +37,16 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
     @Autowired MesoTemplateService mesoTemplateService;
     @Autowired TrainService trainService;
     @Autowired WorkoutService workoutService;
+    @Autowired VolumeProgressionService volumeProgressionService;
     @Autowired TrainPopulator train;
     @Autowired MuscleGroupVolumeLogRepository volumeRepo;
     @Autowired DatabasePopulator databasePopulator;
+    @Autowired io.mrkuhne.mezo.feature.auth.OwnerProperties ownerProperties;
+
+    /** Find-or-create yields the demodata-seeded owner's id — the single-user principal. */
+    private UUID ownerId() {
+        return databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
 
     @Test
     void testStartTemplate_shouldSeedBaselinesForTrainedGroupsOnly_whenStartedAsActive() {
@@ -165,6 +174,41 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
                     .build(),
                 MesoDayInput.builder().day("Kedd").type("Rest").build()))
             .build();
+    }
+
+    @Test
+    void testSeedBaselines_shouldSkipGroup_whenAllItsExercisesAreExemptFromVolume() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Hét");
+        ExerciseEntity hang = train.createExercise(owner, day.getId(), "Dead Hang", "back-wide", "plyo");
+        hang.setCountsTowardVolume(false);
+        train.save(hang);
+        train.createExercise(owner, day.getId(), "Fekvenyomás", "chest-mid", "compound");
+
+        volumeProgressionService.seedBaselines(owner, meso.getId());
+
+        assertThat(rows(owner, meso.getId()))
+            .extracting(MuscleGroupVolumeLogEntity::getMuscle)
+            .containsExactly("chest");
+    }
+
+    @Test
+    void testSeedBaselines_shouldSeedGroup_whenItHasBothACountingAndAnExemptExercise() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Hét");
+        ExerciseEntity hang = train.createExercise(owner, day.getId(), "Dead Hang", "back-wide", "plyo");
+        hang.setCountsTowardVolume(false);
+        train.save(hang);
+        train.createExercise(owner, day.getId(), "Pull-Up", "back-wide", "compound");
+        train.createExercise(owner, day.getId(), "Fekvenyomás", "chest-mid", "compound");
+
+        volumeProgressionService.seedBaselines(owner, meso.getId());
+
+        assertThat(rows(owner, meso.getId()))
+            .extracting(MuscleGroupVolumeLogEntity::getMuscle)
+            .containsExactlyInAnyOrder("back", "chest");
     }
 
     private List<MuscleGroupVolumeLogEntity> rows(UUID user, UUID mesoId) {

@@ -86,6 +86,7 @@ public class VolumeProgressionService {
         }
         SortedSet<String> trained = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateIds).stream()
+            .filter(ExerciseEntity::isCountsTowardVolume) // mezo-gbo7: no target without volume work
             .map(e -> MuscleGroup.of(e.getMuscle()))
             .collect(Collectors.toCollection(TreeSet::new));
         Set<String> existing = volumeLogRepository
@@ -196,8 +197,8 @@ public class VolumeProgressionService {
                     continue;
                 }
                 ExerciseEntity exercise = exercisesById.get(s.getExerciseId());
-                if (exercise == null) {
-                    continue;
+                if (exercise == null || !exercise.isCountsTowardVolume()) {
+                    continue; // mezo-gbo7: posture/plyo sets are not hypertrophy volume
                 }
                 loggedLastWeek.merge(MuscleGroup.of(exercise.getMuscle()), 1, Integer::sum);
                 if (s.getRir() != null) {

@@ -892,3 +892,47 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mesoMutationPending: activateMutation.isPending || closeMutation.isPending,
   }
 }
+
+/**
+ * Lightweight any-route read of today's open (resumable) gym workout — the
+ * FloatingReturnLayer's data source (mezo-78sd). Shares `useTrain`'s param-less
+ * `['train','workoutToday', null]` key, so on Train/Today routes it dedupes
+ * against the already-warm cache and adds zero network; elsewhere it costs one
+ * GET instead of `useTrain`'s full 8-query fan-out. Set-logging/finish already
+ * invalidate the `['train','workoutToday']` prefix, so the badge stays live.
+ * Mock mode has no persisted instances (Phase-1 parity): the cache-first
+ * queryFn preserves test-seeded values instead of clobbering them back to null.
+ */
+export function useOpenWorkout(): {
+  openWorkout: WorkoutInstanceResponse | null
+  title: string | null
+  doneSets: number
+} {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  // Two literal option objects, NOT one with `x: mock ? y : undefined` fields — an
+  // explicitly-undefined key still overrides the client's defaultOptions on merge,
+  // which would silently drop a caller-configured staleTime in real mode.
+  const { data } = useQuery(
+    mock
+      ? {
+          queryKey: ['train', 'workoutToday', null],
+          queryFn: async () =>
+            qc.getQueryData<WorkoutTodayResponse | null>(['train', 'workoutToday', null]) ?? null,
+          initialData: null as WorkoutTodayResponse | null,
+          staleTime: Infinity,
+        }
+      : {
+          queryKey: ['train', 'workoutToday', null],
+          queryFn: (): Promise<WorkoutTodayResponse | null> => trainApi.workoutToday(),
+        },
+  )
+  // A completed today-instance means the open one is stale chrome, not a resumable
+  // session — the same gate TrainTodayPage/useToday apply.
+  const open = data && !data.completedWorkout ? data.openWorkout ?? null : null
+  return {
+    openWorkout: open,
+    title: open ? data?.title ?? null : null,
+    doneSets: open ? open.sets.filter((s) => !s.skipped).length : 0,
+  }
+}

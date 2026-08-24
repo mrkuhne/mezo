@@ -784,6 +784,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql
   - changeSet:
+      id: "1.0.0:202608241200_mezo-gbo7_exercise_counts_toward_volume"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608241200_mezo-gbo7_exercise_counts_toward_volume.sql
+  - changeSet:
       id: "1.0.0:202608241500_mezo-b3pp.19_companion_message_intervention_kind"
       author: daniel.kuhne
       changes:
