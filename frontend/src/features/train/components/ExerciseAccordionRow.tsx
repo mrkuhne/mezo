@@ -11,7 +11,7 @@
 import { useState } from 'react'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
-import { setStyle } from '@/features/train/logic/setBudget'
+import { countsForVolume, setStyle } from '@/features/train/logic/setBudget'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { Icon } from '@/shared/ui/Icon'
 
@@ -165,6 +165,16 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
               )}
             </div>
           </div>
+
+          <label className="row gap-xs" style={{ alignItems: 'center', fontSize: 11, color: 'var(--text-secondary)' }}>
+            <input
+              type="checkbox"
+              aria-label={`${ex.name} · számít a volumenbe`}
+              checked={countsForVolume(ex)}
+              onChange={(e) => onChange({ countsTowardVolume: e.target.checked })}
+            />
+            Számít a volumenbe
+          </label>
 
           <div>
             <button
