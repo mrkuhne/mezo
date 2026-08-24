@@ -96,9 +96,9 @@ New/extended ITs under `feature/companion/tools` (alongside `CompanionToolsRende
 7. `date`/range on `scope=checkins` / `scope=sleep-goal` → params ignored, existing output.
 8. default call (no new params) → byte-identical compact output (regression).
 
-Test data via a `SleepLogPopulator` (new aggregate → new populator per the IT framework
-conventions) if one does not already exist; `ResetDatabase` TRUNCATE list gains `sleep_log`
-if not already present (verify against mezo-dbsr's ITs).
+Test data via the existing `SleepLogPopulator` (`support/populator/SleepLogPopulator.java`,
+added with mezo-dbsr) — `sleep_log` is already in `ResetDatabase`'s TRUNCATE list, so no
+IT-framework changes are needed.
 
 ## 7. Docs (same change)
 
