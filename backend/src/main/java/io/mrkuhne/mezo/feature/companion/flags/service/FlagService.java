@@ -12,6 +12,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ public class FlagService {
     private final FlagEvaluator evaluator;
     private final CompanionFlagLogRepository repository;
     private final FlagProperties properties;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Evaluates {@code userId} and logs every flag past its cooldown; returns the keys written. */
     @Transactional
@@ -48,6 +50,7 @@ public class FlagService {
             row.setPayload(raise.payload());
             repository.save(row);
             written.add(raise.flagKey());
+            eventPublisher.publishEvent(new FlagRaisedEvent(userId, raise.flagKey(), source));
         }
         if (!written.isEmpty()) {
             log.info("Flags raised for user {} ({}): {}", userId, source, written);
