@@ -12,7 +12,8 @@ compact 7-day view; the params are silently ignored on `scope=sleep-goal`/`check
 
 **Architecture:** A new derived finder
 `SleepLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc` (one read over
-the clamped window) + an in-memory filter to the requested days (≤7 rows, no N+1).
+the clamped window) + an in-memory filter to the requested days (bounded by the window cap, no
+N+1).
 `BiometricsTools.getRecovery` routes to a new `renderSleepDetail` when any of
 `date`/`from`/`to` is present on scope=sleep; the compact path is untouched. Detail rows are
 fully null-guarded (absent fields omitted, never fabricated — manual rows stay sparse). The
@@ -82,6 +83,8 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
 - `docs/features/companion.md` — §4 tool-catalog row, §5.5 tools-seam paragraph, §9 note.
 - `docs/superpowers/specs/2026-08-24-sleep-log-detail-tool-design.md` — the `feheres`→`könnyű`
   typo fix.
+- `docs/superpowers/plans/2026-08-24-sleep-log-detail-tool.md` — this plan (already committed
+  with the spec on this branch; the remaining doc updates land in Task 5).
 
 ## Spec §6 test-case → task map
 
@@ -91,8 +94,8 @@ every field). Integration tests on Postgres (`AbstractIntegrationTest`).
 | 2. 2–3 `date`s → each rendered, newest first | `testRenderDetailMultipleDates_shouldRenderEachNewestFirst_whenTwoOrThreeDates` | 2 |
 | 3. `from` only / `from`+`to` → every logged day in range | `testRenderDetailFromOnly_shouldUseTodayAsTo_whenToOmitted` · `testRenderDetailFromTo_shouldRenderEveryLoggedDayInRange_whenRangeGiven` | 2 |
 | 4. range wider than window cap → clamped, header shows trimmed count | `testRenderDetailWideRange_shouldClampToWindow_andShowTrimmedCount_inHeader` | 2 |
-| 5. requested day without row → `nincs rögzített alvás` | `testRenderDetailMissingDay_shouldRenderNincsRozsigottAlvas_whenNoRowOnDay` | 2 |
-| 6. screenshot row → tracker fields + hypnogram; manual sparse → only populated | `testRenderDetailScreenshotRow_shouldRenderTrackerFieldsAndHypnogram_whenEnriched` · `testRenderDetailManualRow_shouldOmitAbsentFields_whenSparse` | 2 |
+| 5. requested day without row → `nincs rögzített alvás` | `testRenderDetailMissingDay_shouldRenderExplicitNothingLine_whenNoRowOnDay` | 2 |
+| 6. screenshot row → tracker fields + hypnogram; manual sparse → only populated | §6.6a is covered by the §6.1 full-line assert (`testRenderDetailOneDate_…`) · `testRenderDetailManualRow_shouldOmitAbsentFields_whenSparse` | 2 |
 | 7. date/range on checkins / sleep-goal → ignored, existing output | `testRenderDetailParams_shouldBeIgnored_whenScopeCheckins` · `testRenderDetailParams_shouldBeIgnored_whenScopeSleepGoal` | 3 |
 | 8. default call → byte-identical compact (regression) | existing `CompanionToolsRenderIT` tests, **unmodified** + new `testRenderDetailAbsentParams_shouldKeepCompactOutput_whenNoDateParams` | 3 |
 | — Spring AI JSON→`List<LocalDate>` conversion | `ChatServiceIT` fake-tool turn test | 4 |
@@ -263,7 +266,7 @@ One line per requested day, newest first. Fields in fixed order; **a field rende
 non-null** (notes: only when non-blank) — absent fields are omitted, never rendered as zero:
 
 ```
-<date>: lefkévés 23:15, ébredés 06:45; 7,5h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; minőség 4/5; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDL…; megjegyzés: …
+<date>: lefkévés 23:15, ébredés 06:45; 7h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; minőség 4/5; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDL…; megjegyzés: …
 ```
 
 - Clock parts: `lefekvés <bedtime>` / `ébredés <wakeup>` — stored `HH:MM` strings, rendered as-is
@@ -457,10 +460,11 @@ In `BiometricsTools.java`:
                     + "pl. [\"2026-08-23\"])")
             List<LocalDate> date,
             @ToolParam(required = false, description = "Részletes nézet kezdő napja (YYYY-MM-DD), "
-                    + "tárgyilagos határ — csak scope=sleep. without 'to': a mai napig.")
+                    + "tárgyilagos határ; elhagyva 'to': a mai napig — csak scope=sleep, más "
+                    + "scope-on nincs hatása.")
             LocalDate from,
             @ToolParam(required = false, description = "Részletes nézet záró napja (YYYY-MM-DD), "
-                    + "tárgyilagos; elhagyva: mai nap — csak scope=sleep.")
+                    + "tárgyilagos; elhagyva: mai nap — csak scope=sleep, más scope-on nincs hatása.")
             LocalDate to,
 ```
 
