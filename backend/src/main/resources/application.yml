@@ -553,8 +553,9 @@ mezo:
         window-days: 4
         min-days: 3
       sleep-debt:
-        # Cumulative deficit vs the sleep goal over the last 3 nights (today excluded — tonight is
-        # logged tomorrow morning).
+        # Cumulative deficit vs the sleep goal over the last 3 nights. sleep_log.date is the
+        # WAKE-UP MORNING, not the evening the night began, so the row dated today IS last night
+        # and the window ends TODAY (an unlogged today is just skipped, never counted debt-free).
         nights: 3
         # Honest small-n gate: with fewer logged nights than this the deficit is unknown, not zero.
         min-nights: 2

@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,10 +30,9 @@ public class FlagSweepJob {
     public void run() {
         for (AppUserEntity user : appUserRepository.findAll()) {
             try {
-                List<String> raised = flagService.evaluateAndLog(user.getId(), FlagKey.SOURCE_SWEEP);
-                if (!raised.isEmpty()) {
-                    log.info("Flag sweep for user {}: raised {}", user.getId(), raised);
-                }
+                // FlagService.evaluateAndLog already logs the raised keys for both triggers — no
+                // need to log again here.
+                flagService.evaluateAndLog(user.getId(), FlagKey.SOURCE_SWEEP);
             } catch (Exception e) {
                 log.warn("Flag sweep failed for user {}", user.getId(), e);
             }

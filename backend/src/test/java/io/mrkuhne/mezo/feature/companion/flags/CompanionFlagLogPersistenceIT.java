@@ -10,8 +10,11 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,9 +47,23 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
         assertThat(reloaded.getCreatedAt()).isNotNull();
     }
 
-    /** The entity's {@code @Pattern} short-circuits every JPA write, so the DB CHECK itself is only
-     *  reachable by going around bean validation with a native insert (the
+    /** The entity's {@code @Pattern} fires first, in-JVM, on any normal JPA write (the
      *  {@code FeedbackRollupPersistenceIT} precedent). */
+    @Test
+    void rejects_an_unknown_flag_key_at_bean_validation() {
+        assertThatThrownBy(() -> flagLogPopulator.raise(ownerId(), "vibes_off", FlagKey.SOURCE_SWEEP, null))
+            .isInstanceOf(ConstraintViolationException.class);
+    }
+
+    @Test
+    void rejects_an_unknown_source_at_bean_validation() {
+        assertThatThrownBy(() -> flagLogPopulator.raise(ownerId(), FlagKey.ALL_HEALTHY, "guess", null))
+            .isInstanceOf(ConstraintViolationException.class);
+    }
+
+    /** The DB CHECK itself is only reachable by going around bean validation with a native insert
+     *  — this is the case that proves the constraint really is in the schema and not just in the
+     *  entity. */
     @Test
     void rejects_an_unknown_flag_key_at_the_db_check() {
         assertThatThrownBy(() -> flagLogPopulator.rawInsert(ownerId(), "vibes_off", FlagKey.SOURCE_SWEEP))
@@ -57,6 +74,34 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
     void rejects_an_unknown_source_at_the_db_check() {
         assertThatThrownBy(() -> flagLogPopulator.rawInsert(ownerId(), FlagKey.ALL_HEALTHY, "guess"))
             .hasStackTraceContaining("ck_companion_flag_log_source");
+    }
+
+    /** Only {@code sustainedStress} was ever round-tripped above; this covers the other four
+     *  shapes end to end, including {@code MomentumAtRisk}'s {@code List<String>} and
+     *  {@code RecoveryNeeded}'s nullable boxed {@code Double}s (both left null here, as the
+     *  envelope's type allows even though {@code FlagEvaluator} never raises that shape). */
+    @Test
+    void round_trips_every_payload_shape_through_jsonb() {
+        UUID owner = ownerId();
+        Map<String, FlagPayloadEnvelope> shapes = new LinkedHashMap<>();
+        shapes.put(FlagKey.SUSTAINED_STRESS, FlagPayloadEnvelope.sustainedStress(
+            new FlagPayloadEnvelope.SustainedStress(7.0, 4, 3, 3, Map.of("2026-08-24", 8.0))));
+        shapes.put(FlagKey.SLEEP_DEBT, FlagPayloadEnvelope.sleepDebt(
+            new FlagPayloadEnvelope.SleepDebt(8.0, 3, 2, 3.0, 5.0, Map.of("2026-08-24", 6.5))));
+        shapes.put(FlagKey.MOMENTUM_AT_RISK, FlagPayloadEnvelope.momentumAtRisk(
+            new FlagPayloadEnvelope.MomentumAtRisk(
+                3, 14, 0.4, 1.2, 0.5, 1.0, List.of("2026-08-23", "2026-08-24"))));
+        shapes.put(FlagKey.RECOVERY_NEEDED, FlagPayloadEnvelope.recoveryNeeded(
+            new FlagPayloadEnvelope.RecoveryNeeded(
+                2, 6.0, 7.0, 6.0, null, null, 8.0, "2026-08-23", 7.0, "2026-08-24")));
+        shapes.put(FlagKey.ALL_HEALTHY, FlagPayloadEnvelope.allHealthy(
+            new FlagPayloadEnvelope.AllHealthy(7, 5)));
+
+        shapes.forEach((flagKey, payload) -> {
+            CompanionFlagLogEntity saved = flagLogPopulator.raise(owner, flagKey, FlagKey.SOURCE_WRITE, payload);
+            CompanionFlagLogEntity reloaded = repository.findById(saved.getId()).orElseThrow();
+            assertThat(reloaded.getPayload()).isEqualTo(payload);
+        });
     }
 
     @Test

@@ -94,8 +94,12 @@ public class FlagEvaluator {
 
     private Optional<FlagRaise> sleepDebt(UUID userId, LocalDate today) {
         FlagProperties.SleepDebt cfg = properties.sleepDebt();
-        // Today's night is logged tomorrow morning — the window ends YESTERDAY.
-        LocalDate to = today.minusDays(1);
+        // sleep_log.date is the WAKE-UP MORNING, not the evening the night began (confirmed by
+        // HabitEvaluator's sleep_wake_window/bedtime_next_day metrics and by SleepLogSheet posting
+        // date=today on wake) — so the row dated today IS last night, and the window ends TODAY.
+        // An unlogged today is simply skipped by the null check below, never counted as a
+        // debt-free night.
+        LocalDate to = today;
         LocalDate from = to.minusDays(cfg.nights() - 1L);
         Map<LocalDate, Double> sleep =
             metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);

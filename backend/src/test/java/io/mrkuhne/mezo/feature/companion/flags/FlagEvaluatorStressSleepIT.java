@@ -101,12 +101,14 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
 
     @Test
     void sleep_debt_raises_when_the_three_night_deficit_reaches_the_threshold() {
+        // sleep_log.date is the wake morning, so the window [today-2, today] IS the last three
+        // nights (last night's row is dated today).
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15); // 8.0 h
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("6.5"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("6.5"), 3);
-        sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("6.5"), 3);
-        sleepLogPopulator.createSleepLog(owner, today.minusDays(3), new BigDecimal("6.0"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("6.0"), 3);
         // deficit = 1.5 + 1.5 + 2.0 = 5.0 >= 3.0
 
         assertThat(keys(owner)).contains(FlagKey.SLEEP_DEBT);
@@ -117,9 +119,9 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15);
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("7.1"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.1"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("7.1"), 3);
-        sleepLogPopulator.createSleepLog(owner, today.minusDays(3), new BigDecimal("7.1"), 3);
         // deficit = 0.9 * 3 = 2.7 < 3.0
 
         assertThat(keys(owner)).doesNotContain(FlagKey.SLEEP_DEBT);
@@ -159,20 +161,22 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void sleep_debt_never_counts_tonight_which_is_logged_tomorrow_morning() {
-        // today's row alone would push the deficit well past the 3.0 threshold if the window
-        // wrongly ran through "today" (to = today instead of today.minusDays(1)); today-1 and
-        // today-2 alone sit far below the threshold. If this stays quiet, today was excluded.
+    void sleep_debt_counts_last_nights_sleep_which_is_logged_this_morning() {
+        // sleep_log.date is the WAKE-UP MORNING, not the evening the night began (see
+        // HabitEvaluator's sleep_wake_window/bedtime_next_day metrics and SleepLogSheet, which
+        // posts date=today on wake) — so the row dated today IS last night, and must count in the
+        // window. today's row alone pushes the deficit well past the 3.0 threshold; today-1 and
+        // today-2 alone sit far below it. If this raises, today's night was counted.
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15); // 8.0 h
         sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("1.0"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.9"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("7.9"), 3);
-        // window ending yesterday: deficit = 0.1 + 0.1 = 0.2 < 3.0 (today's 7.0h deficit excluded)
-        // window wrongly ending today: deficit = 7.0 + 0.1 + 0.1 = 7.2 >= 3.0 (would wrongly raise)
+        // deficit = 7.0 (today) + 0.1 + 0.1 = 7.2 >= 3.0 — without today's row it would be
+        // 0.1 + 0.1 = 0.2 < 3.0, so this assertion is load-bearing on today's row counting.
 
-        assertThat(keys(owner)).doesNotContain(FlagKey.SLEEP_DEBT);
+        assertThat(keys(owner)).contains(FlagKey.SLEEP_DEBT);
     }
 
     @Test
@@ -182,9 +186,9 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15); // 8.0 h
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("7.0"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.0"), 3);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("7.0"), 3);
-        sleepLogPopulator.createSleepLog(owner, today.minusDays(3), new BigDecimal("7.0"), 3);
         // deficit = 1.0 + 1.0 + 1.0 = 3.0 == 3.0
 
         assertThat(keys(owner)).contains(FlagKey.SLEEP_DEBT);

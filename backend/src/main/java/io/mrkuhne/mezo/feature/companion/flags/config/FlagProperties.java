@@ -43,7 +43,8 @@ public record FlagProperties(
     }
 
     public record SleepDebt(
-        /** How many nights back (ending yesterday) the deficit is accumulated over. */
+        /** How many nights back (ending TODAY — sleep_log.date is the wake morning, so today's
+         *  row is last night) the deficit is accumulated over. */
         @Min(1) @Max(30) int nights,
         /** Honest small-n gate: fewer logged nights than this inside the window ⇒ no flag. */
         @Min(1) @Max(30) int minNights,
