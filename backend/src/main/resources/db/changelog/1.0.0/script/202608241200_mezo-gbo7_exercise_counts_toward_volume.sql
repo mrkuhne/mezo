@@ -14,9 +14,9 @@ update exercise
 -- template would recreate counting closing/plyo rows and the defect would silently return.
 update meso_template t
    set days = (
-         select jsonb_agg(
+         select coalesce(jsonb_agg(
                   case
-                    when jsonb_typeof(d -> 'exercises') <> 'array' then d
+                    when jsonb_typeof(d -> 'exercises') is distinct from 'array' then d
                     else jsonb_set(d, '{exercises}', (
                            select coalesce(jsonb_agg(
                                     e || jsonb_build_object('countsTowardVolume',
@@ -29,6 +29,6 @@ update meso_template t
                                     order by eord), '[]'::jsonb)
                              from jsonb_array_elements(d -> 'exercises') with ordinality as ex(e, eord)))
                   end
-                order by dord)
+                order by dord), '[]'::jsonb)
            from jsonb_array_elements(t.days) with ordinality as dy(d, dord))
  where jsonb_typeof(t.days) = 'array';
