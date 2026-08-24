@@ -193,6 +193,24 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
             .containsExactly("chest");
     }
 
+    @Test
+    void testSeedBaselines_shouldSeedGroup_whenItHasBothACountingAndAnExemptExercise() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Hét");
+        ExerciseEntity hang = train.createExercise(owner, day.getId(), "Dead Hang", "back-wide", "plyo");
+        hang.setCountsTowardVolume(false);
+        train.save(hang);
+        train.createExercise(owner, day.getId(), "Pull-Up", "back-wide", "compound");
+        train.createExercise(owner, day.getId(), "Fekvenyomás", "chest-mid", "compound");
+
+        volumeProgressionService.seedBaselines(owner, meso.getId());
+
+        assertThat(rows(owner, meso.getId()))
+            .extracting(MuscleGroupVolumeLogEntity::getMuscle)
+            .containsExactlyInAnyOrder("back", "chest");
+    }
+
     private List<MuscleGroupVolumeLogEntity> rows(UUID user, UUID mesoId) {
         return volumeRepo.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(user, List.of(mesoId));
     }
