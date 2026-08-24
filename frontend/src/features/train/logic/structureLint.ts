@@ -113,15 +113,18 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
       if (!zones) { zones = { heavy: 0, moderate: 0, light: 0 }; weeklyZones.set(group, zones) }
       zones[repZoneOf(ex.repMin, ex.repMax)] += ex.workingSets
 
-      // R2 — sets per exercise
-      const band = SETS_PER_EXERCISE[ex.type]
-      if (ex.workingSets < band.min) {
+      // R2 — sets per exercise. No band exists for 'plyo' (it was always exempt
+      // pre-mezo-gbo7); a plyo exercise the user explicitly flips to count-toward-
+      // volume still has no established consensus band, so it's skipped rather than
+      // guessed at.
+      const band = (SETS_PER_EXERCISE as Record<string, { min: number; max: number }>)[ex.type]
+      if (band && ex.workingSets < band.min) {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
           detail: `${band.min} szett alatt egy gyakorlat alig ad ingert — a ${band.min} szett teljesen legitim kezdés.`,
         })
-      } else if (ex.workingSets > band.max) {
+      } else if (band && ex.workingSets > band.max) {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
