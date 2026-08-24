@@ -457,14 +457,14 @@ In `BiometricsTools.java`:
 ```java
             @ToolParam(required = false, description = "Konkrét alvásnapok teljes részlete "
                     + "(YYYY-MM-DD), maximum 3 nap — csak scope=sleep, más scope-on nincs hatása. "
-                    + "pl. [\"2026-08-23\"])")
+                    + "pl. [\"2026-08-23\"].")
             List<LocalDate> date,
             @ToolParam(required = false, description = "Részletes nézet kezdő napja (YYYY-MM-DD), "
-                    + "tárgyilagos határ; elhagyva 'to': a mai napig — csak scope=sleep, más "
+                    + "bezárólag; ha a 'to' hiányzik, a mai napig — csak scope=sleep, más "
                     + "scope-on nincs hatása.")
             LocalDate from,
             @ToolParam(required = false, description = "Részletes nézet záró napja (YYYY-MM-DD), "
-                    + "tárgyilagos; elhagyva: mai nap — csak scope=sleep, más scope-on nincs hatása.")
+                    + "bezárólag; elhagyva: mai nap — csak scope=sleep, más scope-on nincs hatása.")
             LocalDate to,
 ```
 

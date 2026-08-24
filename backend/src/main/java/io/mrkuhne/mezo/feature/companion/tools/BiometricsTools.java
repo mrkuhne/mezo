@@ -25,9 +25,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 /**
@@ -155,14 +159,14 @@ public class BiometricsTools {
                     + "esetén (alapértelmezés 7); scope=sleep-goal esetén nincs hatása.") Integer days,
             @ToolParam(required = false, description = "Konkrét alvásnapok teljes részlete "
                     + "(YYYY-MM-DD), maximum 3 nap — csak scope=sleep, más scope-on nincs hatása. "
-                    + "pl. [\"2026-08-23\"])")
+                    + "pl. [\"2026-08-23\"].")
             List<LocalDate> date,
             @ToolParam(required = false, description = "Részletes nézet kezdő napja (YYYY-MM-DD), "
-                    + "tárgyilagos határ; elhagyva 'to': a mai napig — csak scope=sleep, más "
+                    + "bezárólag; ha a 'to' hiányzik, a mai napig — csak scope=sleep, más "
                     + "scope-on nincs hatása.")
             LocalDate from,
             @ToolParam(required = false, description = "Részletes nézet záró napja (YYYY-MM-DD), "
-                    + "tárgyilagos; elhagyva: mai nap — csak scope=sleep, más scope-on nincs hatása.")
+                    + "bezárólag; elhagyva: mai nap — csak scope=sleep, más scope-on nincs hatása.")
             LocalDate to,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
@@ -220,7 +224,7 @@ public class BiometricsTools {
         LocalDate windowFrom = today.minusDays(properties.tools().maxWindowDays() - 1L);
         boolean clamped = false;
 
-        java.util.Set<LocalDate> requested = new java.util.TreeSet<>();
+        Set<LocalDate> requested = new TreeSet<>();
         if (date != null) {
             requested.addAll(date);
         }
@@ -242,7 +246,7 @@ public class BiometricsTools {
             }
         }
 
-        java.util.NavigableSet<LocalDate> days = new java.util.TreeSet<>();
+        NavigableSet<LocalDate> days = new TreeSet<>();
         for (LocalDate d : requested) {
             if (d.isBefore(windowFrom) || d.isAfter(today)) {
                 clamped = true;
@@ -260,19 +264,18 @@ public class BiometricsTools {
         List<SleepLogEntity> rows = sleepLogRepository
                 .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
                         userId, days.first(), days.last());
-        java.util.Map<LocalDate, SleepLogEntity> byDate = new java.util.HashMap<>();
+        Map<LocalDate, SleepLogEntity> byDate = new HashMap<>();
         for (SleepLogEntity r : rows) {
             byDate.putIfAbsent(r.getDate(), r);
         }
 
         StringBuilder b = new StringBuilder(header);
-        for (java.util.Iterator<LocalDate> it = days.descendingIterator(); it.hasNext(); ) {
-            LocalDate d = it.next();
+        for (LocalDate d : days.descendingSet()) {
             SleepLogEntity row = byDate.get(d);
             b.append('\n').append(d)
                     .append(row == null ? ": nincs rögzített alvás" : ": " + renderDetailLine(row));
         }
-        days.stream().sorted(java.util.Comparator.reverseOrder()).limit(5)
+        days.descendingSet().stream().limit(5)
                 .forEach(d -> ToolContexts.audit(toolContext).addRef("Sleep", d.toString()));
         return b.toString();
     }
