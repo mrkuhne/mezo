@@ -10,9 +10,12 @@ import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromptAssembler;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.profile.service.ProfilePromptAssembler;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
@@ -20,6 +23,8 @@ import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,8 +103,11 @@ public class ChatService {
             [Eszköz-útmutató] — kérdéstípus → tool (ne találgass, hívd meg a megfelelőt):
             - PR / rekord / „megdöntöm?" → get_exercise_records
             - mai/holnapi/heti edzésterv, mezociklus → get_training_plan
-            - múltbeli edzés/sport/futás → get_training_log | súlytrend, fogyás ütem → get_weight_trend
+            - múltbeli edzés/sport/futás → get_training_log
+            - súlytrend, fogyás ÜTEME (simított) → get_weight_trend
+            - napi súlyok, egy-egy nap súlya, INGADOZÁS/kilengés → get_weight_log
             - alvás, alvási cél, közérzet (energia/stressz) → get_recovery
+            - konkrét nap alvási adata / fázisai / hypnogram → get_recovery (date vagy from/to)
             - gyógyszer, gyógyszer-ciklus → get_medication
             - recept, mit főzzek → get_recipes | mi van a kamrában → get_pantry
             - napi/heti étkezés, makró, víz → get_fuel_log
@@ -123,6 +132,12 @@ public class ChatService {
     private final ConversationService conversationService;
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
+    /** W3.1 — the always-on [Emlékek] block (mezo-b3pp.12). */
+    private final PromptMemoryAssembler promptMemoryAssembler;
+    /** W2.4 — the [Összefüggések] block (mezo-b3pp.9); absent (null) when the graph switch is off. */
+    private final ObjectProvider<GraphPromptAssembler> graphPromptAssembler;
+    /** W4.3 — the [Rólad tanultam] block (mezo-b3pp.17); absent (null) when the graph switch is off. */
+    private final ObjectProvider<ProfilePromptAssembler> profilePromptAssembler;
     private final CompanionLlm companionLlm;
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
@@ -132,9 +147,14 @@ public class ChatService {
     private final ApplicationEventPublisher eventPublisher;
     private final LlmCallContextHolder llmCallContextHolder;
 
-    /** One prepared chat turn — everything the LLM call needs, produced inside one transaction. */
+    /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
+     *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
+     *  refs the stream path adds to its audit;
+     *  {@code recalled} (W3.1b) is the disclosure envelope the assistant row persists — null when
+     *  the turn recalled nothing. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
-                               List<Turn> history, String userContent) {}
+                               List<Turn> history, String userContent, List<RefsEnvelope.Ref> recalledRefs,
+                               RecalledMemoriesEnvelope recalled) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -146,16 +166,17 @@ public class ChatService {
     @Transactional
     public PreparedTurn prepareTurn(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-        String systemPrompt = SYSTEM_PROMPT
-                + contextSnapshotAssembler.render(userId, LocalDate.now())
-                + knowledgeFactService.renderPromptBlock(userId)
-                + knowledgeFactService.renderNewPatternFactsBlock(userId)
-                + TONE_REMINDER;
+        LocalDate today = LocalDate.now();
+        PromptMemoryAssembler.AmbientRecall recalled =
+                promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
+        GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block());
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         touchConversation(conversation, request.getContent());
-        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent());
+        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent(),
+                ambientRefs(recalled, graph), RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
     }
 
     /**
@@ -166,10 +187,10 @@ public class ChatService {
     @Transactional
     public MessageResponse completeTurn(
             UUID userId, UUID conversationId, UUID userMessageId, String userContent,
-            String answer, ToolCallAudit audit, boolean degraded) {
+            String answer, ToolCallAudit audit, boolean degraded, RecalledMemoriesEnvelope recalled) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded, recalled);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
@@ -181,19 +202,18 @@ public class ChatService {
     public MessageResponse sendMessage(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
 
+        // Prompt order: see assembleSystemPrompt. The history travels as real prior messages
+        // (mezo-q71s), not a transcript inside the system prompt.
+        LocalDate today = LocalDate.now();
+        PromptMemoryAssembler.AmbientRecall recalled =
+                promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
+        GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block());
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        // Prompt order: voice -> snapshot (V0.3) -> top-N facts (V1.1) -> fresh pattern-facts
-        // acknowledgment (V3.3). The history travels as real prior messages (mezo-q71s), not a
-        // transcript inside the system prompt.
-        String systemPrompt = SYSTEM_PROMPT
-                + contextSnapshotAssembler.render(userId, LocalDate.now())
-                + knowledgeFactService.renderPromptBlock(userId)
-                + knowledgeFactService.renderNewPatternFactsBlock(userId)
-                + TONE_REMINDER;
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer;
@@ -215,14 +235,67 @@ public class ChatService {
                     () -> companionLlm.complete(systemPrompt, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
+        // mezo-8z79: same guard as the streamed path — a blank answer is a failed turn. Here the
+        // whole method is ONE transaction, so throwing also rolls the user row back; the FE's
+        // catch-and-refetch then leaves the thread exactly as it was before the send.
+        if (answer == null || answer.isBlank()) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error(ChatStreamService.EMPTY_ANSWER_CODE).build());
+        }
+        // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
+        // refs are the answer's own provenance and win the per-turn ref cap.
+        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id()));
+        // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
+                RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
                 assistant.getId(), answer));
         return mapper.toMessageResponse(assistant);
+    }
+
+    /**
+     * The canonical system prompt: voice → snapshot (V0.3) → top-N facts (V1.1) → fresh
+     * pattern-facts acknowledgment (V3.3) → [Rólad tanultam] pragmatic profile (W4.3, "" when the
+     * profile is archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph context
+     * (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER (mezo-q71s, always
+     * last). The history travels as real prior messages, not a transcript in here.
+     */
+    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock) {
+        return SYSTEM_PROMPT
+                + contextSnapshotAssembler.render(userId, today)
+                + knowledgeFactService.renderPromptBlock(userId)
+                + knowledgeFactService.renderNewPatternFactsBlock(userId)
+                + profileBlock(userId)
+                + memoriesBlock
+                + graphBlock
+                + TONE_REMINDER;
+    }
+
+    /** W2.4: the graph's contribution — EMPTY when the switch is off (no bean) or nothing matched. */
+    private GraphPromptAssembler.GraphContext graphContext(UUID userId, String userMessage) {
+        GraphPromptAssembler assembler = graphPromptAssembler.getIfAvailable();
+        return assembler == null ? GraphPromptAssembler.GraphContext.EMPTY : assembler.assemble(userId, userMessage);
+    }
+
+    /** W4.3: the profile's contribution — "" when the bean is absent or nothing is stored. */
+    private String profileBlock(UUID userId) {
+        ProfilePromptAssembler assembler = profilePromptAssembler.getIfAvailable();
+        return assembler == null ? "" : assembler.render(userId);
+    }
+
+    /** Memory refs first (W3.1), GraphNode refs after (W2.4) — one list so the stream path stays unchanged. */
+    private static List<RefsEnvelope.Ref> ambientRefs(PromptMemoryAssembler.AmbientRecall recalled,
+                                                      GraphPromptAssembler.GraphContext graph) {
+        if (graph.refs().isEmpty()) {
+            return recalled.refs();
+        }
+        List<RefsEnvelope.Ref> refs = new ArrayList<>(recalled.refs());
+        refs.addAll(graph.refs());
+        return List.copyOf(refs);
     }
 
     private List<AiMessageEntity> loadWindow(UUID userId, UUID conversationId) {
@@ -232,9 +305,17 @@ public class ChatService {
                 .reversed();
     }
 
-    /** Az ablak entitásai -> a port provider-független Turn-jei, legrégebbitől a legújabbig. */
+    /**
+     * Az ablak entitásai -> a port provider-független Turn-jei, legrégebbitől a legújabbig.
+     *
+     * <p>mezo-8z79: üres tartalmú sorok KIMARADNAK. A blank-guard óta ilyen sor már nem keletkezik,
+     * de a 2026-08-23 előtt bekerültek ott vannak az adatbázisban — és egy üres {@code
+     * AssistantMessage} part-ot a Gemini elutasíthat, ami visszamenőleg megmérgezné az egész szálat.
+     * A szűrés ezért nem a guard duplikálása, hanem a MÁR meglévő sorok elleni védelem.
+     */
     private static List<Turn> toTurns(List<AiMessageEntity> window) {
         return window.stream()
+                .filter(message -> message.getContent() != null && !message.getContent().isBlank())
                 .map(message -> new Turn(
                         AiMessageEntity.ROLE_USER.equals(message.getRole()) ? Role.USER : Role.ASSISTANT,
                         message.getContent()))
@@ -242,7 +323,8 @@ public class ChatService {
     }
 
     private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,
-            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded) {
+            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded,
+            RecalledMemoriesEnvelope recalled) {
         AiMessageEntity message = new AiMessageEntity();
         message.setConversation(conversation);
         message.setCreatedBy(userId);
@@ -250,6 +332,7 @@ public class ChatService {
         message.setContent(content);
         message.setToolCalls(toolCalls);
         message.setRefs(refs);
+        message.setRecalledMemories(recalled);
         message.setDegraded(degraded);
         // saveAndFlush so the two rows of a turn get distinct created_at (history ordering key)
         return messageRepository.saveAndFlush(message);

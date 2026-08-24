@@ -6,7 +6,7 @@ export interface OpenLoops {
 }
 
 /**
- * Napzárás act 3 (Nyitott hurkok, mezo-ilsj §4) — pure derivation of which of the day's two
+ * Napzárás act 4 (Nyitott hurkok, mezo-ilsj §4) — pure derivation of which of the day's two
  * GATED loops still need closing. `checkinOpen` reuses the TodayPage next-open-slot predicate
  * (`checkins.findIndex(c => c.state === 'now' || c.state === 'pending')`, TodayPage.tsx:42) —
  * any slot still due or in its window counts as open. `reflectOpen` mirrors the IntentionBanner

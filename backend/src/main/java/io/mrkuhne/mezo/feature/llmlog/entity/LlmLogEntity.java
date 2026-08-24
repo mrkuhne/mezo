@@ -115,6 +115,16 @@ public class LlmLogEntity {
     @Column(name = "service_tier", columnDefinition = "text")
     private String serviceTier;
 
+    /**
+     * mezo-8z79: the provider's finish reason for the FINAL generation — STOP on a normal answer,
+     * MAX_TOKENS when the output cap was hit (including a thinking-only round that never got to
+     * emit text), SAFETY/RECITATION when the candidate was blocked. Null = none reported, or the
+     * call never reached a generation (every ERROR row). This is the column that separates "the
+     * model chose to say nothing" from "the model was cut off" on an empty {@link #responseText}.
+     */
+    @Column(name = "finish_reason", columnDefinition = "text")
+    private String finishReason;
+
     // ── usage: generation ────────────────────────────────────────────────────────
 
     /**
@@ -178,6 +188,14 @@ public class LlmLogEntity {
     /** True PRE-truncation total payload size in bytes (spec §5) — recorded even when {@link #truncated} is set. */
     @Column(name = "payload_bytes", nullable = false)
     private int payloadBytes;
+
+    /**
+     * mezo-1y3p retention stamp: when the nightly job hard-removed the four payload columns.
+     * Null = payload intact, or never present (embed rows) — the honest distinction the
+     * detail view renders. Never set vacuously: only rows that actually lost text get stamped.
+     */
+    @Column(name = "payload_scrubbed_at")
+    private Instant payloadScrubbedAt;
 
     // ── usage: vision ────────────────────────────────────────────────────────────
 

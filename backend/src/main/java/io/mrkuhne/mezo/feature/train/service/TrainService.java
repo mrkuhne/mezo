@@ -446,6 +446,10 @@ public class TrainService {
         e.setTargetRir(in.getTargetRIR());
         e.setAnchorWeightKg(in.getAnchorWeightKg());
         e.setType(in.getType().getValue());
+        // mezo-gbo7: absent flag means "counts", except plyo which defaults to exempt.
+        e.setCountsTowardVolume(in.getCountsTowardVolume() != null
+            ? in.getCountsTowardVolume()
+            : !"plyo".equals(in.getType() == null ? null : in.getType().getValue()));
         e.setWarning(in.getWarning());
         e.setCatalogId(in.getCatalogId());
         e.setOrderIndex(orderIndex);

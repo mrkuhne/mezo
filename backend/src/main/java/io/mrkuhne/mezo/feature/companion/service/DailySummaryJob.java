@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter;
+import io.mrkuhne.mezo.feature.companion.embedding.NoteEmbeddingCatchUp;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,12 @@ import java.util.UUID;
  * user and every FINISHED day in the catch-up window it (a) generates the missing
  * {@code daily_summary} (idempotent — an existing day is returned, not regenerated) and (b)
  * embeds it; then (c) catch-up-embeds any chat turns still missing their vector (covers
- * listener-off periods, crashes, and pre-V2.2 history). Per-date failures are isolated: one
- * bad day must never kill the run — the next night retries it via the same catch-up.
+ * listener-off periods, crashes, and pre-V2.2 history); and, since W1.5 (spec §5.5, bd
+ * mezo-b3pp.5), (d) runs {@link NoteEmbeddingCatchUp} — the narrative written OUTSIDE the journal
+ * ({@code activity_log.text}, {@code check_in.note}) has NO listener, so this one nightly sweep is
+ * its only writer (its own toggle, length gate and per-run budget live in the pass). Per-date
+ * failures are isolated: one bad day must never kill the run — the next night retries it via the
+ * same catch-up.
  */
 @Slf4j
 @Component
@@ -36,6 +41,7 @@ public class DailySummaryJob {
     private final DailySummaryService dailySummaryService;
     private final MemoryEmbeddingWriter memoryEmbeddingWriter;
     private final CompanionProperties properties;
+    private final NoteEmbeddingCatchUp noteEmbeddingCatchUp;
 
     @Scheduled(cron = "${mezo.companion.summary.cron}")
     public void run() {
@@ -71,8 +77,17 @@ public class DailySummaryJob {
                     log.warn("Turn-embedding catch-up failed for user {}", user.getId(), e);
                 }
             }
-            log.info("Daily-summary run for user {}: {} day(s) processed in window {}..{}",
-                    user.getId(), generated, from, yesterday);
+            // W1.5 (spec §5.5): one nightly narrative sweep, not a new cron — the notes written
+            // OUTSIDE the journal join the memory here. Its own toggle + batch budget live in the
+            // pass; a failing row is isolated there, so nothing can abort the user's run.
+            int notes = 0;
+            try {
+                notes = noteEmbeddingCatchUp.run(user.getId(), yesterday);
+            } catch (Exception e) {
+                log.warn("Note-embedding catch-up failed for user {}", user.getId(), e);
+            }
+            log.info("Daily-summary run for user {}: {} day(s) processed, {} note(s) embedded in window {}..{}",
+                    user.getId(), generated, notes, from, yesterday);
         }
     }
 }

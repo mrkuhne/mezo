@@ -39,6 +39,7 @@ public interface LlmLogMapper {
             .streamed(e.isStreamed())
             .toolRounds(e.getToolRounds())
             .serviceTier(e.getServiceTier())
+            .finishReason(e.getFinishReason())
             .promptTokens(e.getPromptTokens())
             .candidatesTokens(e.getCandidatesTokens())
             .thoughtsTokens(e.getThoughtsTokens())
@@ -55,6 +56,7 @@ public interface LlmLogMapper {
             .responseText(e.getResponseText())
             .truncated(e.isTruncated())
             .payloadBytes(e.getPayloadBytes())
+            .payloadScrubbedAt(toOffset(e.getPayloadScrubbedAt()))
             .costUsd(toDouble(e.getCostUsd()))
             .pricingSnapshot(toSnapshot(e.getPricingSnapshot()))
             .build();

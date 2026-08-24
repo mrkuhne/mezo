@@ -5,6 +5,7 @@ export const mockRitualDay = (date: string): RitualDay => ({
   date,
   closed: false,
   closedAt: null,
+  reflectionText: null,
   window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
 })
 
@@ -14,5 +15,6 @@ export const EMPTY_RITUAL_DAY = (date: string): RitualDay => ({
   date,
   closed: false,
   closedAt: null,
+  reflectionText: null,
   window: { opensAt: '20:45', prepStartsAt: '21:15', bedTime: '22:00' },
 })

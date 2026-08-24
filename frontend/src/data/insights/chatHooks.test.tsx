@@ -69,6 +69,34 @@ describe('useChatActions (real mode)', () => {
     expect(assistant.refs).toEqual([{ kind: 'Sleep', id: '2026-07-02' }])
   })
 
+  // mezo-8z79: the backend refuses to persist a blank answer and terminates the stream with
+  // COMPANION_EMPTY_ANSWER. That is a different story from a transport failure — nothing was
+  // saved either way, but "the model said nothing" is worth an immediate retry, so it gets its
+  // own message rather than the generic one.
+  it('surfaces the empty-answer stream error with its own message', async () => {
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, () => {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(
+            `event:error\ndata:${JSON.stringify({ code: 'COMPANION_EMPTY_ANSWER' })}\n\n`))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    const wrapper = makeHookWrapper()
+    const chat = renderHook(() => useChat(), { wrapper })
+    await waitFor(() => expect(chat.result.current.data.conversationId).toBe('c-1'))
+
+    const actions = renderHook(() => useChatActions(), { wrapper })
+    act(() => actions.result.current.send('Fáradt vagyok'))
+
+    await waitFor(() =>
+      expect(actions.result.current.error).toBe('A társ nem adott választ erre a körre — próbáld újra.'))
+  })
+
   // mezo-280: the live 'tool' SSE event accumulates onto the in-flight turn as it streams,
   // ahead of the terminal 'done' row — this is what lets ChatPage show the chip mid-answer.
   // The stream is gated after the 'tool' frame so the test can observe that intermediate
@@ -92,6 +120,7 @@ describe('useChatActions (real mode)', () => {
             createdAt: '2026-07-03T07:00:05Z',
             tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
             degraded: false,
           })))
           controller.close()

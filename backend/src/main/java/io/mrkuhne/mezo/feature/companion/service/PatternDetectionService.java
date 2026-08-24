@@ -8,6 +8,9 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.appnotification.config.NotificationFeedProperties;
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.List;
@@ -43,6 +47,8 @@ public class PatternDetectionService {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final PatternEventRepository patternEventRepository;
     private final CompanionProperties properties;
+    private final AppNotificationEmitter appNotificationEmitter;
+    private final NotificationFeedProperties feedProperties;
 
     /**
      * Runs detection for one user over the finished-days window; returns pairs upserted.
@@ -113,6 +119,7 @@ public class PatternDetectionService {
         if (pattern != null && PatternEntity.STATUS_REJECTED.equals(pattern.getStatus())) {
             return; // user-judged — frozen for the nightly job
         }
+        boolean isNew = pattern == null;
         if (pattern == null) {
             pattern = new PatternEntity();
             pattern.setCreatedBy(userId);
@@ -129,13 +136,25 @@ public class PatternDetectionService {
         pattern.setN(result.n());
         pattern.setP(BigDecimal.valueOf(result.p()).setScale(6, RoundingMode.HALF_UP));
         pattern.setConfidence(null); // honest small-n — V3.2's critique fills it for hypotheses
-        pattern.setLastDetectedAt(Instant.now());
+        pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
         recordSnapshot(pattern, result);
+        if (isNew && passesInboxGate(result)) {
+            appNotificationEmitter.emit(userId, AppNotificationKind.PATTERN_INBOX,
+                    "Új minta vár döntésre",
+                    "„" + pair.title() + "” — erős jel rajzolódik ki. Döntsd el, figyeljük-e.",
+                    AppNotificationKind.PATTERN_INBOX.deeplink() + pair.key(),
+                    pattern.getId(), "pattern_inbox:" + pair.key());
+        }
     }
 
-    /** S1 (mezo-tk88.1): one history snapshot per LIVE evaluation — the detail chart's raw data. */
+    /** S1 (mezo-tk88.1): one history snapshot per LIVE evaluation — the detail chart's raw data.
+     *  Feed (mezo-gzhp.1): a band crossing on a still-undecided row also emits a pattern_signal
+     *  notification — the SAME |r| bands the FE strengthWord uses (0.3/0.6), config-pinned. */
     private void recordSnapshot(PatternEntity pattern, PearsonCorrelation.Result result) {
+        var previous = patternEventRepository
+                .findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
+                        pattern.getCreatedBy(), pattern.getId(), PatternEventEntity.KIND_SNAPSHOT);
         PatternEventEntity event = new PatternEventEntity();
         event.setCreatedBy(pattern.getCreatedBy());
         event.setPatternId(pattern.getId());
@@ -143,6 +162,36 @@ public class PatternDetectionService {
         event.setOccurredAt(Instant.now());
         event.setPayload(PatternEventPayloadEnvelope.snapshot(result.r(), result.n(), result.p()));
         patternEventRepository.saveAndFlush(event);
+
+        boolean undecided = PatternEntity.STATUS_PROPOSED.equals(pattern.getStatus())
+                || PatternEntity.STATUS_MONITORING.equals(pattern.getStatus());
+        if (undecided && previous.isPresent() && previous.get().getPayload().r() != null) {
+            int prevBand = band(previous.get().getPayload().r());
+            int newBand = band(result.r());
+            if (prevBand != newBand) {
+                boolean strengthened = newBand > prevBand;
+                appNotificationEmitter.emit(pattern.getCreatedBy(), AppNotificationKind.PATTERN_SIGNAL,
+                        "Egy minta jele " + (strengthened ? "erősödött" : "gyengült"),
+                        "„" + pattern.getTitle() + "” — átlépett egy erősség-sávot.",
+                        AppNotificationKind.PATTERN_SIGNAL.deeplink() + pattern.getPairKey(),
+                        pattern.getId(),
+                        "pattern_signal:" + pattern.getPairKey() + ":" + LocalDate.now());
+            }
+        }
+    }
+
+    /** |r| → band index 0/1/2 — MUST mirror the FE strengthWord thresholds (findings.ts). */
+    private int band(double r) {
+        double abs = Math.abs(r);
+        if (abs < feedProperties.bandPromising()) {
+            return 0;
+        }
+        return abs < feedProperties.bandStrong() ? 1 : 2;
+    }
+
+    private boolean passesInboxGate(PearsonCorrelation.Result result) {
+        return Math.abs(result.r()) >= feedProperties.inboxMinAbsR()
+                && result.p() <= feedProperties.inboxMaxP();
     }
 
     /** Same-direction re-detection bumps the promoted fact's reinforcement (V3.3). */
@@ -154,7 +203,7 @@ public class PatternDetectionService {
             return; // direction flipped — that is NOT the confirmed pattern recurring
         }
         Instant cooldownFloor = Instant.now().minus(
-                properties.patterns().reinforceCooldownDays(), java.time.temporal.ChronoUnit.DAYS);
+                properties.patterns().reinforceCooldownDays(), ChronoUnit.DAYS);
         knowledgeFactRepository.findById(pattern.getPromotedFactId()).ifPresent(fact -> {
             if (fact.getLastReinforcedAt() != null && fact.getLastReinforcedAt().isAfter(cooldownFloor)) {
                 return; // the sliding window re-counts the SAME evidence — cool down (review finding)
@@ -171,6 +220,11 @@ public class PatternDetectionService {
             patternEventRepository.saveAndFlush(event);
             log.info("Confirmed pattern {} recurred — fact {} reinforced to {}",
                     pattern.getPairKey(), fact.getId(), fact.getReinforcementCount());
+            appNotificationEmitter.emit(pattern.getCreatedBy(), AppNotificationKind.FACT_REINFORCED,
+                    "Egy tudás megerősödött ×" + fact.getReinforcementCount(),
+                    "„" + fact.getFactText() + "” — újra előjött ugyanabban az irányban.",
+                    AppNotificationKind.FACT_REINFORCED.deeplink(), fact.getId(),
+                    "fact_reinforced:" + fact.getId() + ":" + fact.getReinforcementCount());
         });
     }
 

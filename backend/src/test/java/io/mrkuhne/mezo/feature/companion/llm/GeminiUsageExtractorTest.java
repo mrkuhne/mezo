@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.llm.GeminiUsageExtractor.UsageInfo;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -139,6 +140,29 @@ class GeminiUsageExtractorTest {
         ChatResponse response = response(ChatResponseMetadata.builder().build());
 
         assertThat(extractor.extract(response).servedModel()).isNull();
+    }
+
+    /**
+     * mezo-8z79: MAX_TOKENS on a candidate with NO text is the exact shape of the 2026-08-23 empty
+     * -answer incident — the one signal that separates "the model chose to stop" from "the model
+     * was cut off mid-thinking". It rides the per-generation metadata, not the response metadata.
+     */
+    @Test
+    void testFinishReason_shouldReadTheFinalGenerationsReason_whenReported() {
+        ChatResponse response = ChatResponse.builder()
+            .generations(List.of(new Generation(new AssistantMessage(""),
+                ChatGenerationMetadata.builder().finishReason("MAX_TOKENS").build())))
+            .metadata(ChatResponseMetadata.builder().model("gemini-2.5-flash").build())
+            .build();
+
+        assertThat(extractor.finishReason(response)).isEqualTo("MAX_TOKENS");
+    }
+
+    @Test
+    void testFinishReason_shouldBeNull_whenResponseOrReasonAbsent() {
+        assertThat(extractor.finishReason(null)).isNull();
+        // A generation with no reason reported must read as null, never as an empty string.
+        assertThat(extractor.finishReason(response(ChatResponseMetadata.builder().build()))).isNull();
     }
 
     private static ChatResponse response(ChatResponseMetadata metadata) {

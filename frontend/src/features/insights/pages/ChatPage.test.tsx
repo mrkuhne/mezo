@@ -1,4 +1,5 @@
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -8,6 +9,8 @@ import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { cannedReply } from '@/data/insights/chat'
 
 // The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
+const FEEDBACK_GROUP = 'Visszajelzés a válaszról'
+
 const renderPage = (path = '/insights/chat') =>
   render(
     <QueryWrapper>
@@ -29,6 +32,24 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
     // V1.3: the mock seed never carries a degraded answer — no badge
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
+  })
+
+  test('the composer wraps instead of scrolling sideways (mezo-a837)', () => {
+    renderPage()
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    // A textarea az, ami tördel — egy <input> vízszintesen csúsztatná el a hosszú üzenetet.
+    expect(input.tagName).toBe('TEXTAREA')
+    expect(input).toHaveAttribute('rows', '1')
+  })
+
+  test('Shift+Enter breaks a line instead of sending (mezo-a837)', () => {
+    renderPage()
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Első sor' } })
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
+    // nem ment el: a piszkozat a mezőben marad, a szálban nem jelenik meg buborékként
+    expect(input).toHaveValue('Első sor')
+    expect(screen.queryByText('Első sor', { ignore: 'textarea' })).not.toBeInTheDocument()
   })
 
   test('parks the view on the newest message on open (mezo-at8x.2)', async () => {
@@ -54,6 +75,28 @@ describe('ChatPage (mock mode)', () => {
     })
     expect(screen.getByText(/A gyógyszer-ciklus D3-án ez gyakori/)).toBeInTheDocument()
     vi.useRealTimers()
+  })
+
+  test('renders feedback chips on the assistant answers only (mezo-b3pp.15)', async () => {
+    renderPage()
+    // The demo thread is assistant / user / assistant — two votable answers, one user bubble.
+    expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2)
+    const [up] = screen.getAllByRole('button', { name: /Segített/ })
+    expect(up).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(up)
+    await waitFor(() => expect(up).toHaveAttribute('aria-pressed', 'true'))
+    // ...and only that one card's chip flips — each answer carries its own instance.
+    expect(screen.getAllByRole('button', { name: /Segített/ })[1]).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('the first assistant message shows a collapsed Emlékek row that reveals the recalled gists', async () => {
+    renderPage()
+    const toggle = await screen.findByText(/Emlékek · 2/)
+    // collapsed by default — the answer is the point, this is only its provenance
+    expect(screen.queryByText('futás után jobban aludtam')).not.toBeInTheDocument()
+    fireEvent.click(toggle)
+    expect(screen.getByText('futás után jobban aludtam')).toBeInTheDocument()
+    expect(screen.getByText(/napló · 92%/)).toBeInTheDocument()
   })
 })
 
@@ -83,6 +126,23 @@ describe('ChatPage (real mode)', () => {
     expect(screen.getByText(/\[Sleep\]/)).toBeInTheDocument()
   })
 
+  test('the streamed answer carries its own Emlékek disclosure (mezo-b3pp.28)', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    // the persisted history's first answer already discloses what it recalled
+    expect(screen.getByText(/Emlékek · 2/)).toBeInTheDocument()
+
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+
+    const toggle = screen.getByText(/Emlékek · 1/)
+    expect(screen.queryByText('korábban is rosszul aludtál edzés után')).not.toBeInTheDocument()
+    fireEvent.click(toggle)
+    expect(screen.getByText('korábban is rosszul aludtál edzés után')).toBeInTheDocument()
+  })
+
   test('renders the live tool chip while the turn is still streaming (mezo-280)', async () => {
     // the stream is gated after the 'tool' frame — the module handler's frames all land
     // within the same microtask flush (too fast for any assertion to catch mid-stream),
@@ -104,6 +164,7 @@ describe('ChatPage (real mode)', () => {
             createdAt: '2026-07-03T07:00:05Z',
             tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
             degraded: false,
           })))
           controller.close()
@@ -148,6 +209,7 @@ describe('ChatPage (real mode)', () => {
             createdAt: '2026-07-03T07:00:05Z',
             tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
             degraded: false,
           })))
           controller.close()
@@ -182,7 +244,7 @@ describe('ChatPage (real mode)', () => {
           controller.enqueue(encoder.encode(frame('delta', { text: 'bizonytalan válasz' })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-degraded', role: 'assistant', content: 'bizonytalan válasz',
-            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: true,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: true,
           })))
           controller.close()
         },
@@ -209,7 +271,7 @@ describe('ChatPage (real mode)', () => {
           controller.enqueue(encoder.encode(frame('delta', { text: answer })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-md', role: 'assistant', content: answer,
-            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: false,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: false,
           })))
           controller.close()
         },
@@ -257,6 +319,70 @@ describe('ChatPage (real mode)', () => {
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
     fireEvent.click(screen.getByLabelText('Beszélgetések'))
     expect(await screen.findByText('Aludtam 7h-t…')).toBeInTheDocument()
+  })
+
+  test('chips ride the persisted answers, never the in-flight draft (mezo-b3pp.15)', async () => {
+    // Same gated-stream idiom as the live-tool-chip test above: hold 'delta'/'done' back so the
+    // streaming turn is actually observable on screen.
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          await rest
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    // The MSW history is assistant / user / assistant — two votable answers.
+    await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2))
+
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    // The draft answer is on screen but not yet persisted — there is nothing to vote on.
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+    expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2)
+
+    releaseRest()
+    // Once 'done' lands the persisted row carries an id — and gains its own chips.
+    await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(3))
+  })
+
+  test('a 👎 + reason on one answer writes only that answer (mezo-b3pp.15)', async () => {
+    const puts: unknown[] = []
+    server.use(http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+      const body = await request.json()
+      puts.push(body)
+      return HttpResponse.json({ ...(body as object), updatedAt: '2026-08-21T12:00:00Z' })
+    }))
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2))
+
+    // The reason row is per-card state: opening it on the FIRST answer must not open it on the second.
+    await userEvent.click(screen.getAllByRole('button', { name: /Nem talált/ })[0])
+    expect(screen.getAllByRole('button', { name: 'pontatlan' })).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: 'pontatlan' }))
+
+    await waitFor(() => expect(puts).toHaveLength(1))
+    expect(puts[0]).toMatchObject({
+      artifactKind: 'chat_message', artifactId: 'msg-0', verdict: 'down', reason: 'inaccurate',
+    })
   })
 
   test('renders the honest degraded state when the companion switch is off', async () => {

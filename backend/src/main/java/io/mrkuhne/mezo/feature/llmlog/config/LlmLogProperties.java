@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.llmlog.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.ZoneId;
@@ -19,8 +20,15 @@ public record LlmLogProperties(
      * Bound as a {@link ZoneId} so an unknown zone id fails at startup, not at first request.
      */
     @NotNull ZoneId reportZone,
-    @NotNull @Valid Executor executor
+    @NotNull @Valid Executor executor,
+    @NotNull @Valid Retention retention
 ) {
     /** The audit-writer thread pool — small by design; logging must never starve the request path. */
     public record Executor(@Positive int coreSize, @Positive int maxSize, @Positive int queueCapacity) {}
+
+    /**
+     * mezo-1y3p payload retention: the four payload columns are NULLed after {@code payloadDays};
+     * cost/token metadata is kept forever (the ADR 0014 founding purpose is retention-proof).
+     */
+    public record Retention(@Positive int payloadDays, @NotBlank String cron) {}
 }

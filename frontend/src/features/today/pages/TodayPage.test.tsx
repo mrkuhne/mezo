@@ -302,7 +302,9 @@ describe('TodayPage — composition', () => {
     vi.useFakeTimers().setSystemTime(at('13:42'))
     const { container } = renderToday()
     const chip = () => screen.getByRole('button', { name: /Mezo üzenetei/ })
+    const quests = () => screen.getByRole('button', { name: /Napi küldetések/ })
     const preview = chip().textContent
+    const questPreview = quests().textContent
     // …and it does not change with the selected tab — the thread is daypart-independent
     // by design, the exact complaint the old full-bleed band's repetition drew.
     for (const [pattern, face] of [[/Reggel/, 'reggel'], [/Nap/, 'nap'], [/Este/, 'este']] as const) {
@@ -310,7 +312,52 @@ describe('TodayPage — composition', () => {
       expect(shownFace(container)).toBe(face)
       expect(chip()).toBeInTheDocument()
       expect(chip().textContent).toBe(preview)
+      expect(quests()).toBeInTheDocument()
+      expect(quests().textContent).toBe(questPreview)
     }
+  })
+
+  test('the standing controls are ordered Mezo → daily quests → six need rings', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    renderToday()
+
+    const mezo = screen.getByRole('button', { name: /Mezo üzenetei/ })
+    const quests = screen.getByRole('button', { name: /Napi küldetések/ })
+    const needs = screen.getByRole('group', { name: 'Életjelek' })
+
+    expect(mezo.compareDocumentPosition(quests) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(quests.compareDocumentPosition(needs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(needs).getAllByRole('button')).toHaveLength(6)
+  })
+
+  test('the daily-quests chip opens the complete quest list in a sheet', async () => {
+    clockAt('09:12')
+    renderToday()
+
+    fireEvent.click(screen.getByRole('button', { name: /Napi küldetések/ }))
+    const dialog = screen.getByRole('dialog', { name: 'Napi küldetések' })
+
+    expect(within(dialog).getByText('A mai tervezett edzés a naptárban van — csináld végig')).toBeInTheDocument()
+    expect(within(dialog).getByText('Reggeli súlymérés — logold be')).toBeInTheDocument()
+    expect(within(dialog).getByText('Olvass ma legalább 10 percet')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Edzés' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Naplózz' })).toBeInTheDocument()
+  })
+
+  test('reroll replaces the chosen quest without closing the sheet', async () => {
+    clockAt('09:12')
+    renderToday()
+
+    await userEvent.click(screen.getByRole('button', { name: /Napi küldetések/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Napi küldetések' })
+    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Csere' })[0])
+
+    expect(await within(dialog).findByText('Pihenőnap: aludj legalább 7,5 órát')).toBeInTheDocument()
+    expect(dialog).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Csere' })).toBeNull()
+    expect(screen.getByRole('button', {
+      name: 'Napi küldetések, 1/3 kész, 0 újrasorsolás',
+    })).toBeInTheDocument()
   })
 
   test('the evening daypart owns the Napzárás act — it is never also a row', () => {
@@ -333,12 +380,11 @@ describe('TodayPage — composition', () => {
     expect(off.container.querySelector('.td-foot.is-warn')).toBeNull()
   })
 
-  test('the quest group heading links into quest management', () => {
+  test('quests are absent from the daypart list because the sheet is their single Today surface', () => {
     clockAt('09:12')
     renderToday()
-    const link = screen.getByRole('link', { name: 'Küldetések kezelése a Növekedésben' })
-    expect(link).toHaveAttribute('href', '/me/growth')
-    expect(link.textContent).toMatch(/^\d+\/\d+ · \+\d+ XP/)
+    expect(screen.queryByText('Olvass ma legalább 10 percet')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Küldetések kezelése a Növekedésben' })).toBeNull()
   })
 
   test('the evening retrospective appears with the day XP once something is done', async () => {
@@ -434,12 +480,16 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
-  test('an ACTIVITY quest row opens the activity log sheet, it never self-completes', () => {
-    vi.useFakeTimers().setSystemTime(at('09:12'))
+  test('an ACTIVITY quest action opens the activity log sheet, it never self-completes', () => {
+    clockAt('09:12')
     renderToday()
-    const row = screen.getByText('Olvass ma legalább 10 percet').closest('.td-row') as HTMLElement
-    fireEvent.click(within(row).getByRole('button', { name: 'Naplózz' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /Napi küldetések/ }))
+    const dialog = screen.getByRole('dialog', { name: 'Napi küldetések' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Naplózz' }))
+
     expect(screen.getByText('Mi történt ma?')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Napi küldetések' })).toBeNull()
   })
 
   test('a MANUAL habit row routes to check() and the chain advances', async () => {

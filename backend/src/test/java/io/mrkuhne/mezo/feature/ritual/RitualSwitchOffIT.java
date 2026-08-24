@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.ritual;
 
+import io.mrkuhne.mezo.api.dto.RitualReflectionRequest;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -13,5 +14,12 @@ class RitualSwitchOffIT extends ApiIntegrationTest {
     @Test
     void testGetRitualDay_shouldReturn404_whenRitualSwitchOff() {
         getForBody("/api/ritual/day/" + LocalDate.now(), ownerAuthHeaders(), HttpStatus.NOT_FOUND, Void.class);
+    }
+
+    @Test
+    void testSaveRitualReflection_shouldReturn404_whenRitualSwitchOff() {
+        putForBody("/api/ritual/reflection",
+            RitualReflectionRequest.builder().date(LocalDate.now()).text("x").build(),
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, Void.class);
     }
 }

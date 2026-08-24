@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
@@ -17,18 +18,24 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The {@code [fake-experiment:{…}]} sentinel rides a check-in note — the proposal gather renders
  * the V0.3 snapshot, so the check-in channel IS in the payload.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class ExperimentProposalGeneratorIT extends AbstractIntegrationTest {
 
     @Autowired
     private ExperimentProposalGenerator generator;
+
+    @Autowired
+    private AppNotificationRepository appNotificationRepository;
 
     @Autowired
     private UserPopulator userPopulator;
@@ -81,6 +88,11 @@ class ExperimentProposalGeneratorIT extends AbstractIntegrationTest {
         assertThat(e.getTotalDays()).isEqualTo(28);   // clamped from 90 to max-days
         assertThat(e.getStartDate()).isNull();
         assertThat(e.getSourcePatternId()).isEqualTo(confirmedPattern.getId());
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("experiment_proposed");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights/experiments");
+                });
     }
 
     @Test

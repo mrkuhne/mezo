@@ -66,6 +66,24 @@ public final class ToolText {
     }
 
     /**
+     * "gym ({dayLabel}): {exercises}" — or "pihenőnap (gym)" when the day has no exercises. The gym
+     * half of a day, shared by {@code TrainTools} (get_training_plan) and
+     * {@code ContextSnapshotAssembler} (Ma:/Holnap:) exactly the way {@link #sportLine} shares the
+     * sport half (mezo-4qu). Both used to render this themselves, and the duplication is what let
+     * them drift: the criterion below — a present-but-EMPTY meso template day is a REST day, not a
+     * gym day — had to be fixed twice, and the weekend-training hallucination (mezo-650a) lived in
+     * the copy that was missed. One helper, one criterion, no third drift.
+     *
+     * @param dayLabel the template day's label; only read when {@code exerciseLines} is non-empty
+     * @param exerciseLines already-rendered {@link #exerciseLine} strings, in display order
+     */
+    public static String gymLine(String dayLabel, List<String> exerciseLines) {
+        return exerciseLines.isEmpty()
+                ? "pihenőnap (gym)"
+                : "gym (" + dayLabel + "): " + String.join(", ", exerciseLines);
+    }
+
+    /**
      * Lowercase + NFD accent-strip — "Túrós" → "turos", so a Hungarian name is findable without
      * diacritics (the {@code ClinicalOutputCheck.fold} idiom, promoted here for tool matching).
      */

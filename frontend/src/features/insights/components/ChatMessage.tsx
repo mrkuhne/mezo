@@ -1,9 +1,19 @@
 import { Markdown } from '@/shared/lib/markdown'
 import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
+import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
-export function ChatMessage({ m }: { m: ChatMessageT }) {
+/** The card's slice of the page-level `useFeedback` handle (mezo-b3pp.15). Absent when the
+ *  message is not votable — a user bubble, or an answer still streaming (no persisted id yet). */
+export interface ChatMessageFeedback {
+  value: ArtifactFeedback | undefined
+  onVote: (verdict: FeedbackVerdict, reason?: FeedbackReason) => void
+}
+
+export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatMessageFeedback }) {
   if (m.role === 'user') {
     return (
       <div style={{ alignSelf: 'flex-end', maxWidth: '80%' }}>
@@ -47,8 +57,18 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
       </div>
       {m.tools && <ToolChipRow tools={m.tools} />}
       <div className="card" style={{ padding: 14 }}>
-        {/* Model prose — blocks, not one <p>: the answer carries real markdown (mezo-at8x.1). */}
-        <div className="md-prose"><Markdown text={m.text} /></div>
+        {/* mezo-8z79: a blank answer can no longer be persisted, but rows written BEFORE the guard
+            are still in history — and an empty card reads as a rendering bug. Name what happened
+            instead of showing nothing. Gated on `m.id` (i.e. PERSISTED): the in-flight streaming
+            bubble is legitimately empty while its tool chips run, and must not say this. */}
+        {m.text.trim() || !m.id ? (
+          /* Model prose — blocks, not one <p>: the answer carries real markdown (mezo-at8x.1). */
+          <div className="md-prose"><Markdown text={m.text} /></div>
+        ) : (
+          <p className="text-tertiary" style={{ fontSize: 12.5, fontStyle: 'italic' }}>
+            Erre a körre nem érkezett válasz.
+          </p>
+        )}
         {m.refs && (
           <div
             className="row gap-xs flex-wrap mt-md"
@@ -63,6 +83,15 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
           </div>
         )}
       </div>
+      {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
+      {m.recalled && <RecalledMemoriesRow items={m.recalled} />}
+      {/* Under the card, assistant rows only — and only once the answer is persisted, i.e. has
+          an artifactId to vote on. The parent keys this row by that id, so React never reuses
+          one FeedbackChips instance (whose reason-row state is session-local) across two
+          different answers — advisory since the row derives from the verdict, not load-bearing. */}
+      {feedback && (
+        <FeedbackChips value={feedback.value} onVote={feedback.onVote} label="a válaszról" />
+      )}
     </div>
   )
 }

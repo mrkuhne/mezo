@@ -89,11 +89,6 @@ describe('DayGroups', () => {
     expect(screen.getByRole('button', { name: '+250 ml' })).toBeInTheDocument()
   })
 
-  test('the quest heading carries the ONE Today → Growth route', () => {
-    renderGroups({ growth: { done: 2, total: 5, xp: 120 } })
-    expect(screen.getByRole('link', { name: /Küldetések kezelése/ })).toHaveAttribute('href', '/me/growth')
-  })
-
   test('head and focus slots render as given', () => {
     // DayGroups no longer wraps `focus` in its own „Fókusz" heading — the slot's own
     // content (IntentionBanner) brings its own `TodayList` now (mezo-e26w); that heading

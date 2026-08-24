@@ -10,6 +10,7 @@ import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
+import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
@@ -46,6 +47,7 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
+import { JournalPage } from '@/features/me/pages/JournalPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -76,6 +78,9 @@ export const routes: RouteObject[] = [
           { path: 'exercises', element: <ExercisesPage /> },
           { path: 'medals', element: <MedalsPage /> },
           { path: 'mesocycles', element: <MesocycleLibraryPage /> },
+          // The `Sablonok` tab (mezo-tlwa) — a Train tab like the ones above (keeps the
+          // sub-nav), NOT a full-screen sibling; the template EDITOR below still is one.
+          { path: 'templates', element: <MesoTemplatesPage /> },
         ],
       },
       { path: 'train/session', element: <ActiveWorkoutPage /> },
@@ -147,6 +152,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <ProfilePage /> },
           { path: 'growth', element: <GrowthPage /> },
+          { path: 'naplo', element: <JournalPage /> },
           { path: 'goals', element: <GoalsPage /> },
           { path: 'weight', element: <WeightPage /> },
           { path: 'sleep', element: <SleepPage /> },

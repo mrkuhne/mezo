@@ -29,3 +29,14 @@ test('toDayInputs keeps rest days, drops exercise ids and blanks a falsy muscleA
   expect(inputs[0].exercises![0]).not.toHaveProperty('id')
   expect(inputs[0].exercises![0]).toMatchObject({ name: 'Bench', workingSets: 4, anchorWeightKg: 60 })
 })
+
+test('toDayInputs carries countsTowardVolume so the toggle survives a save', () => {
+  const inputs = toDayInputs([{
+    day: 'Hét', type: 'Pull', muscle: 'back', exerciseCount: 1,
+    exercises: [
+      { id: 'x', name: 'Dead Hang', muscle: 'back-wide', warmupSets: 0, workingSets: 2,
+        repMin: 45, repMax: 60, targetRIR: 0, type: 'plyo', countsTowardVolume: false },
+    ],
+  }])
+  expect(inputs[0].exercises?.[0].countsTowardVolume).toBe(false)
+})

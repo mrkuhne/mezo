@@ -50,6 +50,7 @@ class LlmLogWriterIT extends AbstractIntegrationTest {
             .status(CallStatus.SUCCESS).latencyMs(500)
             .tokens(new TokenUsage(10_000, 1_000, 500, 0, 11_500))
             .systemPrompt("sys").userMessage("hi").responseText("hello")
+            .finishReason("STOP")
             .context(new LlmCallContext("companion_chat", "chat_turn", "meal", mealId))
             .build();
 
@@ -67,6 +68,8 @@ class LlmLogWriterIT extends AbstractIntegrationTest {
         assertThat(row.getPricingSnapshot().sourceModel()).isEqualTo("gemini-2.5-flash");
         assertThat(row.getCreatedBy()).isEqualTo(owner);
         assertThat(row.isTruncated()).isFalse();
+        // mezo-8z79: the finish reason rides the row so an empty responseText is diagnosable.
+        assertThat(row.getFinishReason()).isEqualTo("STOP");
     }
 
     /**

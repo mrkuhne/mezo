@@ -509,18 +509,19 @@ public class MetricSeriesService {
     }
 
     /**
-     * 0/1 lezárás-sorozat (point-biserial). ritual_day sor csak záráskor születik, ezért a 0-kat
-     * a naptár adja — de csak az első valaha lezárt nap (adopció) UTÁN: előtte a hiány nem
+     * 0/1 lezárás-sorozat (point-biserial). ritual_day sor reflexióra is születhet (mezo-b3pp.2),
+     * ezért a lezárás mércéje a {@code closed_at is not null}, nem a sor léte; a 0-kat a naptár
+     * adja — de csak az első valaha lezárt nap (adopció) UTÁN: előtte a hiány nem
      * "nem zárta le", hanem "még nem használta a rituálét".
      */
     private Map<LocalDate, Double> ritualClosed(UUID userId, LocalDate from, LocalDate to) {
-        LocalDate adopted = ritualDayRepository.findFirstByCreatedByOrderByRitualDateAsc(userId)
+        LocalDate adopted = ritualDayRepository.findFirstByCreatedByAndClosedAtIsNotNullOrderByRitualDateAsc(userId)
                 .map(RitualDayEntity::getRitualDate).orElse(null);
         if (adopted == null) {
             return Map.of();
         }
         Set<LocalDate> closed = ritualDayRepository
-                .findByCreatedByAndRitualDateBetween(userId, from, to).stream()
+                .findByCreatedByAndRitualDateBetweenAndClosedAtIsNotNull(userId, from, to).stream()
                 .map(RitualDayEntity::getRitualDate)
                 .collect(Collectors.toSet());
         Map<LocalDate, Double> series = new HashMap<>();

@@ -1,14 +1,20 @@
 package io.mrkuhne.mezo.feature.companion.embedding;
 
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
+import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -108,6 +114,147 @@ public class MemoryEmbeddingWriter {
                 .filter(id -> !memoryEmbeddingRepository.existsByKindAndRefId(
                         MemoryEmbeddingEntity.KIND_CHAT_TURN, id))
                 .toList();
+    }
+
+    /** W1.1 journal unit (spec §5.1): create inserts, an edit re-embeds in place ({@link #upsert}). */
+    @Transactional
+    public void writeJournal(JournalEntryEntity entry) {
+        upsert(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId(),
+                entry.getText(), entry.getOccurredOn());
+    }
+
+    /** Deleted entries must not be recallable — soft-deletes the entry's vector row (IDENT-1 honesty). */
+    @Transactional
+    public void deleteJournalEmbedding(UUID entryId) {
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entryId)
+                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+    }
+
+    /** W1.3 gratitude unit (spec §4.1 / §5.3): short lines, same upsert-in-place seam as journal. */
+    @Transactional
+    public void writeGratitude(GratitudeEntryEntity entry) {
+        upsert(entry.getCreatedBy(), MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId(),
+                entry.getText(), entry.getOccurredOn());
+    }
+
+    /** Deleted gratitude entries must not be recallable — soft-deletes the entry's vector row. */
+    @Transactional
+    public void deleteGratitudeEmbedding(UUID entryId) {
+        memoryEmbeddingRepository
+                .findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entryId)
+                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+    }
+
+    /**
+     * W1.4 decision unit (spec §5.4): the decision text on create, and — once reviewed — the same
+     * text plus its outcome, re-embedded IN PLACE on the live {@code (kind, ref_id)} row. The
+     * outcome is the half worth recalling ("what did I decide, and did it work"), which is why a
+     * review re-embeds instead of leaving the create-time vector standing.
+     */
+    @Transactional
+    public void writeDecision(DecisionEntryEntity decision) {
+        upsert(decision.getCreatedBy(), MemoryEmbeddingEntity.KIND_DECISION, decision.getId(),
+                decisionContent(decision), decision.getDecidedOn());
+    }
+
+    /**
+     * W1.2 evening reflection (spec §5.2): the day's prose, embedded when the ritual closes and
+     * re-embedded when an already-closed day's prose is edited, so the vector never goes stale.
+     * A blank or cleared reflection is not embeddable — any existing vector is soft-deleted, so a
+     * skipped (or erased) evening is never recallable (IDENT-3 honesty, the {@link
+     * #deleteJournalEmbedding} idiom).
+     */
+    @Transactional
+    public void writeReflection(RitualDayEntity day) {
+        String text = day.getReflectionText();
+        if (text == null || text.isBlank()) {
+            memoryEmbeddingRepository
+                    .findByKindAndRefId(MemoryEmbeddingEntity.KIND_REFLECTION, day.getId())
+                    .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+            return;
+        }
+        upsert(day.getCreatedBy(), MemoryEmbeddingEntity.KIND_REFLECTION, day.getId(), text,
+                day.getRitualDate());
+    }
+
+    /**
+     * W3.2 consolidation ladder (spec §7.2): a {@code period_summary} row becomes a
+     * {@code weekly_summary} / {@code monthly_summary} vector. {@code occurred_on} is the period's
+     * START (its identity — the ISO Monday / first of the month), so the block renders the period
+     * a reader can name and the recency decay treats the whole period as that one date. The write
+     * goes through {@link #upsert}: a regenerated period text refreshes the vector IN PLACE
+     * instead of leaving a stale one behind on the same {@code (kind, ref_id)} key — but an
+     * UNCHANGED text short-circuits before the provider call, because the nightly job re-offers
+     * every period in its backfill window on every run.
+     */
+    @Transactional
+    public void writePeriodSummary(PeriodSummaryEntity summary) {
+        String kind = PeriodSummaryEntity.GRANULARITY_MONTH.equals(summary.getGranularity())
+                ? MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY
+                : MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY;
+        String capped = cap(summary.getSummaryText());
+        boolean unchanged = memoryEmbeddingRepository.findByKindAndRefId(kind, summary.getId())
+                .filter(existing -> capped.equals(existing.getContent()))
+                .isPresent();
+        if (unchanged) {
+            // the nightly job re-offers every period in its backfill window; re-embedding an
+            // unchanged text would burn a provider call per period per night for nothing
+            return;
+        }
+        upsert(summary.getCreatedBy(), kind, summary.getId(), capped, summary.getPeriodStart());
+    }
+
+    /**
+     * W1.5 note unit (spec §5.5): a substantive note from a {@link NarrativeNoteSource}
+     * (activity-log „Napló" entry or check-in note), embedded WRITE-ONCE via {@link #write} —
+     * there is no listener behind these kinds, only the nightly sweep, so an edited or deleted
+     * source row keeps/leaves orphaned its original vector (known gap, journal.md §9).
+     */
+    @Transactional
+    public void writeNote(String kind, NarrativeNoteSource.Note note) {
+        write(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
+    }
+
+    /**
+     * The re-embeddable unit's write path: first write inserts; a later edit re-embeds IN PLACE on
+     * the {@code (kind, ref_id)} row. {@code uq_memory_embedding_kind_ref_id} spans soft-deleted
+     * rows, so the spec's "delete + insert" is realized as an update (same key, fresh vector +
+     * content). Only kinds whose source text can change go through here — {@code chat_turn}/{@code
+     * daily_summary} are write-once and use {@link #write} directly.
+     *
+     * <p>The lookup deliberately INCLUDES soft-deleted rows and revives what it finds. A cleared
+     * unit ({@link #writeReflection}'s blank branch, {@link #deleteJournalEmbedding}) soft-deletes
+     * its vector, but the plain unique constraint keeps that dead row parked on the key — so
+     * without the revive a later re-write would take the insert branch, hit the constraint, and
+     * (both listeners swallow their failures) leave the unit silently un-embeddable FOREVER.
+     * Reviving is safe for every kind routed here: {@code writeJournal} is only ever reached for
+     * an entry that is still live (its listener re-reads through the {@code @SQLRestriction}
+     * filter first, and re-checks liveness AFTER the write, deleting again if a racing delete won),
+     * and decisions cannot be deleted at all.
+     */
+    private void upsert(UUID createdBy, String kind, UUID refId, String content, LocalDate occurredOn) {
+        memoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted(kind, refId)
+                .ifPresentOrElse(existing -> {
+                    String capped = cap(content);
+                    float[] vector = llmCallContextHolder.runWith(
+                            new LlmCallContext("embed_memory", "document", kind, refId),
+                            () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
+                    existing.setContent(capped);
+                    existing.setEmbedding(vector);
+                    existing.setOccurredOn(occurredOn);
+                    existing.setDeleted(false); // revive: the key is still ours, take it back
+                    memoryEmbeddingRepository.saveAndFlush(existing);
+                }, () -> write(createdBy, kind, refId, content, occurredOn));
+    }
+
+    private static String decisionContent(DecisionEntryEntity decision) {
+        if (decision.getOutcomeRating() == null) {
+            return decision.getDecisionText();
+        }
+        String outcome = decision.getOutcomeText() == null ? "" : " " + decision.getOutcomeText();
+        return decision.getDecisionText()
+                + "\n\nKimenet (" + decision.getOutcomeRating() + "/5):" + outcome;
     }
 
     private void write(UUID createdBy, String kind, UUID refId, String content, LocalDate occurredOn) {

@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.PredictionResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
@@ -47,6 +48,8 @@ class ProactiveApiIT extends ApiIntegrationTest {
 
         assertThat(suggestion.getWeekStart()).isEqualTo(weekStart);
         assertThat(suggestion.getProse()).isNotBlank();
+        // lazily generated inside the endpoint — no populated row to pin identity against
+        assertThat(suggestion.getId()).isNotNull();
     }
 
     @Test
@@ -61,13 +64,14 @@ class ProactiveApiIT extends ApiIntegrationTest {
     void testGetMemoir_shouldReturnLatestPersistedRow_whenOneExists() {
         LocalDate monday = LocalDate.now().with(
                 java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-        memoirPopulator.memoir(ownerId(), monday.minusWeeks(1));
+        MemoirEntity memoirRow = memoirPopulator.memoir(ownerId(), monday.minusWeeks(1));
 
         MemoirResponse memoir = getForBody(
                 "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.OK, MemoirResponse.class);
 
         assertThat(memoir.getTitle()).isEqualTo("Teszt memoir");
         assertThat(memoir.getAnchors()).hasSize(1);
+        assertThat(memoir.getId()).isEqualTo(memoirRow.getId());
     }
 
     @Test
@@ -82,6 +86,8 @@ class ProactiveApiIT extends ApiIntegrationTest {
 
         assertThat(memoir.getWeekStart()).isEqualTo(lastWeek);
         assertThat(memoir.getTitle()).isEqualTo("Fake memoir");   // the un-scripted fake default
+        // lazily generated inside the endpoint — no populated row to pin identity against
+        assertThat(memoir.getId()).isNotNull();
     }
 
     @Test

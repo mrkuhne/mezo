@@ -76,6 +76,7 @@ public class LlmLogWriter {
         entity.setStreamed(record.streamed());
         entity.setToolRounds(record.toolRounds());
         entity.setServiceTier(record.serviceTier());
+        entity.setFinishReason(record.finishReason());
         applyTokens(entity, record.tokens());
         applyEmbed(entity, record.embed());
         applyPayload(entity, record);

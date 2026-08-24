@@ -204,6 +204,7 @@ components:
         streamed: { type: boolean }
         toolRounds: { type: integer, format: int32, nullable: true }
         serviceTier: { type: string, nullable: true }
+        finishReason: { type: string, nullable: true, description: "provider finish reason of the final generation (STOP / MAX_TOKENS / SAFETY / ...); null = none reported or the call never reached a generation" }
         promptTokens: { type: integer, format: int32, nullable: true, description: "RAW provider count — INCLUDES cachedTokens" }
         candidatesTokens: { type: integer, format: int32, nullable: true }
         thoughtsTokens: { type: integer, format: int32, nullable: true }
@@ -220,6 +221,7 @@ components:
         responseText: { type: string, nullable: true }
         truncated: { type: boolean, description: "a payload column was cut to mezo.llm-log.max-payload-chars" }
         payloadBytes: { type: integer, format: int32, description: "TRUE pre-truncation payload size in bytes" }
+        payloadScrubbedAt: { type: string, format: date-time, nullable: true, description: "when the mezo-1y3p retention job hard-removed the payload columns; null = payload intact or never present (embed rows)" }
         costUsd: { type: number, format: double, nullable: true }
         pricingSnapshot: { $ref: '#/components/schemas/LlmPricingSnapshot' }
     LlmPricingSnapshot:

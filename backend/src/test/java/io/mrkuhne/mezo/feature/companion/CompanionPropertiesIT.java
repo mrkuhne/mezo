@@ -53,6 +53,9 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.embedding().model()).isEqualTo("gemini-embedding-001");
         assertThat(properties.embedding().embedChatTurns()).isTrue();
         assertThat(properties.embedding().embedMaxChars()).isEqualTo(2000);
+        assertThat(properties.embedding().embedNotes()).isTrue();
+        assertThat(properties.embedding().noteMinChars()).isEqualTo(80);
+        assertThat(properties.embedding().noteBatchSize()).isEqualTo(200);
     }
 
     @Test
@@ -101,5 +104,28 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);
         assertThat(properties.tools().maxTrendWeeks()).isEqualTo(26);
         assertThat(properties.tools().maxRefsPerTurn()).isEqualTo(10);
+    }
+
+    @Test
+    void testAmbientRecallConfig_shouldBindPerGroupFloorsAndDecayFromYaml_whenContextStarts() {
+        CompanionProperties.AmbientRecall ambient = properties.ambientRecall();
+        assertThat(ambient.enabled()).isTrue();
+        assertThat(ambient.weeklyShadowDays()).isEqualTo(30);
+        assertThat(ambient.maxTokens()).isEqualTo(1200);
+        assertThat(ambient.dailySummary()).isEqualTo(new CompanionProperties.AmbientRecall.Group(2, 0.55, 90));
+        assertThat(ambient.periodSummary()).isEqualTo(new CompanionProperties.AmbientRecall.Group(2, 0.55, 180));
+        // W3.3 (mezo-b3pp.14): lived-with 2026-08-22 — the journal family wants a higher floor
+        assertThat(ambient.journal()).isEqualTo(new CompanionProperties.AmbientRecall.Group(2, 0.60, 90));
+        assertThat(ambient.chatTurn()).isEqualTo(new CompanionProperties.AmbientRecall.Group(1, 0.55, 90));
+        assertThat(ambient.other()).isEqualTo(new CompanionProperties.AmbientRecall.Group(1, 0.55, 90));
+    }
+
+    @Test
+    void testGraphConfig_shouldBindTraversalAndMaintenanceKnobsFromYaml_whenContextStarts() {
+        assertThat(properties.graph().maxHops()).isEqualTo(2);
+        assertThat(properties.graph().topK()).isEqualTo(8);
+        assertThat(properties.graph().decayFactor()).isEqualTo(0.99);
+        assertThat(properties.graph().pruneFloor()).isEqualTo(0.05);
+        assertThat(properties.graph().renderMaxTokens()).isEqualTo(800);
     }
 }

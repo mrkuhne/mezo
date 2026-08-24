@@ -354,6 +354,34 @@ class MesoTemplateIT extends ApiIntegrationTest {
             .satisfies(m -> assertThat(m.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE));
     }
 
+    @Test
+    void testStartTemplate_shouldExemptPlyoExerciseFromVolume_whenTemplateFlagAbsent() {
+        // mezo-gbo7 regression: the planner emits plyo recipes (Box Jump, Depth Jump) with NO
+        // explicit countsTowardVolume — the wizard's generated split never sets it. The stored plan
+        // document and the toExerciseEntity() stamp must agree that an absent flag on a plyo
+        // exercise means "exempt", or a plyo exercise silently rejoins its muscle's weekly volume.
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateUpsertRequest req = upsertRequest();
+        List<MesoDayInput> days = new ArrayList<>(req.getDays());
+        GymExerciseInput boxJump = GymExerciseInput.builder()
+            .name("Box Jump").muscle("quad").warmupSets(0).workingSets(3).repMin(5).repMax(8)
+            .targetRIR(2).type(GymExerciseInput.TypeEnum.PLYO).build(); // no countsTowardVolume
+        days.add(MesoDayInput.builder().day("Szo").type("Legs").muscle("quad")
+            .exercises(List.of(boxJump)).build());
+        req.setDays(days);
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+
+        postForBody(TEMPLATES + "/" + created.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        Boolean countsTowardVolume = jdbcTemplate.queryForObject(
+            "select counts_toward_volume from exercise where name = 'Box Jump'", Boolean.class);
+        assertThat(countsTowardVolume).isFalse();
+    }
+
     // ── rerun: materializing a template out of a legacy run (Task 4) ─────────────
 
     @Test

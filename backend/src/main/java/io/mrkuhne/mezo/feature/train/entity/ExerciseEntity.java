@@ -84,6 +84,15 @@ public class ExerciseEntity extends OwnedEntity {
     @Column(name = "catalog_id")
     private UUID catalogId;
 
+    /**
+     * Whether this exercise's sets count as hypertrophy volume (mezo-gbo7). False for the fix-zárás
+     * closing block (posture/accessory work) and for plyometrics, so neither distorts the per-muscle
+     * weekly set target nor consumes the group's budget. Read by WorkoutService.effectiveWorkingSets,
+     * VolumeProgressionService's weekly signals, VolumeArcService's actuals and the baseline seeding.
+     */
+    @Column(name = "counts_toward_volume", nullable = false)
+    private boolean countsTowardVolume = true;
+
     @NotNull
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;

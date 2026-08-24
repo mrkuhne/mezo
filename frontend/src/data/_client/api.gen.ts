@@ -2497,6 +2497,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ritual/reflection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert the day's prose reflection before the close (Ritual) */
+        put: operations["saveRitualReflection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gamification/profile": {
         parameters: {
             query?: never;
@@ -2635,6 +2652,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The in-app notification feed, newest first (NotificationFeed) */
+        get: operations["getNotificationFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/feed/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every unread feed row read (NotificationFeed) */
+        post: operations["markNotificationFeedRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notification/schedule": {
         parameters: {
             query?: never;
@@ -2748,6 +2799,221 @@ export interface paths {
         get: operations["getNeedsSummary"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Journal entries in a date range, newest first (Journal) */
+        get: operations["listJournalEntries"];
+        put?: never;
+        /** Create a free-prose journal entry (Journal) */
+        post: operations["createJournalEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit an entry's text and/or day (Journal) */
+        put: operations["updateJournalEntry"];
+        post?: never;
+        /** Soft-delete an entry (Journal) */
+        delete: operations["deleteJournalEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All decisions, newest first (Journal) */
+        get: operations["listDecisionEntries"];
+        put?: never;
+        /** Record a decision; the server freezes its own context snapshot (Journal) */
+        post: operations["createDecisionEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal/decision/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rate how a decision turned out (Journal) */
+        put: operations["reviewDecisionEntry"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal/gratitude": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List gratitude entries in a date range (Journal) */
+        get: operations["listGratitudeEntries"];
+        put?: never;
+        /** Create a gratitude entry (Journal) */
+        post: operations["createGratitudeEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal/gratitude/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Soft-delete a gratitude entry (Journal) */
+        delete: operations["deleteGratitudeEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read this user's verdicts for one artifact kind (CompanionFeedback)
+         * @description Page hydration: the caller passes every artifact id it renders and gets back only the ones that carry a verdict. Unknown/never-voted ids are simply absent (never an error) — the surface degrades to "no chip selected", never to a failed page.
+         */
+        get: operations["listFeedback"];
+        /**
+         * Upsert the single verdict for one artifact (CompanionFeedback)
+         * @description One updatable verdict per (user, artifactKind, artifactId). Re-tapping the OTHER verdict overwrites this row; re-tapping the SAME verdict is a retraction and goes to DELETE. Artifact existence is deliberately NOT checked cross-table (the kinds span five tables; a dangling id is harmless in a single-user app).
+         */
+        put: operations["putFeedback"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/feedback/{artifactKind}/{artifactId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Retract the verdict on one artifact (CompanionFeedback) */
+        delete: operations["deleteFeedback"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active knowledge-graph nodes for the current user (KnowledgeGraph) */
+        get: operations["listGraphNodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a node — hides it from active listing and traversal (KnowledgeGraph) */
+        post: operations["archiveGraphNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/candidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending (undecided) LIFE_EVENT candidates from the nightly extractor, newest first (W2.3) */
+        get: operations["listGraphCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a candidate (W2.3) — accept activates the node and creates its proposed edges, reject soft-deletes it. One decision per candidate; confirm is an explicit L2 action. */
+        post: operations["decideGraphCandidate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3099,6 +3365,8 @@ export interface components {
             warning?: string;
             /** Format: uuid */
             catalogId?: string;
+            /** @description Whether this exercise's sets count as hypertrophy volume; false for the fix-zárás closing block and plyometrics (mezo-gbo7). Absent = true. */
+            countsTowardVolume?: boolean;
             /** @description Effective YouTube demo URL resolved from the linked catalog row (null when none) */
             videoUrl?: string | null;
             /** @description Demo still (start position) resolved from the linked catalog row (null when none) */
@@ -3258,6 +3526,8 @@ export interface components {
             warning?: string;
             /** Format: uuid */
             catalogId?: string;
+            /** @description Whether this exercise's sets count as hypertrophy volume; false for the fix-zárás closing block and plyometrics (mezo-gbo7). Absent = true. */
+            countsTowardVolume?: boolean;
         };
         CustomWorkoutResponse: {
             /** Format: uuid */
@@ -3300,7 +3570,7 @@ export interface components {
             imageEndUrl?: string | null;
         };
         CatalogVideoRequest: {
-            /** @description A YouTube watch/short URL, or null to clear the demo */
+            /** @description A YouTube watch/short URL or an Instagram reel/post permalink, or null to clear the demo */
             videoUrl?: string | null;
         };
         /** @description Demo stills for a catalog exercise. Either field null clears that frame. Values are same-origin vendored paths (/exercises/{slug}-a.jpg) or an absolute http(s) URL. */
@@ -4926,6 +5196,26 @@ export interface components {
             tools: components["schemas"]["MessageTool"][];
             /** @description Data references backing this answer (V0.5): entity refs contributed by the executed tools (deduped, capped). Empty when the turn used no tools. */
             refs: components["schemas"]["MessageRef"][];
+            /** @description W3.1b (mezo-b3pp.28): the memories ambient recall injected into this answer's prompt (the [Emlékek] block), in prompt order — date + source + one-line gist + raw cosine similarity. Empty on user rows, on pre-W3.1 rows, and when recall found nothing or failed (the turn is never degraded by a failed recall). */
+            recalled: components["schemas"]["RecalledMemory"][];
+        };
+        RecalledMemory: {
+            /**
+             * Format: date
+             * @description The day the remembered episode happened
+             */
+            occurredOn: string;
+            /** @description memory_embedding.kind (journal_entry | daily_summary | chat_turn | …) */
+            kind: string;
+            /** @description Hungarian source tag as rendered in the prompt (napló, napi összefoglaló, …) */
+            label: string;
+            /** @description The one-line excerpt that was injected (first line, capped) */
+            gist: string;
+            /**
+             * Format: double
+             * @description Raw cosine similarity to the user message
+             */
+            similarity: number;
         };
         MessageTool: {
             /** @description 'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only 'read' */
@@ -5375,6 +5665,11 @@ export interface components {
             label: string;
         };
         FeedMessageResponse: {
+            /**
+             * Format: uuid
+             * @description The companion_message row id — the W4.1 feedback artifactId (feed_message).
+             */
+            id: string;
             /** Format: date */
             date: string;
             /** @enum {string} */
@@ -5386,6 +5681,11 @@ export interface components {
             generatedAt: string;
         };
         WeeklySuggestionResponse: {
+            /**
+             * Format: uuid
+             * @description The weekly_suggestion row id — the W4.1 feedback artifactId (weekly_suggestion).
+             */
+            id: string;
             /** Format: date */
             weekStart: string;
             /** @description Plain Hungarian plan-suggestion prose (smart tier; no markdown structure) */
@@ -5399,6 +5699,11 @@ export interface components {
             label: string;
         };
         MemoirResponse: {
+            /**
+             * Format: uuid
+             * @description The memoir row id — the W4.1 feedback artifactId (memoir).
+             */
+            id: string;
             /** Format: date */
             weekStart: string;
             /** @description Display title of the week's narrative */
@@ -5844,11 +6149,19 @@ export interface components {
             closed: boolean;
             /** Format: date-time */
             closedAt?: string | null;
+            /** @description The day's prose reflection (W1.2); null when skipped */
+            reflectionText?: string | null;
             window: components["schemas"]["RitualWindow"];
         };
         RitualCloseRequest: {
             /** Format: date */
             date: string;
+        };
+        RitualReflectionRequest: {
+            /** Format: date */
+            date: string;
+            /** @description Free prose; stored stripped of surrounding whitespace, and blank (or whitespace-only) clears the reflection */
+            text: string;
         };
         GamificationProfileResponse: {
             /** Format: int64 */
@@ -5931,6 +6244,22 @@ export interface components {
             /** @description The categories this payload REPLACES — a category listed with no entries is cleared */
             categories: string[];
             entries: components["schemas"]["NotificationScheduleEntry"][];
+        };
+        NotificationFeedItem: {
+            /** Format: uuid */
+            id: string;
+            /** @example pattern_inbox */
+            kind: string;
+            title: string;
+            body?: string | null;
+            deeplink: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: date-time */
+            readAt?: string | null;
+        };
+        NotificationFeedResponse: {
+            items: components["schemas"]["NotificationFeedItem"][];
         };
         LlmUsageSummaryResponse: {
             day: components["schemas"]["LlmUsagePeriod"];
@@ -6061,6 +6390,8 @@ export interface components {
             /** Format: int32 */
             toolRounds?: number | null;
             serviceTier?: string | null;
+            /** @description provider finish reason of the final generation (STOP / MAX_TOKENS / SAFETY / ...); null = none reported or the call never reached a generation */
+            finishReason?: string | null;
             /**
              * Format: int32
              * @description RAW provider count — INCLUDES cachedTokens
@@ -6095,6 +6426,11 @@ export interface components {
              * @description TRUE pre-truncation payload size in bytes
              */
             payloadBytes: number;
+            /**
+             * Format: date-time
+             * @description when the mezo-1y3p retention job hard-removed the payload columns; null = payload intact or never present (embed rows)
+             */
+            payloadScrubbedAt?: string | null;
             /** Format: double */
             costUsd?: number | null;
             pricingSnapshot?: components["schemas"]["LlmPricingSnapshot"];
@@ -6142,6 +6478,129 @@ export interface components {
             /** Format: date */
             lastCloseDate?: string;
             lastAllGreen?: boolean;
+        };
+        JournalEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            occurredOn: string;
+            text: string;
+            /** @enum {string} */
+            source: "quickinput" | "ritual";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateJournalEntryRequest: {
+            text: string;
+            /**
+             * Format: date
+             * @description The day the entry is ABOUT; server defaults to today when absent.
+             */
+            occurredOn?: string;
+            source: string;
+        };
+        UpdateJournalEntryRequest: {
+            text: string;
+            /**
+             * Format: date
+             * @description Absent = keep the current day.
+             */
+            occurredOn?: string;
+        };
+        DecisionEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            decidedOn: string;
+            decisionText: string;
+            /**
+             * Format: date
+             * @description decidedOn + mezo.companion.journal.decision-review-days, server-computed.
+             */
+            reviewDue: string;
+            /** Format: date-time */
+            reviewedAt?: string | null;
+            outcomeRating?: number | null;
+            outcomeText?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateDecisionEntryRequest: {
+            decisionText: string;
+            /**
+             * Format: date
+             * @description The day the decision was made; server defaults to today when absent.
+             */
+            decidedOn?: string;
+        };
+        ReviewDecisionRequest: {
+            outcomeRating: number;
+            outcomeText?: string;
+        };
+        GratitudeEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            occurredOn: string;
+            text: string;
+            lifeArea?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateGratitudeEntryRequest: {
+            text: string;
+            lifeArea?: string | null;
+            /**
+             * Format: date
+             * @description Defaults to today when absent
+             */
+            occurredOn?: string;
+        };
+        PutFeedbackRequest: {
+            artifactKind: string;
+            /** Format: uuid */
+            artifactId: string;
+            verdict: string;
+            /** @description Only legal with verdict=down (mirrors ck_message_feedback_reason); absent otherwise. */
+            reason?: string | null;
+        };
+        MessageFeedbackResponse: {
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' | 'prediction' */
+            artifactKind: string;
+            /** Format: uuid */
+            artifactId: string;
+            /** @description 'up' | 'down' */
+            verdict: string;
+            /** @description 'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down verdicts only */
+            reason?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        GraphNodeResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT";
+            title: string;
+            summary?: string | null;
+            /** @enum {string} */
+            status: "candidate" | "active" | "archived";
+            sourceKind?: string | null;
+            /** Format: uuid */
+            sourceId?: string | null;
+            /** Format: date */
+            occurredOn?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description W2.3 candidates: how many edges accepting this node would create (0 otherwise). */
+            proposedEdgeCount?: number;
+            /** @description Up to 3 Hungarian text lines for this node's strongest touching edges, weight-desc (W2.6, mezo-b3pp.11) — "<cause> → <verb> → <effect> · <erős|közepes|gyenge>", the same renderer the [Összefüggések] prompt block uses. Empty for candidates and nodes with no edges. */
+            topEdges?: string[];
+        };
+        GraphCandidateDecisionRequest: {
+            decision: string;
         };
     };
     responses: never;
@@ -13339,6 +13798,39 @@ export interface operations {
             };
         };
     };
+    saveRitualReflection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RitualReflectionRequest"];
+            };
+        };
+        responses: {
+            /** @description The day after the upsert (blank text clears the reflection) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RitualDayResponse"];
+                };
+            };
+            /** @description RITUAL_NOT_TODAY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getGamificationProfile: {
         parameters: {
             query?: never;
@@ -13597,7 +14089,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All 14 categories, always complete — a category with no stored row reports its code default */
+            /** @description All 21 categories, always complete — a category with no stored row reports its code default */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -13645,6 +14137,64 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getNotificationFeed: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The newest feed rows for the current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationFeedResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    markNotificationFeedRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stamped */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing/invalid token */
             401: {
@@ -13875,6 +14425,617 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NeedsSummaryResponse"];
+                };
+            };
+        };
+    };
+    listJournalEntries: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries with occurred_on in [from, to], newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJournalEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Entry saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResponse"];
+                };
+            };
+            /** @description Validation error (empty text, bad source) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJournalEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated entry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description JOURNAL_ENTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description JOURNAL_ENTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listDecisionEntries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every non-deleted decision, newest first by decidedOn */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionEntryResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createDecisionEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDecisionEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Decision saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionEntryResponse"];
+                };
+            };
+            /** @description Validation error (empty decisionText) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    reviewDecisionEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Reviewed decision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionEntryResponse"];
+                };
+            };
+            /** @description Validation error (rating out of 1..5) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description DECISION_ENTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGratitudeEntries: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GratitudeEntryResponse"][];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createGratitudeEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGratitudeEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GratitudeEntryResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteGratitudeEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listFeedback: {
+        parameters: {
+            query: {
+                kind: string;
+                ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The verdicts that exist among the requested ids (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageFeedbackResponse"][];
+                };
+            };
+            /** @description Validation error (unknown kind, empty/oversized id list) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageFeedbackResponse"];
+                };
+            };
+            /** @description Validation error (unknown kind/verdict/reason, or reason sent with an up verdict) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifactKind: string;
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retracted (idempotent — retracting a never-voted artifact also returns 204) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error (unknown kind) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGraphNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active nodes, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    archiveGraphNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived node */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GRAPH_NODE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGraphCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidate nodes awaiting an explicit L2 decision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideGraphCandidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GraphCandidateDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided node (status active on accept; the soft-deleted row on reject) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"];
+                };
+            };
+            /** @description GRAPH_CANDIDATE_ALREADY_DECIDED / validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GRAPH_NODE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };

@@ -1,10 +1,12 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
@@ -54,6 +56,29 @@ class FakeEmbeddingAdapterIT extends AbstractIntegrationTest {
     @Test
     void testEmbedDocuments_shouldReturnEmpty_whenNoTexts() {
         assertThat(embeddingPort.embedDocuments(List.of())).isEmpty();
+    }
+
+    /**
+     * W3.1: the two failure sentinels the ambient-recall ITs stage their failure paths with. Pinned
+     * here so those ITs are discriminating — without this, a sentinel that silently stopped failing
+     * would turn every "the block is omitted" assertion into a vacuous truth.
+     */
+    @Test
+    void testEmbedQuery_shouldThrowSystemError_whenFailEmbedSentinelPresent() {
+        assertThatThrownBy(() -> embeddingPort.embedQuery(FakeEmbeddingAdapter.FAIL_EMBED + " szia"))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+        assertThatThrownBy(() ->
+                embeddingPort.embedDocuments(List.of(FakeEmbeddingAdapter.FAIL_EMBED + " szia")))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    /** The ANN sentinel must EMBED fine — the failure is meant to land at the DB, on dimensions. */
+    @Test
+    void testEmbedQuery_shouldReturnShortVector_whenFailAnnSentinelPresent() {
+        float[] vector = embeddingPort.embedQuery(FakeEmbeddingAdapter.FAIL_ANN + " szia");
+
+        assertThat(vector).hasSize(3);
+        assertThat(norm(vector)).isCloseTo(1.0, within(1e-6));
     }
 
     private static double norm(float[] vector) {

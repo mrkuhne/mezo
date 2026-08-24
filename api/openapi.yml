@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.4.0
+  version: 0.5.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -5976,6 +5976,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/ritual/reflection:
+    put:
+      tags:
+        - Ritual
+      operationId: saveRitualReflection
+      summary: Upsert the day's prose reflection before the close (Ritual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RitualReflectionRequest'
+      responses:
+        '200':
+          description: The day after the upsert (blank text clears the reflection)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RitualDayResponse'
+        '409':
+          description: RITUAL_NOT_TODAY
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/gamification/profile:
     get:
       tags:
@@ -6173,7 +6198,7 @@ paths:
       responses:
         '200':
           description: >-
-            All 14 categories, always complete — a category with no stored row
+            All 21 categories, always complete — a category with no stored row
             reports its code default
           content:
             application/json:
@@ -6205,6 +6230,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/feed:
+    get:
+      tags:
+        - NotificationFeed
+      operationId: getNotificationFeed
+      summary: 'The in-app notification feed, newest first (NotificationFeed)'
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: The newest feed rows for the current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationFeedResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/notification/feed/read-all:
+    post:
+      tags:
+        - NotificationFeed
+      operationId: markNotificationFeedRead
+      summary: Mark every unread feed row read (NotificationFeed)
+      responses:
+        '204':
+          description: Stamped
         '401':
           description: Missing/invalid token
           content:
@@ -6418,6 +6486,540 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NeedsSummaryResponse'
+  /api/journal:
+    get:
+      tags:
+        - Journal
+      operationId: listJournalEntries
+      summary: 'Journal entries in a date range, newest first (Journal)'
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Entries with occurred_on in [from, to], newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JournalEntryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Journal
+      operationId: createJournalEntry
+      summary: Create a free-prose journal entry (Journal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJournalEntryRequest'
+      responses:
+        '201':
+          description: Entry saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryResponse'
+        '400':
+          description: 'Validation error (empty text, bad source)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/journal/{id}':
+    put:
+      tags:
+        - Journal
+      operationId: updateJournalEntry
+      summary: Edit an entry's text and/or day (Journal)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateJournalEntryRequest'
+      responses:
+        '200':
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: JOURNAL_ENTRY_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Journal
+      operationId: deleteJournalEntry
+      summary: Soft-delete an entry (Journal)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: JOURNAL_ENTRY_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/journal/decision:
+    get:
+      tags:
+        - Journal
+      operationId: listDecisionEntries
+      summary: 'All decisions, newest first (Journal)'
+      responses:
+        '200':
+          description: 'Every non-deleted decision, newest first by decidedOn'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionEntryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Journal
+      operationId: createDecisionEntry
+      summary: Record a decision; the server freezes its own context snapshot (Journal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDecisionEntryRequest'
+      responses:
+        '201':
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionEntryResponse'
+        '400':
+          description: Validation error (empty decisionText)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/journal/decision/{id}/review':
+    put:
+      tags:
+        - Journal
+      operationId: reviewDecisionEntry
+      summary: Rate how a decision turned out (Journal)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDecisionRequest'
+      responses:
+        '200':
+          description: Reviewed decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionEntryResponse'
+        '400':
+          description: Validation error (rating out of 1..5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: DECISION_ENTRY_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/journal/gratitude:
+    get:
+      tags:
+        - Journal
+      summary: List gratitude entries in a date range (Journal)
+      operationId: listGratitudeEntries
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Entries, newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GratitudeEntryResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Journal
+      summary: Create a gratitude entry (Journal)
+      operationId: createGratitudeEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGratitudeEntryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GratitudeEntryResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/journal/gratitude/{id}':
+    delete:
+      tags:
+        - Journal
+      summary: Soft-delete a gratitude entry (Journal)
+      operationId: deleteGratitudeEntry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/feedback:
+    get:
+      tags:
+        - CompanionFeedback
+      operationId: listFeedback
+      summary: >-
+        Batch-read this user's verdicts for one artifact kind
+        (CompanionFeedback)
+      description: >-
+        Page hydration: the caller passes every artifact id it renders and gets
+        back only the ones that carry a verdict. Unknown/never-voted ids are
+        simply absent (never an error) — the surface degrades to "no chip
+        selected", never to a failed page.
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+        - name: ids
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 200
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: The verdicts that exist among the requested ids (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageFeedbackResponse'
+        '400':
+          description: 'Validation error (unknown kind, empty/oversized id list)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - CompanionFeedback
+      operationId: putFeedback
+      summary: Upsert the single verdict for one artifact (CompanionFeedback)
+      description: >-
+        One updatable verdict per (user, artifactKind, artifactId). Re-tapping
+        the OTHER verdict overwrites this row; re-tapping the SAME verdict is a
+        retraction and goes to DELETE. Artifact existence is deliberately NOT
+        checked cross-table (the kinds span five tables; a dangling id is
+        harmless in a single-user app).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutFeedbackRequest'
+      responses:
+        '200':
+          description: The stored verdict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageFeedbackResponse'
+        '400':
+          description: >-
+            Validation error (unknown kind/verdict/reason, or reason sent with
+            an up verdict)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/feedback/{artifactKind}/{artifactId}':
+    delete:
+      tags:
+        - CompanionFeedback
+      operationId: deleteFeedback
+      summary: Retract the verdict on one artifact (CompanionFeedback)
+      parameters:
+        - name: artifactKind
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: >-
+            Retracted (idempotent — retracting a never-voted artifact also
+            returns 204)
+        '400':
+          description: Validation error (unknown kind)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/node:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: listGraphNodes
+      summary: Active knowledge-graph nodes for the current user (KnowledgeGraph)
+      responses:
+        '200':
+          description: 'Active nodes, newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/graph/node/{id}/archive':
+    post:
+      tags:
+        - KnowledgeGraph
+      operationId: archiveGraphNode
+      summary: >-
+        Archive a node — hides it from active listing and traversal
+        (KnowledgeGraph)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archived node
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/node/candidate:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: listGraphCandidates
+      summary: >-
+        Pending (undecided) LIFE_EVENT candidates from the nightly extractor,
+        newest first (W2.3)
+      responses:
+        '200':
+          description: Candidate nodes awaiting an explicit L2 decision
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/graph/node/{id}/decision':
+    post:
+      tags:
+        - KnowledgeGraph
+      operationId: decideGraphCandidate
+      summary: >-
+        Decide a candidate (W2.3) — accept activates the node and creates its
+        proposed edges, reject soft-deletes it. One decision per candidate;
+        confirm is an explicit L2 action.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphCandidateDecisionRequest'
+      responses:
+        '200':
+          description: >-
+            The decided node (status active on accept; the soft-deleted row on
+            reject)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphNodeResponse'
+        '400':
+          description: GRAPH_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -7221,6 +7823,12 @@ components:
         catalogId:
           type: string
           format: uuid
+        countsTowardVolume:
+          type: boolean
+          description: >-
+            Whether this exercise's sets count as hypertrophy volume; false for
+            the fix-zárás closing block and plyometrics (mezo-gbo7). Absent =
+            true.
         videoUrl:
           type: string
           nullable: true
@@ -7656,6 +8264,12 @@ components:
         catalogId:
           type: string
           format: uuid
+        countsTowardVolume:
+          type: boolean
+          description: >-
+            Whether this exercise's sets count as hypertrophy volume; false for
+            the fix-zárás closing block and plyometrics (mezo-gbo7). Absent =
+            true.
     CustomWorkoutResponse:
       type: object
       required:
@@ -7791,7 +8405,7 @@ components:
           type: string
           nullable: true
           pattern: >-
-            ^https?://(www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?$
+            ^https?://((www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?|(www\.|m\.)?instagram\.com/([A-Za-z0-9_.]+/)?(reels?|p|tv)/[A-Za-z0-9_-]{5,}/?([?#].*)?)$
         imageStartUrl:
           type: string
           nullable: true
@@ -7806,9 +8420,11 @@ components:
         videoUrl:
           type: string
           nullable: true
-          description: 'A YouTube watch/short URL, or null to clear the demo'
+          description: >-
+            A YouTube watch/short URL or an Instagram reel/post permalink, or
+            null to clear the demo
           pattern: >-
-            ^https?://(www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?$
+            ^https?://((www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?|(www\.|m\.)?instagram\.com/([A-Za-z0-9_.]+/)?(reels?|p|tv)/[A-Za-z0-9_-]{5,}/?([?#].*)?)$
     CatalogImagesRequest:
       type: object
       description: >-
@@ -12112,6 +12728,7 @@ components:
         - createdAt
         - tools
         - refs
+        - recalled
         - degraded
       properties:
         id:
@@ -12148,6 +12765,48 @@ components:
             tools.
           items:
             $ref: '#/components/schemas/MessageRef'
+        recalled:
+          type: array
+          description: >-
+            W3.1b (mezo-b3pp.28): the memories ambient recall injected into this
+            answer's prompt (the [Emlékek] block), in prompt order — date +
+            source + one-line gist + raw cosine similarity. Empty on user rows,
+            on pre-W3.1 rows, and when recall found nothing or failed (the turn
+            is never degraded by a failed recall).
+          items:
+            $ref: '#/components/schemas/RecalledMemory'
+    RecalledMemory:
+      type: object
+      required:
+        - occurredOn
+        - kind
+        - label
+        - gist
+        - similarity
+      properties:
+        occurredOn:
+          type: string
+          format: date
+          description: The day the remembered episode happened
+        kind:
+          type: string
+          description: >-
+            memory_embedding.kind (journal_entry | daily_summary | chat_turn |
+            …)
+        label:
+          type: string
+          description: >-
+            Hungarian source tag as rendered in the prompt (napló, napi
+            összefoglaló, …)
+        gist:
+          type: string
+          description: 'The one-line excerpt that was injected (first line, capped)'
+        similarity:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Raw cosine similarity to the user message
     MessageTool:
       type: object
       required:
@@ -13165,6 +13824,7 @@ components:
     FeedMessageResponse:
       type: object
       required:
+        - id
         - date
         - kind
         - eyebrow
@@ -13172,6 +13832,12 @@ components:
         - refs
         - generatedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            The companion_message row id — the W4.1 feedback artifactId
+            (feed_message).
         date:
           type: string
           format: date
@@ -13199,10 +13865,17 @@ components:
     WeeklySuggestionResponse:
       type: object
       required:
+        - id
         - weekStart
         - prose
         - generatedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            The weekly_suggestion row id — the W4.1 feedback artifactId
+            (weekly_suggestion).
         weekStart:
           type: string
           format: date
@@ -13230,12 +13903,17 @@ components:
     MemoirResponse:
       type: object
       required:
+        - id
         - weekStart
         - title
         - body
         - anchors
         - generatedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: The memoir row id — the W4.1 feedback artifactId (memoir).
         weekStart:
           type: string
           format: date
@@ -14273,6 +14951,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        reflectionText:
+          type: string
+          nullable: true
+          description: The day's prose reflection (W1.2); null when skipped
         window:
           $ref: '#/components/schemas/RitualWindow'
     RitualCloseRequest:
@@ -14283,6 +14965,20 @@ components:
         date:
           type: string
           format: date
+    RitualReflectionRequest:
+      type: object
+      required:
+        - date
+        - text
+      properties:
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+          description: >-
+            Free prose; stored stripped of surrounding whitespace, and blank (or
+            whitespace-only) clears the reflection
     GamificationProfileResponse:
       type: object
       required:
@@ -14514,6 +15210,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NotificationScheduleEntry'
+    NotificationFeedItem:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - deeplink
+        - occurredAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: pattern_inbox
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 300
+          nullable: true
+        deeplink:
+          type: string
+          minLength: 1
+          maxLength: 200
+        occurredAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+    NotificationFeedResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationFeedItem'
     LlmUsageSummaryResponse:
       type: object
       required:
@@ -14794,6 +15535,13 @@ components:
         serviceTier:
           type: string
           nullable: true
+        finishReason:
+          type: string
+          nullable: true
+          description: >-
+            provider finish reason of the final generation (STOP / MAX_TOKENS /
+            SAFETY / ...); null = none reported or the call never reached a
+            generation
         promptTokens:
           type: integer
           format: int32
@@ -14854,6 +15602,13 @@ components:
           type: integer
           format: int32
           description: TRUE pre-truncation payload size in bytes
+        payloadScrubbedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            when the mezo-1y3p retention job hard-removed the payload columns;
+            null = payload intact or never present (embed rows)
         costUsd:
           type: number
           format: double
@@ -14974,3 +15729,284 @@ components:
           format: date
         lastAllGreen:
           type: boolean
+    JournalEntryResponse:
+      type: object
+      required:
+        - id
+        - occurredOn
+        - text
+        - source
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredOn:
+          type: string
+          format: date
+        text:
+          type: string
+        source:
+          type: string
+          enum:
+            - quickinput
+            - ritual
+        createdAt:
+          type: string
+          format: date-time
+    CreateJournalEntryRequest:
+      type: object
+      required:
+        - text
+        - source
+      properties:
+        text:
+          type: string
+          minLength: 1
+        occurredOn:
+          type: string
+          format: date
+          description: The day the entry is ABOUT; server defaults to today when absent.
+        source:
+          type: string
+          pattern: ^(quickinput|ritual)$
+    UpdateJournalEntryRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+        occurredOn:
+          type: string
+          format: date
+          description: Absent = keep the current day.
+    DecisionEntryResponse:
+      type: object
+      required:
+        - id
+        - decidedOn
+        - decisionText
+        - reviewDue
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        decidedOn:
+          type: string
+          format: date
+        decisionText:
+          type: string
+        reviewDue:
+          type: string
+          format: date
+          description: >-
+            decidedOn + mezo.companion.journal.decision-review-days,
+            server-computed.
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        outcomeRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        outcomeText:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    CreateDecisionEntryRequest:
+      type: object
+      required:
+        - decisionText
+      properties:
+        decisionText:
+          type: string
+          minLength: 1
+        decidedOn:
+          type: string
+          format: date
+          description: The day the decision was made; server defaults to today when absent.
+    ReviewDecisionRequest:
+      type: object
+      required:
+        - outcomeRating
+      properties:
+        outcomeRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        outcomeText:
+          type: string
+    GratitudeEntryResponse:
+      type: object
+      required:
+        - id
+        - occurredOn
+        - text
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredOn:
+          type: string
+          format: date
+        text:
+          type: string
+          maxLength: 280
+        lifeArea:
+          type: string
+          nullable: true
+          pattern: >-
+            ^(mindfulness|mindset|cooking|financial|productivity|learning|connection|recovery)$
+        createdAt:
+          type: string
+          format: date-time
+    CreateGratitudeEntryRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 280
+        lifeArea:
+          type: string
+          nullable: true
+          pattern: >-
+            ^(mindfulness|mindset|cooking|financial|productivity|learning|connection|recovery)$
+        occurredOn:
+          type: string
+          format: date
+          description: Defaults to today when absent
+    PutFeedbackRequest:
+      type: object
+      required:
+        - artifactKind
+        - artifactId
+        - verdict
+      properties:
+        artifactKind:
+          type: string
+          pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+        artifactId:
+          type: string
+          format: uuid
+        verdict:
+          type: string
+          pattern: ^(up|down)$
+        reason:
+          type: string
+          nullable: true
+          pattern: ^(inaccurate|too_much|bad_timing|not_about_me)$
+          description: >-
+            Only legal with verdict=down (mirrors ck_message_feedback_reason);
+            absent otherwise.
+    MessageFeedbackResponse:
+      type: object
+      required:
+        - artifactKind
+        - artifactId
+        - verdict
+        - updatedAt
+      properties:
+        artifactKind:
+          type: string
+          description: >-
+            'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' |
+            'prediction'
+        artifactId:
+          type: string
+          format: uuid
+        verdict:
+          type: string
+          description: '''up'' | ''down'''
+        reason:
+          type: string
+          nullable: true
+          description: >-
+            'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down
+            verdicts only
+        updatedAt:
+          type: string
+          format: date-time
+    GraphNodeResponse:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - PATTERN
+            - PREFERENCE
+            - GOAL
+            - LIFE_EVENT
+            - SEASON
+            - INSIGHT
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - candidate
+            - active
+            - archived
+        sourceKind:
+          type: string
+          nullable: true
+        sourceId:
+          type: string
+          format: uuid
+          nullable: true
+        occurredOn:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        proposedEdgeCount:
+          type: integer
+          description: >-
+            W2.3 candidates: how many edges accepting this node would create (0
+            otherwise).
+        topEdges:
+          type: array
+          items:
+            type: string
+          description: >-
+            Up to 3 Hungarian text lines for this node's strongest touching
+            edges, weight-desc (W2.6, mezo-b3pp.11) — "<cause> → <verb> →
+            <effect> · <erős|közepes|gyenge>", the same renderer the
+            [Összefüggések] prompt block uses. Empty for candidates and nodes
+            with no edges.
+    GraphCandidateDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(accept|reject)$

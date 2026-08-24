@@ -1,18 +1,19 @@
 // ============================================================
-// Mezo · MesocycleLibraryPage (Mesociklusok) — the mesocycle library.
-// Template/run split (mezo-meyc.1): Sablonok (reusable blueprints + the "plan
-// new" CTA — the planner saves templates now) → Aktív hero → Tervezett →
-// Történet (closed runs, each rerunnable). Thin TrainSection shell ⇒ this view
-// owns its own .page-header, whose `+ Új` chip and the Sablonok CTA navigate to
-// the planner; live run cards navigate to their builder, a CLOSED run card to its
-// frozen report (mezo-meyc.2), template cards to the template editor. Both
-// „Indítás" (template) and „Újrafuttatás" (closed run) funnel into the one
-// shared MesoStartSheet.
+// Mezo · MesocycleLibraryPage (Mesociklusok) — the RUN library.
+// Template/run split (mezo-meyc.1) with the template half moved out to its own
+// `Sablonok` tab (mezo-tlwa): a `Sablonok →` nav row (the DS `.mesorow`) → Aktív
+// hero → Tervezett → Történet (closed runs, each rerunnable AND saveable back
+// into a template). Thin TrainSection shell ⇒ this view owns its own
+// .page-header, whose `+ Új` chip navigates to the planner; live run cards
+// navigate to their builder, a CLOSED run card to its frozen report
+// (mezo-meyc.2). „Újrafuttatás" (closed run) still funnels into the shared
+// MesoStartSheet, which is why the sheet wiring stays on this page.
 // Ported from prototype mesocycles.jsx MesocycleLibrary.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
+import type { Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -21,13 +22,13 @@ import { CtaGhost } from '@/shared/ui/Cta'
 import { ActiveMesoCard } from '@/features/train/components/ActiveMesoCard'
 import { PlannedMesoCard } from '@/features/train/components/PlannedMesoCard'
 import { ArchivedMesoCard } from '@/features/train/components/ArchivedMesoCard'
-import { MesoTemplateCard } from '@/features/train/components/MesoTemplateCard'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
+import { runToTemplate } from '@/features/train/logic/runToTemplate'
 import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
 
 export function MesocycleLibraryPage() {
   const { mesocycles, workoutPending } = useTrain()
-  const { templates, pending: templatesPending, rerun } = useMesoTemplates()
+  const { templates, pending: templatesPending, rerun, createTemplate } = useMesoTemplates()
   const navigate = useNavigate()
   // The template the start sheet is open on (null = closed). A rerun resolves its
   // template id first, then lands here — one start surface for both entries.
@@ -53,6 +54,7 @@ export function MesocycleLibraryPage() {
   const openReport = (id: string) => navigate(`/train/mesocycles/${id}/report`)
   const openPlanner = () => navigate('/train/mesocycles/new')
   const openTemplateEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
+  const openTemplates = () => navigate('/train/templates')
   // Leaving the mode clears the pick: a selection surviving an invisible mode would fire the
   // next time the user turns it on, out of nowhere.
   const toggleCompareMode = () => {
@@ -71,6 +73,15 @@ export function MesocycleLibraryPage() {
       // Failed mutations are toasted globally (§7a) — nothing extra to do but stay put.
       .catch(() => {})
   }
+  // „Sablonná" (mezo-tlwa): freeze this closed run's plan into a NEW template and land in
+  // its editor — a new blueprint is made to be tweaked, and the editor is also the only
+  // place that proves the copy exists. Rerun is the other, unchanged direction (reuse the
+  // run's ORIGINATING template); this one forks the plan.
+  const saveAsTemplate = (meso: Mesocycle) => {
+    createTemplate(runToTemplate(meso))
+      .then((created) => openTemplateEditor(created.id))
+      .catch(() => {})
+  }
 
   return (
     <>
@@ -85,33 +96,27 @@ export function MesocycleLibraryPage() {
         </button>
       </div>
 
-      {/* T0 clean slate: brand-new library gets a short orientation hint; the
-          Sablonok section's dashed CTA below stays the single creation action. */}
+      {/* T0 clean slate: brand-new library gets a short orientation hint; the header's
+          `+ Új` chip stays the creation action (the planner saves a template). */}
       {mesocycles.length === 0 && (
         <div style={{ padding: '8px 24px 0' }}>
           <GhostState lines={2} message="Még nincs mesociklusod — itt fognak élni a blokkjaid." />
         </div>
       )}
 
-      {/* Templates — the reusable blueprints every run is stamped from */}
-      <div style={{ padding: '8px 24px 16px' }}>
-        <div style={{ marginBottom: 12 }}>
-          <Eyebrow>Sablonok · {templates.length}</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {templates.map((t) => (
-            <MesoTemplateCard
-              key={t.id}
-              template={t}
-              onEdit={() => openTemplateEditor(t.id)}
-              onStart={() => setStartTemplate({ id: t.id, title: t.title })}
-            />
-          ))}
-          {/* The shared dashed "add one more" CTA the Mai/Heti/Sport lists close with. */}
-          <button type="button" onClick={openPlanner} className="card dashedcta">
-            + Új mesociklus tervezése
-          </button>
-        </div>
+      {/* Templates live on their own tab (mezo-tlwa) — this page only points at them,
+          via the DS canonical 56px nav row (the TrainTodayPage `.mesorow` idiom). */}
+      <div style={{ padding: '8px 24px 4px' }}>
+        <button
+          type="button"
+          className="card mesorow"
+          onClick={openTemplates}
+          aria-label={`Sablonok · ${templates.length}`}
+        >
+          <span aria-hidden="true">🧩</span>
+          <span className="mesorow-tx">Sablonok · {templates.length}</span>
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        </button>
       </div>
 
       {/* Active */}
@@ -165,6 +170,7 @@ export function MesocycleLibraryPage() {
               // One card, two meanings — the mode decides which (mezo-meyc.4).
               onOpen={() => (compareMode ? toggleSelected(m.id) : openReport(m.id))}
               onRerun={() => rerunMeso(m.id, m.title)}
+              onSaveAsTemplate={() => saveAsTemplate(m)}
               selectMode={compareMode}
               selected={selectedIds.includes(m.id)}
             />

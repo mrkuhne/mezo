@@ -12,7 +12,6 @@ import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { TodayStats } from '@/features/today/components/TodayStats'
-import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact, IslandHero } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
@@ -23,13 +22,12 @@ export interface DaypartMorningProps {
   done: TodayItem[]
   doneXp: number
   celebrations: ChainCelebrationInput[]
-  growth?: GrowthTodaySummary | null
   habitPending?: boolean
   onAct: (item: TodayItem) => void
 }
 
 export function DaypartMorning({
-  hero, facts, open, done, doneXp, celebrations, growth, habitPending, onAct,
+  hero, facts, open, done, doneXp, celebrations, habitPending, onAct,
 }: DaypartMorningProps) {
   return (
     <DaypartPanel tone="reggel">
@@ -41,7 +39,6 @@ export function DaypartMorning({
         done={done}
         doneLabel={`✓ ${done.length} kész ma · +${doneXp} XP`}
         focus={<IntentionBanner variant="chip" />}
-        growth={growth}
         habitPending={habitPending}
         onAct={onAct}
       />

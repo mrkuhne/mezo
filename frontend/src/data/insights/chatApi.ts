@@ -16,6 +16,8 @@ const CONVERSATION = '/api/companion/conversation'
 /** Wire → FE mock-era shape (deliberately aligned in V0.2 — the cast below is the bridge). */
 export function toChatMessage(m: MessageResponse): ChatMessage {
   return {
+    // The persisted row id — what the 👍/👎 chips vote on (mezo-b3pp.15).
+    id: m.id,
     role: m.role as ChatRole,
     ts: new Date(m.createdAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }),
     text: m.content,
@@ -23,6 +25,9 @@ export function toChatMessage(m: MessageResponse): ChatMessage {
     tools: m.tools.length ? (m.tools as Tool[]) : undefined,
     refs: m.refs.length ? m.refs : undefined,
     degraded: m.degraded || undefined,
+    // W3.1b: the [Emlékek] block behind this answer — absent (not an empty row) when recall
+    // found nothing, so the disclosure only appears where there is provenance to show.
+    recalled: m.recalled.length ? m.recalled : undefined,
   }
 }
 

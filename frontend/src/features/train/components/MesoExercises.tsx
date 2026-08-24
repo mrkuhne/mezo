@@ -32,6 +32,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
       warmupSets: e.warmupSets, workingSets: e.workingSets,
       repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
       anchorWeightKg: e.anchorWeightKg, type: e.type, warning: e.warning, catalogId: e.catalogId,
+      countsTowardVolume: e.countsTowardVolume,
     })))
   }
   // The day (by `day` key) whose picker is open, or null when closed.

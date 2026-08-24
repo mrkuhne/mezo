@@ -62,6 +62,8 @@ describe('DailyQuestsCard', () => {
     expect(screen.getByText(completed.title)).toBeInTheDocument()
     expect(screen.getByText('+25 XP')).toBeInTheDocument()
     expect(screen.getByText('1/2 ma')).toBeInTheDocument()
+    expect(screen.getByText('Elérhető')).toHaveClass('sr-only')
+    expect(screen.getByText('Teljesítve')).toHaveClass('sr-only')
   })
 
   test('reroll button fires the action for offered quests only', () => {

@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -84,6 +86,7 @@ public class DailySummaryService {
     private final MentionRepository mentionRepository;
     private final DailyIntentionRepository dailyIntentionRepository;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     /**
      * Generates (or returns the existing) summary for one finished day. Returns null for an
@@ -109,7 +112,13 @@ public class DailySummaryService {
         summary.setCreatedBy(userId);
         summary.setSummaryDate(date);
         summary.setNarrative(narrative);
-        return dailySummaryRepository.saveAndFlush(summary);
+        DailySummaryEntity saved = dailySummaryRepository.saveAndFlush(summary);
+        appNotificationEmitter.emit(userId, AppNotificationKind.MEMORY_NOTE,
+                "Napi összefoglaló kész",
+                "A(z) " + date + " nap emléke megírva és beágyazva a memóriába.",
+                AppNotificationKind.MEMORY_NOTE.deeplink(), saved.getId(),
+                "memory_note:" + date);
+        return saved;
     }
 
     /** Deterministic date-scoped digest — one labelled Hungarian line per present L0 block. */

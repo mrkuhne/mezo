@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.llm;
 
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import io.mrkuhne.mezo.feature.llmlog.service.TokenUsage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -55,6 +56,19 @@ public class GeminiUsageExtractor {
             return UsageInfo.NOTHING;
         }
         return new UsageInfo(blankToNull(metadata.getModel()), serviceTier(metadata), tokens(metadata.getUsage()));
+    }
+
+    /**
+     * mezo-8z79: the FINAL generation's finish reason. It lives on the per-generation metadata
+     * ({@link ChatGenerationMetadata}), not on the response metadata the rest of this class reads —
+     * but it is still provider metadata, so it is unwrapped HERE like everything else. Blank is
+     * normalised to null, same rule as the model id: "not reported" must never look like a value.
+     */
+    public String finishReason(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getMetadata() == null) {
+            return null;
+        }
+        return blankToNull(response.getResult().getMetadata().getFinishReason());
     }
 
     private static TokenUsage tokens(Usage usage) {

@@ -266,6 +266,9 @@ public class GeminiCompanionLlm implements CompanionLlm {
         return baseRecord(spec, startedAt, context)
             .servedModel(usage.servedModel())
             .serviceTier(usage.serviceTier())
+            // mezo-8z79: read from the SAME response the usage came from — on a streamed call that
+            // is the last chunk, which is where Gemini puts the finish reason.
+            .finishReason(geminiUsageExtractor.finishReason(response))
             .tokens(tallied ? tally.toTokenUsage() : usage.tokens())
             .toolRounds(tallied ? tally.rounds() - 1 : null);
     }

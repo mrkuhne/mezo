@@ -77,6 +77,24 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldBindListDates_whenFakeToolPassesDateArray() {
+        UUID userId = databasePopulator.populateUser("chat-tools-detail@test.local");
+        LocalDate d = LocalDate.now().minusDays(1);
+        sleepLogPopulator.createTrackerSleepLog(userId, d, "23:00", "06:30", new BigDecimal("7.5"),
+                4, 1, 450, 10, 200, 80, 60, 87, "screenshot",
+                new io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram(10, "DRL"), null);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(),
+                request("miért fáradt vagyok? [fake-tool:get_recovery {\"scope\":\"sleep\",\"date\":[\""
+                        + d + "\"]}]"));
+
+        assertThat(resp.getContent()).contains("tool:get_recovery=[\"Alvás — részletes nézet");
+        assertThat(resp.getContent()).contains("lefekvés 23:00").contains("hypnogram: 10 DRL");
+        assertThat(resp.getRefs()).extracting(MessageRef::getKind).contains("Sleep");
+    }
+
+    @Test
     void testSendMessage_shouldMentionToolsInSystemPrompt_whenSending() {
         UUID userId = databasePopulator.populateUser("chat-tool-hint@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
@@ -233,6 +251,43 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldThrowAndPersistNothing_whenModelReturnsNoText() {
+        UUID userId = databasePopulator.populateUser("chat-empty@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        assertThatThrownBy(() -> chatService.sendMessage(userId, conversation.getId(),
+                request("mennyi a súlyom " + FakeCompanionLlm.EMPTY_ANSWER)))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .hasMessageContaining("COMPANION_EMPTY_ANSWER");
+
+        // No assistant row: the blank answer never becomes history. (In production the throw also
+        // rolls the user row back — sendMessage is ONE transaction — but this IT is @Transactional,
+        // so the enclosing test transaction is merely marked rollback-only and the row stays
+        // visible here. The streamed path, which is what the app actually uses, is asserted
+        // end-to-end in ChatStreamServiceIT.)
+        assertThat(messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(
+                        conversation.getId(), userId))
+                .extracting(AiMessageEntity::getRole)
+                .containsExactly(AiMessageEntity.ROLE_USER);
+    }
+
+    @Test
+    void testSendMessage_shouldSkipBlankRowsInHistory_whenAnEmptyAnswerWasPersistedBefore() {
+        UUID userId = databasePopulator.populateUser("chat-blank-history@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+        // A pre-mezo-8z79 blank assistant row: it must never travel as an empty AssistantMessage.
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_ASSISTANT, "");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+
+        String history = answer.getContent()
+                .substring(answer.getContent().indexOf("history=["), answer.getContent().indexOf("] user=["));
+        assertThat(history).contains("Daniel: korábbi kérdés").doesNotContain("Mezo: ");
+    }
+
+    @Test
     void testSendMessage_shouldWindowHistoryIntoPrompt_whenPriorTurnsExist() {
         UUID userId = databasePopulator.populateUser("chat-window@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
@@ -356,5 +411,24 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
         assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+    }
+
+    /**
+     * The seedless half of the W3.1 coverage — a message with nothing to recall changes nothing.
+     * The seed-dependent ambient tests live in {@link ChatServiceAmbientRecallIT}: they assert that
+     * the turn COMMITS (both message rows on disk after a failed ANN statement, the Memory refs on
+     * the persisted row), which a {@code @Transactional} test — always rolled back — cannot observe.
+     * Visibility is not the reason: the ANN query runs on the caller's own connection and does see
+     * uncommitted test-transaction rows.
+     */
+    @Test
+    void testSendMessage_shouldOmitMemoriesBlock_whenNothingSimilar() {
+        UUID userId = databasePopulator.populateUser("chat-memories-none@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        assertThat(answer.getContent()).doesNotContain("[Emlékek]");
+        assertThat(answer.getRefs()).isEmpty();
     }
 }

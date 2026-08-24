@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -26,6 +28,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.List;
@@ -95,6 +98,7 @@ public class HypothesisPipelineService {
     private final CompanionProperties properties;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final AppNotificationEmitter appNotificationEmitter;
 
     /** One hypothesis as the LLM returns it. */
     record Hypothesis(String title, String mechanism, String category) {}
@@ -318,8 +322,13 @@ public class HypothesisPipelineService {
         pattern.setCritique(new PatternCritiqueEnvelope(critique.statistical(), critique.confounders(),
                 critique.l3align(), critique.actionability(), critique.reasoning()));
         pattern.setStatus(PatternEntity.STATUS_PROPOSED);
-        pattern.setLastDetectedAt(Instant.now());
+        pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
+        appNotificationEmitter.emit(userId, AppNotificationKind.HYPOTHESIS_NEW,
+                "Új AI-hipotézis készült",
+                "„" + title + "” — a heti hipotézis-körből. Nézd meg a Minták között.",
+                AppNotificationKind.HYPOTHESIS_NEW.deeplink(), pattern.getId(),
+                "hypothesis_new:" + pairKey);
         return true;
     }
 

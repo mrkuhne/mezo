@@ -8,12 +8,13 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
  * Write-and-read-back access to the INSERT-only {@code llm_log_history} audit table (mezo-2zyu).
- * Retention pruning arrives with a later task.
+ * Retention scrubbing: {@link #scrubPayloadsOlderThan} (mezo-1y3p).
  */
 public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
 
@@ -110,4 +111,28 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
                                @Param("status") CallStatus status,
                                @Param("callKind") CallKind callKind,
                                Pageable pageable);
+
+    /**
+     * The mezo-1y3p retention primitive: one idempotent bulk UPDATE that NULLs the four payload
+     * columns of every row older than {@code cutoff} and stamps {@code payloadScrubbedAt}. The
+     * payload-presence predicate keeps the stamp honest (embed rows are never stamped) and the
+     * {@code payloadScrubbedAt is null} guard makes re-runs free. Everything else on the row —
+     * cost, tokens, pricing snapshot, attribution — is deliberately untouched, forever.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        update LlmLogEntity l
+        set l.systemPrompt = null,
+            l.conversationHistory = null,
+            l.userMessage = null,
+            l.responseText = null,
+            l.payloadScrubbedAt = :now
+        where l.createdAt < :cutoff
+          and l.payloadScrubbedAt is null
+          and (l.systemPrompt is not null
+            or l.conversationHistory is not null
+            or l.userMessage is not null
+            or l.responseText is not null)
+        """)
+    int scrubPayloadsOlderThan(@Param("cutoff") Instant cutoff, @Param("now") Instant now);
 }

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
@@ -19,7 +20,6 @@ import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,8 +31,12 @@ import java.util.UUID;
  * the persisted narrative (fake echoes the digest), empty days produce nothing, existing days
  * are returned without a new LLM call, and the {@code [fake-summary:…]} sentinel scripts the
  * narrative through a check-in note.
+ *
+ * <p>No class-level {@code @Transactional} — an emit-reachable service running under
+ * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
+ * test-user row (bd mezo-gzhp.1 precedent). Isolation comes from {@code ResetDatabase} via
+ * {@link AbstractIntegrationTest}.
  */
-@Transactional
 @ActiveProfiles("companion-fake")
 class DailySummaryServiceIT extends AbstractIntegrationTest {
 
@@ -40,6 +44,7 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
 
     @Autowired private DailySummaryService dailySummaryService;
     @Autowired private DailySummaryRepository dailySummaryRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
@@ -107,6 +112,11 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
         assertThat(summary.getNarrative())
                 .contains("104.5").contains("7.2").contains("minőség 4/5").contains(DAY.toString());
         assertThat(dailySummaryRepository.findByCreatedByAndSummaryDate(owner, DAY)).isPresent();
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .anySatisfy(n -> {
+                    assertThat(n.getKind()).isEqualTo("memory_note");
+                    assertThat(n.getDeeplink()).isEqualTo("/insights/memoria");
+                });
     }
 
     @Test

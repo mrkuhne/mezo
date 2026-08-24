@@ -1,17 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useDailyQuests, useQuestActions } from '@/data/hooks'
 import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
+import { DailyQuestList } from '@/features/today/components/DailyQuestList'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import type { DailyQuest } from '@/data/types'
-
-const STATE_ICON: Record<DailyQuest['status'], string> = {
-  offered: '◦',
-  completed: '✓',
-  expired: '—',
-  rerolled: '—',
-}
 
 /**
  * Napi küldetések (gamified growth E1). Derived quests complete server-side — the card only
@@ -37,46 +31,19 @@ export function DailyQuestsCard() {
   const doneCount = quests.filter(q => q.status === 'completed').length
 
   return (
-    <div className="card" style={{ margin: '8px 0', padding: '14px 16px' }}>
+    <div className="card daily-quests-card" style={{ margin: '8px 0', padding: '14px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', paddingBottom: 8 }}>
         <span className="eyebrow">Napi küldetések</span>
         <span className="eyebrow text-tertiary">{doneCount}/{quests.length} ma</span>
       </div>
-      {quests.map(q => (
-        <div key={q.id} className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '6px 0' }}>
-          <span style={{
-            color: q.status === 'completed' ? 'var(--success)' : 'var(--coral)',
-            opacity: q.status === 'expired' ? 0.4 : 1,
-            width: 14, textAlign: 'center',
-          }}>
-            {STATE_ICON[q.status]}
-          </span>
-          <div style={{ flex: 1, opacity: q.status === 'expired' ? 0.5 : 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{q.title}</div>
-            <div className="text-tertiary" style={{ fontSize: 11, paddingTop: 2 }}>{q.why}</div>
-          </div>
-          <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{q.xp} XP</span>
-          {q.status === 'offered' && q.completionMode === 'ACTIVITY' && (
-            <button
-              className="chip"
-              onClick={() => setActivityQuest(q)}
-              style={{ cursor: 'pointer' }}
-            >
-              Naplózz
-            </button>
-          )}
-          {q.status === 'offered' && rerollsLeft > 0 && (
-            <button
-              className="chip"
-              disabled={pending}
-              onClick={() => reroll(q.id)}
-              style={{ cursor: 'pointer' }}
-            >
-              Csere
-            </button>
-          )}
-        </div>
-      ))}
+      <DailyQuestList
+        quests={quests}
+        rerollsLeft={rerollsLeft}
+        pending={pending}
+        actionLabel={(quest) => quest.completionMode === 'ACTIVITY' ? 'Naplózz' : null}
+        onAction={setActivityQuest}
+        onReroll={reroll}
+      />
       {activityQuest && <ActivityLogSheet quest={activityQuest} onClose={() => setActivityQuest(null)} />}
     </div>
   )

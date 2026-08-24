@@ -15,6 +15,8 @@ import org.springframework.validation.annotation.Validated;
  *     io.mrkuhne.mezo.feature.notification.service.PushSender} encrypts and sends it
  * @param medicationTime the fixed HH:mm the {@code medication} category anchors on — medication
  *     has no per-day time column, only {@code MedicationCycleService}'s derived cycle day (spec §6)
+ * @param decisionReviewTime the fixed HH:mm the {@code decision_review} category anchors on — a
+ *     decision's review has no time of its own, only a due DATE (spec §5.4)
  * @param proseExcerptChars how much of an already-generated prose row (briefing/heartbeat/weekly/
  *     memoir) {@code AnchorResolver} excerpts into a push body — cut at a word boundary, never a
  *     new LLM call on the push path (spec §6)
@@ -34,6 +36,7 @@ import org.springframework.validation.annotation.Validated;
 public record NotificationProperties(
         @Min(20) @Max(2000) int bodyMaxChars,
         @NotBlank @Pattern(regexp = "([01]\\d|2[0-3]):[0-5]\\d") String medicationTime,
+        @NotBlank @Pattern(regexp = "([01]\\d|2[0-3]):[0-5]\\d") String decisionReviewTime,
         @Min(20) @Max(2000) int proseExcerptChars,
         @NotBlank String dispatchCron,
         @Min(1) @Max(60) int catchUpMinutes,

@@ -226,6 +226,10 @@ mezo:
     # notification beans exist and /api/notification/* 404s.
     notification:
       enabled: true
+    # In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed
+    # 404s, producers' emits no-op through AppNotificationEmitter.
+    notification-feed:
+      enabled: true
     # Sleep goal + day-anchor (mezo-dbsr): first-class sleep goal owns the day's wake/bed anchor.
     sleep-goal:
       enabled: true
@@ -256,6 +260,14 @@ mezo:
     # Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist.
     needs:
       enabled: true
+    # Phase 5 W1.1 journal (bd mezo-b3pp.1) — free-prose entries + embed pipeline;
+    # off ⇒ /api/journal 404s and no journal beans exist.
+    journal:
+      enabled: true
+    # Phase 5 W2.1 knowledge graph (bd mezo-b3pp.6) — off ⇒ /api/companion/graph 404s, no graph
+    # beans exist, and every graph hook elsewhere stays silently absent.
+    knowledge-graph:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -265,6 +277,27 @@ mezo:
       # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
+        enabled: true
+      # W4.2 (mezo-b3pp.16) nightly feedback rollup job (schedule: mezo.companion.feedback-learning.cron);
+      # off = the FeedbackLearningJob bean does not exist
+      feedback-learning-job:
+        enabled: true
+      # W5.1 (mezo-b3pp.18) hourly composite-flag sweep (schedule: mezo.companion.flags.sweep-cron);
+      # off = the FlagSweepJob bean does not exist (on-write evaluation still runs)
+      flag-sweep-job:
+        enabled: true
+      # W4.3 (mezo-b3pp.17): weekly pragmatic-profile synthesis (smart tier, one LLM call/user/week)
+      profile-assembler-job:
+        enabled: true
+      # W2.5 (mezo-b3pp.10) nightly graph maintenance: edge decay/prune + reinforcement, plus the
+      # W2.2 reconciler and W2.3 extraction (schedule: mezo.companion.graph.cron);
+      # off = the GraphMaintenanceJob bean does not exist
+      graph-maintenance-job:
+        enabled: true
+      # W3.2 (mezo-b3pp.13) consolidation ladder: Monday weekly + 1st-of-month monthly rungs
+      # (schedules: mezo.companion.consolidation.*-cron); off = the ConsolidationJob bean does not
+      # exist (the ladder simply stops growing; nothing else changes, nothing is deleted)
+      consolidation-job:
         enabled: true
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
@@ -307,6 +340,11 @@ mezo:
       # does not exist.
       notification-dispatch-job:
         enabled: true
+      # mezo-1y3p LLM-log payload retention (schedule: mezo.llm-log.retention.cron);
+      # off = the LlmLogRetentionJob bean does not exist. Deliberately independent of
+      # mezo.feature.llm-log.enabled: already-written payload keeps aging while recording is off.
+      llm-log-retention-job:
+        enabled: true
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
@@ -319,6 +357,12 @@ mezo:
       core-size: 1
       max-size: 2
       queue-capacity: 500
+    # mezo-1y3p payload retention — the 4 payload columns are NULLed after this many days;
+    # cost/token metadata is kept forever (cost attribution, ADR 0014). 03:40 is a verified-free
+    # slot: the dawn cron cluster sits at 02:20/02:40/03:00(SUN), the proactive block starts 05:45.
+    retention:
+      payload-days: 90
+      cron: "0 40 3 * * *"
     # Unit prices keyed by SERVED model id: USD per 1M tokens (generation) / per 1M chars (embedding).
     # Rates drift — verify the current Gemini rates when touching this block. Changing them does NOT
     # rewrite history: every logged call freezes its own pricing snapshot at write time.
@@ -374,6 +418,13 @@ mezo:
       embed-chat-turns: true
       # Upper cap on embedded content length (chars) per narrative unit (turn / summary)
       embed-max-chars: 2000
+      # W1.5 (mezo-b3pp.5): the nightly sweep also embeds the narrative written OUTSIDE the journal —
+      # activity_log.text (QuickInput „Napló") and check_in.note. Off = the catch-up pass does nothing.
+      embed-notes: true
+      # Length gate: a note shorter than this carries no retrieval value, so it never becomes a vector
+      note-min-chars: 80
+      # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
+      note-batch-size: 200
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)
@@ -386,6 +437,72 @@ mezo:
       candidate-pool: 20
       # Per-memory render cap in the tool result (chars) — gist over full re-quote
       render-max-chars: 300
+    ambient-recall:
+      # W3.1 (mezo-b3pp.12, spec §7.1): always-on episodic recall — every chat turn embeds the user
+      # message once (feature=companion_recall, operation=recall_embed) and the prompt opens with an
+      # [Emlékek] block of similar past episodes. The ANN candidate pool and the per-item render cap
+      # reuse mezo.companion.recall.*; a failed embed/ANN just omits the block.
+      enabled: true
+      # Coverage cutoff (W3.2): daily summaries older than this are no longer asked for — the covering
+      # weekly/monthly rung answers for that stretch. Nothing is deleted, only shadowed.
+      weekly-shadow-days: 30
+      # Hard cap on the rendered block (estimated tokens; ~3 chars/token for Hungarian prose)
+      max-tokens: 1200
+      # W3.3 input (mezo-b3pp.27): excludes the WHOLE conversation from ambient chat_turn recall, not
+      # just what fits in mezo.companion.chat.history-window (20 messages ≈ 10 turns) — beyond the
+      # window this is a deliberate trade: a long thread's own early turns drop out of ambient
+      # recall, but the thread is still the conversation being answered.
+      exclude-current-conversation: true
+      # W3.3 (mezo-b3pp.14, spec §7.3): PER KIND-GROUP tuning — cap = items in the block
+      # (0 = group not queried); min-similarity = raw cosine floor; decay-days = τ of the
+      # similarity × exp(-age/τ) re-rank.
+      # Moving any of these is expected to turn AmbientRecallEvalIT red: its corpus is built so
+      # every cap, the daily/journal floors and the period τ each have a row that moves. Re-derive
+      # that table's geometry by hand — its javadoc lists exactly what it does and does not pin.
+      daily-summary:
+        cap: 2
+        min-similarity: 0.55
+        decay-days: 90
+      # Ladder rungs stand for whole stretches — they fade slower than single days
+      period-summary:
+        cap: 2
+        min-similarity: 0.55
+        decay-days: 180
+      # Lived-with 2026-08-22: journal hits at 0.59–0.62 were only weakly related → stricter floor
+      journal:
+        cap: 2
+        min-similarity: 0.60
+        decay-days: 90
+      chat-turn:
+        cap: 1
+        min-similarity: 0.55
+        decay-days: 90
+      # activity_note + checkin_note
+      other:
+        cap: 1
+        min-similarity: 0.55
+        decay-days: 90
+    graph:
+      # W2.1 (mezo-b3pp.6, spec §6.1): traversal bounds consumed by W2.4's GraphTraversalService
+      # and nightly maintenance knobs consumed by W2.5's GraphMaintenanceJob. Declared here now so
+      # every later slice reads the same record; unused until then.
+      max-hops: 2
+      top-k: 8
+      decay-factor: 0.99
+      prune-floor: 0.05
+      render-max-tokens: 800
+      # W2.2 (mezo-b3pp.7): the edge structurer drops suggestions below this confidence; the ones
+      # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
+      edge-confidence-floor: 0.4
+      # W2.5 (mezo-b3pp.10): nightly maintenance cron — 03:20, a free dawn slot (02:20 daily-summary,
+      # 02:40 patterns, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:40 llm-log retention).
+      cron: "0 20 3 * * *"
+      # Candidate nodes (never confirmed/rejected by the L2 inbox) older than this many days are
+      # soft-deleted — a stale extractor guess stops sitting in the list forever.
+      candidate-max-age-days: 30
+      # Fresh pattern evidence (a same-night pattern_event snapshot for an already-promoted
+      # pattern) bumps that node's edges by this much, capped at 1.0.
+      reinforcement-bump: 0.05
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
@@ -395,6 +512,16 @@ mezo:
       # V3.4 digest-gazdagitas: minosegi mezonkenti karakter-cap (jegyzetek, emlites-kivonat,
       # reflexio) - a digest ossz-merete tovabbra is konstrukcio szerint korlatos
       note-max-chars: 200
+    consolidation:
+      # W3.2 (mezo-b3pp.13, spec §7.2): the ladder's crons — 03:30 Monday (weekly rung, after the
+      # 02:20 daily summaries of the same dawn) and 03:50 on the 1st (monthly rung, after that
+      # dawn's weekly one). Free dawn slots: 02:20/02:40/03:00 SUN/03:10/03:20/03:40 are taken.
+      weekly-cron: "0 30 3 * * MON"
+      monthly-cron: "0 50 3 1 * *"
+      # Finished weeks/months each run re-offers — the idempotent catch-up doubles as the backfill
+      # of existing history (a period whose rung exists is returned untouched, no LLM call)
+      backfill-weeks: 8
+      backfill-months: 3
     hypotheses:
       # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
       cron: "0 0 3 * * SUN"
@@ -404,6 +531,70 @@ mezo:
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)
       revise-threshold: 0.50
+    feedback-learning:
+      # W4.2 (mezo-b3pp.16, spec §8.2): nightly rollup-only pass over message_feedback — per-surface
+      # effectiveness + style (down-reason) histograms. 03:10, a free dawn slot (02:20/02:40/03:00
+      # SUN/03:40 are taken). The reinforcement layer (graph-node edge weighting) is a later,
+      # switch-guarded slice and is NOT built here.
+      cron: "0 10 3 * * *"
+      # Trailing window (days) the rollups are computed over
+      window-days: 30
+    flags:
+      # W5.1 (mezo-b3pp.18, spec §9.1): deterministic, LLM-free composite state flags. Every
+      # threshold below is config, never code. Two triggers, one code path: the on-write listener
+      # (check-in/sleep save) and this hourly sweep — the sweep exists for windows that are crossed
+      # by TIME alone (a third quiet day, a cooldown expiring), with no write to react to.
+      # :05 every hour — brushes past no dawn job (02:20 summary, 02:40 patterns, 03:00 SUN
+      # hypotheses, 03:10 feedback-learning, 03:20 graph, 03:40 llm-log retention).
+      sweep-cron: "0 5 * * * *"
+      sustained-stress:
+        # Check-in stress is 1–10; 7+ on 3 of the last 4 days is "this is not one bad day".
+        threshold: 7.0
+        window-days: 4
+        min-days: 3
+      sleep-debt:
+        # Cumulative deficit vs the sleep goal over the last 3 nights. sleep_log.date is the
+        # WAKE-UP MORNING, not the evening the night began, so the row dated today IS last night
+        # and the window ends TODAY (an unlogged today is just skipped, never counted debt-free).
+        nights: 3
+        # Honest small-n gate: with fewer logged nights than this the deficit is unknown, not zero.
+        min-nights: 2
+        deficit-hours: 3.0
+        # Only used when there is no sleep_goal row at all.
+        default-goal-hours: 8.0
+      momentum:
+        # Habit completions in the last 3 days vs the 14 days before them; a halving plus a missed
+        # PLANNED gym day (gym_schedule_slot day-of-week with no completed workout) is the signal.
+        window-days: 3
+        baseline-days: 14
+        drop-ratio: 0.5
+        # Below this baseline average there is no momentum to lose — no flag.
+        min-baseline: 1.0
+      recovery:
+        # "Poor sleep + high RPE + high stress inside the same 48h" as whole days (today included).
+        window-days: 2
+        sleep-floor-hours: 6.0
+        rpe-threshold: 7.0
+        stress-threshold: 6.0
+      all-healthy:
+        # Nothing else raised for a week ⇒ record the quiet state (W5.2 may celebrate it).
+        quiet-days: 7
+      cooldown-hours:
+        # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
+        # write + hourly), and without this the log would fill with the same day's state.
+        sustained-stress: 24
+        sleep-debt: 24
+        momentum-at-risk: 48
+        recovery-needed: 24
+        all-healthy: 168
+    # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
+    profile:
+      # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,
+      # both of which are this job's inputs.
+      cron: "0 45 3 * * MON"
+      render-max-tokens: 400
+      max-decisions: 10
+      max-graph-nodes: 12
     patterns:
       # V3.1 nightly Pearson correlation over the pair catalog — 02:40, after the summary job
       cron: "0 40 2 * * *"
@@ -798,6 +989,9 @@ mezo:
         - audio/mp4
         - audio/mpeg
         - audio/aac
+    # Phase 5 W1 journal (mezo-b3pp.1) — decision review-due offset in days (used by W1.4's decision journal).
+    journal:
+      decision-review-days: 30
   proactive:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
@@ -1031,6 +1225,9 @@ mezo:
     # Medication has no per-day time column (MedicationCycleService only derives which cycle
     # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
     medication-time: "08:00"
+    # A decision's review has no time of its own, only a due DATE (decision_entry.review_due) —
+    # the decision_review push anchors on this fixed HH:mm instead (spec §5.4, bd mezo-b3pp.4).
+    decision-review-time: "09:00"
     # How much of an already-generated prose row (companion_message/weekly/memoir) AnchorResolver
     # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
     prose-excerpt-chars: 160
@@ -1050,6 +1247,15 @@ mezo:
     # crons themselves via CronExpression — those minutes are NOT duplicated here. morning needs
     # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
     prose-generation-grace-min: 15
+    # In-app notification feed (bd mezo-gzhp.1). The two inbox-* values MUST mirror the FE
+    # STRONG_SIGNAL constant, the two band-* values the FE strengthWord bands — pinned by
+    # AppNotificationServiceIT and the FE insights tests on both sides.
+    feed:
+      limit: 50
+      inbox-min-abs-r: 0.3
+      inbox-max-p: 0.15
+      band-promising: 0.3
+      band-strong: 0.6
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:

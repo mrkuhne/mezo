@@ -10,7 +10,7 @@ import { huMonthDay } from '@/shared/lib/dates'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
+import { VideoDemo, videoEmbed } from '@/features/train/components/VideoDemo'
 import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 
 // 102.5 -> "102.5", 100.0 -> "100"
@@ -109,9 +109,10 @@ export function ExerciseRecordSheet({
             </div>
           )}
 
-          {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
-              YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
-          {videoUrl && youTubeId(videoUrl) && (
+          {/* Inline demo video (catalog-resolved) — the wrapper renders only when the url
+              resolves to an embed (YouTube or Instagram), so an unrecognized stored url
+              leaves no empty gap. */}
+          {videoEmbed(videoUrl) && (
             <div style={{ marginBottom: 12 }}>
               <VideoDemo url={videoUrl} />
             </div>

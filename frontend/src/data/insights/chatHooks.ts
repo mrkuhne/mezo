@@ -74,6 +74,10 @@ const nowIso = () => new Date().toISOString()
 /** The switch-off 404 is an honest "companion unavailable" (IDENT-3), never a retried error. */
 const isSwitchedOff = (err: unknown) => err instanceof ApiError && err.status === 404
 
+/** mezo-8z79: the stream ended with a technically-successful round that produced no text. */
+const isEmptyAnswer = (err: unknown) =>
+  err instanceof ApiError && err.messages.some((m) => m.code === 'COMPANION_EMPTY_ANSWER')
+
 /**
  * The conversation list — the picker's source and the single place the degraded state is
  * detected (the list endpoint is the one call every chat surface makes).
@@ -198,12 +202,18 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
       append(conversationId, [
         { role: 'user', ts: 'now', text },
         {
+          // A mock answer is "persisted" the moment it lands in the cache — give it an id so it
+          // is votable exactly like a live one (mezo-b3pp.15).
+          id: crypto.randomUUID(),
           role: 'assistant', ts: 'now', text: cannedReply(text),
           tools: [
             { type: 'read', name: 'get_recent_checkins(d=3)' },
             { type: 'compute', name: `recallSharedMemory(theme='${text.slice(0, 20)}')` },
           ],
           refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
+          recalled: [
+            { occurredOn: '2026-05-19', kind: 'chat_turn', label: 'korábbi beszélgetés', gist: 'Daniel: fáradt vagyok ma', similarity: 0.66 },
+          ],
         },
       ])
       setTurn(null)
@@ -227,8 +237,13 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
         )
         append(conversationId, [{ role: 'user', ts: nowTs(), text }, toChatMessage(done)])
         refreshConversations()
-      } catch {
-        setError('Nem sikerült válaszolni — próbáld újra.')
+      } catch (err) {
+        // mezo-8z79: the backend now REFUSES to persist a blank answer, so this is a real outcome
+        // the user must be able to tell apart from a transport failure — nothing was saved either
+        // way, but "the model said nothing" is worth retrying immediately.
+        setError(isEmptyAnswer(err)
+          ? 'A társ nem adott választ erre a körre — próbáld újra.'
+          : 'Nem sikerült válaszolni — próbáld újra.')
         // the user message may have persisted server-side; refetch keeps history honest
         void queryClient.invalidateQueries({ queryKey: chatKey(selection) })
         if (conversationId) void queryClient.invalidateQueries({ queryKey: chatKey(conversationId) })

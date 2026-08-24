@@ -1,18 +1,16 @@
 // ============================================================
 // Mezo · DayGroups — egy napszak-nézet tétel-listája (mezo-e26w). A csoportosító
 // logika VÁLTOZATLAN a mezo-puci óta: első-megjelenés sorrend, darabszám a
-// fejlécben, a küldetés-fejléc egyetlen /me/growth útvonala, head/focus slotok.
+// fejlécben, head/focus slotok.
 // Ami változott: minden csoport EGY `TodayList` dobozban ül, és a sorok a
 // Today saját `TodayRow`-ja — NEM a `shared/ui/ItemRow` (spec §7: azt a Fuel
 // és a rutin-szerkesztő is rendereli, és ebben a változásban nem mozdulnak).
 // Az EGYETLEN összecsukott elem a lapon továbbra is a kész-hajtás.
 // ============================================================
 import { useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { TodayList } from '@/features/today/components/TodayList'
 import { TodayRow, type RowTone } from '@/features/today/components/TodayRow'
 import { rowAccessory } from '@/features/today/logic/rowAccessory'
-import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { ItemSource, TodayItem } from '@/features/today/logic/todayItems'
 
 const SOURCE_TONE: Record<ItemSource, RowTone> = {
@@ -30,13 +28,12 @@ export interface DayGroupsProps {
   head?: ReactNode
   /** IntentionBanner slot — saját „Fókusz" fejléc alatt. */
   focus?: ReactNode
-  growth?: GrowthTodaySummary | null
   habitPending?: boolean
   onAct: (item: TodayItem) => void
 }
 
 export function DayGroups({
-  open, done, doneLabel, dayXp, head, focus, growth, habitPending, onAct,
+  open, done, doneLabel, dayXp, head, focus, habitPending, onAct,
 }: DayGroupsProps) {
   const [doneOpen, setDoneOpen] = useState(false)
 
@@ -73,13 +70,6 @@ export function DayGroups({
           key={group}
           label={group}
           count={rows.length}
-          action={
-            group === 'Napi küldetések' && growth && growth.total > 0 ? (
-              <Link to="/me/growth" aria-label="Küldetések kezelése a Növekedésben">
-                {growth.done}/{growth.total} · +{growth.xp} XP ›
-              </Link>
-            ) : undefined
-          }
         >
           {rows.map((it) => rowOf(it))}
         </TodayList>

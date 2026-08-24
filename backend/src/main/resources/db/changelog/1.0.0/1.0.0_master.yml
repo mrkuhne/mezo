@@ -685,3 +685,108 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608180300_mezo-dhzk_needs_source_type.sql
+  - changeSet:
+      id: "1.0.0:202608181100_mezo-1y3p_llm_log_payload_scrubbed_at"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608181100_mezo-1y3p_llm_log_payload_scrubbed_at.sql
+  - changeSet:
+      id: "1.0.0:202608181400_mezo-gzhp.1_create_app_notification"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608181400_mezo-gzhp.1_create_app_notification.sql
+  - changeSet:
+      id: "1.0.0:202608181600_mezo-b3pp.1_create_journal_entry"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608181600_mezo-b3pp.1_create_journal_entry.sql
+  - changeSet:
+      id: "1.0.0:202608181610_mezo-b3pp.1_expand_memory_embedding_kinds"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608181610_mezo-b3pp.1_expand_memory_embedding_kinds.sql
+  - changeSet:
+      id: "1.0.0:202608201200_mezo-b3pp.4_create_decision_entry"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608201200_mezo-b3pp.4_create_decision_entry.sql
+  - changeSet:
+      id: "1.0.0:202608211200_mezo-b3pp.15_create_message_feedback"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608211200_mezo-b3pp.15_create_message_feedback.sql
+  - changeSet:
+      id: "1.0.0:202608211200_mezo-b3pp.3_create_gratitude_entry"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608211200_mezo-b3pp.3_create_gratitude_entry.sql
+  - changeSet:
+      id: "1.0.0:202608211500_mezo-b3pp.2_ritual_day_reflection"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608211500_mezo-b3pp.2_ritual_day_reflection.sql
+  - changeSet:
+      id: "1.0.0:202608221200_mezo-b3pp.16_create_feedback_rollup"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608221200_mezo-b3pp.16_create_feedback_rollup.sql
+  - changeSet:
+      id: "1.0.0:202608221600_mezo-b3pp.6_create_knowledge_graph"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608221600_mezo-b3pp.6_create_knowledge_graph.sql
+  - changeSet:
+      id: "1.0.0:202608221700_mezo-b3pp.28_ai_message_recalled_memories"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608221700_mezo-b3pp.28_ai_message_recalled_memories.sql
+  - changeSet:
+      id: "1.0.0:202608231100_mezo-8z79_llm_log_finish_reason"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608231100_mezo-8z79_llm_log_finish_reason.sql
+  - changeSet:
+      id: "1.0.0:202608231400_mezo-b3pp.13_create_period_summary"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608231400_mezo-b3pp.13_create_period_summary.sql
+  - changeSet:
+      id: "1.0.0:202608241200_mezo-b3pp.18_create_companion_flag_log"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql
+  - changeSet:
+      id: "1.0.0:202608241200_mezo-gbo7_exercise_counts_toward_volume"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608241200_mezo-gbo7_exercise_counts_toward_volume.sql

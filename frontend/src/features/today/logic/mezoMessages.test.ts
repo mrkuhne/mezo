@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { toNudgeMessage } from '@/features/today/logic/needsNudges'
 import type { Briefing, FeedMessage } from '@/data/types'
 
 const demoBriefing: Briefing = {
@@ -10,6 +11,7 @@ const demoBriefing: Briefing = {
 }
 
 const morning: FeedMessage = {
+  id: '11111111-1111-4111-8111-111111111111',
   kind: 'morning',
   eyebrow: 'Reggeli briefing · Reta nap 3',
   body: [{ type: 'p', text: 'Jól aludtál.' }, { type: 'p', text: 'Ma Pull Day.' }],
@@ -18,6 +20,7 @@ const morning: FeedMessage = {
 }
 
 const midday: FeedMessage = {
+  id: '22222222-2222-4222-8222-222222222222',
   kind: 'midday',
   eyebrow: 'Déli jegyzet',
   body: [{ type: 'p', text: 'Fehérjéből 100 g van meg.' }],
@@ -37,6 +40,20 @@ describe('buildMezoMessages', () => {
     expect(m.paragraphs).toEqual(['Jól aludtál.', 'Ma Pull Day.'])
     expect(m.refs).toEqual([{ kind: 'Sleep', label: 'regeneráció' }])
     expect(m.meta).toBeNull()
+  })
+
+  // mezo-b3pp.15 — a visszajelzés-chipek CSAK perzisztált artifactre ülhetnek. Az item `id`-je
+  // marad a kind (React-kulcs + látott-üzenet kulcs); az artifact-azonosító külön mező.
+  test('a feed-elem artifactId-ja a sor uuid-je, az id-je pedig továbbra is a kind', () => {
+    const [m] = buildMezoMessages({ feed: [morning], demoBriefing: null })
+    expect(m.id).toBe('morning')
+    expect(m.artifactId).toBe('11111111-1111-4111-8111-111111111111')
+  })
+
+  test('a demo-briefing kártyán NINCS artifactId — nem perzisztált artifact (mezo-kr9v)', () => {
+    const [demo] = buildMezoMessages({ feed: [midday], demoBriefing })
+    expect(demo.id).toBe('briefing-demo')
+    expect(demo.artifactId).toBeUndefined()
   })
 
   test('a time a generatedAt-ból jön, HH:mm formátumban', () => {
@@ -84,6 +101,13 @@ describe('buildMezoMessages', () => {
   test('nudges: a feed ÉS a demo-előtag UTÁN, a szál VÉGÉRE fűződnek', () => {
     const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [nudge] })
     expect(msgs.map((m) => m.id)).toEqual(['briefing-demo', 'midday', 'nudge-hidratacio-2026-07-06T15:00:00.000Z'])
+  })
+
+  test('a nudge artifactId nélkül fut végig a szálon — nem perzisztált artifact (mezo-kr9v)', () => {
+    const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [toNudgeMessage({ key: 'hidratacio', at: '2026-07-06T15:00:00.000Z' })] })
+    expect(msgs[msgs.length - 1].artifactId).toBeUndefined()
+    // A szálban PONTOSAN egy elem votolható: a feed sora.
+    expect(msgs.filter((m) => m.artifactId != null).map((m) => m.id)).toEqual(['midday'])
   })
 
   test('nudges elhagyva (paraméter nélkül) → a viselkedés változatlan', () => {

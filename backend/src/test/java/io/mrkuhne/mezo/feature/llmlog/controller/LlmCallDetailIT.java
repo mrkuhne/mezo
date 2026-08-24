@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
 import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmLogRetentionJob;
+import java.time.temporal.ChronoUnit;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -28,6 +30,7 @@ class LlmCallDetailIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private LlmLogRetentionJob llmLogRetentionJob;
 
     @Test
     void testGetCall_shouldReturnUnauthorized_whenNoToken() {
@@ -96,6 +99,20 @@ class LlmCallDetailIT extends ApiIntegrationTest {
             HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(raw, "LLM_LOG_CALL_NOT_FOUND");
+    }
+
+    @Test
+    void testGetCallDetail_shouldExposeScrubStamp_whenPayloadScrubbed() {
+        LlmLogEntity old = llmLogPopulator.logPayloadAt(
+            Instant.now().minus(91, ChronoUnit.DAYS), ownerId(), "companion_chat", "s", "u", "r");
+        llmLogRetentionJob.run();
+
+        LlmCallDetailResponse detail = detail(old.getId());
+
+        assertThat(detail.getPayloadScrubbedAt()).isNotNull();
+        assertThat(detail.getSystemPrompt()).isNull();
+        assertThat(detail.getResponseText()).isNull();
+        assertThat(detail.getCostUsd()).isNotNull(); // cost metadata survives on the wire too
     }
 
     private LlmCallDetailResponse detail(UUID id) {

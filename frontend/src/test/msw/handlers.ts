@@ -273,6 +273,19 @@ export const handlers = [
       window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
     })
   }),
+  // Ritual reflection upsert (W1.2, mezo-b3pp.2) — a DEFAULT so real-mode COMPONENT tests that
+  // save prose (ReflectionStep/RitualPage) never fall through to the network: `setupServer` has
+  // no `onUnhandledRequest: 'error'`, so a missing handler would fail confusingly rather than
+  // loudly. Echoes the backend's strip()-then-null-if-blank semantics; tests that assert the
+  // exact payload override with server.use().
+  http.put(`${API_BASE}/api/ritual/reflection`, async ({ request }) => {
+    const body = (await request.json()) as { date: string; text: string }
+    return HttpResponse.json({
+      date: body.date, closed: false, closedAt: null,
+      reflectionText: body.text.trim() || null,
+      window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+    })
+  }),
 
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
@@ -1072,6 +1085,7 @@ export const handlers = [
         createdAt: `2026-07-03T06:3${i}:00Z`,
         tools: m.tools ?? [],
         refs: m.refs ?? [],
+        recalled: m.recalled ?? [],
         degraded: false,
       })),
     ),
@@ -1081,7 +1095,7 @@ export const handlers = [
   // mutating flow (accept → refetch without the candidate) override with server.use.
   http.get(`${API_BASE}/api/companion/fact`, () =>
     HttpResponse.json(
-      knowledgeSeed.map((f, i) => ({
+      knowledgeSeed.map((f) => ({
         id: f.id,
         factText: f.text,
         category: f.category,
@@ -1089,7 +1103,7 @@ export const handlers = [
         reinforcementCount: f.reinforced,
         includeInPrompt: f.active,
         lastReinforcedAt: f.lastReinforcedAt,
-        createdAt: `2026-07-01T06:${String(i).padStart(2, '0')}:00Z`,
+        createdAt: f.createdAt,
         patternTitle: f.patternTitle ?? null,
       })),
     ),
@@ -1204,6 +1218,11 @@ export const handlers = [
           createdAt: '2026-07-03T07:00:05Z',
           tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+          // W3.1b: the persisted row also carries what ambient recall fed the prompt
+          recalled: [{
+            occurredOn: '2026-07-01', kind: 'journal_entry', label: 'napló',
+            gist: 'korábban is rosszul aludtál edzés után', similarity: 0.88,
+          }],
           degraded: false,
         })))
         controller.close()
@@ -1235,4 +1254,66 @@ export const handlers = [
       totals: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
     }),
   ),
+
+  // Journal (mezo-b3pp.1) — honest-empty default list; create/update echo a
+  // JournalEntryResponse-shaped row, delete is a plain 204. Tests override with server.use().
+  http.get(`${API_BASE}/api/journal`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/journal`, async ({ request }) => {
+    const body = (await request.json()) as { text: string; occurredOn?: string; source: string }
+    return HttpResponse.json(
+      {
+        id: 'jn-new',
+        occurredOn: body.occurredOn ?? '2026-08-18',
+        text: body.text,
+        source: body.source,
+        createdAt: '2026-08-18T12:00:00Z',
+      },
+      { status: 201 },
+    )
+  }),
+  http.put(`${API_BASE}/api/journal/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as { text: string; occurredOn?: string }
+    return HttpResponse.json({
+      id: String(params.id),
+      occurredOn: body.occurredOn ?? '2026-08-18',
+      text: body.text,
+      source: 'quickinput',
+      createdAt: '2026-08-18T12:00:00Z',
+    })
+  }),
+  http.delete(`${API_BASE}/api/journal/:id`, () => new HttpResponse(null, { status: 204 })),
+
+  // Gratitude (mezo-b3pp.3) — honest-empty default list, echo on create, 204 on delete.
+  // Without these, real-mode reads of /api/journal/gratitude hit MSW's 'bypass' fallthrough
+  // (test/setup.ts) and resolve via a real network error instead of exercising this handler.
+  http.get(`${API_BASE}/api/journal/gratitude`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/journal/gratitude`, async ({ request }) => {
+    const b = (await request.json()) as { text: string; lifeArea?: string | null; occurredOn?: string }
+    return HttpResponse.json({ id: 'gratitude-new', occurredOn: b.occurredOn ?? '2026-08-21', text: b.text,
+      lifeArea: b.lifeArea ?? null, createdAt: '2026-08-21T20:00:00Z' }, { status: 201 })
+  }),
+  http.delete(`${API_BASE}/api/journal/gratitude/:id`, () => new HttpResponse(null, { status: 204 })),
+
+  // Decisions (mezo-b3pp.4) — honest-empty default list, mirroring the journal-notes default
+  // above; without this, real-mode reads of /api/journal/decision hit MSW's 'bypass' fallthrough
+  // (test/setup.ts) and resolve via a real network error instead of exercising this handler.
+  // Tests override with server.use() for anything beyond the empty-list default.
+  http.get(`${API_BASE}/api/journal/decision`, () => HttpResponse.json([])),
+
+  // Companion feedback (mezo-b3pp.15) — honest-empty default batch read; the PUT echoes the body
+  // back as the stored MessageFeedbackResponse row and the retraction is a plain 204. Without
+  // these, every real-mode test that renders a 👍/👎 surface falls through MSW's 'bypass'
+  // (test/setup.ts) into a live connection attempt to localhost:8090 — slow and flaky. Tests that
+  // need actual verdicts override with server.use().
+  http.get(`${API_BASE}/api/companion/feedback`, () => HttpResponse.json([])),
+  http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+    const body = (await request.json()) as {
+      artifactKind: string
+      artifactId: string
+      verdict: string
+      reason?: string | null
+    }
+    return HttpResponse.json({ ...body, reason: body.reason ?? null, updatedAt: '2026-08-21T12:00:00Z' })
+  }),
+  http.delete(`${API_BASE}/api/companion/feedback/:artifactKind/:artifactId`, () => new HttpResponse(null, { status: 204 })),
 ]

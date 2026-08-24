@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
-import { NEW_CHAT, useChat, useChatActions, useConversations } from '@/data/hooks'
+import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
@@ -9,6 +9,10 @@ import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { cn } from '@/shared/lib/cn'
 
 const SUBTITLE = { mock: 'demo beszélgetés', live: 'Gemini · élő' } as const
+
+// A composer legfeljebb ennyire nő meg (~5 sor 13px/1.45-nél), utána a mező befelé görget —
+// egy hosszú üzenet sem eszi meg az egész beszélgetést (mezo-a837).
+const COMPOSER_MAX_HEIGHT = 104
 
 function ThinkingDots() {
   return (
@@ -51,6 +55,7 @@ export function ChatPage() {
   const { conversations, degraded: companionOff } = useConversations().data
   const { send, turn, error } = useChatActions(selection, selectConversation)
   const [draft, setDraft] = useState('')
+  const draftRef = useRef<HTMLTextAreaElement>(null)
   // The transcript lands in the composer rather than being sent — the user checks it first.
   const voice = useVoiceInput((text) => setDraft((d) => (d ? `${d} ${text}` : text)))
   const recording = voice.state === 'recording'
@@ -58,6 +63,15 @@ export function ChatPage() {
   // The switch-off 404 can surface on either read; a draft thread makes no read of its own.
   const degraded = data.degraded || companionOff
   const isNew = selection === NEW_CHAT
+
+  // ONE feedback read for the whole thread (mezo-b3pp.15) — a per-bubble hook would fire one
+  // HTTP request per answer. Only persisted assistant rows are votable: the in-flight draft has
+  // no id yet, and a user bubble is not an AI artifact.
+  const assistantIds = useMemo(
+    () => messages.flatMap((m) => (m.role === 'assistant' && m.id ? [m.id] : [])),
+    [messages],
+  )
+  const feedback = useFeedback('chat_message', assistantIds)
 
   // Landing on the conversation (or gaining a message) parks the view on the newest turn —
   // a chat opens at the bottom, never at its first line (mezo-at8x.2).
@@ -74,6 +88,16 @@ export function ChatPage() {
   useEffect(() => {
     if (turn) scrollIfStuck()
   }, [turn, turn?.draft, turn?.tools.length, scrollIfStuck])
+
+  // A mező textarea, hogy a hosszú üzenet TÖRJÖN, ne oldalra csússzon (mezo-a837): minden
+  // változásnál egy sorra nullázzuk, majd a tartalom magasságára állítjuk — a maxHeight fölött
+  // már a textarea saját görgetője viszi tovább.
+  useLayoutEffect(() => {
+    const el = draftRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_HEIGHT)}px`
+  }, [draft])
 
   const submit = () => {
     if (!draft.trim() || degraded || turn) return
@@ -142,8 +166,23 @@ export function ChatPage() {
             </p>
           </div>
         )}
+        {/* Keyed by the persisted row id where there is one, so React never reuses one bubble's
+            FeedbackChips instance — and its session-local reason-row state — for a different
+            answer. Unpersisted rows (mock user bubbles) keep the positional fallback — they
+            render no chips and only ever get appended to the end. */}
         {messages.map((m, i) => (
-          <ChatMessage key={i} m={m} />
+          <ChatMessage
+            key={m.id ?? `idx-${i}`}
+            m={m}
+            feedback={
+              m.role === 'assistant' && m.id
+                ? {
+                    value: feedback.get(m.id),
+                    onVote: (verdict, reason) => feedback.vote(m.id!, verdict, reason),
+                  }
+                : undefined
+            }
+          />
         ))}
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
         {/* mezo-280 (Finding 3): thinking flips false the moment a 'tool' event lands, well before
@@ -173,7 +212,7 @@ export function ChatPage() {
         <p className="text-tertiary" style={{ fontSize: 11, textAlign: 'center' }}>{voice.error}</p>
       )}
 
-      <div className="card chat-composer" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="card chat-composer" style={{ padding: 8, display: 'flex', alignItems: 'flex-end', gap: 8 }}>
         <button
           type="button"
           className={cn('chip', recording && 'chat-mic-live')}
@@ -190,17 +229,34 @@ export function ChatPage() {
         >
           <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
         </button>
-        <input
+        <textarea
+          ref={draftRef}
+          rows={1}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && submit()}
+          // Enter küld (mint eddig), Shift+Enter új sort tesz; IME-kompozíció közben egyik sem.
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            submit()
+          }}
+          enterKeyHint="send"
           placeholder={
             recording ? 'Hallgatlak…'
               : voice.state === 'transcribing' ? 'Leiratozom…'
                 : 'Mondj valamit...'
           }
           disabled={degraded}
-          style={{ flex: 1, padding: '8px 4px', fontSize: 13 }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '8px 4px',
+            fontSize: 13,
+            lineHeight: 1.45,
+            resize: 'none',
+            overflowY: 'auto',
+            maxHeight: COMPOSER_MAX_HEIGHT,
+          }}
         />
         <button
           type="button"

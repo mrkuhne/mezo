@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
@@ -66,6 +67,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("companion-fake")
 class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
+    @Autowired private ContextSnapshotAssembler contextSnapshotAssembler;
     @Autowired private BiometricsTools biometricsTools;
     @Autowired private TrainTools trainTools;
     @Autowired private FuelTools fuelTools;
@@ -131,11 +133,52 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetWeightLog_shouldRenderNincsAdat_whenNoWeighInsInWindow() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(40), new BigDecimal("88.0"));
+        String out = biometricsTools.getWeightLog(7, ctx(owner));
+        assertThat(out).isEqualTo("Napi súlymérések (utolsó 7 nap): nincs adat");
+        assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testGetWeightLog_shouldListRawDailyRowsNewestFirst_andClampDays_whenHistoryExists() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.4"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(2), new BigDecimal("86.1"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(40), new BigDecimal("88.0"));
+
+        String out = biometricsTools.getWeightLog(90, ctx(owner)); // clamps to max-window-days=30
+
+        assertThat(out).startsWith("Napi súlymérések (utolsó 30 nap):")
+                .contains(LocalDate.now().minusDays(1) + ": 85.4 kg")
+                .contains(LocalDate.now().minusDays(2) + ": 86.1 kg")
+                .doesNotContain("88 kg");
+        // newest first — the day-1 line precedes the day-2 line
+        assertThat(out.indexOf(LocalDate.now().minusDays(1).toString()))
+                .isLessThan(out.indexOf(LocalDate.now().minusDays(2).toString()));
+        assertThat(audit.toRefsEnvelope().refs()).extracting(r -> r.kind()).containsOnly("Weight");
+    }
+
+    @Test
+    void testGetWeightLog_shouldRenderDayOverDayDelta_whenConsecutiveDaysExist() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.4"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(2), new BigDecimal("86.1"));
+
+        String out = biometricsTools.getWeightLog(7, ctx(owner));
+
+        // the newest row's delta against the row below it: 85.4 - 86.1 = -0.7
+        assertThat(out).contains("-0.7 kg");
+    }
+
+    @Test
     void testGetRecovery_shouldListWindowedRowsNewestFirst_andClampDays_whenScopeSleep() {
         UUID owner = userPopulator.createUser().getId();
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("7.5"), 4);
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(40), new BigDecimal("6.0"), 2);
-        String out = biometricsTools.getRecovery("sleep", 90, ctx(owner)); // clamps to max-window-days=30
+        String out = biometricsTools.getRecovery("sleep", 90, null, null, null, ctx(owner));
+        // clamps to max-window-days=30
         assertThat(out).startsWith("Alvás (utolsó 30 nap):")
                 .contains(LocalDate.now().minusDays(1) + ": 7.5 h, minőség 4/5")
                 .doesNotContain(LocalDate.now().minusDays(40).toString());
@@ -145,7 +188,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Test
     void testGetRecovery_shouldRenderNincsAdat_whenScopeAndDaysNullAndNoSleepLogs() {
         // null scope defaults to "sleep", null days defaults to 7 — both defaults exercised at once.
-        String out = biometricsTools.getRecovery(null, null, ctx(userPopulator.createUser().getId()));
+        String out = biometricsTools.getRecovery(
+                null, null, null, null, null, ctx(userPopulator.createUser().getId()));
         assertThat(out).isEqualTo("Alvás (utolsó 7 nap): nincs adat");
     }
 
@@ -155,7 +199,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // 450 min (7h30m) target, WAKE-anchored at 06:45 -> derived bed 23:15, ±15 min regularity band.
         sleepGoalPopulator.goal(owner);
 
-        String out = biometricsTools.getRecovery("sleep-goal", null, ctx(owner));
+        String out = biometricsTools.getRecovery("sleep-goal", null, null, null, null, ctx(owner));
 
         assertThat(out).isEqualTo(
                 "Alvási cél: 7ó 30p alvás, ébredés 06:45, lefekvés 23:15; szabályosság ±15 perc");
@@ -170,7 +214,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(1), "08:00", 7, 3, null);
         checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(40), "08:00", 9, 1, null);
 
-        String out = biometricsTools.getRecovery("checkins", null, ctx(owner)); // default window: 7 days
+        String out = biometricsTools.getRecovery("checkins", null, null, null, null, ctx(owner));
+        // default window: 7 days
 
         assertThat(out).startsWith("Bejelentkezések (utolsó 7 nap):")
                 .contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10, stressz 3/10, testi 3/10, mentális 3/10")
@@ -181,7 +226,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
     @Test
     void testGetRecovery_shouldRenderNincsAdat_whenScopeCheckinsAndEmpty() {
-        assertThat(biometricsTools.getRecovery("checkins", null, ctx(userPopulator.createUser().getId())))
+        assertThat(biometricsTools.getRecovery(
+                "checkins", null, null, null, null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Bejelentkezések (utolsó 7 nap): nincs adat");
     }
 
@@ -310,7 +356,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // the window (today..+6) covers all 7 HU weekdays exactly once: today's line resolves the
         // planned gym day, the other 6 have no matching template — genuine rest days ("pihenőnap").
         assertThat(out).startsWith("Edzésterv (" + today + " – " + today.plusDays(6) + "):")
-                .contains(today + ": gym: " + todayLabel + ": Húzódzkodás 3×6-8")
+                .contains(today + ": gym (" + todayLabel + "): Húzódzkodás 3×6-8")
                 .contains("pihenőnap");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", today + ".." + today.plusDays(6)));
@@ -362,9 +408,9 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = trainTools.getTrainingPlan("today", null, ctx(owner));
 
-        // no active meso → "gym: pihenőnap", but the active running block's prescribed session
+        // no active meso → "pihenőnap (gym)", but the active running block's prescribed session
         // for today's weekday still appends the "; futás: …" tail.
-        assertThat(out).contains("gym: pihenőnap; futás: Sprint-intervallum");
+        assertThat(out).contains("pihenőnap (gym); futás: Sprint-intervallum");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", LocalDate.now().toString()));
     }
@@ -381,7 +427,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = trainTools.getTrainingPlan("today", null, ctx(owner));
 
         assertThat(out).startsWith("Edzésterv (ma, " + today + "):")
-                .contains("gym: pihenőnap; sport: volleyball 18:00 training (120 perc)")
+                .contains("pihenőnap (gym); sport: volleyball 18:00 training (120 perc)")
                 .doesNotContain("nincs adat");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", today.toString()));
@@ -402,7 +448,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         // the reported chat's exact shape: a Full Body gym day AND an 18:00 sport session — the
         // model must see both from one call, never only the gym half.
-        assertThat(out).contains("gym: " + todayLabel + ": Guggolás 3×6-8")
+        assertThat(out).contains("gym (" + todayLabel + "): Guggolás 3×6-8")
                 .contains("sport: volleyball 18:00 training (120 perc)");
     }
 
@@ -418,7 +464,51 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // the week walk resolves each of the 7 dates on its own weekday — the slot lands on
         // exactly its day, and the other days stay honest rest days.
         assertThat(out).startsWith("Edzésterv (" + today + " – " + today.plusDays(6) + "):")
-                .contains(sportDay + ": gym: pihenőnap; sport: volleyball 19:30 match (90 perc)");
+                .contains(sportDay + ": pihenőnap (gym); sport: volleyball 19:30 match (90 perc)");
+    }
+
+    /**
+     * mezo-4qu: the tool and the chat snapshot can both land in the SAME prompt, so a day may never
+     * render differently in the two. The zero-exercise template day is the shape that used to make
+     * them contradict each other outright ("gym: pihenőnap" vs "gym (Push)"); both now go through
+     * {@code ToolText.gymLine}, and this test is what keeps a future edit from re-splitting them.
+     */
+    @Test
+    void testDayRender_shouldMatchSnapshotExactly_whenTemplateDayHasNoExercises() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        // the meso wizard's live shape: every weekday is a template row, rest days carry zero
+        // exercises (mezo-650a) — a "Rest" row for TODAY is the divergence trigger.
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "Rest", 0, "planned");
+
+        String toolOut = trainTools.getTrainingPlan("today", null, ctx(owner));
+        String snapshot = contextSnapshotAssembler.render(owner, today);
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+
+        // one gym rendering, one rest criterion: neither side may call this day a gym day
+        assertThat(toolOut).contains("pihenőnap (gym)").doesNotContain("gym (");
+        assertThat(maSegment).contains("pihenőnap (gym)").doesNotContain("gym (");
+    }
+
+    /** The gym-day counterpart of the rest-day pin above — same label, same shape, both renderers. */
+    @Test
+    void testDayRender_shouldMatchSnapshotExactly_whenTemplateDayHasExercises() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "Push", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+
+        String toolOut = trainTools.getTrainingPlan("today", null, ctx(owner));
+        String snapshot = contextSnapshotAssembler.render(owner, today);
+
+        String gymFragment = "gym (" + todayLabel + "): Fekvenyomás 3×6-8";
+        assertThat(toolOut).contains(gymFragment);
+        assertThat(snapshot).contains(gymFragment);
     }
 
     @Test

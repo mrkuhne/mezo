@@ -1,4 +1,6 @@
-import { useWeekly } from '@/data/hooks'
+import { useMemo } from 'react'
+import { useFeedback, useWeekly } from '@/data/hooks'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { GrowthWeekCard } from '@/features/insights/components/GrowthWeekCard'
 import type { WeeklyTrend } from '@/data/types'
 
@@ -11,7 +13,14 @@ function trendColor(t: WeeklyTrend): string {
 }
 
 export function WeeklyPage() {
-  const { weekly, deltaLabel, weeklySuggestion, growthWeek, mode } = useWeekly()
+  const { weekly, deltaLabel, weeklySuggestion, weeklySuggestionId, growthWeek, mode } = useWeekly()
+  // ONE feedback read for the page (mezo-b3pp.15) — the card is the only votable artifact here,
+  // and there is nothing to vote on while the honest placeholder is up (no id ⇒ no request).
+  const feedbackIds = useMemo(
+    () => (weeklySuggestionId ? [weeklySuggestionId] : []),
+    [weeklySuggestionId],
+  )
+  const feedback = useFeedback('weekly_suggestion', feedbackIds)
 
   return (
     <div className="col gap-md">
@@ -70,6 +79,19 @@ export function WeeklyPage() {
                 <button type="button" className="chip" style={{ fontSize: 9 }}>Hangoljuk</button>
               </div>
             ) : null}
+            {/* Both modes — the suggestion is an AI artifact wherever it comes from. Keyed by the
+                artifactId, so React never carries one week's FeedbackChips instance — and its
+                session-local reason-row state — over to the next week's suggestion. */}
+            {weeklySuggestionId != null && (
+              <div className="mt-md">
+                <FeedbackChips
+                  key={weeklySuggestionId}
+                  value={feedback.get(weeklySuggestionId)}
+                  onVote={(verdict, reason) => feedback.vote(weeklySuggestionId, verdict, reason)}
+                  label="a heti tervjavaslatról"
+                />
+              </div>
+            )}
           </>
         ) : (
           <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>

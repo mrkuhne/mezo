@@ -1,0 +1,212 @@
+package io.mrkuhne.mezo.feature.companion.graph.service;
+
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * W2.2 promotion pipelines (bd mezo-b3pp.7, spec §6.2): existing knowledge flows into the graph
+ * idempotently. Every write goes through {@link GraphService#upsertNode}, keyed by
+ * {@code (createdBy, sourceKind, sourceId)} — re-promotion updates title/meta, never duplicates.
+ *
+ * <p>Deliberately EXCLUDES {@code knowledge_fact} rows with {@code source='pattern'}: those are the
+ * V3.3 shadow of a pattern that already becomes a PATTERN node, so promoting them too would put the
+ * same sentence in the graph twice.
+ *
+ * <p>Callers are (from later slices) async promotion hooks and the nightly reconciler — never a
+ * controller: promotion is internal, there is no REST surface for it.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH, havingValue = "true")
+public class GraphPromotionService {
+
+    public static final String SOURCE_PATTERN = "pattern";
+    public static final String SOURCE_FACT = "knowledge_fact";
+    public static final String SOURCE_GOAL = "goal";
+
+    private final GraphService graphService;
+    private final PatternRepository patternRepository;
+    private final KnowledgeFactRepository knowledgeFactRepository;
+    private final GoalRepository goalRepository;
+    // ObjectProvider, not a direct dependency: the companion switch can be off while the graph
+    // switch is on, so GraphEdgeStructurer's bean may not exist (see its @ConditionalOnProperty).
+    private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
+    // Self-injected proxy (ObjectProvider defers resolution, so this is safe despite the
+    // apparent circularity). See reconcile()'s javadoc for why it is called through this proxy
+    // instead of `this`.
+    private final ObjectProvider<GraphPromotionService> self;
+
+    /** Confirmed pattern -> PATTERN node. Empty when the pattern is gone, not this user's, or not confirmed.
+     *  Only a genuinely NEW node pays for the LLM edge structurer — re-confirming a pattern is a pure UPSERT.
+     *
+     *  <p>{@link GraphEdgeStructurer#structureEdges} runs inside THIS method's transaction (see its
+     *  javadoc for why it is deliberately not {@code REQUIRES_NEW}): node + edges commit or roll
+     *  back together. A DB failure here loses this promotion entirely, but promotion is idempotent
+     *  (keyed on {@code (createdBy, sourceKind, sourceId)}), so a later re-confirm or the nightly
+     *  reconciler (W2.5) heals it without any special-casing. */
+    @Transactional
+    public Optional<GraphNodeEntity> promotePattern(UUID userId, UUID patternId) {
+        Optional<PatternEntity> found = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+            .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()));
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        PatternEntity pattern = found.get();
+        boolean isNew = graphService.findBySource(userId, SOURCE_PATTERN, patternId).isEmpty();
+        GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PATTERN,
+            truncateTitle(pattern.getTitle()), pattern.getMechanism(),
+            SOURCE_PATTERN, pattern.getId(), null, patternMeta(pattern));
+        if (isNew) {
+            GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
+            if (structurer != null) {
+                structurer.structureEdges(userId, node, SOURCE_PATTERN, patternId);
+            }
+        }
+        return Optional.of(node);
+    }
+
+    /** Active (non-pattern-sourced) knowledge fact -> PREFERENCE node. */
+    @Transactional
+    public Optional<GraphNodeEntity> promoteFact(UUID userId, UUID factId) {
+        return knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+            .filter(f -> !KnowledgeFactEntity.SOURCE_PATTERN.equals(f.getSource()))
+            .map(f -> graphService.upsertNode(userId, GraphNodeEntity.KIND_PREFERENCE,
+                truncateTitle(f.getFactText()), f.getFactText(), SOURCE_FACT, f.getId(), null,
+                Map.of("category", f.getCategory(), "source", f.getSource())));
+    }
+
+    /** Goal -> GOAL node; a goal that is no longer active archives its node (the graph shadows, never forgets). */
+    @Transactional
+    public Optional<GraphNodeEntity> syncGoal(UUID userId, UUID goalId) {
+        Optional<GoalEntity> found = goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, userId);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        GoalEntity goal = found.get();
+        boolean active = "active".equals(goal.getStatus());
+        if (!active && graphService.findBySource(userId, SOURCE_GOAL, goalId).isEmpty()) {
+            return Optional.empty();   // never promoted, never active — nothing to shadow
+        }
+        GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_GOAL,
+            truncateTitle(goal.getTitle()), goal.getTitle(), SOURCE_GOAL, goal.getId(), null,
+            Map.of("status", goal.getStatus()));
+        String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
+        if (!status.equals(node.getStatus())) {
+            node.setStatus(status);
+        }
+        return Optional.of(node);
+    }
+
+    /**
+     * The nightly sweep (spec §6.2) — everything the write-path hooks could have missed: patterns
+     * confirmed before the graph existed, manually created facts (no promote hook), goals whose
+     * title drifted since they were last synced. Pure UPSERT (every write is keyed on
+     * {@code (createdBy, sourceKind, sourceId)}), so running it every night — or twice in a row —
+     * is free of side effects: {@code reconcile(userId)} called back-to-back returns the same
+     * count and leaves the same rows. W2.5 wires it into {@code GraphMaintenanceJob}; nothing
+     * schedules it in this slice, and it is not exposed over REST.
+     *
+     * <p>Deliberately reuses {@link #promotePattern}/{@link #promoteFact}/{@link #syncGoal}
+     * rather than re-deriving their skip rules here: this method fetches confirmed patterns, all
+     * (non-deleted) facts, and all (non-deleted) goals for the user, and lets each promote/sync
+     * method's own filter decide whether a given row actually produces a node (unconfirmed
+     * patterns are excluded at the query level since the repository already has a
+     * status-scoped finder; pattern-sourced facts and never-promoted/inactive goals are excluded
+     * by {@link #promoteFact} and {@link #syncGoal} respectively).
+     *
+     * <p><b>Deliberately NOT {@code @Transactional} itself.</b> Each promote/sync call below goes
+     * through {@link #self}, the injected proxy, so it runs inside its OWN transaction — the one
+     * {@code @Transactional} already puts on {@link #promotePattern}/{@link #promoteFact}/
+     * {@link #syncGoal}. Calling them on {@code this} instead (ordinary Spring self-invocation)
+     * would bypass the proxy entirely: no new transactional advice would apply, and if reconcile
+     * itself carried {@code @Transactional}, every promotion in the sweep would silently merge
+     * into that one outer transaction. For a large first sweep over a backlog — where every
+     * confirmed pattern is a NEW node and therefore pays for a {@link GraphEdgeStructurer} LLM
+     * call (cheap-tier, but potentially many calls back-to-back) — that would mean one DB
+     * connection held open across the entire sweep, and one bad row rolling back every other
+     * promotion that already succeeded. Per-item transactions (via the proxy) keep the sweep safe
+     * to interrupt, cheap to retry, and consistent with the fact that each promote/sync method is
+     * independently idempotent.
+     *
+     * <p>Not a single bulk pass either: each row costs its own {@code findBySource} lookup (the
+     * new-node check inside {@link #promotePattern}) plus its own upsert, so the sweep is O(rows)
+     * round trips rather than one query per entity type — acceptable for a nightly job, but worth
+     * knowing before pointing this at a very large backlog.
+     *
+     * <p>Per-row isolation (mezo-b3pp.32): a single row's promotion/sync failure is caught,
+     * logged, and skipped — it does not abort the rest of the sweep for this user. This matters
+     * once W2.5's {@code GraphMaintenanceJob} calls this nightly across every user: one corrupt
+     * pattern must not silently stop that user's facts and goals from reconciling too.
+     *
+     * @return how many nodes were upserted (created or updated) this run
+     */
+    public int reconcile(UUID userId) {
+        GraphPromotionService proxy = self.getObject();
+        int count = 0;
+        int skipped = 0;
+        for (PatternEntity pattern : patternRepository
+                .findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(userId, PatternEntity.STATUS_CONFIRMED)) {
+            try {
+                count += proxy.promotePattern(userId, pattern.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: pattern {} promotion failed for user {}", pattern.getId(), userId, e);
+            }
+        }
+        for (KnowledgeFactEntity fact : knowledgeFactRepository
+                .findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)) {
+            try {
+                count += proxy.promoteFact(userId, fact.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: fact {} promotion failed for user {}", fact.getId(), userId, e);
+            }
+        }
+        for (GoalEntity goal : goalRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(userId)) {
+            try {
+                count += proxy.syncGoal(userId, goal.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: goal {} sync failed for user {}", goal.getId(), userId, e);
+            }
+        }
+        if (skipped > 0) {
+            log.warn("Reconcile skipped {} row(s) for user {} due to per-row failures", skipped, userId);
+        }
+        return count;
+    }
+
+    /** {r, n, direction} — the spec's PATTERN meta envelope; direction is the sign of r, prompt-renderable. */
+    private static Map<String, Object> patternMeta(PatternEntity pattern) {
+        Map<String, Object> meta = new HashMap<>();
+        BigDecimal r = pattern.getR();
+        meta.put("r", r == null ? null : r.toPlainString());
+        meta.put("n", pattern.getN());
+        meta.put("direction", r == null ? null : (r.signum() < 0 ? "negative" : "positive"));
+        return meta;
+    }
+
+    /** knowledge_node.title is varchar(120); pattern titles (up to 200, LLM-generated hypotheses),
+     *  fact texts, and goal titles can all be longer. */
+    private static String truncateTitle(String text) {
+        return text.length() <= 120 ? text : text.substring(0, 117) + "…";
+    }
+}

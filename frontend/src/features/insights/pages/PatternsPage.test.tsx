@@ -207,6 +207,48 @@ describe('PatternsPage (real mode)', () => {
     expect(screen.getByText('alvásminőség')).toBeInTheDocument()
   })
 
+  // mezo-mqdj: az éjszakai job a kapu-bukáskor sem nem frissíti, sem nem törli a már perzisztált
+  // sort, így az az utolsó élő éjszaka statisztikájával itt marad. A Motor ugyanerre a párra
+  // few_days-t mond — a két felület nem mondhat mást ugyanarról a párról.
+  const staleMonitorWire = {
+    ...monitorWire,
+    pairs: [{ ...monitorWire.pairs[0], verdict: 'few_days', alignedDays: 4, missingDays: 4,
+      bottleneckMetricKey: 'sleep-quality', r: null, n: null, p: null }],
+  }
+
+  test('a stale proposed row whose pair is no longer live leaves the decision inbox for gathering', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([patternWire])),
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, () => HttpResponse.json(staleMonitorWire)),
+    )
+    renderPage()
+
+    // nem kérünk döntést olyan összefüggésre, amit a mai adat ki sem tud számolni
+    expect(await screen.findByText(/Még gyűlik az adat/)).toBeInTheDocument()
+    expect(screen.queryByText(/Döntésre vár/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Megerősítem/ })).not.toBeInTheDocument()
+    // és a befagyott lelet-mondat sem mehet ki jelen időben
+    expect(screen.queryByText(patternWire.mechanism)).not.toBeInTheDocument()
+
+    // a gyűjtés-szekció alapból csukva — kinyitva a kapu saját nudge-a áll a soron
+    fireEvent.click(screen.getByText(/Még gyűlik az adat/))
+    expect(screen.getByText(/Még 4 nap adat ebből/)).toBeInTheDocument()
+  })
+
+  test('a monitoring row whose pair went non-live shows the gate verdict, not the frozen mechanism', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern`, () =>
+        HttpResponse.json([{ ...patternWire, status: 'monitoring' }]),
+      ),
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, () => HttpResponse.json(staleMonitorWire)),
+    )
+    renderPage()
+
+    fireEvent.click(await screen.findByText(/Megfigyelés alatt/))
+    expect(screen.getByText(/Még 4 nap adat ebből/)).toBeInTheDocument()
+    expect(screen.queryByText(patternWire.mechanism)).not.toBeInTheDocument()
+  })
+
   test('a switch-off 404 on BOTH endpoints renders the honest degraded card, with no motor link', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/pattern`, () =>

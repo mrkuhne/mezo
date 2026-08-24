@@ -118,6 +118,12 @@ describe('toNudgeMessage', () => {
     })
   })
 
+  // mezo-b3pp.15 — a küszöb-nudge nem perzisztált AI-artifact: nincs sor-azonosítója, tehát
+  // nem kaphat visszajelzés-chipet (a hamis affordancia, amit ez a szelet megöl — mezo-kr9v).
+  test('nincs artifactId — a nudge nem votolható', () => {
+    expect(toNudgeMessage({ key: 'hidratacio', at: '2026-08-17T15:07:00' }).artifactId).toBeUndefined()
+  })
+
   test('minden NeedKey-hez van copy, és mind emoji-val kezdődik', () => {
     const keys: NeedKey[] = ['energia', 'hidratacio', 'pihenes', 'mozgas', 'lelek', 'rend']
     for (const k of keys) {

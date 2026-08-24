@@ -32,7 +32,7 @@ import {
   useActivities, useCheckins, useCompanionFeed, useDailyQuests, useFuelPreview, useGoal,
   useHabitActions, useHabitCatalog, useHabitDay, useIntentionActions, useIntentionDay,
   useQuestActions, useQuickStats, useRitualDay, useSleep, useSleepGoal, useToday,
-  useTodayScenario, useWaterActions, useWeight, resolveBriefing,
+  useTodayScenario, useWaterActions, useWeight, resolveBriefing, useFeedback,
 } from '@/data/hooks'
 import { AppHero } from '@/features/progression/components/AppHero'
 import { buildHabitRewardToast, buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
@@ -42,6 +42,8 @@ import { DaypartEvening } from '@/features/today/components/DaypartEvening'
 import { DaypartMorning } from '@/features/today/components/DaypartMorning'
 import { DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { DaypartTabs } from '@/features/today/components/DaypartTabs'
+import { DailyQuestsChip } from '@/features/today/components/DailyQuestsChip'
+import { DailyQuestsSheet } from '@/features/today/components/DailyQuestsSheet'
 import { MezoChip } from '@/features/today/components/MezoChip'
 import { MezoMessagesSheet } from '@/features/today/components/MezoMessagesSheet'
 import { NeedsRow } from '@/features/today/components/NeedsRow'
@@ -86,21 +88,17 @@ const isFace = (v: string | null): v is Face => v !== null && (DAY_FACES as read
 
 /**
  * Can THIS screen actually serve the item's action? The ItemRow doctrine's enforcement point:
- * `buildTodayItems` labels every habit and every offered quest, but three families have no
- * surface here, and a labelled row with nowhere to go is a dead button.
+ * `buildTodayItems` labels every habit, but a pending DERIVED habit can have no log surface
+ * of its own. A labelled row with nowhere to go would be a dead button.
  *  • habit → `habitAction` is `'none'`: a pending DERIVED habit with no log surface of its own.
- *  • quest → `questAction` is `null`: a metric with no Today surface (`growth_intention` ships).
- *  • quest → a `checkin` CTA on a day where every slot is already recorded, so `act()` has no
- *    index to open. A `skipped` slot does NOT close this: it is still fillable (`isFillableSlot`).
+ * Quest capabilities are resolved separately for `DailyQuestsSheet`; raw quest items never
+ * reach the daypart lists.
  */
-function servableAction(item: TodayItem, hasFillableCheckin: boolean): boolean {
+function servableAction(item: TodayItem): boolean {
   const a = item.action
   if (!a) return false
   if (a.kind === 'habit') return habitAction(a.habit).kind !== 'none'
-  if (a.kind !== 'quest') return true
-  const qa = questAction(a.quest)
-  if (!qa) return false
-  return qa.kind !== 'checkin' || hasFillableCheckin
+  return true
 }
 
 /**
@@ -125,8 +123,12 @@ export function TodayPage() {
   } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
-  const { quests, levelUps: questLevelUps } = useDailyQuests(date)
-  const { consumeLevelUps: consumeQuestLevelUps } = useQuestActions(date)
+  const { quests, levelUps: questLevelUps, rerollsLeft } = useDailyQuests(date)
+  const {
+    consumeLevelUps: consumeQuestLevelUps,
+    pending: questPending,
+    reroll: rerollQuest,
+  } = useQuestActions(date)
   const { data: activities } = useActivities(date)
   const { habits, levelUps: habitLevelUps } = useHabitDay(date)
   // The routine editor's live catalog (mezo-n5e9.2) — `buildTodayItems` looks up each habit's
@@ -143,10 +145,16 @@ export function TodayPage() {
   const { addFocus, reflect } = useIntentionActions(date)
   const stats = useQuickStats()
   const feed = useCompanionFeed()
+  // ONE feedback read for the whole thread (mezo-b3pp.15) — a per-bubble hook would fire one
+  // HTTP request per message. Called ABOVE this page's early returns (anchor mode, skeleton);
+  // in mock mode the feed is deliberately `[]`, so the id set is empty and nothing is fetched.
+  const feedIds = useMemo(() => feed.map((m) => m.id), [feed])
+  const feedback = useFeedback('feed_message', feedIds)
   const navigate = useNavigate()
   const [params, setSearchParams] = useSearchParams()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const [activityQuest, setActivityQuest] = useState<DailyQuest | null>(null)
+  const [questsOpen, setQuestsOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
   const [mealOpen, setMealOpen] = useState<{ slot?: MealSlot } | null>(null)
   const [sleepOpen, setSleepOpen] = useState(false)
@@ -261,7 +269,7 @@ export function TodayPage() {
   const heroSession = sessions[0] ?? null
   const heroItemId = heroSession ? `session:${heroSession.id}` : null
 
-  const items = useMemo(() => {
+  const { items, itemDayXp } = useMemo(() => {
     const built = buildTodayItems({
       quests, habits, checkins, fuelSlots, ritual: ritualDay, goal: sleepGoal, sessions,
       chains: habitCatalog.chains,
@@ -269,15 +277,23 @@ export function TodayPage() {
     // The ItemRow doctrine, enforced for EVERY source in one place: a row keeps its action
     // only when this screen can serve it (`servableAction`), otherwise the row survives and
     // the pill goes. A stripped habit picks up `habitHint`'s explainer.
-    const hasFillableCheckin = checkins.some(isFillableSlot)
-    return built.map((i) => {
+    // Daily quests have one dedicated Today surface: the standing chip + sheet above the
+    // rings. Keep them out of the daypart lists; habits may still absorb their XP for the
+    // existing dedup/accounting rules inside `buildTodayItems`.
+    const visible = built.filter((i) => i.source !== 'quest').map((i) => {
       // The promoted session's face follows its HERO: the day view is where it renders,
       // so the item belongs to `nap` whatever the session's start.
       const faced = i.id === heroItemId ? { ...i, face: 'nap' as const } : i
-      if (servableAction(faced, hasFillableCheckin)) return faced
+      if (servableAction(faced)) return faced
       const hint = faced.action?.kind === 'habit' ? habitHint(faced.action.habit) : null
       return { ...faced, action: null, subtitle: hint ?? faced.subtitle }
     })
+    return {
+      items: visible,
+      // Count before removing raw quest rows: standalone completed quests still belong to
+      // the day's XP total, while absorbed quest XP is already folded into its habit item.
+      itemDayXp: built.filter((item) => item.status === 'done').reduce((sum, item) => sum + (item.xp ?? 0), 0),
+    }
   }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, sessions, heroItemId, habitCatalog.chains])
 
   // The current face comes from the clock; `?dp=` overrides it. Absent (`null`) and
@@ -337,7 +353,7 @@ export function TodayPage() {
   const open = faceItems.open.filter((i) => i.id !== heroItemId)
   const done = faceItems.done.filter((i) => i.id !== heroItemId)
   const doneXp = done.reduce((s, i) => s + (i.xp ?? 0), 0)
-  const dayXp = items.filter((i) => i.status === 'done').reduce((s, i) => s + (i.xp ?? 0), 0)
+  const dayXp = itemDayXp
     + (activities ?? []).reduce((s, e) => s + e.xpAwarded, 0)
 
   // Per-chain progress + celebrations, keyed by the catalog's own `chainKey` (mezo-n5e9.4).
@@ -347,6 +363,32 @@ export function TodayPage() {
   const chainProgress = (chainKey: string) => {
     const steps = habits.filter((h) => h.chain === chainKey)
     return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
+  }
+
+  // ADR 0010: nothing here ever self-completes a quest. The dedicated quest sheet delegates
+  // every smart action here; completion still comes from the underlying domain write.
+  const actQuest = (quest: DailyQuest) => {
+    const qa = questAction(quest)
+    if (!qa) return
+    if (qa.kind === 'water') return logWater(qa.amountMl)
+    if (qa.kind === 'checkin') {
+      const idx = checkins.findIndex(isFillableSlot)
+      if (idx < 0) return
+      setQuestsOpen(false)
+      return setCheckInIdx(idx)
+    }
+    if (qa.kind === 'activity') {
+      setQuestsOpen(false)
+      return setActivityQuest(quest)
+    }
+    return navigate(qa.to)
+  }
+
+  const questActionLabel = (quest: DailyQuest) => {
+    const qa = questAction(quest)
+    if (!qa) return null
+    if (qa.kind === 'checkin' && !checkins.some(isFillableSlot)) return null
+    return qa.label
   }
 
   // A row's action is dispatched through the SAME mappings the old cards used —
@@ -360,15 +402,7 @@ export function TodayPage() {
       return item.source === 'fuel' ? setMealOpen({}) : navigate(a.to)
     }
     if (a.kind === 'quest') {
-      const qa = questAction(a.quest)
-      if (!qa) return
-      if (qa.kind === 'water') return logWater(qa.amountMl)
-      if (qa.kind === 'checkin') {
-        const idx = checkins.findIndex(isFillableSlot)
-        return idx >= 0 ? setCheckInIdx(idx) : undefined
-      }
-      if (qa.kind === 'activity') return setActivityQuest(a.quest)
-      return navigate(qa.to)
+      return actQuest(a.quest)
     }
     const ha = habitAction(a.habit)
     switch (ha.kind) {
@@ -447,6 +481,13 @@ export function TodayPage() {
       {scenario.vulnerable && <VulnerabilityCard />}
       <DaypartTabs selected={selected} current={current} onSelect={selectFace} />
       <MezoChip messages={messages} unread={msgsUnread} onOpen={openMessages} />
+      <DailyQuestsChip
+        done={growth.done}
+        total={growth.total}
+        rerollsLeft={rerollsLeft}
+        open={questsOpen}
+        onOpen={() => setQuestsOpen(true)}
+      />
       {needs.isPending
         // sleepGoal has already resolved here (the page-level skeleton above gates it), but
         // useNeeds' own composite isPending can still be true for a beat — six rings simulated
@@ -458,7 +499,7 @@ export function TodayPage() {
         <DaypartMorning
           hero={mHero} facts={morningFacts}
           open={open} done={done} doneXp={doneXp}
-          celebrations={celebrationsFor('MORNING')} growth={growth}
+          celebrations={celebrationsFor('MORNING')}
           habitPending={habitPending} onAct={act}
         />
       )}
@@ -469,14 +510,14 @@ export function TodayPage() {
           facts={dayFacts}
           mesoLine={user.weekInMeso ? `${user.weekInMeso}. mezóhét` : null}
           open={open} done={done} doneXp={doneXp}
-          celebrations={celebrationsFor('DAY')} growth={growth}
+          celebrations={celebrationsFor('DAY')}
           habitPending={habitPending} onAct={act} onCustom={() => setCustomOpen(true)}
         />
       )}
       {selected === 'este' && (
         <DaypartEvening
           open={open} done={done} dayXp={dayXp} facts={eveningFacts}
-          celebrations={celebrationsFor('EVENING')} growth={growth}
+          celebrations={celebrationsFor('EVENING')}
           habitPending={habitPending} onAct={act}
         />
       )}
@@ -494,7 +535,18 @@ export function TodayPage() {
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
-      {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} />}
+      {msgsOpen && <MezoMessagesSheet messages={messages} onClose={() => setMsgsOpen(false)} feedback={feedback} />}
+      {questsOpen && (
+        <DailyQuestsSheet
+          quests={quests}
+          rerollsLeft={rerollsLeft}
+          pending={questPending}
+          actionLabel={questActionLabel}
+          onQuestAction={actQuest}
+          onReroll={rerollQuest}
+          onClose={() => setQuestsOpen(false)}
+        />
+      )}
       {needSheet && (
         <NeedRingSheet
           state={needs.states.find((s) => s.key === needSheet)!}

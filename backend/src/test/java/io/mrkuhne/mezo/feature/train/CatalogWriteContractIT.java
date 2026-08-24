@@ -70,6 +70,31 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testSetVideo_shouldAcceptInstagramReel_whenPermalinkGiven() {
+        HttpHeaders auth = ownerAuthHeaders();
+        ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
+            .stream().filter(e -> "box-jump".equals(e.getSlug())).findFirst().orElseThrow();
+        String reel = "https://www.instagram.com/reel/DAbc-1_x2yZ/?igsh=Ntb3Q";
+        CatalogVideoRequest vidReq = CatalogVideoRequest.builder().videoUrl(reel).build();
+        ExerciseCatalogItem out = putForBody(
+            "/api/train/exercises/" + boxJump.getId() + "/video", vidReq, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(out.getVideoUrl()).isEqualTo(reel);
+
+        // box-jump is a master row ResetDatabase never cleans — clear the video so no cross-test residue.
+        CatalogVideoRequest clear = CatalogVideoRequest.builder().videoUrl(null).build();
+        putForBody("/api/train/exercises/" + boxJump.getId() + "/video", clear, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+    }
+
+    @Test
+    void testSetVideo_shouldReturn400_whenUrlIsNeitherYouTubeNorInstagram() {
+        HttpHeaders auth = ownerAuthHeaders();
+        ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
+            .stream().filter(e -> "box-jump".equals(e.getSlug())).findFirst().orElseThrow();
+        CatalogVideoRequest vidReq = CatalogVideoRequest.builder().videoUrl("https://vimeo.com/12345").build();
+        putForBody("/api/train/exercises/" + boxJump.getId() + "/video", vidReq, auth, HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
     void testSetExerciseImages_shouldAttachAndClearOnMasterRow_whenOwnershipFree() {
         HttpHeaders auth = ownerAuthHeaders();
         ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)

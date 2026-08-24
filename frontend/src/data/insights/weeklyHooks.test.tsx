@@ -5,7 +5,7 @@ import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { prevMondayIso, weekEndIso, isoWeekNumber, inWeek, deriveWeekMetrics, deriveItems, deriveScore, trendOf, weightTrendOf, useWeekly } from '@/data/insights/weeklyHooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
-import { weekly as mockWeekly, weeklySuggestion as mockSuggestion, growthWeek as mockGrowthWeek } from '@/data/insights/insights'
+import { weekly as mockWeekly, weeklySuggestion as mockSuggestion, weeklySuggestionId as mockSuggestionId, growthWeek as mockGrowthWeek } from '@/data/insights/insights'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { SleepEntry } from '@/data/types'
 
@@ -91,6 +91,9 @@ describe('useWeekly (mock mode)', () => {
     expect(result.current.weekly).toEqual(mockWeekly)
     expect(result.current.deltaLabel).toBe('vs hét 20')
     expect(result.current.weeklySuggestion).toBe(mockSuggestion)
+    // The demo suggestion carries a stable artifactId so a mock-mode 👍/👎 has something to key
+    // on — mock must render the same chips live mode does (mezo-b3pp.15).
+    expect(result.current.weeklySuggestionId).toBe(mockSuggestionId)
     expect(result.current.growthWeek).toEqual(mockGrowthWeek)
     expect(result.current.mode).toBe('mock')
   })
@@ -165,18 +168,22 @@ describe('useWeekly (real mode)', () => {
     expect(result.current.weekly.delta).toBeNull()
   })
 
-  it('serves the generated weeklySuggestion prose when the GET succeeds', async () => {
+  it('serves the generated weeklySuggestion prose AND its artifactId when the GET succeeds', async () => {
     server.use(http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => HttpResponse.json({
+      id: '7b1e0c33-0000-4000-8000-0000000005a1',
       weekStart: '2026-07-06', prose: 'Fókuszálj az alvásra ezen a héten.',
       generatedAt: '2026-07-06T06:00:00Z',
     })))
     const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.weeklySuggestion).toBe('Fókuszálj az alvásra ezen a héten.'))
+    // The wire id is the W4.1 feedback artifactId — the prose alone is not votable.
+    expect(result.current.weeklySuggestionId).toBe('7b1e0c33-0000-4000-8000-0000000005a1')
   })
 
-  it('keeps weeklySuggestion null on the default 404 (honest placeholder)', async () => {
+  it('keeps weeklySuggestion and its id null on the default 404 (honest placeholder)', async () => {
     const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.mode).toBe('live'))
     expect(result.current.weeklySuggestion).toBeNull()
+    expect(result.current.weeklySuggestionId).toBeNull()
   })
 })

@@ -19,11 +19,11 @@ test('/me shows the Profil route with the header dropdown', async () => {
   expect(screen.getByRole('button', { name: 'Profil' })).toHaveAttribute('aria-haspopup', 'menu')
 })
 
-test('the dropdown lists all seven Me sub-views and navigates to Cél', async () => {
+test('the dropdown lists all eight Me sub-views and navigates to Cél', async () => {
   server.use(http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])))
   renderApp('/me')
   await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
-  for (const label of ['Profil', 'Growth', 'Cél', 'Súly', 'Alvás', 'Emberek', 'Tudás']) {
+  for (const label of ['Profil', 'Growth', 'Napló', 'Cél', 'Súly', 'Alvás', 'Emberek', 'Tudás']) {
     expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
   }
   await userEvent.click(screen.getByRole('menuitem', { name: 'Cél' }))

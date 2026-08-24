@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.PatternCritique;
 import io.mrkuhne.mezo.api.dto.PatternEventResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
+import io.mrkuhne.mezo.api.dto.RecalledMemory;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -16,6 +17,7 @@ import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import org.mapstruct.Mapper;
@@ -45,6 +47,7 @@ public interface CompanionMapper {
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .tools(toTools(entity.getToolCalls()))
                 .refs(toRefs(entity.getRefs()))
+                .recalled(toRecalled(entity.getRecalledMemories()))
                 .degraded(entity.isDegraded())
                 .build();
     }
@@ -143,6 +146,18 @@ public interface CompanionMapper {
         }
         return envelope.refs().stream()
                 .map(ref -> MessageRef.builder().kind(ref.kind()).id(ref.id()).build())
+                .toList();
+    }
+
+    /** W3.1b: null envelope maps to [] — a user row and a pre-W3.1b answer disclose nothing. */
+    default List<RecalledMemory> toRecalled(RecalledMemoriesEnvelope envelope) {
+        if (envelope == null || envelope.items() == null) {
+            return List.of();
+        }
+        return envelope.items().stream()
+                .map(item -> RecalledMemory.builder()
+                        .occurredOn(item.occurredOn()).kind(item.kind()).label(item.label())
+                        .gist(item.gist()).similarity(item.similarity()).build())
                 .toList();
     }
 

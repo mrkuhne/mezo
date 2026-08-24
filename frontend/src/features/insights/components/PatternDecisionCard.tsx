@@ -3,6 +3,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights/insights'
 import { confidenceMeta, findingSentence, pairLine, type ConfidenceMeta } from '@/features/insights/logic/findings'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
+import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { Pattern, PatternMonitorPair, PatternStatus } from '@/data/types'
 
 const TONE_COLOR: Record<ConfidenceMeta['tone'], { bg: string; border: string; text: string }> = {
@@ -94,7 +95,13 @@ export function PatternDecisionCard({
             )}
           </>
         ) : (
-          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)', marginTop: 4 }}>{pattern.mechanism}</p>
+          // mezo-mqdj: ha a monitor szerint a pár ma nem él, a sor `mechanism`-je a LEGUTÓBBI élő
+          // éjszakáról fagyott be ("Erős pozitív együttjárás … az elmúlt N napban") — a mai adatról
+          // állítana valótlant. Ilyenkor a kapu saját mondata megy ki. (A coverage-t a kártya nem
+          // ismeri: null → a no_data általános, lefedettség-független megfogalmazása.)
+          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)', marginTop: 4 }}>
+            {pair != null && pair.verdict !== 'live' ? verdictSentence(pair, null) : pattern.mechanism}
+          </p>
         )}
       </div>
 

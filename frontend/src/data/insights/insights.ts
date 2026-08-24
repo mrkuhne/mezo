@@ -98,7 +98,13 @@ export const growthWeek: WeeklyGrowth = {
 export const weeklySuggestion =
   'Hét 22: tartsd ezt a Pull/Push váltogatást. A volleyball után visszamentünk 7.2h-ra — vasárnap próbáljunk 8h+-ot.'
 
+/** Stable demo artifactId so a mock-mode 👍/👎 on the suggestion has something to key on
+ *  (mezo-b3pp.15) — mock must render the same chips live mode does. */
+export const weeklySuggestionId = '5a91b0e8-0000-4000-8000-00000000e402'
+
 export const memoir: Memoir = {
+  // Stable demo artifactId so a mock-mode 👍/👎 has something to key on (mezo-b3pp.15).
+  id: '3f7c1d20-0000-4000-8000-00000000e401',
   week: 'Hét 20 · 2026 · Máj 11-17',
   title: 'Egy hét amikor a tested megtanult várni',
   body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a hétfő reggeleken mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi. A Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',
@@ -231,8 +237,12 @@ export const patternMonitor: PatternMonitor = {
       whenPositiveHu: 'a későbbi vacsorák után {erősség} jobban aludtál',
       whenNegativeHu: 'a későbbi vacsorák után {erősség} rosszabbul aludtál',
       metricADomain: 'fuel', metricBDomain: 'sleep',
-      verdict: 'few_days', alignedDays: 7, missingDays: 1, bottleneckMetricKey: 'late-meal-hour',
-      r: null, n: null, p: null, status: null,
+      // mezo-mqdj: ez a pár a `p2` sor gazdája, ezért ÉLŐNEK kell lennie. Egy few_days pár mellett
+      // perzisztált sor pontosan az a hibás állapot, amit a lifecycle-kosarazás azóta kiszűr (a
+      // döntés-inbox nem kérdezhet olyan összefüggésre, amit a mai ablak ki sem tud számolni) —
+      // így a mock ezt a jelenetet nem is állíthatja elő.
+      verdict: 'live', alignedDays: 14, missingDays: null, bottleneckMetricKey: null,
+      r: -0.52, n: 14, p: 0.03, status: null,
     },
     {
       key: 'daily-kcal~next-morning-weight-delta',

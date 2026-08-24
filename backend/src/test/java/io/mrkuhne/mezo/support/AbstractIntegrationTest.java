@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.TestcontainersConfiguration;
 import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
+import io.mrkuhne.mezo.support.populator.AppNotificationPopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -14,13 +15,17 @@ import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.GraphPopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.IntentionPopulator;
+import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MealSlotTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
+import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
+import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
@@ -32,6 +37,7 @@ import io.mrkuhne.mezo.support.populator.NeedsPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryImportPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PeriodSummaryPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
@@ -75,14 +81,14 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
-    DailySummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
-    CompanionMessagePopulator.class,
+    DailySummaryPopulator.class, PeriodSummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
+    CompanionMessagePopulator.class, FeedbackPopulator.class, FlagLogPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
-    IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class,
+    IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class, JournalPopulator.class,
     TrainPopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
-    GoalPlanLinkPopulator.class,
+    GoalPlanLinkPopulator.class, GraphPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     SleepGoalPopulator.class,
     CheckInPopulator.class,
@@ -93,7 +99,7 @@ import org.springframework.context.annotation.Import;
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,
     PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
-    LlmLogPopulator.class, NotificationPopulator.class, ResetDatabase.class})
+    LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired

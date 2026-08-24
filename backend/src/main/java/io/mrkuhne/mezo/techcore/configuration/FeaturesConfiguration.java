@@ -28,6 +28,15 @@ public class FeaturesConfiguration {
     /** V3.1 nightly statistical pattern-detection job — techcore cron zone. */
     public static final String PATTERN_DETECTION_JOB_SWITCH = "mezo.techcore.cron.pattern-detection-job.enabled";
 
+    /** Phase 5 W4.2 (mezo-b3pp.16) nightly feedback-rollup job — techcore cron zone. */
+    public static final String FEEDBACK_LEARNING_JOB_SWITCH = "mezo.techcore.cron.feedback-learning-job.enabled";
+
+    /** W5.1 (mezo-b3pp.18): hourly composite-flag sweep; off ⇒ the FlagSweepJob bean does not exist. */
+    public static final String FLAG_SWEEP_JOB_SWITCH = "mezo.techcore.cron.flag-sweep-job.enabled";
+
+    /** Phase 5 W4.3 (mezo-b3pp.17) weekly profile assembler job — techcore cron zone. */
+    public static final String PROFILE_ASSEMBLER_JOB_SWITCH = "mezo.techcore.cron.profile-assembler-job.enabled";
+
     /** V3.2 weekly hypothesis pipeline — techcore cron zone. */
     public static final String HYPOTHESIS_JOB_SWITCH = "mezo.techcore.cron.hypothesis-job.enabled";
 
@@ -152,6 +161,12 @@ public class FeaturesConfiguration {
      *  adapter can publish an audit event and no llm_log_history row is ever written. */
     public static final String LLM_LOG_SWITCH = "mezo.feature.llm-log.enabled";
 
+    /** mezo-1y3p LLM-log payload retention cron — off ⇒ the LlmLogRetentionJob bean does not exist.
+     *  Deliberately independent of {@link #LLM_LOG_SWITCH}: payload already on disk keeps aging
+     *  even while recording is off. */
+    public static final String LLM_LOG_RETENTION_JOB_SWITCH =
+        "mezo.techcore.cron.llm-log-retention-job.enabled";
+
     /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
     public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
 
@@ -167,4 +182,23 @@ public class FeaturesConfiguration {
 
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
+
+    /** In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed 404s, producers' emits no-op through AppNotificationEmitter. */
+    public static final String NOTIFICATION_FEED_SWITCH = "mezo.feature.notification-feed.enabled";
+
+    /** Phase 5 W1.1 journal (bd mezo-b3pp.1) — off ⇒ the /api/journal surface 404s and no journal
+     *  beans exist. */
+    public static final String JOURNAL_SWITCH = "mezo.feature.journal.enabled";
+
+    /** Phase 5 W2.1 knowledge graph (bd mezo-b3pp.6) — off ⇒ no graph beans exist, the graph API
+     *  404s, and every graph hook elsewhere (W3.1 [Összefüggések] block, W4.2 reinforcement,
+     *  RECOVERY profile input) stays silently absent. */
+    public static final String KNOWLEDGE_GRAPH_SWITCH = "mezo.feature.knowledge-graph.enabled";
+
+    /** Phase 5 W3.2 (mezo-b3pp.13) consolidation ladder cron (weekly + monthly rungs). */
+    public static final String CONSOLIDATION_JOB_SWITCH = "mezo.techcore.cron.consolidation-job.enabled";
+
+    /** Phase 5 W2.5 (mezo-b3pp.10) nightly graph-maintenance job — techcore cron zone. */
+    public static final String GRAPH_MAINTENANCE_JOB_SWITCH =
+        "mezo.techcore.cron.graph-maintenance-job.enabled";
 }

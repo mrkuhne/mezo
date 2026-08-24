@@ -22,7 +22,6 @@ import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { TodayStats } from '@/features/today/components/TodayStats'
-import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact } from '@/features/today/logic/islandFacts'
 import { bedCountdown } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
@@ -48,14 +47,13 @@ export interface DaypartEveningProps {
   /** [dayBalance, sleepOutlook] — the dim phase swaps the first cell for the REM evidence. */
   facts: IslandFact[]
   celebrations: ChainCelebrationInput[]
-  growth?: GrowthTodaySummary | null
   habitPending?: boolean
   onAct: (item: TodayItem) => void
 }
 
 export function DaypartEvening({
   open, done, dayXp, facts,
-  celebrations, growth, habitPending, onAct,
+  celebrations, habitPending, onAct,
 }: DaypartEveningProps) {
   const date = localDateString()
   const { phase, now, goal } = useWindDownPhase()
@@ -151,7 +149,6 @@ export function DaypartEvening({
         doneLabel={`Ahogy a nap telt · ${done.length} tétel`}
         dayXp={dayXp}
         focus={<IntentionBanner variant="reflect" />}
-        growth={growth}
         habitPending={habitPending}
         onAct={onAct}
       />

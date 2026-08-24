@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
@@ -6,6 +7,9 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
 
 const renderPage = () => render(<WeeklyPage />, { wrapper: QueryWrapper })
+
+const FEEDBACK_GROUP = 'Visszajelzés a heti tervjavaslatról'
+const LIVE_SUGGESTION_ID = '7b1e0c33-0000-4000-8000-0000000005a1'
 
 describe('WeeklyPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -24,6 +28,17 @@ describe('WeeklyPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: 'Elfogad' })).toBeInTheDocument()
     expect(screen.getByText('Growth — heti')).toBeInTheDocument()
   })
+
+  test('renders the feedback chips on the suggestion card (mezo-b3pp.15)', async () => {
+    renderPage()
+    expect(screen.getByRole('group', { name: FEEDBACK_GROUP })).toBeInTheDocument()
+    // The parked Elfogad/Hangoljuk pair is a SEPARATE mock-only affordance — untouched.
+    expect(screen.getByRole('button', { name: 'Elfogad' })).toBeInTheDocument()
+    const up = screen.getByRole('button', { name: /Segített/ })
+    expect(up).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(up)
+    await waitFor(() => expect(up).toHaveAttribute('aria-pressed', 'true'))
+  })
 })
 
 describe('WeeklyPage (real mode)', () => {
@@ -39,6 +54,8 @@ describe('WeeklyPage (real mode)', () => {
     expect(screen.getByText('A társ heti tervjavaslata hamarosan.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Elfogad' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Hét 22: tartsd ezt a Pull\/Push/)).not.toBeInTheDocument()
+    // No suggestion → no artifact to vote on → no chips on the honest placeholder.
+    expect(screen.queryByRole('group', { name: FEEDBACK_GROUP })).not.toBeInTheDocument()
   })
 
   test('renders the tanulom null-state when nothing is logged', async () => {
@@ -57,11 +74,41 @@ describe('WeeklyPage (real mode)', () => {
 
   it('renders the live suggestion prose WITHOUT the inert Elfogad/Hangoljuk buttons', async () => {
     server.use(http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => HttpResponse.json({
+      id: LIVE_SUGGESTION_ID,
       weekStart: '2026-07-06', prose: 'Élő heti javaslat.', generatedAt: '2026-07-06T06:00:00Z',
     })))
     renderPage()
     expect(await screen.findByText('Élő heti javaslat.')).toBeInTheDocument()
     expect(screen.queryByText('Elfogad')).not.toBeInTheDocument()
     expect(screen.queryByText('Hangoljuk')).not.toBeInTheDocument()
+    // ...but the chips are NOT mock-only — the mezo-kr9v asymmetry must not come back.
+    expect(screen.getByRole('group', { name: FEEDBACK_GROUP })).toBeInTheDocument()
+  })
+
+  it('a 👎 + reason on the suggestion writes the weekly_suggestion artifact (mezo-b3pp.15)', async () => {
+    server.use(http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => HttpResponse.json({
+      id: LIVE_SUGGESTION_ID,
+      weekStart: '2026-07-06', prose: 'Élő heti javaslat.', generatedAt: '2026-07-06T06:00:00Z',
+    })))
+    const puts: unknown[] = []
+    server.use(http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+      const body = await request.json()
+      puts.push(body)
+      return HttpResponse.json({ ...(body as object), updatedAt: '2026-08-21T12:00:00Z' })
+    }))
+    renderPage()
+    await screen.findByRole('group', { name: FEEDBACK_GROUP })
+
+    await userEvent.click(screen.getByRole('button', { name: /Nem talált/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'rossz időzítés' }))
+
+    await waitFor(() => expect(puts).toHaveLength(1))
+    // Pins the WIRE payload — a wrong artifactKind or artifactId would otherwise stay green.
+    expect(puts[0]).toMatchObject({
+      artifactKind: 'weekly_suggestion',
+      artifactId: LIVE_SUGGESTION_ID,
+      verdict: 'down',
+      reason: 'bad_timing',
+    })
   })
 })

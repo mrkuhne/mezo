@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-17
+updated: 2026-08-21
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -258,9 +258,11 @@ this redesign and remain as shipped.
   leaves `PHASE3_TAB_IDS` so the tab shows in real mode; `MemoirPage` drops its `PhaseTeaserCard`
   guard and renders the real memoir card (title/body + `RefTag` anchors) with a client-derived week
   label `Hét N · …`, else the honest null-state *"Az első memoir a hét zárásakor készül el."*. The
-  **reactions row + anniversary card + archive footer are MOCK-ONLY** (unpersisted interactivity =
-  false affordance, the W1 button precedent — §9 decision k). Mock keeps the full Phase-1 demo +
-  byte-parity. Details: [insights.md §2.3](insights.md).
+  **anniversary card + archive footer are MOCK-ONLY** (unpersisted interactivity =
+  false affordance, the W1 button precedent — §9 decision k). The mock-only **reactions row was
+  RETIRED at Phase 5 W4.1** (`mezo-b3pp.15`) in favour of a real 👍/👎 `FeedbackChips` row that
+  renders in BOTH modes — closes `mezo-kr9v`, and it is what the new `MemoirResponse.id` feeds
+  (§4/§9 (a2)). Mock is otherwise the full Phase-1 demo + byte-parity. Details: [insights.md §2.3](insights.md).
 
 **H1 (`mezo-h4wp.5`) — in-app heartbeat (SUPERSEDED by the companion feed, `mezo-gst9`):**
 
@@ -471,7 +473,7 @@ evaluator**. Design of record:
 | Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
 | Frontend (Insights Weekly card swap) | 🟢 W1 | `useWeekly().weeklySuggestion` real (404→null); the Weekly card renders the generated prose, else the honest placeholder; „Elfogad/Hangoljuk" hidden in live. |
 | Memoir (table + generator + Sunday cron + lazy read) | 🟢 W2 | `memoir` table (ISO-Monday identity, partial unique, typed-jsonb `anchors`); smart-tier `MemoirGenerator` (gather = the week's OWN summaries + facts + patterns + numbered anchor candidates → ONE `completeSmart` call, model-selected anchors, honest-null); Sunday-19:00 `MemoirJob` (three-switch, no backfill); `GET /api/proactive/memoir` (no params; latest row else lazy-generate the LAST COMPLETED week; 404 = empty week). |
-| Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; reactions/anniversary/archive mock-only. |
+| Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; anniversary/archive mock-only, and since **W4.1** (`mezo-b3pp.15`) a real 👍/👎 chip row in both modes replaces the retired mock reactions. |
 | Predictions (table + generator + validation + weekly/daily job + list read) | 🟢 P1 | `prediction` table (week_start idempotence probe, nullable confidence, CHECK-pinned direction/status); smart-tier `PredictionGenerator` (gather = snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog → ONE `completeSmart`, code-set windows, pattern-copied confidence, honest-empty); deterministic `PredictionValidationService` (window-vs-prior-7-days, no-data ⇒ stays pending); `PredictionJob` two crons (Mon 06:30 generate + daily 06:15 validate, three-switch); `GET /api/proactive/prediction` (list; lazy current-week; `[]` = honest empty, never 404). |
 | Frontend (Insights Predictions tab un-ghost) | 🟢 P1 | `usePredictions()` real (list, `[]` on error); `predictions` left `PHASE3_TAB_IDS`, `PredictionsPage` ghost dropped; renders real cards („tanulom" on null confidence, `✗ Missed` state, accuracy header derived from closed rows), else the honest „still learning" null-state; mock keeps the Phase-1 seed + literal header. |
 | Experiments (table + proposal + outcome + write path + two-cron job) | 🟢 P2 | `experiment` table (proposed/active/completed/dismissed lifecycle, nullable start_date/outcome_good); smart-tier `ExperimentProposalGenerator` (cap-gated, CONFIRMED-pattern-grounded); deterministic `ExperimentOutcomeService` (shared `MetricWindowEvaluator`); **write path** `POST …/decision` (L2, 409 on non-proposed) + `POST …/propose`; list `GET` (lazy propose, `[]` = honest); `ExperimentJob` two crons (weekly propose + daily outcome, three-switch). |
@@ -531,10 +533,11 @@ chips** (the code-collected, model-selected `Memory`/`Pattern` refs) and a **cli
 label** (`Hét N · …`). The Sunday-evening cron has usually already written the week's memoir; if not,
 the first GET generates the **last completed week** on the spot (lazy fallback). When there is no
 narrative memory yet (404) the tab shows the **honest null-state** *"Az első memoir a hét zárásakor
-készül el."* — never demo fiction. In **live mode the reaction toggles, the „Évforduló · 1 hónap"
-anniversary card, and the „Memoir archive · 17 darab" footer are hidden** (unpersisted interactivity /
-deferred surfaces = false affordance); **mock mode** keeps the full Phase-1 demo (seed memoir +
-reactions + anniversary + archive, byte-parity). See [insights.md §2.3](insights.md) for the tab in
+készül el."* — never demo fiction. In **live mode the „Évforduló · 1 hónap"
+anniversary card and the „Memoir archive · 17 darab" footer are hidden** (unpersisted interactivity /
+deferred surfaces = false affordance); **mock mode** keeps the Phase-1 demo (seed memoir + anniversary
++ archive, byte-parity). The Phase-1 **reaction toggles are gone from both modes since W4.1**
+(`mezo-b3pp.15`) — a real 👍/👎 chip row took their place, and unlike them it renders live too. See [insights.md §2.3](insights.md) for the tab in
 the context of the full Insights sub-nav (Memoir now shows as the 3rd of 5 real-mode tabs).
 
 **H1's separate companion-note card is retired.** The midday nudge / evening closing observation it
@@ -1086,16 +1089,29 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `GET /api/proactive/challenge?templateSessionId=&date=` | `ChallengeResponse[]` | 200 · 401 | HBWI. A planned session's live challenges for `date` (dismissed excluded), oldest first. **Lazily generates** when none exist AND `date == today`; **lazily resolves** accepted ones when the instance is done. **`200 []` = honest empty, never 404.** Owner-scoped. |
 | `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
-Schemas: `FeedMessageResponse{date, kind, eyebrow, body[], refs[], generatedAt}` (replaces
+Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt}` (replaces
 `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`, no
 `tone`** on the wire (§9 gotcha c, unchanged). `kind` is the 5-value companion-feed enum
 (`morning|sleep|weight|midday|evening`); `refs[].kind` is the FE `RefTag` vocabulary
 (`WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory`) — always `[]` for the `midday`/
 `evening` kinds (the retired heartbeat generator carried no refs either).
-`WeeklySuggestionResponse{weekStart, prose, generatedAt}` — plain prose, no structured fields.
-`MemoirResponse{weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
+`WeeklySuggestionResponse{id, weekStart, prose, generatedAt}` — plain prose, no structured fields.
+`MemoirResponse{id, weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
 `anchors[].kind` is the same FE `RefTag` vocabulary (`Memory`/`Pattern` in practice), model-SELECTED
 from code-collected candidates, never invented.
+
+**`id` on those three responses is NEW at Phase 5 W4.1 (`mezo-b3pp.15`), and it is REQUIRED.** They
+were the only proactive reads that exposed no row id at all — `PredictionResponse`/
+`ExperimentResponse`/`ChallengeResponse` always had one because their surfaces write back through it.
+The feed/suggestion/memoir surfaces were read-only, so the id had never earned its place; **W4.1's
+👍/👎 capture is what earned it** — `message_feedback.artifact_id` is that row id, and without it the
+FE has literally nothing to vote on (`feed_message` → `companion_message.id`, `weekly_suggestion` →
+`weekly_suggestion.id`, `memoir` → `memoir.id`; predictions ride their existing `id`). The change is
+**contract-only**: all three are MapStruct-mapped from entities that already had `id`, so no mapper,
+service or query changed. It is a required field rather than optional on purpose — a nullable id
+would push a "can this be voted on?" branch into every consumer for a case that cannot occur.
+Table + endpoints + semantics: [`companion.md` §4/§5.7](companion.md); the FE side:
+[`insights.md` §5.7](insights.md) and [`today.md` §1](today.md).
 `PredictionResponse{id, title, basis, confidence?, metricKey, expectedDirection, validFrom, validTo,
 status, actual?, generatedAt}` — `confidence` nullable on the wire (the FE renders „tanulom" on null;
 the `BigDecimal → Double` mapper default); the FE derives its `date` window label + accuracy header
@@ -1198,6 +1214,16 @@ so the only import crossing the boundary is still proactive → companion (uncha
 companion reaches proactive's data purely through Spring DI, never a compile-time dependency. See
 [`companion.md`](companion.md) §5.5 for the companion-side writeup of the same seam.
 
+**W4.2 (`mezo-b3pp.16`) added a second instance of that same inversion.** The nightly feedback
+rollup buckets `feed_message` verdicts by feed slot, which means resolving artifact ids to
+`companion_message.kind` — proactive data again, read from `feature.companion`. `FeedMessageKindService`
+(`feature.proactive.service`, `COMPANION_SWITCH` only, like `PatternImpactService`) implements the
+companion-owned `FeedMessageKindSource` port (`feature.companion.feedback.service`), which also
+carries the five feed-slot constants as literal mirrors of `CompanionMessageEntity.KIND_*` — the
+same "literal mirror rather than import" rule as the fake sentinels (§9 gotcha a). The lookup is
+`userId`-scoped inside the implementation. See [`companion.md`](companion.md) §3 (W4.2 backend
+classes) for the companion-side writeup.
+
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
 All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per
 companion-feed message) and **smart tier** (`completeSmart`, one call per weekly suggestion / one per
@@ -1228,12 +1254,18 @@ dayState)`) only while the feed carries no `morning` kind. `TodayPage.tsx` calls
 directly (not through `useToday`) and passes the result to `buildMezoMessages`. **This replaces BOTH**
 the old `useBriefing()`/`briefingHooks.ts`/`BriefingCard.tsx` seam (B1.2) **and** the old
 `useCompanionNote()`/`heartbeatHooks.ts`/`CompanionNoteCard.tsx` seam (H1) — all now deleted. The
-seam type omits `confidence`/`tone` same as before (§9 gotcha c, unchanged).
+seam type omits `confidence`/`tone` same as before (§9 gotcha c, unchanged). **Since `mezo-b3pp.15`
+the row `id` rides through too** (`FeedMessage.id` → `MezoMessageItem.artifactId`), which is what lets
+each persisted bubble carry 👍/👎 chips; the demo-briefing card and the Életjel nudges get none,
+because neither is a persisted row ([`today.md` §9](today.md)). Mock mode stays `[]`, so those chips
+are real-mode-only in practice.
 
 ### 5.5 Proactive → Insights Weekly FE (✅ W1 wired — real-only read)
 The Insights Weekly „Mezo · heti tervjavaslat" card ([insights.md §2.2](insights.md)) is the
 consumer. `useWeekly()` (`data/insights/weeklyHooks.ts`) fetches `GET /api/proactive/weekly-suggestion?date=<local>`
-via `weeklySuggestionApi.get` (`data/insights/weeklySuggestionApi.ts`, `wire → w.prose` string) in a
+via `weeklySuggestionApi.get` (`data/insights/weeklySuggestionApi.ts` — **since `mezo-b3pp.15` it
+returns `{id, prose}`, not a bare prose string**, so the card has an artifactId for its 👍/👎 chips;
+`useWeekly` splits it into `weeklySuggestion`/`weeklySuggestionId`, both null on the 404) in a
 real-only `useQuery` (`['weeklySuggestion', start]`, `enabled: !mock`, `retry: false`, 404→null) —
 the one bare `useQuery` in that otherwise-`useRealQuery` file (commented as such). `weeklySuggestion:
 string | null` joins the D′ `WeeklyView`; the card renders the prose or the honest placeholder, and
@@ -1248,9 +1280,12 @@ The Insights Memoir tab ([insights.md §2.3](insights.md)) is the consumer. `use
 `['memoir']` `useQuery` (`retry:false`, 404→null). Returns `{ memoir: Memoir | null; anniversaryNote:
 string | null; mode }`; real mode maps the server memoir (or null on 404/loading/error, note always
 null), mock returns the seed memoir + anniversaryNote synchronously (byte-parity). `MemoirPage`
-renders the memoir card or the honest null-state, with reactions/anniversary/archive gated behind
-`mode === 'mock'`. The FE `Memoir` type (`{week, title, body, anchors}`) is reused **unchanged** from
-Phase 1. `memoir` also leaves `PHASE3_TAB_IDS` (`tabs.ts`) so the tab is visible in real mode.
+renders the memoir card or the honest null-state, with anniversary/archive gated behind
+`mode === 'mock'`. `memoir` also leaves `PHASE3_TAB_IDS` (`tabs.ts`) so the tab is visible in real mode.
+**Since `mezo-b3pp.15`** the FE `Memoir` type — reused unchanged from Phase 1 until now — gains `id`
+(`{id, week, title, body, anchors}`) off the new wire field, and the Phase-1 mock-only Like/Love/
+Save/Dismiss reaction row is **retired** in favour of a real 👍/👎 `FeedbackChips` row that renders
+in BOTH modes (closes `mezo-kr9v`; [`insights.md` §2.3](insights.md)).
 
 ### 5.7 (retired — folded into §5.4)
 H1's separate `CompanionNoteCard` seam is gone; see §5.4 above (`useCompanionFeed` now covers
@@ -1264,7 +1299,10 @@ window label + accuracy header derive client-side; `confidence ?? null`) in real
 loading/error — a list never 404s), mock returns the seed. Returns `{predictions, mode}`. `PredictionsPage`
 renders the real cards or the honest still-learning null-state; `predictions` also leaves `PHASE3_TAB_IDS`
 (`tabs.ts`) so the tab is visible in real mode. The FE `Prediction` type gained a **nullable
-`confidence`** and the `missed` status (both honest-state additions).
+`confidence`** and the `missed` status (both honest-state additions). **Since `mezo-b3pp.15`** each
+card carries a 👍/👎 `FeedbackChips` row keyed by the prediction's existing `id` — the one W4.1
+surface that needed **no** contract change, because predictions already exposed their row id
+([`insights.md` §2.6](insights.md)).
 
 ### 5.9 Proactive → Insights Experiments FE (✅ P2 wired — dual-mode read + write)
 The Insights Experiments tab ([insights.md §2.7](insights.md)) is the consumer, and the FIRST
@@ -1297,6 +1335,22 @@ The FE `Challenge` type gained a **nullable `confidence`**, a `status`, the stru
 and `outcome`/`outcomeGood`.
 The proactive→train coupling is strictly one-way (the backend evaluator reads Train repositories; Train
 never imports proactive — challenges are NOT in `WorkoutPlan`, sourced separately by the page).
+
+### 5.11 Proactive → Platform notifications, in-app feed (✅ F2 wired — one-way, fire-and-forget)
+
+Every generator/evaluator in this feature that produces user-facing content now also emits an
+in-app notification into the platform's `app_notification` outbox at the moment that content
+persists (bd `mezo-gzhp.2`): `MemoirGenerator` (`memoir_ready`), `PredictionGenerator` /
+`PredictionValidationService` (`prediction_new` / `prediction_outcome`),
+`ExperimentProposalGenerator` / `ExperimentOutcomeService` (`experiment_proposed` /
+`experiment_closed`), and `ChallengeGenerator` / `ChallengeOutcomeEvaluator` (`challenge_event`, both
+the proposed and the closed moment) — each a one-line `AppNotificationEmitter.emit(...)` call. The
+call is synchronous but fire-and-forget: the emitter absorbs every failure, so a broken notification
+can never break the generator's own persistence. See
+[`_platform-notifications.md`](_platform-notifications.md) §3a/§4/§9 for the full producer→kind map,
+the dedup-key shapes, and the load-bearing rule that any emit-reachable IT test must drop its
+class-level `@Transactional` (the emitter's `REQUIRES_NEW` transaction otherwise FK-deadlocks against
+the test's own uncommitted fixtures).
 
 ## 6. How to use it (consume)
 
@@ -1569,7 +1623,7 @@ renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
 `data/insights/memoirHooks.test.tsx` (3) — maps the server memoir with a derived `Hét N …` week label
 (anniversaryNote null, mode live); returns null memoir on the default 404; returns the seed +
 anniversaryNote without fetching in mock mode; `features/insights/pages/MemoirPage.test.tsx` gains a
-real-mode describe (renders the real memoir + anchors, no reactions/anniversary/archive; the 404 shows
+real-mode describe (renders the real memoir + anchors, no anniversary/archive; the 404 shows
 the honest „készül" placeholder, not demo fiction); `insights.nav.test.tsx` flips Memoir from hidden to
 visible (5 real-mode tabs incl. Memoir) — at the time `InsightsSubNav.test.tsx` covered this too, but
 that file is since deleted with the component it tested (compact-header redesign, `mezo-ugqb`; the
@@ -1617,6 +1671,7 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
   / the challenge `{…proposals…}`) nest objects, so a non-greedy match would stop at the FIRST inner
   `}` and truncate the JSON. The morning/sleep/weight sentinels (`[fake-feed-morning:{…}]`/
   `[fake-feed-sleep:{…}]`/`[fake-feed-weight:{…}]`) are non-greedy (their JSON is flat, no nesting).
+- **(a2) The three read-only responses now expose their row `id` — because feedback needed it, not because the surface did (`mezo-b3pp.15`, Phase 5 W4.1).** `FeedMessageResponse`, `WeeklySuggestionResponse` and `MemoirResponse` were the last proactive reads with no id on the wire: their surfaces only render, never write back, so nothing had ever needed one. W4.1's 👍/👎 capture changed that — `message_feedback.artifact_id` IS that row id. The addition is **contract-only** (all three are MapStruct-mapped from entities that always had `id`) and **required, not optional** — a nullable id would push a "can this be voted on?" branch into every consumer for a case that cannot happen. Consequence worth knowing: the FE's `weeklySuggestionApi.get` stopped returning a bare prose string and now returns `{id, prose}`, so `useWeekly` grew `weeklySuggestionId` alongside `weeklySuggestion` (§5.5). **Proactive owns none of the feedback machinery** — the table, the `/api/companion/feedback` surface and the FE hook are all companion-side ([`companion.md` §4/§5.7](companion.md)); proactive's whole contribution is these three fields.
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
@@ -1888,7 +1943,9 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
   and `HeartbeatNoteResponse`; …+ `ExperimentResponse`, `ExperimentDecisionRequest`,
   `ChallengeResponse`, `ChallengeRef`, `ChallengeDecisionRequest`) (tag `Proactive` →
   `ProactiveApi`); registered in `api/generate/merge.yml` → merged `api/openapi.yml` →
-  `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
+  `api.gen.ts` + `io.mrkuhne.mezo.api.*`. **`mezo-b3pp.15` (contract-only):** `FeedMessageResponse`,
+  `WeeklySuggestionResponse` and `MemoirResponse` each gained a **required `id`** — the W4.1 feedback
+  artifactId (§4/§9 (a2)); no mapper, service or query changed.
 
 **Backend — controller / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getFeed` replaces `getBriefing`+`getHeartbeat`; …+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.

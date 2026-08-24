@@ -11,14 +11,14 @@ import { useQuery } from '@tanstack/react-query'
 import { ApiError } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
-import { weeklySuggestionApi } from '@/data/insights/weeklySuggestionApi'
+import { weeklySuggestionApi, type WeeklySuggestion } from '@/data/insights/weeklySuggestionApi'
 import { growthWeekApi } from '@/data/insights/growthWeekApi'
 import { mealApi } from '@/data/fuel/mealApi'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { trainApi } from '@/data/train/trainApi'
 import { useSleep } from '@/data/me/sleepHooks'
 import { useWeight } from '@/data/me/weightHooks'
-import { weekly as mockWeekly, weeklySuggestion as mockWeeklySuggestion, growthWeek as mockGrowthWeek } from '@/data/insights/insights'
+import { weekly as mockWeekly, weeklySuggestion as mockWeeklySuggestion, weeklySuggestionId as mockWeeklySuggestionId, growthWeek as mockGrowthWeek } from '@/data/insights/insights'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { SleepEntry, WeeklyGrowth, WeeklyItem, WeeklyTrend } from '@/data/types'
 
@@ -159,6 +159,8 @@ export interface WeeklyView {
   deltaLabel: string
   /** Mock: the seed prose. Real: the generated tervjavaslat prose, or null (404) — the card renders the honest placeholder. */
   weeklySuggestion: string | null
+  /** The suggestion's artifactId for 👍/👎 (mezo-b3pp.15) — null exactly when the prose is null. */
+  weeklySuggestionId: string | null
   /** Mock: the seed aggregate. Real: the fetched growth-week aggregate, or null while unresolved (or on error). */
   growthWeek: WeeklyGrowth | null
   mode: 'mock' | 'live'
@@ -193,7 +195,7 @@ export function useWeekly(): WeeklyView {
   const { sleepLog } = useSleep()
   const { weightTrends } = useWeight()
   // Proactive weekly tervjavaslat (W1) — real-only; 404 = no narrative memory yet ⇒ honest placeholder.
-  const suggestionQ = useQuery<string | null>({
+  const suggestionQ = useQuery<WeeklySuggestion | null>({
     queryKey: ['weeklySuggestion', start],
     queryFn: async () => {
       try {
@@ -215,7 +217,14 @@ export function useWeekly(): WeeklyView {
   })
 
   if (mock) {
-    return { weekly: mockWeekly, deltaLabel: 'vs hét 20', weeklySuggestion: mockWeeklySuggestion, growthWeek: mockGrowthWeek, mode: 'mock' }
+    return {
+      weekly: mockWeekly,
+      deltaLabel: 'vs hét 20',
+      weeklySuggestion: mockWeeklySuggestion,
+      weeklySuggestionId: mockWeeklySuggestionId,
+      growthWeek: mockGrowthWeek,
+      mode: 'mock',
+    }
   }
 
   const planned = gymSlots != null && sportSlots != null ? gymSlots.length + sportSlots.length : null
@@ -251,7 +260,8 @@ export function useWeekly(): WeeklyView {
       items: deriveItems(cur, prev, weightRate),
     },
     deltaLabel: 'vs előző hét',
-    weeklySuggestion: suggestionQ.data ?? null,
+    weeklySuggestion: suggestionQ.data?.prose ?? null,
+    weeklySuggestionId: suggestionQ.data?.id ?? null,
     growthWeek: growthQ.data ?? null,
     mode: 'live',
   }

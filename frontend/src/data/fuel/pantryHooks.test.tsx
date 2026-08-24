@@ -25,9 +25,9 @@ describe('usePantry (mock mode)', () => {
   it('returns the preserved shape with seeded ingredients + stash', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => usePantry(), { wrapper: Wrapper })
-    // Exact pre-existing shape: ingredients, stash, sources, categoryMeta, imports, suggestions.
+    // Exact shape: the Phase-1 fields + pending (real-mode skeleton) + error (mezo-b6q0 gate).
     expect(Object.keys(result.current).sort()).toEqual(
-      ['categoryMeta', 'imports', 'ingredients', 'pending', 'sources', 'stash', 'suggestions'],
+      ['categoryMeta', 'error', 'imports', 'ingredients', 'pending', 'sources', 'stash', 'suggestions'],
     )
     expect(result.current.ingredients.length).toBeGreaterThan(0)
     expect(result.current.stash.length).toBeGreaterThan(0)

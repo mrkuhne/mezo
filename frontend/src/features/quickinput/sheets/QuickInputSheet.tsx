@@ -9,13 +9,17 @@ import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
+import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { useCheckins } from '@/data/hooks'
 
-/** Which surface the sheet shows: the launcher grid, or a log sheet opened in its place. */
-type Phase = 'menu' | 'sleep' | 'naplo' | 'checkin'
+/** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
+ * sheet opened in its place. Napló used to jump straight to the activity log (`'naplo'`); it now
+ * offers a choice first (mezo-b3pp.1) — `'naplo-pick'` renders inside the same Sheet shell, while
+ * `'aktivitas'`/`'journal'`/`'gratitude'` are the three log sheets it can swap in. */
+type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin'
 
 const NAV_ACTIONS = [
   { label: 'Étkezés', emoji: '🍽', to: '/fuel' },
@@ -52,10 +56,15 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const nextCheckInIdx = checkins.findIndex(isFillableSlot)
 
+  // Return to naplo-pick from a sub-sheet (aktivitas/journal/gratitude).
+  const goBack = () => setPhase('naplo-pick')
+
   // Each log sheet brings its own portal + backdrop, so it REPLACES the menu
   // rather than layering over it. Closing it closes the whole stack.
   if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
-  if (phase === 'naplo') return <ActivityLogSheet onClose={onClose} />
+  if (phase === 'aktivitas') return <ActivityLogSheet onClose={onClose} onBack={goBack} />
+  if (phase === 'journal') return <JournalSheet onClose={onClose} onBack={goBack} />
+  if (phase === 'gratitude') return <JournalSheet onClose={onClose} initialMode="gratitude" onBack={goBack} />
   if (phase === 'checkin' && checkInIdx !== null) {
     return (
       <CheckInSheet
@@ -69,39 +78,61 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet onClose={onClose} labelledBy="quicklog-title">
-      {close => (
+      {(close) => (
         <div className="quicklog">
-          <h2 id="quicklog-title">Gyors logolás</h2>
-          <p className="quicklog-sub">bármikor, két koppintás</p>
+          {phase === 'naplo-pick' ? (
+            <>
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <button type="button" className="cta-ghost" onClick={() => setPhase('menu')}
+                  style={{ padding: '4px 8px', fontSize: 14 }}>
+                  ← Vissza
+                </button>
+              </div>
+              <h2 id="quicklog-title">Mit naplózol?</h2>
+              <div className="quicklog-grid mt-lg">
+                <Tile emoji="✍️" label="Aktivitás"
+                  onClick={() => setPhase('aktivitas')} />
+                <Tile emoji="📓" label="Napló"
+                  onClick={() => setPhase('journal')} />
+                <Tile emoji="🙏" label="Hála"
+                  onClick={() => setPhase('gratitude')} />
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 id="quicklog-title">Gyors logolás</h2>
+              <p className="quicklog-sub">bármikor, két koppintás</p>
 
-          <button
-            type="button"
-            className="quicklog-chat np-press"
-            onClick={() => { close(); navigate('/insights/chat') }}
-          >
-            <span className="quicklog-chat-emoji" aria-hidden>💬</span>
-            <span className="quicklog-chat-text">
-              <span className="quicklog-chat-label">Beszélgetés a társsal</span>
-              <span className="quicklog-chat-hint">kérdezz, mesélj, tervezz</span>
-            </span>
-            <Icon name="chevron-right" size={18} />
-          </button>
+              <button
+                type="button"
+                className="quicklog-chat np-press"
+                onClick={() => { close(); navigate('/insights/chat') }}
+              >
+                <span className="quicklog-chat-emoji" aria-hidden>💬</span>
+                <span className="quicklog-chat-text">
+                  <span className="quicklog-chat-label">Beszélgetés a társsal</span>
+                  <span className="quicklog-chat-hint">kérdezz, mesélj, tervezz</span>
+                </span>
+                <Icon name="chevron-right" size={18} />
+              </button>
 
-          <div className="quicklog-grid">
-            {NAV_ACTIONS.map(a => (
-              <Tile key={a.label} emoji={a.emoji} label={a.label}
-                onClick={() => { close(); navigate(a.to) }} />
-            ))}
-            <Tile emoji="❤️" label="Check-in"
-              onClick={() => {
-                if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
-                else { close(); navigate('/today') }
-              }} />
-            <Tile emoji="😴" label="Alvás"
-              onClick={() => setPhase('sleep')} />
-            <Tile emoji="📓" label="Napló"
-              onClick={() => setPhase('naplo')} />
-          </div>
+              <div className="quicklog-grid">
+                {NAV_ACTIONS.map(a => (
+                  <Tile key={a.label} emoji={a.emoji} label={a.label}
+                    onClick={() => { close(); navigate(a.to) }} />
+                ))}
+                <Tile emoji="❤️" label="Check-in"
+                  onClick={() => {
+                    if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
+                    else { close(); navigate('/today') }
+                  }} />
+                <Tile emoji="😴" label="Alvás"
+                  onClick={() => setPhase('sleep')} />
+                <Tile emoji="📓" label="Napló"
+                  onClick={() => setPhase('naplo-pick')} />
+              </div>
+            </>
+          )}
         </div>
       )}
     </Sheet>

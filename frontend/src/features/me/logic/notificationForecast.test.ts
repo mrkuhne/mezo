@@ -115,4 +115,20 @@ describe('forecastToday (pure)', () => {
     const result = forecastToday(prefs, [], NO_ANCHORS, WEDNESDAY)
     expect(result.total).toBe(0)
   })
+
+  it('feed-anchored categories (pattern, knowledge, prediction, experiment, challenge, memory) yield no forecast anchors', () => {
+    const feedCategories: NotificationCategoryKey[] = [
+      'pattern', 'knowledge', 'prediction', 'experiment', 'challenge', 'memory',
+    ]
+
+    for (const category of feedCategories) {
+      const prefs = [pref(category, true)]
+      const result = forecastToday(prefs, [], NO_ANCHORS, WEDNESDAY)
+
+      // Feed categories are backend events, not FE-forecastable — contribute zero to the forecast.
+      expect(result.total).toBe(0)
+      expect(result.denseWindows).toHaveLength(0)
+      expect(result.perHour.every((count) => count === 0)).toBe(true)
+    }
+  })
 })

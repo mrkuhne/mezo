@@ -112,6 +112,7 @@ public class ClosingBlockService {
         e.setRepMin(r.config().repMin());
         e.setRepMax(r.config().repMax());
         e.setTargetRir(r.config().targetRir());
+        e.setCountsTowardVolume(false); // posture/accessory work — never hypertrophy volume (mezo-gbo7)
         e.setOrderIndex(orderIndex);
         return e;
     }

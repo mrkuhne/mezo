@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useDailyQuests, useGamification, useProfile, useTitles } from '@/data/hooks'
+import { NotificationBell } from '@/features/notification/components/NotificationBell'
 import { StreakSheet } from '@/features/progression/sheets/StreakSheet'
 import { TitleShopSheet } from '@/features/progression/sheets/TitleShopSheet'
 import { localDateString } from '@/shared/lib/dates'
@@ -76,6 +77,7 @@ export function AppHero({ utilities }: { utilities?: ReactNode }) {
           >
             🪙 {profile.coins}
           </button>
+          <NotificationBell />
         </div>
         {utilities && <div className="util">{utilities}</div>}
       </div>

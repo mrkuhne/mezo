@@ -13,15 +13,18 @@ class NotificationCategoryTest {
         assertThat(Arrays.stream(NotificationCategory.values()).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
                 "weekly", "memoir", "wind_down", "midday", "checkin", "fuel_slot",
-                "evening", "sleep_reaction", "weight_reaction");
+                "evening", "sleep_reaction", "weight_reaction", "pattern", "knowledge",
+                "prediction", "experiment", "challenge", "memory", "decision_review");
     }
 
     @Test
-    void testDefaultEnabled_shouldBeTheTenSpecDefaults_whenFiltered() {
+    void testDefaultEnabled_shouldBeSeventeenSpecDefaults_whenFiltered() {
         assertThat(Arrays.stream(NotificationCategory.values())
                 .filter(NotificationCategory::defaultEnabled).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
-                "weekly", "memoir", "evening", "sleep_reaction", "weight_reaction");
+                "weekly", "memoir", "evening", "sleep_reaction", "weight_reaction",
+                "pattern", "knowledge", "prediction", "experiment", "challenge", "memory",
+                "decision_review");
     }
 
     @Test
@@ -43,5 +46,32 @@ class NotificationCategoryTest {
     void testFromKey_shouldBeEmpty_whenKeyIsUnknown() {
         assertThat(NotificationCategory.fromKey("nope")).isEmpty();
         assertThat(NotificationCategory.fromKey("gym")).contains(NotificationCategory.GYM);
+    }
+
+    @Test
+    void testFeedAnchoredCategories_shouldHaveCorrectDefaults_whenRead() {
+        assertThat(NotificationCategory.PATTERN.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.PATTERN.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.PATTERN.feWritten()).isFalse();
+
+        assertThat(NotificationCategory.KNOWLEDGE.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.KNOWLEDGE.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.KNOWLEDGE.feWritten()).isFalse();
+
+        assertThat(NotificationCategory.PREDICTION.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.PREDICTION.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.PREDICTION.feWritten()).isFalse();
+
+        assertThat(NotificationCategory.EXPERIMENT.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.EXPERIMENT.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.EXPERIMENT.feWritten()).isFalse();
+
+        assertThat(NotificationCategory.CHALLENGE.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.CHALLENGE.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.CHALLENGE.feWritten()).isFalse();
+
+        assertThat(NotificationCategory.MEMORY.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.MEMORY.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.MEMORY.feWritten()).isFalse();
     }
 }

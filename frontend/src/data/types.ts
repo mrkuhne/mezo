@@ -14,6 +14,8 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
+  /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
+  id: string
   kind: FeedMessageKind
   eyebrow: string
   body: BriefingPara[]
@@ -677,11 +679,43 @@ export interface KnowledgeFact {
   source: FactSource
   /** Az utolsó megerősítés időpontja (ISO), null ha még sosem erősítették meg újra. */
   lastReinforcedAt: string | null
+  /** A tény létrejötte (ISO instant) — a prompt-rangsor másodlagos kulcsa (reinforced DESC, createdAt DESC). */
+  createdAt: string
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
 export interface FactCandidate { id: string; text: string; category: FactCategory }
 export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
+
+/** W2.3 (mezo-b3pp.8): egy éjszakai kivonatoló által javasolt életesemény-jelölt (L2 inbox). */
+export interface LifeEventCandidate {
+  id: string
+  title: string
+  summary: string | null
+  /** A nap, amiről az esemény szól (ISO date). */
+  occurredOn: string | null
+  /** Hány kapcsolat jönne létre, ha elfogadod. */
+  proposedEdgeCount: number
+}
+
+export type LifeEventDecision = 'accept' | 'reject'
+
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+
+/** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
+ *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same
+ *  renderer the `[Összefüggések]` prompt block uses, so the UI and the model never disagree on
+ *  phrasing. */
+export interface KnowledgeGraphNode {
+  id: string
+  kind: GraphNodeKind
+  title: string
+  summary: string | null
+  topEdges: string[]
+  /** W4.3 (mezo-b3pp.17): `'profile'` marks the singleton pragmatic-profile node, which the
+   *  Tudástár renders in its own section instead of the kind groups. */
+  sourceKind: string | null
+}
 
 // --- Insights (AI-memory surface) ---
 export type PatternCategory = 'physiology' | 'trigger' | 'response'
@@ -804,6 +838,8 @@ export interface PatternPairDetail {
 
 export interface MemoirAnchor { kind: string; label: string }
 export interface Memoir {
+  /** The memoir row id — the W4.1 feedback artifactId (`memoir`, mezo-b3pp.15). */
+  id: string
   week: string
   title: string
   body: string
@@ -851,7 +887,22 @@ export interface WeeklyGrowth {
 
 export type ChatRole = 'user' | 'assistant'
 export interface ChatRef { kind: string; id: string }
+/** W3.1b (mezo-b3pp.28): one memory ambient recall injected into the answer's prompt —
+ *  `similarity` is the raw cosine 0..1 (the row renders `Math.round(s * 100)%`). */
+export interface ChatRecalledMemory {
+  occurredOn: string
+  kind: string
+  label: string
+  gist: string
+  similarity: number
+}
 export interface ChatMessage {
+  /**
+   * The persisted `ai_message` row id — the W4.1 feedback artifactId (`chat_message`,
+   * mezo-b3pp.15). Absent while a turn is still streaming, which is exactly when there is
+   * nothing to vote on yet (and on the optimistic user bubble, which is never votable).
+   */
+  id?: string
   role: ChatRole
   ts: string
   text: string
@@ -859,6 +910,8 @@ export interface ChatMessage {
   refs?: ChatRef[]
   /** V1.3: answer failed the backend self-check even after retry — render flagged. */
   degraded?: boolean
+  /** W3.1b: what ambient recall put in front of the model before this answer (undefined = none). */
+  recalled?: ChatRecalledMemory[]
 }
 
 // --- Train (mesocycles, workouts, sport) ---
@@ -892,6 +945,7 @@ export interface GymExercise {
   type: ExerciseKind
   warning?: string
   catalogId?: string  // exercise_catalog row when picked from the API catalog (real mode)
+  countsTowardVolume?: boolean  // false = posture/plyo work, outside the hypertrophy budget (mezo-gbo7)
 }
 export interface MesoDay {
   id?: string            // template-day row id (real mode only; mock fixtures carry none)
@@ -1212,7 +1266,13 @@ export interface IntentionDay {
 
 // ── Daily closing ritual — sleep-anchored evening window (R3, mezo-ilsj) ────
 export interface RitualWindow { opensAt: string; prepStartsAt: string; bedTime: string }
-export interface RitualDay { date: string; closed: boolean; closedAt: string | null; window: RitualWindow }
+export interface RitualDay {
+  date: string
+  closed: boolean
+  closedAt: string | null
+  reflectionText: string | null // W1.2 (mezo-b3pp.2): the day's prose reflection; null when skipped
+  window: RitualWindow
+}
 
 // ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
 export type LifeSkillKey =
@@ -1281,7 +1341,7 @@ export interface PushSubscriptionState {
 
 // ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
 // evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
-// The 14 keys/sections/defaults mirror the backend's authoritative enum
+// The 21 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
@@ -1289,12 +1349,16 @@ export type NotificationCategoryKey =
   | 'briefing' | 'gym' | 'medication' | 'ritual' | 'lights_out'
   | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
   | 'evening' | 'sleep_reaction' | 'weight_reaction'
+  | 'pattern' | 'knowledge' | 'prediction' | 'experiment' | 'challenge' | 'memory'
+  | 'decision_review'
 
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'briefing', 'gym', 'medication', 'ritual', 'lights_out',
   'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
   'evening', 'sleep_reaction', 'weight_reaction',
+  'pattern', 'knowledge', 'prediction', 'experiment', 'challenge', 'memory',
+  'decision_review',
 ]
 
 export interface NotificationPrefView {
@@ -1303,7 +1367,7 @@ export interface NotificationPrefView {
   leadMinutes: number
 }
 
-export type NotificationSection = 'prose' | 'reminder'
+export type NotificationSection = 'prose' | 'reminder' | 'brain'
 
 export interface NotificationCategoryMeta {
   label: string
@@ -1379,4 +1443,68 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     label: 'Súly-reakció', emoji: '⚖️', section: 'prose',
     description: 'Üzenet a reggeli mérés után.', showLeadChip: false, iconBg: '--wash-sport',
   },
+  pattern: {
+    label: 'Minták', emoji: '🧩', section: 'brain',
+    description: 'Új minta döntésre, jel-erősödés — reggel, ébredés után', showLeadChip: false, iconBg: '--wash-lav',
+  },
+  knowledge: {
+    label: 'Tudástár', emoji: '📚', section: 'brain',
+    description: 'Új tény jóváhagyásra, tudás-megerősödés', showLeadChip: false, iconBg: '--wash-sage',
+  },
+  prediction: {
+    label: 'Előrejelzések', emoji: '🔮', section: 'brain',
+    description: 'Új predikció, bevált / nem vált be', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  experiment: {
+    label: 'Kísérletek', emoji: '🧪', section: 'brain',
+    description: 'Új javaslat, kísérlet lezárult', showLeadChip: false, iconBg: '--wash-amber',
+  },
+  challenge: {
+    label: 'Kihívások', emoji: '🏆', section: 'brain',
+    description: 'Edzés-kihívás javaslat és eredmény', showLeadChip: false, iconBg: '--wash-gym',
+  },
+  memory: {
+    label: 'Memória', emoji: '🗂', section: 'brain',
+    description: 'Napi összefoglaló elkészült — ébredés után', showLeadChip: false, iconBg: '--wash-run',
+  },
+  decision_review: {
+    label: 'Döntés visszanézés', emoji: '⚖️', section: 'brain',
+    description: 'Amikor egy döntésed esedékes visszanézni', showLeadChip: false, iconBg: '--wash-lav',
+  },
+}
+
+// --- In-app notification feed (bd mezo-gzhp.1, spec 2026-08-18) ---
+/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side). */
+export type AppNotificationKindKey =
+  | 'pattern_inbox' | 'pattern_signal' | 'hypothesis_new'
+  | 'fact_candidate' | 'fact_reinforced' | 'memoir_ready'
+  | 'prediction_new' | 'prediction_outcome'
+  | 'experiment_proposed' | 'experiment_closed'
+  | 'challenge_event' | 'memory_note'
+
+export interface AppNotificationView {
+  id: string
+  kind: AppNotificationKindKey
+  title: string
+  body: string | null
+  deeplink: string
+  /** ISO date-time */
+  occurredAt: string
+  readAt: string | null
+}
+
+/** Per-kind panel icon + tint class suffix (the mockup's family colors). */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string }> = {
+  pattern_inbox: { emoji: '🧩', tint: 'pattern' },
+  pattern_signal: { emoji: '🧩', tint: 'pattern' },
+  hypothesis_new: { emoji: '🧩', tint: 'pattern' },
+  fact_candidate: { emoji: '📚', tint: 'knowledge' },
+  fact_reinforced: { emoji: '📚', tint: 'knowledge' },
+  memoir_ready: { emoji: '✍️', tint: 'memoir' },
+  prediction_new: { emoji: '🔮', tint: 'prediction' },
+  prediction_outcome: { emoji: '🔮', tint: 'prediction' },
+  experiment_proposed: { emoji: '🧪', tint: 'experiment' },
+  experiment_closed: { emoji: '🧪', tint: 'experiment' },
+  challenge_event: { emoji: '🏆', tint: 'experiment' },
+  memory_note: { emoji: '🗂', tint: 'memory' },
 }

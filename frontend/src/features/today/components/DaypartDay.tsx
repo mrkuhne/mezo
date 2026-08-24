@@ -13,7 +13,6 @@ import { DayGroups } from '@/features/today/components/DayGroups'
 import { DaypartHero, DaypartPanel } from '@/features/today/components/DaypartPanel'
 import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { TodayStats } from '@/features/today/components/TodayStats'
-import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { IslandFact } from '@/features/today/logic/islandFacts'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
@@ -40,7 +39,6 @@ export interface DaypartDayProps {
   done: TodayItem[]
   doneXp: number
   celebrations: ChainCelebrationInput[]
-  growth?: GrowthTodaySummary | null
   habitPending?: boolean
   onAct: (item: TodayItem) => void
   onCustom: () => void
@@ -48,7 +46,7 @@ export interface DaypartDayProps {
 
 export function DaypartDay({
   hero, heroWarn, facts, mesoLine, open, done, doneXp, celebrations,
-  growth, habitPending, onAct, onCustom,
+  habitPending, onAct, onCustom,
 }: DaypartDayProps) {
   const durationFact = hero?.facts.find((f) => typeof f === 'string' && /perc|′/.test(f))
   const heroUnit = hero ? `${hero.title}${durationFact ? ` · ${durationFact}` : ''}` : 'nap'
@@ -85,7 +83,6 @@ export function DaypartDay({
         done={done}
         doneLabel={`✓ ${done.length} kész ma · +${doneXp} XP`}
         focus={<IntentionBanner variant="chip" />}
-        growth={growth}
         habitPending={habitPending}
         onAct={onAct}
       />

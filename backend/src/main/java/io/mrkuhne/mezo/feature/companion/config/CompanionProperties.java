@@ -26,11 +26,14 @@ public record CompanionProperties(
     @NotNull @Valid Advisors advisors,
     @NotNull @Valid Embedding embedding,
     @NotNull @Valid Summary summary,
+    @NotNull @Valid Consolidation consolidation,
     @NotNull @Valid Recall recall,
     @NotNull @Valid Patterns patterns,
     @NotNull @Valid Hypotheses hypotheses,
     @NotNull @Valid HabitSuggest habitSuggest,
-    @NotNull @Valid Transcription transcription
+    @NotNull @Valid Transcription transcription,
+    @NotNull @Valid AmbientRecall ambientRecall,
+    @NotNull @Valid Graph graph
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -87,7 +90,13 @@ public record CompanionProperties(
         /** V2.2: embed each completed chat turn (user+assistant as one unit, post-commit async) — off removes the listener bean (COMPANION_EMBED_TURNS_SWITCH). */
         boolean embedChatTurns,
         /** Upper cap on embedded content length (chars) per narrative unit (turn / summary). */
-        @Min(200) @Max(20000) int embedMaxChars
+        @Min(200) @Max(20000) int embedMaxChars,
+        /** W1.5: embed activity_log.text / check_in.note in the nightly sweep — off = the catch-up does nothing (the pass HEALS the toggle, never bypasses it). */
+        boolean embedNotes,
+        /** W1.5 length gate: below this many chars a note carries no retrieval value („fáradt vagyok") and is never embedded. */
+        @Min(1) @Max(500) int noteMinChars,
+        /** W1.5 blast-radius guard: at most this many note embeddings per user per nightly run — the first-run history backfill spreads over nights instead of one giant burst. */
+        @Min(1) @Max(5000) int noteBatchSize
     ) {}
 
     /** V2.3 episodic recall (find_similar_past_days) — rank = similarity × exp(-age/τ). */
@@ -102,6 +111,71 @@ public record CompanionProperties(
         @Min(1) @Max(100) int candidatePool,
         /** Per-memory render cap in the tool result (chars) — gist over full re-quote (token budget). */
         @Min(50) @Max(2000) int renderMaxChars
+    ) {}
+
+    /**
+     * W3.1 always-on ambient recall (mezo-b3pp.12, spec §7.1) — the {@code [Emlékek]} block every
+     * chat turn opens with. The ANN candidate pool and the per-item render cap are REUSED from
+     * {@link Recall}; since W3.3 (mezo-b3pp.14, spec §7.3) the raw-cosine floor and the recency τ
+     * are PER KIND-GROUP ({@link Group}) so the block is tuned from yml alone — no number lives in code.
+     */
+    public record AmbientRecall(
+        /** Runtime kill-switch — off ⇒ no embed call and no block; the turn is otherwise unchanged. */
+        boolean enabled,
+        /** W3.2 coverage cutoff: a daily_summary hit older than this many days is not asked for at
+         *  all — its covering weekly/monthly rung speaks for that stretch instead. The fine-grained
+         *  rows and vectors stay in the store untouched (spec §12); only recall's reach changes. */
+        @Min(1) @Max(3650) int weeklyShadowDays,
+        /** Hard cap on the rendered block in ESTIMATED tokens (part of the ~6k memory budget). */
+        @Min(100) @Max(6000) int maxTokens,
+        /** W3.3 input (mezo-b3pp.27): skip the CURRENT conversation's own chat turns — they are
+         *  already in the history window, recalling them is a duplicate. */
+        boolean excludeCurrentConversation,
+        /** daily_summary (inside the coverage window). */
+        @NotNull @Valid Group dailySummary,
+        /** weekly_summary + monthly_summary — the ladder rungs (W3.2), queried without a date floor. */
+        @NotNull @Valid Group periodSummary,
+        /** journal_entry + reflection + gratitude + decision. */
+        @NotNull @Valid Group journal,
+        /** chat_turn. */
+        @NotNull @Valid Group chatTurn,
+        /** activity_note + checkin_note. */
+        @NotNull @Valid Group other
+    ) {
+        /** One kind-group's tuning: how many items may enter the block, the raw-cosine floor, and τ. */
+        public record Group(
+            /** Items allowed into the block (0 = the group is not even queried). */
+            @Min(0) @Max(10) int cap,
+            /** Raw-cosine floor — below it a match is noise, not a memory (0..1). */
+            @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
+            /** τ: the recency scale in days — rank = similarity × exp(-age/τ). */
+            @Min(1) @Max(3650) int decayDays
+        ) {}
+    }
+
+    /** W2.1 knowledge-graph tuning (spec §6.1) — traversal bounds + nightly maintenance knobs. */
+    public record Graph(
+        /** Neighborhood traversal depth from a seed node (W2.4). */
+        @Min(1) @Max(3) int maxHops,
+        /** Top-K neighbors returned by weight (W2.4). */
+        @Min(1) @Max(20) int topK,
+        /** Nightly edge-weight multiplicative decay (W2.5) — e.g. 0.99 = 1%/day fade. */
+        @DecimalMin("0.9") @DecimalMax("1.0") double decayFactor,
+        /** Edges below this weight are soft-deleted on the nightly pass (W2.5). */
+        @DecimalMin("0.0") @DecimalMax("1.0") double pruneFloor,
+        /** Hard cap on the rendered [Összefüggések] block (estimated tokens, W2.4). */
+        @Min(1) int renderMaxTokens,
+        /** W2.2 edge structurer: suggestions below this confidence are dropped (edges start humble). */
+        @DecimalMin("0.0") @DecimalMax("1.0") double edgeConfidenceFloor,
+        /** W2.5 (mezo-b3pp.10): cron for the nightly GraphMaintenanceJob (server zone). */
+        @NotBlank String cron,
+        /** W2.5: candidate nodes (never confirmed/rejected) older than this many days are
+         *  soft-deleted — the stale L2 inbox item gets swept off the list. */
+        @Min(1) @Max(365) int candidateMaxAgeDays,
+        /** W2.5: fresh pattern evidence (a same-night pattern_event snapshot for a promoted
+         *  pattern) bumps that node's edges by this much, capped at 1.0 — decay's counterweight
+         *  for evidence still arriving. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double reinforcementBump
     ) {}
 
     /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */
@@ -184,6 +258,23 @@ public record CompanionProperties(
         /** V3.4 digest-gazdagítás: minőségi mezőnkénti karakter-cap (check-in/alvás/futás jegyzet,
          *  említés-kivonat, intention-reflexió). */
         @Min(0) @Max(1000) int noteMaxChars
+    ) {}
+
+    /**
+     * W3.2 consolidation ladder (mezo-b3pp.13, spec §7.2) — the weekly/monthly rung generator's
+     * schedules and how far back each run re-offers periods. The backfill windows double as the
+     * self-heal: a period whose rung is missing (job off, LLM down, brand-new history) is picked
+     * up by the next run instead of needing a one-off backfill command.
+     */
+    public record Consolidation(
+        /** Weekly rung cron (server zone) — Monday dawn, after the nightly daily-summary job. */
+        @NotBlank String weeklyCron,
+        /** Monthly rung cron (server zone) — the 1st, after the weekly rung of the same dawn. */
+        @NotBlank String monthlyCron,
+        /** Finished weeks back each weekly run checks and fills (idempotent catch-up = backfill). */
+        @Min(1) @Max(520) int backfillWeeks,
+        /** Finished months back each monthly run checks and fills. */
+        @Min(1) @Max(120) int backfillMonths
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

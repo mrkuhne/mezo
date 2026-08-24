@@ -180,13 +180,14 @@ describe('NotificationsPage', () => {
   })
 
   // ── N2/N3: settings category list + preview header (mezo-h4wp.6.2/.3) ──────────────────────
-  it('renders all 14 categories grouped into the two mockup sections, plus the master toggle', async () => {
+  it('renders all 21 categories grouped into the three sections (prose, reminder, brain), plus the master toggle', async () => {
     hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
     renderPage()
     expect(await screen.findByText('Mezo megszólal')).toBeInTheDocument()
     expect(screen.getByText('Emlékeztetők')).toBeInTheDocument()
-    // 1 master toggle + 14 category rows (7 prose + 7 reminder).
-    await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(15))
+    expect(screen.getByText('Az agy eseményei')).toBeInTheDocument()
+    // 1 master toggle + 21 category rows (7 prose + 7 reminder + 7 brain).
+    await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(22))
   })
 
   it('toggling a category row calls setPref, flipping just that row', async () => {
@@ -242,5 +243,25 @@ describe('NotificationsPage', () => {
     // is showing something derived, not the generic copy.
     expect(screen.queryByText('A napzárás-ablak nyílásakor')).not.toBeInTheDocument()
     expect(screen.queryByText('Az esti alvás-horgonynál')).not.toBeInTheDocument()
+  })
+
+  it('renders the "Az agy eseményei" section with a row labeled "Minták"', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    expect(await screen.findByText('Az agy eseményei')).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Minták' })).toBeInTheDocument()
+  })
+
+  // The volume preview (NotificationPreviewHeader) cannot forecast the 6 feed-anchored
+  // categories (they have no FE-resolvable anchor, notificationForecast.ts's exhaustive switch
+  // returns null for all of them) — this static line discloses that gap instead of silently
+  // under-counting.
+  it('discloses that the feed-anchored categories are excluded from the volume preview', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    await screen.findByText('Az agy eseményei')
+    expect(
+      screen.getByText('Eseményvezérelt — nem szerepel a napi terhelés előnézetben.'),
+    ).toBeInTheDocument()
   })
 })

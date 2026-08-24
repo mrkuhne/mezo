@@ -1,0 +1,260 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { JournalPage } from '@/features/me/pages/JournalPage'
+import { QueryWrapper } from '@/test/queryWrapper'
+import type { JournalNote } from '@/data/journal/journalTypes'
+import type { DecisionEntry } from '@/data/journal/decisionTypes'
+
+// Barrel-mock the journal hooks so the fixtures drive the view deterministically in both
+// mock and real test modes (GrowthPage.test.tsx idiom). `useDecisions`/`useDecisionActions` join
+// the same mock for the same reason — left unmocked, real-mode test runs hit a dead backend
+// (`/api/journal/decision` has no MSW handler), so the decisions block silently stayed empty and
+// `DecisionReviewSheet`'s save rejected with no `.catch` (mezo-b3pp.4 Task 7 review finding).
+const hooks = vi.hoisted(() => ({
+  useJournalNotes: vi.fn(),
+  useJournalActions: vi.fn(),
+  useDecisions: vi.fn(),
+  useDecisionActions: vi.fn(),
+}))
+vi.mock('@/data/hooks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/data/hooks')>()),
+  useJournalNotes: hooks.useJournalNotes,
+  useJournalActions: hooks.useJournalActions,
+  useDecisions: hooks.useDecisions,
+  useDecisionActions: hooks.useDecisionActions,
+}))
+
+// Pin "today" to 2026-08-15 so the widening window + Ma/Tegnap labels are deterministic.
+vi.mock('@/shared/lib/dates', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/dates')>()),
+  localDateString: () => '2026-08-15',
+}))
+
+function note(over: Partial<JournalNote> = {}): JournalNote {
+  return {
+    id: 'jn-1',
+    occurredOn: '2026-08-10',
+    text: 'Augusztusi bejegyzés',
+    source: 'quickinput',
+    createdAt: '2026-08-10T08:00:00.000Z',
+    ...over,
+  }
+}
+
+function decision(over: Partial<DecisionEntry> = {}): DecisionEntry {
+  return {
+    id: 'dec2',
+    decidedOn: '2026-07-21',
+    decisionText: 'Esti edzésre váltok a reggeli helyett, mert reggel sosem alszom eleget.',
+    reviewDue: '2026-08-15',
+    reviewedAt: null,
+    outcomeRating: null,
+    outcomeText: null,
+    createdAt: '2026-07-21T21:30:00Z',
+    ...over,
+  }
+}
+
+function renderPage() {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/me/naplo']}>
+        <JournalPage />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+const actions = { addNote: vi.fn(), updateNote: vi.fn(), removeNote: vi.fn(), pending: false }
+const decisionActions = { addDecision: vi.fn(), reviewDecision: vi.fn(), pending: false }
+
+beforeEach(() => {
+  hooks.useJournalActions.mockReturnValue(actions)
+  // Default: no open decisions, so the "Döntések" block stays out of the way for tests that
+  // aren't exercising it — individual tests below override this.
+  hooks.useDecisions.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisionActions.mockReturnValue(decisionActions)
+})
+afterEach(() => vi.clearAllMocks())
+
+test('renders the Napló header', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  expect(screen.getByRole('heading', { level: 1, name: 'Napló' })).toBeInTheDocument()
+  expect(screen.getByText('Me · Napló')).toBeInTheDocument()
+})
+
+test('groups a two-month fixture under separate month separators, newest first', () => {
+  const notes = [
+    note({ id: 'jn-aug', occurredOn: '2026-08-10', text: 'Augusztusi bejegyzés' }),
+    note({ id: 'jn-jul', occurredOn: '2026-07-05', text: 'Júliusi bejegyzés' }),
+  ]
+  hooks.useJournalNotes.mockReturnValue({ data: notes, isPending: false, isError: false, refetch: vi.fn() })
+  const { container } = renderPage()
+  // Scope to the month-separator elements inside the notes list (not the entry prose, which itself
+  // mentions the month name for these fixtures, and not the "Döntések" block's own eyebrow label,
+  // which shares the same `.eyebrow.text-tertiary` classes but lives outside the `.col.gap-md`
+  // notes-list container) — proves two distinct separators render, newest month first.
+  const separators = container.querySelectorAll('.col.gap-md .eyebrow.text-tertiary')
+  expect(separators).toHaveLength(2)
+  expect(separators[0].textContent).toMatch(/augusztus/i)
+  expect(separators[1].textContent).toMatch(/július/i)
+  expect(screen.getByText('Augusztusi bejegyzés')).toBeInTheDocument()
+  expect(screen.getByText('Júliusi bejegyzés')).toBeInTheDocument()
+})
+
+test('tapping an entry opens the edit sheet, prefilled with its text', async () => {
+  const notes = [note({ id: 'jn-1', occurredOn: '2026-08-10', text: 'Fáradt vagyok, de motivált' })]
+  hooks.useJournalNotes.mockReturnValue({ data: notes, isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  await userEvent.click(screen.getByText('Fáradt vagyok, de motivált'))
+  expect(await screen.findByText('Bejegyzés szerkesztése')).toBeInTheDocument()
+  expect(screen.getByDisplayValue('Fáradt vagyok, de motivált')).toBeInTheDocument()
+})
+
+test('the add button opens the sheet in create mode', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: /Új bejegyzés/ }))
+  expect(await screen.findByText('Mi jár a fejedben?')).toBeInTheDocument()
+})
+
+test('empty fixture shows the ghost state', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  expect(screen.getByText('Még nincs bejegyzés — kezdd a + gombbal.')).toBeInTheDocument()
+})
+
+test('loading state shows skeleton rows, not the ghost state', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: true, isError: false, refetch: vi.fn() })
+  renderPage()
+  expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
+  expect(screen.queryByText('Még nincs bejegyzés — kezdd a + gombbal.')).not.toBeInTheDocument()
+})
+
+test('"Korábbi hónapok" widens the window (a new range is requested from useJournalNotes)', async () => {
+  hooks.useJournalNotes.mockReturnValue({
+    data: [note()], isPending: false, isError: false, refetch: vi.fn(),
+  })
+  renderPage()
+  const callsBefore = hooks.useJournalNotes.mock.calls.length
+  await userEvent.click(screen.getByRole('button', { name: 'Korábbi hónapok' }))
+  const callsAfter = hooks.useJournalNotes.mock.calls
+  expect(callsAfter.length).toBeGreaterThan(callsBefore)
+  const [lastFrom] = callsAfter[callsAfter.length - 1]
+  const [firstFrom] = callsAfter[0]
+  expect(lastFrom < firstFrom).toBe(true)
+})
+
+test('an empty current window still offers "Korábbi hónapok" (older notes may sit outside it), and it requests an earlier `from`', async () => {
+  // The current 3-month window has no notes — but that doesn't mean the user has none, only that
+  // their newest entry predates the window. Without a widen affordance here the ghost state would
+  // strand them (mezo-b3pp.1 review finding). GhostState's own ctaLabel/onCta carries it, wired to
+  // the same widen handler the in-list footer button uses.
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+  const callsBefore = hooks.useJournalNotes.mock.calls.length
+  await userEvent.click(screen.getByRole('button', { name: 'Korábbi hónapok' }))
+  const callsAfter = hooks.useJournalNotes.mock.calls
+  expect(callsAfter.length).toBeGreaterThan(callsBefore)
+  const [firstFrom] = callsAfter[0]
+  const [lastFrom] = callsAfter[callsAfter.length - 1]
+  expect(lastFrom < firstFrom).toBe(true)
+})
+
+test('a failed fetch shows the retry state, not the create-invite empty state', async () => {
+  const refetch = vi.fn()
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: true, refetch })
+  renderPage()
+  expect(screen.getByText('Nem sikerült betölteni a naplót.')).toBeInTheDocument()
+  expect(screen.queryByText('Még nincs bejegyzés — kezdd a + gombbal.')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
+  expect(refetch).toHaveBeenCalledTimes(1)
+})
+
+test('an error with stale-but-present notes falls through to the normal list (not the retry state)', () => {
+  hooks.useJournalNotes.mockReturnValue({
+    data: [note({ text: 'Régi, de meglévő bejegyzés' })], isPending: false, isError: true, refetch: vi.fn(),
+  })
+  renderPage()
+  expect(screen.getByText('Régi, de meglévő bejegyzés')).toBeInTheDocument()
+  expect(screen.queryByText('Nem sikerült betölteni a naplót.')).not.toBeInTheDocument()
+})
+
+// The decisions block reads `useDecisions` off the barrel mock (fixtures below), not a real or
+// MSW-backed fetch — dec2's reviewDue (2026-08-15) is pinned to this file's frozen "today" so the
+// due state is deterministic (isDecisionDue itself stays real/unmocked, a pure function).
+test('lists open decisions with a due chip and opens the review sheet', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({
+    data: [decision()],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  })
+  const user = userEvent.setup()
+  renderPage()
+
+  await screen.findByText('Döntések')
+  expect(screen.getByText('Nézd vissza')).toBeInTheDocument()
+  const due = await screen.findByText(/Esti edzésre váltok/)
+  await user.click(due)
+
+  expect(await screen.findByText('Hogyan sült el?')).toBeInTheDocument()
+})
+
+test('does not list already-reviewed decisions among the open ones', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({
+    data: [
+      decision(),
+      decision({
+        id: 'dec1',
+        decidedOn: '2026-06-10',
+        decisionText: 'Kihagyom a nyári versenyt, és inkább alapozok.',
+        reviewDue: '2026-07-10',
+        reviewedAt: '2026-07-11T08:00:00Z',
+        outcomeRating: 4,
+        outcomeText: 'Jó döntés volt, ősszel sokkal frissebb voltam.',
+      }),
+    ],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  })
+  renderPage()
+  await screen.findByText('Döntések')
+
+  expect(screen.queryByText(/Kihagyom a nyári versenyt/)).not.toBeInTheDocument()
+})
+
+// mezo-b3pp.4 Task 7 review finding: JournalPage previously destructured only `data` from
+// useDecisions, discarding isError — a failed decisions fetch rendered as nothing at all (an
+// overdue decision silently vanishing with no signal), unlike the notes list's own isError branch.
+test('a failed decisions fetch shows a retry state instead of silently vanishing', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  const refetchDecisions = vi.fn()
+  hooks.useDecisions.mockReturnValue({ data: [], isPending: false, isError: true, refetch: refetchDecisions })
+  renderPage()
+
+  expect(await screen.findByText('Nem sikerült betölteni a döntéseket.')).toBeInTheDocument()
+  expect(screen.queryByText('Döntések')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
+  expect(refetchDecisions).toHaveBeenCalledTimes(1)
+})
+
+test('a decisions error with stale-but-present open decisions falls through to the normal list', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({
+    data: [decision()],
+    isPending: false,
+    isError: true,
+    refetch: vi.fn(),
+  })
+  renderPage()
+
+  await screen.findByText('Döntések')
+  expect(screen.queryByText('Nem sikerült betölteni a döntéseket.')).not.toBeInTheDocument()
+})
