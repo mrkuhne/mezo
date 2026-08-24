@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
@@ -28,6 +30,8 @@ class SleepLogDetailRenderIT extends AbstractIntegrationTest {
 
     @Autowired private BiometricsTools biometricsTools;
     @Autowired private SleepLogRepository sleepLogRepository;
+    @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private UserPopulator userPopulator;
 
@@ -181,5 +185,49 @@ class SleepLogDetailRenderIT extends AbstractIntegrationTest {
                 + d + ": lefekvés 23:40, ébredés 07:05; 7h 24p; minőség 3/5; ébredések 1; forrás: manual");
         assertThat(out).doesNotContain("ágyban").doesNotContain("hypnogram")
                 .doesNotContain("megjegyzés").doesNotContain("forrás: screenshot");
+    }
+
+    // ---- spec §6.7 — detail params on scope=checkins -> ignored, existing output ----
+
+    @Test
+    void testRenderDetailParams_shouldBeIgnored_whenScopeCheckins() {
+        UUID owner = userPopulator.createUser().getId();
+        checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(1), "08:00", 7, 3, null);
+        sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("7.5"), 4);
+
+        String out = biometricsTools.getRecovery("checkins", null, List.of(LocalDate.now().minusDays(1)),
+                LocalDate.now().minusDays(3), null, ctx(owner));
+
+        assertThat(out).startsWith("Bejelentkezések (utolsó 7 nap):\n");
+        assertThat(out).contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10");
+        assertThat(out).doesNotContain("részletes").doesNotContain("lefekvés");
+    }
+
+    // ---- spec §6.7 — detail params on scope=sleep-goal -> ignored, existing output ----
+
+    @Test
+    void testRenderDetailParams_shouldBeIgnored_whenScopeSleepGoal() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner);
+
+        String out = biometricsTools.getRecovery("sleep-goal", null, List.of(LocalDate.now()),
+                null, null, ctx(owner));
+
+        assertThat(out).isEqualTo(
+                "Alvási cél: 7ó 30p alvás, ébredés 06:45, lefekvés 23:15; szabályosság ±15 perc");
+        assertThat(out).doesNotContain("részletes");
+    }
+
+    // ---- spec §6.8 — default call, no new params -> byte-identical compact output ----
+
+    @Test
+    void testRenderDetailAbsentParams_shouldKeepCompactOutput_whenNoDateParams() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("7.5"), 4);
+
+        String out = biometricsTools.getRecovery("sleep", 7, null, null, null, ctx(owner));
+
+        assertThat(out).isEqualTo("Alvás (utolsó 7 nap):\n"
+                + LocalDate.now().minusDays(1) + ": 7.5 h, minőség 4/5");
     }
 }
