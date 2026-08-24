@@ -200,13 +200,13 @@ public class FlagEvaluator {
         FlagProperties.Recovery cfg = properties.recovery();
         LocalDate from = today.minusDays(cfg.windowDays() - 1L);
 
-        Map.Entry<LocalDate, Double> poorSleep = firstMatch(
+        Map.Entry<LocalDate, Double> poorSleep = newestMatch(
             metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, today),
             v -> v <= cfg.sleepFloorHours());
-        Map.Entry<LocalDate, Double> highRpe = firstMatch(
+        Map.Entry<LocalDate, Double> highRpe = newestMatch(
             metricSeriesService.series(userId, MetricKey.TRAINING_RPE, from, today),
             v -> v >= cfg.rpeThreshold());
-        Map.Entry<LocalDate, Double> highStress = firstMatch(
+        Map.Entry<LocalDate, Double> highStress = newestMatch(
             metricSeriesService.series(userId, MetricKey.CHECKIN_STRESS, from, today),
             v -> v >= cfg.stressThreshold());
 
@@ -222,7 +222,7 @@ public class FlagEvaluator {
     }
 
     /** The newest day in the series whose value satisfies {@code test}, or null. */
-    private static Map.Entry<LocalDate, Double> firstMatch(
+    private static Map.Entry<LocalDate, Double> newestMatch(
         Map<LocalDate, Double> series, DoublePredicate test) {
         return series.entrySet().stream()
             .filter(e -> e.getValue() != null && test.test(e.getValue()))

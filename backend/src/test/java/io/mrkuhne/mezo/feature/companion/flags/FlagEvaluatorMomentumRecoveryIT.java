@@ -146,6 +146,26 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         assertThat(keys(owner)).doesNotContain(FlagKey.RECOVERY_NEEDED);
     }
 
+    /**
+     * Tight companion to the coarse case above. windowDays=2 ⇒ the TRUE window is
+     * [today-1, today]; RPE at today-2 sits exactly one day past that edge. Dropping the
+     * "- 1L" in {@code from = today.minusDays(cfg.windowDays() - 1L)} would widen the window to
+     * [today-2, today] and pull this RPE row in, wrongly raising — this assertion is
+     * load-bearing on that exact off-by-one. The other half of the pair (RPE at today-1,
+     * inside the true edge, DOES raise) is already pinned by
+     * {@link #recovery_needed_raises_on_poor_sleep_plus_high_rpe_plus_high_stress_in_48h}.
+     */
+    @Test
+    void recovery_needed_stays_quiet_when_the_rpe_leg_lands_one_day_past_the_true_edge() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("5.5"), 2);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 3, 7, null);
+        trainPopulator.createSportSessionWithRpe(owner, today.minusDays(2), 9);
+
+        assertThat(keys(owner)).doesNotContain(FlagKey.RECOVERY_NEEDED);
+    }
+
     @Test
     void all_healthy_raises_after_a_quiet_week_with_actual_data() {
         UUID owner = ownerId();
