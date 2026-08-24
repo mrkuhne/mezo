@@ -1144,7 +1144,8 @@ arithmetic over `MetricSeriesService` series the owning features already compose
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
 @TransactionalEventListener(phase = AFTER_COMMIT)` on the NEW `CheckInSavedEvent` — published by
-`CheckInService.save` alongside the existing `SleepLogSavedEvent`) and the hourly sweep
+`CheckInService.save` — and the existing `SleepLogSavedEvent`, published by `SleepLogService.log`)
+and the hourly sweep
 (`FlagSweepJob`, `@Scheduled(cron = "${mezo.companion.flags.sweep-cron}")`, gated on
 `COMPANION_SWITCH` ∧ `mezo.techcore.cron.flag-sweep-job.enabled`, per-user try/catch — the
 `PatternDetectionJob`/`GraphMaintenanceJob` idiom). Both call `FlagService.evaluateAndLog(userId,
@@ -2298,7 +2299,7 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `sustained-stress.threshold` | `7.0` | check-in stress (1–10 scale) at/above this counts as a "bad" day |
 | `sustained-stress.window-days` | `4` | the trailing window, TODAY included |
 | `sustained-stress.min-days` | `3` | bad days required inside the window to raise |
-| `sleep-debt.nights` | `3` | nights accumulated, ending YESTERDAY (tonight is logged tomorrow) |
+| `sleep-debt.nights` | `3` | nights accumulated, ending TODAY (`sleep_log.date` is the wake morning, so today's row IS last night) |
 | `sleep-debt.min-nights` | `2` | logged nights required inside the window (honest small-n gate) |
 | `sleep-debt.deficit-hours` | `3.0` | cumulative `Σ max(0, goal − actual)` at/above which it raises |
 | `sleep-debt.default-goal-hours` | `8.0` | fallback goal used only when the user has no `sleep_goal` row |
@@ -2329,7 +2330,7 @@ completions):
 | flag | fires when | inputs |
 |---|---|---|
 | `sustained_stress` | per-day avg `CHECKIN_STRESS` ≥ `threshold` on ≥ `min-days` of the last `window-days` days (today included) | `MetricKey.CHECKIN_STRESS` |
-| `sleep_debt` | over the last `nights` nights (yesterday-anchored, today excluded — today's night is logged in the morning): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
+| `sleep_debt` | over the last `nights` nights ending TODAY (`sleep_log.date` is the wake morning, so today's row is last night): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
 | `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
 | `all_healthy` | none of the four fire now, **and** no non-`all_healthy` row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
@@ -3129,19 +3130,21 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
 **W5.1 composite-flag test additions (`mezo-b3pp.18`, spec §9.1) — no LLM anywhere in this path:**
 
-- **`flags/CompanionFlagLogPersistenceIT`** — entity round-trip with the typed jsonb payload; an
-  unknown `flag_key`/`source` is rejected by the entity's `@Pattern` in-JVM AND, via a native
-  insert that bypasses bean validation, by the DB CHECK too; `existsRaiseSince` sees only rows
-  inside its window.
+- **`flags/CompanionFlagLogPersistenceIT`** — entity round-trip with the typed jsonb payload for
+  all five `FlagPayloadEnvelope` shapes (including `MomentumAtRisk`'s `List<String>` and
+  `RecoveryNeeded`'s nullable boxed `Double`s); an unknown `flag_key`/`source` is rejected by the
+  entity's `@Pattern` in-JVM AND, via a native insert that bypasses bean validation, by the DB
+  CHECK too; `existsRaiseSince` sees only rows inside its window.
 - **`flags/FlagPropertiesIT`** — every rule/window/cooldown key binds from `application.yml`, the
   shipped defaults pinned one by one.
 - **`flags/FlagEvaluatorStressSleepIT`** — `sustained_stress`: raises at 3-of-4 bad days, stays
   quiet at 2-of-4, the day just outside the window is ignored while the day just inside it counts,
   multiple same-day check-ins average; `sleep_debt`: raises at the deficit threshold, stays quiet
   just below it, a long night never credits against a short one, stays quiet below the
-  `min-nights` gate, falls back to the default goal without a `sleep_goal` row, **never counts
-  tonight** (logged tomorrow morning), and raises exactly AT the threshold (boundary); the payload
-  freezes the stress inputs (`the_payload_freezes_the_stress_inputs`).
+  `min-nights` gate, falls back to the default goal without a `sleep_goal` row, **counts last
+  night's sleep, which is logged this morning** (`sleep_log.date` is the wake morning), and raises
+  exactly AT the threshold (boundary); the payload freezes the stress inputs
+  (`the_payload_freezes_the_stress_inputs`).
 - **`flags/FlagEvaluatorMomentumRecoveryIT`** — `momentum_at_risk`: raises on a habit collapse plus
   a missed planned gym day, stays quiet when every planned day was trained, with no planned gym day
   at all, below the baseline floor, or when the habits held up; `recovery_needed`: raises on poor
@@ -3667,14 +3670,22 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   and `FlagProperties` follows that precedent rather than growing the already-large
   `CompanionProperties` further. Recorded here as a deliberate deviation from the spec's literal
   text, not a silent one.
-- **`sleep_debt` excludes today; `momentum_at_risk`'s recent window ends yesterday (its baseline
-  window sits entirely before that).** Tonight's sleep is logged tomorrow morning, so counting
-  today as a debt-free night — absence, not a real zero — would understate the deficit on every
-  single evaluation; today's habits are still in progress at whatever hour the evaluator runs, so
-  counting an unfinished day's zero completions as a collapse would flag every single morning.
-  `sustained_stress` and `recovery_needed` DO include today deliberately — a check-in or a workout
-  already logged today is real signal the moment it lands, and both rules read from series that go
-  stale rather than series that are inherently incomplete until the day ends.
+- **`sleep_debt`'s window ends TODAY; `momentum_at_risk`'s recent window ends yesterday (its
+  baseline window sits entirely before that) — for a different reason, not the same one.**
+  `sleep_log.date` is the WAKE-UP MORNING, not the evening the night began (confirmed by
+  `HabitEvaluator`'s `sleep_wake_window`/`bedtime_next_day` metrics and by `SleepLogSheet` posting
+  `date=today` on wake), so the row dated today already IS last night — excluding it would drop
+  the very night that triggered the on-write evaluation and understate the deficit on every
+  evaluation; an unlogged today is simply skipped by the existing null check, never counted as a
+  debt-free night. `momentum_at_risk` excludes today for the opposite reason: today's habits are
+  still in progress at whatever hour the evaluator runs, so counting an unfinished day's zero
+  completions as a collapse would flag every single morning. `sustained_stress` and
+  `recovery_needed` DO include today deliberately — a check-in or a workout already logged today is
+  real signal the moment it lands, and both rules read from series that go stale rather than series
+  that are inherently incomplete until the day ends. (This entry originally stated that `sleep_debt`
+  excluded today on the same "logged tomorrow morning" premise as `momentum_at_risk`; that premise
+  was wrong and was corrected during final review, along with the evaluator's window and its
+  tests — see the sleep_debt row above and `FlagEvaluatorStressSleepIT`.)
 - **`all_healthy` never raises over an empty log.** The guard requires the quiet window to
   actually contain at least one observed check-in-stress or sleep value, not merely the absence of
   a problem flag — a brand-new user, or one who logged nothing for a week, has NO evidence either
@@ -3682,6 +3693,22 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   honest-degradation identity every other companion surface holds to (contrast the `[Emlékek]`/
   `[Összefüggések]` blocks above, which render `""` rather than fabricate) — a raised
   `all_healthy` row is a positive claim, so it earns the same evidentiary bar as any other flag.
+- **The raise path is check-then-act, not atomic: `FlagService.evaluateAndLog` reads
+  `existsRaiseSince` and only then `save`s.** The on-write listener and the hourly sweep can both
+  evaluate the same user within milliseconds of each other (a check-in save fires the listener
+  right as the sweep is mid-run), and nothing serializes the two — each can pass the same
+  cooldown-window read before either writes, so a duplicate audit row for the same flag inside one
+  cooldown window is possible, not merely theoretical. `companion_flag_log` is append-only and has
+  no uniqueness constraint on `(created_by, flag_key)` within a window, so this is not a bug to fix
+  here — it is a property W5.2 (the raise → intervention consumer) must design for: tolerate
+  duplicate rows inside a cooldown window rather than assume one row per window per flag.
+- **One evaluation issues roughly 9 `MetricSeriesService.series` calls, three of which
+  (`sustained_stress`, `recovery_needed`, `all_healthy` — all reading `CHECKIN_STRESS`) fetch
+  EVERY one of the owner's check-ins via `CheckInRepository.findAllOwned` and filter to the window
+  in memory** (the `MetricSeriesService.checkIn` implementation, shared by every `CHECKIN_*`
+  metric). Fine at today's single-user-interactive-request scale — this runs at most once per
+  write plus once an hour — but worth knowing before `FlagService.evaluateAndLog` is reused at
+  higher frequency or batch scale, where the unbounded owner-history scan would start to matter.
 
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group

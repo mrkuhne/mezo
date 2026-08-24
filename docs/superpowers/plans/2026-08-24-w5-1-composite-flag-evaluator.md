@@ -89,10 +89,18 @@ All windows are **whole days ending yesterday-or-today as noted**, computed from
 | flag | fires when | inputs |
 |---|---|---|
 | `sustained_stress` | per-day avg `CHECKIN_STRESS` ≥ `threshold` on ≥ `min-days` of the last `window-days` days (today included) | `MetricKey.CHECKIN_STRESS` |
-| `sleep_debt` | over the last `nights` nights (yesterday-anchored, today excluded — today's night is logged in the morning): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
+| `sleep_debt` | over the last `nights` nights ending TODAY (`sleep_log.date` is the wake morning, so today's row IS last night): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
 | `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
 | `all_healthy` | none of the four fire now, **and** no non-`all_healthy` row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+
+> **Corrected during final review (mezo-b3pp.18):** this table originally described
+> `sleep_debt`'s window as "yesterday-anchored, today excluded — today's night is logged in the
+> morning", on the same premise `momentum_at_risk` uses. That premise is wrong for `sleep_debt`:
+> `sleep_log.date` is the WAKE-UP MORNING, not the evening the night began, so the row dated today
+> already IS last night. The shipped code and its tests were corrected to match (window ends
+> today, not yesterday) — this row reflects that fix, not the original plan text. See
+> `docs/features/companion.md` §3/§9 and `FlagEvaluator.sleepDebt`/`FlagEvaluatorStressSleepIT`.
 
 Missing days are **absent, never invented** (the `MetricSeriesService` rule) — except
 `HABITS_DONE`, where a day with no `habit_day` row genuinely means "zero habits done" and is
