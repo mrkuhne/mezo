@@ -367,6 +367,39 @@ class TrainServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testReplaceDayExercises_shouldResolveCountsTowardVolume_forAllFourInputOutcomes() {
+        // mezo-gbo7: explicit flag always wins; an absent flag defaults to exempt only for plyo.
+        UUID user = databasePopulator.populateUser("counts-toward-volume@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Volume flag", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hét", "Pull", 0, "planned");
+
+        trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(
+            GymExerciseInput.builder().name("Explicit true").warmupSets(2).workingSets(3)
+                .repMin(8).repMax(10).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND)
+                .countsTowardVolume(true).build(),
+            GymExerciseInput.builder().name("Explicit false").warmupSets(2).workingSets(3)
+                .repMin(8).repMax(10).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND)
+                .countsTowardVolume(false).build(),
+            GymExerciseInput.builder().name("Absent plyo").warmupSets(2).workingSets(3)
+                .repMin(8).repMax(10).targetRIR(1).type(GymExerciseInput.TypeEnum.PLYO).build(),
+            GymExerciseInput.builder().name("Absent compound").warmupSets(2).workingSets(3)
+                .repMin(8).repMax(10).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build()));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ExerciseEntity> fresh = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId()));
+        var byName = fresh.stream()
+            .collect(java.util.stream.Collectors.toMap(ExerciseEntity::getName, e -> e));
+
+        assertThat(byName.get("Explicit true").isCountsTowardVolume()).isTrue();
+        assertThat(byName.get("Explicit false").isCountsTowardVolume()).isFalse();
+        assertThat(byName.get("Absent plyo").isCountsTowardVolume()).isFalse();
+        assertThat(byName.get("Absent compound").isCountsTowardVolume()).isTrue();
+    }
+
+    @Test
     void testReplaceDayExercises_shouldThrowNotFound_whenDayBelongsToOtherMeso() {
         UUID user = databasePopulator.populateUser("replace-b@test.local");
         MesocycleEntity mesoA = trainPopulator.createMesocycle(user, "A blokk", "active");
