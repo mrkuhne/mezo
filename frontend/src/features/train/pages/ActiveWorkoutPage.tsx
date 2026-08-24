@@ -1030,6 +1030,7 @@ function ActiveWorkoutSession({
       ...(e.anchorWeightKg != null ? { anchorWeightKg: e.anchorWeightKg } : {}),
       ...(e.warning ? { warning: e.warning } : {}),
       ...(e.catalogId ? { catalogId: e.catalogId } : {}),
+      ...(e.countsTowardVolume !== undefined ? { countsTowardVolume: e.countsTowardVolume } : {}),
     }))
     saveDayExercises(activeMeso.id, day.id, exercises)
   }
