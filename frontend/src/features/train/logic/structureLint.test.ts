@@ -71,6 +71,16 @@ describe('sets-per-exercise (R2)', () => {
     w[0].exercises.push(ex('quad', 1, { name: 'Box Jump', type: 'plyo' }))
     expect(rules(w)).not.toContain('sets-per-exercise')
   })
+  // mezo-gbo7: countsTowardVolume: true no longer skips the loop via !countsForVolume(ex),
+  // so a plyo exercise the user explicitly flips to counting reaches the SETS_PER_EXERCISE
+  // lookup — which has no 'plyo' key. Without the band-existence guard this throws
+  // (band.min off undefined); with it, R2 stays silent (no established plyo band).
+  it('a plyo exercise explicitly counted toward volume does not throw and stays silent under R2', () => {
+    const w = cleanWeek()
+    w[0].exercises.push(ex('quad', 1, { name: 'Counted Box Jump', type: 'plyo', countsTowardVolume: true }))
+    expect(() => structureLint(w)).not.toThrow()
+    expect(rules(w)).not.toContain('sets-per-exercise')
+  })
 })
 
 describe('frequency (R3)', () => {

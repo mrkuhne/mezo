@@ -30,8 +30,17 @@ export interface StructureFinding {
 // Exercises per muscle group per session (RP: 1–3; hams/traps stricter).
 export const MAX_EXERCISES_PER_MUSCLE_SESSION_DEFAULT = 3
 export const MAX_EXERCISES_PER_MUSCLE_SESSION: Record<string, number> = { ham: 2, traps: 2 }
-// Working-set band per exercise kind (exempt work excluded).
-export const SETS_PER_EXERCISE = { compound: { min: 2, max: 4 }, isolation: { min: 2, max: 3 } } as const
+interface SetBand { min: number; max: number }
+// Working-set band per exercise kind (exempt work excluded). No 'plyo' entry: no
+// consensus band exists for plyo/exempt work, so a lookup keyed by the full
+// ExerciseKind union (below, R2) types honestly as `SetBand | undefined` and
+// skips kinds with no defined band rather than guessing (mezo-gbo7). compound/
+// isolation stay non-optional so direct property access (programFit's kindCap)
+// is unaffected.
+export const SETS_PER_EXERCISE: Record<'compound' | 'isolation', SetBand> & Partial<Record<'plyo', SetBand>> = {
+  compound: { min: 2, max: 4 },
+  isolation: { min: 2, max: 3 },
+}
 // The frequency rule fires only at/above this weekly set count (splitting less is noise).
 export const FREQUENCY_MIN_WEEKLY_SETS = 4
 // Weekly distinct exercises per group.
@@ -117,7 +126,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
       // pre-mezo-gbo7); a plyo exercise the user explicitly flips to count-toward-
       // volume still has no established consensus band, so it's skipped rather than
       // guessed at.
-      const band = (SETS_PER_EXERCISE as Record<string, { min: number; max: number }>)[ex.type]
+      const band = SETS_PER_EXERCISE[ex.type]
       if (band && ex.workingSets < band.min) {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
