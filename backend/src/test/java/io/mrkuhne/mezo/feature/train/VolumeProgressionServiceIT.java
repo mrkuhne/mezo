@@ -73,6 +73,38 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
         assertThat(chestLog(owner, meso.getId()).getCurrentSets()).isEqualTo(8);
     }
 
+    @Test
+    void testRollover_shouldIgnoreExemptExercises_whenCountingLastWeeksVolume() {
+        UUID owner = ownerId();
+        // calWeek 3 (started 2 weeks ago); back target sits at 10 with MRV headroom.
+        var meso = train.activeMesoStartedWeeksAgo(
+            owner, 2, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+        train.createVolumeLog(owner, meso.getId(), "back", 10);
+
+        // Week 2 logs 10 working sets — but ONLY on an exempt exercise (the fix-zárás hang).
+        var day = train.createWorkoutSession(owner, meso.getId(), "Hát nap", "gym", 0, "planned");
+        var hang = train.createExercise(owner, day.getId(), "Dead Hang", "back-wide", "plyo");
+        hang.setTargetRir(0);
+        hang.setCountsTowardVolume(false);
+        train.save(hang);
+        var instance = train.createWorkoutInstance(
+            owner, day, meso.getStartDate().plusWeeks(1), "completed");
+        for (int i = 0; i < 10; i++) {
+            train.createLoggedSet(owner, hang.getId(), instance.getId(), i, "0", 45, 0);
+        }
+
+        svc.rolloverIfDue(owner, reload(meso));
+
+        // No COUNTING volume last week -> target not hit -> HOLD at 10.
+        // Before mezo-gbo7 the hang's 10 sets read as a hit target and ramped to 12.
+        assertThat(backLog(owner, meso.getId()).getCurrentSets()).isEqualTo(10);
+    }
+
+    private MuscleGroupVolumeLogEntity backLog(UUID owner, UUID mesoId) {
+        return volumeRepo.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(owner, List.of(mesoId))
+            .stream().filter(r -> "back".equals(r.getMuscle())).findFirst().orElseThrow();
+    }
+
     private MuscleGroupVolumeLogEntity chestLog(UUID owner, UUID mesoId) {
         return volumeRepo.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(owner, List.of(mesoId)).stream()
             .filter(v -> v.getMuscle().equals("chest"))

@@ -151,6 +151,57 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
         assertThat(te.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.DELOAD);
     }
 
+    @Test
+    void testGetToday_shouldSpreadTargetAcrossTheWeek_whenGroupIsTrainedOnTwoDays() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        String otherLabel = "Hét".equals(todayLabel) ? "Kedd" : "Hét";
+
+        var today = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        ExerciseEntity press = train.createExercise(owner, today.getId(), "Fekvenyomás", "chest", "compound");
+        press.setWorkingSets(3);
+        train.save(press);
+
+        var other = train.createTemplateDay(owner, meso.getId(), otherLabel);
+        ExerciseEntity flye = train.createExercise(owner, other.getId(), "Cable Flye", 1, "chest", "isolation", null);
+        flye.setWorkingSets(3);
+        train.save(flye);
+
+        train.createVolumeLog(owner, meso.getId(), "chest", 10);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        // The WEEK's two chest exercises share currentSets(10): base 1/1, remaining 8 split 4/4.
+        // Before mezo-gbo7 today's lone exercise absorbed all 10 and the week totalled 20.
+        assertThat(byId(res, press.getId()).getWorkingSets()).isEqualTo(5);
+    }
+
+    @Test
+    void testGetToday_shouldKeepTemplateSets_whenExerciseIsExemptFromVolume() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+
+        ExerciseEntity row = train.createExercise(owner, day.getId(), "Csónakázás", "back-mid", "compound");
+        row.setWorkingSets(3);
+        train.save(row);
+        ExerciseEntity hang = train.createExercise(owner, day.getId(), "Dead Hang", "back-wide", "plyo");
+        hang.setWorkingSets(2);
+        hang.setCountsTowardVolume(false);
+        train.save(hang);
+
+        train.createVolumeLog(owner, meso.getId(), "back", 10);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        // The exempt hang keeps its template 2 and is absent from the distribution, so the whole
+        // back target lands on the one counting exercise.
+        assertThat(byId(res, hang.getId()).getWorkingSets()).isEqualTo(2);
+        assertThat(byId(res, row.getId()).getWorkingSets()).isEqualTo(10);
+    }
+
     /** An active meso whose rollover is a guaranteed no-op — see class javadoc. */
     private MesocycleEntity pinnedActiveMeso(UUID owner) {
         MesocycleEntity meso = train.createActiveMeso(owner);

@@ -26,6 +26,7 @@ function toUpsert(name: string, exercises: GymExercise[]): CustomWorkoutUpsertRe
       warmupSets: e.warmupSets, workingSets: e.workingSets,
       repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
       anchorWeightKg: e.anchorWeightKg, type: e.type, catalogId: e.catalogId,
+      countsTowardVolume: e.countsTowardVolume,
     })),
   }
 }

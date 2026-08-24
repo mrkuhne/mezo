@@ -9,7 +9,7 @@
 // exported tables below — one place to tune.
 // ============================================================
 import type { MesoDay } from '@/data/types'
-import { BUDGET_GROUP_LABELS, budgetGroup } from '@/features/train/logic/setBudget'
+import { BUDGET_GROUP_LABELS, budgetGroup, countsForVolume } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
@@ -30,15 +30,24 @@ export interface StructureFinding {
 // Exercises per muscle group per session (RP: 1–3; hams/traps stricter).
 export const MAX_EXERCISES_PER_MUSCLE_SESSION_DEFAULT = 3
 export const MAX_EXERCISES_PER_MUSCLE_SESSION: Record<string, number> = { ham: 2, traps: 2 }
-// Working-set band per exercise kind (plyo exempt).
-export const SETS_PER_EXERCISE = { compound: { min: 2, max: 4 }, isolation: { min: 2, max: 3 } } as const
+interface SetBand { min: number; max: number }
+// Working-set band per exercise kind (exempt work excluded). No 'plyo' entry: no
+// consensus band exists for plyo/exempt work, so a lookup keyed by the full
+// ExerciseKind union (below, R2) types honestly as `SetBand | undefined` and
+// skips kinds with no defined band rather than guessing (mezo-gbo7). compound/
+// isolation stay non-optional so direct property access (programFit's kindCap)
+// is unaffected.
+export const SETS_PER_EXERCISE: Record<'compound' | 'isolation', SetBand> & Partial<Record<'plyo', SetBand>> = {
+  compound: { min: 2, max: 4 },
+  isolation: { min: 2, max: 3 },
+}
 // The frequency rule fires only at/above this weekly set count (splitting less is noise).
 export const FREQUENCY_MIN_WEEKLY_SETS = 4
 // Weekly distinct exercises per group.
 export const VARIETY_MAX = 5
 export const VARIETY_MIN = 2
 export const VARIETY_MIN_WEEKLY_SETS = 6
-// Exercises per training day — plyo counts, it is a real session slot.
+// Exercises per training day — exempt work counts, it is a real session slot.
 export const SESSION_SIZE = { min: 5, max: 9 } as const
 // Estimated session-length band, minutes (research: 20 min too short, 3 h counterproductive).
 export const SESSION_LENGTH_BAND = { min: 45, max: 90 } as const
@@ -94,7 +103,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
     const perGroupExercises = new Map<string, number>()
 
     for (const ex of d.exercises) {
-      if (ex.type === 'plyo') continue
+      if (!countsForVolume(ex)) continue
       const group = budgetGroup(ex.muscle)
       if (!group) continue
 
@@ -113,15 +122,18 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
       if (!zones) { zones = { heavy: 0, moderate: 0, light: 0 }; weeklyZones.set(group, zones) }
       zones[repZoneOf(ex.repMin, ex.repMax)] += ex.workingSets
 
-      // R2 — sets per exercise
+      // R2 — sets per exercise. No band exists for 'plyo' (it was always exempt
+      // pre-mezo-gbo7); a plyo exercise the user explicitly flips to count-toward-
+      // volume still has no established consensus band, so it's skipped rather than
+      // guessed at.
       const band = SETS_PER_EXERCISE[ex.type]
-      if (ex.workingSets < band.min) {
+      if (band && ex.workingSets < band.min) {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
           detail: `${band.min} szett alatt egy gyakorlat alig ad ingert — a ${band.min} szett teljesen legitim kezdés.`,
         })
-      } else if (ex.workingSets > band.max) {
+      } else if (band && ex.workingSets > band.max) {
         session.push({
           rule: 'sets-per-exercise', day: d.day,
           label: `${ex.name}: ${ex.workingSets} szett (${d.day}).`,
