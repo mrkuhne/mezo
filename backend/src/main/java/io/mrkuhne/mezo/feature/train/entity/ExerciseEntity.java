@@ -90,7 +90,6 @@ public class ExerciseEntity extends OwnedEntity {
      * weekly set target nor consumes the group's budget. Read by WorkoutService.effectiveWorkingSets,
      * VolumeProgressionService's weekly signals, VolumeArcService's actuals and the baseline seeding.
      */
-    @NotNull
     @Column(name = "counts_toward_volume", nullable = false)
     private boolean countsTowardVolume = true;
 

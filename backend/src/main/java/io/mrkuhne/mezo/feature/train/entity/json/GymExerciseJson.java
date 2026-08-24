@@ -30,11 +30,15 @@ public record GymExerciseJson(
 ) {
     /**
      * Documents written before mezo-gbo7 carry no {@code countsTowardVolume}; Jackson hands us null
-     * for them. Default it to TRUE here — on every construction path (mapper, hand-rolled rerun
-     * materialization, Jackson) — so the volume math never has to null-check, mirroring the
-     * coercion {@link MesoDayJson} applies to its own optional fields.
+     * for them. Default it here — on every construction path (mapper, hand-rolled rerun
+     * materialization, Jackson) — so the volume math never has to null-check. Absent means "counts",
+     * except for {@code plyo}, which defaults to exempt: this mirrors both the migration's own
+     * backfill (which set existing plyo rows to {@code false}) and {@link
+     * io.mrkuhne.mezo.feature.train.service.TrainService#toExerciseEntity} downstream, so a template
+     * document and the live {@code exercise} row it stamps out never disagree about a plyo exercise
+     * that never had the flag set explicitly.
      */
     public GymExerciseJson {
-        countsTowardVolume = countsTowardVolume == null || countsTowardVolume;
+        countsTowardVolume = countsTowardVolume != null ? countsTowardVolume : !"plyo".equals(type);
     }
 }

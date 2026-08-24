@@ -30,6 +30,21 @@ class MesoTemplateVolumeFlagIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGymExerciseJson_shouldDefaultToExempt_whenFieldAbsentAndTypeIsPlyo() throws Exception {
+        // mezo-gbo7 fix: an absent flag on a plyo recipe must NOT re-arm the defect the migration's
+        // own backfill closed (which set existing plyo rows to false).
+        String legacy = """
+            {"id":"0f6d6b4e-3f4a-4a1e-8f34-2b5f7f5d1c13","name":"Box Jump","muscle":"quad",
+             "warmupSets":0,"workingSets":3,"repMin":5,"repMax":8,"targetRir":0,
+             "anchorWeightKg":null,"type":"plyo","warning":null,"catalogId":null}
+            """;
+
+        GymExerciseJson parsed = objectMapper.readValue(legacy, GymExerciseJson.class);
+
+        assertThat(parsed.countsTowardVolume()).isFalse();
+    }
+
+    @Test
     void testGymExerciseJson_shouldKeepFalse_whenDocumentExemptsTheExercise() throws Exception {
         String exempt = """
             {"id":"0f6d6b4e-3f4a-4a1e-8f34-2b5f7f5d1c12","name":"Dead Hang","muscle":"back-wide",
@@ -39,5 +54,18 @@ class MesoTemplateVolumeFlagIT extends AbstractIntegrationTest {
             """;
 
         assertThat(objectMapper.readValue(exempt, GymExerciseJson.class).countsTowardVolume()).isFalse();
+    }
+
+    @Test
+    void testGymExerciseJson_shouldKeepTrue_whenDocumentExplicitlyCountsAPlyoExercise() throws Exception {
+        // An explicit flag always wins over the type-based default, in both directions.
+        String explicit = """
+            {"id":"0f6d6b4e-3f4a-4a1e-8f34-2b5f7f5d1c14","name":"Jump Squat","muscle":"quad",
+             "warmupSets":0,"workingSets":3,"repMin":5,"repMax":8,"targetRir":0,
+             "anchorWeightKg":null,"type":"plyo","warning":null,"catalogId":null,
+             "countsTowardVolume":true}
+            """;
+
+        assertThat(objectMapper.readValue(explicit, GymExerciseJson.class).countsTowardVolume()).isTrue();
     }
 }
