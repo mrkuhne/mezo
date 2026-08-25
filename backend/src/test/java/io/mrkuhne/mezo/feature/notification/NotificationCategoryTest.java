@@ -14,17 +14,18 @@ class NotificationCategoryTest {
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
                 "weekly", "memoir", "wind_down", "midday", "checkin", "fuel_slot",
                 "evening", "sleep_reaction", "weight_reaction", "pattern", "knowledge",
-                "prediction", "experiment", "challenge", "memory", "decision_review");
+                "prediction", "experiment", "challenge", "memory", "decision_review",
+                "intervention");
     }
 
     @Test
-    void testDefaultEnabled_shouldBeSeventeenSpecDefaults_whenFiltered() {
+    void testDefaultEnabled_shouldBeEighteenSpecDefaults_whenFiltered() {
         assertThat(Arrays.stream(NotificationCategory.values())
                 .filter(NotificationCategory::defaultEnabled).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
                 "weekly", "memoir", "evening", "sleep_reaction", "weight_reaction",
                 "pattern", "knowledge", "prediction", "experiment", "challenge", "memory",
-                "decision_review");
+                "decision_review", "intervention");
     }
 
     @Test

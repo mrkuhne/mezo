@@ -44,11 +44,11 @@ class NotificationPrefApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testGetNotificationPrefs_shouldReturnAllTwentyOneWithSpecDefaults_whenFreshUser() {
+    void testGetNotificationPrefs_shouldReturnAllTwentyTwoWithSpecDefaults_whenFreshUser() {
         NotificationPrefListResponse response = getForBody("/api/notification/pref",
                 ownerAuthHeaders(), HttpStatus.OK, NotificationPrefListResponse.class);
 
-        assertThat(response.getPrefs()).hasSize(21);
+        assertThat(response.getPrefs()).hasSize(22);
         assertThat(response.getPrefs())
                 .filteredOn(p -> p.getCategory().equals("gym"))
                 .singleElement()
@@ -73,8 +73,9 @@ class NotificationPrefApiIT extends ApiIntegrationTest {
         // 7 pre-existing ON categories + the 3 companion-feed categories (evening/
         // sleep_reaction/weight_reaction) + 6 feed-anchored categories (pattern/knowledge/prediction/
         // experiment/challenge/memory), all default ON (mezo-gst9, spec 2026-08-18)
-        // + decision_review, default ON (Phase 5 W1.4, bd mezo-b3pp.4).
-        assertThat(response.getPrefs().stream().filter(NotificationPref::getEnabled).count()).isEqualTo(17);
+        // + decision_review, default ON (Phase 5 W1.4, bd mezo-b3pp.4)
+        // + intervention, default ON (Phase 5 W5.2, bd mezo-b3pp.19).
+        assertThat(response.getPrefs().stream().filter(NotificationPref::getEnabled).count()).isEqualTo(18);
     }
 
     @Test

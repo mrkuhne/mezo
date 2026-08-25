@@ -35,6 +35,9 @@ public class CompanionMessageEntity extends OwnedEntity {
     public static final String KIND_WEIGHT = "weight";
     public static final String KIND_MIDDAY = "midday";
     public static final String KIND_EVENING = "evening";
+    /** W5.2 (bd mezo-b3pp.19): config-text intervention card — the only kind whose envelope
+     *  carries an {@code interventionKey}; never LLM-generated. */
+    public static final String KIND_INTERVENTION = "intervention";
 
     @Id
     @GeneratedValue

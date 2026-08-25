@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.repository;
 
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -14,4 +15,9 @@ public interface CompanionMessageRepository extends JpaRepository<CompanionMessa
 
     List<CompanionMessageEntity> findByCreatedByAndMessageDateOrderByGeneratedAtAsc(
             UUID createdBy, LocalDate messageDate);
+
+    /** W5.2 per-key cooldown lookback (bd mezo-b3pp.19): recent intervention cards, key read
+     *  from the envelope in memory — single-user volumes, no jsonb query needed. */
+    List<CompanionMessageEntity> findByCreatedByAndKindAndGeneratedAtAfter(
+            UUID createdBy, String kind, Instant after);
 }

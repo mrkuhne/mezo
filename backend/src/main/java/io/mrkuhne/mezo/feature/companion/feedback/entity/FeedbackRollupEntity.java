@@ -38,16 +38,20 @@ public class FeedbackRollupEntity extends OwnedEntity {
     public static final String SCOPE_STYLE = "style";
     public static final String SCOPE_SURFACE_PREFIX = "surface:";
     public static final String SCOPE_FEED_PREFIX = "feed:";
+    /** W5.2 (bd mezo-b3pp.19): per-intervention-key effectiveness — the selection weight
+     *  {@code InterventionService} reads back. Task 7 builds the writer side. */
+    public static final String SCOPE_INTERVENTION_PREFIX = "intervention:";
 
     @Id
     @GeneratedValue
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    /** Mirrors ck_feedback_rollup_scope: {@code style} | {@code surface:<artifact_kind>} | {@code feed:<kind>}. */
+    /** Mirrors ck_feedback_rollup_scope: {@code style} | {@code surface:<artifact_kind>} |
+     *  {@code feed:<kind>} | {@code intervention:<key>} (W5.2, bd mezo-b3pp.19). */
     @NotNull
     @Size(max = 40)
-    @Pattern(regexp = "style|surface:.+|feed:.+")
+    @Pattern(regexp = "style|surface:.+|feed:.+|intervention:.+")
     @Column(nullable = false, length = 40)
     private String scope;
 

@@ -10,8 +10,10 @@ export interface CheckinSlot { time: string; state: CheckinState; values: Checki
 export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
-/** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per generation. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening'
+/** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per
+ *  generation. `intervention` (W5.2, mezo-b3pp.19) is the odd one out: config-text, never LLM
+ *  output — the card's body comes straight from `mezo.companion.interventions[].textHu`. */
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -1343,7 +1345,7 @@ export interface PushSubscriptionState {
 
 // ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
 // evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
-// The 21 keys/sections/defaults mirror the backend's authoritative enum
+// The 22 keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
@@ -1352,7 +1354,7 @@ export type NotificationCategoryKey =
   | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
   | 'evening' | 'sleep_reaction' | 'weight_reaction'
   | 'pattern' | 'knowledge' | 'prediction' | 'experiment' | 'challenge' | 'memory'
-  | 'decision_review'
+  | 'decision_review' | 'intervention'
 
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
@@ -1360,7 +1362,7 @@ export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
   'evening', 'sleep_reaction', 'weight_reaction',
   'pattern', 'knowledge', 'prediction', 'experiment', 'challenge', 'memory',
-  'decision_review',
+  'decision_review', 'intervention',
 ]
 
 export interface NotificationPrefView {
@@ -1472,6 +1474,13 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
   decision_review: {
     label: 'Döntés visszanézés', emoji: '⚖️', section: 'brain',
     description: 'Amikor egy döntésed esedékes visszanézni', showLeadChip: false, iconBg: '--wash-lav',
+  },
+  // W5.2 (mezo-b3pp.19): event-driven — a flag raise választja ki, a kártya SAJÁT generálási
+  // perce a horgony, csendes órák esetén eltolva (sosem eldobva). Ezért nincs lead-chip, és a
+  // leírás sem ígér konkrét időt (lásd notificationForecast.ts `case 'intervention'`).
+  intervention: {
+    label: 'Közbelépések', emoji: '🎯', section: 'brain',
+    description: 'Amikor egy jelzés közbelépést indokol', showLeadChip: false, iconBg: '--wash-amber',
   },
 }
 
