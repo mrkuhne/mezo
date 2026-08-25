@@ -33,6 +33,17 @@ describe('libraryToGymExercise', () => {
     expect([ex.warmupSets, ex.workingSets, ex.repMin, ex.repMax, ex.targetRIR]).toEqual([0, 3, 5, 5, 0])
     expect(ex.countsTowardVolume).toBe(false)
   })
+
+  test('catalogId is present when the library item carries one', () => {
+    const withCatalog: ExerciseLibraryItem = { ...compound, catalogId: 'cat-1' }
+    const ex = libraryToGymExercise(withCatalog, 'hypertrophy')
+    expect(ex.catalogId).toBe('cat-1')
+  })
+
+  test('catalogId key is absent (not just undefined) when the library item carries none', () => {
+    const ex = libraryToGymExercise(compound, 'hypertrophy') // fixture has no catalogId
+    expect('catalogId' in ex).toBe(false)
+  })
 })
 
 describe('addExerciseWithDefaults', () => {
@@ -42,5 +53,13 @@ describe('addExerciseWithDefaults', () => {
     const added = next.exercises[0]
     expect(next.exercises).toHaveLength(1)
     expect(added.warmupSets).toBe(suggestedWarmupSets(next, added.id))
+  })
+
+  test('plyo keeps 0 warmups through the post-insert warmup refinement, and exerciseCount is incremented', () => {
+    const day: MesoDay = { day: 'Hét', type: 'Push', muscle: 'quad', exerciseCount: 0, exercises: [] }
+    const next = addExerciseWithDefaults(day, plyo, 'hypertrophy')
+    expect(next.exerciseCount).toBe(1)
+    expect(next.exercises).toHaveLength(1)
+    expect(next.exercises[0].warmupSets).toBe(0)
   })
 })
