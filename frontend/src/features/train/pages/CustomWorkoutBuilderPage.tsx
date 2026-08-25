@@ -15,8 +15,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
 import { ExerciseRecipeRow } from '@/features/train/components/ExerciseRecipeRow'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
-
-const DEFAULT_RECIPE = { warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 1 } as const
+import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
 
 function toUpsert(name: string, exercises: GymExercise[]): CustomWorkoutUpsertRequest {
   return {
@@ -53,11 +52,13 @@ export function CustomWorkoutBuilderPage() {
   const valid = name.trim().length > 0 && exercises.length > 0
   const totalSets = exercises.reduce((a, e) => a + e.workingSets, 0)
 
+  // null preset = the shared hypertrophy fallback (mezo-dq60) — same source of
+  // truth the meso pickers use, so a plyo pick lands on its fixed weightless
+  // PLYO_SCHEME instead of the flat compound-shaped default this page used to
+  // hardcode (mezo-szsi item 1). anchorWeightKg is page-specific: the recipe
+  // row's stepper starts at "auto" (null), not undefined.
   const addFromCatalog = (item: ExerciseLibraryItem) => {
-    setExercises((xs) => [...xs, {
-      id: crypto.randomUUID(), name: item.name, muscle: item.muscle, type: item.type,
-      ...DEFAULT_RECIPE, anchorWeightKg: null, catalogId: item.catalogId,
-    }])
+    setExercises((xs) => [...xs, { ...libraryToGymExercise(item, null), anchorWeightKg: null }])
   }
   const save = (onDone?: (saved?: CustomWorkout) => void) => {
     const body = toUpsert(name, exercises)
