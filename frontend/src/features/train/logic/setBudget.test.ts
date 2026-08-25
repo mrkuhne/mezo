@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { GymExercise, MesoDay } from '@/data/types'
 import {
-  budgetGroup, budgetLevel, budgetOf, daySessionBreakdown, leastLoadedDayFor, muscleBudgets,
+  GROUP_LANDMARKS, budgetGroup, budgetOf, daySessionBreakdown, leastLoadedDayFor, muscleBudgets,
   sessionCapWarnings, setStyle,
 } from '@/features/train/logic/setBudget'
 
@@ -23,19 +23,32 @@ describe('setStyle', () => {
   })
 })
 
-describe('budgetOf + budgetLevel', () => {
-  it('caps: 12 failure sets or 20 volume sets exactly fill the budget', () => {
+// budgetOf/setStyle/FAILURE_WEEKLY_CAP/VOLUME_WEEKLY_CAP/GROUP_MEV are the ORIGINAL fatigue-cap
+// model — muscleBudgets below no longer uses it (reframed against tier targets, mezo-3m5m), but
+// programFit.ts and weekZone.ts still call these directly, so they stay and stay tested here.
+describe('budgetOf', () => {
+  it('caps: 12 failure sets or 20 volume sets exactly fill the fatigue budget', () => {
     expect(budgetOf(12, 0)).toBeCloseTo(1)
     expect(budgetOf(0, 20)).toBeCloseTo(1)
-    expect(budgetLevel(1)).toBe('near') // 100% is still allowed — over only past it
-    expect(budgetLevel(1.01)).toBe('over')
-    expect(budgetLevel(0.84)).toBe('ok')
-    expect(budgetLevel(0.85)).toBe('near')
   })
-  it('mixed: 8 failure + 6 volume = 0.9667; +2 volume tips over', () => {
+  it('mixed: 8 failure + 6 volume = 0.9667', () => {
     expect(budgetOf(8, 6)).toBeCloseTo(8 / 12 + 6 / 20)
-    expect(budgetLevel(budgetOf(8, 6))).toBe('near')
-    expect(budgetLevel(budgetOf(8, 8))).toBe('over')
+  })
+})
+
+describe('GROUP_LANDMARKS', () => {
+  it('mirrors application.yml mezo.volume.baselines (mezo-3m5m)', () => {
+    expect(GROUP_LANDMARKS).toEqual({
+      chest: { mev: 8, mav: 14, mrv: 20 },
+      back: { mev: 10, mav: 16, mrv: 22 },
+      shoulder: { mev: 8, mav: 12, mrv: 18 },
+      biceps: { mev: 6, mav: 10, mrv: 14 },
+      triceps: { mev: 6, mav: 10, mrv: 14 },
+      quad: { mev: 8, mav: 12, mrv: 18 },
+      ham: { mev: 6, mav: 10, mrv: 14 },
+      glute: { mev: 8, mav: 12, mrv: 18 },
+      calf: { mev: 6, mav: 10, mrv: 16 },
+    })
   })
 })
 
@@ -52,7 +65,7 @@ describe('budgetGroup', () => {
 })
 
 describe('muscleBudgets', () => {
-  it('aggregates across days into groups with style split and level', () => {
+  it('aggregates across days into groups with style split and level, against the Grow (default) tier target', () => {
     const days = [
       day('H', 'chest', [ex('chest-mid', 4, 0), ex('chest-upper', 4, 0)]),
       day('Cs', 'chest', [ex('chest-mid', 4, 2), ex('chest-lower', 4, 2)]),
@@ -60,14 +73,44 @@ describe('muscleBudgets', () => {
     ]
     const rows = muscleBudgets(days)
     expect(rows).toHaveLength(1)
+    // chest landmark {mev:8, mav:14, mrv:20}; Grow (default, no priorities) -> target = mav 14.
     expect(rows[0]).toMatchObject({
-      group: 'chest', label: 'Mell', failureSets: 8, volumeSets: 8, workingSets: 16, level: 'over',
+      group: 'chest', label: 'Mell', failureSets: 8, volumeSets: 8, workingSets: 16,
+      tier: 'grow', target: 14, level: 'over',
     })
-    expect(rows[0].budget).toBeCloseTo(8 / 12 + 8 / 20)
+    expect(rows[0].budget).toBeCloseTo(16 / 14)
   })
   it('skips off-day and sport rows entirely', () => {
     const days = [day('Sze', 'sport', [ex('sport', 6, 0)]), day('H', '', [])]
     expect(muscleBudgets(days)).toHaveLength(0)
+  })
+})
+
+describe('muscleBudgets — tier target math (mezo-3m5m, GD5)', () => {
+  const backWeek = (sets: number) => [day('H', 'back', [ex('back-wide', sets, 0)])]
+
+  it('Grow (default, no priorities passed): target = MAV, near at 14/16', () => {
+    const rows = muscleBudgets(backWeek(14))
+    expect(rows[0]).toMatchObject({ tier: 'grow', target: 16, level: 'near' })
+    expect(rows[0].budget).toBeCloseTo(0.875)
+  })
+  it('Emphasize: target = MRV, ok at 14/22', () => {
+    const rows = muscleBudgets(backWeek(14), { back: 'emphasize' })
+    expect(rows[0]).toMatchObject({ tier: 'emphasize', target: 22, level: 'ok' })
+    expect(rows[0].budget).toBeCloseTo(14 / 22)
+  })
+  it('Maintain: target = MEV, over at 14/10', () => {
+    const rows = muscleBudgets(backWeek(14), { back: 'maintain' })
+    expect(rows[0]).toMatchObject({ tier: 'maintain', target: 10, level: 'over' })
+    expect(rows[0].budget).toBeCloseTo(1.4)
+  })
+  it('a group with no landmark at all (traps) gets a null target/budget and level ok', () => {
+    const rows = muscleBudgets([day('H', 'back', [ex('traps', 3, 0)])])
+    expect(rows[0]).toMatchObject({ group: 'traps', target: null, budget: null, mev: null, level: 'ok' })
+  })
+  it('AD5: an explicit volumePerMuscle landmark wins over the static GROUP_LANDMARKS default', () => {
+    const rows = muscleBudgets(backWeek(14), null, { back: { mev: 1, mav: 2, mrv: 3 } })
+    expect(rows[0]).toMatchObject({ tier: 'grow', target: 2, level: 'over' }) // Grow -> mav 2, 14 > 2
   })
 })
 
@@ -157,34 +200,37 @@ describe('leastLoadedDayFor', () => {
   })
 })
 
-describe('optimal zone (mezo-oyhy.1)', () => {
-  it('flags under strictly below the group MEV', () => {
-    const under = muscleBudgets([day('H', 'arms', [ex('biceps-long', 7, 0)])])
-    const atMev = muscleBudgets([day('H', 'arms', [ex('biceps-long', 8, 0)])])
+describe('optimal zone (mezo-oyhy.1; recomputed against landmark MEV/MAV mezo-3m5m)', () => {
+  it('flags under strictly below the group landmark MEV', () => {
+    // biceps landmark mev=6 (was GROUP_MEV.biceps=8 pre-mezo-3m5m).
+    const under = muscleBudgets([day('H', 'arms', [ex('biceps-long', 5, 0)])])
+    const atMev = muscleBudgets([day('H', 'arms', [ex('biceps-long', 6, 0)])])
     expect(under[0].level).toBe('under')
     expect(under[0].setsToZone).toBe(1)
     expect(atMev[0].level).toBe('ok')
     expect(atMev[0].setsToZone).toBe(0)
   })
 
-  it('projects zoneStart onto the budget scale with the group style mix', () => {
+  it('zoneStart is mev/target — a structural ratio, invariant to the style mix or set count', () => {
+    // chest landmark {mev:8, mav:14, mrv:20}; Grow (default) target = mav 14 -> zoneStart 8/14
+    // regardless of whether the sets are pure volume, pure failure, or a mix.
     const volume = muscleBudgets([day('H', 'chest', [ex('chest-mid', 5, 2)])])
-    expect(volume[0].zoneStart).toBeCloseTo(4 / 20) // pure volume: MEV 4 of cap 20
+    expect(volume[0].zoneStart).toBeCloseTo(8 / 14)
     const failure = muscleBudgets([day('H', 'chest', [ex('chest-mid', 5, 0)])])
-    expect(failure[0].zoneStart).toBeCloseTo(4 / 12) // pure failure: MEV 4 of cap 12
+    expect(failure[0].zoneStart).toBeCloseTo(8 / 14)
     const mixed = muscleBudgets([day('H', 'chest', [ex('chest-mid', 6, 0), ex('chest-upper', 4, 2)])])
-    expect(mixed[0].budget).toBeCloseTo(0.7) // 6/12 + 4/20
-    expect(mixed[0].zoneStart).toBeCloseTo(0.28) // 0.7 × 4/10
+    expect(mixed[0].budget).toBeCloseTo(10 / 14) // workingSets 10 / target 14 — style mix no longer matters
+    expect(mixed[0].zoneStart).toBeCloseTo(8 / 14)
   })
 
   it('compares MEV against non-plyo sets only', () => {
     const rows = muscleBudgets([day('H', 'quad', [ex('quad', 3, 0), plyoEx('quad', 10)])])
-    expect(rows[0].level).toBe('under') // 3 < quad MEV 4 — plyo does not rescue it
+    expect(rows[0].level).toBe('under') // 3 < quad landmark MEV 8 — plyo does not rescue it
   })
 
-  it('traps and core have no lower bound and never go under', () => {
+  it('traps and core have no landmark and never go under', () => {
     const rows = muscleBudgets([day('H', 'back', [ex('traps', 1, 0)])])
-    expect(rows[0]).toMatchObject({ level: 'ok', mev: null, zoneStart: null, setsToZone: 0 })
+    expect(rows[0]).toMatchObject({ level: 'ok', target: null, budget: null, mev: null, zoneStart: null, setsToZone: 0 })
   })
 
   it('suggests the least-loaded training day for an under group', () => {

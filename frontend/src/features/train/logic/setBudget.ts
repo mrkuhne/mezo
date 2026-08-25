@@ -1,16 +1,26 @@
 // ============================================================
 // Mezo · setBudget — planning-time weekly set-budget per muscle group
-// (mezo-7rdg, spec 2026-08-01). Source: Built With Science video
-// (yt ehQ_5TThkRI, Zourdos/Remmert): failure style (RIR≤1) is productive
-// up to ~12 sets/muscle/week, volume style (RIR≥2) up to ~20; beyond ~11
-// sets/muscle in ONE session extra sets don't add growth. Budget model:
-// each failure set costs 1/12, each volume set 1/20 of the weekly budget.
+// (mezo-7rdg, spec 2026-08-01; reframed mezo-3m5m, spec GD5). Two models
+// now coexist:
+//  - The ORIGINAL fatigue-cap model (setStyle/budgetOf/FAILURE_WEEKLY_CAP/
+//    VOLUME_WEEKLY_CAP/GROUP_MEV) — source: Built With Science video (yt
+//    ehQ_5TThkRI, Zourdos/Remmert): failure style (RIR≤1) is productive up
+//    to ~12 sets/muscle/week, volume style (RIR≥2) up to ~20. Still used
+//    directly by programFit.ts and weekZone.ts — kept verbatim here.
+//  - The per-tier LANDMARK model (GROUP_LANDMARKS + muscleBudgets below):
+//    each muscle group's weekly budget is now measured against its OWN
+//    tier target (Maintain→MEV, Grow→MAV, Emphasize→MRV — see
+//    logic/musclePriorities.ts) instead of the shared failure/volume caps.
+//    This is what the SetBudgetCard pill/rows display.
+// Beyond ~11 sets/muscle in ONE session extra sets don't add growth
+// (SESSION_MUSCLE_CAP, tier-independent, unchanged).
 // Pure client-side derivation from the meso days template — nothing persisted.
 // Granularity is the coarse muscle group (chest/back/…): finer than the 6
 // color regions (Kar/Láb would over-merge), coarser than the 21 heads.
 // ============================================================
-import type { ExerciseKind, MesoDay } from '@/data/types'
+import type { ExerciseKind, MesoDay, MusclePriorities, MuscleTier } from '@/data/types'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { tierOf, tierTargetOf } from '@/features/train/logic/musclePriorities'
 
 /**
  * Does this exercise's work count as hypertrophy volume? The server sets the flag explicitly
@@ -48,8 +58,20 @@ export function budgetOf(failureSets: number, volumeSets: number): number {
   return failureSets / FAILURE_WEEKLY_CAP + volumeSets / VOLUME_WEEKLY_CAP
 }
 
-export function budgetLevel(budget: number): BudgetLevel {
-  return budget > 1 ? 'over' : budget >= NEAR_THRESHOLD ? 'near' : 'ok'
+// Weekly volume landmarks per muscle group — MIRROR of application.yml
+// mezo.volume.baselines (mezo-3m5m). The tier target for muscleBudgets below
+// (Maintain→mev, Grow→mav, Emphasize→mrv, via tierTargetOf). traps/core are
+// intentionally absent — same "no lower bound" treatment as GROUP_MEV.
+export const GROUP_LANDMARKS: Record<string, { mev: number; mav: number; mrv: number }> = {
+  chest: { mev: 8, mav: 14, mrv: 20 },
+  back: { mev: 10, mav: 16, mrv: 22 },
+  shoulder: { mev: 8, mav: 12, mrv: 18 },
+  biceps: { mev: 6, mav: 10, mrv: 14 },
+  triceps: { mev: 6, mav: 10, mrv: 14 },
+  quad: { mev: 8, mav: 12, mrv: 18 },
+  ham: { mev: 6, mav: 10, mrv: 14 },
+  glute: { mev: 8, mav: 12, mrv: 18 },
+  calf: { mev: 6, mav: 10, mrv: 16 },
 }
 
 // Catalog head / legacy key → coarse budget group. Off-day keys ('', 'sport') → null.
@@ -83,12 +105,17 @@ export interface MuscleBudgetRow {
   workingSets: number
   /** Sets that do not count toward the budget — reported separately for visibility. */
   exemptSets: number
-  /** 1 = 100% of the weekly budget. */
-  budget: number
+  /** Tier driving `target` below; defaults to 'grow' when no priorities map picks it. */
+  tier: MuscleTier
+  /** Weekly landmark target for the tier (MEV/MAV/MRV via tierTargetOf); null when the
+   *  group carries no landmark at all (traps/core — set-count-only display). */
+  target: number | null
+  /** workingSets / target; 1 = 100% of the tier target. null when target is null. */
+  budget: number | null
   level: BudgetLevel
   /** Weekly minimum-effective sets for the group; null = no lower bound (traps/core). */
   mev: number | null
-  /** Green-zone start on the budget scale (same 0..1 unit as budget); null when mev is. */
+  /** Green-zone start on the budget scale (mev / target); null when either is. */
   zoneStart: number | null
   /** Non-exempt sets still missing to reach MEV; 0 when in zone or no lower bound. */
   setsToZone: number
@@ -96,7 +123,18 @@ export interface MuscleBudgetRow {
   suggestedDay: string | null
 }
 
-export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
+/**
+ * Weekly per-group budget measured against each group's OWN tier target (spec GD5) —
+ * Maintain→MEV, Grow (default)→MAV, Emphasize→MRV (musclePriorities.tierTargetOf).
+ * Landmark source per group: explicit `volumePerMuscle[group]` (structural {mev,mav,mrv},
+ * e.g. a mesocycle's own progressed baselines) → else the static `GROUP_LANDMARKS` → else
+ * null (traps/core: no landmark at all, sets-only display, level always 'ok').
+ */
+export function muscleBudgets(
+  days: MesoDay[],
+  priorities?: MusclePriorities | null,
+  volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null,
+): MuscleBudgetRow[] {
   const acc = new Map<string, MuscleBudgetRow>()
   for (const d of days) {
     for (const ex of d.exercises) {
@@ -104,7 +142,12 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
       if (!group) continue
       let row = acc.get(group)
       if (!row) {
-        row = { group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle, failureSets: 0, volumeSets: 0, workingSets: 0, exemptSets: 0, budget: 0, level: 'ok', mev: null, zoneStart: null, setsToZone: 0, suggestedDay: null }
+        row = {
+          group, label: BUDGET_GROUP_LABELS[group] ?? group, colorMuscle: ex.muscle,
+          failureSets: 0, volumeSets: 0, workingSets: 0, exemptSets: 0,
+          tier: 'grow', target: null, budget: null, level: 'ok', mev: null, zoneStart: null,
+          setsToZone: 0, suggestedDay: null,
+        }
         acc.set(group, row)
       }
       if (!countsForVolume(ex)) { row.exemptSets += ex.workingSets; continue }
@@ -116,22 +159,30 @@ export function muscleBudgets(days: MesoDay[]): MuscleBudgetRow[] {
   return [...acc.values()]
     .filter((r) => r.workingSets > 0)
     .map((r) => {
-      const budget = budgetOf(r.failureSets, r.volumeSets)
-      const mev = GROUP_MEV[r.group] ?? null
-      const under = mev !== null && r.workingSets < mev
-      // Project the MEV set count onto the budget scale with the group's own
-      // style mix: at exactly MEV sets the bar would sit at budget × MEV / sets.
+      const lm = volumePerMuscle?.[r.group] ?? GROUP_LANDMARKS[r.group] ?? null
+      const tier = tierOf(priorities, r.group)
+      const target = lm ? tierTargetOf(tier, lm) : null
+      const mev = lm ? lm.mev : null
+      const budget = target !== null ? r.workingSets / target : null
+      const level: BudgetLevel =
+        target === null ? 'ok'
+          : r.workingSets > target ? 'over'
+            : budget !== null && budget >= NEAR_THRESHOLD ? 'near'
+              : mev !== null && r.workingSets < mev ? 'under'
+                : 'ok'
       return {
         ...r,
+        tier,
+        target,
         budget,
         mev,
-        zoneStart: mev !== null ? Math.min(1, (budget * mev) / r.workingSets) : null,
+        zoneStart: target !== null && mev !== null ? Math.min(1, mev / target) : null,
         setsToZone: mev !== null ? Math.max(0, mev - r.workingSets) : 0,
-        suggestedDay: under ? leastLoadedDayFor(days, r.group, '') : null,
-        level: under ? ('under' as const) : budgetLevel(budget),
+        suggestedDay: level === 'under' ? leastLoadedDayFor(days, r.group, '') : null,
+        level,
       }
     })
-    .sort((a, b) => b.budget - a.budget || a.group.localeCompare(b.group))
+    .sort((a, b) => (b.budget ?? -1) - (a.budget ?? -1) || a.group.localeCompare(b.group))
 }
 
 export interface SessionCapWarning { day: string; group: string; label: string; sets: number }
