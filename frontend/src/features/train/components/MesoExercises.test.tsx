@@ -9,6 +9,13 @@ import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { activeMeso } from '@/data/train/train'
+import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
+
+// Same lookup as MusclePriorityPicker.test.tsx — locates a tier row by its coarse-muscle group.
+function tierRow(group: string) {
+  const label = BUDGET_GROUP_LABELS[group] ?? group
+  return screen.getByRole('group', { name: `${label} prioritás` })
+}
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -175,6 +182,64 @@ test('adding an exercise fills SCHEMES defaults from a non-null meso.goalPreset 
   expect(added.repMin).toBe(6)
   expect(added.repMax).toBe(8)
   expect(added.targetRIR).toBe(0)
+})
+
+test('the Fókusz picker shows the meso\'s existing musclePriorities map, plus the GD7 helper line (mezo-3m5m)', async () => {
+  // activeMeso (train.ts) carries musclePriorities: { shoulder: 'maintain' }.
+  await renderExercisesView()
+  await userEvent.click(screen.getByText('Fókusz'))
+  expect(within(tierRow('shoulder')).getByRole('button', { name: 'Maintain' })).toHaveAttribute('aria-pressed', 'true')
+  expect(within(tierRow('back')).getByRole('button', { name: 'Grow' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('A módosítás a következő heti görgetésnél lép életbe.')).toBeInTheDocument()
+})
+
+test('changing a Fókusz tier fires the muscle-priorities PUT with the new sparse map, and MesoEditor receives it (mezo-3m5m)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
+  const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
+  const puts: { id: string; musclePriorities?: Record<string, string> | null }[] = []
+  // musclePriorities is mutable so the GET handler's re-fetch (fired by the mutation's
+  // onSuccess invalidate) reflects the just-written map — the same "hook's cache write
+  // refreshes the view" contract mock mode gets from mockUpdateMusclePriorities.
+  let musclePriorities: Record<string, string> | null = null
+  const mesoFixture = () => ({
+    id: MESO_ID, title: 'Valódi blokk', shortTitle: 'Valódi', status: 'active',
+    startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 1,
+    split: 'PPL', style: 'RP', phaseCurve: ['MEV'], musclePriorities,
+    days: [{
+      id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, current: true,
+      exercises: [{ id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2,
+        workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' }],
+    }],
+  })
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([mesoFixture()])),
+    // The default msw handler for this endpoint echoes a THIN {id, musclePriorities} — this
+    // test captures the full body instead (mirroring the real backend's full-response contract)
+    // so the refetched GET above stays consistent.
+    http.put(`${API_BASE}/api/train/mesocycles/:id/muscle-priorities`, async ({ params, request }) => {
+      const body = (await request.json()) as { musclePriorities?: Record<string, string> | null }
+      musclePriorities = body.musclePriorities ?? null
+      puts.push({ id: String(params.id), musclePriorities: body.musclePriorities ?? null })
+      return HttpResponse.json({ ...mesoFixture(), id: String(params.id) })
+    }),
+  )
+
+  const router = createMemoryRouter(routes, { initialEntries: [`/train/mesocycles/${MESO_ID}`] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
+
+  await userEvent.click(await screen.findByText('Fókusz'))
+  await userEvent.click(within(tierRow('back')).getByRole('button', { name: 'Emphasize' }))
+
+  await waitFor(() => expect(puts).toHaveLength(1))
+  expect(puts[0].id).toBe(MESO_ID)
+  expect(puts[0].musclePriorities).toEqual({ back: 'emphasize' })
+
+  // MesoEditor received the map once the invalidated query refetches — the SetBudgetCard's
+  // collapsed pill names the new tier for the 'back' group.
+  await waitFor(() => expect(screen.getByText(/Hát · Emphasize/)).toBeInTheDocument())
 })
 
 test('reordering a day exercise via ▲ persists the new order (PUT) in real mode', async () => {

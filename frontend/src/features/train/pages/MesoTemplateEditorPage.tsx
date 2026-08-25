@@ -15,13 +15,14 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMesoTemplates } from '@/data/hooks'
-import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate } from '@/data/types'
+import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { GOAL_PRESETS } from '@/data/train/train'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
+import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
@@ -32,8 +33,14 @@ import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet
 const GOAL_PRESET_OPTIONS = [{ value: '', label: '— (hypertrophy)' }, ...GOAL_PRESETS.map((p) => ({ value: p.id, label: p.label }))]
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
-// shared here so the Cél select persists through the identical upsert helper.
-function toUpsert(template: MesoTemplate, days: MesoDay[], goalPreset = template.goalPreset): MesoTemplateUpsertRequest {
+// shared here so the Cél select AND the Fókusz tier picker persist through the identical
+// upsert helper.
+function toUpsert(
+  template: MesoTemplate,
+  days: MesoDay[],
+  goalPreset = template.goalPreset,
+  musclePriorities = template.musclePriorities,
+): MesoTemplateUpsertRequest {
   return {
     title: template.title,
     shortTitle: template.shortTitle,
@@ -43,7 +50,7 @@ function toUpsert(template: MesoTemplate, days: MesoDay[], goalPreset = template
     // along every day/goal edit here or it silently resets to all-grow on the next PUT
     // (this editor has no per-field PATCH — see the module doc above; caught by the
     // mandated goalPreset grep-audit, mirroring the mezo-dq60 unlisted-site precedent).
-    musclePriorities: template.musclePriorities,
+    musclePriorities,
     weeks: template.weeks,
     split: template.split,
     style: template.style,
@@ -115,10 +122,14 @@ export function MesoTemplateEditorPage() {
         </div>
       ) : null}
       {/* Remounts (and reseeds) only when the route points at another template. */}
-      <TemplateDayEditor key={template.id} template={template} onPersist={(days, goalPreset) => updateTemplate(template.id, toUpsert(template, days, goalPreset))
-      // Failed mutations are toasted globally (§7a); the local edit stands and the
-      // next change retries the whole document.
-      .catch(() => {})} />
+      <TemplateDayEditor
+        key={template.id}
+        template={template}
+        onPersist={(days, goalPreset, musclePriorities) => updateTemplate(template.id, toUpsert(template, days, goalPreset, musclePriorities))
+          // Failed mutations are toasted globally (§7a); the local edit stands and the
+          // next change retries the whole document.
+          .catch(() => {})}
+      />
     </div>
   )
 }
@@ -135,7 +146,7 @@ export function MesoTemplateEditorPage() {
 // silently reverting an edit the UI still shows as applied.
 function TemplateDayEditor({ template, onPersist }: {
   template: MesoTemplate
-  onPersist: (days: MesoDay[], goalPreset?: string | null) => void
+  onPersist: (days: MesoDay[], goalPreset?: string | null, musclePriorities?: MusclePriorities | null) => void
 }) {
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(template.days ?? []))
   const [pickerDay, setPickerDay] = useState<string | null>(null)
@@ -190,6 +201,19 @@ function TemplateDayEditor({ template, onPersist }: {
           {GOAL_PRESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
+      <details style={{ padding: '0 24px 8px' }}>
+        <summary className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', cursor: 'pointer' }}>
+          Fókusz
+        </summary>
+        <div style={{ marginTop: 8 }}>
+          <MusclePriorityPicker
+            value={template.musclePriorities ?? {}}
+            // Built from THIS render's `days` state — same stale-cache rule as the Cél
+            // select above (:121-130): never the parent's query-cache `template.days` copy.
+            onChange={(next) => onPersist(days, undefined, next)}
+          />
+        </div>
+      </details>
       <div style={{ padding: '12px 24px' }}>
         <MesoEditor
           days={days}
@@ -197,6 +221,8 @@ function TemplateDayEditor({ template, onPersist }: {
           onRemove={removeExercise}
           onChange={updateExercise}
           onReorder={reorderExercises}
+          priorities={template.musclePriorities}
+          volumePerMuscle={template.volumePerMuscle ?? undefined}
         />
       </div>
 
