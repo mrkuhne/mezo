@@ -248,6 +248,14 @@ public class TrainService {
         return assembleResponse(createdBy, target);
     }
 
+    /** GD7: the map change is stored now, applied at the next weekly rollover — nothing rewritten retroactively. */
+    @Transactional
+    public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities) {
+        MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
+        m.setMusclePriorities(priorities == null || priorities.isEmpty() ? null : Map.copyOf(priorities));
+        return mapper.toResponse(m);
+    }
+
     /**
      * Closes (archives) a run and FREEZES its end-of-mesocycle report in the same transaction
      * (mezo-meyc.2): {@code status = archived}, {@code closedAt = now}, the computed

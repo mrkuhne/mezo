@@ -94,6 +94,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles/{id}/muscle-priorities:
+    put:
+      tags: [Train]
+      operationId: updateMesocycleMusclePriorities
+      summary: Replace the run's muscle priority tier map — takes effect at the next weekly rollover (mezo-3m5m)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusclePrioritiesUpdateRequest'
+      responses:
+        '200':
+          description: Updated mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/mesocycles/{id}/report:
     get:
       tags: [Train]
@@ -2036,6 +2073,15 @@ components:
         status:
           type: string
           enum: [active, planned]
+    MusclePrioritiesUpdateRequest:
+      type: object
+      properties:
+        musclePriorities:
+          type: object
+          nullable: true
+          description: Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
     MesoRerunResponse:
       type: object
       required:

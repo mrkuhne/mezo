@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.MusclePrioritiesUpdateRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -105,6 +106,39 @@ class MusclePrioritiesCarryIT extends ApiIntegrationTest {
         String musclePrioritiesColumn = jdbcTemplate.queryForObject(
             "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
         assertThat(musclePrioritiesColumn).isNull();
+    }
+
+    @Test
+    void testUpdateMusclePriorities_shouldReplaceTheMapOnTheRun() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoTemplateUpsertRequest req = upsertRequest();
+        req.setMusclePriorities(Map.of("back", "emphasize"));
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        MesocycleResponse updated = putForBody(MESOCYCLES + "/" + run.getId() + "/muscle-priorities",
+            MusclePrioritiesUpdateRequest.builder().musclePriorities(Map.of("glute", "maintain")).build(),
+            auth, HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(updated.getMusclePriorities()).containsExactlyInAnyOrderEntriesOf(
+            Map.of("glute", "maintain"));
+        String musclePrioritiesColumn = jdbcTemplate.queryForObject(
+            "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
+        assertThat(musclePrioritiesColumn).doesNotContain("emphasize").contains("maintain");
+
+        MesocycleResponse cleared = putForBody(MESOCYCLES + "/" + run.getId() + "/muscle-priorities",
+            MusclePrioritiesUpdateRequest.builder().musclePriorities(Map.of()).build(),
+            auth, HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(cleared.getMusclePriorities()).isNull();
+        String clearedColumn = jdbcTemplate.queryForObject(
+            "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
+        assertThat(clearedColumn).isNull();
     }
 
     // ── fixtures ────────────────────────────────────────────────────────────────
