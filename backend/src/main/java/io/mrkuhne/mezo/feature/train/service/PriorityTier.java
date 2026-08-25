@@ -46,13 +46,24 @@ public enum PriorityTier {
         }
         Map<String, String> normalized = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : priorities.entrySet()) {
-            switch (entry.getValue()) {
+            // Null-guard BEFORE the switch (same style as IntentionService#reflect's lookup
+            // guard) — a null selector in a String switch throws NPE regardless of `default`,
+            // and a plain Map<String,String> deserializes `{"back": null}` without complaint.
+            String tierValue = entry.getValue();
+            if (tierValue == null) {
+                throw invalidTier();
+            }
+            switch (tierValue) {
                 case "grow" -> { /* redundant with the sparse-map default — dropped, not stored */ }
-                case "emphasize", "maintain" -> normalized.put(entry.getKey(), entry.getValue());
-                default -> throw new SystemRuntimeErrorException(
-                    SystemMessage.error("TRAIN_MUSCLE_PRIORITY_TIER_INVALID").build(), HttpStatus.BAD_REQUEST);
+                case "emphasize", "maintain" -> normalized.put(entry.getKey(), tierValue);
+                default -> throw invalidTier();
             }
         }
         return normalized;
+    }
+
+    private static SystemRuntimeErrorException invalidTier() {
+        return new SystemRuntimeErrorException(
+            SystemMessage.error("TRAIN_MUSCLE_PRIORITY_TIER_INVALID").build(), HttpStatus.BAD_REQUEST);
     }
 }
