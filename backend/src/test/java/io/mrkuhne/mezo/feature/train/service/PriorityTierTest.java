@@ -41,9 +41,4 @@ class PriorityTierTest {
         int ceiling = PriorityTier.MAINTAIN.ceiling(8, 14, 20);
         assertThat(ceiling).isEqualTo(8);
     }
-    @Test void rampEnabledFalseOnlyForMaintain() {
-        assertThat(PriorityTier.EMPHASIZE.rampEnabled()).isTrue();
-        assertThat(PriorityTier.GROW.rampEnabled()).isTrue();
-        assertThat(PriorityTier.MAINTAIN.rampEnabled()).isFalse();
-    }
 }

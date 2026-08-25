@@ -2,7 +2,13 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import java.util.Map;
 
-/** Per-muscle priority tier — picks which volume landmark is "100%" for the weekly ramp (mezo-3m5m, spec GD4). */
+/**
+ * Per-muscle priority tier — picks which volume landmark is "100%" for the weekly ramp
+ * (mezo-3m5m, spec GD4). Maintain's ceiling is MEV: {@link VolumeDecider} ramps a muscle
+ * below its ceiling back up (e.g. recovering toward MEV after a deload) and holds once it
+ * reaches the ceiling — the ceiling alone encodes maintain semantics, there is no separate
+ * ramp-disable flag.
+ */
 public enum PriorityTier {
     EMPHASIZE, GROW, MAINTAIN;
 
@@ -18,9 +24,5 @@ public enum PriorityTier {
 
     public int ceiling(int mev, int mav, int mrv) {
         return switch (this) { case EMPHASIZE -> mrv; case GROW -> mav; case MAINTAIN -> mev; };
-    }
-
-    public boolean rampEnabled() {
-        return this != MAINTAIN;
     }
 }

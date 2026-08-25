@@ -11,7 +11,7 @@ public final class VolumeDecider {
 
     public record Input(int week, int prevSets, int mev, int mav, int mrv, boolean deloadPhase,
                         int loggedLastWeek, boolean grind, int step, BigDecimal deloadFraction,
-                        int rampCeiling, boolean rampEnabled) {}
+                        int rampCeiling) {}
     public record Result(int targetSets, Lever lever, String change) {}
 
     public static Result decide(Input in) {
@@ -26,7 +26,7 @@ public final class VolumeDecider {
                 (in.deloadPhase() ? "Deload " : "Korai deload ") + in.prevSets() + " → " + target);
         }
         boolean targetHit = in.loggedLastWeek() >= in.prevSets();
-        if (in.rampEnabled() && targetHit && !in.grind() && in.prevSets() < in.rampCeiling()) {
+        if (targetHit && !in.grind() && in.prevSets() < in.rampCeiling()) {
             int target = Math.min(in.prevSets() + in.step(), in.rampCeiling());
             return new Result(target, Lever.RAMP, "+" + (target - in.prevSets())
                 + " (" + in.prevSets() + " → " + target + ")");

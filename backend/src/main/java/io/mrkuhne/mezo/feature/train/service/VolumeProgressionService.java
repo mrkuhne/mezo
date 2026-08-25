@@ -144,7 +144,7 @@ public class VolumeProgressionService {
                 signals.loggedLastWeek().getOrDefault(muscle, 0),
                 signals.grind().getOrDefault(muscle, false),
                 props.step(), props.deloadFraction(),
-                tier.ceiling(row.getMev(), row.getMav(), row.getMrv()), tier.rampEnabled()));
+                tier.ceiling(row.getMev(), row.getMav(), row.getMrv())));
 
             row.setCurrentSets(result.targetSets());
             row.setSource(withRolloverAdjustment(row.getSource(), calWeek, result));
