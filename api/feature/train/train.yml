@@ -119,6 +119,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:

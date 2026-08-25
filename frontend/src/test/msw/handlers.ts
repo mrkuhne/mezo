@@ -566,6 +566,7 @@ export const handlers = [
         split: 'Pull / Push / Legs · 5×/hét',
         style: 'RP · 6 hét',
         phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+        musclePriorities: { back: 'emphasize' },
         volumePerMuscle: {
           chest: {
             mev: 8, mav: 14, mrv: 20, current: 14,

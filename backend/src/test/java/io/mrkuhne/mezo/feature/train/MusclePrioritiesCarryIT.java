@@ -14,12 +14,14 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -167,6 +169,122 @@ class MusclePrioritiesCarryIT extends ApiIntegrationTest {
         String clearedColumn = jdbcTemplate.queryForObject(
             "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
         assertThat(clearedColumn).isNull();
+    }
+
+    @Test
+    void testUpdateMusclePriorities_shouldReject400_whenTierValueUnknown() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoTemplateUpsertRequest req = upsertRequest();
+        req.setMusclePriorities(Map.of("back", "emphasize"));
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        String body = exchangeForBody(HttpMethod.PUT, MESOCYCLES + "/" + run.getId() + "/muscle-priorities",
+            MusclePrioritiesUpdateRequest.builder().musclePriorities(Map.of("back", "typo")).build(),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "TRAIN_MUSCLE_PRIORITY_TIER_INVALID");
+        // DB unchanged: the pre-existing "emphasize" value from the template start survives the
+        // rejected PUT — normalize() must throw BEFORE anything is written, not after a partial write.
+        String musclePrioritiesColumn = jdbcTemplate.queryForObject(
+            "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
+        assertThat(musclePrioritiesColumn).contains("emphasize").doesNotContain("typo");
+    }
+
+    @Test
+    void testUpdateMusclePriorities_shouldDropGrowEntries_whileKeepingKnownTiers() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoTemplateUpsertRequest req = upsertRequest();
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        // "grow" is semantically identical to an absent key — it drops during normalization
+        // rather than 400ing (mezo-ltk0 ruling), leaving only the non-default tier persisted.
+        MesocycleResponse updated = putForBody(MESOCYCLES + "/" + run.getId() + "/muscle-priorities",
+            MusclePrioritiesUpdateRequest.builder()
+                .musclePriorities(Map.of("back", "grow", "glute", "maintain")).build(),
+            auth, HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(updated.getMusclePriorities()).containsExactlyInAnyOrderEntriesOf(
+            Map.of("glute", "maintain"));
+        String musclePrioritiesColumn = jdbcTemplate.queryForObject(
+            "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
+        assertThat(musclePrioritiesColumn).doesNotContain("back").contains("maintain");
+    }
+
+    @Test
+    void testUpsertTemplate_shouldReject400_whenTierValueUnknown() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoTemplateUpsertRequest req = upsertRequest();
+        req.setMusclePriorities(Map.of("back", "typo"));
+
+        String body = exchangeForBody(HttpMethod.POST, TEMPLATES, req,
+            auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "TRAIN_MUSCLE_PRIORITY_TIER_INVALID");
+    }
+
+    @Test
+    void testUpdateTemplate_shouldReject400_whenTierValueUnknown() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        // POST create and PUT update both funnel through MesoTemplateService#applyUpsert —
+        // the "upsert" in the spec means both entry points, not just create (review fix-round-1).
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, upsertRequest(), auth, HttpStatus.OK, MesoTemplateResponse.class);
+
+        MesoTemplateUpsertRequest badUpdate = upsertRequest();
+        badUpdate.setMusclePriorities(Map.of("back", "typo"));
+
+        String body = exchangeForBody(HttpMethod.PUT, TEMPLATES + "/" + created.getId(), badUpdate,
+            auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "TRAIN_MUSCLE_PRIORITY_TIER_INVALID");
+        // The pre-existing (null) musclePriorities must be untouched by the rejected update.
+        MesoTemplateResponse unchanged =
+            getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).stream()
+                .filter(t -> t.getId().equals(created.getId())).findFirst().orElseThrow();
+        assertThat(unchanged.getMusclePriorities()).isNull();
+    }
+
+    @Test
+    void testUpdateMusclePriorities_shouldReject400_whenTierValueNull() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoTemplateUpsertRequest req = upsertRequest();
+        req.setMusclePriorities(Map.of("back", "emphasize"));
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        // {"back": null} deserializes fine into Map<String,String> — must 400, not 500/NPE
+        // (review fix-round-1: the null selector in normalize()'s switch used to NPE).
+        Map<String, String> withNullValue = new HashMap<>();
+        withNullValue.put("back", null);
+        String body = exchangeForBody(HttpMethod.PUT, MESOCYCLES + "/" + run.getId() + "/muscle-priorities",
+            MusclePrioritiesUpdateRequest.builder().musclePriorities(withNullValue).build(),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "TRAIN_MUSCLE_PRIORITY_TIER_INVALID");
+        String musclePrioritiesColumn = jdbcTemplate.queryForObject(
+            "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
+        assertThat(musclePrioritiesColumn).contains("emphasize");
     }
 
     // ── fixtures ────────────────────────────────────────────────────────────────
