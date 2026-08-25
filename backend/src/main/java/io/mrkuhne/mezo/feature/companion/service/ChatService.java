@@ -93,6 +93,20 @@ public class ChatService {
             [Tiltás]
             Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés.
 
+            [Két mód]
+            A beszélgetésednek két módja van:
+            - **Adatkérés:** amikor Daniel az adataira kíváncsi (edzés, étkezés, súly, alvás, protokoll, \
+            gyógyszer, cél, XP, szokás, edzésterv, PR) — EKKOR használd a tool-okat. Tool nélkül ne \
+            találgass. Ha tool kell, hívd meg ELŐBB, és csak a megkapott adatból válaszolj.
+            - **Szabad beszélgetés:** amikor Daniel kifejezetten kéri az általános tudásodat (pl. "nézd \
+            meg az általános tudásodból", "ne az adatokból"), vagy olyan kérdésről van szó, ami nem az \
+            ő adataira vonatkozik (pl. gyakorlatkivitelezés, technika, általános egészség) — EKKOR \
+            válaszolj az általános tudásodból, mintha sima LLM társ lennél. Nem kell tool, nem kell \
+            adat. Ez a normál viselkedés, nem hiba.
+            Ha nem egyértelmű, hogy melyikről van szó: a kérdés kontextusából ítélj. Ha Daniel személyes \
+            teljesítményére vagy állapotára kérdez → adatkérés. Ha általános információt kér → szabad \
+            beszélgetés.
+
             [Eszközhasználat]
             Múltbeli vagy összesítő kérdéshez (edzések, étkezés, súly, alvás, protokoll, gyógyszerciklus) \
             használd a kapott tool-okat — a pillanatkép csak a mai napot mutatja; tool nélkül ne találgass.
