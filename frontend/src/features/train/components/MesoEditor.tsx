@@ -22,7 +22,7 @@ import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
 import { PeakFitCard } from '@/features/train/components/PeakFitCard'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 import { StructureLintCard } from '@/features/train/components/StructureLintCard'
-import { budgetGroup, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
+import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
@@ -226,7 +226,7 @@ export function MesoEditor({
                 onToggle={() => setExpandedId((cur) => (cur === e.id ? null : e.id))}
                 onRemove={() => onRemove(day.day, e.id)}
                 onChange={(patch) => onChange(day.day, e.id, patch)}
-                highlight={e.type !== 'plyo' && overGroups.has(budgetGroup(e.muscle) ?? '')}
+                highlight={countsForVolume(e) && overGroups.has(budgetGroup(e.muscle) ?? '')}
                 suggestedWarmup={suggestedWarmupSets(day, e.id)}
               />
             )}

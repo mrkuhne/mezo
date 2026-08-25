@@ -51,6 +51,24 @@ describe('MesoEditor', () => {
     expect(rowB).toHaveAttribute('data-over', 'true')
   })
 
+  it('an exempt exercise in an over-budget group does NOT get the over-budget highlight; a counted exercise still does (mezo-yqpf)', () => {
+    const exemptDays: MesoDay[] = [
+      {
+        day: 'H', type: 'Push A', muscle: 'chest', exerciseCount: 3, current: true,
+        exercises: [
+          ex('a', 'chest-mid', 6, 0),
+          ex('b', 'chest-upper', 6, 0),
+          { ...ex('x', 'chest-lower', 5, 0), countsTowardVolume: false },
+        ],
+      },
+    ]
+    render(<MesoEditor days={exemptDays} {...props} />)
+    const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.card')
+    const rowX = screen.getByRole('button', { name: /Gyak x · szerkesztés/ }).closest('.card')
+    expect(rowA).toHaveAttribute('data-over', 'true') // counted exercise in the over group — still flagged
+    expect(rowX).not.toHaveAttribute('data-over') // exempt exercise — never flagged, even in an over group
+  })
+
   it('switching to day Cs shows its own breakdown (13/11), the suggestDay clause, and highlights the over exercise', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^Cs ·/ }))

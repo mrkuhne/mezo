@@ -8,11 +8,12 @@
 //     with a legality-checked last-resort duplicate removal;
 //   3 session-length guard — pad/trim days toward the 45–90 band.
 // Pure and deterministic (alphabetical groups, rule-defined tie-breaks);
-// plyo exercises, off days, warnings and warmupSets pass through untouched.
+// exempt exercises (countsForVolume false — plyo, or explicit countsTowardVolume:
+// false), off days, warnings and warmupSets pass through untouched.
 // Applied by generateProgram as its final step on both return paths.
 // ============================================================
 import type { GymExercise, MesoDay } from '@/data/types'
-import { FAILURE_WEEKLY_CAP, GROUP_MEV, SESSION_MUSCLE_CAP, VOLUME_WEEKLY_CAP, budgetGroup, budgetOf, setStyle } from '@/features/train/logic/setBudget'
+import { FAILURE_WEEKLY_CAP, GROUP_MEV, SESSION_MUSCLE_CAP, VOLUME_WEEKLY_CAP, budgetGroup, budgetOf, countsForVolume, setStyle } from '@/features/train/logic/setBudget'
 import { SETS_PER_EXERCISE, SESSION_LENGTH_BAND, repZoneOf, type RepZone } from '@/features/train/logic/structureLint'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { isOffDay } from '@/features/train/logic/offDay'
@@ -21,6 +22,10 @@ export const FIT_CEILING = 0.85
 
 interface Slot { dayIdx: number; exIdx: number }
 
+// Invariant: only counted exercises reach this — countsForVolume gates every caller
+// (slotsOf, daySetsForGroup, guardSessionLength's victims/candidates maps), so a plyo
+// or countsTowardVolume:false exercise never gets fed into kindCap. Do not add a plyo
+// branch here — fix the caller's gate instead if one is ever found to leak through.
 const kindCap = (t: GymExercise['type']) => (t === 'compound' ? SETS_PER_EXERCISE.compound.max : SETS_PER_EXERCISE.isolation.max)
 
 function slotsOf(days: MesoDay[]): Map<string, Slot[]> {
@@ -28,7 +33,7 @@ function slotsOf(days: MesoDay[]): Map<string, Slot[]> {
   days.forEach((d, dayIdx) => {
     if (isOffDay(d)) return
     d.exercises.forEach((e, exIdx) => {
-      if (e.type === 'plyo') return
+      if (!countsForVolume(e)) return
       const group = budgetGroup(e.muscle)
       if (!group) return
       if (!map.has(group)) map.set(group, [])
@@ -50,7 +55,7 @@ function groupStats(days: MesoDay[], slots: Slot[]): { sets: number; budget: num
 }
 
 function daySetsForGroup(days: MesoDay[], group: string, dayIdx: number): number {
-  return days[dayIdx].exercises.reduce((a, e) => (e.type !== 'plyo' && budgetGroup(e.muscle) === group ? a + e.workingSets : a), 0)
+  return days[dayIdx].exercises.reduce((a, e) => (countsForVolume(e) && budgetGroup(e.muscle) === group ? a + e.workingSets : a), 0)
 }
 
 // --- phase 1 -------------------------------------------------------------
@@ -148,7 +153,7 @@ function guardSessionLength(days: MesoDay[], slotMap: Map<string, Slot[]>): void
       const est = estimateSessionMinutes(d.exercises)
       if (est > SESSION_LENGTH_BAND.max) {
         const victims = d.exercises
-          .map((e, exIdx) => ({ e, exIdx, group: e.type !== 'plyo' ? budgetGroup(e.muscle) : null }))
+          .map((e, exIdx) => ({ e, exIdx, group: countsForVolume(e) ? budgetGroup(e.muscle) : null }))
           .filter(({ e, group }) => group !== null && e.workingSets > 2)
           .filter(({ group }) => {
             const mev = GROUP_MEV[group!]
@@ -159,7 +164,7 @@ function guardSessionLength(days: MesoDay[], slotMap: Map<string, Slot[]>): void
         victims[0].e.workingSets--
       } else if (est < SESSION_LENGTH_BAND.min) {
         const candidates = d.exercises
-          .map((e, exIdx) => ({ e, exIdx, group: e.type !== 'plyo' ? budgetGroup(e.muscle) : null }))
+          .map((e, exIdx) => ({ e, exIdx, group: countsForVolume(e) ? budgetGroup(e.muscle) : null }))
           .filter(({ e, group }) => group !== null && e.workingSets < kindCap(e.type)
             && daySetsForGroup(days, group!, dayIdx) + 1 <= SESSION_MUSCLE_CAP)
           .map((c) => {
