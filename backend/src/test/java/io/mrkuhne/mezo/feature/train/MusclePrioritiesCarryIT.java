@@ -120,6 +120,11 @@ class MusclePrioritiesCarryIT extends ApiIntegrationTest {
         MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start",
             startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
             HttpStatus.OK, MesocycleResponse.class);
+        // The freshly-started run always carries its template day(s) — used below to pin that the
+        // PUT response is the fully-assembled MesocycleResponse (assembleResponse), not the bare
+        // mapper.toResponse, which would silently drop days/volumePerMuscle/hasReport and risk
+        // clobbering the FE mesocycles cache on write.
+        assertThat(run.getDays()).hasSize(1);
 
         MesocycleResponse updated = putForBody(MESOCYCLES + "/" + run.getId() + "/muscle-priorities",
             MusclePrioritiesUpdateRequest.builder().musclePriorities(Map.of("glute", "maintain")).build(),
@@ -127,6 +132,7 @@ class MusclePrioritiesCarryIT extends ApiIntegrationTest {
 
         assertThat(updated.getMusclePriorities()).containsExactlyInAnyOrderEntriesOf(
             Map.of("glute", "maintain"));
+        assertThat(updated.getDays()).hasSize(1);
         String musclePrioritiesColumn = jdbcTemplate.queryForObject(
             "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
         assertThat(musclePrioritiesColumn).doesNotContain("emphasize").contains("maintain");

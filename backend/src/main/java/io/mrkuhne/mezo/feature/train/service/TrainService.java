@@ -253,7 +253,7 @@ public class TrainService {
     public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities) {
         MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
         m.setMusclePriorities(priorities == null || priorities.isEmpty() ? null : Map.copyOf(priorities));
-        return mapper.toResponse(m);
+        return assembleResponse(createdBy, m);
     }
 
     /**
