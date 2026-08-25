@@ -53,7 +53,7 @@ test('renders the Set-büdzsé section (mezo-7rdg)', () => {
   expect(screen.getByText('Set-büdzsé')).toBeInTheDocument()
 })
 
-test('an over-budget muscle shows the "heti keret" warning (mezo-7rdg)', () => {
+test('an over-budget muscle shows the tier-plafon warning (mezo-7rdg; copy reframed mezo-3m5m)', () => {
   const overBudgetMeso: Mesocycle = {
     ...meso,
     days: [{
@@ -65,5 +65,7 @@ test('an over-budget muscle shows the "heti keret" warning (mezo-7rdg)', () => {
     }],
   }
   render(<QueryWrapper><MuscleWeekSheet meso={overBudgetMeso} sportSlots={slots} onClose={() => {}} /></QueryWrapper>)
-  expect(screen.getByText(/Mell: heti keret/)).toBeInTheDocument()
+  // MuscleWeekSheet passes no priorities/volumePerMuscle to muscleBudgets(), so chest defaults
+  // to Grow -> target = GROUP_LANDMARKS.chest.mav (14). 8+8 = 16 counted sets > 14 -> 'over'.
+  expect(screen.getByText('Mell: 16 szett — Grow plafon 14 (MAV).')).toBeInTheDocument()
 })
