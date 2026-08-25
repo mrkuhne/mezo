@@ -107,6 +107,43 @@ test('useTrain (mock mode) mutations resolve without any network call', async ()
   await waitFor(() => expect(onSuccess).toHaveBeenCalled())
 })
 
+test('useTrain (real mode) updateMusclePriorities PUTs the map and returns the mapped run', async () => {
+  let putId: string | null = null
+  let putBody: unknown = null
+  server.use(
+    http.put(`${API_BASE}/api/train/mesocycles/:id/muscle-priorities`, async ({ params, request }) => {
+      putId = String(params.id)
+      putBody = await request.json()
+      return HttpResponse.json({
+        id: String(params.id), title: 'Hypertrophy 04 · Tavasz', shortTitle: 'Hypertrophy 04',
+        status: 'active', startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6, currentWeek: 3,
+        split: 's', style: 's', phaseCurve: ['MEV'], hasReport: false,
+        musclePriorities: { back: 'emphasize' },
+      })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const onSuccess = vi.fn()
+  result.current.updateMusclePriorities('m-1', { back: 'emphasize' }, { onSuccess })
+  await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  expect(putId).toBe('m-1')
+  expect(putBody).toEqual({ musclePriorities: { back: 'emphasize' } })
+})
+
+test('useTrain (mock mode) updateMusclePriorities writes the mesocycles cache and the write sticks', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true') // override the file-level real-mode stub
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const onSuccess = vi.fn()
+  result.current.updateMusclePriorities('meso-hyp-04', { chest: 'emphasize' }, { onSuccess })
+  await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  // The write must STICK — not get silently reverted by a re-resolve of the frozen fixture
+  // (the mock-cache clobber trap: a queryFn without staleTime/cache-first reads regresses a
+  // just-written setQueryData edit back to the static seed).
+  expect(result.current.mesocycles.find((m) => m.id === 'meso-hyp-04')?.musclePriorities).toEqual({
+    chest: 'emphasize',
+  })
+})
+
 test('useTrain (real mode) returns nulls (no static fallback) when the backend is empty', async () => {
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),

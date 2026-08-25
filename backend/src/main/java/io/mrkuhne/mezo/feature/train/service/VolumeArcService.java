@@ -86,7 +86,7 @@ public class VolumeArcService {
 
         List<MuscleVolumeArc> muscles = volumeLogRepository
             .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(mesoId)).stream()
-            .map(row -> buildMuscleArc(row, phaseCurve, weeks, currentWeek, actualByGroupWeek))
+            .map(row -> buildMuscleArc(row, meso, phaseCurve, weeks, currentWeek, actualByGroupWeek))
             .toList();
 
         return MesocycleVolumeArcResponse.builder()
@@ -116,13 +116,16 @@ public class VolumeArcService {
         return byGroupWeek;
     }
 
-    private MuscleVolumeArc buildMuscleArc(MuscleGroupVolumeLogEntity row, List<String> phaseCurve,
-            int weeks, int currentWeek, Map<String, Map<Integer, Integer>> actualByGroupWeek) {
+    private MuscleVolumeArc buildMuscleArc(MuscleGroupVolumeLogEntity row, MesocycleEntity meso,
+            List<String> phaseCurve, int weeks, int currentWeek,
+            Map<String, Map<Integer, Integer>> actualByGroupWeek) {
         String muscle = row.getMuscle(); // already the coarse volume-group key
         int mev = row.getMev();
         int mrv = row.getMrv();
+        PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), muscle);
+        int ceiling = tier.ceiling(mev, row.getMav(), mrv);
         Map<Integer, Integer> actuals = actualByGroupWeek.getOrDefault(muscle, Map.of());
-        int[] planned = plannedScaffold(phaseCurve, weeks, mev, mrv);
+        int[] planned = plannedScaffold(phaseCurve, weeks, mev, ceiling);
 
         List<VolumeArcWeek> weekList = new ArrayList<>(weeks);
         for (int w = 1; w <= weeks; w++) {
@@ -144,10 +147,13 @@ public class VolumeArcService {
     }
 
     /**
-     * Planned-set scaffold (spec DA7): week 1 starts at MEV, deload weeks drop to {@code round(mrv *
-     * deloadFraction)} (ramp untouched), every other week ramps by {@code step} up to a ceiling of MRV.
+     * Planned-set scaffold (spec DA7, GD4): week 1 starts at MEV, deload weeks drop to {@code
+     * round(ceiling * deloadFraction)} (ramp untouched), every other week ramps by {@code step} up
+     * to the muscle's tier {@code ceiling} (Emphasize MRV / Grow MAV / Maintain MEV — mezo-3m5m,
+     * AD4). The arc RESPONSE still reports the row's raw {@code mrv} untouched (see {@link
+     * MuscleVolumeArc#getMrv()}) — only this internal scaffold shifts with the tier.
      */
-    private int[] plannedScaffold(List<String> phaseCurve, int weeks, int mev, int mrv) {
+    private int[] plannedScaffold(List<String> phaseCurve, int weeks, int mev, int ceiling) {
         int[] planned = new int[weeks];
         int ramp = mev;
         for (int w = 1; w <= weeks; w++) {
@@ -155,9 +161,9 @@ public class VolumeArcService {
                 planned[w - 1] = mev;
                 ramp = mev;
             } else if (PHASE_DELOAD.equalsIgnoreCase(phaseAt(phaseCurve, w))) {
-                planned[w - 1] = round(mrv, props.deloadFraction());
+                planned[w - 1] = round(ceiling, props.deloadFraction());
             } else {
-                ramp = Math.min(ramp + props.step(), mrv);
+                ramp = Math.min(ramp + props.step(), ceiling);
                 planned[w - 1] = ramp;
             }
         }

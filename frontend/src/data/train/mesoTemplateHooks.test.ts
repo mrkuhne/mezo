@@ -197,6 +197,76 @@ describe('useMesoTemplates', () => {
     expect(updated!.goalPreset).toBe('strength')
   })
 
+  it('musclePriorities survives the template hydrate round-trip (real mode GET)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () =>
+        HttpResponse.json([
+          {
+            id: 'a10e0000-0000-4000-8000-000000000000',
+            title: 'Hypertrophy 04 · Tavasz',
+            shortTitle: 'Hypertrophy 04',
+            goal: 'Felsőtest hypertrophy · izomtömeg építés',
+            musclePriorities: { back: 'emphasize' },
+            weeks: 6,
+            split: 'Pull / Push / Legs · 5×/hét',
+            style: 'RP · 6 hét',
+            phaseCurve: ['MEV'],
+            runCount: 1,
+            days: [],
+          },
+        ]),
+      ),
+    )
+    const { result } = renderHook(() => useMesoTemplates(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.templates.length).toBeGreaterThan(0))
+    expect(result.current.templates[0].musclePriorities).toEqual({ back: 'emphasize' })
+  })
+
+  it('musclePriorities survives the template save round-trip (mock createTemplate/updateTemplate)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => useMesoTemplates(), { wrapper: makeHookWrapper() })
+    let created: Awaited<ReturnType<typeof result.current.createTemplate>> | undefined
+    await act(async () => {
+      created = await result.current.createTemplate({
+        title: 'Mock Block',
+        musclePriorities: { back: 'emphasize' },
+        weeks: 4,
+        phaseCurve: ['MEV'],
+        days: [],
+      })
+    })
+    expect(created!.musclePriorities).toEqual({ back: 'emphasize' })
+
+    let updated: Awaited<ReturnType<typeof result.current.updateTemplate>> | undefined
+    await act(async () => {
+      updated = await result.current.updateTemplate(created!.id, {
+        title: 'Mock Block',
+        musclePriorities: { back: 'emphasize' },
+        weeks: 4,
+        phaseCurve: ['MEV'],
+        days: [],
+      })
+    })
+    expect(updated!.musclePriorities).toEqual({ back: 'emphasize' })
+  })
+
+  it('musclePriorities is stamped onto the run by mock startTemplate', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => useMesoTemplates(), { wrapper: makeHookWrapper() })
+    // mesoTemplatesMock[1] ("Upper/Lower Power") carries musclePriorities: { back: 'emphasize' }
+    // (mezo-3m5m demo fixture) — starting it must carry that map onto the new run, not
+    // silently reset it to all-Grow (the mezo-gbo7 stamp-path defect class re-armed).
+    let run: Awaited<ReturnType<typeof result.current.startTemplate>> | undefined
+    await act(async () => {
+      run = await result.current.startTemplate('b20f0000-0000-4000-8000-000000000000', {
+        startDate: '2026-06-16',
+        status: 'planned',
+      })
+    })
+    expect(run!.musclePriorities).toEqual({ back: 'emphasize' })
+  })
+
   it('mock mode: rerun on a legacy (untemplated) meso materializes a fresh template and stamps the meso', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'true')
     const { qc, wrapper } = wrap()

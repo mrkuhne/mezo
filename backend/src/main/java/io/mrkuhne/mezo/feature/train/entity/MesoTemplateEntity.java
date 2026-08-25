@@ -54,6 +54,11 @@ public class MesoTemplateEntity extends OwnedEntity {
     @Column(name = "goal_preset")
     private String goalPreset;
 
+    /** Sparse per-coarse-muscle priority tiers ("emphasize"/"maintain"; absent key = grow); null = all grow (mezo-3m5m). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "muscle_priorities", columnDefinition = "jsonb")
+    private Map<String, String> musclePriorities;
+
     @NotNull
     @Column(nullable = false)
     private Integer weeks;

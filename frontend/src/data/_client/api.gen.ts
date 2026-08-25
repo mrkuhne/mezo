@@ -143,6 +143,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/muscle-priorities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the run's muscle priority tier map — takes effect at the next weekly rollover (mezo-3m5m) */
+        put: operations["updateMesocycleMusclePriorities"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles/{id}/report": {
         parameters: {
             query?: never;
@@ -3207,6 +3224,10 @@ export interface components {
             goal?: string;
             /** @description Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60) */
             goalPreset?: string | null;
+            /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m) */
+            musclePriorities?: {
+                [key: string]: string;
+            } | null;
             /** Format: date */
             startDate: string;
             /** Format: date */
@@ -3243,6 +3264,10 @@ export interface components {
             goal?: string | null;
             /** @description Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60) */
             goalPreset?: string | null;
+            /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m) */
+            musclePriorities?: {
+                [key: string]: string;
+            } | null;
             weeks: number;
             split?: string | null;
             style?: string | null;
@@ -3384,6 +3409,10 @@ export interface components {
             goal?: string | null;
             /** @description Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60) */
             goalPreset?: string | null;
+            /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m) */
+            musclePriorities?: {
+                [key: string]: string;
+            } | null;
             weeks: number;
             split?: string | null;
             style?: string | null;
@@ -3400,6 +3429,12 @@ export interface components {
             startDate: string;
             /** @enum {string} */
             status: "active" | "planned";
+        };
+        MusclePrioritiesUpdateRequest: {
+            /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m) */
+            musclePriorities?: {
+                [key: string]: string;
+            } | null;
         };
         MesoRerunResponse: {
             /** Format: uuid */
@@ -7009,6 +7044,50 @@ export interface operations {
                 };
             };
             /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateMesocycleMusclePriorities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MusclePrioritiesUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated mesocycle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found or not owned */
             404: {
                 headers: {
                     [name: string]: unknown;

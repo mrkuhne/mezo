@@ -29,17 +29,19 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
     @Test
     void testRollover_shouldRampMuscleAndAdvanceWeek_whenCalendarWeekIsAhead() {
         UUID owner = ownerId();
-        // Active meso: startDate = 14 days ago, weeks=6 → calWeek=3; lastRun null; chest currentSets=14 (mev8/mav14/mrv20).
+        // Active meso: startDate = 14 days ago, weeks=6 → calWeek=3; lastRun null; chest currentSets=10
+        // (mev8/mav14/mrv20) — below the MAV ceiling so a no-priority (Grow) ramp is observable
+        // (mezo-3m5m, GD4: Grow's ceiling is MAV, not MRV — a row already sat AT MAV would HOLD).
         var meso = train.activeMesoStartedWeeksAgo(
             owner, 2, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
-        train.createVolumeLog(owner, meso.getId(), "chest", 14);
+        train.createVolumeLog(owner, meso.getId(), "chest", 10);
         // A completed instance in week 2's window logging 14 chest working sets (targetHit, no grind: rir 1, targetRir 1).
         train.completedChestSetsInWeek(owner, meso, 2, 14, 1, 1);
 
         svc.rolloverIfDue(owner, reload(meso));
 
         MuscleGroupVolumeLogEntity chest = chestLog(owner, meso.getId());
-        assertThat(chest.getCurrentSets()).isEqualTo(16); // 14 + step(2)
+        assertThat(chest.getCurrentSets()).isEqualTo(12); // 10 + step(2)
         var after = reload(meso);
         assertThat(after.getCurrentWeek()).isEqualTo(3);
         assertThat(after.getVolumeRecompute().lastRun()).isEqualTo("W3");
@@ -49,7 +51,7 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
         // idempotent: a second rollover in the same calendar week does nothing.
         svc.rolloverIfDue(owner, reload(meso));
         MuscleGroupVolumeLogEntity chest2 = chestLog(owner, meso.getId());
-        assertThat(chest2.getCurrentSets()).isEqualTo(16);
+        assertThat(chest2.getCurrentSets()).isEqualTo(12);
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W3");
     }
 

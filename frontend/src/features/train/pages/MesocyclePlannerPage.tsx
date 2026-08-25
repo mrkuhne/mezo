@@ -1,25 +1,30 @@
 // ============================================================
-// Mezo · MesocyclePlannerPage — 4-step AI-guided new-mesocycle planner.
+// Mezo · MesocyclePlannerPage — 5-step AI-guided new-mesocycle planner.
 // Full-screen sibling route (/train/mesocycles/new): own back-button header,
-// 4-segment progress bar, eyebrow brand step counter, per-step page title and
-// footer nav. The terminal step (3) hosts the AI program review + set/rep
+// 5-segment progress bar, eyebrow brand step counter, per-step page title and
+// footer nav. The terminal step (4) hosts the AI program review + set/rep
 // tuning on the unified MesoEditor (day tabs, set-budget card, accordion
 // recipe rows) and the two save actions.
 //   Step 0 · Cél             → goal preset picker (prefills the rest)
 //   Step 1 · Hossz + fázisok → name / start / length / phase-curve editor
 //   Step 2 · Split + napok   → split picker + days-per-week
-//   Step 3 · Program         → generateProgram review + MesoEditor (day tabs,
+//   Step 3 · Fókusz          → MusclePriorityPicker (which muscle groups this
+//                              block emphasizes/maintains) — always passable,
+//                              never wipes a hand-edited program (mezo-3m5m)
+//   Step 4 · Program         → generateProgram review + MesoEditor (day tabs,
 //                              set-budget card, accordion set/rep tuning) + save
 // Ported from prototype meso-planner.jsx MesocyclePlannerPage + its step parts.
-// Steps 3+4 (program review, set/rep tuning) merged into one terminal step on
-// the unified MesoEditor (mezo-7rdg Task 6) — MesoDayTabsEditor/PlannerDaySection retired.
+// Steps 3+4 of the ORIGINAL prototype (program review, set/rep tuning) merged
+// into one terminal step on the unified MesoEditor (mezo-7rdg Task 6) —
+// MesoDayTabsEditor/PlannerDaySection retired. The Fókusz step added later
+// (mezo-3m5m) sits before that terminal step, shifting it to index 4.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
-import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, SplitOption } from '@/data/types'
+import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, MusclePriorities, SplitOption } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { huMonthDay } from '@/shared/lib/dates'
 import { DAY_ORDER, GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
@@ -30,18 +35,24 @@ import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, step
 import type { PlannerDay } from '@/features/train/logic/planner'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
+import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { toDayInputs } from '@/features/train/logic/mesoDays'
 import { MiniStat } from '@/features/train/components/MiniStat'
 
-const STEP_COUNT = 4
+const STEP_COUNT = 5
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
 const CORAL_TINT = 'var(--primary-bg)'
 
+// Same text as MusclePriorityPicker's own card header — intentional (this is
+// the chrome page title, the picker's header lives inside the step body;
+// other steps also keep their chrome title distinct from the body copy, but
+// here the picker's heading IS the natural title for the step).
 const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
   'Mennyi időnk van?',
   'Hogyan osszuk be?',
+  'Mire gyúr ez a blokk?',
   'A programod · gyakorlatok + set & rep',
 ] as const
 
@@ -71,6 +82,10 @@ export function MesocyclePlannerPage() {
   const [daysTouched, setDaysTouched] = useState(false)
   // Lifted from Step3 so the terminal save buttons can read the reviewed/edited program.
   const [program, setProgram] = useState<PlannerDay[] | null>(null)
+  // Fókusz step (mezo-3m5m): per-coarse-muscle tier picks. Deliberately NOT part of
+  // programSignature below (AD6) — a tier change must never regenerate/wipe a
+  // hand-edited program — and never reset in selectGoal either.
+  const [priorities, setPriorities] = useState<MusclePriorities>({})
 
   // Gym times (mezo-4t43): each selected day prefills from the standing weekly schedule
   // (gymSlots, the Train-owned WHEN); a day with no slot defaults to 18:00. `dayTimes` holds
@@ -93,7 +108,10 @@ export function MesocyclePlannerPage() {
   const generatedFor = useRef<string | null>(null)
   const programSignature = `${goal?.id ?? ''}|${split?.label ?? ''}|${days}|${selectedDays.join(',')}`
   useEffect(() => {
-    if (step < 3) return
+    // step < 4: Program is the new terminal step (index 4) — generation still only
+    // kicks in once the wizard reaches it, unchanged from before the Fókusz step
+    // insertion. Browsing Fókusz (step 3) never triggers or disturbs this.
+    if (step < 4) return
     if (generatedFor.current === programSignature) return
     setProgram(null)
     const timer = setTimeout(() => {
@@ -194,6 +212,7 @@ export function MesocyclePlannerPage() {
       shortTitle: goal?.label,
       goal: goal?.description,
       goalPreset: goal?.id,
+      musclePriorities: Object.keys(priorities).length ? priorities : null,
       weeks,
       split: split ? `${split.label} · ${days}×/hét` : `${days}×/hét`,
       style: goal?.style ?? `${weeks} hét`,
@@ -226,7 +245,7 @@ export function MesocyclePlannerPage() {
 
   const canNext =
     (step === 0 && !!goal) || (step === 1 && weeks > 0)
-    || (step === 2 && selectedDays.length === days) || step === 3
+    || (step === 2 && selectedDays.length === days) || step === 3 // Fókusz — always passable
 
   const handleBack = () => {
     if (step > 0) setStep(step - 1)
@@ -311,13 +330,15 @@ export function MesocyclePlannerPage() {
           onTimeChange={setTimeForDay}
         />
       )}
-      {step === 3 && (
-        <Step3Program
+      {step === 3 && <Step3Focus priorities={priorities} onChange={setPriorities} />}
+      {step === 4 && (
+        <Step4Program
           goal={goal}
           name={name}
           weeks={weeks}
           days={days}
           program={program}
+          priorities={priorities}
           onAdd={addExercise}
           onRemove={removeExercise}
           onChange={updateExercise}
@@ -328,7 +349,7 @@ export function MesocyclePlannerPage() {
 
       {/* Nav */}
       <div style={{ padding: '16px 24px 32px' }}>
-        {step < 3 && (
+        {step < 4 && (
           <div className="row gap-sm">
             {step > 0 && (
               <button
@@ -356,7 +377,7 @@ export function MesocyclePlannerPage() {
             </button>
           </div>
         )}
-        {step === 3 && (
+        {step === 4 && (
           <div className="col gap-sm">
             <button
               type="button"
@@ -793,7 +814,7 @@ function Step2Split({
           <div className="col flex-1">
             <span className="eyebrow brand">Gyakorlatok · automatikusan</span>
             <p style={{ fontSize: 14, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
-              A Mezo a STIM/fatigue rangsor + niggle-aware substitúció + korábbi mesók kedvenc gyakorlatai alapján kitölti. A 4.
+              A Mezo a STIM/fatigue rangsor + niggle-aware substitúció + korábbi mesók kedvenc gyakorlatai alapján kitölti. Az 5.
               lépésben átnézzük, és bármit cserélhetsz.
             </p>
           </div>
@@ -803,14 +824,29 @@ function Step2Split({
   )
 }
 
-// === Step 3 (terminal): AI-generated program review + set/rep tuning on the
+// === Step 3: Fókusz — muscle priority tier picker (mezo-3m5m). Always
+// passable; deliberately never touches `program` — the picker only feeds the
+// terminal step's MesoEditor budget/fit cards, it never regenerates anything. ===
+function Step3Focus({ priorities, onChange }: { priorities: MusclePriorities; onChange: (next: MusclePriorities) => void }) {
+  return (
+    <div style={{ padding: '8px 24px' }}>
+      <p className="text-secondary" style={{ fontSize: 16, lineHeight: 1.5, marginBottom: 16 }}>
+        <SafeMarkdown text="Daniel — mielőtt legenerálnánk a programot: melyik izomcsoportokra gyúrjunk rá ebben a blokkban? A hangsúlyos csoportok MRV-ig mennek fel, a többi a szokásos MAV-ütemben nő." />
+      </p>
+      <MusclePriorityPicker value={priorities} onChange={onChange} />
+    </div>
+  )
+}
+
+// === Step 4 (terminal): AI-generated program review + set/rep tuning on the
 // unified MesoEditor (day tabs, set-budget card, accordion recipe rows) ===
-function Step3Program({
+function Step4Program({
   goal,
   name,
   weeks,
   days,
   program,
+  priorities,
   onAdd,
   onRemove,
   onChange,
@@ -822,6 +858,7 @@ function Step3Program({
   weeks: number
   days: number
   program: PlannerDay[] | null
+  priorities: MusclePriorities
   onAdd: (dayName: string, item: ExerciseLibraryItem) => void
   onRemove: (dayName: string, exId: string) => void
   onChange: (dayName: string, exId: string, patch: Partial<GymExercise>) => void
@@ -914,6 +951,7 @@ function Step3Program({
         onChange={onChange}
         onReorder={onReorder}
         onRenameDay={onRename}
+        priorities={priorities}
       />
 
       {pickerDay && (

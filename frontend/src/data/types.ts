@@ -1012,6 +1012,13 @@ export interface MesoVolumeArc {
   muscles: MuscleVolumeArc[]
 }
 
+// Per-coarse-muscle priority tier (mezo-3m5m, spec GD4): picks which volume landmark is
+// "100%" for the weekly ramp — emphasize -> MRV, grow (default/absent key) -> MAV,
+// maintain -> MEV (flat, no ramp). Mirrors the backend's PriorityTier enum.
+export type MuscleTier = 'emphasize' | 'grow' | 'maintain'
+// Sparse per-coarse-muscle map (absent key = grow); null/empty = all grow.
+export type MusclePriorities = Record<string, MuscleTier>
+
 export interface Mesocycle {
   id: string
   status: MesoStatus
@@ -1019,6 +1026,7 @@ export interface Mesocycle {
   shortTitle: string
   goal: string
   goalPreset?: string | null
+  musclePriorities?: MusclePriorities | null
   startDate: string
   endDate: string
   weeks: number
@@ -1046,6 +1054,7 @@ export interface MesoTemplate {
   shortTitle: string | null
   goal: string | null
   goalPreset?: string | null
+  musclePriorities?: MusclePriorities | null
   weeks: number
   split: string | null
   style: string | null
