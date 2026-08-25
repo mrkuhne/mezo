@@ -164,10 +164,15 @@ export function muscleBudgets(
       const target = lm ? tierTargetOf(tier, lm) : null
       const mev = lm ? lm.mev : null
       const budget = target !== null ? r.workingSets / target : null
+      // Maintain's target IS the landmark mev (tierTargetOf) — 'near' is a ramp-approaching-
+      // ceiling concept (grow/emphasize: target > mev) that has no meaning when the target is
+      // the floor itself, so it's skipped for Maintain. Without this, [0.85·mev, mev) reads as
+      // 'near' and mev itself as impossible to reach as 'ok' — holding exactly at MEV must be
+      // 'ok', not an amber alarm (spec GD5's own "Farizom · Maintain · 100%" example).
       const level: BudgetLevel =
         target === null ? 'ok'
           : r.workingSets > target ? 'over'
-            : budget !== null && budget >= NEAR_THRESHOLD ? 'near'
+            : tier !== 'maintain' && budget !== null && budget >= NEAR_THRESHOLD ? 'near'
               : mev !== null && r.workingSets < mev ? 'under'
                 : 'ok'
       return {

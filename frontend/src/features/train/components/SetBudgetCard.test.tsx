@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { MuscleBudgetRow, SessionCapWarning } from '@/features/train/logic/setBudget'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
+import { muscleColor } from '@/features/train/logic/muscleColors'
 
 // Recomputed against the tier-target model (mezo-3m5m, spec GD5): budget = workingSets / target,
 // target sourced from GROUP_LANDMARKS (chest {mev:8,mav:14,mrv:20}) via the row's own tier.
@@ -56,6 +57,18 @@ describe('pill format (AD1, mezo-3m5m)', () => {
   it('Grow pill stays compact: `Comb 67%`', () => {
     render(<SetBudgetCard budgets={[ok]} capWarnings={[]} />)
     expect(screen.getByText('Comb 67%')).toBeInTheDocument()
+  })
+
+  // Fix round 2 (mezo-3m5m): Maintain's target IS the landmark mev — holding exactly at it is
+  // the spec's own canonical "good" state (GD5: "Farizom · Maintain · 100%"), level 'ok', so the
+  // pill must render with the NEUTRAL muscle-family colors, never the amber 'near' alarm.
+  const maintainAtMev: MuscleBudgetRow = { group: 'glute', label: 'Farizom', colorMuscle: 'glute', failureSets: 8, volumeSets: 0, workingSets: 8, exemptSets: 0, tier: 'maintain', target: 8, budget: 1, level: 'ok', mev: 8, zoneStart: 1, setsToZone: 0, suggestedDay: null }
+  it('Maintain at exactly MEV renders `Farizom · Maintain · 100%` with neutral family colors, not amber', () => {
+    render(<SetBudgetCard budgets={[maintainAtMev]} capWarnings={[]} />)
+    const pill = screen.getByText('Farizom · Maintain · 100%')
+    expect(pill).toBeInTheDocument()
+    expect(pill).toHaveStyle({ background: muscleColor('glute').wash })
+    expect(pill).not.toHaveStyle({ background: 'var(--wash-amber)' })
   })
   it('target-less pill shows a plain set count: `Trapéz · 3 szett`', () => {
     render(<SetBudgetCard budgets={[traps]} capWarnings={[]} />)

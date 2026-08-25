@@ -104,6 +104,18 @@ describe('muscleBudgets — tier target math (mezo-3m5m, GD5)', () => {
     expect(rows[0]).toMatchObject({ tier: 'maintain', target: 10, level: 'over' })
     expect(rows[0].budget).toBeCloseTo(1.4)
   })
+  // Fix round 2: Maintain's target IS the landmark mev, so 'near' (a ramp-approaching-ceiling
+  // concept) is skipped for it — holding exactly at MEV is the spec's own canonical "good" state
+  // (GD5: "Farizom · Maintain · 100%"), not an amber near-ceiling alarm.
+  it('Maintain exactly at MEV is "ok", not "near" (spec GD5\'s canonical Farizom · Maintain · 100%)', () => {
+    const rows = muscleBudgets([day('H', 'glute', [ex('glute', 8, 0)])], { glute: 'maintain' })
+    expect(rows[0]).toMatchObject({ tier: 'maintain', target: 8, level: 'ok' })
+    expect(rows[0].budget).toBeCloseTo(1)
+  })
+  it('Maintain one set below MEV is "under" — pins the boundary the fix must not blur', () => {
+    const rows = muscleBudgets([day('H', 'glute', [ex('glute', 7, 0)])], { glute: 'maintain' })
+    expect(rows[0]).toMatchObject({ tier: 'maintain', target: 8, level: 'under' })
+  })
   it('a group with no landmark at all (traps) gets a null target/budget and level ok', () => {
     const rows = muscleBudgets([day('H', 'back', [ex('traps', 3, 0)])])
     expect(rows[0]).toMatchObject({ group: 'traps', target: null, budget: null, mev: null, level: 'ok' })
