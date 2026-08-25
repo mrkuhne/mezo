@@ -7078,6 +7078,15 @@ export interface operations {
                     "application/json": components["schemas"]["MesocycleResponse"];
                 };
             };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Missing/invalid token */
             401: {
                 headers: {

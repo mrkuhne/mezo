@@ -47,3 +47,43 @@ test('editing an existing custom workout prefills name + exercises', () => {
   expect(screen.getByText('Incline DB Press')).toBeInTheDocument()
   expect(screen.getByText('Lateral Raise')).toBeInTheDocument()
 })
+
+// Reads the numeric value shown by an ExerciseRecipeRow stepper. Anchored on the
+// field's own "növelése" (increase) button, which carries a name-scoped
+// `${exerciseName} · ${field}` aria-label — stable regardless of duplicate visible
+// text elsewhere (e.g. the picker sheet still shows the same exercise name). The
+// value <span> is the increase button's own row-sibling (see ExerciseRecipeRow's
+// RecipeStepper: <div row>[<span value>, <div buttons>[dec, inc]]).
+function stepperValue(exerciseName: string, field: string): string | null {
+  const incBtn = screen.getByRole('button', { name: `${exerciseName} · ${field} növelése` })
+  const valueSpan = incBtn.parentElement?.previousElementSibling
+  return valueSpan?.textContent ?? null
+}
+
+test('mezo-szsi item 1: adding a plyo via the picker yields the fixed weightless PLYO scheme (3x5 RIR0, 0 warmup)', async () => {
+  // The static mock exerciseLibrary (data/train/train.ts) carries no plyo fixture
+  // (trainHooks.test.tsx pins its length at 21, all compound/isolation) — switch
+  // to real mode for this test so the picker loads the msw API-catalog fixture,
+  // which does have one ("Box Jump", quad/plyo, handlers.ts), same pattern as
+  // ExercisePickerSheet.test.tsx's "plyo chip filters by type in real mode" test.
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  renderAt('/train/custom/new')
+  fireEvent.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
+  fireEvent.click(await screen.findByRole('button', { name: /Box Jump/ }))
+  expect(stepperValue('Box Jump', 'Bemelegítő')).toBe('0')
+  expect(stepperValue('Box Jump', 'Working')).toBe('3')
+  expect(stepperValue('Box Jump', 'Rep min')).toBe('5')
+  expect(stepperValue('Box Jump', 'Rep max')).toBe('5')
+  expect(stepperValue('Box Jump', 'RIR')).toBe('0')
+})
+
+test('mezo-szsi item 1: a compound pick still gets the shared hypertrophy scheme (4x8-10 RIR1)', () => {
+  renderAt('/train/custom/new')
+  fireEvent.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
+  // "Chest Supported Row" is a mock catalog compound fixture.
+  fireEvent.click(screen.getByRole('button', { name: /Chest Supported Row/ }))
+  expect(stepperValue('Chest Supported Row', 'Working')).toBe('4')
+  expect(stepperValue('Chest Supported Row', 'Rep min')).toBe('8')
+  expect(stepperValue('Chest Supported Row', 'Rep max')).toBe('10')
+  expect(stepperValue('Chest Supported Row', 'RIR')).toBe('1')
+})

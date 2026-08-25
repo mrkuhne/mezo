@@ -154,8 +154,10 @@ public class MesoTemplateService {
         // Normalize {} to NULL just like TrainService#updateMusclePriorities does for a run's PUT
         // (mezo-3m5m final review, fix 4) — otherwise an empty map persists here while the run
         // path normalizes it away, an observable asymmetry between the two upsert paths.
-        template.setMusclePriorities(req.getMusclePriorities() == null || req.getMusclePriorities().isEmpty()
-            ? null : req.getMusclePriorities());
+        // PriorityTier.normalize also drops redundant `grow` entries and 400s on unknown tier
+        // values, same as the run PUT (mezo-ltk0, tier-review follow-up 2).
+        Map<String, String> normalizedPriorities = PriorityTier.normalize(req.getMusclePriorities());
+        template.setMusclePriorities(normalizedPriorities.isEmpty() ? null : normalizedPriorities);
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());

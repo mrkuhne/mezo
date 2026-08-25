@@ -27,6 +27,9 @@ test('useTrain (real mode) fetches mesocycles, formats display dates, derives ac
   expect(active.title).toBe('Hypertrophy 04 · Tavasz')
   expect(active.startDate).toBe('Máj 1') // ISO 2026-05-01 -> HU display
   expect(active.volumePerMuscle?.chest.source.confidence).toBe(0.78)
+  // toMesocycle narrows musclePriorities explicitly (mezo-ltk0) rather than leaving it to the
+  // blanket `...r` spread + `as Mesocycle` cast — pin that it survives the mapping on the read path.
+  expect(active.musclePriorities).toEqual({ back: 'emphasize' })
 })
 
 test('useTrain (real mode) fetches sport sessions with computed HU date labels', async () => {

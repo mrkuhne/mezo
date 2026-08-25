@@ -66,7 +66,7 @@ export function MusclePriorityPicker({ value, onChange }: MusclePriorityPickerPr
                       aria-pressed={pressed}
                       disabled={disabled}
                       onClick={() => onChange(setTier(value ?? {}, group, tier))}
-                      style={{ flex: 1, minHeight: 36, padding: '6px 8px', fontSize: 12.5 }}
+                      style={{ flex: 1, padding: '6px 8px', fontSize: 12.5 }}
                     >
                       {TIER_LABELS[tier]}
                     </button>

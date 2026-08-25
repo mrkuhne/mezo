@@ -136,6 +136,9 @@ export function toMesocycle(r: MesocycleResponse): Mesocycle {
     startDate: huMonthDay(r.startDate),
     endDate: huMonthDay(r.endDate),
     goal: r.goal ?? '',
+    // Narrowed explicitly (mezo-ltk0) rather than left to the blanket spread above + the
+    // `as Mesocycle` cast — mirrors mesoTemplateHooks.ts's toMesoTemplate.
+    musclePriorities: (r.musclePriorities as MusclePriorities | null) ?? null,
   } as Mesocycle
 }
 

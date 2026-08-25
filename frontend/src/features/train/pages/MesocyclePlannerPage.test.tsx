@@ -140,8 +140,11 @@ test('emphasizing a muscle group on the Fókusz step travels with the saved temp
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
   // step indicator: the new step lands at index 3 (4th, 1-indexed)
   expect(screen.getByRole('button', { name: '4. lépés · Fókusz' })).toBeInTheDocument()
-  // the chrome page title and the picker's own card header intentionally share this text
-  expect(screen.getByRole('heading', { name: 'Mire gyúr ez a blokk?' })).toBeInTheDocument()
+  // RULING (mezo-ltk0): the chrome title is the short step name; the picker's own card
+  // header is the ONLY place asking the question — pin both so the duplicate can't creep back.
+  expect(screen.getByRole('heading', { name: 'Fókusz' })).toBeInTheDocument()
+  // getByText throws on >1 match — this pins the question renders exactly once.
+  expect(screen.getByText('Mire gyúr ez a blokk?')).toBeInTheDocument()
   // emphasize the "back" group via the MusclePriorityPicker
   await user.click(within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Emphasize' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
