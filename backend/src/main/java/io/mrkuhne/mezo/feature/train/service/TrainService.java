@@ -252,7 +252,8 @@ public class TrainService {
     @Transactional
     public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities) {
         MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
-        m.setMusclePriorities(priorities == null || priorities.isEmpty() ? null : Map.copyOf(priorities));
+        Map<String, String> normalized = PriorityTier.normalize(priorities);
+        m.setMusclePriorities(normalized.isEmpty() ? null : Map.copyOf(normalized));
         return assembleResponse(createdBy, m);
     }
 
