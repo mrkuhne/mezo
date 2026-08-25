@@ -32,10 +32,17 @@ public interface FeedMessageKindSource {
     String KIND_WEIGHT = "weight";
     String KIND_MIDDAY = "midday";
     String KIND_EVENING = "evening";
+    String KIND_INTERVENTION = "intervention";
 
     /** {@code (companion_message.id → kind)} for every id in {@code feedMessageIds} that is both a
      *  live {@code companion_message} row AND owned by {@code userId}; an id with no match (a
      *  dangling artifact_id — spec §8.1 names that harmless in a single-user app — or one belonging
      *  to a different user) is simply absent from the map. */
     Map<UUID, String> kindsByIds(UUID userId, Collection<UUID> feedMessageIds);
+
+    /** {@code (companion_message.id → envelope interventionKey)} for every id that is a live,
+     *  user-owned intervention-kind row WITH a non-null key; every other id is absent. W5.2's
+     *  (bd mezo-b3pp.19) per-intervention rollup join, same dangling-id contract as
+     *  {@link #kindsByIds}. */
+    Map<UUID, String> interventionKeysByIds(UUID userId, Collection<UUID> feedMessageIds);
 }

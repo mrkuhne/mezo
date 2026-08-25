@@ -127,6 +127,12 @@ function backendAnchorMinute(
       // An honest "no resolvable anchor", never a fabricated 09:00 that may not fire (same
       // contract as sleep_reaction/weight_reaction above).
       return null
+    case 'intervention':
+      // Event-born card (W5.2, mezo-b3pp.19): the anchor is the intervention card's OWN
+      // generation minute, further quiet-hours-deferred — neither fact is knowable client-side
+      // ahead of the flag raise. Same honest "no resolvable anchor" contract as the rest of
+      // this feed-anchored family.
+      return null
   }
 }
 

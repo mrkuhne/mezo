@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
@@ -40,6 +41,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +52,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 21 categories'
+ * The impure half of the dispatcher (bd mezo-h4wp.6.2, mezo-gst9): reads every one of the 22 categories'
  * anchors for one owner+day into an {@link AnchorSet}, the pure {@link DueEvaluator}'s input.
  * A wrong read here produces a notification at the wrong minute or, worse, a per-minute write
  * storm — see the class-by-class notes below, each pinned to a verified trap.
@@ -133,6 +135,7 @@ public class AnchorResolver {
     private final ProactiveProperties proactiveProperties;
     private final AppNotificationRepository appNotificationRepository;
     private final DecisionEntryRepository decisionEntryRepository;
+    private final CompanionProperties companionProperties;
 
     @Transactional(readOnly = true)
     public AnchorSet resolve(UUID owner, LocalDate date) {
@@ -140,6 +143,7 @@ public class AnchorResolver {
         medicationAnchor(owner, date).ifPresent(backendAnchors::add);
         ritualFamilyAnchors(owner, date, backendAnchors);
         backendAnchors.addAll(decisionReviewAnchors(owner, date));
+        backendAnchors.addAll(interventionAnchors(owner, date));
         backendAnchors.addAll(feedAnchors(owner, date));
 
         List<AnchoredEvent> proseAnchors = new ArrayList<>();
@@ -267,6 +271,79 @@ public class AnchorResolver {
                         minuteOfDay(time), time + ":" + decision.getId().toString().substring(0, 8),
                         "Hogyan sült el?", excerptProse(decision.getDecisionText()), URL_JOURNAL))
                 .toList();
+    }
+
+    // ---- intervention (companion_message kind=intervention, W5.2 bd mezo-b3pp.19) --------------
+
+    /**
+     * The card's own generation minute is the anchor (the sleep_reaction rule), except that a
+     * non-exempt card generated in quiet hours is DEFERRED to quiet-hours end — possibly onto the
+     * next day, which is why yesterday's card is consulted too. Channel gate: a library entry
+     * with {@code channel=feed} (or a key no longer in the library — honest absence) yields no
+     * push anchor at all. Dedup carries the row id fragment and the url a {@code ?n=}
+     * discriminator (the feed-anchor shape): /today is also briefing/midday/evening's deeplink,
+     * and push-sw.js uses the url as the notification tag — a bare /today intervention push would
+     * REPLACE the day's briefing on the phone.
+     */
+    private List<AnchoredEvent> interventionAnchors(UUID owner, LocalDate date) {
+        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        List<AnchoredEvent> events = new ArrayList<>();
+        for (LocalDate cardDate : List.of(date.minusDays(1), date)) {
+            companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(owner, cardDate, CompanionMessageEntity.KIND_INTERVENTION)
+                .ifPresent(msg -> {
+                    String key = msg.getContent().interventionKey();
+                    Optional<CompanionProperties.Intervention> entry = companionProperties.interventions()
+                        .stream().filter(e -> e.key().equals(key)).findFirst();
+                    if (entry.isEmpty() || "feed".equals(entry.get().channel())) {
+                        return; // feed-only entry or retired key — no push, ever
+                    }
+                    LocalDateTime generatedAt =
+                        LocalDateTime.ofInstant(msg.getGeneratedAt(), ZoneId.systemDefault());
+                    interventionFireMinute(generatedAt, date, entry.get().quietHoursExempt(),
+                            quietStart, quietEnd)
+                        .ifPresent(minute -> {
+                            String idFragment = msg.getId().toString().substring(0, 8);
+                            // Deliberately mirrors InterventionService.EYEBROW as a literal — kept
+                            // literal to avoid a service-layer import into this notification-layer
+                            // resolver for a display string alone.
+                            events.add(new AnchoredEvent(NotificationCategory.INTERVENTION, minute,
+                                hhmm(minute) + ":" + idFragment, "Mezo · észrevétel",
+                                excerptProse(String.join(" ", msg.getContent().body())),
+                                URL_TODAY + "?n=" + idFragment));
+                        });
+                });
+        }
+        return events;
+    }
+
+    /**
+     * When (if at all) an intervention card generated at {@code generatedAt} pushes on
+     * {@code targetDate} (W5.2, bd mezo-b3pp.19). Non-exempt fires inside the quiet window are
+     * deferred to the window's END — a 23:10 card lands at next-day 07:00, which is exactly why
+     * this is computed per target date instead of assuming same-day: the resolver asks for
+     * yesterday's cards too. Returns empty when the (deferred) fire lands on a different date.
+     */
+    static OptionalInt interventionFireMinute(LocalDateTime generatedAt, LocalDate targetDate,
+            boolean quietHoursExempt, LocalTime quietStart, LocalTime quietEnd) {
+        LocalDateTime fire = generatedAt;
+        if (!quietHoursExempt && !quietStart.equals(quietEnd)) {
+            LocalTime t = generatedAt.toLocalTime();
+            boolean wraps = quietStart.isAfter(quietEnd);
+            boolean quiet = wraps ? !t.isBefore(quietStart) || t.isBefore(quietEnd)
+                                  : !t.isBefore(quietStart) && t.isBefore(quietEnd);
+            if (quiet) {
+                // defer to the NEXT quiet-end at or after the generation moment
+                LocalDate endDay = (wraps && !t.isBefore(quietStart))
+                        ? generatedAt.toLocalDate().plusDays(1) : generatedAt.toLocalDate();
+                fire = endDay.atTime(quietEnd);
+            }
+        }
+        if (!fire.toLocalDate().equals(targetDate)) {
+            return OptionalInt.empty();
+        }
+        return OptionalInt.of(fire.getHour() * 60 + fire.getMinute());
     }
 
     // ---- ritual / lights_out / wind_down ---------------------------------------------------------

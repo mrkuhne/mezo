@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-24
+updated: 2026-08-25
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -13,7 +13,7 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, proactive, today, _platform-api-backend, _platform-auth-security, journal, ritual]
+related: [insights, proactive, today, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -1154,8 +1154,12 @@ source)`, which re-runs the evaluator, drops every raise still inside its own
 survives to `companion_flag_log` with the inputs frozen in `payload` — **the ONLY difference
 between the two triggers is the `source` string** (`FlagKey.SOURCE_WRITE`/`SOURCE_SWEEP`) on the
 row. The write path never fails its caller: the listener catches and logs, the sweep isolates
-per user. Nothing reads these raises yet — **W5.2 is the consumer** that will turn a raise into a
-companion-facing intervention.
+per user. **W5.2 (bd `mezo-b3pp.19`) is now the consumer**: `FlagService.evaluateAndLog` publishes a
+`FlagRaisedEvent(userId, flagKey, source)` for every raise it actually WRITES (post-cooldown, inside
+the same transaction), and `feature.proactive.service.InterventionEventListener` (`@Async
+@TransactionalEventListener(AFTER_COMMIT)` — the `CompanionMessageEventListener` template) turns a
+committed raise into a `companion_message` feed card. See the W5.2 subsection below and
+[`proactive.md`](proactive.md) §3/§4 for the card mechanics.
 
 ## 4. Data model & API
 
@@ -1340,19 +1344,29 @@ nightly, rollup-only aggregation layer over `message_feedback` (spec §4.4/§8.2
   `scope varchar(40)`, `window_days int`, `stats jsonb`, `computed_at timestamptz`. Constraints:
   `pk_feedback_rollup_id`, `fk_feedback_rollup_created_by_app_user_id`,
   **`uq_feedback_rollup_scope (created_by, scope, window_days)`** — the upsert identity —,
-  `ck_feedback_rollup_scope` (`scope = 'style' or scope like 'surface:%' or scope like 'feed:%'`),
+  `ck_feedback_rollup_scope` (`scope = 'style' or scope like 'surface:%' or scope like 'feed:%' or
+  scope like 'intervention:%'` — the `intervention:%` arm is W5.2's, migration
+  `202608241600_mezo-b3pp.19_feedback_rollup_intervention_scope.sql`, CK-swap-only, spec §9.2),
   `ck_feedback_rollup_window_days` (`window_days > 0`). Index
   `idx_feedback_rollup_created_by_scope (created_by, scope)`.
 - **No history** — the nightly job overwrites `stats`/`computed_at` **in place** on the same
   `(created_by, scope, window_days)` row; there is no append-only log of past rollups.
-- **Eleven scopes per user, always** — `surface:chat_message`, `surface:feed_message`,
-  `surface:weekly_suggestion`, `surface:memoir`, `surface:prediction` (per-artifact-kind
-  up/down/total); `feed:morning`, `feed:sleep`, `feed:weight`, `feed:midday`, `feed:evening`
-  (feed-kind resolved by looking `feed_message` artifact ids up against `companion_message.kind`
-  through the `FeedMessageKindSource` port — no FK, spec §8.1's dangling-id precedent, and the
-  lookup is user-scoped so a foreign row can never leak in); and one `style` row (a per-surface down-reason
-  histogram, `FeedbackRollupStatsEnvelope.bySurface`). Every scope is written even at zero counts
-  — a missing row never means "no data", so W4.3/W5.2 don't need to special-case absence.
+- **Eleven fixed scopes per user, always, PLUS one `intervention:<key>` scope per configured
+  library entry (W5.2, currently 6 → 17 rows total)** — `surface:chat_message`,
+  `surface:feed_message`, `surface:weekly_suggestion`, `surface:memoir`, `surface:prediction`
+  (per-artifact-kind up/down/total); `feed:morning`, `feed:sleep`, `feed:weight`, `feed:midday`,
+  `feed:evening` (feed-kind resolved by looking `feed_message` artifact ids up against
+  `companion_message.kind` through the `FeedMessageKindSource` port — no FK, spec §8.1's
+  dangling-id precedent, and the lookup is user-scoped so a foreign row can never leak in); one
+  `style` row (a per-surface down-reason histogram, `FeedbackRollupStatsEnvelope.bySurface`); and,
+  since W5.2, one `intervention:<key>` row per `mezo.companion.interventions[].key` — the same
+  `feed_message`-verdict lookup, filtered to the cards carrying that key
+  (`FeedMessageKindSource.interventionKeysByIds`). An intervention verdict counts in BOTH
+  `surface:feed_message` (it IS a `feed_message` artifact) and its own `intervention:<key>` row —
+  deliberate, not double-counted: `FEED_KINDS` deliberately stays the five prose kinds, so the
+  per-key scope is the only place the selection signal lives. Every scope is written even at zero
+  counts — a missing row never means "no data", so W4.3/`InterventionService` never need to
+  special-case absence.
 - **`FeedbackRollupEntity`** (`feedback/entity/FeedbackRollupEntity.java`, W4.2)
   `extends OwnedEntity`; `stats` is the typed jsonb `FeedbackRollupStatsEnvelope` (the
   `PatternEventPayloadEnvelope` precedent — one record, all-nullable fields,
@@ -1888,6 +1902,76 @@ append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1).
   raise time; those source rows can later change or be deleted without touching this row (the
   `message_feedback`/`feedback_rollup` dangling-reference precedent, spec §8.1).
 
+### W5.2 intervention delivery (✅ `mezo-b3pp.19`, spec §9.2) — JITAI-lite
+
+**Not a new companion table** — the flag log above is read only for its EVENT (below); the
+delivered card itself is a sixth `companion_message` kind, `intervention`, owned by
+`feature.proactive` and documented from that side ([`proactive.md`](proactive.md) §3/§4 — the
+CHECK widening migration, the envelope's `interventionKey`, and why it is excluded from the feed's
+cron miss-recovery). This subsection covers what companion owns: the raise→event trigger, the
+selection algorithm, the two shipped decisions, and the config shape.
+
+**Delivery chain (raise → event → selection → card → anchored push):**
+
+1. `FlagService.evaluateAndLog` writes a `companion_flag_log` row (W5.1, above) and, in the SAME
+   transaction, `eventPublisher.publishEvent(new FlagRaisedEvent(userId, flagKey, source))` — one
+   event per raise that actually got WRITTEN (post-cooldown), never per evaluation.
+2. `feature.proactive.service.InterventionEventListener` (`@Async
+   @TransactionalEventListener(phase = AFTER_COMMIT)` — the `CompanionMessageEventListener`
+   template) reacts only once the raise durably committed; a rolled-back raise delivers nothing.
+3. `InterventionService.deliverForFlag(userId, flagKey)` — pure code, no LLM call anywhere in this
+   path (the text is config, `textHu`) — runs the selection below and, if it picks an entry,
+   `saveAndFlush`s the `companion_message` card.
+4. `AnchorResolver.interventionAnchors` (not this feature — [`_platform-notifications.md`](_platform-notifications.md)
+   §3d) anchors a push on the card's own generation minute, quiet-hours-deferred, gated on the
+   picked entry's `channel`.
+
+**Selection math** (`InterventionService.deliverForFlag`, `feature/proactive/service/`):
+
+- Candidates = every `mezo.companion.interventions[]` entry whose `flag` matches the raised flag,
+  minus any entry still inside its OWN `cooldownHours` — the cooldown gate reads the **envelope
+  keys of recent `intervention`-kind cards** (`findByCreatedByAndKindAndGeneratedAtAfter`, filtered
+  in memory at single-user volumes, spec §12), not `companion_flag_log` — see the resolved W5.1
+  gotcha in §9 below.
+- Pick = **max W4.2 effectiveness** — `feedback_rollup` scope `intervention:<key>`, `up/total`
+  (§4 above); a key with **no votes yet gets `OPTIMISTIC_PRIOR = 1.5`**, strictly above any real
+  ratio (max 1.0), so an untried entry is always tried before a proven-mediocre one — the spec's
+  "unseen entries get optimistic default," exploration-before-exploitation, not a tunable knob.
+  Ties keep **config order** (`Stream.max` over a strict comparator keeps the FIRST max).
+- No eligible candidate (library empty for the flag, or every entry for it is in cooldown) ⇒
+  delivers nothing, logged at info — never a fallback or a generic text.
+
+**The two shipped decisions:**
+
+- **`channel: feed | push | both` — and `push` behaves exactly like `both` (user decision,
+  2026-08-24).** The card always exists (it is the „Segített?" home and the push anchor), so a
+  push-only entry with no card would have nothing to anchor on and nowhere for feedback to land;
+  `channel=feed` therefore means "card only, no push anchor" and `channel=push`/`channel=both` both
+  mean "card + push" — `AnchorResolver.interventionAnchors` treats `feed` (or a since-retired key
+  not in the library at all) as "no anchor, ever" and anything else as anchor-eligible.
+- **One card per day, first raise wins (anti-nagging).** `deliverForFlag` checks
+  `findByCreatedByAndMessageDateAndKind(userId, today, KIND_INTERVENTION)` before doing anything
+  else — a SECOND raise of ANY flag the same day (the same flag re-raising, or a different flag
+  raising after the first delivered) delivers nothing, logged at info. This is the partial unique
+  index's (`uq_companion_message_created_by_date_kind`) natural consequence for this kind, not a
+  separate guard — see [`proactive.md`](proactive.md) §4.
+
+**Config** (`mezo.companion.interventions` — `CompanionProperties.Intervention`, §4 config keys
+below) — a validated list, one record per library entry:
+`{key (^[a-z0-9_]{1,27}$, unique — pinned by InterventionConfigIT), flag (one of the five W5.1
+flag keys), channel (feed|push|both), textHu (≤500 chars, the card's ONLY content — never an LLM
+call), cooldownHours (1–8760), quietHoursExempt (boolean)}`. Ships with **6 entries** covering all
+five flags (two for `sustained_stress`: `stress_reset`/both/48h and `stress_talk`/feed/72h; one
+each for `sleep_debt` (`sleep_recover_tonight`), `momentum_at_risk` (`momentum_small_win`),
+`recovery_needed` (`recovery_rest_day`), all `channel: both`; and `all_healthy`
+(`healthy_celebrate`, `channel: feed`, `cooldownHours: 168` — a weekly celebration, not a daily
+nag)). The feature switch is `mezo.feature.intervention.enabled`
+(`FeaturesConfiguration.INTERVENTION_SWITCH`) — every W5.2 bean (`InterventionService`,
+`InterventionEventListener`) is `@ConditionalOnProperty` on `COMPANION_SWITCH` ∧ `PROACTIVE_SWITCH`
+∧ `INTERVENTION_SWITCH`; off ⇒ the beans don't exist, `FlagService` still logs raises and publishes
+events (nothing is listening), and `evaluateAndLog` writes the flag but no card follows
+(`InterventionSwitchOffIT`).
+
 ### Entities
 
 `MessageFeedbackEntity` (`feedback/entity/MessageFeedbackEntity.java`, W4.1) `extends OwnedEntity`,
@@ -2285,6 +2369,17 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   decisions (newest-review-first) enter the synthesis payload.
 - `mezo.companion.profile.max-graph-nodes` = **12** (`@Min(0) @Max(100)`) — how many active
   PATTERN/PREFERENCE node titles enter the synthesis payload.
+- `mezo.companion.interventions` (`@NotNull List<@Valid Intervention>`) — W5.2 (bd `mezo-b3pp.19`)
+  the intervention library, one `{key, flag, channel, textHu, cooldownHours, quietHoursExempt}`
+  entry per config-text card `InterventionService` can select; **ships with 6 entries** covering
+  all five W5.1 flags. Its own nested `CompanionProperties.Intervention` record (not a separate
+  `@ConfigurationProperties` class — it needs `interventions()` alongside every other companion
+  knob, and there is exactly one list field, not a cluster of related ones the `FlagProperties`/
+  `ProfileProperties` precedent would justify splitting out). See the W5.2 subsection above (§4)
+  for the full shape and the shipped entries.
+- Feature switch `mezo.feature.intervention.enabled`
+  (`FeaturesConfiguration.INTERVENTION_SWITCH`) — W5.2's own switch, `@ConditionalOnProperty`-gated
+  ALONGSIDE `COMPANION_SWITCH` ∧ `PROACTIVE_SWITCH` (§4 above).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.companion.flags.*` — `FlagProperties`, `@Validated`)
@@ -2749,12 +2844,31 @@ The FE side is a single page-level hook + one shared controlled component
 Every finished night, `FeedbackLearningJob` walks every user and calls
 `FeedbackLearningService.computeRollups(userId)`, which reads the last `window-days` (default 30)
 of `message_feedback` (by **`updated_at`**, so an edited or re-cast verdict re-enters the window)
-and overwrites 11 `feedback_rollup` rows in place: per-surface
-effectiveness, per-feed-kind effectiveness (resolved through the `FeedMessageKindSource` port to
-`companion_message.kind`), and one
-`style` row with a per-surface down-reason histogram. No prompt, no UI, and no consumer yet reads
-this table — W4.3's `ProfileAssembler` (`mezo-b3pp.17`) and W5.2's intervention weighting
-(`mezo-b3pp.19`) are its first readers, once those slices ship.
+and overwrites 11 + N `feedback_rollup` rows in place (N = configured intervention keys, W5.2,
+currently 6): per-surface effectiveness, per-feed-kind effectiveness (resolved through the
+`FeedMessageKindSource` port to `companion_message.kind`), one `style` row with a per-surface
+down-reason histogram, and one `intervention:<key>` row per library entry (§4 above). No prompt,
+no UI — this is a rollup-only table. Its readers: W4.3's `ProfileAssembler` (`mezo-b3pp.17`, folds
+all scopes into the weekly profile synthesis) and, since W5.2, `InterventionService`'s selection
+math reads back the `intervention:<key>` rows to pick the best-weighted card (§4 above). **Known,
+harmless gap:** a key removed from `mezo.companion.interventions` leaves its `intervention:<key>`
+row behind in `feedback_rollup` forever — nothing prunes or zero-fills a retired key's row, because
+nothing reads it either (`InterventionService` only ever looks up keys still present in the live
+config).
+
+### 5.8 Companion flags → Proactive interventions (✅ W5.2 wired, `mezo-b3pp.19`)
+
+**One-way, event-driven, cross-feature — the `CompanionMessageEventListener` shape reused across a
+feature boundary.** `FlagService` (companion) publishes `FlagRaisedEvent`; the LISTENER
+(`InterventionEventListener`) and the delivery service (`InterventionService`) both live in
+`feature.proactive`, not here — companion knows nothing about `companion_message`, cards, or push.
+This mirrors `feature.proactive` already depending on `feature.companion` everywhere (the
+`FeedMessageKindSource`/`PatternImpactSource` precedent, §4 above): the dependency runs companion →
+proactive via a plain domain event (no import needed in either direction for the event type itself,
+`FlagRaisedEvent` lives in `feature.companion.flags.service` and `feature.proactive` imports it),
+so ArchUnit's frozen `feature_slices_are_cycle_free` rule is untouched. See
+[`proactive.md`](proactive.md) §3/§5 for the receiving side and
+[`_platform-notifications.md`](_platform-notifications.md) §3d for the push anchor + quiet hours.
 
 ## 6. How to use it (consume)
 
@@ -3168,6 +3282,57 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`flags/FlagSweepJobSwitchOffIT`** — `mezo.techcore.cron.flag-sweep-job.enabled=false` ⇒ no
   `FlagSweepJob` bean (the house cron-switch idiom; the on-write listener is unaffected — a
   separate switch).
+
+**W5.2 intervention delivery test additions (`mezo-b3pp.19`, spec §9.2) — no LLM anywhere in this
+path either (the `flags/` suite above already pins `FlagService`'s event publish; these are the
+consumer side, in `feature.proactive`, and the push-anchor side, in `feature.notification`):**
+
+- **`proactive/InterventionServiceIT`** — a raised flag writes the card
+  (`raisedFlagWritesTheCard`); the higher-effectiveness entry wins between two eligible candidates
+  (`higherEffectivenessWins`); an unseen (unvoted) key beats a voted one via the optimistic prior
+  (`unseenKeyBeatsVotedKey`); a cooled-down key is skipped in favor of the next-best
+  (`perKeyCooldownSkipsToNextBest`); every eligible entry in cooldown delivers nothing
+  (`allKeysInCooldownDeliversNothing`); a second same-day card is skipped regardless of flag
+  (`secondCardSameDayIsSkipped`); two unseen (unvoted, no rollups seeded) candidates are a genuine
+  tie and the FIRST in config order wins (`tieBreakKeepsConfigOrder_whenBothCandidatesAreUnseen`,
+  final-review addition — distinct from `unseenKeyBeatsVotedKey` above, which pins unseen-beats-
+  voted, not the unseen-vs-unseen tie-break itself); the REAL
+  `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` path delivers end to end
+  (`listenerDeliversAfterCommit`, the `CompanionMessageEventIT` idiom — a rolled-back raise must
+  deliver nothing).
+- **`proactive/InterventionConfigIT`** — the library binds and covers every one of the five flags,
+  and every key is unique (`libraryBindsCoversEveryFlagAndKeysAreUnique`).
+- **`proactive/InterventionSwitchOffIT`** — `mezo.feature.intervention.enabled=false` ⇒ no
+  `InterventionService` bean in the context, and `FlagService.evaluateAndLog` still writes the flag
+  log row with no card following (the flag-log write path is unaffected by this switch — only the
+  consumer disappears).
+- **`proactive/CompanionMessageInterventionPersistenceIT`** — the `intervention` kind round-trips
+  with its envelope `interventionKey` set; an unknown `kind` still trips the widened CHECK.
+- **`notification/service/InterventionFireMinuteTest`** (pure, no Spring) —
+  `AnchorResolver.interventionFireMinute` as a table: fires same-day in daytime; defers to the
+  NEXT day's quiet-end when generated late evening; defers to the SAME day's quiet-end when
+  generated early morning (already inside the window); the quiet-start boundary is INSIDE the
+  window, the quiet-end boundary is OUTSIDE it (asymmetric, `[start, end)`); fires immediately when
+  `quietHoursExempt`; never defers when `start == end` (quiet hours off); a non-wrapping window
+  (final-review addition — `quietStart < quietEnd`, e.g. a midday 12:00–14:00 window, unlike the
+  default's midnight-wrapping 22:00–07:00) defers within the SAME day, proving the wraps-detection
+  branch handles both window shapes.
+- **`notification/AnchorResolverInterventionIT`** — a `both`-channel card anchors on its own
+  generation minute in daytime; a `both`-channel card generated in quiet hours defers ACROSS the
+  day boundary (seeded via `CompanionMessagePopulator`'s explicit-`generatedAt` overload, the
+  `sleep_reaction`/`weight_reaction` flakiness-avoidance idiom); a `feed`-channel card's library
+  entry yields NO anchor; a card whose key is no longer in the library (retired) also yields none.
+  Kept separate from `AnchorResolverIT` (the `AnchorResolverDecisionIT` precedent) since it drives
+  its own quiet-hours fixtures. `AnchorResolverIT`/`AnchorResolverFeedIT` are re-run alongside it as
+  a regression guard on the shared `AnchorResolver.resolve` entry point (§9 — nothing about the
+  intervention addition should perturb an existing category's anchor).
+- **`notification/NotificationCategoryTest`** — pins the now-**22**-key catalog (§4/§9 of
+  [`_platform-notifications.md`](_platform-notifications.md)) including `INTERVENTION`.
+- **`notification/NotificationPrefApiIT`** — the code-default fallback and per-category upsert,
+  re-run as a regression guard now that `effectiveFor` walks 22 keys instead of 21.
+- **`companion/feedback/Feedback*IT`** (`FeedbackLearningServiceIT`/`FeedbackRollupPersistenceIT`
+  et al.) — re-run as a regression guard: the nightly rollup now writes 11+N rows instead of a
+  fixed 11, and the widened `ck_feedback_rollup_scope` CHECK must still reject a bogus scope.
 
 **W3.1 ambient-recall test additions (`mezo-b3pp.12`) — the LLM and the embedding port are both
 fakes; the ANN math is real Postgres/pgvector over hand-seeded axis vectors:**
@@ -3706,6 +3871,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   no uniqueness constraint on `(created_by, flag_key)` within a window, so this is not a bug to fix
   here — it is a property W5.2 (the raise → intervention consumer) must design for: tolerate
   duplicate rows inside a cooldown window rather than assume one row per window per flag.
+  **Resolved by construction, not by fixing this row:** `InterventionService` never reads
+  `companion_flag_log` at all — its own cooldown gate reads recent `companion_message` envelope
+  keys (§4 above), and its own anti-nag gate is the `companion_message` partial-unique index (one
+  card per user+day+kind). A duplicate `FlagRaisedEvent` from two near-simultaneous raises therefore
+  triggers at most one delivered card (the "today's card already exists" short-circuit runs before
+  candidate selection); the duplicate audit rows this bullet describes stay a `companion_flag_log`
+  bookkeeping quirk, never a duplicate delivery.
 - **One evaluation issues roughly 9 `MetricSeriesService.series` calls, three of which
   (`sustained_stress`, `recovery_needed`, `all_healthy` — all reading `CHECKIN_STRESS`) fetch
   EVERY one of the owner's check-ins via `CheckInRepository.findAllOwned` and filter to the window
@@ -3713,6 +3885,33 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   metric). Fine at today's single-user-interactive-request scale — this runs at most once per
   write plus once an hour — but worth knowing before `FlagService.evaluateAndLog` is reused at
   higher frequency or batch scale, where the unbounded owner-history scan would start to matter.
+
+**W5.2 intervention delivery decisions + gotchas (`mezo-b3pp.19`, spec §9.2):**
+
+- **`channel: push` and `channel: both` are the SAME behavior (user decision, 2026-08-24) — the
+  spec's three-value enum reads as two.** The card is always the push anchor AND the „Segített?"
+  home, so there is no meaningful "push without a card" to distinguish from "card + push"; only
+  `feed` (card, no push) is a real behavioral fork. Recorded here as a deliberate reading, not a
+  silent no-op branch — see §4 above.
+- **One card per day is enforced by the SAME partial-unique index that gives every other
+  `companion_message` kind its idempotence, but it means something different here.** For
+  `morning`/`sleep`/`weight`/`midday`/`evening` the index makes REGENERATION idempotent (a retry
+  finds the existing row). For `intervention` it makes a SECOND RAISE OF ANY FLAG THE SAME DAY a
+  no-op — the anti-nagging behavior is a side effect of reusing the existing table shape, not a
+  bespoke guard. Worth knowing before touching the index: loosening it for another kind would also
+  loosen `intervention`'s once-a-day ceiling.
+- **The optimistic prior (`1.5`) is a `static final double` constant, not a config knob.** Spec
+  §9.2 mandates it as a fixed exploration-over-exploitation rule (an unseen entry always beats a
+  voted one, since 1.5 > any real up/total ratio); making it configurable would let a future change
+  quietly break that guarantee for values ≥ 1.0 or ≤ 0, so it stays code, not `application.yml`.
+- **`InterventionService` runs `@Transactional` and reads `feedback_rollup` for every candidate
+  synchronously** — fine at single-user, ≤6-entries-per-flag scale (spec §12), but a library grown
+  to dozens of entries per flag would turn this into N rollup reads per raise; not a problem today,
+  worth knowing before the library grows much past its shipped 6. (Final-review fix, mezo-b3pp.19:
+  the N reads are precomputed into a `Map<key, effectiveness>` BEFORE `Stream.max`, not inside its
+  comparator — `Comparator.comparingDouble`'s key extractor would otherwise re-invoke the DB read
+  on every pairwise comparison, not just once per candidate; the map keeps it to exactly N reads and
+  leaves the config-order tie-break — first max under a strict comparator — untouched.)
 
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
@@ -3785,7 +3984,18 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/service/CheckInSavedEvent.java` — the NEW `CheckInService.save` AFTER_COMMIT event this slice consumes; the check-in feature itself knows nothing about flags.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. No FE — nothing consumes these raises yet (W5.2).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
+
+**Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionEventListener.java` — `@Async @TransactionalEventListener(AFTER_COMMIT)` on `FlagRaisedEvent`, the `CompanionMessageEventListener` template; catches and warns rather than propagating.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionService.java` — `deliverForFlag(userId, flagKey)`: the one-card-per-day gate, per-key cooldown (recent `intervention`-kind card envelope keys), `OPTIMISTIC_PRIOR = 1.5`, max-effectiveness selection, `saveAndFlush` into `companion_message`. PURE CODE — no `LlmCallContextHolder` call anywhere in this class.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — the nested `Intervention` record (`interventions()` field) — §4 config keys above.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `INTERVENTION_SWITCH` (`mezo.feature.intervention.enabled`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql` — the CHECK-widening migration (companion_message kind, CK-swap only).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608241600_mezo-b3pp.19_feedback_rollup_intervention_scope.sql` — the CHECK-widening migration (feedback_rollup scope, CK-swap only).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{InterventionServiceIT,InterventionConfigIT,InterventionSwitchOffIT,CompanionMessageInterventionPersistenceIT}.java` — §8. Push-anchor + quiet-hours tests live under `feature/notification` — see [`_platform-notifications.md`](_platform-notifications.md) §10.
+- **FE side** — `frontend/src/features/today/components/MezoMessagesSheet.tsx` (the „Segített?" label on `kind === 'intervention'` rows, same `useFeedback('feed_message')` chips every other card kind uses) + `frontend/src/features/today/logic/mezoMessages.ts` (`MezoMessageItem` gains an optional `kind: FeedMessageKind`, so the sheet can branch on it — the wire never exposes `interventionKey` itself, only `kind`) + `frontend/src/data/types.ts` (`FeedMessageKind` gains `'intervention'`) — see [`proactive.md`](proactive.md) §5.4/§10 (the owning doc for the FE feed consumer) and [`_platform-notifications.md`](_platform-notifications.md) §10 (the `NotificationCategory`/settings-page side).
 
 **Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.feedback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
@@ -30,6 +31,7 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private FeedbackPopulator feedbackPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
+    @Autowired private CompanionProperties companionProperties;
 
     @Test
     void testComputeRollups_shouldUpsertElevenScopes_always() {
@@ -37,7 +39,8 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
 
         int upserted = feedbackLearningService.computeRollups(owner);
 
-        assertThat(upserted).isEqualTo(11);
+        // 11 surface/feed/style scopes + one intervention:<key> scope per configured library entry
+        assertThat(upserted).isEqualTo(11 + companionProperties.interventions().size());
         assertThat(feedbackRollupRepository
             .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:chat_message", 30))
             .isPresent();
@@ -171,9 +174,50 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
 
         int upserted = feedbackLearningService.computeRollups(owner);
 
-        assertThat(upserted).isEqualTo(11); // still 11 rows, not 22 — overwritten in place
+        // still the same row count, not doubled — overwritten in place
+        assertThat(upserted).isEqualTo(11 + companionProperties.interventions().size());
         assertThat(feedbackRollupRepository
             .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:chat_message", 30)
             .orElseThrow().getStats().up()).isEqualTo(2);
+    }
+
+    @Test
+    void interventionScopesAreZeroFilledForEveryLibraryKey() {
+        UUID owner = userPopulator.createUser().getId();
+
+        feedbackLearningService.computeRollups(owner);
+
+        for (CompanionProperties.Intervention entry : companionProperties.interventions()) {
+            FeedbackRollupEntity rollup = feedbackRollupRepository
+                .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "intervention:" + entry.key(), 30)
+                .orElseThrow();
+            assertThat(rollup.getStats().up()).isZero();
+            assertThat(rollup.getStats().down()).isZero();
+            assertThat(rollup.getStats().total()).isZero();
+        }
+    }
+
+    @Test
+    void interventionVerdictRollsUpUnderItsKey() {
+        UUID owner = userPopulator.createUser().getId();
+        CompanionMessageEntity stressReset = companionMessagePopulator.createIntervention(
+            owner, LocalDate.now(), "stress_reset", "Tarts egy tudatos lezárást ma este.", Instant.now());
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_FEED_MESSAGE, stressReset.getId(),
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        feedbackLearningService.computeRollups(owner);
+
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "intervention:stress_reset", 30)
+            .orElseThrow().getStats().up()).isEqualTo(1);
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "intervention:stress_reset", 30)
+            .orElseThrow().getStats().total()).isEqualTo(1);
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "intervention:stress_talk", 30)
+            .orElseThrow().getStats().total()).isZero();
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:feed_message", 30)
+            .orElseThrow().getStats().up()).isEqualTo(1);
     }
 }

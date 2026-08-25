@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaisedEvent;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -18,7 +19,17 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
+/**
+ * {@code @RecordApplicationEvents} records only what publishes on the TEST's own thread — fine
+ * here since {@link FlagService#evaluateAndLog} is called directly, not over HTTP (the
+ * {@code MesocycleCloseReportIT} / {@code RitualReflectionEventIT} precedent). No class-level
+ * {@code @Transactional}: this class already runs each test's writes as real committed
+ * transactions (see the cooldown tests below, which depend on that across separate calls).
+ */
+@RecordApplicationEvents
 class FlagServiceIT extends AbstractIntegrationTest {
 
     @Autowired private FlagService flagService;
@@ -27,6 +38,7 @@ class FlagServiceIT extends AbstractIntegrationTest {
     @Autowired private FlagLogPopulator flagLogPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private ApplicationEvents applicationEvents;
 
     private UUID ownerId() {
         return userPopulator.createUser().getId();
@@ -107,5 +119,26 @@ class FlagServiceIT extends AbstractIntegrationTest {
             .isEqualTo(repository
                 .findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(other, FlagKey.SUSTAINED_STRESS)
                 .orElseThrow().getPayload().sustainedStress());
+    }
+
+    @Test
+    void a_written_raise_publishes_a_flag_raised_event() {
+        UUID owner = ownerId();
+        stressedThreeDays(owner);
+
+        flagService.evaluateAndLog(owner, FlagKey.SOURCE_SWEEP);
+
+        assertThat(applicationEvents.stream(FlagRaisedEvent.class))
+            .anySatisfy(e -> {
+                assertThat(e.userId()).isEqualTo(owner);
+                assertThat(e.flagKey()).isEqualTo(FlagKey.SUSTAINED_STRESS);
+                assertThat(e.source()).isEqualTo(FlagKey.SOURCE_SWEEP);
+            });
+
+        // a cooldown-suppressed second run publishes nothing new
+        applicationEvents.clear();
+        flagService.evaluateAndLog(owner, FlagKey.SOURCE_SWEEP);
+
+        assertThat(applicationEvents.stream(FlagRaisedEvent.class)).isEmpty();
     }
 }

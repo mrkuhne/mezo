@@ -52,13 +52,17 @@ export function MezoMessagesSheet({ messages, onClose, feedback }: {
                       affordancia lenne (mezo-kr9v). Kulcs az artifactId: a FeedbackChips egyszer,
                       mountkor magolja be az indok-sor nyitottságát, ezért minden üzenetnek SAJÁT
                       példány jár — React sosem használhatja újra az egyikét a másikra. */}
+                  {/* A „Segített?" felirat a W5.2 hurok — ugyanaz a feed_message verdict, a
+                      backend a kártya interventionKey-e alapján görgeti fel kulcsonként
+                      (mezo-b3pp.19). */}
                   {feedback && m.artifactId != null && (
                     <div className="mt-sm">
+                      {m.kind === 'intervention' && <div className="td-bub-meta">Segített?</div>}
                       <FeedbackChips
                         key={m.artifactId}
                         value={feedback.get(m.artifactId)}
                         onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
-                        label="az üzenetről"
+                        label={m.kind === 'intervention' ? 'a közbelépésről' : 'az üzenetről'}
                       />
                     </div>
                   )}

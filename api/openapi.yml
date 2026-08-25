@@ -13843,12 +13843,17 @@ components:
           format: date
         kind:
           type: string
+          description: >-
+            Feed message kind — morning, sleep, weight, midday, or evening
+            LLM-generated messages; intervention is config text
+            (mezo.companion.interventions), never LLM output.
           enum:
             - morning
             - sleep
             - weight
             - midday
             - evening
+            - intervention
         eyebrow:
           type: string
         body:

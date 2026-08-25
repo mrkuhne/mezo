@@ -9,7 +9,7 @@
 // nap legfrissebb hangjai, ezért a demo-briefing előtag UTÁN, minden más elem UTÁN
 // jönnek. Pure: no React, no hooks, no side effects.
 // ============================================================
-import type { Briefing, BriefingRef, FeedMessage } from '@/data/types'
+import type { Briefing, BriefingRef, FeedMessage, FeedMessageKind } from '@/data/types'
 
 export interface MezoMessageItem {
   /** Stabil a napon belül: a feed KINDJE (`morning`/`sleep`/…) vagy a nudge/demo kulcsa —
@@ -19,6 +19,10 @@ export interface MezoMessageItem {
    *  (mezo-b3pp.15). CSAK feed-sorokon van: a cimkézett demo-briefing kártya és a küszöb-nudge
    *  nem perzisztált AI-artifact, nincs mire visszajelezni — chip sem ülhet rájuk (mezo-kr9v). */
   artifactId?: string
+  /** A feed-sor eredeti kindje (W5.2, mezo-b3pp.19) — CSAK feed-sorokon van, a demo/nudge
+   *  elemeknek nincs. A sheet ez alapján választja a „Segített?" kártya-változatot
+   *  intervention kindre. */
+  kind?: FeedMessageKind
   eyebrow: string
   time: string | null
   /** Markdown-forrás; a renderelő `SafeMarkdown`-ozza. */
@@ -44,6 +48,7 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
   const out: MezoMessageItem[] = feed.map((m) => ({
     id: m.kind,
     artifactId: m.id,
+    kind: m.kind,
     eyebrow: m.eyebrow,
     time: hhmm(m.generatedAt),
     paragraphs: m.body.map((p) => p.text),

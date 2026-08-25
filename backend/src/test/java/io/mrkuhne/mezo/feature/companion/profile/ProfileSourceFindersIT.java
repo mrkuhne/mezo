@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.profile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.feature.companion.feedback.service.FeedbackLearningService;
@@ -27,6 +28,8 @@ class ProfileSourceFindersIT extends AbstractIntegrationTest {
     private DecisionEntryRepository decisionRepository;
     @Autowired
     private FeedbackLearningService feedbackLearningService;
+    @Autowired
+    private CompanionProperties companionProperties;
     @Autowired
     private JournalPopulator journalPopulator;
     @Autowired
@@ -60,6 +63,8 @@ class ProfileSourceFindersIT extends AbstractIntegrationTest {
                 .stream().map(FeedbackRollupEntity::getScope)
                 .toList();
 
-        assertThat(scopes).hasSize(11).isSorted();
+        // 11 fixed scopes + one intervention:<key> per configured library entry (W5.2,
+        // mezo-b3pp.19) — derived, not hardcoded, so a library edit can't silently break this.
+        assertThat(scopes).hasSize(11 + companionProperties.interventions().size()).isSorted();
     }
 }

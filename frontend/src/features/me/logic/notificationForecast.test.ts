@@ -131,4 +131,14 @@ describe('forecastToday (pure)', () => {
       expect(result.perHour.every((count) => count === 0)).toBe(true)
     }
   })
+
+  // W5.2 (mezo-b3pp.19) — the intervention card's anchor is its own generation minute, further
+  // quiet-hours-deferred: neither fact is knowable client-side, so honestly skipped like the
+  // rest of the feed-anchored family above.
+  it('intervention (event-born, quiet-hours-deferred) yields no forecast anchor', () => {
+    const prefs = [pref('intervention', true)]
+    const result = forecastToday(prefs, [], NO_ANCHORS, WEDNESDAY)
+    expect(result.total).toBe(0)
+    expect(result.denseWindows).toHaveLength(0)
+  })
 })
