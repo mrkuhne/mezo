@@ -56,16 +56,25 @@ test('renders the Set-büdzsé section (mezo-7rdg)', () => {
 test('an over-budget muscle shows the tier-plafon warning (mezo-7rdg; copy reframed mezo-3m5m)', () => {
   const overBudgetMeso: Mesocycle = {
     ...meso,
+    // mirrors the mock active run's own musclePriorities ({shoulder: 'maintain'}, train.ts:69) —
+    // MuscleWeekSheet now threads meso.musclePriorities into muscleBudgets (mezo-3m5m final review).
+    musclePriorities: { shoulder: 'maintain' },
     days: [{
-      day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 2,
+      day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 3,
       exercises: [
         { id: 'ob1', name: 'Bench Press', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 4, repMax: 6, targetRIR: 1, type: 'compound', anchorWeightKg: 100 },
         { id: 'ob2', name: 'Cable Fly', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 12, repMax: 15, targetRIR: 3, type: 'isolation', anchorWeightKg: 15 },
+        { id: 'ob3', name: 'Lateral Raise', muscle: 'shoulder', warmupSets: 1, workingSets: 9, repMin: 12, repMax: 15, targetRIR: 2, type: 'isolation', anchorWeightKg: 10 },
       ],
     }],
   }
   render(<QueryWrapper><MuscleWeekSheet meso={overBudgetMeso} sportSlots={slots} onClose={() => {}} /></QueryWrapper>)
-  // MuscleWeekSheet passes no priorities/volumePerMuscle to muscleBudgets(), so chest defaults
-  // to Grow -> target = GROUP_LANDMARKS.chest.mav (14). 8+8 = 16 counted sets > 14 -> 'over'.
+  // chest carries no key in musclePriorities -> tierOf defaults to 'grow' -> target =
+  // GROUP_LANDMARKS.chest.mav (14), unaffected by the shoulder entry. 8+8 = 16 counted sets
+  // (both non-plyo, non-exempt) > 14 -> 'over'.
   expect(screen.getByText('Mell: 16 szett — Grow plafon 14 (MAV).')).toBeInTheDocument()
+  // shoulder is 'maintain' -> target = GROUP_LANDMARKS.shoulder.mev (8) (tierTargetOf maps
+  // maintain -> mev). 9 counted sets (targetRIR 2 -> 'volume' style, isolation counts toward
+  // volume) > 8 -> 'over' too, and the maintain-tier warning names its own tier word.
+  expect(screen.getByText('Váll: 9 szett — Maintain plafon 8 (MEV).')).toBeInTheDocument()
 })
