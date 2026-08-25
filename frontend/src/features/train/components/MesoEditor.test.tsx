@@ -102,4 +102,38 @@ describe('MesoEditor', () => {
     render(<MesoEditor days={days} {...props} />)
     expect(screen.getByRole('button', { name: /Struktúra/i })).toBeInTheDocument()
   })
+
+  it('does not render the peak-week fit card when nothing projects out of band (mezo-3m5m, GD6)', () => {
+    render(<MesoEditor days={days} {...props} />)
+    expect(screen.queryByText(/Csúcshét/i)).not.toBeInTheDocument()
+  })
+
+  it('threads priorities/volumePerMuscle into the peak-week fit card (mezo-3m5m, GD6)', () => {
+    // Same fixture + hand-computed projection as peakWeekFit.test.ts's primary case: back
+    // Emphasize -> target 40 -> Szo projects to 109 min (over), Sze to 29 min (under) -> 2 days.
+    const peakDays: MesoDay[] = [
+      {
+        day: 'Szo', type: 'Pull', muscle: 'back', exerciseCount: 2, current: true,
+        exercises: [
+          { id: 'p1', name: 'Row', muscle: 'back-mid', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound' },
+          { id: 'p2', name: 'Pulldown', muscle: 'back-wide', warmupSets: 1, workingSets: 2, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound' },
+        ],
+      },
+      {
+        day: 'Sze', type: 'Pull', muscle: 'back', exerciseCount: 1,
+        exercises: [
+          { id: 'p3', name: 'Deadlift', muscle: 'lats', warmupSets: 1, workingSets: 1, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound' },
+        ],
+      },
+    ]
+    render(
+      <MesoEditor
+        days={peakDays} {...props}
+        priorities={{ back: 'emphasize' }}
+        volumePerMuscle={{ back: { mev: 5, mav: 20, mrv: 40 } }}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /Csúcshét/i })).toBeInTheDocument()
+    expect(screen.getByText('2 nap')).toBeInTheDocument()
+  })
 })
