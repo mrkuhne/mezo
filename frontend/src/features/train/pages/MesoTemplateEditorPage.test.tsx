@@ -94,6 +94,53 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     expect(putBody!.days![0].exercises![0].workingSets).toBe(5) // fixture 4 -> +1
   })
 
+  it('the whole-template PUT carries the existing musclePriorities map through an unrelated day edit (mezo-3m5m; this editor has no per-field PATCH, so a builder that drops the field silently resets it to all-Grow)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () =>
+        HttpResponse.json([
+          {
+            id: REAL_TPL,
+            title: 'Hypertrophy 04 · Tavasz',
+            shortTitle: 'Hypertrophy 04',
+            goal: 'Felsőtest hypertrophy · izomtömeg építés',
+            musclePriorities: { back: 'emphasize' },
+            weeks: 6,
+            split: 'Pull / Push / Legs · 5×/hét',
+            style: 'RP · 6 hét',
+            phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+            runCount: 1,
+            days: [
+              {
+                day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1,
+                exercises: [
+                  { id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
+                    muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+                ],
+              },
+              { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+            ],
+          },
+        ]),
+      ),
+    )
+    let putBody: { musclePriorities?: Record<string, string> | null } | null = null
+    server.use(
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        putBody = (await request.json()) as typeof putBody
+        return HttpResponse.json({ id: String(params.id), runCount: 1, phaseCurve: [], days: [], ...putBody })
+      }),
+    )
+    const user = userEvent.setup()
+    setupPage(REAL_TPL)
+
+    await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' })
+    await user.click(screen.getAllByRole('button', { name: /· szerkesztés$/ })[0])
+    await user.click(screen.getAllByRole('button', { name: /· Munkaszett növelése$/ })[0])
+
+    await waitFor(() => expect(putBody).not.toBeNull())
+    expect(putBody!.musclePriorities).toEqual({ back: 'emphasize' })
+  })
+
   it('the Cél dropdown persists a preset change via the same full-upsert path, other fields surviving', async () => {
     let putBody: { title?: string; goalPreset?: string | null } | null = null
     server.use(

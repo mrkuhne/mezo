@@ -647,6 +647,7 @@ export const handlers = [
         shortTitle: body.shortTitle ?? null,
         goal: body.goal ?? null,
         goalPreset: body.goalPreset ?? null,
+        musclePriorities: body.musclePriorities ?? null,
         weeks: Number(body.weeks ?? 0),
         split: body.split ?? null,
         style: body.style ?? null,
@@ -666,6 +667,7 @@ export const handlers = [
       shortTitle: body.shortTitle ?? null,
       goal: body.goal ?? null,
       goalPreset: body.goalPreset ?? null,
+      musclePriorities: body.musclePriorities ?? null,
       weeks: Number(body.weeks ?? 0),
       split: body.split ?? null,
       style: body.style ?? null,
@@ -684,6 +686,12 @@ export const handlers = [
       title: 'Hypertrophy 04 · Tavasz',
       shortTitle: 'Hypertrophy 04',
       status: body.status,
+      // The run-side mock surface was left thin by mezo-dq60 — goalPreset/musclePriorities
+      // are static here (this handler doesn't look up the started template's own values) so
+      // real-mode stamp-carry tests can assert on them; tests needing a specific stamped
+      // value override this handler with server.use.
+      goalPreset: null,
+      musclePriorities: null,
       startDate: body.startDate,
       endDate: body.startDate,
       weeks: 6,
@@ -696,6 +704,12 @@ export const handlers = [
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
     HttpResponse.json({ id: params.id }),
   ),
+  // Muscle-priorities replace (mezo-3m5m): echoes the body onto the mock run shape — tests
+  // that need the FULL assembled response override with server.use.
+  http.put(`${API_BASE}/api/train/mesocycles/:id/muscle-priorities`, async ({ params, request }) => {
+    const body = (await request.json()) as { musclePriorities?: Record<string, string> | null }
+    return HttpResponse.json({ id: params.id, musclePriorities: body.musclePriorities ?? null })
+  }),
   // Close accepts an OPTIONAL `{ selfEval }` body (mezo-meyc.2) — read and ignore it here so
   // the default stays a happy path; tests that assert the payload override with a spy.
   http.post(`${API_BASE}/api/train/mesocycles/:id/close`, async ({ params, request }) => {

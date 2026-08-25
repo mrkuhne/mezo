@@ -39,6 +39,11 @@ function toUpsert(template: MesoTemplate, days: MesoDay[], goalPreset = template
     shortTitle: template.shortTitle,
     goal: template.goal,
     goalPreset,
+    // Full-replace body (mezo-3m5m): the template's own musclePriorities map must ride
+    // along every day/goal edit here or it silently resets to all-grow on the next PUT
+    // (this editor has no per-field PATCH — see the module doc above; caught by the
+    // mandated goalPreset grep-audit, mirroring the mezo-dq60 unlisted-site precedent).
+    musclePriorities: template.musclePriorities,
     weeks: template.weeks,
     split: template.split,
     style: template.style,
