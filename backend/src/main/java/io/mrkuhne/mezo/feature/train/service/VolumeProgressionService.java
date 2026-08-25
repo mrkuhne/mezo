@@ -77,11 +77,8 @@ public class VolumeProgressionService {
      */
     @Transactional
     public void seedBaselines(UUID createdBy, UUID mesoId) {
-        List<UUID> templateIds = workoutSessionRepository
-            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)).stream()
-            .filter(s -> s.getTemplateSessionId() == null)
-            .map(WorkoutSessionEntity::getId)
-            .toList();
+        List<UUID> templateIds = MesoTemplateDays.ids(workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)));
         if (templateIds.isEmpty()) {
             return;
         }
