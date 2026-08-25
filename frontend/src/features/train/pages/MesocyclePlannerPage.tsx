@@ -44,15 +44,16 @@ const STEP_COUNT = 5
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
 const CORAL_TINT = 'var(--primary-bg)'
 
-// Same text as MusclePriorityPicker's own card header — intentional (this is
-// the chrome page title, the picker's header lives inside the step body;
-// other steps also keep their chrome title distinct from the body copy, but
-// here the picker's heading IS the natural title for the step).
+// Step 3's chrome title used to repeat MusclePriorityPicker's own card header verbatim — a
+// visible duplicate ("Mire gyúr ez a blokk?" rendered twice: chrome PageTitle + picker card).
+// RULING (mezo-ltk0, tier-review follow-up 4): the chrome title becomes the short step name
+// (matches stepLabels below) and the picker's card header stays the only place asking the
+// question — it is the only title in that step's body.
 const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
   'Mennyi időnk van?',
   'Hogyan osszuk be?',
-  'Mire gyúr ez a blokk?',
+  'Fókusz',
   'A programod · gyakorlatok + set & rep',
 ] as const
 
