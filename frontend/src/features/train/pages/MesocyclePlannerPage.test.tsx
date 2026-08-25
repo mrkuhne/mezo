@@ -66,7 +66,7 @@ async function runWizardToTerminalStep(user: ReturnType<typeof userEvent.setup>)
 
 test('„Mentés sablonként" creates the template only and lands on the library', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  let postedTemplate: { title?: string; weeks?: number; days?: unknown[] } | null = null
+  let postedTemplate: { title?: string; weeks?: number; days?: unknown[]; goalPreset?: string } | null = null
   let startCalls = 0
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
@@ -92,6 +92,7 @@ test('„Mentés sablonként" creates the template only and lands on the library
   await waitFor(() => expect(postedTemplate).not.toBeNull())
   expect(postedTemplate!.weeks).toBeGreaterThan(0)
   expect(postedTemplate!.days).toHaveLength(7) // all template days travel, rest days included
+  expect(postedTemplate!.goalPreset).toBe('hypertrophy') // the chosen preset id travels with the template
   expect(startCalls).toBe(0) // a template save never stamps a run
   // the planner also persists the standing gym schedule (mezo-4t43): one slot per selected day
   await waitFor(() => expect(putSpy).toHaveBeenCalled())

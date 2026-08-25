@@ -73,8 +73,11 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
 
   // Auto-expand: when the active day gains an id absent from the mount-time
   // baseline (a freshly added exercise), expand it — AND, once, apply its
-  // adaptive warmup suggestion when it differs from the stored default
-  // (libraryToGymExercise seeds warmupSets: 2 for every pick).
+  // adaptive warmup suggestion when it differs from the stored default.
+  // The picker now seeds scheme- and type-aware warmups itself (compound 2 /
+  // isolation 1 / plyo 0 via addExerciseWithDefaults, refined by
+  // warmupSuggest on insert), so this patch is a safety net for out-of-band
+  // divergence — usually a no-op.
   useEffect(() => {
     if (!day) return
     const seen = knownIds.current

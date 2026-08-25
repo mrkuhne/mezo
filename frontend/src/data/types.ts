@@ -1018,6 +1018,7 @@ export interface Mesocycle {
   title: string
   shortTitle: string
   goal: string
+  goalPreset?: string | null
   startDate: string
   endDate: string
   weeks: number
@@ -1044,6 +1045,7 @@ export interface MesoTemplate {
   title: string
   shortTitle: string | null
   goal: string | null
+  goalPreset?: string | null
   weeks: number
   split: string | null
   style: string | null

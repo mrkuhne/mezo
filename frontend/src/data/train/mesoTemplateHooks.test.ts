@@ -143,6 +143,60 @@ describe('useMesoTemplates', () => {
     expect(mesos.find((m) => m.id === 'meso-hyp-04')?.templateId).toBe('a10e0000-0000-4000-8000-000000000000')
   })
 
+  it('goalPreset survives the template hydrate round-trip (real mode GET)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () =>
+        HttpResponse.json([
+          {
+            id: 'a10e0000-0000-4000-8000-000000000000',
+            title: 'Hypertrophy 04 · Tavasz',
+            shortTitle: 'Hypertrophy 04',
+            goal: 'Felsőtest hypertrophy · izomtömeg építés',
+            goalPreset: 'strength',
+            weeks: 6,
+            split: 'Pull / Push / Legs · 5×/hét',
+            style: 'RP · 6 hét',
+            phaseCurve: ['MEV'],
+            runCount: 1,
+            days: [],
+          },
+        ]),
+      ),
+    )
+    const { result } = renderHook(() => useMesoTemplates(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.templates.length).toBeGreaterThan(0))
+    expect(result.current.templates[0].goalPreset).toBe('strength')
+  })
+
+  it('goalPreset survives the template save round-trip (mock createTemplate/updateTemplate)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => useMesoTemplates(), { wrapper: makeHookWrapper() })
+    let created: Awaited<ReturnType<typeof result.current.createTemplate>> | undefined
+    await act(async () => {
+      created = await result.current.createTemplate({
+        title: 'Mock Block',
+        goalPreset: 'strength',
+        weeks: 4,
+        phaseCurve: ['MEV'],
+        days: [],
+      })
+    })
+    expect(created!.goalPreset).toBe('strength')
+
+    let updated: Awaited<ReturnType<typeof result.current.updateTemplate>> | undefined
+    await act(async () => {
+      updated = await result.current.updateTemplate(created!.id, {
+        title: 'Mock Block',
+        goalPreset: 'strength',
+        weeks: 4,
+        phaseCurve: ['MEV'],
+        days: [],
+      })
+    })
+    expect(updated!.goalPreset).toBe('strength')
+  })
+
   it('mock mode: rerun on a legacy (untemplated) meso materializes a fresh template and stamps the meso', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'true')
     const { qc, wrapper } = wrap()

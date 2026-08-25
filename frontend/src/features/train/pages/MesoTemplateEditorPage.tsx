@@ -16,13 +16,38 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMesoTemplates } from '@/data/hooks'
 import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate } from '@/data/types'
+import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
+import { GOAL_PRESETS } from '@/data/train/train'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
-import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
+import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
+
+// The Cél select's options — the six wizard presets plus an empty "unset" one
+// (labeled with the fallback it actually behaves as — SCHEMES defaults an
+// unset/unknown preset to hypertrophy, see exerciseDefaults.ts).
+const GOAL_PRESET_OPTIONS = [{ value: '', label: '— (hypertrophy)' }, ...GOAL_PRESETS.map((p) => ({ value: p.id, label: p.label }))]
+
+// Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
+// shared here so the Cél select persists through the identical upsert helper.
+function toUpsert(template: MesoTemplate, days: MesoDay[], goalPreset = template.goalPreset): MesoTemplateUpsertRequest {
+  return {
+    title: template.title,
+    shortTitle: template.shortTitle,
+    goal: template.goal,
+    goalPreset,
+    weeks: template.weeks,
+    split: template.split,
+    style: template.style,
+    phaseCurve: template.phaseCurve,
+    notes: template.notes,
+    volumePerMuscle: template.volumePerMuscle,
+    days: toDayInputs(days),
+  }
+}
 
 export function MesoTemplateEditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -84,28 +109,11 @@ export function MesoTemplateEditorPage() {
           <span className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>{template.goal}</span>
         </div>
       ) : null}
-      <div className="row gap-md" style={{ padding: '4px 24px 8px' }}>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.weeks} hét</span>
-        {template.split ? (
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.split}</span>
-        ) : null}
-      </div>
-
       {/* Remounts (and reseeds) only when the route points at another template. */}
-      <TemplateDayEditor key={template.id} template={template} onPersist={(days) => updateTemplate(template.id, {
-        title: template.title,
-        shortTitle: template.shortTitle,
-        goal: template.goal,
-        weeks: template.weeks,
-        split: template.split,
-        style: template.style,
-        phaseCurve: template.phaseCurve,
-        notes: template.notes,
-        volumePerMuscle: template.volumePerMuscle,
-        days: toDayInputs(days),
+      <TemplateDayEditor key={template.id} template={template} onPersist={(days, goalPreset) => updateTemplate(template.id, toUpsert(template, days, goalPreset))
       // Failed mutations are toasted globally (§7a); the local edit stands and the
       // next change retries the whole document.
-      }).catch(() => {})} />
+      .catch(() => {})} />
     </div>
   )
 }
@@ -113,9 +121,16 @@ export function MesoTemplateEditorPage() {
 // The editable day plan. Mounted only once the template has resolved, so the
 // one-shot seed always sees real days (MesoExercises gets the same guarantee
 // from its parent resolving the meso first).
+//
+// The Cél select also lives here rather than on the parent page: it must build
+// its upsert from THIS component's live `days` state, not the parent's
+// `template` (query-cache) copy — otherwise a goal change between an exercise
+// edit and the refetch landing (or after a failed day PUT, whose local edit
+// deliberately stands) full-replaces the template with the pre-edit day list,
+// silently reverting an edit the UI still shows as applied.
 function TemplateDayEditor({ template, onPersist }: {
   template: MesoTemplate
-  onPersist: (days: MesoDay[]) => void
+  onPersist: (days: MesoDay[], goalPreset?: string | null) => void
 }) {
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(template.days ?? []))
   const [pickerDay, setPickerDay] = useState<string | null>(null)
@@ -141,11 +156,7 @@ function TemplateDayEditor({ template, onPersist }: {
   }
 
   const addExercise = (dayKey: string, item: ExerciseLibraryItem) => {
-    apply(days.map((d) => {
-      if (d.day !== dayKey) return d
-      const exercises = [...d.exercises, libraryToGymExercise(item)]
-      return { ...d, exercises, exerciseCount: exercises.length }
-    }))
+    apply(days.map((d) => (d.day === dayKey ? addExerciseWithDefaults(d, item, template.goalPreset) : d)))
   }
 
   const reorderExercises = (dayKey: string, ids: string[]) => {
@@ -158,6 +169,22 @@ function TemplateDayEditor({ template, onPersist }: {
 
   return (
     <div className="col">
+      <div className="row gap-md" style={{ padding: '4px 24px 8px', alignItems: 'center' }}>
+        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.weeks} hét</span>
+        {template.split ? (
+          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.split}</span>
+        ) : null}
+        <select
+          aria-label="Cél"
+          value={template.goalPreset ?? ''}
+          // Built from THIS render's `days` state (current, possibly unsaved-to-server
+          // edits included) — never the parent's query-cache `template.days` copy.
+          onChange={(e) => onPersist(days, e.target.value || null)}
+          style={{ fontSize: 9, color: 'var(--text-primary)', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '3px 6px' }}
+        >
+          {GOAL_PRESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
       <div style={{ padding: '12px 24px' }}>
         <MesoEditor
           days={days}

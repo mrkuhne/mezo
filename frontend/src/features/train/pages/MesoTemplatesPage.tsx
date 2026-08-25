@@ -50,6 +50,7 @@ export function MesoTemplatesPage() {
       title: `${t.title} (másolat)`,
       shortTitle: t.shortTitle,
       goal: t.goal,
+      goalPreset: t.goalPreset,
       weeks: t.weeks,
       split: t.split,
       style: t.style,

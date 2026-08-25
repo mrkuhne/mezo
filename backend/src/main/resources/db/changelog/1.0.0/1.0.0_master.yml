@@ -804,3 +804,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608241600_mezo-b3pp.19_feedback_rollup_intervention_scope.sql
+  - changeSet:
+      id: "1.0.0:202608242315_mezo-dq60_goal_preset"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608242315_mezo-dq60_goal_preset.sql

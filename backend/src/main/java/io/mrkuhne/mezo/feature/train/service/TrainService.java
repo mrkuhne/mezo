@@ -148,6 +148,7 @@ public class TrainService {
         String title,
         String shortTitle,
         String goal,
+        String goalPreset,
         LocalDate startDate,
         Integer weeks,
         String split,
@@ -176,6 +177,7 @@ public class TrainService {
         m.setShortTitle(src.shortTitle() != null ? src.shortTitle() : src.title());
         m.setStatus(src.status());
         m.setGoal(src.goal());
+        m.setGoalPreset(src.goalPreset());
         m.setStartDate(src.startDate());
         m.setEndDate(src.startDate().plusWeeks(src.weeks()));
         m.setWeeks(src.weeks());

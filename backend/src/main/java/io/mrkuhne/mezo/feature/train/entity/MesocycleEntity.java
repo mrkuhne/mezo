@@ -54,6 +54,10 @@ public class MesocycleEntity extends OwnedEntity {
     @Column
     private String goal;
 
+    /** Machine key of the wizard's goal choice (hypertrophy/strength/…); null = unknown/legacy (mezo-dq60). */
+    @Column(name = "goal_preset")
+    private String goalPreset;
+
     @NotNull
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
