@@ -149,6 +149,13 @@ function TemplateDayEditor({ template, onPersist }: {
   onPersist: (days: MesoDay[], goalPreset?: string | null, musclePriorities?: MusclePriorities | null) => void
 }) {
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(template.days ?? []))
+  // Same local-authoritative idiom as `days` above: seeded once from the prop, then the
+  // single source of truth for the picker AND the editor's budgets/lint. updateTemplate is
+  // invalidate-only (no optimistic cache write), so reading `template.musclePriorities`
+  // directly here would lag until refetch — two rapid picks would both build off the same
+  // stale map and the second onChange would full-replace away the first pick (mezo-3m5m
+  // final review, fix 2).
+  const [priorities, setPriorities] = useState<MusclePriorities>(() => template.musclePriorities ?? {})
   const [pickerDay, setPickerDay] = useState<string | null>(null)
 
   const apply = (next: MesoDay[]) => {
@@ -193,9 +200,11 @@ function TemplateDayEditor({ template, onPersist }: {
         <select
           aria-label="Cél"
           value={template.goalPreset ?? ''}
-          // Built from THIS render's `days` state (current, possibly unsaved-to-server
-          // edits included) — never the parent's query-cache `template.days` copy.
-          onChange={(e) => onPersist(days, e.target.value || null)}
+          // Built from THIS render's `days`/`priorities` state (current, possibly
+          // unsaved-to-server edits included) — never the parent's query-cache
+          // `template.days`/`template.musclePriorities` copy (the latter would otherwise
+          // clobber a tier pick still in flight — mezo-3m5m final review, fix 2).
+          onChange={(e) => onPersist(days, e.target.value || null, priorities)}
           style={{ fontSize: 9, color: 'var(--text-primary)', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '3px 6px' }}
         >
           {GOAL_PRESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -207,10 +216,13 @@ function TemplateDayEditor({ template, onPersist }: {
         </summary>
         <div style={{ marginTop: 8 }}>
           <MusclePriorityPicker
-            value={template.musclePriorities ?? {}}
+            value={priorities}
             // Built from THIS render's `days` state — same stale-cache rule as the Cél
             // select above (:121-130): never the parent's query-cache `template.days` copy.
-            onChange={(next) => onPersist(days, undefined, next)}
+            onChange={(next) => {
+              setPriorities(next)
+              onPersist(days, undefined, next)
+            }}
           />
         </div>
       </details>
@@ -221,7 +233,7 @@ function TemplateDayEditor({ template, onPersist }: {
           onRemove={removeExercise}
           onChange={updateExercise}
           onReorder={reorderExercises}
-          priorities={template.musclePriorities}
+          priorities={priorities}
           volumePerMuscle={template.volumePerMuscle ?? undefined}
         />
       </div>

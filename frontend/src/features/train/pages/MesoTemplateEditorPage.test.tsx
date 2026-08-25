@@ -331,4 +331,69 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     // not the pre-edit value 4 that the (unrefetched) query cache still holds.
     expect(tierChangePut.days![0].exercises![0].workingSets).toBe(5)
   })
+
+  it('two rapid Fókusz picks on different groups both persist, no clobber, aria-pressed flips immediately (mezo-3m5m final review, fix 2)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () =>
+        HttpResponse.json([
+          {
+            id: REAL_TPL,
+            title: 'Hypertrophy 04 · Tavasz',
+            shortTitle: 'Hypertrophy 04',
+            goal: 'Felsőtest hypertrophy · izomtömeg építés',
+            musclePriorities: null,
+            weeks: 6,
+            split: 'Pull / Push / Legs · 5×/hét',
+            style: 'RP · 6 hét',
+            phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+            runCount: 1,
+            days: [
+              {
+                day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1,
+                exercises: [
+                  { id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
+                    muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+                ],
+              },
+              { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+            ],
+          },
+        ]),
+      ),
+    )
+    const puts: { musclePriorities?: Record<string, string> | null }[] = []
+    server.use(
+      // Deliberate delay: updateTemplate is invalidate-only, so the second pick below must
+      // fire before any refetch could land — this pins the local-state fix rather than a
+      // race that happens to resolve fast enough in CI.
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        const body = (await request.json()) as (typeof puts)[number]
+        await new Promise((resolve) => setTimeout(resolve, 30))
+        puts.push(body)
+        return HttpResponse.json({ id: String(params.id), runCount: 1, phaseCurve: [], days: [], ...body })
+      }),
+    )
+    const user = userEvent.setup()
+    setupPage(REAL_TPL)
+
+    await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' })
+    await user.click(screen.getByText('Fókusz'))
+
+    // Two rapid picks on different groups, back to back — no wait for the first PUT
+    // (still in flight, delayed above) in between. The picker's `value` used to come
+    // straight from the query-cache prop, which lags in real mode; two quick picks would
+    // both build off the SAME stale map and the second onChange would full-replace away
+    // the first pick.
+    await user.click(within(tierRow('back')).getByRole('button', { name: 'Emphasize' }))
+    await user.click(within(tierRow('shoulder')).getByRole('button', { name: 'Maintain' }))
+
+    // aria-pressed reflects both picks immediately, off local state — no refetch awaited above.
+    expect(within(tierRow('back')).getByRole('button', { name: 'Emphasize' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(tierRow('shoulder')).getByRole('button', { name: 'Maintain' })).toHaveAttribute('aria-pressed', 'true')
+
+    await waitFor(() => expect(puts).toHaveLength(2))
+    // The second PUT is built from the LOCALLY merged map, so it carries BOTH picks — a
+    // stale-cache-sourced merge would have dropped the first ('back') key here.
+    expect(puts[1].musclePriorities).toEqual({ back: 'emphasize', shoulder: 'maintain' })
+  })
 })
