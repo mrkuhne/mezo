@@ -1564,6 +1564,12 @@ components:
           type: string
           nullable: true
           description: Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60)
+        musclePriorities:
+          type: object
+          nullable: true
+          description: Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
         startDate:
           type: string
           format: date
@@ -1632,6 +1638,12 @@ components:
           type: string
           nullable: true
           description: Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60)
+        musclePriorities:
+          type: object
+          nullable: true
+          description: Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
         weeks:
           type: integer
           minimum: 1
@@ -1977,6 +1989,12 @@ components:
           type: string
           nullable: true
           description: Machine key of the wizard's goal choice (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null for legacy/edited goals (mezo-dq60)
+        musclePriorities:
+          type: object
+          nullable: true
+          description: Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
         weeks:
           type: integer
           minimum: 1

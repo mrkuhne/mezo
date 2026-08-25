@@ -99,7 +99,8 @@ public class MesoTemplateService {
         return trainService.stampRun(createdBy, new TrainService.StampSource(
             t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), t.getGoalPreset(), req.getStartDate(),
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
-            mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle())));
+            mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
+            t.getMusclePriorities()));
     }
 
     /**
@@ -122,6 +123,8 @@ public class MesoTemplateService {
         template.setShortTitle(run.getShortTitle());
         template.setGoal(run.getGoal());
         template.setGoalPreset(run.getGoalPreset());
+        template.setMusclePriorities(
+            run.getMusclePriorities() != null ? Map.copyOf(run.getMusclePriorities()) : null);
         template.setWeeks(run.getWeeks());
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
@@ -148,6 +151,7 @@ public class MesoTemplateService {
         template.setShortTitle(req.getShortTitle());
         template.setGoal(req.getGoal());
         template.setGoalPreset(req.getGoalPreset());
+        template.setMusclePriorities(req.getMusclePriorities());
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());
