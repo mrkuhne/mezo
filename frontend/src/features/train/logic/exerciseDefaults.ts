@@ -4,7 +4,10 @@
 // wizard + template editor). New exercises are filled from the goal-preset
 // SCHEMES table (mezo-dq60): compound/isolation get preset-specific
 // reps/RIR/sets, plyo always gets the fixed weightless PLYO_SCHEME and is
-// exempt from the hypertrophy volume budget (mezo-gbo7).
+// exempt from the hypertrophy volume budget (mezo-gbo7) — via type alone
+// (countsForVolume's `type !== 'plyo'` fallback), no explicit
+// countsTowardVolume field, matching the generator's own plyo seed shape
+// (mezo-szsi item 6).
 // ============================================================
 import type { ExerciseLibraryItem, GymExercise, MesoDay } from '@/data/types'
 import { SCHEMES, PLYO_SCHEME } from '@/features/train/logic/planner'
@@ -31,7 +34,12 @@ export function libraryToGymExercise(item: ExerciseLibraryItem, preset?: string 
       repMin: PLYO_SCHEME.reps,
       repMax: PLYO_SCHEME.reps,
       targetRIR: 0,
-      countsTowardVolume: false,
+      // No explicit countsTowardVolume (mezo-szsi item 6): both the ExerciseAccordionRow and
+      // ExerciseRecipeRow "Számít a volumenbe" checkboxes read countsForVolume(ex), which
+      // already falls back to `type !== 'plyo'` when the field is absent — so an explicit
+      // `false` here was redundant and, worse, made the picker's plyo carry a field the
+      // generator's plyo seed (planner.ts's inline PLYO_SCHEME object) never sets. Dropping it
+      // gives both origins the identical shape (and the identical unchecked checkbox state).
     }
   }
   const scheme = (SCHEMES[preset ?? 'hypertrophy'] ?? SCHEMES.hypertrophy)[item.type]
