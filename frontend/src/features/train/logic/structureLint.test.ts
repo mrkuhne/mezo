@@ -93,6 +93,19 @@ describe('frequency (R3)', () => {
     expect(found).toHaveLength(1)
     expect(found[0].label).toContain('Bicepsz')
   })
+  it('goes silent for Maintain groups but still fires for Emphasize and no-map', () => {
+    const w = cleanWeek()
+    w[0].exercises[5].workingSets = 4 // biceps 4 sets, single day → would fire R3
+    // With { biceps: 'maintain' } — R3 silent
+    const found1 = structureLint(w, { biceps: 'maintain' }).filter((f) => f.rule === 'frequency')
+    expect(found1).toHaveLength(0)
+    // With { biceps: 'emphasize' } — R3 still fires
+    const found2 = structureLint(w, { biceps: 'emphasize' }).filter((f) => f.rule === 'frequency')
+    expect(found2).toHaveLength(1)
+    // With no priorities — R3 fires (default is 'grow')
+    const found3 = structureLint(w).filter((f) => f.rule === 'frequency')
+    expect(found3).toHaveLength(1)
+  })
 })
 
 describe('variety (R4)', () => {
@@ -110,6 +123,19 @@ describe('variety (R4)', () => {
     expect(structureLint(base).filter((f) => f.rule === 'variety')).toHaveLength(0)
     const heavy = [day('Hét', [ex('chest-mid', 3, { name: 'Bench' })]), day('Csü', [ex('chest-mid', 3, { name: 'Bench' })])]
     expect(structureLint(heavy).filter((f) => f.rule === 'variety')).toHaveLength(1)
+  })
+  it('goes silent for Maintain groups but still fires for Emphasize and no-map on the "1 gyakorlat egész héten" arm', () => {
+    // 1 exercise with 6 sets → would fire R4 "single movement carrying ≥6 weekly sets"
+    const single = [day('Hét', [ex('chest-mid', 3, { name: 'Bench' })]), day('Csü', [ex('chest-mid', 3, { name: 'Bench' })])]
+    // With { chest: 'maintain' } — R4 silent
+    const found1 = structureLint(single, { chest: 'maintain' }).filter((f) => f.rule === 'variety')
+    expect(found1).toHaveLength(0)
+    // With { chest: 'emphasize' } — R4 still fires
+    const found2 = structureLint(single, { chest: 'emphasize' }).filter((f) => f.rule === 'variety')
+    expect(found2).toHaveLength(1)
+    // With no priorities — R4 fires (default is 'grow')
+    const found3 = structureLint(single).filter((f) => f.rule === 'variety')
+    expect(found3).toHaveLength(1)
   })
 })
 
@@ -191,6 +217,12 @@ describe('session-length (R8, mezo-oyhy.3)', () => {
     // Long: pile sets past 90 min — 8 compounds × 4 sets ≈ 105 min
     const long = [day('Hét', Array.from({ length: 8 }, (_, i) => ex('chest-mid', 4, { name: `L${i}` })))]
     expect(structureLint(long).filter((f) => f.rule === 'session-length')).toHaveLength(1)
+  })
+  it('is tier-blind: Maintain groups still trip R8', () => {
+    // Too-short session (chest with 2 sets) flags R8 regardless of tier
+    const short = [day('Hét', [ex('chest-mid', 2)])]
+    const found = structureLint(short, { chest: 'maintain' }).filter((f) => f.rule === 'session-length')
+    expect(found).toHaveLength(1)
   })
 })
 
