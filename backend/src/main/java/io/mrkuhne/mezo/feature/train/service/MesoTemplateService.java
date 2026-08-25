@@ -151,7 +151,11 @@ public class MesoTemplateService {
         template.setShortTitle(req.getShortTitle());
         template.setGoal(req.getGoal());
         template.setGoalPreset(req.getGoalPreset());
-        template.setMusclePriorities(req.getMusclePriorities());
+        // Normalize {} to NULL just like TrainService#updateMusclePriorities does for a run's PUT
+        // (mezo-3m5m final review, fix 4) — otherwise an empty map persists here while the run
+        // path normalizes it away, an observable asymmetry between the two upsert paths.
+        template.setMusclePriorities(req.getMusclePriorities() == null || req.getMusclePriorities().isEmpty()
+            ? null : req.getMusclePriorities());
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());

@@ -106,6 +106,28 @@ class MusclePrioritiesCarryIT extends ApiIntegrationTest {
         String musclePrioritiesColumn = jdbcTemplate.queryForObject(
             "select muscle_priorities::text from mesocycle where id = ?", String.class, run.getId());
         assertThat(musclePrioritiesColumn).isNull();
+
+        // mezo-3m5m final review, fix 4: MesoTemplateService#applyUpsert used to store {} verbatim
+        // while TrainService#updateMusclePriorities (the run PUT, exercised above) normalizes {} to
+        // NULL — an observable asymmetry between the two upsert paths. Pin the template side too,
+        // with a non-empty map first so a bug that just skips the write (rather than normalizing)
+        // couldn't pass this by accident.
+        MesoTemplateUpsertRequest seeded = upsertRequest();
+        seeded.setMusclePriorities(Map.of("back", "emphasize"));
+        MesoTemplateResponse withMap =
+            putForBody(TEMPLATES + "/" + created.getId(), seeded, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(withMap.getMusclePriorities()).containsExactlyInAnyOrderEntriesOf(
+            Map.of("back", "emphasize"));
+
+        MesoTemplateUpsertRequest emptyMapUpdate = upsertRequest();
+        emptyMapUpdate.setMusclePriorities(Map.of());
+        MesoTemplateResponse withEmptyMap = putForBody(TEMPLATES + "/" + created.getId(), emptyMapUpdate,
+            auth, HttpStatus.OK, MesoTemplateResponse.class);
+
+        assertThat(withEmptyMap.getMusclePriorities()).isNull();
+        String templateMusclePrioritiesColumn = jdbcTemplate.queryForObject(
+            "select muscle_priorities::text from meso_template where id = ?", String.class, created.getId());
+        assertThat(templateMusclePrioritiesColumn).isNull();
     }
 
     @Test
