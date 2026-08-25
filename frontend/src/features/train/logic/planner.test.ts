@@ -26,8 +26,8 @@ describe('getSeason', () => {
 })
 
 describe('stepLabels', () => {
-  test('is the verbatim 4-step label list', () => {
-    expect(stepLabels).toEqual(['Cél', 'Hossz + fázisok', 'Split + napok', 'Program'])
+  test('is the 5-step label list, Fókusz inserted before Program (mezo-3m5m)', () => {
+    expect(stepLabels).toEqual(['Cél', 'Hossz + fázisok', 'Split + napok', 'Fókusz', 'Program'])
   })
 })
 

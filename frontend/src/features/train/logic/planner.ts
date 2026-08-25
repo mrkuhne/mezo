@@ -1,9 +1,11 @@
 // ============================================================
-// Mezo · Mesocycle Planner helpers (4-step AI planner)
+// Mezo · Mesocycle Planner helpers (5-step AI planner)
 // Ported verbatim from prototype meso-planner.jsx:
-//   - stepLabels (the 4-step state-machine labels; steps 3+4 — program review
-//     and set/rep tuning — merged into one terminal 'Program' step on the
-//     unified MesoEditor, mezo-7rdg Task 6)
+//   - stepLabels (the wizard's state-machine labels; the original prototype's
+//     steps 3+4 — program review and set/rep tuning — merged into one
+//     terminal 'Program' step on the unified MesoEditor (mezo-7rdg Task 6);
+//     a 'Fókusz' step (muscle priority tier picker) was inserted before it
+//     at index 3, mezo-3m5m)
 //   - GOAL_HINTS (per-goal "Mezo javasolja" copy, keyed by goal id)
 //   - SCHEMES (per-goal compound/isolation rep/RIR/set schemes)
 //   - addWeeks (HU month math), getSeason (Tavasz/Nyár/Ősz/Tél)
@@ -15,8 +17,9 @@ import { DAY_ORDER } from '@/data/train/train'
 import type { ExerciseKind, GymExercise, MesoDay, GoalPreset, SplitOption } from '@/data/types'
 import { fitProgram } from '@/features/train/logic/programFit'
 
-// --- step labels (meso-planner.jsx:135) ---
-export const stepLabels = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Program'] as const
+// --- step labels (meso-planner.jsx:135; Fókusz inserted at index 3 for the
+// muscle priority tier picker, mezo-3m5m — Program shifts to index 4) ---
+export const stepLabels = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Fókusz', 'Program'] as const
 
 // --- per-goal "Mezo javasolja" hint copy (meso-planner.jsx:405-409), verbatim ---
 export const GOAL_HINTS: Record<string, string> = {
