@@ -205,8 +205,8 @@ the screen-level design phase.
 
 **Screen prototype package (2026-08-26, rounds 5+ — built in Claude Code):**
 
-Interactive, self-contained prototypes live in `docs/design/prototypes/` (assembled HTML +
-`src/` parts + `build.sh`, which inlines the clay sprites from `docs/design/assets/`).
+Interactive, self-contained prototypes live in `docs/design_2.0/prototypes/` (assembled HTML +
+`src/` parts + `build.sh`, which inlines the clay sprites from `docs/design_2.0/assets/`).
 Published artifacts — updatable from ANY session by republishing with the matching `url`:
 
 - Clay csomag (asset catalog): https://claude.ai/code/artifact/79f7676e-7998-4a61-b098-44c2e0f8b905
@@ -240,11 +240,11 @@ Locked patterns from the screen rounds (canonical for every further page):
 - **Advisory signals are never red and never block; nulls are never zeros** — carried through
   every screen.
 
-**How a fresh session continues:** read this file + `docs/design/prototypes/README.md` +
-`docs/design/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
+**How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
+`docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
 Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel tab, Mezo
 (chat) tab, Napzárás, Me/profil surfaces, and the remaining Edzés full-screen flows (live
-session, review). New icons/spots always go back into `docs/design/assets/` sprites first.
+session, review). New icons/spots always go back into `docs/design_2.0/assets/` sprites first.
 
 **The task for this Claude Design session:** propose **2-3 distinct IA/navigation directions**
 as mobile mockups (iPhone, ~390×844), then iterate with Daniel toward one. Each direction must

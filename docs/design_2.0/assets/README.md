@@ -1,7 +1,7 @@
 # Mezo Clay Asset Package
 
 Draft v1 (2026-08-26) for the UI redesign (`mezo-88jw`). Source of truth for the clay graphic
-language decided in the mockup rounds — see `docs/design/2026-08-26-ui-ia-redesign-handoff.md` §10.
+language decided in the mockup rounds — see `docs/design_2.0/2026-08-26-ui-ia-redesign-handoff.md` §10.
 
 ## Files
 
