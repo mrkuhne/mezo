@@ -202,6 +202,12 @@ public class FeaturesConfiguration {
     public static final String GRAPH_MAINTENANCE_JOB_SWITCH =
         "mezo.techcore.cron.graph-maintenance-job.enabled";
 
+    /** Phase 5 W5.3 (mezo-b3pp.20) quarterly deep pass — techcore cron zone. Off ⇒ the
+     *  QuarterlyReviewJob bean does not exist; no season candidates, no quarterly profile rerun
+     *  (the WEEKLY profile job is independent and keeps running). */
+    public static final String QUARTERLY_REVIEW_JOB_SWITCH =
+        "mezo.techcore.cron.quarterly-review-job.enabled";
+
     /** W5.2 JITAI-lite interventions (bd mezo-b3pp.19) — flag-raise → config-library feed card
      *  (+ optional push). Off ⇒ no InterventionService/listener beans: flags keep logging
      *  (W5.1 is independent), but nothing is ever delivered. Needs COMPANION_SWITCH and
