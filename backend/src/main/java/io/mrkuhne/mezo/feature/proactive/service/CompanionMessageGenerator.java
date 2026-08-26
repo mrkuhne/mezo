@@ -121,13 +121,22 @@ public class CompanionMessageGenerator {
     public static final String WINDOW_MARKER = "NAPKOZBENI-JEGYZET-FELADAT";
 
     private static final String WINDOW_PROMPT = WINDOW_MARKER + "\n"
-            + "Írj rövid (2-3 mondatos), magyar napközbeni jegyzetet Danielnek társ-szemszögből, "
-            + "kizárólag a megadott mai állapotból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
-            + "déli (nudge) esetén a nap hátralévő részére adj egy konkrét, gyengéd fókuszt; esti "
-            + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI KORÁBBI "
-            + "ÜZENETEK blokk, annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
-            + "adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi "
-            + "döntés. Sima folyószöveggel válaszolj, markdown és felsorolás nélkül.";
+            + "Írj magyar napközbeni jegyzetet Danielnek társ-szemszögből, 2-4 rövid bekezdésben, "
+            + "kizárólag a megadott tényadatokból és a te eszközeidből (tool-hívások) származó "
+            + "adatokból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
+            + "- déli (nudge): (1) a nap EDDIGI állapota konkrét számokkal (ami már történt: edzés, "
+            + "bevitel a célhoz képest, alvás ha van); (2) mi JÖN MÉG MA (edzés, étkezési keret); "
+            + "(3) 1-2 konkrét, cselekvési szintű fókuszpont a hátralévő időre. "
+            + "- esti (closing): zárd a napot 1-2 konkrét megfigyeléssel a mai tényleges adataiból "
+            + "(mit sikerült, miben maradt el a célhoz képest) + egy rövid tanulság a holnapi napra. "
+            + "Szabályok: "
+            + "- Konkrét számot CSAK akkor idézhetsz, ha az a megadott pillanatképből vagy egy "
+            + "tool-válaszból származik; kitalálni tilos. "
+            + "- Ha a pillanatkép egy adatpontot nem ad meg pontosan (pl. mai edzésterv, "
+            + "makró-maradék, alvási fázisok), hívd meg a megfelelő eszközt, mielőtt írsz. "
+            + "- Ha van MAI KORÁBBI ÜZENETEK blokk, annak tartalmát NE ismételd. "
+            + "- Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
+            + "- Sima folyószöveg, markdown és felsorolás nélkül.";
 
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
