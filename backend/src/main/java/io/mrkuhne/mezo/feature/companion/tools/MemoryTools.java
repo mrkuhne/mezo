@@ -66,7 +66,7 @@ public class MemoryTools {
         return b.toString();
     }
 
-    @Tool(name = "compare_periods", description = "Két KORÁBBI IDŐSZAK összevetése a heti/havi "
+    @Tool(name = "compare_periods", description = "Két KORÁBBI IDŐSZAK összevetése a havi "
             + "összefoglalókból: mi jellemezte az egyiket, mi a másikat. periodA és periodB "
             + "formátuma negyedév (pl. 2026-Q3) vagy hónap (pl. 2026-07); a negyedév a benne lévő "
             + "havi összefoglalókból áll össze. Használd, amikor a user két időszakot hasonlít "

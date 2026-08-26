@@ -87,6 +87,11 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
                 LocalDate.of(2026, 7, 1), "Júliusban sok volt a volumen.");
+        // A second month INSIDE the same quarter — this is what proves a quarter really is
+        // assembled from ALL its month rungs (Quarters.endOf), not just its first month, which is
+        // exactly what Quarters.parse(periodA) would already return on its own.
+        periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 8, 1), "Augusztusban javult a helyzet.");
         periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
                 LocalDate.of(2026, 4, 1), "Áprilisban visszafogtam.");
 
@@ -94,13 +99,34 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).contains("2026-Q3")
                 .contains("Júliusban sok volt a volumen.")
+                .contains("Augusztusban javult a helyzet.")
                 .contains("2026-Q2")
                 .contains("Áprilisban visszafogtam.");
         assertThat(audit.toRefsEnvelope().refs())
                 .anySatisfy(ref -> {
                     assertThat(ref.kind()).isEqualTo("Memory");
                     assertThat(ref.id()).isEqualTo("2026-07-01");
+                })
+                .anySatisfy(ref -> {
+                    assertThat(ref.kind()).isEqualTo("Memory");
+                    assertThat(ref.id()).isEqualTo("2026-08-01");
                 });
+    }
+
+    @Test
+    void testComparePeriods_shouldTruncateLongSummary_whenOverRenderCap() {
+        UUID owner = userPopulator.createUser().getId();
+        // mezo.companion.quarterly.render-max-chars = 400 (application.yml) — one char past the
+        // cap must be cut, with the "…" marker, so the prompt budget the property documents is
+        // actually enforced and not merely declared.
+        String longSummary = "A".repeat(400) + "TULCSORDULT-RESZ";
+        periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 7, 1), longSummary);
+
+        String out = memoryTools.comparePeriods("2026-07", "2026-06", ctx(owner));
+
+        assertThat(out).contains("A".repeat(400) + "…")
+                .doesNotContain("TULCSORDULT-RESZ");
     }
 
     @Test
@@ -124,6 +150,15 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
         String out = memoryTools.comparePeriods("2026-Q3", "2025-Q1", ctx(owner));
 
         assertThat(out).contains("2025-Q1").contains("nincs adat");
+        // Only the PRESENT period's rung produced a ref — the missing period's "nincs adat"
+        // branch must add nothing to the audit (no ref for a period the tool didn't actually
+        // find data for).
+        assertThat(audit.toRefsEnvelope().refs())
+                .hasSize(1)
+                .anySatisfy(ref -> {
+                    assertThat(ref.kind()).isEqualTo("Memory");
+                    assertThat(ref.id()).isEqualTo("2026-07-01");
+                });
     }
 
     @Test
@@ -132,8 +167,11 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(memoryTools.comparePeriods("tavaly nyáron", "2026-Q2", ctx(owner)))
                 .isEqualTo("Időszak-összehasonlítás: nincs adat");
+        assertThat(audit.toRefsEnvelope()).isNull();
+
         assertThat(memoryTools.comparePeriods(null, null, ctx(owner)))
                 .isEqualTo("Időszak-összehasonlítás: nincs adat");
+        assertThat(audit.toRefsEnvelope()).isNull();
     }
 
     @Test
