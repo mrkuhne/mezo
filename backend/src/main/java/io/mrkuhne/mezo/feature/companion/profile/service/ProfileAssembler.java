@@ -8,16 +8,21 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.profile.config.ProfileProperties;
 import io.mrkuhne.mezo.feature.companion.profile.entity.ProfileMetaEnvelope;
+import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
  * nodes when W2 live". There is no RECOVERY node kind; the faithful reading is what the graph
  * knows about how he works, i.e. the active PATTERN/PREFERENCE titles (the profile node itself
  * excluded — it must never eat its own output).
+ *
+ * <p><b>Decision-quality trend (W5.3, mezo-b3pp.20, spec §9.3):</b> this calendar quarter's mean
+ * reviewed outcome rating against the previous quarter's, computed quarter-over-quarter in pure
+ * code — see {@link #decisionQuality}.
  *
  * <p><b>Honest absence:</b> with no feedback verdicts, no reviewed decisions and no graph nodes
  * there is nothing to learn from — no LLM call, no node, and any existing profile is left exactly
@@ -99,7 +108,7 @@ public class ProfileAssembler {
             log.debug("Profile skipped for user {} — no feedback, no reviewed decisions, no graph nodes", userId);
             return Optional.empty();
         }
-        String payload = renderPayload(rollups, decisions, nodes);
+        String payload = renderPayload(userId, rollups, decisions, nodes);
         String prose = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_profile", "assemble", null, null),
                 () -> companionLlm.completeSmart(PROMPT, payload));
@@ -141,7 +150,7 @@ public class ProfileAssembler {
     }
 
     /** The LLM payload — pure code, honest about absence (a section with nothing stays out). */
-    String renderPayload(List<FeedbackRollupEntity> rollups, List<DecisionEntryEntity> decisions,
+    String renderPayload(UUID userId, List<FeedbackRollupEntity> rollups, List<DecisionEntryEntity> decisions,
             List<GraphNodeEntity> nodes) {
         StringBuilder out = new StringBuilder();
         List<String> feedbackLines = rollups.stream()
@@ -175,6 +184,10 @@ public class ProfileAssembler {
                 out.append('\n');
             }
         }
+        String quality = decisionQuality(userId);
+        if (!quality.isEmpty()) {
+            out.append("\nDÖNTÉSI MINŐSÉG:\n").append(quality).append('\n');
+        }
         if (!nodes.isEmpty()) {
             out.append("\nAMIT A GRÁF TUD RÓLA:\n");
             for (GraphNodeEntity n : nodes) {
@@ -182,6 +195,41 @@ public class ProfileAssembler {
             }
         }
         return out.toString();
+    }
+
+    /**
+     * W5.3 (mezo-b3pp.20, spec §9.3): the decision-quality trend — this calendar quarter's mean
+     * outcome rating against the previous quarter's, computed in PURE CODE (NFR-M-4: never derive
+     * and narrate in one step; the model gets the observation, not the arithmetic).
+     *
+     * <p>Honest absence, both halves: a quarter with no reviewed decision contributes no line at
+     * all, and with neither quarter present the whole section stays out of the payload rather
+     * than telling the model "0,0/5", which would read as terrible judgement instead of no data.
+     */
+    private String decisionQuality(UUID userId) {
+        LocalDate currentStart = Quarters.startOf(LocalDate.now());
+        String current = quarterLine("ez a negyedév", userId, currentStart);
+        String previous = quarterLine("előző negyedév", userId, Quarters.previous(currentStart));
+        if (current.isEmpty()) {
+            return "";   // nothing reviewed this quarter — a lone historical line is not a trend
+        }
+        return previous.isEmpty() ? current : current + "\n" + previous;
+    }
+
+    /** "- ez a negyedév: 4,5/5 (2 értékelt döntés)" — empty when the quarter has none. */
+    private String quarterLine(String label, UUID userId, LocalDate quarterStart) {
+        ZoneId zone = ZoneId.systemDefault();
+        List<DecisionEntryEntity> reviewed = decisionRepository
+                .findByCreatedByAndReviewedAtBetweenAndOutcomeRatingIsNotNullAndDeletedFalse(
+                        userId,
+                        quarterStart.atStartOfDay(zone).toInstant(),
+                        Quarters.endOf(quarterStart).plusDays(1).atStartOfDay(zone).toInstant());
+        OptionalDouble mean = reviewed.stream().mapToInt(DecisionEntryEntity::getOutcomeRating).average();
+        if (mean.isEmpty()) {
+            return "";
+        }
+        return String.format(Locale.forLanguageTag("hu"), "- %s: %.1f/5 (%d értékelt döntés)",
+                label, mean.getAsDouble(), reviewed.size());
     }
 
     /** Hard cap at the injection budget, cut on a word boundary — Tudástár must never show more

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.journal.repository;
 
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -23,4 +24,11 @@ public interface DecisionEntryRepository extends JpaRepository<DecisionEntryEnti
      *  newest review first, capped by the caller — the profile's decision-quality input. */
     List<DecisionEntryEntity> findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(
         UUID createdBy, Limit limit);
+
+    /** W5.3 (mezo-b3pp.20): reviewed decisions whose REVIEW landed inside a window, rating
+     *  present — the profile's decision-quality trend input. Windowed by {@code reviewedAt}
+     *  (not {@code decidedOn}) on purpose: the trend is about how his judgement is turning out
+     *  as he learns the outcomes, not about when he happened to write the decision down. */
+    List<DecisionEntryEntity> findByCreatedByAndReviewedAtBetweenAndOutcomeRatingIsNotNullAndDeletedFalse(
+        UUID createdBy, Instant from, Instant to);
 }

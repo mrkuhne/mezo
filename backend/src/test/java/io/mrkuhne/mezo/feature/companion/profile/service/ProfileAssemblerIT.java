@@ -9,13 +9,17 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.profile.entity.ProfileMetaEnvelope;
+import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
+import io.mrkuhne.mezo.support.populator.GraphPopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +52,8 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     private FeedbackPopulator feedbackPopulator;
     @Autowired
     private JournalPopulator journalPopulator;
+    @Autowired
+    private GraphPopulator graphPopulator;
     @Autowired
     private UserPopulator userPopulator;
     @Autowired
@@ -199,11 +205,87 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         List<DecisionEntryEntity> decisions = decisionRepository
                 .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
 
-        String payload = assembler.renderPayload(rollups, decisions, List.of());
+        String payload = assembler.renderPayload(owner, rollups, decisions, List.of());
 
         assertThat(payload).contains("VISSZAJELZÉSEK (utolsó 30 nap):");
         assertThat(payload).contains("surface:chat_message: 1 tetszik / 1 nem tetszik");
         assertThat(payload).contains("ELUTASÍTÁS OKAI:");
         assertThat(payload).contains("chat_message: pontatlan 0 · túl sok 1 · rossz időzítés 0 · nem rólam szól 0");
+    }
+
+    /**
+     * W5.3 (mezo-b3pp.20): seeds a reviewed decision with an explicit {@code reviewedAt} so the
+     * decision-quality trend's quarter window (keyed by REVIEW time, not {@code decidedOn}) can be
+     * pinned deterministically — {@code decidedOn} doubles as the review instant here purely to
+     * place the row inside a specific calendar quarter for the test.
+     */
+    private void reviewedDecision(UUID owner, LocalDate decidedOn, short rating) {
+        Instant reviewedAt = decidedOn.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        journalPopulator.createReviewedDecision(owner, decidedOn, "Döntés", rating, "Eredmény", reviewedAt);
+    }
+
+    /**
+     * Same idiom as {@link #renderPayload_carries_real_effectiveness_and_style_lines_from_computed_rollups}
+     * above: {@link ProfileAssembler#renderPayload} is package-private exactly so a test can call
+     * it directly with the real rows, no {@code rebuild} (and no LLM call) required.
+     */
+    private String lastPayloadFor(UUID owner) {
+        List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc(owner);
+        List<DecisionEntryEntity> decisions = decisionRepository
+                .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
+        return assembler.renderPayload(owner, rollups, decisions, List.of());
+    }
+
+    /**
+     * W5.3 (mezo-b3pp.20): the decision-quality trend compares two independently reviewed
+     * quarters — two ratings this quarter (mean 4.5) against one last quarter (2.0) — proving the
+     * arithmetic (mean, count, quarter windowing via {@link Quarters}) is genuinely per-quarter and
+     * not, say, an all-time average mislabeled as two lines.
+     */
+    @Test
+    void renderPayload_compares_this_quarter_against_the_previous_one_when_both_have_reviewed_decisions() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate thisQuarter = LocalDate.now();
+        LocalDate lastQuarter = Quarters.previous(Quarters.startOf(thisQuarter)).plusDays(10);
+        // two reviewed decisions this quarter (4 and 5), one last quarter (2)
+        reviewedDecision(owner, thisQuarter, (short) 4);
+        reviewedDecision(owner, thisQuarter, (short) 5);
+        reviewedDecision(owner, lastQuarter, (short) 2);
+
+        String payload = lastPayloadFor(owner);
+
+        assertThat(payload).contains("DÖNTÉSI MINŐSÉG:")
+                .contains("ez a negyedév: 4,5/5 (2 értékelt döntés)")
+                .contains("előző negyedév: 2,0/5 (1 értékelt döntés)");
+    }
+
+    /**
+     * W5.3 (mezo-b3pp.20): honest absence, first half — a quarter with nothing reviewed
+     * contributes no line, so a lone current-quarter rating renders without a dangling "előző
+     * negyedév" line for a quarter that has no data behind it.
+     */
+    @Test
+    void renderPayload_omits_the_previous_quarter_line_when_it_has_no_reviewed_decisions() {
+        UUID owner = userPopulator.createUser().getId();
+        reviewedDecision(owner, LocalDate.now(), (short) 3);
+
+        String payload = lastPayloadFor(owner);
+
+        assertThat(payload).contains("ez a negyedév: 3,0/5 (1 értékelt döntés)")
+                .doesNotContain("előző negyedév");
+    }
+
+    /**
+     * W5.3 (mezo-b3pp.20): honest absence, second half — with NOTHING reviewed this quarter the
+     * whole section stays out, even though the user has other signal (a graph node) that would
+     * otherwise make the payload non-empty. Rendering "0,0/5" here would read to the model as
+     * terrible judgement rather than as no data — this is the bug the omission rule prevents.
+     */
+    @Test
+    void renderPayload_omits_the_whole_section_when_nothing_is_reviewed_this_quarter() {
+        UUID owner = userPopulator.createUser().getId();
+        graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Késői evés rontja az alvást");
+
+        assertThat(lastPayloadFor(owner)).doesNotContain("DÖNTÉSI MINŐSÉG");
     }
 }
