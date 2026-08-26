@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
+import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
@@ -325,6 +326,15 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  exercise the catch-and-log degrade instead of the "empty answer" path. */
     public static final String LIFE_EVENTS_BROKEN = "[fake-life-events-broken]";
 
+    /** Scripted season proposal (W5.3): [fake-season:[…]] planted in a month rung's text (the
+     *  gather renders every rung verbatim, so that is this pipeline's sentinel-planting channel). */
+    public static final Pattern SEASON_SENTINEL =
+            Pattern.compile("\\[fake-season:(\\[.*])]", Pattern.DOTALL);
+
+    /** Scripted BROKEN season answer (W5.3) — matching brackets, invalid JSON inside, so ITs
+     *  exercise the catch-and-log degrade instead of the "empty answer" path. */
+    public static final String SEASON_BROKEN = "[fake-season-broken]";
+
     /** Call counter (W2.2): lets ITs assert the LLM-call guarantees (emptiness gate, no re-call on
      *  re-confirm) rather than only their edge-count side effects — {@code llm_log_history} is
      *  written only by the REAL {@code GeminiCompanionLlm} adapter's {@code recorded(...)} wrapper,
@@ -498,6 +508,15 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             Matcher m = LIFE_EVENTS_SENTINEL.matcher(userMessage);
             // default = no life events: an un-scripted narrative proposes nothing
+            return m.find() ? m.group(1) : "[]";
+        }
+        if (systemPrompt.startsWith(QuarterlyReviewService.SEASON_MARKER)) {
+            if (userMessage.contains(SEASON_BROKEN)) {
+                // matching brackets, invalid JSON inside — the catch-and-log path, not "empty"
+                return "[{\"title\":\"Törött\",\"summary\":}]";
+            }
+            Matcher m = SEASON_SENTINEL.matcher(userMessage);
+            // default = no seasons: an un-scripted quarter proposes nothing
             return m.find() ? m.group(1) : "[]";
         }
         // mezo-8z79: a scripted empty CHAT answer. Placed AFTER every marker branch on purpose —
