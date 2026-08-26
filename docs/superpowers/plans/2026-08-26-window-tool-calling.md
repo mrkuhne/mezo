@@ -102,7 +102,7 @@ supplement the scaffold, never replace it.
 
 Steps:
 
-- [ ] Add the import to `CompanionMessageGeneratorIT.java` (the file currently
+- [x] Add the import to `CompanionMessageGeneratorIT.java` (the file currently
   imports `CheckInPopulator`, `DailySummaryPopulator`, etc. — add in the same
   `io.mrkuhne.mezo.support.populator` group, alphabetically):
   ```java
@@ -113,7 +113,7 @@ Steps:
   ```java
   @Autowired private GoalPopulator goalPopulator;
   ```
-- [ ] Add the two failing tests at the end of the class (before the closing
+- [x] Add the two failing tests at the end of the class (before the closing
   brace), after `testGenerateWindow_shouldReturnExistingRow_whenCalledTwice`:
   ```java
   @Test
@@ -156,12 +156,12 @@ Steps:
   (The file already has `import static org.assertj.core.api.Assertions.assertThat;` —
   add `import static org.assertj.core.api.Assertions.tuple;` to the same static group
   and use `tuple("Goal", "Nyári cut")` unqualified in both tests.)
-- [ ] Run the focused IT — expect the two NEW tests to FAIL (refs are `[]` today),
+- [x] Run the focused IT — expect the two NEW tests to FAIL (refs are `[]` today),
   the existing tests to pass:
   ```bash
   cd backend && docker compose up -d && ./mvnw clean test -Dtest=CompanionMessageGeneratorIT
   ```
-- [ ] Commit:
+- [x] Commit:
   ```bash
   git add backend/src/test/java/io/mrkuhne/mezo/feature/proactive/CompanionMessageGeneratorIT.java
   git commit -m "test(proactive): window kinds should persist tool-audit refs (mezo-106s)"
@@ -190,7 +190,7 @@ Steps:
 
 Steps:
 
-- [ ] In `CompanionMessageGenerator.java`, add the two imports to the existing
+- [x] In `CompanionMessageGenerator.java`, add the two imports to the existing
   `io.mrkuhne.mezo.feature.companion.*` group (next to the `ToolText` import at
   line 20):
   ```java
@@ -198,12 +198,12 @@ Steps:
   import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
   import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
   ```
-- [ ] Add the registry field to the `@RequiredArgsConstructor` field block (after
+- [x] Add the registry field to the `@RequiredArgsConstructor` field block (after
   `private final CompanionLlm companionLlm;` at line 136):
   ```java
   private final CompanionToolRegistry toolRegistry;
   ```
-- [ ] In `generateWindow` (lines 339-350), replace the 2-string call and the
+- [x] In `generateWindow` (lines 339-350), replace the 2-string call and the
   empty-refs envelope with the tool-calling call + audit-ref conversion:
   ```java
   // ELŐTT (delete):
@@ -246,7 +246,7 @@ Steps:
   (The `LlmCallContext` call is byte-identical to before — only the `complete`
   arguments change. The other three `generate*` methods keep the 2-string overload
   untouched.)
-- [ ] In `FakeCompanionLlm.java`, patch the heartbeat branch (lines 389-391) so the
+- [x] In `FakeCompanionLlm.java`, patch the heartbeat branch (lines 389-391) so the
   scripted answer is returned UNCHANGED but the tool sentinels in the user message
   still execute for their audit side effect (Locked decision 2):
   ```java
@@ -270,13 +270,13 @@ Steps:
   (`toolEchoes` is the existing private helper at line 666 — it executes every
   `[fake-tool:name]` sentinel against the passed callbacks and returns the echo
   strings, which are discarded here on purpose.)
-- [ ] Run the focused IT — expect ALL tests in `CompanionMessageGeneratorIT` to pass
+- [x] Run the focused IT — expect ALL tests in `CompanionMessageGeneratorIT` to pass
   (the two new ref tests green, the existing `body()`/eyebrow/blank/idempotency
   tests still green):
   ```bash
   cd backend && ./mvnw clean test -Dtest=CompanionMessageGeneratorIT
   ```
-- [ ] Commit:
+- [x] Commit:
   ```bash
   git add backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java \
           backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java
@@ -297,7 +297,7 @@ Steps:
 
 Steps:
 
-- [ ] In `CompanionMessageGenerator.java` (lines 120-127), replace the entire
+- [x] In `CompanionMessageGenerator.java` (lines 120-127), replace the entire
   `WINDOW_PROMPT` constant. The `WINDOW_MARKER` line (line 118) and its javadoc
   (lines 115-117) stay; only the constant body changes:
   ```java
@@ -334,7 +334,7 @@ Steps:
   (The prompt's tool routing rides on each tool's own `Használd, amikor …`
   description — `ChatService.SYSTEM_PROMPT`'s `[Eszköz-útmutató]` block is NOT
   touched, per spec §4.)
-- [ ] Run the focused IT — all `CompanionMessageGeneratorIT` tests still pass
+- [x] Run the focused IT — all `CompanionMessageGeneratorIT` tests still pass
   (the fake dispatches on the marker, not the body):
   ```bash
   cd backend && ./mvnw clean test -Dtest=CompanionMessageGeneratorIT
@@ -357,7 +357,7 @@ Steps:
 
 Steps:
 
-- [ ] In `docs/features/proactive.md`, update the `generateWindow` bullet in §3
+- [x] In `docs/features/proactive.md`, update the `generateWindow` bullet in §3
   (the bullet starting "**`generateWindow`** (midday/evening) — the heartbeat
   generator ported near-verbatim", around line 129). Replace the trailing
   "Flat prose answer (no JSON), code-set eyebrow (`Napközi jegyzet`/`Napzárás`),
@@ -369,13 +369,13 @@ Steps:
   tool-audit refs land in the envelope (`refs` no longer `[]`); the `morning`/
   `sleep`/`weight` kinds keep the tool-free overload.
   ```
-- [ ] In §7 "How to extend it", update the `midday`/`evening` carry-no-refs note
+- [x] In §7 "How to extend it", update the `midday`/`evening` carry-no-refs note
   (the bullet listing `MORNING_CANDIDATES` — around line 1516): replace
   "`midday`/`evening` carry no refs (the retired-heartbeat precedent)" with
   "`midday`/`evening` carry the tool-audit refs (mezo-106s — the retired-heartbeat
   no-refs precedent is superseded)".
-- [ ] Bump the frontmatter: `updated: 2026-08-25` → `updated: 2026-08-26`.
-- [ ] Run the doc lint — expect no new errors and no staleness flag on
+- [x] Bump the frontmatter: `updated: 2026-08-25` → `updated: 2026-08-26`.
+- [x] Run the doc lint — expect no new errors and no staleness flag on
   `proactive.md`:
   ```bash
   node scripts/lint-docs.mjs
@@ -399,12 +399,12 @@ Steps:
   ```bash
   cd backend && docker compose up -d && ./mvnw clean test
   ```
-- [ ] Frontend both modes (no FE change expected — the gate is mandatory
+- [x] Frontend both modes (no FE change expected — the gate is mandatory
   anyway):
   ```bash
   cd frontend && pnpm test && VITE_USE_MOCK=true pnpm test
   ```
-- [ ] Doc lint (already green after Task 4 — re-run to be safe):
+- [x] Doc lint (already green after Task 4 — re-run to be safe):
   ```bash
   node scripts/lint-docs.mjs
   ```
