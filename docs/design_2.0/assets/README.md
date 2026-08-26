@@ -8,7 +8,7 @@ language decided in the mockup rounds — see `docs/design_2.0/2026-08-26-ui-ia-
 | File | Contents |
 |---|---|
 | `logo-orb.svg` | The Orb — standalone logo mark (app icon, chat avatar, coach marker) |
-| `clay-icons.svg` | Sprite: 30 `<symbol>` icons, ids `i-*`, all `viewBox="0 0 100 100"` |
+| `clay-icons.svg` | Sprite: 33 `<symbol>` icons, ids `i-*`, all `viewBox="0 0 100 100"` |
 | `clay-spots.svg` | Sprite: 14 `<symbol>` spot illustrations, ids `s-*` |
 
 Browsable catalog artifact: https://claude.ai/code/artifact/ *(see bd issue notes for current link)*.
@@ -63,6 +63,9 @@ brightness(1.04) opacity(.48)`.
 | i-hajnal | Hajnal | daypart switcher (Reggel) |
 | i-level | Levél | Mezo messages tile (with unread badge) |
 | i-rend | Rend | Életjel "Rend" need (zen stones) |
+| i-video | Videó | exercise demo video chip (play button) |
+| i-idozito | Időzítő | rest timer (pihenő) bar + timer surfaces |
+| i-kihivas | Kihívás | workout challenges ("A mai küldetések" carousel) |
 
 ### Spots (`s-*`)
 

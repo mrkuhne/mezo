@@ -9,4 +9,5 @@ cat src/nap-head.html     "$A/clay-icons.svg" "$A/clay-spots.svg" src/nap-body.h
 cat src/edzes-head.html   "$A/clay-icons.svg" "$A/clay-spots.svg" src/edzes-body.html   > edzes-tab.html
 cat src/meso-head.html    "$A/clay-icons.svg" "$A/clay-spots.svg" src/meso-body.html    > mezociklus.html
 cat src/catalog-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/catalog-body.html > clay-csomag.html
-echo "OK — 4 prototype files assembled."
+cat src/session-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/session-body.html > edzes-session.html
+echo "OK — 5 prototype files assembled."

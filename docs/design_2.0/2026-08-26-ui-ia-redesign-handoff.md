@@ -213,6 +213,7 @@ Published artifacts — updatable from ANY session by republishing with the matc
 - Nap-gerinc: https://claude.ai/code/artifact/e1eae7d4-05bc-41c9-8e7e-55bdbee70249
 - Edzés tab: https://claude.ai/code/artifact/d9fd807c-71ca-4c27-b8c9-7d32aca48d15
 - Mezociklus: https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3
+- Edzés-session: https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77
 
 Locked patterns from the screen rounds (canonical for every further page):
 
@@ -239,12 +240,22 @@ Locked patterns from the screen rounds (canonical for every further page):
   frozen report ("Heti szettek · a blokk íve" naming), Történet selection mode → A/B compare.
 - **Advisory signals are never red and never block; nulls are never zeros** — carried through
   every screen.
+- **Edzés-session fully specified** in its prototype (feature-audited against
+  `ActiveWorkoutPage.tsx` — see `prototypes/README.md` for the full list): prep briefing
+  (XP forecast ring + skill bars, weekly zone-context with the 4 status hints, niggle card,
+  challenge carousel with conf/"tanulom"), live logging (family-color-themed execution card,
+  warmup B-labels with no RIR, rest bar with pause/skip, medal toast, 5-way navigation,
+  ⋯ actions incl. reorder-with-handover and the "Csak ma / Minden hétre" extra-set prompt,
+  set table with edit/delete + one-slot floor), RP debrief, summary + level-up. New icons for
+  it: `i-video`, `i-idozito`, `i-kihivas`. Honesty gates deliberately preserved (no fabricated
+  numbers, misses never red, inert `Passz`/`Tudatosítsuk később` kept inert).
 
 **How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
 `docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
 Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel tab, Mezo
-(chat) tab, Napzárás, Me/profil surfaces, and the remaining Edzés full-screen flows (live
-session, review). New icons/spots always go back into `docs/design_2.0/assets/` sprites first.
+(chat) tab, Napzárás, Me/profil surfaces, and the Edzés review page (the live session flow is
+done — see Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
+sprites first.
 
 **The task for this Claude Design session:** propose **2-3 distinct IA/navigation directions**
 as mobile mockups (iPhone, ~390×844), then iterate with Daniel toward one. Each direction must
