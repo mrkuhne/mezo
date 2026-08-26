@@ -220,7 +220,7 @@ public class ProfileAssembler {
     private String quarterLine(String label, UUID userId, LocalDate quarterStart) {
         ZoneId zone = ZoneId.systemDefault();
         List<DecisionEntryEntity> reviewed = decisionRepository
-                .findByCreatedByAndReviewedAtBetweenAndOutcomeRatingIsNotNullAndDeletedFalse(
+                .findByCreatedByAndReviewedAtGreaterThanEqualAndReviewedAtLessThanAndOutcomeRatingIsNotNullAndDeletedFalse(
                         userId,
                         quarterStart.atStartOfDay(zone).toInstant(),
                         Quarters.endOf(quarterStart).plusDays(1).atStartOfDay(zone).toInstant());

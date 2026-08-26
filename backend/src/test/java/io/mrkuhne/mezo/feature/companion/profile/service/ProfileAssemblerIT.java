@@ -288,4 +288,28 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(lastPayloadFor(owner)).doesNotContain("DÖNTÉSI MINŐSÉG");
     }
+
+    /**
+     * Review fix (mezo-b3pp.20): {@code Between} is inclusive at BOTH ends, so a decision reviewed
+     * at exactly the current quarter's first instant used to land in BOTH windows — the previous
+     * window's exclusive-in-intent upper bound IS the current quarter's start instant. Pins the
+     * half-open fix ({@code GreaterThanEqual}/{@code LessThan}): a decision reviewed at that exact
+     * boundary counts ONLY in the current quarter's line, never in the previous one's. A second row
+     * is seeded in the previous quarter purely so both lines render and both counts can be asserted
+     * — that way this test fails under the old query on ANY day of the year, not only when run on a
+     * real quarter start.
+     */
+    @Test
+    void renderPayload_counts_a_decision_reviewed_at_the_exact_quarter_boundary_only_once() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate quarterStart = Quarters.startOf(LocalDate.now());
+        LocalDate previousQuarterDay = Quarters.previous(quarterStart).plusDays(5);
+        reviewedDecision(owner, quarterStart, (short) 4);       // reviewedAt == exact quarter-start instant
+        reviewedDecision(owner, previousQuarterDay, (short) 2);
+
+        String payload = lastPayloadFor(owner);
+
+        assertThat(payload).contains("ez a negyedév: 4,0/5 (1 értékelt döntés)")
+                .contains("előző negyedév: 2,0/5 (1 értékelt döntés)");
+    }
 }
