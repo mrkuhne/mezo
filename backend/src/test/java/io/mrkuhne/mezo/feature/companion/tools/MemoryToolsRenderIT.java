@@ -175,6 +175,21 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testComparePeriods_shouldEmitNoRefs_whenBothPeriodsParseButHaveNoRungs() {
+        UUID owner = userPopulator.createUser().getId();
+        // No period_summary rows at all for this user — unlike the unparseable-argument test,
+        // both arguments here parse fine (Quarters.parse succeeds for both), so this walks all
+        // the way into renderPeriod on EACH side and hits its rungs.isEmpty() branch, rather than
+        // short-circuiting before renderPeriod is ever called.
+
+        String out = memoryTools.comparePeriods("2026-Q3", "2026-Q2", ctx(owner));
+
+        assertThat(out).contains("2026-Q3").contains("2026-Q2")
+                .contains("nincs adat");
+        assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
     void testComparePeriods_shouldNotLeakAnotherUsersPeriods_whenOwnershipDiffers() {
         UUID owner = userPopulator.createUser().getId();
         UUID other = userPopulator.createUser().getId();
