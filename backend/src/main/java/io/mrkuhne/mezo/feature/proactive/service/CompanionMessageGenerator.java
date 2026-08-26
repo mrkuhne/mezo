@@ -8,9 +8,12 @@ import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
+import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
@@ -134,6 +137,7 @@ public class CompanionMessageGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final CompanionToolRegistry toolRegistry;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ProactiveProperties properties;
     private final ObjectMapper objectMapper;
@@ -336,18 +340,26 @@ public class CompanionMessageGenerator {
                 + earlierMessagesBlock(userId, date)
                 + "\n\nABLAK: " + window;
 
+        ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", kind, null, null),
-                () -> companionLlm.complete(WINDOW_PROMPT, payload));
+                () -> companionLlm.complete(WINDOW_PROMPT, payload,
+                        toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         if (answer == null || answer.isBlank()) {
             log.warn("Unusable {} answer for {} on {} — no row persisted", kind, userId, date);
             return null;
         }
+        RefsEnvelope toolRefs = audit.toRefsEnvelope();
+        List<CompanionMessageEnvelope.Ref> refs = toolRefs == null
+                ? List.of()
+                : toolRefs.refs().stream()
+                        .map(r -> new CompanionMessageEnvelope.Ref(r.kind(), r.id()))
+                        .toList();
         CompanionMessageEntity message = new CompanionMessageEntity();
         message.setCreatedBy(userId);
         message.setMessageDate(date);
         message.setKind(kind);
-        message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), List.of()));
+        message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), refs));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
     }

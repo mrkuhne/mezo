@@ -388,6 +388,10 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchorIndexes\":[]}";
         }
         if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
+            // mezo-106s: run the scripted [fake-tool:…] sentinels for their audit side
+            // effect (real RecordingToolCallback + real tool refs), but do NOT echo the
+            // results into the answer — the window body stays the clean scripted text.
+            toolEchoes(userMessage, tools, toolContext);
             Matcher m = HEARTBEAT_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "FAKE-NAPKOZBENI-JEGYZET";
         }
