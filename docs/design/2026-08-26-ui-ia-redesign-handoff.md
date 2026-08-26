@@ -172,6 +172,37 @@ visual fragmentation (4 card languages) amplifies the feeling, but the root is s
 around the daily rhythm; visual unification is part of it, not the driver. The 4-tab shell is
 NOT sacred.
 
+**Decided in the mockup rounds (2026-08-26, Claude Code artifacts):**
+
+- **Spine = Hybrid.** A day-rhythm "Nap" spine tab + Edzés and Fuel as workshop tabs + **Mezo
+  (chat) as a first-class tab**. Rule: spine = "doing now", tabs = "plan/manage". The spine
+  itself uses feed mechanics (chronological, now-anchored cards). Rejected: pure time-spine,
+  chat-as-home (strong runner-up), pure feed.
+- **Visual language = "Mozaik 2.0".** Huawei-Health-inspired tile mosaic: data drawn as
+  graphics (rings, gauges, hypnogram, sparkline), poster-anatomy cards (one visual anchor +
+  one big 40–60px numeral + eyebrow label), domain-color washes on tiles — a conscious
+  relaxation of the "domain colors only in the data-viz band" rule.
+- **Depth.** Two-layer shadows (large soft + contact) + inner top light edge; focus cards cast
+  *colored* shadows (MOST card coral, insight card lavender); subtle ground gradient.
+- **Motion.** One-shot entrance choreography (staggered card rise 60–80 ms, ring sweep, kcal
+  count-up, day-bar fill), then calm — only the MOST dot and the FAB keep breathing; springy
+  press states; everything reduced-motion-guarded.
+- **Brand: logo = the Orb.** The companion as a warm gradient sphere *character* with states
+  (awake, night, listening, celebrating); it is the app icon, chat avatar and coach marker in
+  one. Wordmark: lowercase "mezo" in Geist. Rejected: Ívjel, M-horizont.
+- **Graphics = clay 3D SVG.** Recipe: radial gradient (light from top-left) + specular
+  highlight + ground shadow + reflected glow. A full **clay icon set replaces emojis**
+  (12 pieces drafted); in the tab bar active = colored clay, inactive = muted. Mini-clay
+  rules: silhouette-first, one gradient + one highlight, ground shadow only ≥32 px, light
+  always from top-left. Stroke icons were rejected as too dry.
+- Mockup artifacts (claude.ai/code/artifact/…): Négy gerinc `9d423d6a-d792-458b-951f-41dc019c6514`,
+  Hibrid nyelvpróbák `bd54c3ae-19fc-4da1-89f7-3e20cd556a8e`, Mozaik 2.0
+  `dd9ed4ee-7d2f-4ef6-baad-de086b68f128`, Grafikai műhely `9a376291-ae47-4e86-afe7-2a1faabcc6df`.
+
+Of the §12 open questions, #1, #2 and #6 are answered by the above; #3 (how Insights
+dissolves), #4 (companion thread placement) and #5 (the exact "now card" content) remain for
+the screen-level design phase.
+
 **The task for this Claude Design session:** propose **2-3 distinct IA/navigation directions**
 as mobile mockups (iPhone, ~390×844), then iterate with Daniel toward one. Each direction must
 answer:
