@@ -129,7 +129,8 @@ public class ChatService {
             - cél, kalóriacél, heti ütem → get_goal
             - XP, szint, skill, streak → get_growth | napi rutin, küldetés, szokás → get_daily_practice
             - minták, „mit vettél észre rólam" → get_insights (csak megerősített minták; predikció/kísérlet még nem elérhető)
-            - hasonló korábbi nap → find_similar_past_days""";
+            - hasonló korábbi nap → find_similar_past_days
+            - két időszak összevetése (negyedév/hónap) → compare_periods""";
 
     /**
      * mezo-q71s: a persona a prompt TETEJÉN áll, alatta a futásidejű adatblokkok (pillanatkép,

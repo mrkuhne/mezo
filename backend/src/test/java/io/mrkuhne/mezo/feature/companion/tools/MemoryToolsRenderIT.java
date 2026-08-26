@@ -3,8 +3,10 @@ package io.mrkuhne.mezo.feature.companion.tools;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
+import io.mrkuhne.mezo.support.populator.PeriodSummaryPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ToolContext;
@@ -28,6 +30,7 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private MemoryTools memoryTools;
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private PeriodSummaryPopulator periodSummaryPopulator;
 
     private ToolCallAudit audit;
 
@@ -77,5 +80,71 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).isEqualTo("Hasonló korábbi napok: nincs adat");
         assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testComparePeriods_shouldRenderBothQuarters_whenRungsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 7, 1), "Júliusban sok volt a volumen.");
+        periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 4, 1), "Áprilisban visszafogtam.");
+
+        String out = memoryTools.comparePeriods("2026-Q3", "2026-Q2", ctx(owner));
+
+        assertThat(out).contains("2026-Q3")
+                .contains("Júliusban sok volt a volumen.")
+                .contains("2026-Q2")
+                .contains("Áprilisban visszafogtam.");
+        assertThat(audit.toRefsEnvelope().refs())
+                .anySatisfy(ref -> {
+                    assertThat(ref.kind()).isEqualTo("Memory");
+                    assertThat(ref.id()).isEqualTo("2026-07-01");
+                });
+    }
+
+    @Test
+    void testComparePeriods_shouldAcceptMonths_whenSpelledAsYyyyMm() {
+        UUID owner = userPopulator.createUser().getId();
+        periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 7, 1), "Júliusi hónap.");
+
+        String out = memoryTools.comparePeriods("2026-07", "2026-06", ctx(owner));
+
+        assertThat(out).contains("2026-07").contains("Júliusi hónap.")
+                .contains("2026-06").contains("nincs adat");
+    }
+
+    @Test
+    void testComparePeriods_shouldRenderHonestNoData_whenAPeriodHasNoRungs() {
+        UUID owner = userPopulator.createUser().getId();
+        periodSummaryPopulator.periodSummary(owner, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 7, 1), "Júliusi hónap.");
+
+        String out = memoryTools.comparePeriods("2026-Q3", "2025-Q1", ctx(owner));
+
+        assertThat(out).contains("2025-Q1").contains("nincs adat");
+    }
+
+    @Test
+    void testComparePeriods_shouldRenderNoData_whenAnArgumentIsUnparseable() {
+        UUID owner = userPopulator.createUser().getId();
+
+        assertThat(memoryTools.comparePeriods("tavaly nyáron", "2026-Q2", ctx(owner)))
+                .isEqualTo("Időszak-összehasonlítás: nincs adat");
+        assertThat(memoryTools.comparePeriods(null, null, ctx(owner)))
+                .isEqualTo("Időszak-összehasonlítás: nincs adat");
+    }
+
+    @Test
+    void testComparePeriods_shouldNotLeakAnotherUsersPeriods_whenOwnershipDiffers() {
+        UUID owner = userPopulator.createUser().getId();
+        UUID other = userPopulator.createUser().getId();
+        periodSummaryPopulator.periodSummary(other, PeriodSummaryEntity.GRANULARITY_MONTH,
+                LocalDate.of(2026, 7, 1), "IDEGEN-SZOVEG");
+
+        String out = memoryTools.comparePeriods("2026-Q3", "2026-Q2", ctx(owner));
+
+        assertThat(out).doesNotContain("IDEGEN-SZOVEG");
     }
 }
