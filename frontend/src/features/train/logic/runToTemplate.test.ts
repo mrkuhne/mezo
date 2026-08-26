@@ -56,6 +56,13 @@ describe('runToTemplate', () => {
     expect(body.notes).toBe('Váll niggle-kíméletes')
   })
 
+  test('musclePriorities carries onto the template (mezo-3m5m), null when the run has none', () => {
+    expect(runToTemplate(meso({ musclePriorities: { back: 'emphasize' } })).musclePriorities).toEqual({
+      back: 'emphasize',
+    })
+    expect(runToTemplate(meso()).musclePriorities).toBeNull()
+  })
+
   test('maps the days to day inputs — the working day keeps its recipe, ids dropped', () => {
     const body = runToTemplate(meso())
     expect(body.days).toHaveLength(2)

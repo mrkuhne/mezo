@@ -29,17 +29,19 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
     @Test
     void testRollover_shouldRampMuscleAndAdvanceWeek_whenCalendarWeekIsAhead() {
         UUID owner = ownerId();
-        // Active meso: startDate = 14 days ago, weeks=6 → calWeek=3; lastRun null; chest currentSets=14 (mev8/mav14/mrv20).
+        // Active meso: startDate = 14 days ago, weeks=6 → calWeek=3; lastRun null; chest currentSets=10
+        // (mev8/mav14/mrv20) — below the MAV ceiling so a no-priority (Grow) ramp is observable
+        // (mezo-3m5m, GD4: Grow's ceiling is MAV, not MRV — a row already sat AT MAV would HOLD).
         var meso = train.activeMesoStartedWeeksAgo(
             owner, 2, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
-        train.createVolumeLog(owner, meso.getId(), "chest", 14);
+        train.createVolumeLog(owner, meso.getId(), "chest", 10);
         // A completed instance in week 2's window logging 14 chest working sets (targetHit, no grind: rir 1, targetRir 1).
         train.completedChestSetsInWeek(owner, meso, 2, 14, 1, 1);
 
         svc.rolloverIfDue(owner, reload(meso));
 
         MuscleGroupVolumeLogEntity chest = chestLog(owner, meso.getId());
-        assertThat(chest.getCurrentSets()).isEqualTo(16); // 14 + step(2)
+        assertThat(chest.getCurrentSets()).isEqualTo(12); // 10 + step(2)
         var after = reload(meso);
         assertThat(after.getCurrentWeek()).isEqualTo(3);
         assertThat(after.getVolumeRecompute().lastRun()).isEqualTo("W3");
@@ -49,7 +51,7 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
         // idempotent: a second rollover in the same calendar week does nothing.
         svc.rolloverIfDue(owner, reload(meso));
         MuscleGroupVolumeLogEntity chest2 = chestLog(owner, meso.getId());
-        assertThat(chest2.getCurrentSets()).isEqualTo(16);
+        assertThat(chest2.getCurrentSets()).isEqualTo(12);
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W3");
     }
 
@@ -98,6 +100,65 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
         // No COUNTING volume last week -> target not hit -> HOLD at 10.
         // Before mezo-gbo7 the hang's 10 sets read as a hit target and ramped to 12.
         assertThat(backLog(owner, meso.getId()).getCurrentSets()).isEqualTo(10);
+    }
+
+    @Test
+    void testRollover_shouldHoldInsteadOfRamp_whenLastWeekGrindsBelowTargetRir() {
+        UUID owner = ownerId();
+        // calWeek 3 (started 2 weeks ago), chest currentSets=10, well under mrv(20) so this isn't
+        // the early-deload branch — isolates the decider's plain `!grind` ramp gate (DA4's other
+        // half; the existing rollover fixtures only ever pin targetRir 0 / rir 0 -> gap 0, which
+        // never fires grind).
+        var meso = train.activeMesoStartedWeeksAgo(
+            owner, 2, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+        train.createVolumeLog(owner, meso.getId(), "chest", 10);
+        // Week 2: 10 chest working sets hit the target(10), but the logged RIR(0) lands 3 below the
+        // exercise's targetRir(3) — >= grindRirGap(2) — so the group's `grind` fires.
+        train.completedChestSetsInWeek(owner, meso, 2, 10, 0, 3);
+
+        svc.rolloverIfDue(owner, reload(meso));
+
+        // Target hit but grinding -> the decider's `!grind` gate blocks the ramp -> HOLD at 10,
+        // not RAMP to 12 (10 + step(2)).
+        assertThat(chestLog(owner, meso.getId()).getCurrentSets()).isEqualTo(10);
+    }
+
+    @Test
+    void testRollover_shouldIgnoreExemptExerciseGrind_whenCountingExerciseHitsTargetCleanly() {
+        UUID owner = ownerId();
+        var meso = train.activeMesoStartedWeeksAgo(
+            owner, 2, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+        train.createVolumeLog(owner, meso.getId(), "back", 10);
+
+        var day = train.createWorkoutSession(owner, meso.getId(), "Hát nap", "gym", 0, "planned");
+        // Counting exercise: hits the target(10) cleanly — logged RIR equals its own targetRir, no
+        // grind of its own.
+        var row = train.createExercise(owner, day.getId(), "Behúzás", "back", "compound");
+        row.setTargetRir(1);
+        train.save(row);
+        // Exempt exercise, same coarse group ("back-wide" -> MuscleGroup.of -> "back"), grinding
+        // hard (rir 0 vs targetRir 3, gap 3 >= grindRirGap 2). This is the regression the issue
+        // names: if this ever leaked back into latestRirByExercise (instead of being filtered by
+        // countsTowardVolume BEFORE that map is populated), the group would wrongly HOLD instead
+        // of ramping.
+        var hang = train.createExercise(owner, day.getId(), "Dead Hang", "back-wide", "plyo");
+        hang.setTargetRir(3);
+        hang.setCountsTowardVolume(false);
+        train.save(hang);
+
+        var instance = train.createWorkoutInstance(owner, day, meso.getStartDate().plusWeeks(1), "completed");
+        for (int i = 0; i < 10; i++) {
+            train.createLoggedSet(owner, row.getId(), instance.getId(), i, "60", 8, 1); // rir == targetRir -> no grind
+        }
+        for (int i = 10; i < 15; i++) {
+            train.createLoggedSet(owner, hang.getId(), instance.getId(), i, "0", 45, 0); // deep grind, but exempt
+        }
+
+        svc.rolloverIfDue(owner, reload(meso));
+
+        // Target hit, no grind leak from the exempt exercise -> RAMP to 12 (10 + step(2)), not
+        // HOLD at 10.
+        assertThat(backLog(owner, meso.getId()).getCurrentSets()).isEqualTo(12);
     }
 
     private MuscleGroupVolumeLogEntity backLog(UUID owner, UUID mesoId) {

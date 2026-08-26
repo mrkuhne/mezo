@@ -13,16 +13,18 @@
 // surface; per-day locality is what the red tab dots are for.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
-import type { GymExercise, MesoDay } from '@/data/types'
+import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
 import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 import { ExerciseAccordionRow } from '@/features/train/components/ExerciseAccordionRow'
 import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
+import { PeakFitCard } from '@/features/train/components/PeakFitCard'
 import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 import { StructureLintCard } from '@/features/train/components/StructureLintCard'
-import { budgetGroup, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
+import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
+import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { structureLint } from '@/features/train/logic/structureLint'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
@@ -35,9 +37,17 @@ interface MesoEditorProps {
   onReorder: (dayKey: string, ids: string[]) => void
   /** Renames the active day (custom splits, capability parity with PlannerDaySection). */
   onRenameDay?: (dayKey: string, name: string) => void
+  /** Per-coarse-muscle tier map (mezo-3m5m, spec GD4) — threaded into muscleBudgets,
+   *  structureLint and peakWeekFit. Absent/null -> every group defaults to Grow. */
+  priorities?: MusclePriorities | null
+  /** Explicit per-mesocycle landmark override (AD5) — wins over the static GROUP_LANDMARKS
+   *  default in muscleBudgets and peakWeekFit. */
+  volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null
 }
 
-export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, onRenameDay }: MesoEditorProps) {
+export function MesoEditor({
+  days, onAddClick, onRemove, onChange, onReorder, onRenameDay, priorities, volumePerMuscle,
+}: MesoEditorProps) {
   const [activeDay, setActiveDay] = useState<string | null>(
     () => days.find((d) => d.current)?.day ?? days.find((d) => !isOffDay(d))?.day ?? days[0]?.day ?? null,
   )
@@ -53,9 +63,10 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
 
   const day = days.find((d) => d.day === activeDay) ?? days[0]
 
-  const budgets = muscleBudgets(days)
+  const budgets = muscleBudgets(days, priorities, volumePerMuscle)
   const capWarnings = sessionCapWarnings(days)
-  const lintFindings = structureLint(days)
+  const lintFindings = structureLint(days, priorities)
+  const peakFit = peakWeekFit(days, priorities, volumePerMuscle)
   const warningDays = new Set(capWarnings.map((w) => w.day))
   const overBudgets = budgets.filter((b) => b.level === 'over')
   const warningCount = overBudgets.length + capWarnings.length
@@ -188,6 +199,8 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
 
       <SetBudgetCard budgets={budgets} capWarnings={capWarnings} defaultOpen={warningCount > 0} />
 
+      <PeakFitCard fits={peakFit} />
+
       <StructureLintCard findings={lintFindings} />
 
       {off ? (
@@ -213,7 +226,7 @@ export function MesoEditor({ days, onAddClick, onRemove, onChange, onReorder, on
                 onToggle={() => setExpandedId((cur) => (cur === e.id ? null : e.id))}
                 onRemove={() => onRemove(day.day, e.id)}
                 onChange={(patch) => onChange(day.day, e.id, patch)}
-                highlight={e.type !== 'plyo' && overGroups.has(budgetGroup(e.muscle) ?? '')}
+                highlight={countsForVolume(e) && overGroups.has(budgetGroup(e.muscle) ?? '')}
                 suggestedWarmup={suggestedWarmupSets(day, e.id)}
               />
             )}

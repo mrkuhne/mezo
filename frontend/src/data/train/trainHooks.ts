@@ -44,6 +44,7 @@ import type {
   GymSchedule,
   GymScheduleSlot,
   Mesocycle,
+  MusclePriorities,
   Sport,
   SportSchedule,
   SportSession,
@@ -135,6 +136,9 @@ export function toMesocycle(r: MesocycleResponse): Mesocycle {
     startDate: huMonthDay(r.startDate),
     endDate: huMonthDay(r.endDate),
     goal: r.goal ?? '',
+    // Narrowed explicitly (mezo-ltk0) rather than left to the blanket spread above + the
+    // `as Mesocycle` cast — mirrors mesoTemplateHooks.ts's toMesoTemplate.
+    musclePriorities: (r.musclePriorities as MusclePriorities | null) ?? null,
   } as Mesocycle
 }
 
@@ -331,6 +335,24 @@ function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void 
   qc.setQueryData(mesoReportQueryKey(id), report)
 }
 
+/**
+ * Mock-mode muscle-priorities update (mezo-3m5m): the real endpoint replaces the map
+ * wholesale and returns the FULL assembled run (days/volumePerMuscle/hasReport included).
+ * Mock mirrors that "full run" semantic by patching just the `musclePriorities` key of the
+ * already-cached run object in place (the mockClose idiom) — every other field rides along
+ * untouched, so the write can never silently drop volumePerMuscle/days/hasReport.
+ */
+function mockUpdateMusclePriorities(
+  qc: QueryClient,
+  id: string,
+  musclePriorities: MusclePriorities | null,
+): Mesocycle | undefined {
+  qc.setQueryData<Mesocycle[]>(['train', 'mesocycles'], (prev) =>
+    (prev ?? mesocycles).map((m) => (m.id === id ? { ...m, musclePriorities } : m)))
+  const cached = qc.getQueryData<Mesocycle[]>(['train', 'mesocycles']) ?? mesocycles
+  return cached.find((m) => m.id === id)
+}
+
 type MutateOpts = { onSuccess?: () => void; onError?: () => void }
 
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
@@ -364,6 +386,8 @@ type TrainData = {
   activateMesocycle: (id: string, opts?: MutateOpts) => void
   /** Closes (archives) a run. `selfEval` is the owner's optional close-time note (mezo-meyc.2). */
   closeMesocycle: (id: string, selfEval?: string | null, opts?: MutateOpts) => void
+  /** Replaces a run's per-muscle priority tiers wholesale (mezo-3m5m); null/empty -> all-Grow. */
+  updateMusclePriorities: (id: string, musclePriorities: MusclePriorities | null, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
@@ -515,6 +539,18 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       invalidate()
       if (!mock) qc.invalidateQueries({ queryKey: mesoReportQueryKey(args.id) })
     },
+  })
+  // Muscle-priority tiers (mezo-3m5m): real mode PUTs the whole map and remaps the FULL
+  // returned run; mock patches the client-owned cache in place (mockUpdateMusclePriorities)
+  // instead of no-oping — a no-op here would leave the picker UI (Task 8) showing a tier
+  // change that never sticks, the same trap `mockClose` was written to avoid.
+  const updateMusclePrioritiesMutation = useMutation({
+    mutationFn: mock
+      ? async (args: { id: string; musclePriorities: MusclePriorities | null }) =>
+          mockUpdateMusclePriorities(qc, args.id, args.musclePriorities)
+      : (args: { id: string; musclePriorities: MusclePriorities | null }) =>
+          trainApi.updateMusclePriorities(args.id, args.musclePriorities).then(toMesocycle),
+    onSuccess: invalidate,
   })
   const replaceMutation = useMutation({
     mutationFn: mock
@@ -745,6 +781,11 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       closeMutation.mutate({ id, selfEval }, opts),
     [closeMutation],
   )
+  const updateMusclePriorities = useCallback(
+    (id: string, musclePriorities: MusclePriorities | null, opts?: MutateOpts) =>
+      updateMusclePrioritiesMutation.mutate({ id, musclePriorities }, opts),
+    [updateMusclePrioritiesMutation],
+  )
   const saveDayExercises = useCallback(
     (mesoId: string, dayId: string, exercises: GymExerciseInput[]) =>
       replaceMutation.mutate({ mesoId, dayId, exercises }),
@@ -871,6 +912,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     exerciseRecords: recordsData ?? [],
     activateMesocycle,
     closeMesocycle,
+    updateMusclePriorities,
     saveDayExercises,
     startWorkout,
     logSet,

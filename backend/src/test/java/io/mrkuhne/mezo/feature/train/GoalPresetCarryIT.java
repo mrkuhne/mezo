@@ -67,6 +67,29 @@ class GoalPresetCarryIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testUpdateTemplate_shouldClearGoalPresetToNull_onFullReplaceWithoutIt() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+
+        MesoTemplateUpsertRequest withPreset = upsertRequest();
+        withPreset.setGoalPreset("strength");
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, withPreset, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(created.getGoalPreset()).isEqualTo("strength");
+
+        // applyUpsert is a full replace (mezo-szsi item 4) — a PUT that omits goalPreset
+        // clears the column, it does not merge/preserve the previous value.
+        MesoTemplateUpsertRequest withoutPreset = upsertRequest();
+        MesoTemplateResponse updated = putForBody(TEMPLATES + "/" + created.getId(), withoutPreset,
+            auth, HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(updated.getGoalPreset()).isNull();
+
+        String goalPresetColumn = jdbcTemplate.queryForObject(
+            "select goal_preset from meso_template where id = ?", String.class, created.getId());
+        assertThat(goalPresetColumn).isNull();
+    }
+
+    @Test
     void testRerun_shouldMaterializeGoalPresetFromLegacyRun() {
         UUID owner = ownerId();
         MesocycleEntity legacy = trainPopulator.createMesocycle(owner, "Legacy sport blokk", "archived");

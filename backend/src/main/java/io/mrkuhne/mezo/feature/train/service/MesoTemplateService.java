@@ -99,7 +99,8 @@ public class MesoTemplateService {
         return trainService.stampRun(createdBy, new TrainService.StampSource(
             t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), t.getGoalPreset(), req.getStartDate(),
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
-            mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle())));
+            mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
+            t.getMusclePriorities()));
     }
 
     /**
@@ -122,6 +123,8 @@ public class MesoTemplateService {
         template.setShortTitle(run.getShortTitle());
         template.setGoal(run.getGoal());
         template.setGoalPreset(run.getGoalPreset());
+        template.setMusclePriorities(
+            run.getMusclePriorities() != null ? Map.copyOf(run.getMusclePriorities()) : null);
         template.setWeeks(run.getWeeks());
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
@@ -148,6 +151,13 @@ public class MesoTemplateService {
         template.setShortTitle(req.getShortTitle());
         template.setGoal(req.getGoal());
         template.setGoalPreset(req.getGoalPreset());
+        // Normalize {} to NULL just like TrainService#updateMusclePriorities does for a run's PUT
+        // (mezo-3m5m final review, fix 4) — otherwise an empty map persists here while the run
+        // path normalizes it away, an observable asymmetry between the two upsert paths.
+        // PriorityTier.normalize also drops redundant `grow` entries and 400s on unknown tier
+        // values, same as the run PUT (mezo-ltk0, tier-review follow-up 2).
+        Map<String, String> normalizedPriorities = PriorityTier.normalize(req.getMusclePriorities());
+        template.setMusclePriorities(normalizedPriorities.isEmpty() ? null : normalizedPriorities);
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());

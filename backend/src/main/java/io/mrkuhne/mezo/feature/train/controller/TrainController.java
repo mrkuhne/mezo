@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.api.dto.MesocycleCloseRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleReportResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
+import io.mrkuhne.mezo.api.dto.MusclePrioritiesUpdateRequest;
 import io.mrkuhne.mezo.api.dto.RunSessionLogRequest;
 import io.mrkuhne.mezo.api.dto.RunSessionLogResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
@@ -162,6 +163,13 @@ public class TrainController implements TrainApi {
     @Override
     public MesocycleResponse activateMesocycle(UUID id) {
         return service.activateMesocycle(currentUserId.get(), id);
+    }
+
+    @Override
+    public MesocycleResponse updateMesocycleMusclePriorities(
+            UUID id, MusclePrioritiesUpdateRequest musclePrioritiesUpdateRequest) {
+        return service.updateMusclePriorities(currentUserId.get(), id,
+            musclePrioritiesUpdateRequest.getMusclePriorities());
     }
 
     @Override

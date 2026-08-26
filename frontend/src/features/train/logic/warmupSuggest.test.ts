@@ -23,9 +23,14 @@ describe('suggestedWarmupSets', () => {
     expect(suggestedWarmupSets(day, 'a')).toBe(0)
   })
 
-  it('bodyweight-ish (no anchor, repMax >= 15) → 0', () => {
-    const day = mkDay([mkEx({ id: 'a', muscle: 'chest-mid', type: 'compound', anchorWeightKg: null, repMax: 15 })])
+  it('genuine bodyweight-ish (no anchor, repMin >= 15, e.g. 15-20) → 0', () => {
+    const day = mkDay([mkEx({ id: 'a', muscle: 'chest-mid', type: 'compound', anchorWeightKg: null, repMin: 15, repMax: 20 })])
     expect(suggestedWarmupSets(day, 'a')).toBe(0)
+  })
+
+  it('weighted-feel 12-15 isolation with no anchor yet still gets warmups (mezo-szsi: repMin, not repMax, gates the bodyweight-ish rule)', () => {
+    const day = mkDay([mkEx({ id: 'a', muscle: 'back-wide', type: 'isolation', anchorWeightKg: null, repMin: 12, repMax: 15 })])
+    expect(suggestedWarmupSets(day, 'a')).toBe(1)
   })
 
   it('first non-plyo compound opening its group → 3', () => {

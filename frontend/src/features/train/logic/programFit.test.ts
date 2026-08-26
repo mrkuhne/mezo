@@ -89,6 +89,53 @@ describe('phase 3 — session length', () => {
   })
 })
 
+describe('countsForVolume — exempt (non-plyo) exercises are gated out like plyo (mezo-yqpf)', () => {
+  it('an exempt exercise\'s sets are NOT counted in the group\'s volume slots — top-up ignores it and never touches it', () => {
+    // biceps MEV 8. Three COUNTED isolation slots start at 2 each (6 total, below MEV) —
+    // same shape as the sibling "tops an under-MEV group up to its MEV" test above. A fourth,
+    // EXEMPT (countsTowardVolume: false) exercise sits in the same group with 8 sets already —
+    // enough to look like the group has already reached MEV if it were wrongly counted as a slot.
+    const out = fitProgram([
+      day('Hét', [
+        ex('biceps-short', 2, { type: 'isolation', repMin: 10, repMax: 12 }),
+        ex('biceps-long', 8, { name: 'ExemptCurl', countsTowardVolume: false }),
+        ex('chest-mid', 3), ex('back-mid', 3), ex('quad', 3),
+      ]),
+      day('Csü', [
+        ex('biceps-brachialis', 2, { name: 'C2', type: 'isolation', repMin: 10, repMax: 12 }),
+        ex('biceps', 2, { name: 'C3', type: 'isolation', repMin: 10, repMax: 12 }),
+        ex('chest-upper', 3), ex('back-wide', 3), ex('ham', 3),
+      ]),
+    ], 'hypertrophy')
+    const exempt = out.flatMap((d) => d.exercises).find((e) => e.name === 'ExemptCurl')!
+    expect(exempt.workingSets).toBe(8) // never touched by the fitter
+    const bi = muscleBudgets(out).find((r) => r.group === 'biceps')!
+    // muscleBudgets already excludes exempt sets — this only passes if the fitter's OWN
+    // top-up loop also ignored the exempt exercise's 8 sets when deciding the group was
+    // already at MEV (a buggy fitter that counts them stops topping up before reaching 8).
+    expect(bi.workingSets).toBeGreaterThanOrEqual(GROUP_MEV.biceps)
+    expect(bi.exemptSets).toBe(8)
+  })
+
+  it('the too-long trim never decrements the exempt exercise even when it has the most sets', () => {
+    // traps has no GROUP_MEV entry, so if the exempt exercise were wrongly treated as a normal
+    // slot it would be a completely unprotected, highest-set-count victim — the fitter's first
+    // and easiest pick every guard iteration. chest (MEV 4, starting at 6) is the only legitimate
+    // trim target and has plenty of headroom above its floor.
+    const long = [day('Hét', [
+      ex('traps', 12, { name: 'ExemptShrug', countsTowardVolume: false }),
+      ex('chest-mid', 6),
+      ex('back-mid', 10),
+    ])]
+    const out = fitProgram(long, 'hypertrophy')
+    const exempt = out[0].exercises.find((e) => e.name === 'ExemptShrug')!
+    expect(exempt.workingSets).toBe(12) // never decremented, despite having the most sets
+    expect(estimateSessionMinutes(out[0].exercises)).toBeLessThanOrEqual(90)
+    const chest = out[0].exercises.find((e) => e.muscle === 'chest-mid')!
+    expect(chest.workingSets).toBeLessThan(6) // the real, protectable exercise absorbs the trim instead
+  })
+})
+
 describe('passthrough', () => {
   it('off/sport/empty days and warnings survive untouched', () => {
     const rest: MesoDay = { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] }

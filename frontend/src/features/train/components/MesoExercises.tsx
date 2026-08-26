@@ -11,16 +11,24 @@
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
-import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
+import type { ExerciseLibraryItem, MesoDay, Mesocycle, MusclePriorities } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
+import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
 export function MesoExercises({ meso }: { meso: Mesocycle }) {
-  const { saveDayExercises } = useTrain()
+  const { saveDayExercises, updateMusclePriorities } = useTrain()
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(meso.days ?? []))
+  // Same local-authoritative idiom as `days` above: seeded once from the prop, then the
+  // single source of truth for the picker AND the editor's budgets/lint. Real mode's
+  // updateMusclePriorities mutation is invalidate-only (no optimistic cache write), so
+  // reading `meso.musclePriorities` directly here would lag until refetch — two rapid
+  // picks would both build off the same stale map and the second onChange would
+  // full-replace away the first pick (mezo-3m5m final review, fix 2).
+  const [priorities, setPriorities] = useState<MusclePriorities>(() => meso.musclePriorities ?? {})
 
   // T1 persistence: each add/remove keeps the synchronous local update (instant UI,
   // Phase-1 behavior) and fires a background full-list PUT when the day carries a real
@@ -88,6 +96,23 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
   return (
     <div className="col">
+      <details style={{ padding: '4px 24px 8px' }}>
+        <summary className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', cursor: 'pointer' }}>
+          Fókusz
+        </summary>
+        <div className="col" style={{ marginTop: 8, gap: 6 }}>
+          <MusclePriorityPicker
+            value={priorities}
+            onChange={(next) => {
+              setPriorities(next)
+              updateMusclePriorities(meso.id, next)
+            }}
+          />
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            A módosítás a következő heti görgetésnél lép életbe.
+          </span>
+        </div>
+      </details>
       <div style={{ padding: '12px 24px' }}>
         <MesoEditor
           days={days}
@@ -95,6 +120,8 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
           onRemove={removeExercise}
           onChange={updateExercise}
           onReorder={reorderExercises}
+          priorities={priorities}
+          volumePerMuscle={meso.volumePerMuscle ?? undefined}
         />
       </div>
 

@@ -32,6 +32,30 @@ class GoalPresetBackfillSqlIT extends AbstractIntegrationTest {
         assertThat(preset(noGoal)).isNull();
     }
 
+    /**
+     * The hypertrophy arm above is the only one the original test exercised — a typo in any of
+     * the other 5 CASE literals would silently leave the column NULL. Descriptions copied
+     * verbatim from the migration file (202608242315_mezo-dq60_goal_preset.sql), not from the FE
+     * GOAL_PRESETS table, so this test actually pins the SQL rather than re-deriving it.
+     */
+    @Test
+    void testBackfill_shouldMapEveryRemainingKnownDescription() throws Exception {
+        UUID owner = ownerId();
+        UUID strength = insertTemplate(owner, "Intenzitás-driven · 3-6 reps · alacsonyabb volumen · hosszabb pihenő");
+        UUID cutPrep = insertTemplate(owner, "Volumen-tartás · izom-megőrzés · deficit nélkül");
+        UUID recovery = insertTemplate(owner, "Isoláció-fokú · alacsony fatigue · niggle-aware substitúció");
+        UUID sport = insertTemplate(owner, "Vertikális teljesítmény · vállstabilitás · plyo-integráció");
+        UUID erohipertrofia = insertTemplate(owner, "Kevés gyakorlat · 6-8 rep RIR 0 · plyo-vezérelt láb + felső");
+
+        for (String stmt : backfillStatements()) jdbcTemplate.update(stmt);
+
+        assertThat(preset(strength)).isEqualTo("strength");
+        assertThat(preset(cutPrep)).isEqualTo("cut-prep");
+        assertThat(preset(recovery)).isEqualTo("recovery");
+        assertThat(preset(sport)).isEqualTo("sport");
+        assertThat(preset(erohipertrofia)).isEqualTo("erohipertrofia");
+    }
+
     private UUID insertTemplate(UUID owner, String goal) {
         UUID id = UUID.randomUUID();
         jdbcTemplate.update("""

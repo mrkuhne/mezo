@@ -51,6 +51,7 @@ export function MesoTemplatesPage() {
       shortTitle: t.shortTitle,
       goal: t.goal,
       goalPreset: t.goalPreset,
+      musclePriorities: t.musclePriorities,
       weeks: t.weeks,
       split: t.split,
       style: t.style,

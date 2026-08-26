@@ -8,10 +8,11 @@
 // blocking) rendered by StructureLintCard. Thresholds live in the
 // exported tables below — one place to tune.
 // ============================================================
-import type { MesoDay } from '@/data/types'
+import type { MesoDay, MusclePriorities } from '@/data/types'
 import { BUDGET_GROUP_LABELS, budgetGroup, countsForVolume } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
+import { tierOf } from '@/features/train/logic/musclePriorities'
 
 export type StructureRuleId =
   | 'exercises-per-muscle' | 'sets-per-exercise' | 'frequency'
@@ -87,7 +88,7 @@ export const PUSH_PULL_SIDE: Record<string, 'push' | 'pull'> = {
 
 const groupLabel = (group: string) => BUDGET_GROUP_LABELS[group] ?? group
 
-export function structureLint(days: MesoDay[]): StructureFinding[] {
+export function structureLint(days: MesoDay[], priorities?: MusclePriorities | null): StructureFinding[] {
   const session: StructureFinding[] = []
   const weekly: StructureFinding[] = []
   const training = days.filter((d) => !isOffDay(d) && d.exercises.length > 0)
@@ -183,6 +184,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
 
   // R3 — frequency
   for (const [group, sets] of weeklySets) {
+    if (tierOf(priorities, group) === 'maintain') continue // maintenance: 1 session/week is defensible (GD5)
     if (sets >= FREQUENCY_MIN_WEEKLY_SETS && (weeklyDays.get(group)?.size ?? 0) === 1) {
       weekly.push({
         rule: 'frequency',
@@ -194,6 +196,7 @@ export function structureLint(days: MesoDay[]): StructureFinding[] {
 
   // R4 — variety
   for (const [group, names] of weeklyNames) {
+    if (tierOf(priorities, group) === 'maintain') continue // maintenance: 1 session/week is defensible (GD5)
     const sets = weeklySets.get(group) ?? 0
     if (names.size > VARIETY_MAX) {
       weekly.push({

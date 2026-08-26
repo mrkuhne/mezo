@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -57,6 +58,11 @@ public class MesocycleEntity extends OwnedEntity {
     /** Machine key of the wizard's goal choice (hypertrophy/strength/…); null = unknown/legacy (mezo-dq60). */
     @Column(name = "goal_preset")
     private String goalPreset;
+
+    /** Sparse per-coarse-muscle priority tiers ("emphasize"/"maintain"; absent key = grow); null = all grow (mezo-3m5m). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "muscle_priorities", columnDefinition = "jsonb")
+    private Map<String, String> musclePriorities;
 
     @NotNull
     @Column(name = "start_date", nullable = false)

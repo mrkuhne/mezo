@@ -1,5 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
+import type { MusclePriorities } from '@/data/types'
 
 // Contract types generated from api/openapi.yml — regenerate with `pnpm generate:api`.
 export type MesocycleResponse = components['schemas']['MesocycleResponse']
@@ -11,6 +12,7 @@ export type MesoTemplateResponse = components['schemas']['MesoTemplateResponse']
 export type MesoTemplateUpsertRequest = components['schemas']['MesoTemplateUpsertRequest']
 export type MesoTemplateStartRequest = components['schemas']['MesoTemplateStartRequest']
 export type MesoRerunResponse = components['schemas']['MesoRerunResponse']
+export type MusclePrioritiesUpdateRequest = components['schemas']['MusclePrioritiesUpdateRequest']
 export type WorkoutTodayResponse = components['schemas']['WorkoutTodayResponse']
 export type WorkoutInstanceResponse = components['schemas']['WorkoutInstanceResponse']
 export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
@@ -70,6 +72,13 @@ export const trainApi = {
     }),
   activate: (id: string): Promise<MesocycleResponse> =>
     apiFetch<MesocycleResponse>(`/api/train/mesocycles/${id}/activate`, { method: 'POST' }),
+  // Replaces the whole map (mezo-3m5m): empty/null normalizes to NULL server-side (all-Grow).
+  // Returns the FULL assembled run (days/volumePerMuscle/hasReport included).
+  updateMusclePriorities: (id: string, musclePriorities: MusclePriorities | null): Promise<MesocycleResponse> =>
+    apiFetch<MesocycleResponse>(`/api/train/mesocycles/${id}/muscle-priorities`, {
+      method: 'PUT',
+      body: JSON.stringify({ musclePriorities } satisfies MusclePrioritiesUpdateRequest),
+    }),
   // The close body is OPTIONAL by contract (mezo-meyc.2): only a non-blank self-eval note
   // travels, so a plain close stays a bodyless POST exactly as before.
   close: (id: string, body?: MesocycleCloseRequest): Promise<MesocycleResponse> =>

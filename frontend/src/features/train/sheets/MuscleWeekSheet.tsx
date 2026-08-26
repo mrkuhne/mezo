@@ -111,8 +111,12 @@ export function MuscleWeekSheet({ meso, sportSlots, onClose }: MuscleWeekSheetPr
           </div>
 
           {/* Set-büdzsé — read-only mirror of the unified editor's weekly budget (mezo-7rdg) */}
-          <SectionHead color="var(--amber-deep)" title="Set-büdzsé" sub="failure ≤12 · volume ≤20 szett/hét · max 11 szett/edzés" />
-          <SetBudgetCard budgets={muscleBudgets(days)} capWarnings={sessionCapWarnings(days)} defaultOpen />
+          <SectionHead color="var(--amber-deep)" title="Set-büdzsé" sub="cél = tier-plafon (MEV/MAV/MRV) · max 11 szett/edzés" />
+          <SetBudgetCard
+            budgets={muscleBudgets(days, meso.musclePriorities, meso.volumePerMuscle ?? undefined)}
+            capWarnings={sessionCapWarnings(days)}
+            defaultOpen
+          />
 
           {/* ② Sport & futás terhelés */}
           <SectionHead color="var(--tag-sport)" title="Sport & futás terhelés" sub="a hét tervezett eseményei izomcsoportokra vetítve" />

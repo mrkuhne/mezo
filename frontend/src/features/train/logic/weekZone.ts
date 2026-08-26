@@ -7,6 +7,10 @@
 // consumed by WeekZoneCard (prep screen) and ZoneMiniGrid (GymPage).
 // Logged sets price by their own RIR (fallback: exercise targetRIR);
 // skip-marker and warmup rows are excluded, plyo exercises never count.
+// GD5 (mezo-3m5m) reframed muscleBudgets' own row.budget/level to be
+// TIER-relative (the budget card's scale) — this view intentionally stays
+// on the fatigue scale, so it recomputes planBudget via budgetOf(failureSets,
+// volumeSets) from the row rather than reading row.budget/row.level.
 // ============================================================
 import type { ExerciseKind, MesoDay } from '@/data/types'
 import type { WorkoutDetailResponse } from '@/data/train/trainApi'
@@ -91,7 +95,10 @@ export function weekZoneRows({ plannedDays, completed, todayPlan }: {
     const plannedSets = p?.workingSets ?? 0
     const doneBudget = d ? budgetOf(d.failure, d.volume) : 0
     const todayBudget = t ? budgetOf(t.failure, t.volume) : 0
-    const planBudget = p?.budget ?? 0
+    // p.budget is tier-relative since mezo-3m5m (spec GD5, the budget CARD's own scale) — this
+    // view stays on the fatigue scale (GD5 reframes only the budget card, not weekZone), so
+    // recompute it the same way done/todayBudget are, straight from the row's failure/volume split.
+    const planBudget = p ? budgetOf(p.failureSets, p.volumeSets) : 0
     const mev = GROUP_MEV[group] ?? null
     // Zone floor projected with the week PLAN's style mix; plan-less (custom-only)
     // groups fall back to the live done+today mix.
