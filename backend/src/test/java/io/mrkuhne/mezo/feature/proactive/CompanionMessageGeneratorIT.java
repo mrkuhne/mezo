@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
@@ -41,6 +43,7 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
+    @Autowired private GoalPopulator goalPopulator;
 
     @Test
     void testGenerateMorning_shouldPersistEnvelope_whenNarrativeWindowHasSummaries() {
@@ -234,5 +237,42 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
 
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(companionMessageRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void testGenerateWindow_shouldPersistToolRefs_whenMiddayRunsGetGoal() {
+        UUID user = userPopulator.createUser("midday-refs@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        goalPopulator.createGoal(user, "active");
+        // the [fake-tool:…] sentinel sits OUTSIDE the heartbeat bracket (Locked decision 3)
+        checkInPopulator.createCheckIn(user, DAY, "12:00", 3, 2,
+                "[fake-heartbeat:Napközi teszt.] [fake-tool:get_goal]");
+
+        CompanionMessageEntity message =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_MIDDAY);
+
+        assertThat(message).isNotNull();
+        assertThat(message.getContent().body()).containsExactly("Napközi teszt.");
+        assertThat(message.getContent().refs())
+                .extracting("kind", "label")
+                .containsExactly(tuple("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void testGenerateWindow_shouldPersistToolRefs_whenEveningRunsGetGoal() {
+        UUID user = userPopulator.createUser("evening-refs@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        goalPopulator.createGoal(user, "active");
+        checkInPopulator.createCheckIn(user, DAY, "20:00", 3, 2,
+                "[fake-heartbeat:Esti teszt.] [fake-tool:get_goal]");
+
+        CompanionMessageEntity message =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_EVENING);
+
+        assertThat(message).isNotNull();
+        assertThat(message.getContent().body()).containsExactly("Esti teszt.");
+        assertThat(message.getContent().refs())
+                .extracting("kind", "label")
+                .containsExactly(tuple("Goal", "Nyári cut"));
     }
 }
