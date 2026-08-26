@@ -1,5 +1,5 @@
 import type { LifeEventCandidate, LifeEventDecision } from '@/data/types'
-import { CANDIDATE_COPY } from '@/data/insights/graph'
+import { CANDIDATE_COPY, formatCandidateDate } from '@/data/insights/graph'
 
 /**
  * Egy L2 gráf-jelölt kártyája — akár egy éjszakai életesemény (W2.3, mezo-b3pp.8), akár egy
@@ -15,7 +15,9 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--amber-deep)' }} />
 
       {candidate.occurredOn && (
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--amber-deep)' }}>{candidate.occurredOn}</span>
+        <span className="label-mono" style={{ fontSize: 9, color: 'var(--amber-deep)' }}>
+          {formatCandidateDate(candidate.kind, candidate.occurredOn)}
+        </span>
       )}
       <p style={{ fontSize: 15, lineHeight: 1.4, color: 'var(--text-primary)', margin: '6px 0 0' }}>{candidate.title}</p>
       {candidate.summary && (

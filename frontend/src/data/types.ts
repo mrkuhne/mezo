@@ -697,7 +697,9 @@ export interface LifeEventCandidate {
   kind: 'LIFE_EVENT' | 'SEASON'
   title: string
   summary: string | null
-  /** A nap, amiről az esemény szól (ISO date). */
+  /** ISO date, kind-függő jelentéssel: LIFE_EVENT esetén a nap, amiről az esemény szól; SEASON
+   *  esetén a lefedett negyedév ELSŐ napja (nem egy konkrét nap) — a kártya ez utóbbit
+   *  negyedévként jeleníti meg, ld. `formatCandidateDate` a `data/insights/graph`-ban. */
   occurredOn: string | null
   /** Hány kapcsolat jönne létre, ha elfogadod. */
   proposedEdgeCount: number
