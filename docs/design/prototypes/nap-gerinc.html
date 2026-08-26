@@ -1,0 +1,1646 @@
+<title>Nap-gerinc</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; transition: background 0.6s ease;
+    background: linear-gradient(180deg, #FDFAF4 0%, #F8F1E6 100%);
+  }
+  .screen[data-dp="reggel"] { background: linear-gradient(180deg, #FEF5E8 0%, #FAEBD6 100%); }
+  .screen[data-dp="este"] { background: linear-gradient(180deg, #F0ECF8 0%, #E6E0F2 100%); }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-body { flex: 1; min-height: 0; overflow: hidden; padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  .float3d {
+    background: #FFFFFF; border-radius: 18px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(43, 33, 24, 0.32), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 6px 14px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .cta.lav { background: linear-gradient(135deg, #8A76CC, #6C5FA3); box-shadow: 0 8px 16px -6px rgba(108, 95, 163, 0.55); }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+
+  .avatar-ring {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
+    display: grid; place-items: center;
+  }
+  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+
+  /* daypart switch — pici gomb a fejlécben */
+  .dpwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpswitch {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; cursor: pointer;
+    display: grid; place-items: center; position: relative;
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.3);
+  }
+  .dpswitch:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .dpswitch > .most { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px #FDFAF4; display: none; }
+  .dpswitch.away > .most { display: block; }
+  .dpmenu {
+    position: absolute; right: 0; top: 40px; z-index: 7;
+    display: flex; gap: 2px; padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.95); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    border-radius: 999px; backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px -12px rgba(43, 33, 24, 0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.92); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .dpwrap.open .dpmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .dpmenu button {
+    width: 40px; height: 32px; border: none; background: none; font-family: inherit;
+    border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative;
+  }
+  .dpmenu button svg { filter: grayscale(1) brightness(1.04) opacity(0.45); }
+  .dpmenu button.on { background: rgba(255, 107, 74, 0.1); }
+  .dpmenu button.on svg { filter: none; }
+  .dpmenu button .most { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .dpmenu button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+
+  /* értesítés-harang + dropdown */
+  .ntfwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .badge.mini { min-width: 15px; height: 15px; font-size: 8.5px; top: -3px; right: -4px; }
+  .ntfmenu {
+    position: absolute; right: -46px; top: 40px; z-index: 8; width: 238px;
+    background: #FDFAF4; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 18px;
+    box-shadow: 0 20px 40px -14px rgba(29, 23, 18, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    padding: 12px 12px 6px;
+    opacity: 0; transform: translateY(-6px) scale(0.94); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .ntfwrap.open .ntfmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .ntfrow { display: flex; gap: 9px; padding: 8px 2px; align-items: flex-start; }
+  .ntfrow + .ntfrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ntfrow .t { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .ntfrow .x { font-size: 10px; font-weight: 300; margin-top: 1px; }
+  .ntffoot { text-align: center; font-size: 9.5px; font-weight: 600; color: #A84A26; padding: 8px 0 4px; cursor: pointer; }
+
+  /* mezo tile */
+  .mezotile {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    border-radius: 17px; padding: 10px 12px;
+    background: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .mezotile:active { transform: scale(0.97); }
+  .mezotile .txt { flex: 1; min-width: 0; font-size: 10.5px; font-weight: 300; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mezotile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; }
+  .mezotile .chev { color: #A2958A; font-size: 12px; flex: none; }
+
+  /* daypart panels */
+  .dp-panel { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 9px; overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+  .dp-panel::-webkit-scrollbar { display: none; }
+  .dp-panel.on { display: flex; }
+  .dp-panel > * { flex: none; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* keret hero */
+  .hero { padding: 12px 13px; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 70%); }
+  .hero.lavw { background: linear-gradient(140deg, #EDE9F8, #FFFFFF 70%); }
+  .hero.dusk { background: linear-gradient(140deg, #E4DDF4, #F7F4FD 75%); }
+  .daybar { display: flex; gap: 3px; margin-top: 8px; align-items: center; }
+  .daybar i { height: 5px; border-radius: 3px; flex: 1; background: #E8DFD1; transform: scaleX(0); transform-origin: left; }
+  .daybar i.f { background: #8FAF7E; }
+  .daybar i.now { background: #C9962E; }
+  .play .daybar i { animation: segf 0.4s ease-out forwards; animation-delay: var(--d); }
+  @keyframes segf { to { transform: scaleX(1); } }
+  .play .daybar i.now { animation: segf 0.4s ease-out forwards, nowpulse 2.6s ease-in-out 1.4s infinite; }
+  @keyframes nowpulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
+    50% { box-shadow: 0 0 0 3.5px rgba(201, 150, 46, 0.3); }
+  }
+
+  .nowcard {
+    padding: 11px 13px; border: 1px solid #FF6B4A; border-radius: 18px; background: #fff;
+    box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .tile {
+    border-radius: 17px; padding: 10px 11px; min-height: 88px;
+    display: flex; flex-direction: column;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer;
+  }
+  .tile:active { transform: scale(0.96); }
+  .t-train { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .t-vital { background: #FFFFFF; }
+  .t-water { background: linear-gradient(150deg, #DFEDF5, #F5FAFD); }
+  .t-stack { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .t-mezo { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-hab { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe .hd.f { background: #6C5FA3; }
+  .t-quest { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check .hd.f { background: #C46FA0; }
+  .t-kreed { background: linear-gradient(150deg, #FFF2EA, #FFFFFF); }
+  .t-most { border: 1px solid #FF6B4A; background: #FFFFFF; box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .t-minta { background: #F0EDF8; box-shadow: 0 14px 26px -14px rgba(108, 95, 163, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .tile-line { font-size: 9px; font-weight: 300; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile-more { font-size: 9.5px; font-weight: 600; }
+  .tile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+  .htick.sm { width: 30px; height: 30px; font-size: 13px; }
+  .spotwrap { flex: 1; display: grid; place-items: center; padding: 4px 0; }
+  .spotwrap .anchor { position: relative; display: grid; place-items: center; }
+  .badge {
+    position: absolute; top: -5px; right: -9px; min-width: 17px; height: 17px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    color: #fff; font-size: 9.5px; font-weight: 700;
+    display: grid; place-items: center; padding: 0 4px;
+    box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
+  }
+  .bigring { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; }
+  .bigring .hole { width: 40px; height: 40px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center; }
+  .bigdots .hd, .ckdots .hd { width: 11px; height: 11px; }
+  .digest {
+    border-radius: 15px; padding: 8px 12px; background: #F0EDF8;
+    border: 0.5px solid rgba(108, 95, 163, 0.14);
+    box-shadow: 0 10px 20px -12px rgba(108, 95, 163, 0.4);
+  }
+  .rr {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+    display: grid; place-items: center;
+  }
+  .rr::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; }
+  .rings6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 2px; justify-items: center; margin-top: 4px; }
+  .waterfill { height: 7px; border-radius: 4px; background: #D8E7F0; overflow: hidden; }
+  .waterfill div { width: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7FB6D9, #4E8FB8); transition: width 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s; }
+  .play .waterfill div { width: 43%; }
+  .stackdots { display: flex; gap: 4px; }
+  .stackdots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(43, 33, 24, 0.1); }
+  .stackdots i.f { background: #7FA06C; }
+
+  .coach {
+    font-weight: 300; font-size: 10.5px; color: #2B2118;
+    background: #FFF4EF; border-radius: 10px; padding: 7px 9px;
+    display: flex; gap: 7px; align-items: flex-start; margin-top: 7px;
+  }
+  .coach .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; margin-top: 1px; background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+
+  .kreed { padding: 11px 13px; border-radius: 18px; background: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%); }
+  .kreed .q { font-weight: 300; font-size: 11.5px; }
+  .foci { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .foci span { background: rgba(168, 74, 38, 0.08); color: #A84A26; border-radius: 999px; padding: 3px 10px; font-size: 9.5px; font-weight: 600; }
+
+  .statstrip { display: flex; gap: 9px; }
+  .statcell {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  }
+  .statcell b { font-size: 13px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+  .statcell small { font-size: 8.5px; color: #6E6257; }
+
+  /* habit tile */
+  .habtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 8px;
+    background: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .habtile:active { transform: scale(0.97); }
+  .habtile.eve {
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE);
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .habtile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .hprog { display: flex; gap: 4px; }
+  .hd { width: 8px; height: 8px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); }
+  .hd.f { background: #C9962E; }
+  .habtile.eve .hd.f { background: #6C5FA3; }
+  .htick {
+    width: 36px; height: 36px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 2px solid rgba(43, 33, 24, 0.18); background: rgba(255, 255, 255, 0.8);
+    display: grid; place-items: center; color: #fff; font-size: 16px; font-family: inherit; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .htick:active { transform: scale(0.88); }
+  .htick.f {
+    border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E);
+    box-shadow: 0 6px 12px -4px rgba(110, 139, 94, 0.6);
+    animation: tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  @keyframes tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  /* küldetés-csempe */
+  .qtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FDF0DA, #FFFCF5);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .qtile:active { transform: scale(0.97); }
+
+  /* check-in csempe */
+  .cktile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FAE3ED, #FEF8FB);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .cktile:active { transform: scale(0.97); }
+  .cktile .hd.f { background: #C46FA0; }
+  .ckslot-hot { background: rgba(196, 111, 160, 0.08); border-radius: 12px; margin: 2px -4px; padding: 9px 8px !important; border-top: none !important; }
+  .ckchip {
+    width: 26px; height: 26px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 1.5px solid rgba(196, 111, 160, 0.45); background: #fff; font-family: inherit;
+    font-size: 10px; font-weight: 700; color: #8E3F6F;
+    display: grid; place-items: center; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .ckchip:active { transform: scale(0.88); }
+
+  /* ============ DETAIL PAGES — Huawei-minta: csempe → saját oldal ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    padding-top: 34px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    background: #FDFAF4;
+  }
+  .page.open { transform: none; }
+  .page.p-coral { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 36%); }
+  .page.p-gold { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%); }
+  .page.p-lav { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%); }
+  .page.p-rose { background: linear-gradient(180deg, #F7E3ED 0%, #FDFAF4 36%); }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .backbtn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 14px 12px; }
+  .page-hero .bignum { font-weight: 200; font-size: 40px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .page-hero .nm { font-size: 15px; font-weight: 700; }
+  .page-hero .sb { font-size: 10px; color: #6E6257; }
+  .page-hero.orb svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  .qcard, .mz-msg {
+    background: #FFFFFF; border-radius: 16px; padding: 11px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .qcard.done { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .qxp { font-size: 9px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.12); border-radius: 999px; padding: 3px 9px; flex: none; }
+  .mz-msg .t { font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+  .mz-msg .txt { font-size: 11px; font-weight: 300; margin-top: 6px; }
+  .mz-cta { width: 100%; margin-top: 4px; padding: 9px 0; text-align: center; }
+
+  .vcard {
+    background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .vrow { display: flex; align-items: center; gap: 11px; padding: 9px 2px; }
+  .vrow + .vrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .vrow .rr { width: 34px; height: 34px; flex: none; }
+  .vrow .rr::after { width: 22px; height: 22px; }
+  .vrow.low { background: rgba(255, 107, 74, 0.07); border-radius: 12px; border-top: none; margin: 2px -4px; padding: 9px 8px; }
+  .vchip {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit;
+    border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #A84A26;
+    cursor: pointer; flex: none;
+  }
+
+  .habrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .habrow + .habrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .tick {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    border: 1.5px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+    font-size: 12px; color: #fff; background: transparent;
+  }
+  .tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .habrow .tick { padding: 0; cursor: pointer; font-family: inherit; }
+  .habrow .nm { font-size: 11.5px; font-weight: 600; }
+  .habrow .nm.done { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+  .hstr { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 4px; }
+  .hstr div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #E5C46B, #C9962E); }
+  .hpct { font-size: 9px; font-weight: 700; color: #A8801F; flex: none; width: 30px; text-align: right; }
+  .habnote { font-size: 9.5px; color: #A2958A; margin-top: 12px; font-weight: 300; }
+
+  .fbrow { display: flex; gap: 6px; margin-top: 7px; }
+  .fb {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+    border-radius: 999px; padding: 3.5px 11px; font-size: 9px; font-weight: 600; color: #6E6257; cursor: pointer;
+  }
+  .fb.sel { background: #EDE9F8; border-color: #6C5FA3; color: #5D4FA0; }
+
+  /* tab bar */
+  .tabbar {
+    margin: 4px 12px 12px; padding: 8px 16px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 24px -12px rgba(43, 33, 24, 0.3);
+  }
+  .mtab { text-align: center; font-size: 9.5px; font-weight: 600; color: #A2958A; display: grid; gap: 2px; justify-items: center; }
+  .mtab.on { color: #A84A26; }
+  .mtab.off svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+  .fab {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6);
+    animation: fabglow 3.2s ease-in-out 1.6s infinite;
+  }
+  @keyframes fabglow {
+    0%, 100% { box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6); }
+    50% { box-shadow: 0 8px 26px -3px rgba(255, 91, 54, 0.85); }
+  }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .daybar i, .play .daybar i { transform: scaleX(1); animation: none; }
+    .waterfill div, .play .waterfill div { width: 43%; transition: none; }
+    .fab, .play .daybar i.now { animation: none; }
+    .tile, .qtile, .habtile, .mezotile { transition: none; }
+    .screen { transition: none; }
+    .dpmenu { transition: none; }
+    .ntfmenu { transition: none; }
+    .page { transition: none; }
+    .htick.f { animation: none; }
+    .page-hero.orb svg { animation: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+  </defs>
+</svg>
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · 1. oldal</p>
+  <h1>Nap-gerinc</h1>
+  <p class="lede">A Hibrid gerinc főképernyője, <strong>Huawei-mintára</strong>: panelenként
+  egyetlen hosszú csempe — a hero —, alatta minden a mozaik-rácsban él, és minden csempe a
+  saját, becsúszó részletoldalára visz.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr" data-dp="nap">
+      <div class="isl"></div>
+      <div class="p-status"><span>11:40</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+          <div class="dpwrap" id="dpwrap">
+            <button class="dpswitch" id="dpswitch" aria-label="Napszak váltása" aria-expanded="false">
+              <svg width="20" height="20" viewBox="0 0 100 100"><use id="dpicon" href="#i-nap"/></svg>
+              <span class="most"></span>
+            </button>
+            <div class="dpmenu" role="menu">
+              <button data-dp="reggel" aria-label="Reggel"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></button>
+              <button data-dp="nap" class="on" aria-label="Nap"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span class="most"></span></button>
+              <button data-dp="este" aria-label="Este"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-alvas"/></svg></button>
+            </div>
+          </div>
+          <div class="ntfwrap" id="ntfwrap">
+            <button class="dpswitch" id="ntfbtn" aria-label="Értesítések" aria-expanded="false">
+              <svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+              <span class="badge mini" id="ntfbadge">2</span>
+            </button>
+            <div class="ntfmenu" role="menu">
+              <div class="p-eyebrow" style="padding:0 2px 6px;">Értesítések · ma</div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>
+                <div class="grow"><div class="t">11:02 · Minta</div><div class="x">Erősödik: késői kávé → kevesebb mély alvás.</div></div>
+              </div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+                <div class="grow"><div class="t">09:40 · Medál</div><div class="x">Tegnapi evezésed új e1RM-rekord — bekerült a vitrinbe.</div></div>
+              </div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+                <div class="grow"><div class="t">12:30 · Emlékeztető</div><div class="x">Pull A 30 perc múlva — indul az előkészítő.</div></div>
+              </div>
+              <div class="ntffoot">Összes értesítés ›</div>
+            </div>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <!-- ============ REGGEL ============ -->
+        <div class="dp-panel" data-dp="reggel">
+          <div class="float3d hero lavw rise" style="--d:0ms;">
+            <div class="mrow">
+              <svg width="52" height="52" viewBox="0 0 100 100"><use href="#s-este"/></svg>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#6C5FA3;">Éjszakád</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;">
+                  <span class="big cnt" style="font-size:32px;" data-kind="time" data-target="444">0:00</span>
+                  <span class="mut" style="font-size:9.5px;">hatékonyság 92% · cél ✓</span>
+                </div>
+              </div>
+            </div>
+            <div class="mrow" style="margin-top:6px;gap:14px;">
+              <span class="mut" style="font-size:9.5px;">Súly <b style="color:#2B2118;">84,2 kg ↘</b></span>
+              <span class="mut" style="font-size:9.5px;">Fókusz <b style="color:#A84A26;">evezés-tempó</b></span>
+            </div>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-mezo open-mezo rise" style="--d:70ms;" role="button" tabindex="0" aria-label="Mezo üzenetei">
+              <div class="p-eyebrow" style="color:#B04524;">Mezo</div>
+              <div class="spotwrap"><span class="anchor"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge unread">3</span></span></div>
+              <div class="tile-more" style="color:#B04524;text-align:center;">Üzenetek ›</div>
+            </div>
+
+            <div class="tile t-hab rise" style="--d:110ms;" data-hab="reggel" role="button" tabindex="0" aria-label="Reggeli rutin">
+              <div class="p-eyebrow" style="color:#A8801F;">Rutin</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use data-habicon href="#i-naplo"/></svg></div>
+              <div data-habname style="font-size:11.5px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Reggeli videó</div>
+              <div class="mrow" style="margin-top:4px;">
+                <span class="mut grow" style="font-size:10.5px;font-weight:600;" data-habcount>3/4</span>
+                <button class="htick sm" data-habtick aria-label="Kipipálás"></button>
+              </div>
+            </div>
+
+            <div class="tile t-quest open-quest rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Napi küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="mrow bigdots" style="justify-content:center;gap:6px;">
+                <span class="hd f"></span><span class="hd"></span><span class="hd"></span>
+                <span style="font-size:10px;font-weight:700;color:#A8801F;margin-left:4px;">+60 XP</span>
+              </div>
+            </div>
+
+            <div class="tile t-check open-check rise" style="--d:190ms;" role="button" tabindex="0" aria-label="Check-in">
+              <div class="p-eyebrow" style="color:#B0567E;">Check-in</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-checkin"/></svg></div>
+              <div class="mrow ckdots" style="justify-content:center;gap:6px;"><span class="hd f"></span><span class="hd f"></span><span class="hd"></span><span class="hd"></span></div>
+            </div>
+
+            <div class="tile t-kreed rise" style="--d:230ms;" role="button" tabindex="0" aria-label="Kreed">
+              <div class="p-eyebrow" style="color:#A84A26;">Kreed</div>
+              <div class="tile-line" style="font-size:10px;-webkit-line-clamp:3;">„A rendszer véd — nekem csak jelen kell lennem."</div>
+              <div style="flex:1;"></div>
+              <div class="tile-more" style="color:#A84A26;">3 fókusz ›</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ NAP ============ -->
+        <div class="dp-panel on" data-dp="nap">
+          <div class="float3d hero rise" style="--d:0ms;">
+            <div class="p-eyebrow" style="color:#5F7A52;">Keret · ma</div>
+            <div class="mrow" style="align-items:baseline;gap:6px;">
+              <span class="big cnt" style="font-size:36px;" data-kind="num" data-target="1520">0</span>
+              <span class="mut" style="font-size:10px;">kcal maradt · fehérje 96/180 g</span>
+            </div>
+            <div class="daybar">
+              <i class="f" style="--d:250ms;"></i><i class="f" style="--d:330ms;"></i><i class="now" style="--d:410ms;"></i><i style="--d:490ms;"></i><i style="--d:570ms;"></i><i style="--d:650ms;"></i>
+            </div>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-most rise" style="--d:70ms;">
+              <div class="p-eyebrow" style="color:#C9962E;">Ebéd-ablak · most</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div>
+              <button class="cta" style="width:100%;padding:6px 0;font-size:10.5px;">Logold</button>
+            </div>
+
+            <div class="tile t-train rise" style="--d:110ms;">
+              <div class="p-eyebrow" style="color:#A84A26;">Edzés</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>
+              <div style="font-size:13px;font-weight:700;text-align:center;">Pull A</div>
+            </div>
+
+            <div class="tile t-vital open-vital rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Életjel részletek">
+              <div class="p-eyebrow">Életjel</div>
+              <div class="spotwrap">
+                <div class="bigring" style="background:conic-gradient(#6E8B5E 0% 12%, rgba(43,33,24,0.08) 12% 16.7%, #4E8FB8 16.7% 23.8%, rgba(43,33,24,0.08) 23.8% 33.3%, #6C5FA3 33.3% 48%, rgba(43,33,24,0.08) 48% 50%, #FF6B4A 50% 55%, rgba(43,33,24,0.08) 55% 66.7%, #C46FA0 66.7% 76.7%, rgba(43,33,24,0.08) 76.7% 83.3%, #C9962E 83.3% 92.5%, rgba(43,33,24,0.08) 92.5% 100%);">
+                  <span class="hole"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile t-water rise" style="--d:190ms;" id="watertile" role="button" tabindex="0" aria-label="Víz +2,5 dl">
+              <div class="mrow">
+                <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-viz"/></svg>
+                <div class="mrow" style="align-items:baseline;gap:3px;">
+                  <span class="big" style="font-size:19px;" id="wval">1,2</span>
+                  <span class="mut" style="font-size:8.5px;">/ 2,8 L</span>
+                </div>
+              </div>
+              <div style="flex:1;"></div>
+              <div class="waterfill"><div id="wbar"></div></div>
+              <div class="mut" style="font-size:8.5px;margin-top:4px;">koppints: +2,5 dl</div>
+            </div>
+
+            <div class="tile t-stack rise" style="--d:230ms;" id="stacktile" role="button" tabindex="0" aria-label="Következő bevétel pipálása">
+              <div class="p-eyebrow" style="color:#4E6B42;">Stack</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-stack"/></svg></div>
+              <div class="big" style="font-size:17px;text-align:center;" id="stackcount">2/5</div>
+            </div>
+
+            <div class="tile t-mezo open-mezo rise" style="--d:270ms;" role="button" tabindex="0" aria-label="Mezo üzenetei">
+              <div class="p-eyebrow" style="color:#B04524;">Mezo</div>
+              <div class="spotwrap"><span class="anchor"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge unread">3</span></span></div>
+              <div class="tile-more" style="color:#B04524;text-align:center;">Üzenetek ›</div>
+            </div>
+
+            <div class="tile t-quest open-quest rise" style="--d:310ms;" role="button" tabindex="0" aria-label="Napi küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="mrow bigdots" style="justify-content:center;gap:6px;">
+                <span class="hd f"></span><span class="hd"></span><span class="hd"></span>
+                <span style="font-size:10px;font-weight:700;color:#A8801F;margin-left:4px;">+60 XP</span>
+              </div>
+            </div>
+
+            <div class="tile t-check open-check rise" style="--d:350ms;" role="button" tabindex="0" aria-label="Check-in">
+              <div class="p-eyebrow" style="color:#B0567E;">Check-in</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-checkin"/></svg></div>
+              <div class="mrow ckdots" style="justify-content:center;gap:6px;"><span class="hd f"></span><span class="hd f"></span><span class="hd"></span><span class="hd"></span></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============ ESTE ============ -->
+        <div class="dp-panel" data-dp="este">
+          <div class="float3d hero dusk rise" style="--d:0ms;">
+            <div class="mrow">
+              <svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-napzaras"/></svg>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#6C5FA3;">Villanyoltásig</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;">
+                  <span class="big cnt" style="font-size:32px;" data-kind="time" data-target="110">0:00</span>
+                  <span class="mut" style="font-size:9.5px;">21:30 lefekvés</span>
+                </div>
+              </div>
+            </div>
+            <button class="cta lav" style="width:100%;margin-top:9px;padding:8px 0;">Zárjuk le a napot</button>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-habe rise" style="--d:70ms;" data-hab="este" role="button" tabindex="0" aria-label="Esti rutin">
+              <div class="p-eyebrow" style="color:#6C5FA3;">Rutin</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use data-habicon href="#i-naplo"/></svg></div>
+              <div data-habname style="font-size:11.5px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Esti napló</div>
+              <div class="mrow" style="margin-top:4px;">
+                <span class="mut grow" style="font-size:10.5px;font-weight:600;" data-habcount>1/3</span>
+                <button class="htick sm" data-habtick aria-label="Kipipálás"></button>
+              </div>
+            </div>
+
+            <div class="tile t-quest open-quest rise" style="--d:110ms;" role="button" tabindex="0" aria-label="Napi küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="mrow bigdots" style="justify-content:center;gap:6px;">
+                <span class="hd f"></span><span class="hd"></span><span class="hd"></span>
+                <span style="font-size:10px;font-weight:700;color:#A8801F;margin-left:4px;">+60 XP</span>
+              </div>
+            </div>
+
+            <div class="tile t-check open-check rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Check-in">
+              <div class="p-eyebrow" style="color:#B0567E;">Check-in</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-checkin"/></svg></div>
+              <div class="mrow ckdots" style="justify-content:center;gap:6px;"><span class="hd f"></span><span class="hd f"></span><span class="hd"></span><span class="hd"></span></div>
+            </div>
+
+            <div class="tile t-mezo open-mezo rise" style="--d:190ms;" role="button" tabindex="0" aria-label="Mezo üzenetei">
+              <div class="p-eyebrow" style="color:#B04524;">Mezo</div>
+              <div class="spotwrap"><span class="anchor"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge unread">3</span></span></div>
+              <div class="tile-more" style="color:#B04524;text-align:center;">Üzenetek ›</div>
+            </div>
+          </div>
+
+          <div class="statstrip rise" style="--d:240ms;">
+            <div class="statcell"><b class="cnt" data-kind="num" data-target="2340">0</b><small>kcal · kereten belül ✓</small></div>
+            <div class="statcell"><b>Pull A ✓</b><small>18 szett · 2 medál</small></div>
+            <div class="statcell"><b>+<span class="cnt" data-kind="num" data-target="120">0</span> XP</b><small>a mai termés</small></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ RÉSZLETOLDALAK ============ -->
+
+      <div class="page p-gold" id="page-hab">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-hab">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <svg width="60" height="60" viewBox="0 0 100 100"><use id="habspot" href="#s-reggel"/></svg>
+          <div class="bignum" id="habnum">3/4</div>
+          <div class="nm" id="habtitle">Reggeli rutin</div>
+          <div class="sb" id="habsub2">4 elem · lánc</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;" id="habstats"></div>
+          <div class="vcard rise" style="--d:100ms;"><div id="hablist"></div></div>
+          <p class="habnote">A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.</p>
+        </div>
+      </div>
+
+      <div class="page p-coral" id="page-mezo">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-mezo">‹ Ma</button>
+        </div>
+        <div class="page-hero orb">
+          <svg width="70" height="70" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+          <div class="nm">Mezo · ma</div>
+          <div class="sb">3 üzenet · a napod fonala</div>
+        </div>
+        <div class="page-body">
+          <div class="mz-msg rise" style="--d:40ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>
+              <div class="t">07:05 · Reggeli briefing</div>
+            </div>
+            <div class="txt">Két nap múlva W3-csúcs — ma a Pull A a hét kulcs-edzése. A fókuszod az evezés-tempó; a vállad jelzett múlt héten, melegíts rá külön.</div>
+            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          </div>
+          <div class="mz-msg rise" style="--d:100ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-este"/></svg>
+              <div class="t">07:12 · Alvás-reakció</div>
+            </div>
+            <div class="txt">7:24, 92% hatékonyság — zsinórban a harmadik cél feletti éjszakád. A korai lecsendesítés működik.</div>
+            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          </div>
+          <div class="mz-msg rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-energia"/></svg>
+              <div class="t">11:30 · Déli jelzés</div>
+            </div>
+            <div class="txt">A hátad hét ez — a mai Pull A-ban dől el a W3 íve. Az ebéd-ablakod most nyílt: 640 kcal fér bele, edzésig bőven megemészted.</div>
+            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          </div>
+          <button class="cta mz-cta rise" style="--d:220ms;">Beszélgess Mezóval ›</button>
+        </div>
+      </div>
+
+      <div class="page p-gold" id="page-quest">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-quest">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <svg width="60" height="60" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg>
+          <div class="bignum">1/3</div>
+          <div class="nm">Napi küldetések</div>
+          <div class="sb">ajánlatok a mai napra</div>
+        </div>
+        <div class="page-body">
+          <div class="qcard rise" style="--d:40ms;">
+            <div class="mrow" style="gap:9px;align-items:flex-start;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Zárd 18 szett felett a Pull A-t</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A hát-hét íve ma dől el — az evezés-tempó a kulcs.</div>
+              </div>
+              <span class="qxp">+25 XP</span>
+            </div>
+            <div class="mrow" style="margin-top:8px;">
+              <span class="mut grow" style="font-size:9px;">folyamatban · az edzésből záródik magától</span>
+              <button class="fb">Csere · 1 maradt</button>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:100ms;">
+            <div class="mrow" style="gap:9px;align-items:flex-start;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-fuel"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Érd el a 180 g fehérjét</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">96 g megvan — az ebéd-ablak a fele úton segít.</div>
+              </div>
+              <span class="qxp">+20 XP</span>
+            </div>
+            <div class="mrow" style="margin-top:8px;">
+              <span class="mut grow" style="font-size:9px;">folyamatban · a logjaidból záródik magától</span>
+            </div>
+          </div>
+          <div class="qcard done rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;align-items:flex-start;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-naplo"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Írj egy sort a naplóba</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A memóriád ma is éhes — egy mondat elég.</div>
+              </div>
+              <span class="qxp">+15 XP</span>
+            </div>
+            <div class="mrow" style="margin-top:8px;">
+              <span class="grow" style="font-size:9px;font-weight:600;color:#5F7A52;">✓ kész · +15 XP jóváírva</span>
+            </div>
+          </div>
+          <p class="habnote">A küldetés ajánlat: ha kimarad, csendben lejár — bukás nincs. A Csere naponta egyszer ingyenes.</p>
+        </div>
+      </div>
+
+      <div class="page p-rose" id="page-vital">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-vital">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <div class="mrow" style="justify-content:center;gap:22px;">
+            <svg width="76" height="76" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg>
+            <span class="bignum">58%</span>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="mosaic">
+            <div class="tile t-stack rise" style="--d:40ms;" role="button" tabindex="0" aria-label="Étel logolása">
+              <div class="p-eyebrow" style="color:#4E6B42;">Étel</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:72;--c:#6E8B5E;"></span>
+                <span style="font-size:12.5px;font-weight:600;">72%</span>
+              </div>
+            </div>
+            <div class="tile t-water rise" style="--d:80ms;" id="vitwater" role="button" tabindex="0" aria-label="Víz +2,5 dl">
+              <div class="p-eyebrow" style="color:#3E7396;">Víz</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-viz"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" id="vitwring" style="--v:43;--c:#4E8FB8;"></span>
+                <span style="font-size:12.5px;font-weight:600;" id="vitwpct">43%</span>
+              </div>
+            </div>
+            <div class="tile t-habe rise" style="--d:120ms;" role="button" tabindex="0" aria-label="Alvás logolása">
+              <div class="p-eyebrow" style="color:#6C5FA3;">Alvás</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-alvas"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:88;--c:#6C5FA3;"></span>
+                <span style="font-size:12.5px;font-weight:600;">88%</span>
+              </div>
+            </div>
+            <div class="tile t-train rise" style="--d:160ms;border:1px solid rgba(255,107,74,0.5);" role="button" tabindex="0" aria-label="Mozgás — edzéshez">
+              <div class="p-eyebrow" style="color:#A84A26;">Mozgás</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:30;--c:#FF6B4A;"></span>
+                <span style="font-size:12.5px;font-weight:600;color:#A84A26;">30%</span>
+              </div>
+            </div>
+            <div class="tile t-check rise" style="--d:200ms;" role="button" tabindex="0" aria-label="Kapcsolat logolása">
+              <div class="p-eyebrow" style="color:#B0567E;">Kapcsolat</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-emberek"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:60;--c:#C46FA0;"></span>
+                <span style="font-size:12.5px;font-weight:600;">60%</span>
+              </div>
+            </div>
+            <div class="tile t-hab rise" style="--d:240ms;" role="button" tabindex="0" aria-label="Rend">
+              <div class="p-eyebrow" style="color:#A8801F;">Rend</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-rend"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:55;--c:#C9962E;"></span>
+                <span style="font-size:12.5px;font-weight:600;">55%</span>
+              </div>
+            </div>
+          </div>
+          <p class="habnote">Koppints egy jelre a logolásához (a cél-felületek még mockok). A gyűrűk nem büntetnek — csak jelzik, mi kér figyelmet.</p>
+        </div>
+      </div>
+
+      <div class="page p-rose" id="page-check">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-check">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>
+          <div class="bignum" id="ckbig">2/4</div>
+          <div class="nm">Check-in</div>
+          <div class="sb">négy pillanatkép a napodról</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard rise" style="--d:40ms;">
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Reggel · 07:10</div><div class="mut" style="font-size:9px;">energia 4/5 · tiszta fej</div></div>
+            </div>
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Délelőtt · 10:05</div><div class="mut" style="font-size:9px;">energia 3/5 · pörgős munka</div></div>
+            </div>
+            <div class="vrow ckslot-hot" id="ckslot">
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#8E3F6F;">Délután · most esedékes</div><div class="mut" style="font-size:9px;">hogy vagy energiával?</div></div>
+              <button class="ckchip">1</button><button class="ckchip">2</button><button class="ckchip">3</button><button class="ckchip">4</button><button class="ckchip">5</button>
+            </div>
+            <div class="vrow" style="opacity:0.6;">
+              <span class="tick"></span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Este · 20:00 körül</div><div class="mut" style="font-size:9px;">később esedékes</div></div>
+            </div>
+          </div>
+          <p class="habnote">A kimaradt slot nem vész el — Pótold bármikor, a társ nem büntet.</p>
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="mtab on"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="fab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>Mit nézz meg</h2>
+        <ul>
+          <li><strong>Egy hosszú csempe panelenként — a hero</strong>; minden más a 2 oszlopos mozaikban él: MOST, Edzés, Életjel, Víz, Stack, Mezo, Küldetések, Check-in, Minta, Rutin, Kreed.</li>
+          <li><strong>Csempe → saját oldal (Huawei-minta)</strong> — a Mezo-, rutin-, küldetés-, Életjel- és check-in-csempe teljes oldalra visz: jobbról csúszik be, színes hero-zóna, „‹ Ma" vissza.</li>
+          <li><strong>A check-in oldalon a délutáni slot helyben kitölthető</strong> — koppints egy 1–5 chipre, és a slot ✓-ra vált, a csempék 3/4-re frissülnek.</li>
+          <li><strong>A csempék élnek</strong> — Víz: +2,5 dl, Stack: következő bevétel, rutin-karika: helyben pipál, Mezo: az olvasatlan-pötty megnyitáskor törlődik.</li>
+          <li><strong>Csomagból építve</strong> — minden ikon és spot a <code>docs/design/assets/</code> sprite-okból jön.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Döntendő ezen az oldalon</h2>
+        <ol>
+          <li>A mozaik-sorrend napszakonként jó-e így (MOST mindig elöl)?</li>
+          <li>A részletoldal a tab bart is fedi (Huawei-hű) — maradjon így?</li>
+          <li>Az Életjel hero-száma átlag (58%) vagy a legalacsonyabb jel legyen?</li>
+        </ol>
+      </div>
+      <p class="note">A hero mondja meg, hol tart a nap; a mozaik mondja meg, mihez nyúlj.
+      A csempe → oldal minta lesz az általános recept minden további felületre.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var scr = document.getElementById('scr');
+  var raf = [];
+
+  function fmtNum(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function fmtTime(m) { m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
+
+  function animateVal(el, target, kind, dur, delay) {
+    var render = kind === 'time' ? fmtTime : fmtNum;
+    if (reduced) { el.textContent = render(target); return; }
+    el.textContent = render(0);
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = (ts - start - delay) / dur;
+      if (t < 0) { raf.push(requestAnimationFrame(step)); return; }
+      t = Math.min(t, 1);
+      var e = 1 - Math.pow(1 - t, 3);
+      el.textContent = render(target * e);
+      if (t < 1) raf.push(requestAnimationFrame(step));
+    }
+    raf.push(requestAnimationFrame(step));
+  }
+
+  function animateRing(el, target, dur, delay) {
+    if (reduced) { el.style.setProperty('--v', target); return; }
+    el.style.setProperty('--v', 0);
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = (ts - start - delay) / dur;
+      if (t < 0) { raf.push(requestAnimationFrame(step)); return; }
+      t = Math.min(t, 1);
+      var e = 1 - Math.pow(1 - t, 3);
+      el.style.setProperty('--v', target * e);
+      if (t < 1) raf.push(requestAnimationFrame(step));
+    }
+    raf.push(requestAnimationFrame(step));
+  }
+
+  function playPanel(dp) {
+    raf.forEach(cancelAnimationFrame); raf = [];
+    document.querySelectorAll('.dp-panel').forEach(function (p) {
+      var on = p.getAttribute('data-dp') === dp;
+      p.classList.toggle('on', on);
+      p.classList.remove('play');
+      if (on) {
+        p.scrollTop = 0;
+        void p.offsetWidth;
+        p.classList.add('play');
+        p.querySelectorAll('.cnt').forEach(function (el, i) {
+          animateVal(el, parseFloat(el.getAttribute('data-target')), el.getAttribute('data-kind'), 1000, 300 + i * 140);
+        });
+        p.querySelectorAll('[data-ring]').forEach(function (r, i) {
+          animateRing(r, parseFloat(r.getAttribute('data-v')), 900, 400 + i * 70);
+        });
+      }
+    });
+  }
+
+  /* --- napszak-váltó --- */
+  var ICONS = { reggel: '#i-hajnal', nap: '#i-nap', este: '#i-alvas' };
+  var dpwrap = document.getElementById('dpwrap');
+  var dpswitch = document.getElementById('dpswitch');
+  function closeMenu() {
+    dpwrap.classList.remove('open');
+    dpswitch.setAttribute('aria-expanded', 'false');
+  }
+  dpswitch.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeNtf();
+    var open = dpwrap.classList.toggle('open');
+    dpswitch.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', function (e) {
+    if (!dpwrap.contains(e.target)) closeMenu();
+  });
+
+  /* --- értesítés-harang --- */
+  var ntfwrap = document.getElementById('ntfwrap');
+  var ntfbtn = document.getElementById('ntfbtn');
+  function closeNtf() {
+    ntfwrap.classList.remove('open');
+    ntfbtn.setAttribute('aria-expanded', 'false');
+  }
+  ntfbtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeMenu();
+    var open = ntfwrap.classList.toggle('open');
+    ntfbtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      var b = document.getElementById('ntfbadge');
+      if (b) b.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (!ntfwrap.contains(e.target)) closeNtf();
+  });
+  document.querySelectorAll('.dpmenu button').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      document.querySelectorAll('.dpmenu button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var dp = b.getAttribute('data-dp');
+      scr.setAttribute('data-dp', dp);
+      document.getElementById('dpicon').setAttribute('href', ICONS[dp]);
+      dpswitch.classList.toggle('away', dp !== 'nap');
+      closeMenu();
+      playPanel(dp);
+    });
+  });
+
+  /* --- részletoldalak --- */
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  function bindOpen(sel, id, extra) {
+    document.querySelectorAll(sel).forEach(function (el) {
+      function go() { if (extra) extra(el); openPage(id); }
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    });
+  }
+  bindOpen('.open-mezo', 'page-mezo', function () {
+    document.querySelectorAll('.unread').forEach(function (d) { d.style.display = 'none'; });
+  });
+  bindOpen('.open-quest', 'page-quest');
+  bindOpen('.open-vital', 'page-vital');
+  bindOpen('.open-check', 'page-check');
+
+  /* --- check-in kitöltés --- */
+  document.querySelectorAll('.ckchip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var v = b.textContent;
+      document.getElementById('ckslot').classList.remove('ckslot-hot');
+      document.getElementById('ckslot').innerHTML =
+        '<span class="tick f">✓</span>' +
+        '<div class="grow"><div style="font-size:11.5px;font-weight:600;">Délután · 11:41</div>' +
+        '<div class="mut" style="font-size:9px;">energia ' + v + '/5</div></div>';
+      document.getElementById('ckbig').textContent = '3/4';
+      document.querySelectorAll('.ckcount').forEach(function (c) { c.textContent = '3/4'; });
+      document.querySelectorAll('.ckdots').forEach(function (d) {
+        d.innerHTML = '<span class="hd f"></span><span class="hd f"></span><span class="hd f"></span><span class="hd"></span>';
+      });
+      document.querySelectorAll('.ckname').forEach(function (n) { n.textContent = 'Esti check-in'; });
+      document.querySelectorAll('.cksub').forEach(function (s) { s.textContent = 'esedékes · 20:00'; });
+    });
+  });
+
+  /* --- habitek --- */
+  var HABITS = {
+    reggel: {
+      title: 'Reggeli rutin', spot: '#s-reggel',
+      stats: [['12/30', 'tökéletes reggel'], ['82%', 'lánc-erő · 28 nap'], ['+35', 'XP ma']],
+      items: [
+        { n: 'Súlymérés', i: '#i-suly', s: 92, d: true },
+        { n: 'Napfény · 10 perc', i: '#i-nap', s: 76, d: true },
+        { n: '50 fekvőtámasz', i: '#i-edzes', s: 88, d: true },
+        { n: 'Reggeli videó', i: '#i-naplo', s: 54, d: false }
+      ]
+    },
+    este: {
+      title: 'Esti rutin', spot: '#s-este',
+      stats: [['9/30', 'tökéletes este'], ['71%', 'lánc-erő · 28 nap'], ['+10', 'XP ma']],
+      items: [
+        { n: 'Lecsendesítés', i: '#i-alvas', s: 84, d: true },
+        { n: 'Esti napló', i: '#i-naplo', s: 62, d: false },
+        { n: 'Esti check-in', i: '#i-checkin', s: 77, d: false }
+      ]
+    }
+  };
+  var habOpenKey = null;
+
+  function renderHabTile(key) {
+    var set = HABITS[key];
+    var tile = document.querySelector('.tile[data-hab="' + key + '"]');
+    if (!tile) return;
+    var done = set.items.filter(function (x) { return x.d; }).length;
+    tile.querySelector('[data-habcount]').textContent = done + '/' + set.items.length;
+    var dotsEl = tile.querySelector('[data-habdots]');
+    if (dotsEl) {
+      dotsEl.innerHTML = set.items.map(function (x) {
+        return '<span class="hd' + (x.d ? ' f' : '') + '"></span>';
+      }).join('');
+    }
+    var next = null;
+    for (var k = 0; k < set.items.length; k++) { if (!set.items[k].d) { next = set.items[k]; break; } }
+    var icon = tile.querySelector('[data-habicon]');
+    var name = tile.querySelector('[data-habname]');
+    var sub = tile.querySelector('[data-habsub]');
+    var tick = tile.querySelector('[data-habtick]');
+    if (next) {
+      tile.classList.remove('alldone');
+      icon.setAttribute('href', next.i);
+      name.textContent = next.n;
+      if (sub) sub.textContent = 'következő';
+      tick.classList.remove('f');
+      tick.textContent = '';
+    } else {
+      tile.classList.add('alldone');
+      icon.setAttribute('href', '#i-lang');
+      name.textContent = key === 'reggel' ? 'Tökéletes reggel' : 'Tökéletes este';
+      if (sub) sub.textContent = 'kész · +15 bónusz XP';
+      tick.classList.add('f');
+      tick.textContent = '✓';
+    }
+  }
+
+  function renderHabPage(key) {
+    var set = HABITS[key];
+    var done = set.items.filter(function (x) { return x.d; }).length;
+    document.getElementById('habspot').setAttribute('href', set.spot);
+    document.getElementById('habnum').textContent = done + '/' + set.items.length;
+    document.getElementById('habtitle').textContent = set.title;
+    document.getElementById('habsub2').textContent = set.items.length + ' elem · lánc';
+    document.getElementById('habstats').innerHTML = set.stats.map(function (s) {
+      return '<div class="statcell"><b>' + s[0] + '</b><small>' + s[1] + '</small></div>';
+    }).join('');
+    document.getElementById('hablist').innerHTML = set.items.map(function (x, i) {
+      return '<div class="habrow">' +
+        '<button class="tick' + (x.d ? ' f' : '') + '" data-hi="' + i + '" aria-label="' + x.n + '">' + (x.d ? '✓' : '') + '</button>' +
+        '<svg width="24" height="24" viewBox="0 0 100 100"><use href="' + x.i + '"/></svg>' +
+        '<div class="grow"><div class="nm' + (x.d ? ' done' : '') + '">' + x.n + '</div>' +
+        '<div class="hstr"><div style="width:' + x.s + '%;"></div></div></div>' +
+        '<span class="hpct">' + x.s + '%</span></div>';
+    }).join('');
+    document.querySelectorAll('#hablist [data-hi]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var it = set.items[parseInt(b.getAttribute('data-hi'), 10)];
+        it.d = !it.d;
+        renderHabPage(key);
+        renderHabTile(key);
+      });
+    });
+  }
+
+  document.querySelectorAll('.tile[data-hab]').forEach(function (tile) {
+    var key = tile.getAttribute('data-hab');
+    function go() { habOpenKey = key; renderHabPage(key); openPage('page-hab'); }
+    tile.addEventListener('click', go);
+    tile.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    tile.querySelector('[data-habtick]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var items = HABITS[key].items;
+      for (var k = 0; k < items.length; k++) {
+        if (!items[k].d) { items[k].d = true; break; }
+      }
+      renderHabTile(key);
+      if (habOpenKey === key) renderHabPage(key);
+    });
+  });
+
+  /* --- víz + stack --- */
+  var water = 1.2, WGOAL = 2.8;
+  function addWater(e) {
+    if (e) e.stopPropagation();
+    water = Math.min(WGOAL, Math.round((water + 0.25) * 100) / 100);
+    var pct = Math.round(water / WGOAL * 100);
+    var txt = water.toFixed(2).replace(/0$/, '').replace(/\.$/, '').replace('.', ',');
+    document.getElementById('wval').textContent = txt;
+    document.getElementById('wbar').style.width = pct + '%';
+    var vr = document.getElementById('vitwring');
+    if (vr) vr.style.setProperty('--v', pct);
+    var vn = document.getElementById('vitwpct');
+    if (vn) vn.textContent = pct + '%';
+  }
+  document.getElementById('watertile').addEventListener('click', addWater);
+  document.getElementById('vitwater').addEventListener('click', addWater);
+
+  var stackDone = 2;
+  document.getElementById('stacktile').addEventListener('click', function () {
+    if (stackDone >= 5) return;
+    stackDone++;
+    document.getElementById('stackcount').textContent = stackDone + '/5';
+  });
+
+  /* --- feedback chipek --- */
+  document.querySelectorAll('.fb').forEach(function (b) {
+    b.addEventListener('click', function () {
+      b.parentElement.querySelectorAll('.fb').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel');
+    });
+  });
+
+  renderHabTile('reggel');
+  renderHabTile('este');
+  playPanel('nap');
+})();
+</script>

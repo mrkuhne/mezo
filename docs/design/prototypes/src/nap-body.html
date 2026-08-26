@@ -1,0 +1,793 @@
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · 1. oldal</p>
+  <h1>Nap-gerinc</h1>
+  <p class="lede">A Hibrid gerinc főképernyője, <strong>Huawei-mintára</strong>: panelenként
+  egyetlen hosszú csempe — a hero —, alatta minden a mozaik-rácsban él, és minden csempe a
+  saját, becsúszó részletoldalára visz.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr" data-dp="nap">
+      <div class="isl"></div>
+      <div class="p-status"><span>11:40</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+          <div class="dpwrap" id="dpwrap">
+            <button class="dpswitch" id="dpswitch" aria-label="Napszak váltása" aria-expanded="false">
+              <svg width="20" height="20" viewBox="0 0 100 100"><use id="dpicon" href="#i-nap"/></svg>
+              <span class="most"></span>
+            </button>
+            <div class="dpmenu" role="menu">
+              <button data-dp="reggel" aria-label="Reggel"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></button>
+              <button data-dp="nap" class="on" aria-label="Nap"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span class="most"></span></button>
+              <button data-dp="este" aria-label="Este"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-alvas"/></svg></button>
+            </div>
+          </div>
+          <div class="ntfwrap" id="ntfwrap">
+            <button class="dpswitch" id="ntfbtn" aria-label="Értesítések" aria-expanded="false">
+              <svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+              <span class="badge mini" id="ntfbadge">2</span>
+            </button>
+            <div class="ntfmenu" role="menu">
+              <div class="p-eyebrow" style="padding:0 2px 6px;">Értesítések · ma</div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>
+                <div class="grow"><div class="t">11:02 · Minta</div><div class="x">Erősödik: késői kávé → kevesebb mély alvás.</div></div>
+              </div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+                <div class="grow"><div class="t">09:40 · Medál</div><div class="x">Tegnapi evezésed új e1RM-rekord — bekerült a vitrinbe.</div></div>
+              </div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+                <div class="grow"><div class="t">12:30 · Emlékeztető</div><div class="x">Pull A 30 perc múlva — indul az előkészítő.</div></div>
+              </div>
+              <div class="ntffoot">Összes értesítés ›</div>
+            </div>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <!-- ============ REGGEL ============ -->
+        <div class="dp-panel" data-dp="reggel">
+          <div class="float3d hero lavw rise" style="--d:0ms;">
+            <div class="mrow">
+              <svg width="52" height="52" viewBox="0 0 100 100"><use href="#s-este"/></svg>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#6C5FA3;">Éjszakád</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;">
+                  <span class="big cnt" style="font-size:32px;" data-kind="time" data-target="444">0:00</span>
+                  <span class="mut" style="font-size:9.5px;">hatékonyság 92% · cél ✓</span>
+                </div>
+              </div>
+            </div>
+            <div class="mrow" style="margin-top:6px;gap:14px;">
+              <span class="mut" style="font-size:9.5px;">Súly <b style="color:#2B2118;">84,2 kg ↘</b></span>
+              <span class="mut" style="font-size:9.5px;">Fókusz <b style="color:#A84A26;">evezés-tempó</b></span>
+            </div>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-mezo open-mezo rise" style="--d:70ms;" role="button" tabindex="0" aria-label="Mezo üzenetei">
+              <div class="p-eyebrow" style="color:#B04524;">Mezo</div>
+              <div class="spotwrap"><span class="anchor"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge unread">3</span></span></div>
+              <div class="tile-more" style="color:#B04524;text-align:center;">Üzenetek ›</div>
+            </div>
+
+            <div class="tile t-hab rise" style="--d:110ms;" data-hab="reggel" role="button" tabindex="0" aria-label="Reggeli rutin">
+              <div class="p-eyebrow" style="color:#A8801F;">Rutin</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use data-habicon href="#i-naplo"/></svg></div>
+              <div data-habname style="font-size:11.5px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Reggeli videó</div>
+              <div class="mrow" style="margin-top:4px;">
+                <span class="mut grow" style="font-size:10.5px;font-weight:600;" data-habcount>3/4</span>
+                <button class="htick sm" data-habtick aria-label="Kipipálás"></button>
+              </div>
+            </div>
+
+            <div class="tile t-quest open-quest rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Napi küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="mrow bigdots" style="justify-content:center;gap:6px;">
+                <span class="hd f"></span><span class="hd"></span><span class="hd"></span>
+                <span style="font-size:10px;font-weight:700;color:#A8801F;margin-left:4px;">+60 XP</span>
+              </div>
+            </div>
+
+            <div class="tile t-check open-check rise" style="--d:190ms;" role="button" tabindex="0" aria-label="Check-in">
+              <div class="p-eyebrow" style="color:#B0567E;">Check-in</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-checkin"/></svg></div>
+              <div class="mrow ckdots" style="justify-content:center;gap:6px;"><span class="hd f"></span><span class="hd f"></span><span class="hd"></span><span class="hd"></span></div>
+            </div>
+
+            <div class="tile t-kreed rise" style="--d:230ms;" role="button" tabindex="0" aria-label="Kreed">
+              <div class="p-eyebrow" style="color:#A84A26;">Kreed</div>
+              <div class="tile-line" style="font-size:10px;-webkit-line-clamp:3;">„A rendszer véd — nekem csak jelen kell lennem."</div>
+              <div style="flex:1;"></div>
+              <div class="tile-more" style="color:#A84A26;">3 fókusz ›</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ NAP ============ -->
+        <div class="dp-panel on" data-dp="nap">
+          <div class="float3d hero rise" style="--d:0ms;">
+            <div class="p-eyebrow" style="color:#5F7A52;">Keret · ma</div>
+            <div class="mrow" style="align-items:baseline;gap:6px;">
+              <span class="big cnt" style="font-size:36px;" data-kind="num" data-target="1520">0</span>
+              <span class="mut" style="font-size:10px;">kcal maradt · fehérje 96/180 g</span>
+            </div>
+            <div class="daybar">
+              <i class="f" style="--d:250ms;"></i><i class="f" style="--d:330ms;"></i><i class="now" style="--d:410ms;"></i><i style="--d:490ms;"></i><i style="--d:570ms;"></i><i style="--d:650ms;"></i>
+            </div>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-most rise" style="--d:70ms;">
+              <div class="p-eyebrow" style="color:#C9962E;">Ebéd-ablak · most</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div>
+              <button class="cta" style="width:100%;padding:6px 0;font-size:10.5px;">Logold</button>
+            </div>
+
+            <div class="tile t-train rise" style="--d:110ms;">
+              <div class="p-eyebrow" style="color:#A84A26;">Edzés</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>
+              <div style="font-size:13px;font-weight:700;text-align:center;">Pull A</div>
+            </div>
+
+            <div class="tile t-vital open-vital rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Életjel részletek">
+              <div class="p-eyebrow">Életjel</div>
+              <div class="spotwrap">
+                <div class="bigring" style="background:conic-gradient(#6E8B5E 0% 12%, rgba(43,33,24,0.08) 12% 16.7%, #4E8FB8 16.7% 23.8%, rgba(43,33,24,0.08) 23.8% 33.3%, #6C5FA3 33.3% 48%, rgba(43,33,24,0.08) 48% 50%, #FF6B4A 50% 55%, rgba(43,33,24,0.08) 55% 66.7%, #C46FA0 66.7% 76.7%, rgba(43,33,24,0.08) 76.7% 83.3%, #C9962E 83.3% 92.5%, rgba(43,33,24,0.08) 92.5% 100%);">
+                  <span class="hole"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile t-water rise" style="--d:190ms;" id="watertile" role="button" tabindex="0" aria-label="Víz +2,5 dl">
+              <div class="mrow">
+                <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-viz"/></svg>
+                <div class="mrow" style="align-items:baseline;gap:3px;">
+                  <span class="big" style="font-size:19px;" id="wval">1,2</span>
+                  <span class="mut" style="font-size:8.5px;">/ 2,8 L</span>
+                </div>
+              </div>
+              <div style="flex:1;"></div>
+              <div class="waterfill"><div id="wbar"></div></div>
+              <div class="mut" style="font-size:8.5px;margin-top:4px;">koppints: +2,5 dl</div>
+            </div>
+
+            <div class="tile t-stack rise" style="--d:230ms;" id="stacktile" role="button" tabindex="0" aria-label="Következő bevétel pipálása">
+              <div class="p-eyebrow" style="color:#4E6B42;">Stack</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-stack"/></svg></div>
+              <div class="big" style="font-size:17px;text-align:center;" id="stackcount">2/5</div>
+            </div>
+
+            <div class="tile t-mezo open-mezo rise" style="--d:270ms;" role="button" tabindex="0" aria-label="Mezo üzenetei">
+              <div class="p-eyebrow" style="color:#B04524;">Mezo</div>
+              <div class="spotwrap"><span class="anchor"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge unread">3</span></span></div>
+              <div class="tile-more" style="color:#B04524;text-align:center;">Üzenetek ›</div>
+            </div>
+
+            <div class="tile t-quest open-quest rise" style="--d:310ms;" role="button" tabindex="0" aria-label="Napi küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="mrow bigdots" style="justify-content:center;gap:6px;">
+                <span class="hd f"></span><span class="hd"></span><span class="hd"></span>
+                <span style="font-size:10px;font-weight:700;color:#A8801F;margin-left:4px;">+60 XP</span>
+              </div>
+            </div>
+
+            <div class="tile t-check open-check rise" style="--d:350ms;" role="button" tabindex="0" aria-label="Check-in">
+              <div class="p-eyebrow" style="color:#B0567E;">Check-in</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-checkin"/></svg></div>
+              <div class="mrow ckdots" style="justify-content:center;gap:6px;"><span class="hd f"></span><span class="hd f"></span><span class="hd"></span><span class="hd"></span></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============ ESTE ============ -->
+        <div class="dp-panel" data-dp="este">
+          <div class="float3d hero dusk rise" style="--d:0ms;">
+            <div class="mrow">
+              <svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-napzaras"/></svg>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#6C5FA3;">Villanyoltásig</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;">
+                  <span class="big cnt" style="font-size:32px;" data-kind="time" data-target="110">0:00</span>
+                  <span class="mut" style="font-size:9.5px;">21:30 lefekvés</span>
+                </div>
+              </div>
+            </div>
+            <button class="cta lav" style="width:100%;margin-top:9px;padding:8px 0;">Zárjuk le a napot</button>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-habe rise" style="--d:70ms;" data-hab="este" role="button" tabindex="0" aria-label="Esti rutin">
+              <div class="p-eyebrow" style="color:#6C5FA3;">Rutin</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use data-habicon href="#i-naplo"/></svg></div>
+              <div data-habname style="font-size:11.5px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Esti napló</div>
+              <div class="mrow" style="margin-top:4px;">
+                <span class="mut grow" style="font-size:10.5px;font-weight:600;" data-habcount>1/3</span>
+                <button class="htick sm" data-habtick aria-label="Kipipálás"></button>
+              </div>
+            </div>
+
+            <div class="tile t-quest open-quest rise" style="--d:110ms;" role="button" tabindex="0" aria-label="Napi küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="mrow bigdots" style="justify-content:center;gap:6px;">
+                <span class="hd f"></span><span class="hd"></span><span class="hd"></span>
+                <span style="font-size:10px;font-weight:700;color:#A8801F;margin-left:4px;">+60 XP</span>
+              </div>
+            </div>
+
+            <div class="tile t-check open-check rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Check-in">
+              <div class="p-eyebrow" style="color:#B0567E;">Check-in</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-checkin"/></svg></div>
+              <div class="mrow ckdots" style="justify-content:center;gap:6px;"><span class="hd f"></span><span class="hd f"></span><span class="hd"></span><span class="hd"></span></div>
+            </div>
+
+            <div class="tile t-mezo open-mezo rise" style="--d:190ms;" role="button" tabindex="0" aria-label="Mezo üzenetei">
+              <div class="p-eyebrow" style="color:#B04524;">Mezo</div>
+              <div class="spotwrap"><span class="anchor"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge unread">3</span></span></div>
+              <div class="tile-more" style="color:#B04524;text-align:center;">Üzenetek ›</div>
+            </div>
+          </div>
+
+          <div class="statstrip rise" style="--d:240ms;">
+            <div class="statcell"><b class="cnt" data-kind="num" data-target="2340">0</b><small>kcal · kereten belül ✓</small></div>
+            <div class="statcell"><b>Pull A ✓</b><small>18 szett · 2 medál</small></div>
+            <div class="statcell"><b>+<span class="cnt" data-kind="num" data-target="120">0</span> XP</b><small>a mai termés</small></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ RÉSZLETOLDALAK ============ -->
+
+      <div class="page p-gold" id="page-hab">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-hab">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <svg width="60" height="60" viewBox="0 0 100 100"><use id="habspot" href="#s-reggel"/></svg>
+          <div class="bignum" id="habnum">3/4</div>
+          <div class="nm" id="habtitle">Reggeli rutin</div>
+          <div class="sb" id="habsub2">4 elem · lánc</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;" id="habstats"></div>
+          <div class="vcard rise" style="--d:100ms;"><div id="hablist"></div></div>
+          <p class="habnote">A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.</p>
+        </div>
+      </div>
+
+      <div class="page p-coral" id="page-mezo">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-mezo">‹ Ma</button>
+        </div>
+        <div class="page-hero orb">
+          <svg width="70" height="70" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+          <div class="nm">Mezo · ma</div>
+          <div class="sb">3 üzenet · a napod fonala</div>
+        </div>
+        <div class="page-body">
+          <div class="mz-msg rise" style="--d:40ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>
+              <div class="t">07:05 · Reggeli briefing</div>
+            </div>
+            <div class="txt">Két nap múlva W3-csúcs — ma a Pull A a hét kulcs-edzése. A fókuszod az evezés-tempó; a vállad jelzett múlt héten, melegíts rá külön.</div>
+            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          </div>
+          <div class="mz-msg rise" style="--d:100ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-este"/></svg>
+              <div class="t">07:12 · Alvás-reakció</div>
+            </div>
+            <div class="txt">7:24, 92% hatékonyság — zsinórban a harmadik cél feletti éjszakád. A korai lecsendesítés működik.</div>
+            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          </div>
+          <div class="mz-msg rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-energia"/></svg>
+              <div class="t">11:30 · Déli jelzés</div>
+            </div>
+            <div class="txt">A hátad hét ez — a mai Pull A-ban dől el a W3 íve. Az ebéd-ablakod most nyílt: 640 kcal fér bele, edzésig bőven megemészted.</div>
+            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          </div>
+          <button class="cta mz-cta rise" style="--d:220ms;">Beszélgess Mezóval ›</button>
+        </div>
+      </div>
+
+      <div class="page p-gold" id="page-quest">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-quest">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <svg width="60" height="60" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg>
+          <div class="bignum">1/3</div>
+          <div class="nm">Napi küldetések</div>
+          <div class="sb">ajánlatok a mai napra</div>
+        </div>
+        <div class="page-body">
+          <div class="qcard rise" style="--d:40ms;">
+            <div class="mrow" style="gap:9px;align-items:flex-start;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Zárd 18 szett felett a Pull A-t</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A hát-hét íve ma dől el — az evezés-tempó a kulcs.</div>
+              </div>
+              <span class="qxp">+25 XP</span>
+            </div>
+            <div class="mrow" style="margin-top:8px;">
+              <span class="mut grow" style="font-size:9px;">folyamatban · az edzésből záródik magától</span>
+              <button class="fb">Csere · 1 maradt</button>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:100ms;">
+            <div class="mrow" style="gap:9px;align-items:flex-start;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-fuel"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Érd el a 180 g fehérjét</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">96 g megvan — az ebéd-ablak a fele úton segít.</div>
+              </div>
+              <span class="qxp">+20 XP</span>
+            </div>
+            <div class="mrow" style="margin-top:8px;">
+              <span class="mut grow" style="font-size:9px;">folyamatban · a logjaidból záródik magától</span>
+            </div>
+          </div>
+          <div class="qcard done rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;align-items:flex-start;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-naplo"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Írj egy sort a naplóba</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A memóriád ma is éhes — egy mondat elég.</div>
+              </div>
+              <span class="qxp">+15 XP</span>
+            </div>
+            <div class="mrow" style="margin-top:8px;">
+              <span class="grow" style="font-size:9px;font-weight:600;color:#5F7A52;">✓ kész · +15 XP jóváírva</span>
+            </div>
+          </div>
+          <p class="habnote">A küldetés ajánlat: ha kimarad, csendben lejár — bukás nincs. A Csere naponta egyszer ingyenes.</p>
+        </div>
+      </div>
+
+      <div class="page p-rose" id="page-vital">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-vital">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <div class="mrow" style="justify-content:center;gap:22px;">
+            <svg width="76" height="76" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg>
+            <span class="bignum">58%</span>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="mosaic">
+            <div class="tile t-stack rise" style="--d:40ms;" role="button" tabindex="0" aria-label="Étel logolása">
+              <div class="p-eyebrow" style="color:#4E6B42;">Étel</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:72;--c:#6E8B5E;"></span>
+                <span style="font-size:12.5px;font-weight:600;">72%</span>
+              </div>
+            </div>
+            <div class="tile t-water rise" style="--d:80ms;" id="vitwater" role="button" tabindex="0" aria-label="Víz +2,5 dl">
+              <div class="p-eyebrow" style="color:#3E7396;">Víz</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-viz"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" id="vitwring" style="--v:43;--c:#4E8FB8;"></span>
+                <span style="font-size:12.5px;font-weight:600;" id="vitwpct">43%</span>
+              </div>
+            </div>
+            <div class="tile t-habe rise" style="--d:120ms;" role="button" tabindex="0" aria-label="Alvás logolása">
+              <div class="p-eyebrow" style="color:#6C5FA3;">Alvás</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-alvas"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:88;--c:#6C5FA3;"></span>
+                <span style="font-size:12.5px;font-weight:600;">88%</span>
+              </div>
+            </div>
+            <div class="tile t-train rise" style="--d:160ms;border:1px solid rgba(255,107,74,0.5);" role="button" tabindex="0" aria-label="Mozgás — edzéshez">
+              <div class="p-eyebrow" style="color:#A84A26;">Mozgás</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:30;--c:#FF6B4A;"></span>
+                <span style="font-size:12.5px;font-weight:600;color:#A84A26;">30%</span>
+              </div>
+            </div>
+            <div class="tile t-check rise" style="--d:200ms;" role="button" tabindex="0" aria-label="Kapcsolat logolása">
+              <div class="p-eyebrow" style="color:#B0567E;">Kapcsolat</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-emberek"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:60;--c:#C46FA0;"></span>
+                <span style="font-size:12.5px;font-weight:600;">60%</span>
+              </div>
+            </div>
+            <div class="tile t-hab rise" style="--d:240ms;" role="button" tabindex="0" aria-label="Rend">
+              <div class="p-eyebrow" style="color:#A8801F;">Rend</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-rend"/></svg></div>
+              <div class="mrow" style="justify-content:center;gap:7px;">
+                <span class="rr" style="--v:55;--c:#C9962E;"></span>
+                <span style="font-size:12.5px;font-weight:600;">55%</span>
+              </div>
+            </div>
+          </div>
+          <p class="habnote">Koppints egy jelre a logolásához (a cél-felületek még mockok). A gyűrűk nem büntetnek — csak jelzik, mi kér figyelmet.</p>
+        </div>
+      </div>
+
+      <div class="page p-rose" id="page-check">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-check">‹ Ma</button>
+        </div>
+        <div class="page-hero">
+          <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>
+          <div class="bignum" id="ckbig">2/4</div>
+          <div class="nm">Check-in</div>
+          <div class="sb">négy pillanatkép a napodról</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard rise" style="--d:40ms;">
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Reggel · 07:10</div><div class="mut" style="font-size:9px;">energia 4/5 · tiszta fej</div></div>
+            </div>
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Délelőtt · 10:05</div><div class="mut" style="font-size:9px;">energia 3/5 · pörgős munka</div></div>
+            </div>
+            <div class="vrow ckslot-hot" id="ckslot">
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#8E3F6F;">Délután · most esedékes</div><div class="mut" style="font-size:9px;">hogy vagy energiával?</div></div>
+              <button class="ckchip">1</button><button class="ckchip">2</button><button class="ckchip">3</button><button class="ckchip">4</button><button class="ckchip">5</button>
+            </div>
+            <div class="vrow" style="opacity:0.6;">
+              <span class="tick"></span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Este · 20:00 körül</div><div class="mut" style="font-size:9px;">később esedékes</div></div>
+            </div>
+          </div>
+          <p class="habnote">A kimaradt slot nem vész el — Pótold bármikor, a társ nem büntet.</p>
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="mtab on"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="fab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>Mit nézz meg</h2>
+        <ul>
+          <li><strong>Egy hosszú csempe panelenként — a hero</strong>; minden más a 2 oszlopos mozaikban él: MOST, Edzés, Életjel, Víz, Stack, Mezo, Küldetések, Check-in, Minta, Rutin, Kreed.</li>
+          <li><strong>Csempe → saját oldal (Huawei-minta)</strong> — a Mezo-, rutin-, küldetés-, Életjel- és check-in-csempe teljes oldalra visz: jobbról csúszik be, színes hero-zóna, „‹ Ma" vissza.</li>
+          <li><strong>A check-in oldalon a délutáni slot helyben kitölthető</strong> — koppints egy 1–5 chipre, és a slot ✓-ra vált, a csempék 3/4-re frissülnek.</li>
+          <li><strong>A csempék élnek</strong> — Víz: +2,5 dl, Stack: következő bevétel, rutin-karika: helyben pipál, Mezo: az olvasatlan-pötty megnyitáskor törlődik.</li>
+          <li><strong>Csomagból építve</strong> — minden ikon és spot a <code>docs/design/assets/</code> sprite-okból jön.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Döntendő ezen az oldalon</h2>
+        <ol>
+          <li>A mozaik-sorrend napszakonként jó-e így (MOST mindig elöl)?</li>
+          <li>A részletoldal a tab bart is fedi (Huawei-hű) — maradjon így?</li>
+          <li>Az Életjel hero-száma átlag (58%) vagy a legalacsonyabb jel legyen?</li>
+        </ol>
+      </div>
+      <p class="note">A hero mondja meg, hol tart a nap; a mozaik mondja meg, mihez nyúlj.
+      A csempe → oldal minta lesz az általános recept minden további felületre.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var scr = document.getElementById('scr');
+  var raf = [];
+
+  function fmtNum(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function fmtTime(m) { m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
+
+  function animateVal(el, target, kind, dur, delay) {
+    var render = kind === 'time' ? fmtTime : fmtNum;
+    if (reduced) { el.textContent = render(target); return; }
+    el.textContent = render(0);
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = (ts - start - delay) / dur;
+      if (t < 0) { raf.push(requestAnimationFrame(step)); return; }
+      t = Math.min(t, 1);
+      var e = 1 - Math.pow(1 - t, 3);
+      el.textContent = render(target * e);
+      if (t < 1) raf.push(requestAnimationFrame(step));
+    }
+    raf.push(requestAnimationFrame(step));
+  }
+
+  function animateRing(el, target, dur, delay) {
+    if (reduced) { el.style.setProperty('--v', target); return; }
+    el.style.setProperty('--v', 0);
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = (ts - start - delay) / dur;
+      if (t < 0) { raf.push(requestAnimationFrame(step)); return; }
+      t = Math.min(t, 1);
+      var e = 1 - Math.pow(1 - t, 3);
+      el.style.setProperty('--v', target * e);
+      if (t < 1) raf.push(requestAnimationFrame(step));
+    }
+    raf.push(requestAnimationFrame(step));
+  }
+
+  function playPanel(dp) {
+    raf.forEach(cancelAnimationFrame); raf = [];
+    document.querySelectorAll('.dp-panel').forEach(function (p) {
+      var on = p.getAttribute('data-dp') === dp;
+      p.classList.toggle('on', on);
+      p.classList.remove('play');
+      if (on) {
+        p.scrollTop = 0;
+        void p.offsetWidth;
+        p.classList.add('play');
+        p.querySelectorAll('.cnt').forEach(function (el, i) {
+          animateVal(el, parseFloat(el.getAttribute('data-target')), el.getAttribute('data-kind'), 1000, 300 + i * 140);
+        });
+        p.querySelectorAll('[data-ring]').forEach(function (r, i) {
+          animateRing(r, parseFloat(r.getAttribute('data-v')), 900, 400 + i * 70);
+        });
+      }
+    });
+  }
+
+  /* --- napszak-váltó --- */
+  var ICONS = { reggel: '#i-hajnal', nap: '#i-nap', este: '#i-alvas' };
+  var dpwrap = document.getElementById('dpwrap');
+  var dpswitch = document.getElementById('dpswitch');
+  function closeMenu() {
+    dpwrap.classList.remove('open');
+    dpswitch.setAttribute('aria-expanded', 'false');
+  }
+  dpswitch.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeNtf();
+    var open = dpwrap.classList.toggle('open');
+    dpswitch.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', function (e) {
+    if (!dpwrap.contains(e.target)) closeMenu();
+  });
+
+  /* --- értesítés-harang --- */
+  var ntfwrap = document.getElementById('ntfwrap');
+  var ntfbtn = document.getElementById('ntfbtn');
+  function closeNtf() {
+    ntfwrap.classList.remove('open');
+    ntfbtn.setAttribute('aria-expanded', 'false');
+  }
+  ntfbtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeMenu();
+    var open = ntfwrap.classList.toggle('open');
+    ntfbtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      var b = document.getElementById('ntfbadge');
+      if (b) b.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (!ntfwrap.contains(e.target)) closeNtf();
+  });
+  document.querySelectorAll('.dpmenu button').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      document.querySelectorAll('.dpmenu button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var dp = b.getAttribute('data-dp');
+      scr.setAttribute('data-dp', dp);
+      document.getElementById('dpicon').setAttribute('href', ICONS[dp]);
+      dpswitch.classList.toggle('away', dp !== 'nap');
+      closeMenu();
+      playPanel(dp);
+    });
+  });
+
+  /* --- részletoldalak --- */
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  function bindOpen(sel, id, extra) {
+    document.querySelectorAll(sel).forEach(function (el) {
+      function go() { if (extra) extra(el); openPage(id); }
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    });
+  }
+  bindOpen('.open-mezo', 'page-mezo', function () {
+    document.querySelectorAll('.unread').forEach(function (d) { d.style.display = 'none'; });
+  });
+  bindOpen('.open-quest', 'page-quest');
+  bindOpen('.open-vital', 'page-vital');
+  bindOpen('.open-check', 'page-check');
+
+  /* --- check-in kitöltés --- */
+  document.querySelectorAll('.ckchip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var v = b.textContent;
+      document.getElementById('ckslot').classList.remove('ckslot-hot');
+      document.getElementById('ckslot').innerHTML =
+        '<span class="tick f">✓</span>' +
+        '<div class="grow"><div style="font-size:11.5px;font-weight:600;">Délután · 11:41</div>' +
+        '<div class="mut" style="font-size:9px;">energia ' + v + '/5</div></div>';
+      document.getElementById('ckbig').textContent = '3/4';
+      document.querySelectorAll('.ckcount').forEach(function (c) { c.textContent = '3/4'; });
+      document.querySelectorAll('.ckdots').forEach(function (d) {
+        d.innerHTML = '<span class="hd f"></span><span class="hd f"></span><span class="hd f"></span><span class="hd"></span>';
+      });
+      document.querySelectorAll('.ckname').forEach(function (n) { n.textContent = 'Esti check-in'; });
+      document.querySelectorAll('.cksub').forEach(function (s) { s.textContent = 'esedékes · 20:00'; });
+    });
+  });
+
+  /* --- habitek --- */
+  var HABITS = {
+    reggel: {
+      title: 'Reggeli rutin', spot: '#s-reggel',
+      stats: [['12/30', 'tökéletes reggel'], ['82%', 'lánc-erő · 28 nap'], ['+35', 'XP ma']],
+      items: [
+        { n: 'Súlymérés', i: '#i-suly', s: 92, d: true },
+        { n: 'Napfény · 10 perc', i: '#i-nap', s: 76, d: true },
+        { n: '50 fekvőtámasz', i: '#i-edzes', s: 88, d: true },
+        { n: 'Reggeli videó', i: '#i-naplo', s: 54, d: false }
+      ]
+    },
+    este: {
+      title: 'Esti rutin', spot: '#s-este',
+      stats: [['9/30', 'tökéletes este'], ['71%', 'lánc-erő · 28 nap'], ['+10', 'XP ma']],
+      items: [
+        { n: 'Lecsendesítés', i: '#i-alvas', s: 84, d: true },
+        { n: 'Esti napló', i: '#i-naplo', s: 62, d: false },
+        { n: 'Esti check-in', i: '#i-checkin', s: 77, d: false }
+      ]
+    }
+  };
+  var habOpenKey = null;
+
+  function renderHabTile(key) {
+    var set = HABITS[key];
+    var tile = document.querySelector('.tile[data-hab="' + key + '"]');
+    if (!tile) return;
+    var done = set.items.filter(function (x) { return x.d; }).length;
+    tile.querySelector('[data-habcount]').textContent = done + '/' + set.items.length;
+    var dotsEl = tile.querySelector('[data-habdots]');
+    if (dotsEl) {
+      dotsEl.innerHTML = set.items.map(function (x) {
+        return '<span class="hd' + (x.d ? ' f' : '') + '"></span>';
+      }).join('');
+    }
+    var next = null;
+    for (var k = 0; k < set.items.length; k++) { if (!set.items[k].d) { next = set.items[k]; break; } }
+    var icon = tile.querySelector('[data-habicon]');
+    var name = tile.querySelector('[data-habname]');
+    var sub = tile.querySelector('[data-habsub]');
+    var tick = tile.querySelector('[data-habtick]');
+    if (next) {
+      tile.classList.remove('alldone');
+      icon.setAttribute('href', next.i);
+      name.textContent = next.n;
+      if (sub) sub.textContent = 'következő';
+      tick.classList.remove('f');
+      tick.textContent = '';
+    } else {
+      tile.classList.add('alldone');
+      icon.setAttribute('href', '#i-lang');
+      name.textContent = key === 'reggel' ? 'Tökéletes reggel' : 'Tökéletes este';
+      if (sub) sub.textContent = 'kész · +15 bónusz XP';
+      tick.classList.add('f');
+      tick.textContent = '✓';
+    }
+  }
+
+  function renderHabPage(key) {
+    var set = HABITS[key];
+    var done = set.items.filter(function (x) { return x.d; }).length;
+    document.getElementById('habspot').setAttribute('href', set.spot);
+    document.getElementById('habnum').textContent = done + '/' + set.items.length;
+    document.getElementById('habtitle').textContent = set.title;
+    document.getElementById('habsub2').textContent = set.items.length + ' elem · lánc';
+    document.getElementById('habstats').innerHTML = set.stats.map(function (s) {
+      return '<div class="statcell"><b>' + s[0] + '</b><small>' + s[1] + '</small></div>';
+    }).join('');
+    document.getElementById('hablist').innerHTML = set.items.map(function (x, i) {
+      return '<div class="habrow">' +
+        '<button class="tick' + (x.d ? ' f' : '') + '" data-hi="' + i + '" aria-label="' + x.n + '">' + (x.d ? '✓' : '') + '</button>' +
+        '<svg width="24" height="24" viewBox="0 0 100 100"><use href="' + x.i + '"/></svg>' +
+        '<div class="grow"><div class="nm' + (x.d ? ' done' : '') + '">' + x.n + '</div>' +
+        '<div class="hstr"><div style="width:' + x.s + '%;"></div></div></div>' +
+        '<span class="hpct">' + x.s + '%</span></div>';
+    }).join('');
+    document.querySelectorAll('#hablist [data-hi]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var it = set.items[parseInt(b.getAttribute('data-hi'), 10)];
+        it.d = !it.d;
+        renderHabPage(key);
+        renderHabTile(key);
+      });
+    });
+  }
+
+  document.querySelectorAll('.tile[data-hab]').forEach(function (tile) {
+    var key = tile.getAttribute('data-hab');
+    function go() { habOpenKey = key; renderHabPage(key); openPage('page-hab'); }
+    tile.addEventListener('click', go);
+    tile.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    tile.querySelector('[data-habtick]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var items = HABITS[key].items;
+      for (var k = 0; k < items.length; k++) {
+        if (!items[k].d) { items[k].d = true; break; }
+      }
+      renderHabTile(key);
+      if (habOpenKey === key) renderHabPage(key);
+    });
+  });
+
+  /* --- víz + stack --- */
+  var water = 1.2, WGOAL = 2.8;
+  function addWater(e) {
+    if (e) e.stopPropagation();
+    water = Math.min(WGOAL, Math.round((water + 0.25) * 100) / 100);
+    var pct = Math.round(water / WGOAL * 100);
+    var txt = water.toFixed(2).replace(/0$/, '').replace(/\.$/, '').replace('.', ',');
+    document.getElementById('wval').textContent = txt;
+    document.getElementById('wbar').style.width = pct + '%';
+    var vr = document.getElementById('vitwring');
+    if (vr) vr.style.setProperty('--v', pct);
+    var vn = document.getElementById('vitwpct');
+    if (vn) vn.textContent = pct + '%';
+  }
+  document.getElementById('watertile').addEventListener('click', addWater);
+  document.getElementById('vitwater').addEventListener('click', addWater);
+
+  var stackDone = 2;
+  document.getElementById('stacktile').addEventListener('click', function () {
+    if (stackDone >= 5) return;
+    stackDone++;
+    document.getElementById('stackcount').textContent = stackDone + '/5';
+  });
+
+  /* --- feedback chipek --- */
+  document.querySelectorAll('.fb').forEach(function (b) {
+    b.addEventListener('click', function () {
+      b.parentElement.querySelectorAll('.fb').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel');
+    });
+  });
+
+  renderHabTile('reggel');
+  renderHabTile('este');
+  playPanel('nap');
+})();
+</script>

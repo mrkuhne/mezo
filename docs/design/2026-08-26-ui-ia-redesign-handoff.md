@@ -203,6 +203,49 @@ Of the §12 open questions, #1, #2 and #6 are answered by the above; #3 (how Ins
 dissolves), #4 (companion thread placement) and #5 (the exact "now card" content) remain for
 the screen-level design phase.
 
+**Screen prototype package (2026-08-26, rounds 5+ — built in Claude Code):**
+
+Interactive, self-contained prototypes live in `docs/design/prototypes/` (assembled HTML +
+`src/` parts + `build.sh`, which inlines the clay sprites from `docs/design/assets/`).
+Published artifacts — updatable from ANY session by republishing with the matching `url`:
+
+- Clay csomag (asset catalog): https://claude.ai/code/artifact/79f7676e-7998-4a61-b098-44c2e0f8b905
+- Nap-gerinc: https://claude.ai/code/artifact/e1eae7d4-05bc-41c9-8e7e-55bdbee70249
+- Edzés tab: https://claude.ai/code/artifact/d9fd807c-71ca-4c27-b8c9-7d32aca48d15
+- Mezociklus: https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3
+
+Locked patterns from the screen rounds (canonical for every further page):
+
+- **One long tile per panel — the hero.** Everything else lives in the 2-column mosaic.
+- **Tile anatomy: eyebrow + spot graphic + one datum.** Details belong to the page, not the tile.
+- **Tile → own full page (Huawei pattern):** slides in from the right, colored hero zone
+  (spot + big numeral + name), "‹ back" chip, content as cards, quiet principle line at the
+  bottom. No blur overlays — those were tried and rejected.
+- **Header recipe:** date eyebrow · daypart switch (Nap tab only — small round button next to
+  the avatar, gold dot when not viewing "now") · clay bell with badge + dropdown panel · orb
+  avatar with XP ring.
+- **Mezo messages tile** uses the envelope icon (`i-level`) with an unread badge; the companion
+  page hero is the breathing orb. **Quests/check-in tiles**: status circles + XP only.
+  **Életjel tile**: one segmented ring (six colored arcs forming the circle); its page = six
+  need tiles with clay icons + mini ring + %. Habit tile: next item name + tick + x/y.
+- **Edzés IA:** the 9 sub-tabs dissolved → hero (today's session WITH the coach line) + 6 tiles
+  (Heti, Mesociklus, Sport, Futás, Gyakorlatok, Medálok). Sablonok folded into the Mesociklus
+  page; the Gym muscle-zone view folds into Heti. Session/planner stay full-screen flows.
+- **Mezociklus fully specified** in its prototype: hub (hero + Volumen/Történet/Sablonok/Új
+  blokk tiles), MEV/MAV/MRV provenance bars with expandable 01→02→03 derivation, 5-step wizard
+  (tappable phase curve + Mezo reset, Emphasize cap 2 with disabled-not-hidden buttons, program
+  editor with day breakdown + session-cap 11 + StructureLint + PeakFit, searchable multi-add
+  picker, ▲▼ reorder), start/close sheets (close → report, mirroring the real transaction),
+  frozen report ("Heti szettek · a blokk íve" naming), Történet selection mode → A/B compare.
+- **Advisory signals are never red and never block; nulls are never zeros** — carried through
+  every screen.
+
+**How a fresh session continues:** read this file + `docs/design/prototypes/README.md` +
+`docs/design/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
+Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel tab, Mezo
+(chat) tab, Napzárás, Me/profil surfaces, and the remaining Edzés full-screen flows (live
+session, review). New icons/spots always go back into `docs/design/assets/` sprites first.
+
 **The task for this Claude Design session:** propose **2-3 distinct IA/navigation directions**
 as mobile mockups (iPhone, ~390×844), then iterate with Daniel toward one. Each direction must
 answer:

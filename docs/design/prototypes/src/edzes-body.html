@@ -1,0 +1,507 @@
+<style>
+  .page.p-sky { background: linear-gradient(180deg, #DCEBF4 0%, #FDFAF4 36%); }
+  .wk { display: flex; gap: 5px; justify-content: center; }
+  .wk .d { display: grid; gap: 3px; justify-items: center; font-size: 7.5px; font-weight: 700; color: #A2958A; }
+  .wk .d i { width: 10px; height: 10px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); }
+  .wk .d i.f { background: #8FAF7E; }
+  .wk .d i.now { background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .arcbars { display: flex; gap: 8px; align-items: flex-end; height: 66px; padding: 6px 6px 2px; }
+  .arcbars b { flex: 1; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, #FF9A78, #E05535); opacity: 0.5; }
+  .arcbars b.cur { opacity: 1; background: linear-gradient(180deg, #FFD979, #C9962E); }
+  .arcbars.sky b { background: linear-gradient(180deg, #9CC4E0, #33749C); }
+  .arcbars.sky b.cur { background: linear-gradient(180deg, #FFD979, #C9962E); }
+  .arclbl { display: flex; gap: 8px; padding: 3px 6px 0; }
+  .arclbl span { flex: 1; text-align: center; font-size: 7.5px; font-weight: 700; color: #A2958A; }
+  .vrow.today { background: rgba(201, 150, 46, 0.1); border-radius: 12px; border-top: none; margin: 2px -4px; padding: 9px 8px; }
+  .zrow { padding: 8px 2px; }
+  .zrow + .zrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .zbar { position: relative; height: 10px; border-radius: 5px; background: rgba(43, 33, 24, 0.08); margin-top: 6px; }
+  .zbar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: linear-gradient(90deg, #FF9A78, #E05535); }
+  .zbar .zone { position: absolute; top: -3px; bottom: -3px; border: 1.5px dashed rgba(201, 150, 46, 0.55); border-radius: 7px; }
+  .chiprow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; }
+  .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .searchpill { background: rgba(43, 33, 24, 0.06); border-radius: 999px; padding: 8px 14px; font-size: 10.5px; color: #A2958A; margin-bottom: 10px; }
+  .laps { display: flex; gap: 4px; align-items: flex-end; height: 30px; padding-top: 4px; }
+  .laps b { flex: 1; border-radius: 3px 3px 2px 2px; background: linear-gradient(180deg, #9CC4E0, #4E8FB8); }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · 2. oldal · v2</p>
+  <h1>Edzés tab</h1>
+  <p class="lede">A főoldal a „Mai" (hero a társ hangjával), az aloldalak csempékből nyílnak —
+  most már <strong>teljes kidolgozással</strong>: izom-zóna sávok, volumen-ív fázisokkal,
+  e1RM-trend, kör-idők, medál-vitrin.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr">
+      <div class="isl"></div>
+      <div class="p-status"><span>11:40</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+          <div class="ntfwrap" id="ntfwrap">
+            <button class="dpswitch" id="ntfbtn" aria-label="Értesítések" aria-expanded="false">
+              <svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+              <span class="badge mini" id="ntfbadge">1</span>
+            </button>
+            <div class="ntfmenu" role="menu">
+              <div class="p-eyebrow" style="padding:0 2px 6px;">Értesítések · ma</div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+                <div class="grow"><div class="t">12:30 · Emlékeztető</div><div class="x">Pull A 30 perc múlva — indul az előkészítő.</div></div>
+              </div>
+              <div class="ntffoot">Összes értesítés ›</div>
+            </div>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <div class="dp-panel on" data-dp="edzes" id="panel">
+          <div class="float3d hero rise" style="--d:0ms;background:linear-gradient(140deg,#FFE7DC,#FFFFFF 70%);">
+            <div class="mrow">
+              <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#A84A26;">Ma · 13:00 · Meso W3/5</div>
+                <span class="big" style="font-size:30px;">Pull A</span>
+              </div>
+            </div>
+            <div class="coach">
+              <span class="dot"></span>
+              <span>Ma az evezés tempójára figyeljünk — múlt héten cél alatt maradt. A vállad miatt melegíts rá külön.</span>
+            </div>
+            <button class="cta" style="width:100%;margin-top:9px;padding:8px 0;">Indítsuk →</button>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-vital rise" style="--d:70ms;" data-page="page-heti" role="button" tabindex="0" aria-label="Heti terv">
+              <div class="p-eyebrow">Heti</div>
+              <div class="spotwrap">
+                <div class="wk">
+                  <span class="d">H<i class="f"></i></span>
+                  <span class="d">K<i class="f"></i></span>
+                  <span class="d">Sz<i class="now"></i></span>
+                  <span class="d">Cs<i></i></span>
+                  <span class="d">P<i></i></span>
+                  <span class="d">Szo<i></i></span>
+                  <span class="d">V<i></i></span>
+                </div>
+              </div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">2 kész · 6 tervből</div>
+            </div>
+
+            <div class="tile t-train rise" style="--d:110ms;" data-page="page-meso" role="button" tabindex="0" aria-label="Mesociklus">
+              <div class="p-eyebrow" style="color:#A84A26;">Mesociklus</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-meso"/></svg></div>
+              <div class="big" style="font-size:16px;text-align:center;">W3/5</div>
+            </div>
+
+            <div class="tile t-check rise" style="--d:150ms;" data-page="page-sport" role="button" tabindex="0" aria-label="Sport">
+              <div class="p-eyebrow" style="color:#B0567E;">Sport</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-sport"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Csüt · 19:00</div>
+            </div>
+
+            <div class="tile t-water rise" style="--d:190ms;" data-page="page-futas" role="button" tabindex="0" aria-label="Futás">
+              <div class="p-eyebrow" style="color:#3E7396;">Futás</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-futas"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Szo · intervall</div>
+            </div>
+
+            <div class="tile t-kreed rise" style="--d:230ms;" data-page="page-gyak" role="button" tabindex="0" aria-label="Gyakorlatok">
+              <div class="p-eyebrow" style="color:#A84A26;">Gyakorlatok</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-polc"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">112 · rekordok</div>
+            </div>
+
+            <div class="tile t-quest rise" style="--d:270ms;" data-page="page-medal" role="button" tabindex="0" aria-label="Medálok">
+              <div class="p-eyebrow" style="color:#A8801F;">Medálok</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-medal"/></svg></div>
+              <div class="big" style="font-size:16px;text-align:center;">12</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ HETI ============ -->
+      <div class="page p-gold" id="page-heti">
+        <div class="page-head"><button class="backbtn" data-back="page-heti">‹ Edzés</button></div>
+        <div class="page-hero">
+          <div class="bignum">2/6</div>
+          <div class="nm">Heti edzések</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;">
+            <div class="statcell"><b>42</b><small>szett terv</small></div>
+            <div class="statcell"><b>7,2</b><small>RPE átlag</small></div>
+            <div class="statcell"><b>2</b><small>medál e héten</small></div>
+          </div>
+          <div class="vcard rise" style="--d:100ms;">
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Hétfő · Push A</div><div class="mut" style="font-size:9px;">18 szett · 1 medál · +45 XP</div></div>
+              <svg width="18" height="18" viewBox="0 0 100 100"><use href="#s-medal"/></svg>
+            </div>
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-sport"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Kedd · Röplabda</div><div class="mut" style="font-size:9px;">90 perc · RPE 7 · váll rendben</div></div>
+            </div>
+            <div class="vrow today">
+              <span class="tick"></span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#A8801F;">Szerda · Pull A</div><div class="mut" style="font-size:9px;">ma 13:00 · hát-fókusz · 18 szett terv</div></div>
+              <button class="vchip">Indítsuk ›</button>
+            </div>
+            <div class="vrow">
+              <span class="tick"></span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-sport"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Csütörtök · Röplabda</div><div class="mut" style="font-size:9px;">19:00 · edzés</div></div>
+            </div>
+            <div class="vrow">
+              <span class="tick"></span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Péntek · Push B</div><div class="mut" style="font-size:9px;">13:00 · váll-fókusz · 16 szett terv</div></div>
+            </div>
+            <div class="vrow">
+              <span class="tick"></span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-futas"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Szombat · Intervall futás</div><div class="mut" style="font-size:9px;">reggel · 6×400 m</div></div>
+            </div>
+            <div class="vrow" style="opacity:0.55;">
+              <span class="tick"></span>
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#s-piheno"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Vasárnap · Pihenő</div></div>
+            </div>
+          </div>
+          <div class="p-eyebrow" style="padding:6px 2px 6px;">Izom-zónák · e hét</div>
+          <div class="vcard rise" style="--d:160ms;padding:8px 12px;">
+            <div class="zrow">
+              <div class="mrow"><span class="grow" style="font-size:11px;font-weight:600;">Hát</span><span class="mut" style="font-size:9px;">14 szett · zónában ✓</span></div>
+              <div class="zbar"><span class="zone" style="left:55%;width:35%;"></span><span class="fill" style="width:70%;"></span></div>
+            </div>
+            <div class="zrow">
+              <div class="mrow"><span class="grow" style="font-size:11px;font-weight:600;">Mell</span><span class="mut" style="font-size:9px;">12 szett · zónában ✓</span></div>
+              <div class="zbar"><span class="zone" style="left:50%;width:30%;"></span><span class="fill" style="width:60%;"></span></div>
+            </div>
+            <div class="zrow">
+              <div class="mrow"><span class="grow" style="font-size:11px;font-weight:600;color:#A84A26;">Láb</span><span style="font-size:9px;font-weight:600;color:#A84A26;">6 szett · zóna alatt ↓</span></div>
+              <div class="zbar"><span class="zone" style="left:50%;width:30%;"></span><span class="fill" style="width:30%;"></span></div>
+            </div>
+            <div class="zrow">
+              <div class="mrow"><span class="grow" style="font-size:11px;font-weight:600;">Váll</span><span class="mut" style="font-size:9px;">8 szett · röpi-cross-load beszámítva</span></div>
+              <div class="zbar"><span class="zone" style="left:30%;width:30%;"></span><span class="fill" style="width:42%;"></span></div>
+            </div>
+          </div>
+          <p class="habnote">A szaggatott sáv a cél-zóna — a teli sáv a heti valóság, a sport cross-load már benne van.</p>
+        </div>
+      </div>
+
+      <!-- ============ MESOCIKLUS ============ -->
+      <div class="page p-coral" id="page-meso">
+        <div class="page-head"><button class="backbtn" data-back="page-meso">‹ Edzés</button></div>
+        <div class="page-hero">
+          <svg width="52" height="52" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+          <div class="bignum">W3/5</div>
+          <div class="nm">Hipertrófia blokk</div>
+          <div class="sb">4 nap/hét · pull-push · 12. nap</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard rise" style="--d:40ms;padding:10px 12px;">
+            <div class="p-eyebrow" style="padding-bottom:2px;">Volumen-ív</div>
+            <div class="arcbars"><b style="height:38%;"></b><b style="height:60%;"></b><b class="cur" style="height:80%;"></b><b style="height:95%;"></b><b style="height:45%;"></b></div>
+            <div class="arclbl"><span>W1</span><span>W2</span><span>W3 · MOST</span><span>W4 · csúcs</span><span>deload</span></div>
+          </div>
+          <div class="vcard rise" style="--d:100ms;padding:10px 12px;">
+            <div class="mrow">
+              <div class="grow">
+                <div class="p-eyebrow">e1RM trend · evezés</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;"><span class="big" style="font-size:20px;">94 kg</span><span style="font-size:9.5px;font-weight:700;color:#5F7A52;">↗ +3,2%</span></div>
+              </div>
+              <svg width="92" height="30" viewBox="0 0 92 30" preserveAspectRatio="none" style="flex:none;">
+                <polyline points="2,24 20,22 38,23 56,17 74,14 90,8" fill="none" stroke="#E05535" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="90" cy="8" r="3" fill="#C9962E"/>
+              </svg>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-lang"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Akkumuláció → intenzifikáció</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A hát-fókusz hét csúcsa két nap múlva — a W4 a legnehezebb, utána deload.</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-eyebrow" style="padding:6px 2px 6px;">Történet</div>
+          <div class="vcard rise" style="--d:220ms;">
+            <div class="vrow">
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Erő blokk · máj–jún</div><div class="mut" style="font-size:9px;">adherencia 92% · riport ✓</div></div>
+              <button class="vchip">Riport ›</button>
+            </div>
+            <div class="vrow">
+              <svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Alap hipertrófia · márc–ápr</div><div class="mut" style="font-size:9px;">adherencia 88% · riport ✓</div></div>
+              <button class="vchip">Riport ›</button>
+            </div>
+          </div>
+          <div class="p-eyebrow" style="padding:6px 2px 6px;">Sablonok</div>
+          <div class="qcard rise" style="--d:280ms;">
+            <div class="mrow">
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Hipertrófia · 5 hetes</div>
+                <div class="mut" style="font-size:9.5px;">4 nap/hét · pull-push split</div>
+              </div>
+              <button class="ghost">Indítás</button>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:340ms;">
+            <div class="mrow">
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Erő · 4 hetes</div>
+                <div class="mut" style="font-size:9.5px;">3 nap/hét · fő gyakorlatok</div>
+              </div>
+              <button class="ghost">Indítás</button>
+            </div>
+          </div>
+          <p class="habnote">Két lezárt futamnál megjelenik az Összevetés — a riport sosem színez pirosra, csak összehasonlít.</p>
+        </div>
+      </div>
+
+      <!-- ============ SPORT ============ -->
+      <div class="page p-rose" id="page-sport">
+        <div class="page-head"><button class="backbtn" data-back="page-sport">‹ Edzés</button></div>
+        <div class="page-hero">
+          <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-sport"/></svg>
+          <div class="bignum">2×</div>
+          <div class="nm">Röplabda · e hét</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;">
+            <div class="statcell"><b>3 ó</b><small>pályán e héten</small></div>
+            <div class="statcell"><b>7</b><small>RPE átlag</small></div>
+            <div class="statcell"><b>✓</b><small>váll rendben</small></div>
+          </div>
+          <div class="vcard rise" style="--d:100ms;">
+            <div class="vrow">
+              <span class="tick f">✓</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Kedd · edzés</div><div class="mut" style="font-size:9px;">90 perc · RPE 7 · sok sáncolás</div></div>
+            </div>
+            <div class="vrow today">
+              <span class="tick"></span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#A8801F;">Csütörtök · edzés</div><div class="mut" style="font-size:9px;">19:00 · csarnok</div></div>
+              <button class="vchip">Logold ›</button>
+            </div>
+            <div class="vrow">
+              <span class="tick"></span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Vasárnap · meccs</div><div class="mut" style="font-size:9px;">10:00 · bajnoki · EGYSZERI</div></div>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Cross-load</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A keddi röpi vállterhelése miatt a mai Pull A vállvolumene −2 szett — a zóna-számításban már benne van.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ FUTÁS ============ -->
+      <div class="page p-sky" id="page-futas">
+        <div class="page-head"><button class="backbtn" data-back="page-futas">‹ Edzés</button></div>
+        <div class="page-hero">
+          <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-futas"/></svg>
+          <div class="bignum">W2/4</div>
+          <div class="nm">Intervall blokk</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard rise" style="--d:40ms;padding:10px 12px;">
+            <div class="p-eyebrow" style="padding-bottom:2px;">Blokk-ív</div>
+            <div class="arcbars sky"><b style="height:45%;"></b><b class="cur" style="height:62%;"></b><b style="height:82%;"></b><b style="height:50%;"></b></div>
+            <div class="arclbl"><span>6×400</span><span>8×400 · MOST</span><span>10×400</span><span>levezető</span></div>
+          </div>
+          <div class="vcard rise" style="--d:100ms;padding:10px 12px;">
+            <div class="p-eyebrow">Legutóbbi · 6×400 m</div>
+            <div class="mrow" style="align-items:baseline;gap:5px;"><span class="big" style="font-size:20px;">1:32</span><span class="mut" style="font-size:9.5px;">átlag körönként · legjobb 1:28</span></div>
+            <div class="laps"><b style="height:70%;"></b><b style="height:62%;"></b><b style="height:78%;"></b><b style="height:85%;"></b><b style="height:92%;"></b><b style="height:100%;"></b></div>
+          </div>
+          <div class="vcard rise" style="--d:160ms;">
+            <div class="vrow today">
+              <span class="tick"></span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#A8801F;">Szombat · 8×400 m</div><div class="mut" style="font-size:9px;">reggel · cél: 1:34 alatt körönként</div></div>
+            </div>
+            <div class="vrow" style="opacity:0.6;">
+              <span class="tick"></span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Jövő szombat · 10×400 m</div><div class="mut" style="font-size:9px;">terv · a blokk csúcsa</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ GYAKORLATOK ============ -->
+      <div class="page p-gold" id="page-gyak">
+        <div class="page-head"><button class="backbtn" data-back="page-gyak">‹ Edzés</button></div>
+        <div class="page-hero">
+          <svg width="52" height="52" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+          <div class="bignum">112</div>
+          <div class="nm">Gyakorlatok</div>
+        </div>
+        <div class="page-body">
+          <div class="searchpill rise" style="--d:40ms;">Keresés a katalógusban…</div>
+          <div class="chiprow rise" style="--d:80ms;">
+            <span class="fchip on">Mind</span><span class="fchip">Hát</span><span class="fchip">Mell</span><span class="fchip">Láb</span><span class="fchip">Váll</span><span class="fchip">Kar</span>
+          </div>
+          <div class="p-eyebrow" style="padding:0 2px 6px;">Rekordjaid</div>
+          <div class="vcard rise" style="--d:120ms;">
+            <div class="vrow">
+              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Döntött evezés</div><div class="mut" style="font-size:9px;">e1RM 94 kg · tegnapi rekord</div></div>
+              <svg width="52" height="20" viewBox="0 0 52 20" preserveAspectRatio="none" style="flex:none;"><polyline points="2,16 12,15 22,12 32,12 42,8 50,4" fill="none" stroke="#C9962E" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+            </div>
+            <div class="vrow">
+              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Fekvenyomás</div><div class="mut" style="font-size:9px;">e1RM 102 kg ↗</div></div>
+              <svg width="52" height="20" viewBox="0 0 52 20" preserveAspectRatio="none" style="flex:none;"><polyline points="2,17 12,14 22,14 32,10 42,9 50,6" fill="none" stroke="#E05535" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+            </div>
+            <div class="vrow">
+              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Guggolás</div><div class="mut" style="font-size:9px;">e1RM 141 kg · stabil</div></div>
+              <svg width="52" height="20" viewBox="0 0 52 20" preserveAspectRatio="none" style="flex:none;"><polyline points="2,12 12,11 22,13 32,11 42,12 50,11" fill="none" stroke="#A2958A" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <button class="ghost rise" style="--d:180ms;width:100%;padding:9px 0;">＋ Új gyakorlat</button>
+          <p class="habnote">Minden gyakorlathoz demo videó köthető — a katalógus a session-picker forrása is.</p>
+        </div>
+      </div>
+
+      <!-- ============ MEDÁLOK ============ -->
+      <div class="page p-gold" id="page-medal">
+        <div class="page-head"><button class="backbtn" data-back="page-medal">‹ Edzés</button></div>
+        <div class="page-hero">
+          <svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-medal"/></svg>
+          <div class="bignum">12</div>
+          <div class="nm">Medálok</div>
+          <div class="sb">ebből 3 e hónapban</div>
+        </div>
+        <div class="page-body">
+          <div class="p-eyebrow" style="padding:0 2px 6px;">Tegnap</div>
+          <div class="qcard rise" style="--d:40ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="32" height="32" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Döntött evezés · e1RM 94 kg</div>
+                <div class="mut" style="font-size:9.5px;">a régi 91 kg-ot múlta felül · Pull A, 3. szett</div>
+              </div>
+              <span class="qxp">REKORD</span>
+            </div>
+          </div>
+          <div class="p-eyebrow" style="padding:6px 2px 6px;">Hétfő</div>
+          <div class="qcard rise" style="--d:100ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="32" height="32" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Fekvenyomás · heti volumen</div>
+                <div class="mut" style="font-size:9.5px;">legjobb heti összvolumen · 4 320 kg</div>
+              </div>
+              <span class="qxp">REKORD</span>
+            </div>
+          </div>
+          <div class="p-eyebrow" style="padding:6px 2px 6px;">Múlt hét</div>
+          <div class="qcard rise" style="--d:160ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="32" height="32" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">Cél-ismétlés · 8×80 kg fekvenyomás</div>
+                <div class="mut" style="font-size:9.5px;">a kitűzött rep-cél teljesült</div>
+              </div>
+              <span class="qxp">CÉL</span>
+            </div>
+          </div>
+          <p class="habnote">A medálok a set-történetből születnek — a vitrin sosem büntet, csak gyűjt.</p>
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab on"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="fab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>Mi került az aloldalakra</h2>
+        <ul>
+          <li><strong>Heti</strong> — stat-sor (szett/RPE/medál), napi lista medál-garnírunggal, és az <strong>izom-zóna kártya</strong> (régi Gym): szaggatott cél-zóna sáv + teli valóság-sáv, a Láb zóna alatt terrakottában.</li>
+          <li><strong>Mesociklus</strong> — volumen-ív fázis-címkékkel (MOST/csúcs/deload), <strong>e1RM-trend sparkline</strong>, fázis-kártya, futam-történet riport-gombokkal, sablonok.</li>
+          <li><strong>Sport</strong> — heti stat-sor, slotok (ma kiemelve, Logold), cross-load kártya.</li>
+          <li><strong>Futás</strong> — blokk-ív égszínben, legutóbbi futás <strong>kör-idő oszlopokkal</strong> (1:32 átlag), következő sessionök.</li>
+          <li><strong>Gyakorlatok</strong> — kereső + izomcsoport-chipek, rekord-sorok <strong>saját sparkline-nal</strong> és clay medállal.</li>
+          <li><strong>Medálok</strong> — dátum-csoportos vitrin, REKORD/CÉL típus-címkék, „mit múlt felül" sorok.</li>
+        </ul>
+      </div>
+      <p class="note">Minden oldal ugyanabból épül: színes hero (spot + nagy szám) → stat-sor →
+      adat-grafika → lista-kártya → csendes elv-mondat alul. Semmi piros, semmi büntetés.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var panel = document.getElementById('panel');
+  void panel.offsetWidth;
+  panel.classList.add('play');
+
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+
+  var ntfwrap = document.getElementById('ntfwrap');
+  var ntfbtn = document.getElementById('ntfbtn');
+  function closeNtf() {
+    ntfwrap.classList.remove('open');
+    ntfbtn.setAttribute('aria-expanded', 'false');
+  }
+  ntfbtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = ntfwrap.classList.toggle('open');
+    ntfbtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      var b = document.getElementById('ntfbadge');
+      if (b) b.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (!ntfwrap.contains(e.target)) closeNtf();
+  });
+})();
+</script>
