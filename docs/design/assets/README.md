@@ -8,7 +8,7 @@ language decided in the mockup rounds — see `docs/design/2026-08-26-ui-ia-rede
 | File | Contents |
 |---|---|
 | `logo-orb.svg` | The Orb — standalone logo mark (app icon, chat avatar, coach marker) |
-| `clay-icons.svg` | Sprite: 27 `<symbol>` icons, ids `i-*`, all `viewBox="0 0 100 100"` |
+| `clay-icons.svg` | Sprite: 28 `<symbol>` icons, ids `i-*`, all `viewBox="0 0 100 100"` |
 | `clay-spots.svg` | Sprite: 14 `<symbol>` spot illustrations, ids `s-*` |
 
 Browsable catalog artifact: https://claude.ai/code/artifact/ *(see bd issue notes for current link)*.
@@ -60,6 +60,7 @@ brightness(1.04) opacity(.48)`.
 | i-kamra | Kamra | pantry |
 | i-recept | Recept | recipes |
 | i-checkin | Check-in | check-in slots |
+| i-hajnal | Hajnal | daypart switcher (Reggel) |
 
 ### Spots (`s-*`)
 
