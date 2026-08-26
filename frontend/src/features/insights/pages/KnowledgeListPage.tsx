@@ -10,6 +10,7 @@ import { FactCandidateCard } from '@/features/insights/components/FactCandidateC
 import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
 import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
 import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
+import { CANDIDATE_COPY } from '@/data/insights/graph'
 import type { FactCategory, KnowledgeFact } from '@/data/types'
 
 export function KnowledgeListPage() {
@@ -96,20 +97,24 @@ export function KnowledgeListPage() {
         </div>
       )}
 
-      {lifeEvents.length > 0 && (
-        <div className="col gap-sm">
-          <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
-            Életesemény-jelöltek · {lifeEvents.length}
-          </span>
-          {lifeEvents.map((c) => (
-            <LifeEventCandidateCard
-              key={c.id}
-              candidate={c}
-              onDecide={(decision) => decideLifeEvent(c.id, decision)}
-            />
-          ))}
-        </div>
-      )}
+      {(['LIFE_EVENT', 'SEASON'] as const).map((kind) => {
+        const group = lifeEvents.filter((c) => c.kind === kind)
+        if (group.length === 0) return null
+        return (
+          <div key={kind} className="col gap-sm">
+            <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
+              {CANDIDATE_COPY[kind].eyebrow} · {group.length}
+            </span>
+            {group.map((c) => (
+              <LifeEventCandidateCard
+                key={c.id}
+                candidate={c}
+                onDecide={(decision) => decideLifeEvent(c.id, decision)}
+              />
+            ))}
+          </div>
+        )
+      })}
 
       {hasNoFacts ? (
         <div className="card" style={{ padding: 14 }}>

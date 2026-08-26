@@ -1,8 +1,10 @@
 import type { LifeEventCandidate, LifeEventDecision } from '@/data/types'
+import { CANDIDATE_COPY } from '@/data/insights/graph'
 
 /**
- * Egy éjszakai életesemény-jelölt (W2.3, mezo-b3pp.8). A kártya kimondja, honnan jött és mit
- * tesz a két gomb — a megerősítés sosem néma (IDENT-6, a FactCandidateCard idiómája).
+ * Egy L2 gráf-jelölt kártyája — akár egy éjszakai életesemény (W2.3, mezo-b3pp.8), akár egy
+ * negyedéves szezon (W5.3, mezo-b3pp.20). A kártya kimondja, honnan jött és mit tesz a két gomb —
+ * a megerősítés sosem néma (IDENT-6, a FactCandidateCard idiómája).
  */
 export function LifeEventCandidateCard({ candidate, onDecide }: {
   candidate: LifeEventCandidate
@@ -20,7 +22,7 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
         <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, margin: '6px 0 0' }}>{candidate.summary}</p>
       )}
       <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, margin: '6px 0 0' }}>
-        Ezt a napod szövegeiből szűrtem ki — csak akkor kerül a gráfba, ha elfogadod.
+        {CANDIDATE_COPY[candidate.kind].provenance}
       </p>
 
       <div className="row gap-sm" style={{ marginTop: 10 }}>

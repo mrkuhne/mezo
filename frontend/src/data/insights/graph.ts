@@ -7,12 +7,38 @@ import type { LifeEventCandidate, KnowledgeGraphNode, GraphNodeKind } from '@/da
 export const lifeEventCandidateSeed: LifeEventCandidate[] = [
   {
     id: 'le-1',
+    kind: 'LIFE_EVENT',
     title: 'Új munkahely első hete',
     summary: 'A naplód szerint hétfőn kezdtél az új helyen, és a hét végére kimerültél.',
     occurredOn: '2026-08-21',
     proposedEdgeCount: 1,
   },
+  {
+    id: 'se-1',
+    kind: 'SEASON',
+    title: 'Nyári alapozás',
+    summary: 'A nyár a volumenről szólt: több gym nap, kevesebb futás, stabil alvás.',
+    occurredOn: '2026-07-01',
+    proposedEdgeCount: 0,
+  },
 ]
+
+/**
+ * W5.3 (mezo-b3pp.20): jelölt-fajtánkénti copy. Egy szezon NEM a napod szövegeiből jött, hanem
+ * két negyedév összevetéséből — közös kártya, de a provenienciát fajtánként kell kimondani
+ * (IDENT-6: a megerősítés sosem néma, és sosem hazudik arról, honnan jött a javaslat).
+ */
+export const CANDIDATE_COPY: Record<LifeEventCandidate['kind'], { eyebrow: string; provenance: string }> = {
+  LIFE_EVENT: {
+    eyebrow: 'Életesemény-jelöltek',
+    provenance: 'Ezt a napod szövegeiből szűrtem ki — csak akkor kerül a gráfba, ha elfogadod.',
+  },
+  SEASON: {
+    eyebrow: 'Szezon-jelöltek',
+    provenance: 'Ezt a negyedév és az előző negyedév összefoglalóiból olvastam ki — csak akkor '
+      + 'kerül a gráfba, ha elfogadod.',
+  },
+}
 
 /** W4.3 (mezo-b3pp.17): the singleton profile node's `source_kind` (backend
  *  `ProfileAssembler.SOURCE_PROFILE`) — the Tudástár splits it out of the kind groups by this. */

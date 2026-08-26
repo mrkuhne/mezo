@@ -692,6 +692,9 @@ export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 
 /** W2.3 (mezo-b3pp.8): egy éjszakai kivonatoló által javasolt életesemény-jelölt (L2 inbox). */
 export interface LifeEventCandidate {
   id: string
+  /** W5.3 (mezo-b3pp.20): a jelölt fajtája — az éjszakai kiszűrő életeseményt, a negyedéves
+   *  mélyfutam szezont javasol. Ugyanaz az L2 inbox hordozza mindkettőt, de a copy nem közös. */
+  kind: 'LIFE_EVENT' | 'SEASON'
   title: string
   summary: string | null
   /** A nap, amiről az esemény szól (ISO date). */

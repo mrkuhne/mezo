@@ -7000,8 +7000,9 @@ paths:
         - KnowledgeGraph
       operationId: listGraphCandidates
       summary: >-
-        Pending (undecided) LIFE_EVENT candidates from the nightly extractor,
-        newest first (W2.3)
+        Pending (undecided) graph candidates, newest first — LIFE_EVENT rows
+        from the nightly extractor (W2.3) and SEASON rows from the quarterly
+        deep pass (W5.3)
       responses:
         '200':
           description: Candidate nodes awaiting an explicit L2 decision
@@ -7023,9 +7024,9 @@ paths:
         - KnowledgeGraph
       operationId: decideGraphCandidate
       summary: >-
-        Decide a candidate (W2.3) — accept activates the node and creates its
-        proposed edges, reject soft-deletes it. One decision per candidate;
-        confirm is an explicit L2 action.
+        Decide a candidate (W2.3 life event / W5.3 season) — accept activates
+        the node and creates its proposed edges, reject soft-deletes it. One
+        decision per candidate; confirm is an explicit L2 action.
       parameters:
         - name: id
           in: path
