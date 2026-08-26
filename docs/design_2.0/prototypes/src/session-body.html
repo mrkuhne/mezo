@@ -18,8 +18,7 @@
   .lvchip { font-size: 7.5px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.14); border-radius: 999px; padding: 2px 7px; flex: none; }
   .buildchips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
   .buildchips span { border-radius: 999px; padding: 3.5px 10px; font-size: 9px; font-weight: 700; }
-  .statpill { margin-top: 9px; font-size: 9.5px; font-weight: 600; color: #6E6257; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 6px 12px; text-align: center; }
-  .ovchip { margin-top: 6px; font-size: 9px; font-weight: 700; color: #A84A26; background: rgba(255, 107, 74, 0.1); border-radius: 999px; padding: 5px 11px; text-align: center; }
+    .ovchip { margin-top: 6px; font-size: 9px; font-weight: 700; color: #A84A26; background: rgba(255, 107, 74, 0.1); border-radius: 999px; padding: 5px 11px; text-align: center; }
 
   .zrow2 { padding: 8px 2px; }
   .zrow2 + .zrow2 { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
@@ -31,9 +30,7 @@
   .nigcard { border-radius: 16px; background: linear-gradient(150deg, #FBEBCB, #FFFDF6); border-left: 3px solid #C9962E; padding: 11px 12px; margin-bottom: 10px;
     box-shadow: 0 14px 26px -16px rgba(181, 126, 20, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
 
-  .chwrap { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -14px; padding: 4px 14px 10px; }
-  .chwrap::-webkit-scrollbar { display: none; }
-  .chcard { flex: 0 0 86%; scroll-snap-align: center; border-radius: 16px; background: #fff; padding: 11px 12px;
+      .chcard { border-radius: 16px; background: #fff; padding: 11px 12px;
     border: 0.5px solid rgba(43, 33, 24, 0.07); box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
   .chcard .tgt { font-size: 17px; font-weight: 200; letter-spacing: 0.01em; text-transform: uppercase; margin: 5px 0 2px; font-variant-numeric: tabular-nums; }
   .risktag { font-size: 8px; font-weight: 700; color: #6E6257; background: rgba(43, 33, 24, 0.06); border-radius: 999px; padding: 3px 8px; flex: none; }
@@ -42,28 +39,35 @@
   .chacc { flex: 1; border: none; border-radius: 999px; padding: 7px 0; font-family: inherit; font-size: 10px; font-weight: 700; cursor: pointer;
     background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); }
   .chacc.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); box-shadow: 0 8px 16px -6px rgba(110, 139, 94, 0.55); }
-  .chdots { display: flex; gap: 5px; justify-content: center; padding-bottom: 4px; }
-  .chdots i { width: 6px; height: 6px; border-radius: 999px; background: rgba(43, 33, 24, 0.15); }
-  .chdots i.acc { background: #FF6B4A; }
+      
+  .zmini { display: grid; gap: 5px; width: 100%; padding: 0 4px; }
+  .zmini .zm { position: relative; height: 8px; border-radius: 4px; background: rgba(43, 33, 24, 0.06); overflow: hidden; }
+  .zmini .zm span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; }
+  #chstack .chcard { margin-bottom: 9px; }
+
+  .xrow { display: flex; align-items: center; gap: 9px; padding: 8px 2px; cursor: default; }
+  .xrow + .xrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .xrail { width: 4px; height: 30px; border-radius: 2px; flex: none; }
+  .xrow .nm3 { font-size: 11.5px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .xrow .sub3 { font-size: 8.5px; color: #6E6257; font-weight: 400; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .xrm { display: flex; align-items: center; gap: 3px; font-size: 8px; font-weight: 700; color: #A8801F; flex: none; }
+  .dchip { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2.5px 8px; flex: none; }
+  .dchip.up { color: #A84A26; background: rgba(255, 107, 74, 0.12); }
+  .dchip.rep { color: #4E6B42; background: rgba(143, 175, 126, 0.2); }
+  .dchip.hold { color: #A8801F; background: rgba(201, 150, 46, 0.16); }
 
   .warmrow { display: flex; align-items: center; gap: 10px; padding: 8px 2px; }
   .warmrow + .warmrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
   .warmrow .ix { font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
 
-  .pxcard { display: flex; gap: 10px; border-radius: 16px; background: #fff; padding: 10px 11px 10px 13px; margin-bottom: 8px; position: relative; overflow: hidden;
-    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
-  .pxcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--fr, #A2958A); }
-  .pxthumb { width: 38px; height: 38px; border-radius: 11px; flex: none; display: grid; place-items: center; background: var(--fw, #EFE8DD); }
-  .mpill { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 8px; flex: none; }
+        .mpill { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 8px; flex: none; }
   .pillrow { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
   .pl { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 2.5px 7px; }
   .pl.fam { color: var(--fd); background: var(--fw); }
   .pl.up { color: #A84A26; background: rgba(255, 107, 74, 0.1); }
   .pl.rep { color: #4E6B42; background: rgba(143, 175, 126, 0.18); }
   .pl.hold { color: #A8801F; background: rgba(201, 150, 46, 0.14); }
-  .rmbadge { position: absolute; top: 8px; right: 9px; display: flex; align-items: center; gap: 3px; font-size: 8px; font-weight: 700; color: #A8801F; }
-  .chline { display: flex; align-items: center; gap: 5px; font-size: 8.5px; font-weight: 700; color: #A84A26; margin-top: 4px; }
-
+    
   /* ===== active ===== */
   .wk-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
   .cntbtn { flex: 1; min-width: 0; border: none; background: none; font-family: inherit; text-align: center; cursor: pointer; padding: 2px 0; }
@@ -274,62 +278,136 @@
               <div class="xpring" style="--v:76;"><div class="in"><b>+240</b><small>VÁRHATÓ XP</small></div></div>
               <div class="grow">
                 <div class="p-eyebrow" style="color:#A84A26;">Ma · 13:00 · Meso W3/5</div>
-                <span class="big" style="font-size:26px;">Pull A</span>
-                <div class="ovchip">⚡ Túlterhelés: 1× +súly · 2× +rep</div>
+                <span class="big" style="font-size:27px;">Pull A</span>
+                <div class="mut" style="font-size:9px;font-weight:600;margin-top:2px;">16 szett · ~74 perc · 3 izomcsoport</div>
               </div>
             </div>
-            <div style="margin-top:9px;">
-              <div class="skillrow"><span class="nm2">Húzás · Lv 7</span><div class="skbar"><div class="lvl" style="width:88%;"></div></div><span class="xg">+130</span><span class="lvchip">szintlépés-esély</span></div>
-              <div class="skillrow"><span class="nm2">Fogóerő · Lv 5</span><div class="skbar"><div style="width:44%;"></div></div><span class="xg">+58</span></div>
-              <div class="skillrow"><span class="nm2">Kar · Lv 6</span><div class="skbar"><div style="width:37%;"></div></div><span class="xg">+52</span></div>
+            <button class="cta" id="startBtn" style="width:100%;margin-top:10px;padding:11px 0;font-size:12.5px;">⚡ Kezdjük el →</button>
+          </div>
+
+          <button class="nigstrip rise" id="nigstrip2" data-page="page-niggle" style="--d:60ms;margin:0;border:none;font-family:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px;">
+            <svg width="15" height="15" viewBox="0 0 100 100" style="flex:none;"><use href="#i-eletjel"/></svg>
+            <span class="grow">Jobb váll · aktív niggle — mire figyeljünk ma</span>
+            <span style="color:#A8801F;">›</span>
+          </button>
+
+          <div class="mosaic">
+            <div class="tile t-train rise" style="--d:90ms;" data-page="page-xp" role="button" tabindex="0" aria-label="Várható fejlődés">
+              <div class="p-eyebrow" style="color:#A84A26;">Fejlődés</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-growth"/></svg></div>
+              <div class="big" style="font-size:15px;text-align:center;">+240 XP</div>
             </div>
-            <div class="buildchips">
-              <span class="p-eyebrow" style="padding:4px 0;">Ma építed:</span>
+            <div class="tile t-vital rise" style="--d:120ms;" data-page="page-zona" role="button" tabindex="0" aria-label="Heti zóna">
+              <div class="p-eyebrow">Heti zóna</div>
+              <div class="spotwrap" style="width:100%;"><div class="zmini" id="zmini"></div></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">kész 2/4 edzés</div>
+            </div>
+            <div class="tile t-quest rise" style="--d:150ms;" data-page="page-kuld" role="button" tabindex="0" aria-label="A mai küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><div class="anchor"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg><span class="badge" id="kuldBadge">1</span></div></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="kuldLine">1/4 elfogadva</div>
+            </div>
+            <div class="tile t-water rise" style="--d:180ms;" data-page="page-warm" role="button" tabindex="0" aria-label="Bemelegítés">
+              <div class="p-eyebrow" style="color:#3E7396;">Bemelegítés</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-lang"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">8 perc · 3 blokk</div>
+            </div>
+          </div>
+
+          <div class="p-eyebrow rise" style="--d:220ms;padding:4px 2px 0;">Gyakorlatok · 5 · 19 szett</div>
+          <div id="prepList"></div>
+
+          <p class="habnote">Ha nincs adat, nincs szám: az XP-gyűrű, az 1RM-jelvény és az induló súly csak akkor jelenik meg, ha valós forrásból jön.</p>
+        </div>
+
+      </div>
+
+      <!-- ================= PREP TILE PAGES ================= -->
+      <div class="page p-coral" id="page-xp">
+        <div class="page-head"><button class="backbtn" data-back="page-xp">‹ Indítás</button></div>
+        <div class="page-hero">
+          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-growth"/></svg>
+          <div class="bignum">+240</div>
+          <div class="nm">Várható XP</div>
+          <div class="sb">16 szett · ~240 rep · ~74 perc</div>
+        </div>
+        <div class="page-body">
+          <div class="p-eyebrow" style="padding:0 2px 6px;">Skillek · ma</div>
+          <div class="vcard" style="padding:8px 12px;">
+            <div class="skillrow"><span class="nm2">Húzás · Lv 7</span><div class="skbar"><div class="lvl" style="width:88%;"></div></div><span class="xg">+130</span><span class="lvchip">szintlépés-esély</span></div>
+            <div class="skillrow"><span class="nm2">Fogóerő · Lv 5</span><div class="skbar"><div style="width:44%;"></div></div><span class="xg">+58</span></div>
+            <div class="skillrow"><span class="nm2">Kar · Lv 6</span><div class="skbar"><div style="width:37%;"></div></div><span class="xg">+52</span></div>
+          </div>
+          <div class="p-eyebrow" style="padding:6px 2px 6px;">Ma építed</div>
+          <div class="vcard" style="padding:10px 12px;">
+            <div class="buildchips" style="margin-top:0;">
               <span style="background:#DFEDF5;color:#33749C;">Hát +96 XP</span>
               <span style="background:#FAE3ED;color:#8E3F6F;">Bicepsz +42 XP</span>
               <span style="background:#EBE6F8;color:#5D4FA0;">Váll +28 XP</span>
             </div>
-            <div class="statpill">16 szett · ~240 rep · ~74 perc · 3 izomcsoport</div>
+            <div class="ovchip" style="margin-top:8px;">⚡ Túlterhelés: 1× +súly · 2× +rep</div>
           </div>
+          <p class="habnote">A becslés a valós skill-profilodból jön — profil nélkül ez az oldal üresen sosem jelenik meg.</p>
+        </div>
+      </div>
 
-          <div class="p-eyebrow rise" style="--d:60ms;padding:2px 2px 0;">Heti zóna-kontextus · <span style="color:#6E6257;">kész 2/4 edzés</span></div>
-          <div class="vcard rise" style="--d:80ms;padding:8px 12px;" id="zonecard"></div>
+      <div class="page p-gold" id="page-zona">
+        <div class="page-head"><button class="backbtn" data-back="page-zona">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="bignum">2/4</div>
+          <div class="nm">Heti edzések kész</div>
+          <div class="sb">a mai szettek már a sávokban</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard" style="padding:8px 12px;" id="zonecard"></div>
+          <p class="habnote">A világos sáv a cél-zóna; teli = kész, közepes = a mai terv, halvány = ami még hátravan a héten.</p>
+        </div>
+      </div>
 
-          <div class="nigcard rise" style="--d:120ms;" id="nigcard">
-            <div class="mrow" style="gap:8px;">
-              <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-eletjel"/></svg>
-              <div class="grow">
-                <div class="p-eyebrow" style="color:#A8801F;">Jobb váll · aktív niggle</div>
-                <div style="font-size:10px;font-weight:300;margin-top:2px;">A keddi röpin megint jelzett — a Face Pull könnyű súllyal, a pulldown pronált fogással menjen.</div>
-              </div>
-            </div>
-            <div class="btn2" style="margin-top:8px;">
-              <button class="ghost" id="nigOk">Értem · jó így</button>
-              <button class="ghost" style="opacity:0.65;">Tudatosítsuk később</button>
-            </div>
-          </div>
+      <div class="page p-coral" id="page-kuld">
+        <div class="page-head"><button class="backbtn" data-back="page-kuld">‹ Indítás</button></div>
+        <div class="page-hero">
+          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>
+          <div class="bignum" id="kuldHero">1/4</div>
+          <div class="nm">A mai küldetések</div>
+          <div class="sb">skip-elhető bármelyik · a try maga a jutalom</div>
+        </div>
+        <div class="page-body" id="chstack"></div>
+      </div>
 
-          <div class="mrow rise" style="--d:150ms;padding:2px 2px 0;">
-            <svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>
-            <div class="grow"><span class="p-eyebrow">A mai küldetések · 4</span></div>
-            <span class="mut" style="font-size:8.5px;" id="chsub">skip-elhető · a try maga a jutalom</span>
-          </div>
-          <div class="chwrap rise" style="--d:170ms;" id="chwrap"></div>
-          <div class="chdots" id="chdots"></div>
-
-          <div class="p-eyebrow rise" style="--d:200ms;padding:2px 2px 0;">Bemelegítés · 8 perc</div>
-          <div class="vcard rise" style="--d:220ms;padding:4px 12px;">
+      <div class="page p-sky" id="page-warm">
+        <div class="page-head"><button class="backbtn" data-back="page-warm">‹ Indítás</button></div>
+        <div class="page-hero">
+          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-lang"/></svg>
+          <div class="bignum">8′</div>
+          <div class="nm">Bemelegítés</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard" style="padding:4px 12px;">
             <div class="warmrow"><span class="ix">01</span><div class="grow" style="font-size:10.5px;font-weight:600;">Dinamikus stretching</div><span class="mut" style="font-size:9px;">3 perc</span></div>
             <div class="warmrow"><span class="ix">02</span><div class="grow" style="font-size:10.5px;font-weight:600;">Cardio-lite · evezőpad</div><span class="mut" style="font-size:9px;">3 perc</span></div>
             <div class="warmrow"><span class="ix">03</span><div class="grow" style="font-size:10.5px;font-weight:600;">Aktiváció · band pull-apart × 20</div><span class="mut" style="font-size:9px;">2 perc</span></div>
           </div>
-
-          <div id="prepList"></div>
-
-          <button class="cta rise" id="startBtn" style="--d:280ms;width:100%;padding:11px 0;font-size:12.5px;">⚡ Kezdjük el →</button>
-          <p class="habnote">Ha nincs adat, nincs szám: az XP-gyűrű, az 1RM-jelvény és az induló súly csak akkor jelenik meg, ha valós forrásból jön.</p>
+          <p class="habnote">Fix protokoll — a gyakorlat-szintű bemelegítő szettek (B1, B2) már az edzésben élnek.</p>
         </div>
+      </div>
 
+      <div class="page p-gold" id="page-niggle">
+        <div class="page-head"><button class="backbtn" data-back="page-niggle">‹ Indítás</button></div>
+        <div class="page-hero">
+          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg>
+          <div class="nm" style="margin-top:4px;">Jobb váll · aktív niggle</div>
+        </div>
+        <div class="page-body">
+          <div class="nigcard">
+            <div style="font-size:10.5px;font-weight:300;">A keddi röpin megint jelzett — a Face Pull könnyű súllyal, a pulldown pronált fogással menjen. Az aktív edzésben az első két gyakorlatnál emlékeztetünk.</div>
+            <div class="btn2" style="margin-top:9px;">
+              <button class="ghost" id="nigOk">Értem · jó így</button>
+              <button class="ghost" style="opacity:0.65;">Tudatosítsuk később</button>
+            </div>
+          </div>
+          <p class="habnote">A niggle sosem tilt — csak emlékeztet. Te döntesz, mi fér bele ma.</p>
+        </div>
       </div>
 
       <!-- ================= ACTIVE ================= -->
@@ -390,10 +468,11 @@
       <div>
         <h2>Mi van benne — a teljes feature-készlet</h2>
         <ul>
-          <li><strong>Prep briefing</strong> — XP-gyűrű + skill-sávok (szintlépés-esély), „Ma építed" izom-chipek,
-          stat-sor, túlterhelés-chip, heti zóna-kontextus 4 státusz-hinttel, niggle-kártya, kihívás-carousel
-          (elfogad/passz, conf% vagy <em>tanulom</em>), bemelegítő blokk, gyakorlat-kártyák izomrégiónként
-          (1RM-jelvény, induló súly, progresszió-delta).</li>
+          <li><strong>Prep briefing — Huawei-módra</strong> — a hero egy adatot mond (várható XP) és az
+          <strong>indítás fold fölött van</strong>; minden más csempe → saját oldal: Fejlődés (skill-sávok +
+          „Ma építed"), Heti zóna (4 státusz-hint), Küldetések (elfogad/passz, conf% vagy <em>tanulom</em>),
+          Bemelegítés. A niggle vékony arany sáv — koppintásra nyílik. A gyakorlatok
+          <strong>karcsú sorok</strong>: szín-sín + név + egy tömör adatsor + 1RM + progresszió-chip.</li>
           <li><strong>Élő logolás</strong> — óriás stepperek (tap-to-edit értékkel), RIR 0–3 (bemelegítőn rejtve),
           oldal L/B/R izolációnál, szett-jegyzet, Szett kész → pihenő-sáv (szünet/folytat/kihagy),
           medál-toast, szabad navigáció 5 úton (lapozó, pöttyök, swipe, áttekintő lap, áthelyezés).</li>
@@ -555,10 +634,9 @@
       '<div class="zhint" style="color:' + z.hc + ';">' + z.hint + '</div></div>';
   }).join('');
 
-  var chwrap = document.getElementById('chwrap');
-  var chdots = document.getElementById('chdots');
+  var chstack = document.getElementById('chstack');
   function renderChallenges() {
-    chwrap.innerHTML = CH.map(function (c) {
+    chstack.innerHTML = CH.map(function (c) {
       var e = byId[c.ex];
       return '<div class="chcard">' +
         '<div class="mrow"><span class="grow" style="font-size:9px;font-weight:700;color:#A84A26;">' + c.type + ' · ' + e.name + '</span>' +
@@ -570,10 +648,12 @@
         '<div class="chbtns"><button class="chacc' + (c.acc ? ' on' : '') + '" data-ch="' + c.id + '" aria-pressed="' + c.acc + '">' + (c.acc ? '✓ Elfogadva' : 'Elfogadom') + '</button>' +
         (c.acc ? '' : '<button class="ghost">Passz</button>') + '</div></div>';
     }).join('');
-    chdots.innerHTML = CH.map(function (c) { return '<i class="' + (c.acc ? 'acc' : '') + '"></i>'; }).join('');
     var n = CH.filter(function (c) { return c.acc; }).length;
-    document.getElementById('chsub').textContent = n ? (n + ' elfogadva · skip-elhető bármelyik') : 'skip-elhető · a try maga a jutalom';
-    chwrap.querySelectorAll('.chacc').forEach(function (b) {
+    document.getElementById('kuldBadge').textContent = n;
+    document.getElementById('kuldBadge').style.display = n ? 'grid' : 'none';
+    document.getElementById('kuldLine').textContent = n + '/' + CH.length + ' elfogadva';
+    document.getElementById('kuldHero').textContent = n + '/' + CH.length;
+    chstack.querySelectorAll('.chacc').forEach(function (b) {
       b.addEventListener('click', function () {
         var c = CH.filter(function (x) { return x.id === b.getAttribute('data-ch'); })[0];
         c.acc = !c.acc;
@@ -584,44 +664,49 @@
 
   var prepList = document.getElementById('prepList');
   function renderPrepList() {
-    var groups = [], seen = {};
-    S.order.forEach(function (id) {
-      var e = byId[id], key = e.muscle === 'Bicepsz' ? 'Kar' : e.muscle;
-      if (!seen[key]) { seen[key] = { label: key, fam: e.fam, items: [] }; groups.push(seen[key]); }
-      seen[key].items.push(e);
-    });
-    prepList.innerHTML = groups.map(function (g) {
-      var f = FAM[g.fam];
-      return '<div class="p-eyebrow rise" style="--d:250ms;padding:4px 2px 6px;color:' + f.deep + ';">' + g.label + ' · ' + g.items.length + ' gyakorlat</div>' +
-        g.items.map(function (e) {
-          var f2 = FAM[e.fam];
-          var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
-          var pills = [];
-          if (e.warm) pills.push('<span class="pl">' + e.warm + ' bemelegítő</span>');
-          pills.push('<span class="pl fam">' + e.work + ' × working</span>');
-          pills.push('<span class="pl">' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + '</span>');
-          if (e.rir != null) pills.push('<span class="pl">RIR ' + e.rir + '</span>');
-          var sw = null;
-          e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
-          if (sw != null) pills.push('<span class="pl up">↑ ' + fmtW(sw) + ' kg-ról indul</span>');
-          if (e.prog) pills.push('<span class="pl ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>');
-          return '<div class="pxcard rise" style="--d:260ms;--fr:' + f2.rail + ';--fw:' + f2.wash + ';--fd:' + f2.deep + ';">' +
-            '<div class="pxthumb"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>' +
-            '<div class="grow"><div class="mrow" style="gap:6px;"><span style="font-size:11.5px;font-weight:700;">' + e.name + '</span>' +
-            '<span class="mpill" style="background:' + f2.wash + ';color:' + f2.deep + ';">' + e.muscle + '</span></div>' +
-            (acc ? '<div class="chline"><svg width="11" height="11" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>' + acc.type + ' · ' + acc.target + '</div>' : '') +
-            '<div class="pillrow">' + pills.join('') + '</div></div>' +
-            (e.oneRm ? '<div class="rmbadge"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' + e.oneRm + ' kg · 1RM</div>' : '') +
-            '</div>';
-        }).join('');
-    }).join('');
+    prepList.innerHTML = '<div class="vcard rise" style="--d:240ms;padding:2px 12px;">' +
+      S.order.map(function (id) {
+        var e = byId[id], f = FAM[e.fam];
+        var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
+        var sw = null;
+        e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
+        var sub = [];
+        sub.push((e.warm ? e.warm + ' bem + ' : '') + e.work + '×' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ''));
+        if (e.rir != null) sub.push('RIR ' + e.rir);
+        if (sw != null) sub.push('↑ ' + fmtW(sw) + ' kg');
+        return '<div class="xrow">' +
+          '<span class="xrail" style="background:' + f.rail + ';"></span>' +
+          '<div class="grow"><div class="nm3">' + e.name +
+          (acc ? '<svg width="11" height="11" viewBox="0 0 100 100" style="flex:none;" aria-label="aktív kihívás"><use href="#i-kihivas"/></svg>' : '') +
+          '</div><div class="sub3">' + sub.join(' · ') + '</div></div>' +
+          (e.oneRm ? '<span class="xrm"><svg width="12" height="12" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' + e.oneRm + '</span>' : '') +
+          (e.prog ? '<span class="dchip ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>' : '') +
+          '</div>';
+      }).join('') + '</div>';
   }
+
+  var zmini = document.getElementById('zmini');
+  zmini.innerHTML = ZONES.map(function (z) {
+    var f = FAM[z.fam];
+    return '<div class="zm"><span style="width:' + (z.solid + z.tod) + '%;background:linear-gradient(90deg,' + f.rail + ' ' + Math.round(z.solid / (z.solid + z.tod) * 100) + '%,' + f.rail + '80);"></span></div>';
+  }).join('');
 
   document.getElementById('nigOk').addEventListener('click', function () {
     UI.nigDismissed = true;
-    document.getElementById('nigcard').style.display = 'none';
+    document.getElementById('nigstrip2').style.display = 'none';
+    closePage('page-niggle');
   });
   document.getElementById('prepBack').addEventListener('click', function () {});
+
+  /* tile → page bindings (prep) */
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
 
   /* ---------- pages ---------- */
   function openPage(id) {
