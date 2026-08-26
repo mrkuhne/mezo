@@ -1827,7 +1827,11 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   reviewed `decision_entry` rows newest-review-first (`DecisionEntryRepository
   .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc`), and up to
   `maxGraphNodes` active PATTERN/PREFERENCE node titles (`GraphService.listActive`, the profile
-  node itself excluded — it must never eat its own output). ONE smart-tier
+  node itself excluded — it must never eat its own output). **Since W5.3 (`mezo-b3pp.20`) a
+  fourth gather joined this list**: two more `DecisionEntryRepository` calls, one per quarter,
+  over the half-open `[quarterStart, quarterStart + 3 months)` window
+  (`decisionQuality`/`quarterLine`), folded into the payload as the `DÖNTÉSI MINŐSÉG` section
+  — full mechanics in the W5.3 subsection below (§4). ONE smart-tier
   `CompanionLlm.completeSmart` call, tagged `LlmCallContext("companion_profile", "assemble", null,
   null)`, prompt marker `ROLAD-TANULTAM` (`FakeCompanionLlm` dispatch key in tests).
 - **Spec interpretation (recorded explicitly, not a silent deviation):** §8.3 asks the assembler to
@@ -2023,8 +2027,10 @@ current: it is windowed off `LocalDate.now()`'s calendar quarter, so re-running 
 same dawn the quarter closes is what surfaces that quarter's number promptly instead of waiting
 for the next Monday's weekly run.
 
-**Decision-quality trend (`ProfileAssembler.decisionQuality`, folded into the `[Rólad tanultam]`
-payload as a new `DÖNTÉSI MINŐSÉG` section).** Pure code, no LLM anywhere in the arithmetic
+**Decision-quality trend (`ProfileAssembler.decisionQuality`, folded into
+`ProfileAssembler.renderPayload`'s payload as a new `DÖNTÉSI MINŐSÉG` section — the LLM's
+INPUT, not the injected `[Rólad tanultam]` block, which carries only the model's output
+prose).** Pure code, no LLM anywhere in the arithmetic
 (NFR-M-4: the model gets the observation, never derives the number itself) — this calendar
 quarter's mean `outcome_rating` over reviewed decisions against the previous quarter's, one line
 each: `"- ez a negyedév: 4,5/5 (2 értékelt döntés)"`. **Honest absence, both halves**: a quarter
@@ -4085,13 +4091,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   from `QuarterlyReviewJob`'s own two-phase shape: phase 2 (`ProfileAssembler.rebuild`) runs
   right after phase 1 (the season proposal), which looks like "the season feeds the profile." It
   doesn't — phase 2 runs there because that is the moment `DÖNTÉSI MINŐSÉG`'s quarter-over-quarter
-  window flips over to the newly finished quarter (§3 above), a purely date-driven trigger that
+  window flips over to the newly finished quarter (§4 above), a purely date-driven trigger that
   would fire identically even if phase 1 proposed zero candidates every single quarter.
 - **`compare_periods` deliberately excludes `feedback_rollup`, resolving an ambiguity in spec
   §9.3's own wording.** The spec describes the quarterly job's INPUT as "period_summaries +
   rollups" and was read, before this slice locked the tool's shape, as implying the
   `compare_periods` tool should expose the same two sources. It doesn't: `QuarterlyReviewService`
-  reads both (§3 above, feeding the SEASON proposal), but `MemoryTools.comparePeriods` reads
+  reads both (§4 above, feeding the SEASON proposal), but `MemoryTools.comparePeriods` reads
   ONLY `period_summary` rungs. **Resolved with Daniel (product owner), recorded here rather than
   silently decided**: a period comparison is a question about his LIFE — what characterized the
   summer vs. the spring — not about how the AI itself performed; `feedback_rollup` scores
@@ -4203,16 +4209,16 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{InterventionServiceIT,InterventionConfigIT,InterventionSwitchOffIT,CompanionMessageInterventionPersistenceIT}.java` — §8. Push-anchor + quiet-hours tests live under `feature/notification` — see [`_platform-notifications.md`](_platform-notifications.md) §10.
 - **FE side** — `frontend/src/features/today/components/MezoMessagesSheet.tsx` (the „Segített?" label on `kind === 'intervention'` rows, same `useFeedback('feed_message')` chips every other card kind uses) + `frontend/src/features/today/logic/mezoMessages.ts` (`MezoMessageItem` gains an optional `kind: FeedMessageKind`, so the sheet can branch on it — the wire never exposes `interventionKey` itself, only `kind`) + `frontend/src/data/types.ts` (`FeedMessageKind` gains `'intervention'`) — see [`proactive.md`](proactive.md) §5.4/§10 (the owning doc for the FE feed consumer) and [`_platform-notifications.md`](_platform-notifications.md) §10 (the `NotificationCategory`/settings-page side).
 
-**Backend — quarterly deep pass (W5.3, `mezo-b3pp.20` — §3/§4/§9, spec §9.3)**
+**Backend — quarterly deep pass (W5.3, `mezo-b3pp.20` — §4/§9, spec §9.3)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/config/QuarterlyProperties.java` — the four `mezo.companion.quarterly.*` knobs (`cron`, `maxCandidates`, `maxPeriodLines`, `renderMaxChars`), a feature-scoped record (`@ConfigurationPropertiesScan`) — the `ProfileProperties`/`FlagProperties` precedent (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/Quarters.java` — the pure calendar helper (`startOf`/`previous`/`endOf`/`label`/`parse`/`isQuarter`), shared by the job, `ProfileAssembler` and `compare_periods`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/SeasonSuggestion.java` — the model's per-season `{title, summary}` answer shape, deserialized straight off the parsed JSON array.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewService.java` — `runFor(userId, quarterStart)`: the two spend gates, the season-over-season smart-tier call, and the self-injected-proxy `persistCandidates` transaction (§3 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewJob.java` — the cron: per-user AND per-phase try/catch around `QuarterlyReviewService.runFor` then `ProfileAssembler.rebuild` (§3 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/repository/GraphNodeRepository.java` — `countQuarterlyNodesOnQuarter`, the native per-quarter idempotence probe (the `countExtractorNodesOnDay` idiom one rung up; §3/§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssembler.java` — `decisionQuality`/`quarterLine`, the `DÖNTÉSI MINŐSÉG` payload section (§3/§9 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/MemoryTools.java` — `comparePeriods`, alongside the existing `findSimilarPastDays` (not a new file — the tool joins the existing V2.3 recall bean; §3/§4 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — the `[Eszköz-útmutató]` routing hint's new `compare_periods` row (§3 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewService.java` — `runFor(userId, quarterStart)`: the two spend gates, the season-over-season smart-tier call, and the self-injected-proxy `persistCandidates` transaction (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewJob.java` — the cron: per-user AND per-phase try/catch around `QuarterlyReviewService.runFor` then `ProfileAssembler.rebuild` (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/repository/GraphNodeRepository.java` — `countQuarterlyNodesOnQuarter`, the native per-quarter idempotence probe (the `countExtractorNodesOnDay` idiom one rung up; §4/§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssembler.java` — `decisionQuality`/`quarterLine`, the `DÖNTÉSI MINŐSÉG` payload section (§4/§9 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/MemoryTools.java` — `comparePeriods`, alongside the existing `findSimilarPastDays` (not a new file — the tool joins the existing V2.3 recall bean; §4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — the `[Eszköz-útmutató]` routing hint's new `compare_periods` row (§4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `QUARTERLY_REVIEW_JOB_SWITCH` (`mezo.techcore.cron.quarterly-review-job.enabled`).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/quarterly/{QuarterlyPropertiesIT,QuarterlyReviewServiceIT,QuarterlyReviewJobIT,QuarterlyReviewJobSwitchOffIT,service/QuartersTest}.java` + extended `profile/service/ProfileAssemblerIT` + extended `tools/MemoryToolsRenderIT` — §8.
 - **FE side** (documented in [`insights.md` §2.4/§10](insights.md)): `frontend/src/data/insights/graph.ts` (`CANDIDATE_COPY`, `formatCandidateDate`, the `lifeEventCandidateSeed` SEASON entry) + `frontend/src/features/insights/components/LifeEventCandidateCard.tsx` (kind-aware date/provenance) + `frontend/src/features/insights/pages/KnowledgeListPage.tsx` (per-kind grouping) — no new endpoint, no new FE data hook.

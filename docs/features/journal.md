@@ -484,7 +484,7 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   `DÖNTÉSI MINŐSÉG` payload section — this calendar quarter's mean `outcome_rating` over reviewed
   decisions against the previous quarter's, computed in pure code and appended to the weekly/
   quarterly profile prose (full mechanics, the two gates, and the cron:
-  [`companion.md`](companion.md) §3 "W5.3 quarterly deep pass"). **Honest absence carries over from
+  [`companion.md`](companion.md) §4 "W5.3 quarterly deep pass"). **Honest absence carries over from
   W4.3's own rule:** a quarter with nothing reviewed contributes no line, and with NOTHING reviewed
   THIS quarter the whole section is omitted from the payload rather than rendering a bare `0,0/5` —
   which would read to the model as terrible judgement, not as an absence of data.
