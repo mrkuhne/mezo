@@ -87,10 +87,10 @@ describe('forecastToday (pure)', () => {
     expect(result.denseWindows).toEqual([])
   })
 
-  it('weekly fires only on Monday, memoir only on Sunday, even when both are enabled every day', () => {
-    const prefs = [pref('weekly', true), pref('memoir', true)]
+  it('weekly_review fires only on Monday, memoir only on Sunday, even when both are enabled every day', () => {
+    const prefs = [pref('weekly_review', true), pref('memoir', true)]
     const monday = forecastToday(prefs, [], { ...NO_ANCHORS, wake: '06:30' }, 1)
-    expect(monday.total).toBe(1) // weekly only
+    expect(monday.total).toBe(1) // weekly_review only
     const sunday = forecastToday(prefs, [], { ...NO_ANCHORS, wake: '06:30' }, 7)
     expect(sunday.total).toBe(1) // memoir only
     const wednesday = forecastToday(prefs, [], { ...NO_ANCHORS, wake: '06:30' }, WEDNESDAY)

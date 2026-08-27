@@ -20,4 +20,7 @@ public interface PredictionRepository extends JpaRepository<PredictionEntity, UU
 
     /** S2 (mezo-tk88.2): the pattern-detail page's impact list — predictions grounded on one pattern. */
     List<PredictionEntity> findByCreatedByAndSourcePatternIdAndDeletedFalse(UUID createdBy, UUID sourcePatternId);
+
+    /** Weekly review gather (mezo-p2tr): this week's predictions + status lines. */
+    List<PredictionEntity> findByCreatedByAndWeekStart(UUID createdBy, LocalDate weekStart);
 }

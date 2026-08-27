@@ -6,6 +6,7 @@ import type { Tool } from '@/shared/ui/ToolChip'
 export type ConversationResponse = components['schemas']['ConversationResponse']
 export type MessageResponse = components['schemas']['MessageResponse']
 export type SendMessageRequest = components['schemas']['SendMessageRequest']
+export type CreateConversationRequest = components['schemas']['CreateConversationRequest']
 export type StreamDelta = components['schemas']['StreamDelta']
 export type StreamToolCall = components['schemas']['StreamToolCall']
 export type StreamError = components['schemas']['StreamError']
@@ -45,7 +46,16 @@ export const chatApi = {
   },
 
   listConversations: () => apiFetch<ConversationResponse[]>(CONVERSATION),
-  createConversation: () => apiFetch<ConversationResponse>(CONVERSATION, { method: 'POST' }),
+  /**
+   * `context` anchors the new conversation to a week/day (mezo-p2tr, the week/day chat
+   * handoff) — the server generates a Mezo opening turn when it's present. Absent context
+   * (every pre-existing caller) posts no body, unchanged behaviour.
+   */
+  createConversation: (context?: CreateConversationRequest['context']) =>
+    apiFetch<ConversationResponse>(CONVERSATION, {
+      method: 'POST',
+      ...(context ? { body: JSON.stringify({ context } satisfies CreateConversationRequest) } : {}),
+    }),
   listMessages: (conversationId: string) =>
     apiFetch<MessageResponse[]>(`${CONVERSATION}/${conversationId}/messages`),
 

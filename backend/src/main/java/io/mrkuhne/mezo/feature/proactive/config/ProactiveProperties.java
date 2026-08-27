@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "mezo.proactive")
 public record ProactiveProperties(
         @NotNull @Valid Weekly weekly,
+        @NotNull @Valid WeeklyReview weeklyReview,
         @NotNull @Valid Memoir memoir,
         @NotNull @Valid Prediction prediction,
         @NotNull @Valid Experiment experiment,
@@ -24,6 +25,13 @@ public record ProactiveProperties(
     /** W1 weekly plan-suggestion generation. */
     public record Weekly(
         /** Monday-dawn schedule (server zone) — the suggestion is FOR the week just starting. */
+        @NotBlank String cron
+    ) {}
+
+    /** Monday weekly-review generation (mezo-p2tr) — looks BACK at the week that just finished,
+     *  unlike {@link Weekly}'s forward-looking suggestion. */
+    public record WeeklyReview(
+        /** Monday schedule (server zone) — the review is FOR the week that just ended. */
         @NotBlank String cron
     ) {}
 

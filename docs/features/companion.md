@@ -13,7 +13,7 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, proactive, today, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
+related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -1160,6 +1160,62 @@ the same transaction), and `feature.proactive.service.InterventionEventListener`
 @TransactionalEventListener(AFTER_COMMIT)` — the `CompanionMessageEventListener` template) turns a
 committed raise into a `companion_message` feed card. See the W5.2 subsection below and
 [`proactive.md`](proactive.md) §3/§4 for the card mechanics.
+
+**Weekly review data layer + anchored conversations (`mezo-p2tr`).** Two companion-owned pieces
+back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
+NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md)):
+
+- **`DayScoreService`** (`service/DayScoreService.java`) — a deterministic, LLM-free per-day score:
+  four `[0,100]`-or-`null` subscores (sleep/fuel/checkin/activity, `null` = "tanulom" — no data that
+  day) folded into an overall day score = the rounded mean of the present subscores, itself `null`
+  below a `<2`-present honesty gate. Constants (`MeWeekProperties`, `mezo.companion.me-week.*`) —
+  `sleep-target-h` (8.0), `kcal-band` (0.25), `xp-baseline` (150). **Sleep quality and check-in
+  energy normalize as `(v-1)/9`** (1–10 dials on the FE sheets, verified against `SleepLogSheet`/
+  `CheckInSheet` — NOT the 1–5 span an early spec draft assumed).
+- **`MeWeekService`** (`service/MeWeekService.java`) — assembles `GET /api/me/week/{start}`
+  (`MeWeekController`, one ISO-Monday week, live for the current in-progress week): per-day
+  fuel/sleep/weight/check-in/workout/XP values + `DayScoreService` scores + weekly aggregates
+  (checkin ratio, EWMA weight rate, prev-week score, totals). `MeWeekService.renderDayLine(day)` is
+  the **single shared Hungarian one-liner formatter** — both `WeeklyReviewGenerator`'s LLM payload
+  (proactive) and this doc's own `[Heti adatok]` block below render through this exact method, so
+  the generated weekly narrative and the chat's live week context can never describe a day
+  differently. Full formula/contract detail: [me.md §4](me.md).
+- **Anchored conversations.** `ai_conversation` carries two nullable columns, `context_kind`
+  (`week`|`day`) and `context_date` — a plain conversation leaves both null.
+  `CreateConversationRequest.context {kind, date}` (contract-optional) sets them at creation
+  (`ConversationService.create`). **`WeekContextRenderer`** (`service/WeekContextRenderer.java`)
+  renders the **`[Heti adatok]`** block for an anchored conversation — every day of the anchored
+  week via `MeWeekService.renderDayLine`, the weekly aggregates, and (when a `weekly_review` row
+  exists for that week) the review's own summary + day-notes; `kind=day` additionally calls out the
+  anchored day with its own expanded line. **Prompt position:** right after the `[Profil]`/`[Cél]`/…
+  context snapshot (V0.3) and before the top-N facts block — `assembleSystemPrompt` now takes two
+  extra parameters, `contextKind`/`contextDate` (both `null` for a plain conversation, in which case
+  the block renders `""` and every other turn is byte-identical to before this slice). **Failure
+  honesty (the `GraphPromptAssembler` precedent, IDENT-3):** `render()` never throws — any failure
+  (bad date, missing data) logs a warn and degrades to `""`, so a broken week anchor never breaks
+  the whole chat turn.
+- **`WeekReviewSource`** (`feature/companion/WeekReviewSource.java`) — the port
+  `WeekContextRenderer` uses to read the weekly-review summary/day-notes without importing
+  `feature/proactive` directly: `proactive`'s `WeekReviewSourceAdapter` implements it (a plain
+  repository read + map, deliberately not routed through `WeeklyReviewGenerator`). The dependency
+  stays **proactive → companion**, never the reverse — proactive already depends on companion
+  elsewhere (`WeeklyReviewGenerator` calls `MeWeekService`/`CompanionLlm`), so a direct
+  `companion.service → proactive.repository` import would close a NEW slice cycle
+  (`ArchitectureTest.feature_slices_are_cycle_free`); consumed via `ObjectProvider<WeekReviewSource>`
+  — an absent bean (proactive switch off) renders the block WITHOUT the review section, never a
+  fabricated one, the `TodayQuestSource`/`TodayActivitySource` precedent.
+- **`ChatService.openingTurn(userId, conversationId)`** — the server-generated FIRST turn on a
+  freshly-anchored conversation, called by `ConversationService.create` right after the row saves,
+  only when a `context` was given. Assembles the SAME anchored system prompt every subsequent turn
+  gets, then calls the LLM with **empty history, no tools**, and a fixed Hungarian `KICKOFF_PROMPT`
+  ("open the conversation yourself: a short 3-5 sentence reflection on the [Heti adatok] block's
+  highlighted day or week, close with a question") as the user content. **The kickoff prompt is
+  never persisted as a user message** — only the resulting assistant answer is saved, so the
+  transcript reads as Mezo genuinely speaking first, not answering a hidden scripted question.
+  **Swallow-and-log on any failure** (bad LLM call, blank answer): the conversation simply stays
+  empty, exactly as a plain `createConversation()` call would leave it — a broken opening turn never
+  fails the create request. The `/me/week` "Beszélgess a napról/hétről" chips
+  (`useChatHandoff`, [me.md §2](me.md)) are the sole trigger.
 
 ## 4. Data model & API
 
@@ -2322,7 +2378,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
 | `GET /api/companion/conversation` | `ConversationResponse[]` | 200 · 401 | Owner's conversations, most-recently-active first (`ConversationService.list`). |
-| `POST /api/companion/conversation` | `ConversationResponse` | 201 · 401 | New empty conversation (`title` null; `startedAt` = `created_at`). `saveAndFlush` so `@CreationTimestamp` is populated before mapping. |
+| `POST /api/companion/conversation` | `ConversationResponse` | 201 · 401 | New empty conversation (`title` null; `startedAt` = `created_at`). `saveAndFlush` so `@CreationTimestamp` is populated before mapping. **`mezo-p2tr`:** an optional body `{context: {kind: week\|day, date}}` anchors it (`context_kind`/`context_date` persisted) and triggers `ChatService.openingTurn` — a server-generated, assistant-only first turn (§3 "Weekly review data layer + anchored conversations"). Absent/omitted `context` = unchanged plain-conversation behaviour. |
 | `GET /api/companion/conversation/{id}/messages` | `MessageResponse[]` | 200 · 401 · 404 | Full history, oldest-first. 404 for missing **or foreign** (`getOwned`, no existence leak). |
 | `POST /api/companion/conversation/{id}/message` | `MessageResponse` | 200 · 400 · 401 · 404 | The **sync** chat turn (V0.2, single transaction — LLM failure still rolls the whole turn back). |
 | `POST /api/companion/conversation/{id}/message/stream` | SSE `(delta\|tool)*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11); `tool` events interleave live since mezo-280 (progress only — the `done` row's `tools[]` stays authoritative). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
@@ -3343,6 +3399,18 @@ Backend integration-first (compose Postgres up: `cd backend && docker compose up
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
 tests is **always** `FakeCompanionLlm` — network never touched.
 
+**Weekly review data layer + anchored conversations (`mezo-p2tr`).**
+`feature/companion/service/DayScoreServiceIT.java` pins the day-score formula per subscore
+(fully-logged day → 100/100/100/100 → overall 100; sleep-only day → the other three null and the
+overall score null under the `<2` gate; zero-kcal day → `fuel()==0`, not null) and the verified
+1–10 (not 1–5) normalization. `feature/companion/controller/MeWeekControllerIT.java` covers the
+7-day response shape, the `ME_WEEK_START_NOT_MONDAY` 400, and the weekly-aggregate math.
+`AnchoredConversationIT` covers `CreateConversationRequest.context` persisting `context_kind`/
+`context_date`, the server-generated opening turn landing as an assistant-only row (never a user
+row), and a failed opening-turn LLM call leaving the conversation created-but-empty rather than
+failing the create call. Full formula/weekly-narrative test list: [me.md §8](me.md) /
+[proactive.md §8](proactive.md).
+
 **The `companion-fake` profile trick.** `@ActiveProfiles("companion-fake")` **merges** with the
 base test profiles (`AbstractIntegrationTest`/`ApiIntegrationTest` run `demodata`), so the fake
 adapter replaces Gemini while everything else stays real. `FakeCompanionLlm.complete/stream`
@@ -3561,8 +3629,9 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   optimistic write + rollback, the 200-id cap keeping the NEWEST ids, empty-id-set = no request, a
   failing read degrading to "no verdicts"), `features/insights/components/FeedbackChips.test.tsx`
   (the reason row's reveal/retract branches, `aria-pressed`), plus per-surface cases in
-  `ChatPage`/`MemoirPage`/`WeeklyPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback`
-  tests — see [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
+  `ChatPage`/`MemoirPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback` tests (the
+  retired `WeeklyPage`'s case moved to `features/me/pages/WeekPage.test.tsx`, `mezo-p2tr`) — see
+  [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
 
 **W4.2 feedback-rollup test additions (`mezo-b3pp.16`) — all integration-first, no LLM in the path:**
 
@@ -4532,6 +4601,19 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/quarterly/{QuarterlyPropertiesIT,QuarterlyReviewServiceIT,QuarterlyReviewJobIT,QuarterlyReviewJobSwitchOffIT,service/QuartersTest}.java` + extended `profile/service/ProfileAssemblerIT` + extended `tools/MemoryToolsRenderIT` — §8.
 - **FE side** (documented in [`insights.md` §2.4/§10](insights.md)): `frontend/src/data/insights/graph.ts` (`CANDIDATE_COPY`, `formatCandidateDate`, the `lifeEventCandidateSeed` SEASON entry) + `frontend/src/features/insights/components/LifeEventCandidateCard.tsx` (kind-aware date/provenance) + `frontend/src/features/insights/pages/KnowledgeListPage.tsx` (per-kind grouping) — no new endpoint, no new FE data hook.
 
+**Backend — weekly review data layer + anchored conversations (`mezo-p2tr` — §3/§4/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` + `config/MeWeekProperties.java` (`mezo.companion.me-week.*`) — the deterministic per-day score formula.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MeWeekService.java` + `controller/MeWeekController.java` — `GET /api/me/week/{start}` and the shared `renderDayLine` formatter.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/WeekContextRenderer.java` — the `[Heti adatok]` anchored-conversation prompt block.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/WeekReviewSource.java` — the port `feature/proactive`'s `WeekReviewSourceAdapter` implements (keeps the dependency proactive → companion, never the reverse).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — `create` reads `CreateConversationRequest.context`, persists `contextKind`/`contextDate`, and (when a context was given) calls `chatService.getObject().openingTurn(userId, saved.getId())`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `KICKOFF_PROMPT` + `openingTurn` (the server-generated, assistant-only first turn) + the widened `assembleSystemPrompt` signature above.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608271800_mezo-p2tr_ai_conversation_context.sql` — `ai_conversation.context_kind`/`.context_date` (nullable additive columns).
+- `api/feature/me-week/me-week.yml` (new fragment) + `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
+- Tests: `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
+- **Owned by `feature/proactive`, not restated here** (the generated weekly-review NARRATIVE + its Monday cron/push/feedback): `feature/proactive/{entity/WeeklyReviewEntity,service/WeeklyReviewGenerator,service/WeeklyReviewJob,service/WeeklyReviewService,service/WeeklyReviewDigestService,service/WeekReviewSourceAdapter}.java` — see [`proactive.md` §10](proactive.md).
+- **FE side** — `frontend/src/features/me/pages/WeekPage.tsx` + `frontend/src/features/me/components/{WeekDayCard,WeekScoreBars,WeekReviewCard,WeekDiscoveries,WeekNextCard}.tsx` + `frontend/src/features/me/logic/useChatHandoff.ts` + `frontend/src/data/me/{meWeek*,weeklyReview*}.ts`, documented in [`me.md`](me.md) `Heti` §2/§4/§10.
+
 **Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/service/GraphService.java` — `upsertNode`/`upsertEdge` are the ONLY write paths later slices use; `archive` flips `status` only.
@@ -4542,7 +4624,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionVoiceController.java` + `service/TranscriptionService.java` — **`mezo-at8x.4`** the stateless voice-note → transcript surface (`implements CompanionVoiceApi`, switch-gated; size/mime validation + the transcription system prompt).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock, graphBlock)` that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock, graphBlock, contextKind, contextDate)` (the last two params added by `mezo-p2tr` for the `[Heti adatok]` anchored block, both `null` for a plain conversation) that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/ChatHistory.java` — **mezo-q71s** the `List<Turn>` → "Daniel: … / Mezo: …" text renderer, the sole source for the three non-model consumers (advisor judge payload, fake LLM echo, `llm_log_history.conversation_history`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).

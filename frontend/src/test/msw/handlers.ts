@@ -4,6 +4,7 @@ import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { addDays } from '@/shared/lib/dates'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -362,18 +363,6 @@ export const handlers = [
 
   // Proactive weekly suggestion (W1) — default: honest 404, the Weekly card keeps its placeholder.
   http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => new HttpResponse(null, { status: 404 })),
-
-  // Weekly growth aggregate (E3, mezo-6ng8) — default: honest zeros (never a 404); the
-  // GrowthWeekCard renders its "nincs growth-adat" empty line. Tests override with server.use(...).
-  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
-    HttpResponse.json({
-      weekStart: params.date,
-      questCompleted: 0,
-      questClosed: 0,
-      lifeXp: 0,
-      activities: 0,
-      savingsHuf: 0,
-    })),
 
   // Proactive memoir (W2) — default: honest 404, MemoirPage renders its "készül" state.
   http.get(`${API_BASE}/api/proactive/memoir`, () => new HttpResponse(null, { status: 404 })),
@@ -1333,4 +1322,64 @@ export const handlers = [
     return HttpResponse.json({ ...body, reason: body.reason ?? null, updatedAt: '2026-08-21T12:00:00Z' })
   }),
   http.delete(`${API_BASE}/api/companion/feedback/:artifactKind/:artifactId`, () => new HttpResponse(null, { status: 204 })),
+
+  // Weekly review (mezo-p2tr) — one fetched week, DELIBERATELY distinct from the mock seed
+  // (`meWeek.ts`) so real-mode tests can tell "the fetch resolved" apart from "the seed leaked".
+  // A day with no data (score: null) reports checkinCount/workoutCount: 0, never omitted fields.
+  http.get(`${API_BASE}/api/me/week/:start`, ({ params }) => {
+    const start = params.start as string
+    const empty = (offset: number) => ({
+      date: addDays(start, offset), score: null, subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+      kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
+      weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
+      workoutCount: 0, xp: null,
+    })
+    return HttpResponse.json({
+      start,
+      // contract: always exactly 7 days (start..start+6) — one distinct-from-seed logged day,
+      // the rest honest-empty (the /api/fuel/week/:start handler above is the house precedent).
+      days: [
+        { date: start, score: 65, subscores: { sleep: 60, fuel: 70, checkin: 62, activity: 68 },
+          kcal: 2800, proteinG: 190, carbsG: 300, fatG: 80, kcalTarget: 3000, proteinTargetG: 200,
+          weightKg: 82.5, sleepMin: 410, sleepQuality: 6, checkinCount: 3, checkinEnergyAvg: 6,
+          workoutCount: 1, xp: 90 },
+        empty(1), empty(2), empty(3), empty(4), empty(5), empty(6),
+      ],
+      weekly: {
+        score: 65, prevWeekScore: 60, avgKcal: 2800, avgProteinG: 190, avgSleepMin: 410,
+        avgCheckinEnergy: 6, checkinRatio: 0.5, latestWeightKg: 82.5, weightWeeklyRateKg: -0.2,
+        totalXp: 90,
+      },
+    })
+  }),
+
+  // Weekly review (mezo-p2tr) — 404-default GET (the weekly-suggestion idiom above: no row
+  // exists for most weeks until the WeeklyReviewJob writes one); tests that want a generated
+  // review override with server.use(). Regenerate always succeeds with a fresh row. The digest
+  // is contractually never a 404 — the default here is deliberately distinct from the mock seed
+  // (the me/week handler's precedent) so real-mode tests can tell "fetch resolved" apart from
+  // "the mock seed leaked".
+  http.get(`${API_BASE}/api/proactive/weekly-review/:start`, () => new HttpResponse(null, { status: 404 })),
+  http.post(`${API_BASE}/api/proactive/weekly-review/:start/regenerate`, ({ params }) => {
+    const start = params.start as string
+    return HttpResponse.json({
+      id: 'e2b1c3d4-5f6a-4b7c-8d9e-0a1b2c3d4e5f',
+      weekStart: start,
+      summary: 'Frissített elemzés: a hét adatai alapján ez a legutóbbi kiértékelés.',
+      dayNotes: [],
+      highlights: [],
+      generatedAt: '2026-08-27T06:00:00Z',
+      stale: false,
+    })
+  }),
+  http.get(`${API_BASE}/api/proactive/weekly-review/:start/digest`, ({ params }) => {
+    const start = params.start as string
+    return HttpResponse.json({
+      patterns: [{ pairKey: 'sleep_workout', title: 'Real-mode pattern', event: 'confirmed' }],
+      newFacts: [{ id: 'f1e2d3c4-b5a6-4978-8675-3021abcdef01', text: 'Real-mode fact.' }],
+      lifeEvents: [{ id: 'a1b2c3d4-e5f6-4708-9182-736455443322', title: 'Real-mode life event', occurredOn: start }],
+      memoir: true,
+      predictions: [{ id: '12345678-90ab-4cde-8f01-234567890abc', title: 'Real-mode prediction', status: 'pending' }],
+    })
+  }),
 ]

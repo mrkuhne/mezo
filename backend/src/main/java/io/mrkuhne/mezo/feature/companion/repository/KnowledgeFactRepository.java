@@ -24,4 +24,9 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
     /** The V3.3 in-chat acknowledgment window — freshly promoted, still-prompt-enabled facts. */
     List<KnowledgeFactEntity> findByCreatedByAndSourceAndIncludeInPromptTrueAndCreatedAtGreaterThanEqualAndDeletedFalseOrderByCreatedAtDesc(
             UUID createdBy, String source, Instant since);
+
+    /** Weekly review gather (mezo-p2tr): facts CREATED inside the review's week — the ÚJ TÉNYEK
+     *  section's candidate source. */
+    List<KnowledgeFactEntity> findByCreatedByAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(
+            UUID createdBy, Instant from, Instant to);
 }

@@ -818,3 +818,24 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608251200_mezo-3m5m_muscle_priorities.sql
+  - changeSet:
+      id: "1.0.0:202608271200_mezo-p2tr_create_weekly_review"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608271200_mezo-p2tr_create_weekly_review.sql
+  - changeSet:
+      id: "1.0.0:202608271500_mezo-p2tr_feedback_weekly_review_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608271500_mezo-p2tr_feedback_weekly_review_kind.sql
+  - changeSet:
+      id: "1.0.0:202608271800_mezo-p2tr_ai_conversation_context"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608271800_mezo-p2tr_ai_conversation_context.sql

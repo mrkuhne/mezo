@@ -1,4 +1,4 @@
-import { patterns, predictions, experiments, weekly, memoir, recentlyConfirmed, MIN_PATTERN_CONFIDENCE, patternCategoryColor } from '@/data/insights/insights'
+import { patterns, predictions, experiments, memoir, recentlyConfirmed, MIN_PATTERN_CONFIDENCE, patternCategoryColor } from '@/data/insights/insights'
 
 test('three patterns, all above the confidence floor', () => {
   expect(patterns).toHaveLength(3)
@@ -11,9 +11,7 @@ test('pattern category colour maps to a --cat-* token', () => {
   expect(patternCategoryColor('response')).toBe('var(--cat-response)')
 })
 
-test('weekly review + memoir + recently-confirmed copy is verbatim', () => {
-  expect(weekly.score).toBe(82)
-  expect(weekly.items).toHaveLength(4)
+test('memoir + recently-confirmed copy is verbatim', () => {
   expect(memoir.title).toBe('Egy hét amikor a tested megtanult várni')
   expect(memoir.anchors).toHaveLength(3)
   expect(recentlyConfirmed).toHaveLength(3)

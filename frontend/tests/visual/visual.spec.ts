@@ -5,7 +5,8 @@ import { test, expect } from '@playwright/test'
  * = 20 screens × 2 themes = 40 snapshots per platform (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
- * `today` shot with one per daypart face — reggel/nap/este).
+ * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
+ * insights-heti shot for me-heti, the new /me/week weekly-review page).
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
@@ -46,8 +47,8 @@ const SCREENS: Array<[string, string, string?]> = [
   ['fuel-terv', '/fuel/plan'],
   ['me', '/me'],
   ['me-cel', '/me/goals'],
+  ['me-heti', '/me/week'],
   ['insights-mintak', '/insights'],
-  ['insights-heti', '/insights/weekly'],
   ['insights-memoar', '/insights/memoir'],
   ['insights-tudastar', '/insights/knowledge'],
   ['insights-chat', '/insights/chat'],

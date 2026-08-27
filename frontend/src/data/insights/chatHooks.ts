@@ -34,16 +34,18 @@ export type ChatSelection = string | null | undefined
 export const NEW_CHAT = 'new'
 
 const MOCK_CONVERSATION_ID = 'mock-conversation'
-const CONVERSATIONS_KEY = ['chat', 'conversations'] as const
+/** Exported for useChatHandoff.ts (mezo-p2tr) — the week/day handoff seeds this same cache. */
+export const CONVERSATIONS_KEY = ['chat', 'conversations'] as const
 /** One cache entry per selection, so switching conversations can't cross-contaminate history. */
-const chatKey = (selection: ChatSelection): QueryKey => ['chat', selection ?? 'newest']
+export const chatKey = (selection: ChatSelection): QueryKey => ['chat', selection ?? 'newest']
 
 const EMPTY_CHAT: ChatBootstrap = { conversationId: null, messages: [], degraded: false, mode: 'live' }
 const MOCK_CHAT: ChatBootstrap = {
   conversationId: MOCK_CONVERSATION_ID, messages: initialChat, degraded: false, mode: 'mock',
 }
 const EMPTY_CONVERSATIONS: ChatConversations = { conversations: [], degraded: false, mode: 'live' }
-const MOCK_CONVERSATIONS: ChatConversations = {
+/** Exported for useChatHandoff.ts (mezo-p2tr) — the fallback base list when seeding a new mock row. */
+export const MOCK_CONVERSATIONS: ChatConversations = {
   mode: 'mock',
   degraded: false,
   conversations: [{

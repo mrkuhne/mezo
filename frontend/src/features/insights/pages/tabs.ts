@@ -9,7 +9,6 @@ export interface InsightsTab {
 
 export const INSIGHTS_TABS: InsightsTab[] = [
   { id: 'patterns', to: '/insights', label: 'Minták', end: true },
-  { id: 'weekly', to: '/insights/weekly', label: 'Heti' },
   { id: 'memoir', to: '/insights/memoir', label: 'Memoár' },
   { id: 'knowledge', to: '/insights/knowledge', label: 'Tudástár' },
   { id: 'chat', to: '/insights/chat', label: 'Chat' },

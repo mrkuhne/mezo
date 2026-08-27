@@ -71,13 +71,14 @@ interface SubLineContext {
  * `medication` on a day where the anchor is genuinely absent (no session today / not a dose
  * day) — an honest fallback, never an invented time. `checkin`'s static description already
  * IS the derived value (the four fixed slot times never vary), so it needs no special case.
+ * `weekly_review` is a fixed backend constant too (Monday 10:00, mezo-p2tr) — its static
+ * `NOTIFICATION_CATEGORY_META` description already IS the derived value, unlike the retired
+ * `weekly`'s wake-anchored one, so it needs no case here either.
  */
 function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx: SubLineContext): string {
   switch (category) {
     case 'briefing':
       return `${ctx.wake} · ébredési horgony`
-    case 'weekly':
-      return `Hétfő reggel · ${ctx.wake}`
     case 'gym':
       return ctx.gymBlock ? `ma ${ctx.gymBlock.time} · ${ctx.gymBlock.label}` : fallback
     case 'ritual':

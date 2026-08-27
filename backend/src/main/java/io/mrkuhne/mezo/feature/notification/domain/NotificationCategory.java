@@ -4,7 +4,9 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * The 22 push-notification categories (16 anchor-resolved + 6 feed-anchored, spec 2026-08-18). This enum is the single source of truth
+ * The 23 push-notification categories (17 anchor-resolved + 6 feed-anchored, spec 2026-08-18;
+ * {@code weekly_review} added mezo-p2tr, replacing the retired {@code weekly} push). This enum is
+ * the single source of truth
  * for which categories exist, which default ON, which carry a notification-side lead offset, and
  * which are FE-written — see spec §6 (`docs/superpowers/specs/2026-07-29-push-notifications-design.md`)
  * for the authoritative catalog table (key, anchor, source of truth, v1 default).
@@ -32,11 +34,23 @@ public enum NotificationCategory {
     /** Anchor: {@code sleep_goal.anchor_time}; source {@code RitualService} {@code bedTime} (RitualService.java:71). */
     LIGHTS_OUT("lights_out", true, 0, false),
 
-    /** Anchor: Monday, wake anchor; source {@code weekly_suggestion} row exists. */
+    /**
+     * @deprecated Retired (mezo-p2tr) — the forward-looking weekly-plan push was replaced by
+     * {@link #WEEKLY_REVIEW}'s backward-looking Monday 10:00 push. The enum entry is KEPT (never
+     * removed) only because persisted {@code notification_pref} rows still reference this key via
+     * {@link #fromKey(String)}; {@link io.mrkuhne.mezo.feature.notification.service.AnchorResolver}
+     * no longer emits an anchor for it.
+     */
+    @Deprecated
     WEEKLY("weekly", true, 0, false),
 
     /** Anchor: Sunday 19:00; source {@code memoir} row exists. */
     MEMOIR("memoir", true, 0, false),
+
+    /** Anchor: Monday 10:00 (fixed); source {@code weekly_review} row exists, keyed by the
+     *  JUST-FINISHED week's Monday (mezo-p2tr) — the backward-looking replacement for the retired
+     *  {@link #WEEKLY} push. */
+    WEEKLY_REVIEW("weekly_review", true, 0, false),
 
     /**
      * Anchor: ritual {@code prepStartsAt} (bed minus {@code mezo.ritual.prep-lead-min}, 45 min);

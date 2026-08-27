@@ -35,7 +35,6 @@ import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { InsightsSection } from '@/features/insights/pages/InsightsSection'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
-import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
@@ -48,6 +47,7 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
+import { WeekPage } from '@/features/me/pages/WeekPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -132,7 +132,10 @@ export const routes: RouteObject[] = [
         element: <InsightsSection />,
         children: [
           { index: true, element: <PatternsPage /> },
-          { path: 'weekly', element: <WeeklyPage /> },
+          // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
+          // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
+          // an honest redirect so any old bookmark/link still lands somewhere sensible.
+          { path: 'weekly', element: <Navigate to="/me/week" replace /> },
           { path: 'memoir', element: <MemoirPage /> },
           { path: 'knowledge', element: <KnowledgeListPage /> },
           { path: 'chat', element: <ChatPage /> },
@@ -153,6 +156,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <ProfilePage /> },
           { path: 'growth', element: <GrowthPage /> },
           { path: 'naplo', element: <JournalPage /> },
+          { path: 'week', element: <WeekPage /> },
           { path: 'goals', element: <GoalsPage /> },
           { path: 'weight', element: <WeightPage /> },
           { path: 'sleep', element: <SleepPage /> },
