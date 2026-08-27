@@ -878,14 +878,6 @@
 <style>
   /* ===== prep ===== */
   .prep-hero { padding: 12px 13px; }
-  .xpring {
-    width: 74px; height: 74px; border-radius: 50%; flex: none;
-    background: conic-gradient(#FF6B4A calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
-    display: grid; place-items: center;
-  }
-  .xpring .in { width: 60px; height: 60px; border-radius: 50%; background: #fff; display: grid; place-items: center; text-align: center; line-height: 1.1; }
-  .xpring b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; display: block; }
-  .xpring small { font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; color: #A2958A; }
   .skillrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
   .skillrow .nm2 { font-size: 10px; font-weight: 600; width: 74px; flex: none; }
   .skillrow .xg { font-size: 9px; font-weight: 700; color: #A8801F; flex: none; width: 34px; text-align: right; }
@@ -948,10 +940,11 @@
   .xstats { display: flex; gap: 14px; margin-top: 9px; }
   .xstats small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
   .xstats b { font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .xfoot { display: flex; align-items: center; gap: 7px; margin-top: 10px; padding-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.09); flex-wrap: wrap; }
+  .xfoot { display: flex; align-items: flex-end; gap: 7px; margin-top: 10px; padding-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.09); flex-wrap: wrap; }
   .xfoot small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
-  .xfoot b { font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .xfoot .arr { color: #A2958A; font-size: 11px; }
+  .xfoot b { font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .xfoot .arr { color: #A2958A; font-size: 11px; line-height: 1.1; }
+  .xfoot .dchip, .xfoot .xchip { margin-bottom: 0.5px; }
   .mini-dots { display: flex; gap: 4px; margin-top: 9px; align-items: center; flex-wrap: wrap; }
   .md { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.14); font-size: 6.5px; font-weight: 700; color: #A2958A; display: grid; place-items: center; background: rgba(255, 255, 255, 0.7); flex: none; }
   .md.wu { border-style: dashed; border-color: rgba(201, 150, 46, 0.55); color: #A8801F; }
@@ -1180,13 +1173,13 @@
           </div>
 
           <div class="float3d prep-hero rise" style="--d:0ms;background:linear-gradient(140deg,#FFE7DC,#FFFFFF 70%);">
-            <div class="mrow" style="gap:11px;">
-              <div class="xpring" style="--v:76;"><div class="in"><b>+240</b><small>VÁRHATÓ XP</small></div></div>
-              <div class="grow">
-                <div class="p-eyebrow" style="color:#A84A26;">Ma · 13:00 · Meso W3/5</div>
-                <span class="big" style="font-size:27px;">Pull A</span>
-                <div class="mut" style="font-size:9px;font-weight:600;margin-top:2px;">16 szett · ~74 perc · 3 izomcsoport</div>
-              </div>
+            <div class="p-eyebrow" style="color:#A84A26;">Ma · 13:00 · Meso W3/5</div>
+            <span class="big" style="font-size:30px;">Pull A</span>
+            <div class="statstrip" style="margin-top:8px;">
+              <div class="statcell"><b style="color:#A84A26;">+240</b><small>várható XP</small></div>
+              <div class="statcell"><b>16</b><small>szett</small></div>
+              <div class="statcell"><b>~74′</b><small>idő</small></div>
+              <div class="statcell"><b>3</b><small>izomcsoport</small></div>
             </div>
             <button class="cta" id="startBtn" style="width:100%;margin-top:10px;padding:11px 0;font-size:12.5px;">⚡ Kezdjük el →</button>
           </div>
@@ -1233,16 +1226,18 @@
       <div class="page p-coral" id="page-gyak">
         <div class="page-head"><button class="backbtn" data-back="page-gyak">‹ Indítás</button></div>
         <div class="page-hero">
-          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
-          <div class="bignum">5</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="92" height="92" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+            <div class="bignum">5</div>
+          </div>
           <div class="nm">Gyakorlatok</div>
-          <div class="sb">a mai Pull A terve · ~74 perc</div>
         </div>
         <div class="page-body">
           <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
             <div class="statcell"><b>19</b><small>szett</small></div>
+            <div class="statcell"><b>~74′</b><small>becsült idő</small></div>
             <div class="statcell"><b>3</b><small>izomcsoport</small></div>
-            <div class="statcell"><b style="color:#A84A26;">3</b><small>progresszió ma</small></div>
+            <div class="statcell"><b style="color:#A84A26;">3</b><small>progresszió</small></div>
           </div>
           <div id="gyakList"></div>
           <p class="habnote">A sorrend a tervezett — élőben az Áthelyezéssel bármikor átrendezhető, a terv nem változik.</p>
@@ -1512,9 +1507,9 @@
           Fejlődés (skill-sávok + „Ma építed"), Heti zóna (státusz-chipek), Küldetések (elfogad/passz,
           conf% vagy <em>tanulom</em>), Bemelegítés, Niggle (badge, „Értem" után kezelve ✓).</li>
           <li><strong>Gyakorlat-csempék</strong> — a Gyakorlatok oldalon minden gyakorlat maga is csempe:
-          családszín-mosás + sín, clay korong, <strong>címkézett oszlopok</strong> (Szett · Cél · Induló súly),
-          mini szett-pöttyök (B szaggatott arany), 1RM-medál, és lábsor: „múlt héten → progresszió"
-          + kihívás-jelölő.</li>
+          családszín-mosás + sín, clay korong, <strong>címkézett oszlopok</strong> (Cél · Induló súly),
+          a szett-számot a mini pöttyök mondják (B szaggatott arany), 1RM-medál, és lábsor:
+          „múlt héten → progresszió" + kihívás-jelölő.</li>
           <li><strong>Élő logolás</strong> — óriás stepperek (tap-to-edit értékkel), RIR 0–3 (bemelegítőn rejtve),
           oldal L/B/R izolációnál, szett-jegyzet, Szett kész → pihenő-sáv (szünet/folytat/kihagy),
           medál-toast, szabad navigáció 5 úton (lapozó, pöttyök, swipe, áttekintő lap, áthelyezés).</li>
@@ -1739,8 +1734,7 @@
           var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
           var sw = null;
           e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
-          var stats = '<div><small>Szett</small><b>' + (e.warm ? e.warm + ' bem + ' : '') + e.work + ' work</b></div>' +
-            '<div><small>Cél</small><b>' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir : '') + '</b></div>' +
+          var stats = '<div><small>Cél</small><b>' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir : '') + '</b></div>' +
             (sw != null ? '<div><small>Induló súly</small><b>' + fmtW(sw) + ' kg</b></div>' : '');
           var dots = '';
           var wc2 = warmCount(e.id);
