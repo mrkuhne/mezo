@@ -9,6 +9,7 @@ import { useMeWeek, useWeeklyReview } from '@/data/hooks'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { localDateString } from '@/shared/lib/dates'
 import { prevMonday, nextMonday, isCurrentWeek } from '@/features/me/logic/weekNav'
+import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { WeekDayCard } from '@/features/me/components/WeekDayCard'
 import { WeekScoreBars } from '@/features/me/components/WeekScoreBars'
 import { WeekReviewCard } from '@/features/me/components/WeekReviewCard'
@@ -130,6 +131,7 @@ export function WeekPage() {
   const [expandedIso, setExpandedIso] = useState<string | null>(null)
   const todayIso = localDateString()
   const dayNoteByDate = new Map((review?.dayNotes ?? []).map((n) => [n.date, n.note]))
+  const chatHandoff = useChatHandoff()
 
   const goPrev = () => setParams({ start: prevMonday(start) }, { replace: true })
   const goNext = () => setParams({ start: nextMonday(start) }, { replace: true })
@@ -175,13 +177,21 @@ export function WeekPage() {
                 expanded={expandedIso === d.date}
                 onToggle={() => setExpandedIso((cur) => (cur === d.date ? null : d.date))}
                 dayNote={dayNoteByDate.get(d.date) ?? null}
+                // Future days haven't happened yet — nothing to talk about.
+                onChat={future ? undefined : () => chatHandoff.open({ kind: 'day', date: d.date })}
               />
             )
           })}
         </div>
       )}
 
-      <WeekReviewCard review={review} regenerate={regenerate} regenerating={regenerating} />
+      <WeekReviewCard
+        review={review}
+        regenerate={regenerate}
+        regenerating={regenerating}
+        onChat={() => chatHandoff.open({ kind: 'week', date: start })}
+        chatPending={chatHandoff.pending}
+      />
       <WeekDiscoveries digest={digest} />
       {currentWeek && <WeekNextCard suggestion={nextSuggestion} />}
     </>

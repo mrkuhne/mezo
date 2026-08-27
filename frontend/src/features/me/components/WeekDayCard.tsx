@@ -1,7 +1,7 @@
 // Weekly review (mezo-p2tr) — one expandable day row in the week grid (the WeeklyWeightCard
-// expand idiom). `dayNote`/`onChat` are a placeholder slot for Tasks 8/10 (Mezo's per-day note +
-// a "beszéljünk róla" chat entry point) — both render NOTHING while absent, so this component is
-// a no-op change for those tasks beyond passing the props in.
+// expand idiom). `dayNote` is Mezo's per-day note (Task 8); `onChat` (Task 10) is the
+// "Beszélgess a napról" chat handoff — WeekPage wires it to useChatHandoff().open({kind:'day'}),
+// absent (and future days) render neither.
 import { ScoreRing } from '@/shared/ui/ScoreRing'
 import { Icon } from '@/shared/ui/Icon'
 import { huMonthDayDow } from '@/shared/lib/dates'
@@ -119,7 +119,7 @@ export function WeekDayCard({ day, expanded, onToggle, future = false, dayNote, 
           )}
           {onChat != null && (
             <button type="button" className="chip" style={{ alignSelf: 'flex-start' }} onClick={onChat}>
-              Beszéljünk róla <Icon name="chevron-right" size={10} />
+              Beszélgess a napról <Icon name="chevron-right" size={10} />
             </button>
           )}
         </div>

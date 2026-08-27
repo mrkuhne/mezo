@@ -6,6 +6,14 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { mockMeWeekStart } from '@/data/me/meWeek'
 
+// Task 10 (mezo-p2tr) — the week/day chat handoff routes through useNavigate; spy on it so the
+// wiring tests can assert the exact target without a real router transition.
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 // One test forces a null weekly score to exercise the "tanulom" hero branch — the mock seed's
 // weekly score is always 78, so that branch is otherwise unreachable in mock mode. Idiom mirrors
 // FuelMaiPage.test's hoisted single-hook override. The same override point lets the
@@ -46,6 +54,7 @@ afterEach(() => {
   hoisted.forceStale = false
   hoisted.forceRegenerating = false
   hoisted.regenerateSpy.mockClear()
+  mockNavigate.mockReset()
 })
 
 const renderPage = (path = '/me/week') =>
@@ -141,4 +150,20 @@ test('the next-week card shows the weekly-suggestion prose under its eyebrow, cu
 test('the next-week card is absent when browsing a past week — its content is unrelated to that week', () => {
   renderPage(`/me/week?start=${mockMeWeekStart}`)
   expect(screen.queryByText('Mezo · a következő heted')).not.toBeInTheDocument()
+})
+
+test('"Beszélgess a napról" on an expanded day card opens an anchored conversation for that day', () => {
+  renderPage(`/me/week?start=${mockMeWeekStart}`)
+  const first = screen.getAllByTestId('week-day-card')[0]
+  fireEvent.click(first.querySelector('button')!)
+  fireEvent.click(screen.getByRole('button', { name: /Beszélgess a napról/ }))
+  expect(mockNavigate).toHaveBeenCalledTimes(1)
+  expect(mockNavigate.mock.calls[0][0]).toMatch(/^\/insights\/chat\?c=.+/)
+})
+
+test('"Beszélgess a hétről" in the review card opens an anchored conversation for the week', () => {
+  renderPage(`/me/week?start=${mockMeWeekStart}`)
+  fireEvent.click(screen.getByRole('button', { name: /Beszélgess a hétről/ }))
+  expect(mockNavigate).toHaveBeenCalledTimes(1)
+  expect(mockNavigate.mock.calls[0][0]).toMatch(/^\/insights\/chat\?c=.+/)
 })
