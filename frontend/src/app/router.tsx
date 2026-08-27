@@ -48,6 +48,7 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
+import { WeekPage } from '@/features/me/pages/WeekPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -153,6 +154,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <ProfilePage /> },
           { path: 'growth', element: <GrowthPage /> },
           { path: 'naplo', element: <JournalPage /> },
+          { path: 'week', element: <WeekPage /> },
           { path: 'goals', element: <GoalsPage /> },
           { path: 'weight', element: <WeightPage /> },
           { path: 'sleep', element: <SleepPage /> },

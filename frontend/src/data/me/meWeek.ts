@@ -3,6 +3,7 @@ import { addDays } from '@/shared/lib/dates'
 
 export type MeWeek = components['schemas']['MeWeekResponse']
 export type MeWeekDay = components['schemas']['MeWeekDay']
+export type MeWeekAggregates = components['schemas']['MeWeekAggregates']
 
 // One deterministic demo week (Monday 2026-05-18, mezo-p2tr) for the weekly review page —
 // 5 dense days (full sleep/fuel/checkin/activity coverage) + 2 sparse days, one of which is
