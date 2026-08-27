@@ -1821,7 +1821,7 @@ Full test list: [me.md §8](me.md).
 
 ## 9. Decisions, gotchas & deferred
 
-- **(a) All ELEVEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
+- **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
   fake dispatches on `MORNING_MARKER_MIRROR` (`"REGGELI-ELIGAZITAS-FELADAT"`), `SLEEP_MARKER_MIRROR`
   (`"ALVAS-REAKCIO-FELADAT"`), `WEIGHT_MARKER_MIRROR` (`"SULY-REAKCIO-FELADAT"`) — the three NEW
   `mezo-gst9` kinds, replacing the single retired `BRIEFING_MARKER_MIRROR` — `WEEKLY_MARKER_MIRROR`

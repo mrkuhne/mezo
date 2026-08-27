@@ -526,10 +526,10 @@ Obligations that apply to every change here: **contract-first** for any boundary
 - `ArchitectureTest` — guards the `WeekReviewSource` port direction (`feature/companion` defines it, `feature/proactive` implements it — a direct `companion → proactive` import would close a new slice cycle).
 
 **Weekly review (`mezo-p2tr`) — frontend:**
-- `data/me/meWeekHooks.test.tsx` / `data/me/weeklyReviewHooks.test.tsx` — dual-mode: mock seeds a deterministic re-dateable week/review; real mode asserts the MSW round-trip, the 404→`null` honest-absence mapping on the review GET (never a thrown error), and `regenerate()`'s invalidate-after-POST.
-- `features/me/logic/useChatHandoff.test.tsx` — mock-mode conversation fabrication (cache-seeded, no network) vs. real-mode `POST /api/companion/conversation`, and the re-entrancy guard (`pending` blocks a second `open()` call).
-- `features/me/pages/WeekPage.test.tsx` — the `?start=` resolution (fallback to the current week on absent/malformed/non-Monday values), the „tanulom" null-score hero, the future-day dim/no-expand guard, the `WeekNextCard`'s current-week-only gate (both render AND fetch), and the `WeekDiscoveries` all-empty-digest-renders-nothing case.
-- Component tests: `WeekDayCard.test.tsx` (subscore line, day-note render, chat-chip omission on future days), `WeekReviewCard.test.tsx` (ghost vs. populated vs. stale-regenerate), `WeekScoreBars.test.tsx` (null-score baseline stub vs. a real bar).
+- `data/me/meWeekHooks.test.tsx` / `data/me/weeklyReviewHooks.test.ts` — dual-mode: mock seeds a deterministic re-dateable week/review; real mode asserts the MSW round-trip, the 404→`null` honest-absence mapping on the review GET (never a thrown error), and `regenerate()`'s invalidate-after-POST.
+- `features/me/logic/useChatHandoff.test.ts` — mock-mode conversation fabrication (cache-seeded, no network) vs. real-mode `POST /api/companion/conversation`, and the re-entrancy guard (`pending` blocks a second `open()` call).
+- `features/me/pages/WeekPage.test.tsx` — the `?start=` resolution (fallback to the current week on absent/malformed/non-Monday values), the „tanulom" null-score hero, the future-day dim/no-expand guard, the `WeekNextCard`'s current-week-only gate (both render AND fetch), the `WeekDiscoveries` all-empty-digest-renders-nothing case, and (integration-level, no dedicated component test files) the `WeekReviewCard` ghost/populated/stale-regenerate states and the `WeekScoreBars` null-score baseline-stub-vs-real-bar rendering.
+- `features/me/components/WeekDayCard.test.tsx` — the one dedicated component test: subscore line, day-note render, chat-chip omission on future days.
 
 **Commands:**
 ```bash
@@ -646,7 +646,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock
 - Backend (companion chat anchoring): `feature/companion/service/{ChatService.java (openingTurn/assembleSystemPrompt), ConversationService.java (create)}`, `ai_conversation.context_kind`/`.context_date` columns
 - Contract: `api/feature/me-week/me-week.yml`, `api/feature/proactive/proactive.yml` (weekly-review paths/schemas), `api/feature/companion/companion.yml` (`CreateConversationRequest.context`)
 - Liquibase: `...202608271200_mezo-p2tr_create_weekly_review.sql`, `...202608271500_mezo-p2tr_feedback_weekly_review_kind.sql`, `...202608271800_mezo-p2tr_ai_conversation_context.sql`
-- Tests: `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `AnchoredConversationIT`, `frontend/src/features/me/{pages/WeekPage.test.tsx,components/{WeekDayCard,WeekReviewCard,WeekScoreBars}.test.tsx,logic/useChatHandoff.test.tsx}`, `frontend/src/data/me/{meWeekHooks.test.tsx,weeklyReviewHooks.test.tsx}`
+- Tests: `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `AnchoredConversationIT`, `frontend/src/features/me/{pages/WeekPage.test.tsx,components/WeekDayCard.test.tsx,logic/useChatHandoff.test.ts}` (`WeekReviewCard`/`WeekScoreBars` have no dedicated component test files — their behavior is covered at the `WeekPage.test.tsx` integration level), `frontend/src/data/me/{meWeekHooks.test.tsx,weeklyReviewHooks.test.ts}`
 - Full generator/job/push/feedback detail: [proactive.md](proactive.md); full prompt-assembly/opening-turn detail: [companion.md](companion.md); the retired Insights tab: [insights.md §2.2](insights.md)
 
 **Docs (link, don't duplicate)**
