@@ -234,6 +234,24 @@
   .trbars small { font-size: 6.5px; font-weight: 700; color: #A2958A; }
   .trbars .rv { font-size: 7.5px; font-weight: 800; color: #4E6B42; font-variant-numeric: tabular-nums; }
   .trnote { font-size: 8.5px; color: #6E6257; margin-top: 7px; }
+  /* — Napló v2 — */
+  .nchart { position: relative; height: 96px; margin-top: 10px; }
+  .nchart .goal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed rgba(201, 150, 46, 0.6); }
+  .nchart .goal small { position: absolute; right: 0; top: -11px; font-size: 6px; font-weight: 800; color: #A8801F; letter-spacing: 0.08em; }
+  .nbars { display: flex; gap: 5px; height: 100%; align-items: flex-end; }
+  .nbars > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+  .nbars .kv { font-size: 6.5px; font-weight: 700; color: #4E6B42; font-variant-numeric: tabular-nums; }
+  .nbars b { width: 100%; border-radius: 5px 5px 3px 3px; background: linear-gradient(180deg, #A9C69A, #6E8B5E); min-height: 4px; }
+  .nbars b.today { background: linear-gradient(180deg, #FFD979, #C9962E); }
+  .nbars .e { width: 100%; height: 12px; border: 1.2px dashed rgba(43, 33, 24, 0.15); border-radius: 5px; }
+  .nbars small { font-size: 6px; font-weight: 800; color: #A2958A; }
+  .ngrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .ncard { border-radius: 15px; padding: 10px 12px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .ncard .bigv { font-size: 19px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .ncard .bigv small { font-size: 9px; font-weight: 600; color: #6E6257; letter-spacing: 0; }
+  .ncard .dl { font-size: 8px; font-weight: 700; margin-top: 3px; }
+  .ncard .dl.good { color: #4E6B42; }
+  .ncard .dl.neu { color: #A2958A; }
   /* ===== sheets ===== */
   .bsheet-back { position: absolute; inset: 0; z-index: 11; border-radius: 42px; background: rgba(29, 23, 18, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
   .bsheet-back.open { opacity: 1; pointer-events: auto; }
@@ -619,39 +637,15 @@
           <div class="nm">Napló</div>
           <div class="mrow" style="justify-content:center;gap:14px;">
             <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-naplo"/></svg>
-            <div class="bignum">87</div>
+            <div class="bignum" id="npBig">87</div>
           </div>
         </div>
         <div class="page-body">
-          <div class="trendcard rise" style="--d:30ms;">
-            <div class="mrow"><div class="p-eyebrow" style="padding:0;">Kcal-átlag · 4 hét</div><span class="mut" style="margin-left:auto;font-size:8px;">cél 2 250</span></div>
-            <div class="trbars">
-              <div><span class="rv">2 340</span><b style="height:88%;"></b><small>aug 3</small></div>
-              <div><span class="rv">2 260</span><b style="height:78%;"></b><small>aug 10</small></div>
-              <div><span class="rv">2 210</span><b style="height:72%;"></b><small>aug 17</small></div>
-              <div><span class="rv">2 180</span><b class="hi" style="height:68%;"></b><small>e hét</small></div>
-            </div>
-            <div class="trnote">A heti átlag a cél körül leng be — nem büntetünk, csak mutatjuk.</div>
-          </div>
-          <div class="trendcard rise" style="--d:70ms;">
-            <div class="p-eyebrow" style="padding:0;">AI-átlag · 4 hét</div>
-            <div class="trbars">
-              <div><span class="rv">78</span><b style="height:58%;"></b><small>aug 3</small></div>
-              <div><span class="rv">81</span><b style="height:66%;"></b><small>aug 10</small></div>
-              <div><span class="rv">84</span><b style="height:74%;"></b><small>aug 17</small></div>
-              <div><span class="rv">87</span><b class="hi" style="height:82%;"></b><small>e hét</small></div>
-            </div>
-          </div>
-          <div class="trendcard rise" style="--d:110ms;">
-            <div class="p-eyebrow" style="padding:0;">Protein-napok · 4 hét</div>
-            <div class="trbars">
-              <div><span class="rv">3/7</span><b style="height:43%;"></b><small>aug 3</small></div>
-              <div><span class="rv">4/7</span><b style="height:57%;"></b><small>aug 10</small></div>
-              <div><span class="rv">5/7</span><b style="height:71%;"></b><small>aug 17</small></div>
-              <div><span class="rv">5/7</span><b class="hi" style="height:71%;"></b><small>e hét</small></div>
-            </div>
-          </div>
-          <p class="habnote">A heti API ma három számmá esik össze — ez az oldal a teljes 7 napos sort mutatná. Design-kiegészítés, implementálásra jelölve.</p>
+          <div class="segtabs rise" style="--d:20ms;" id="npTabs"></div>
+          <div id="npBody"></div>
+          <p class="habnote">A heti API ma három számmá esik össze — itt a teljes 7 napos sor él,
+          hetenként tárolt kcal/makró/súly/AI-átlaggal. A mai nap oszlopa őszintén „folyamatban",
+          a jövő napjai üres helyek. Design-kiegészítés, implementálásra jelölve.</p>
         </div>
       </div>
 
@@ -727,8 +721,12 @@
           keresztlink; ＋ Logolás a log-sheetbe KAMRA-tételként (100 g), Törlés két érintéssel.</li>
           <li><strong>Gyógyszer</strong> — készítmény-kártya ciklus-csíkkal (csúcs = terrakotta,
           sosem piros), fázis-jegyzet, beadás-lista jegyzettel. Új ikon: <code>i-injekcio</code>.</li>
-          <li><strong>Napló</strong> — design-kiegészítés a „sehol egy trend" gapre: kcal-átlag,
-          AI-átlag és protein-napok 4 hetes oszlopai a heti API teljes sorából.</li>
+          <li><strong>Napló</strong> — design-kiegészítés a „sehol egy trend" gapre, hetenként
+          tárolt adatokkal: hét-választó szegmens, <strong>napi kcal-oszlopok</strong> szaggatott
+          cél-vonallal (a mai nap arany „folyamatban" oszlop, a jövő napjai üres helyek — őszinte),
+          protein-nap számláló, <strong>makró-átlag mini-csempék</strong> /nap, és két kártya:
+          <strong>Súly heti átlag</strong> + <strong>AI-átlag</strong>, előző heti deltával.
+          A hero nagy száma a kiválasztott hét AI-átlagát követi.</li>
         </ul>
       </div>
       <p class="note">A hub a Mai oldal lelke: egy pillantás — mennyi fér még, mi a következő ablak,
@@ -1354,6 +1352,70 @@
     q = e.target.value.trim().toLowerCase();
     render();
   });
+  render();
+})();
+
+/* ===== Napló oldal ===== */
+(function () {
+  var GOAL = 2250;
+  var MAXK = 2650;
+  var DAYS = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+  var W = [
+    { lbl: 'Aug 3–9', days: [2410, 2350, 2180, 2460, 2320, 2510, 2150], p: 148, c: 262, f: 74, kavg: 2340, w: '83,4', wd: '−0,2 kg', ai: 78, aid: '+2 p', pd: '3/7' },
+    { lbl: 'Aug 10–16', days: [2280, 2210, 2340, 2190, 2260, 2400, 2140], p: 155, c: 248, f: 70, kavg: 2260, w: '83,0', wd: '−0,4 kg', ai: 81, aid: '+3 p', pd: '4/7' },
+    { lbl: 'Aug 17–23', days: [2190, 2260, 2150, 2310, 2180, 2290, 2090], p: 160, c: 240, f: 68, kavg: 2210, w: '82,7', wd: '−0,3 kg', ai: 84, aid: '+3 p', pd: '5/7' },
+    { lbl: 'E hét', days: [2220, 2140, 420, null, null, null, null], today: 2, p: 158, c: 236, f: 66, kavg: 2180, w: '82,4', wd: '−0,3 kg', ai: 87, aid: '+3 p', pd: '2/2' }
+  ];
+  var cur = 3;
+  var tabs = document.getElementById('npTabs');
+  var body = document.getElementById('npBody');
+  function mcell(v, lbl, mw, md) {
+    return '<span style="--mw:' + mw + ';--md:' + md + ';"><b>' + v + '</b><small>' + lbl + '</small></span>';
+  }
+  function render() {
+    var w = W[cur];
+    tabs.innerHTML = W.map(function (x, i) {
+      return '<button' + (i === cur ? ' class="on"' : '') + ' data-w="' + i + '">' + x.lbl + '</button>';
+    }).join('');
+    var goalTop = (100 - GOAL / MAXK * 100).toFixed(1);
+    var bars = w.days.map(function (v, i) {
+      var inner;
+      if (v == null) inner = '<span class="e"></span>';
+      else {
+        var hh = Math.max(6, Math.round(v / MAXK * 100));
+        var cls = (w.today === i) ? ' class="today"' : '';
+        inner = '<span class="kv">' + (v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + 'k' : v) + '</span><b' + cls + ' style="height:' + hh + '%;"></b>';
+      }
+      return '<div>' + inner + '<small>' + DAYS[i] + (w.today === i ? ' · ma' : '') + '</small></div>';
+    }).join('');
+    body.innerHTML =
+      '<div class="qcard rise" style="--d:40ms;">' +
+      '<div class="mrow"><div class="p-eyebrow" style="padding:0;">Napi kcal · ' + w.lbl + '</div>' +
+      '<span class="mut" style="margin-left:auto;font-size:8px;">protein-nap <b>' + w.pd + '</b></span></div>' +
+      '<div class="nchart"><div class="goal" style="top:' + goalTop + '%;"><small>CÉL 2 250</small></div>' +
+      '<div class="nbars">' + bars + '</div></div></div>' +
+      '<div class="p-eyebrow rise" style="--d:70ms;padding:4px 2px 5px;">Átlag / nap</div>' +
+      '<div class="mcells rise" style="--d:90ms;margin-top:0;">' +
+      mcell(String(w.kavg).replace(/\B(?=(\d{3})+(?!\d))/g, ' '), 'kcal', '#E4EEDD', '#4E6B42') +
+      mcell(w.p + ' g', 'fehérje', '#FFE3D8', '#A84A26') +
+      mcell(w.c + ' g', 'szénh.', '#F6E7C6', '#A8801F') +
+      mcell(w.f + ' g', 'zsír', '#EBE6F8', '#5D4FA0') + '</div>' +
+      '<div class="ngrid rise" style="--d:120ms;">' +
+      '<div class="ncard"><div class="p-eyebrow" style="padding:0 0 3px;">Súly · heti átlag</div>' +
+      '<div class="bigv">' + w.w + ' <small>kg</small></div>' +
+      '<div class="dl good">' + w.wd + ' vs előző hét</div></div>' +
+      '<div class="ncard"><div class="p-eyebrow" style="padding:0 0 3px;">AI-átlag</div>' +
+      '<div class="bigv">' + w.ai + ' <small>p</small></div>' +
+      '<div class="dl good">' + w.aid + ' vs előző hét</div></div>' +
+      '</div>';
+    document.getElementById('npBig').textContent = w.ai;
+    tabs.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        cur = +b.getAttribute('data-w');
+        render();
+      });
+    });
+  }
   render();
 })();
 </script>

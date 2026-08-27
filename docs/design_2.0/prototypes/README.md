@@ -148,8 +148,11 @@ are usable without a build step).
   without touching a window — the real out-of-window semantics), and a two-tap Törlés
   that removes the item and live-updates hero + stats + list), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
   note, dose list with note; new sprite icon `i-injekcio`), **Napló** (designed addition for
-  the "no trends anywhere in Fuel" gap: 4-week kcal-average, AI-average and protein-days bars
-  from the weekly API's full series).
+  the "no trends anywhere in Fuel" gap, now week-centric: week-picker segments over per-week
+  stored data — daily kcal bars with a dashed goal line (today = gold "in progress" bar,
+  future days = honest empty slots), protein-day counter, per-day macro-average mini-tiles,
+  and Súly heti átlag + AI-átlag cards with vs-previous-week deltas; the hero number follows
+  the selected week's AI average).
 - **edzes-session** — the full gym session flow (interactive state machine, feature-complete
   against `frontend/src/features/train/pages/ActiveWorkoutPage.tsx`).
   **Prep = Huawei tile IA**: hero (eyebrow + name + 4 mini stat cells: várható XP / szett / idő /
