@@ -151,6 +151,23 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(accept.length).toBeGreaterThan(0)
   })
 
+  it('a szezon-jelölteket külön csoportban, saját (nem életesemény) provenienciával jeleníti meg (W5.3, mezo-b3pp.20)', async () => {
+    renderPage()
+    // Ha a kártya visszaesne az egyetlen hard-coded életesemény-szövegre, ez a csoport és ez a
+    // mondat is eltűnne — a teszt pontosan azt bukja meg, amit ez a slice orvosolt.
+    expect(await screen.findByText(/Szezon-jelöltek/)).toBeInTheDocument()
+    expect(screen.getByText('Nyári alapozás')).toBeInTheDocument()
+    expect(screen.getByText(
+      'Ezt a negyedév és az előző negyedév összefoglalóiból olvastam ki — csak akkor kerül a gráfba, ha elfogadod.',
+    )).toBeInTheDocument()
+
+    // Az életesemény-kártya a SAJÁT (más) provenienciáját tartja meg — a két copy nem eshet
+    // egybe, különben egy szezon fölött életesemény-szöveg állna.
+    expect(screen.getByText(
+      'Ezt a napod szövegeiből szűrtem ki — csak akkor kerül a gráfba, ha elfogadod.',
+    )).toBeInTheDocument()
+  })
+
   it('elvetés után eltűnik a jelölt a listáról', async () => {
     renderPage()
     const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement

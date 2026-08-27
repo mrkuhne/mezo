@@ -144,13 +144,23 @@ public class WorkoutService {
             .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
                 createdBy, "active")
             .orElse(null);
+        // Shared meso session-list fetch (mezo-dz9c item 4): ensureClosingExercises above is its own
+        // bean's internal query, left self-contained, but the day-resolution branch below and the
+        // effective-sets distribution further down both used to re-query this same
+        // findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc row set independently. Lazily fetched
+        // at most ONCE here, whichever site needs it first; a request that needs neither (e.g. an
+        // already-open or explicit-template day with the volume switch off) still fetches it zero
+        // times, exactly as before.
+        List<WorkoutSessionEntity> mesoSessions = null;
         WorkoutSessionEntity day;
         if (open != null) {
             day = ownedTemplateOrThrow(createdBy, open.getTemplateSessionId());
         } else if (templateSessionId != null) {
             day = ownedTemplateOrThrow(createdBy, templateSessionId);
         } else if (activeMeso != null) {
-            day = findPlannedTemplateForDate(createdBy, LocalDate.now()).orElse(null);
+            mesoSessions = workoutSessionRepository
+                .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()));
+            day = findPlannedTemplateForDate(mesoSessions, LocalDate.now()).orElse(null);
         } else {
             day = null;
         }
@@ -194,7 +204,11 @@ public class WorkoutService {
             List<MuscleGroupVolumeLogEntity> logs = muscleGroupVolumeLogRepository
                 .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(activeMeso.getId()));
             if (!logs.isEmpty()) {
-                effectiveSets = effectiveWorkingSets(weekTemplateExercises(createdBy, activeMeso.getId()), logs);
+                if (mesoSessions == null) {
+                    mesoSessions = workoutSessionRepository
+                        .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()));
+                }
+                effectiveSets = effectiveWorkingSets(weekTemplateExercises(createdBy, mesoSessions), logs);
             }
         }
         int weightUp = 0;
@@ -274,10 +288,20 @@ public class WorkoutService {
         if (activeMeso == null) {
             return Optional.empty();
         }
+        List<WorkoutSessionEntity> mesoSessions = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()));
+        return findPlannedTemplateForDate(mesoSessions, date);
+    }
+
+    /**
+     * Same resolution as {@link #findPlannedTemplateForDate(UUID, LocalDate)}, reusing a
+     * caller-supplied meso session list — {@code getToday}'s shared-fetch path (mezo-dz9c item 4),
+     * avoiding a second query for rows it already has.
+     */
+    private Optional<WorkoutSessionEntity> findPlannedTemplateForDate(
+            List<WorkoutSessionEntity> mesoSessions, LocalDate date) {
         String dayLabel = HU_DAY_LABELS.get(date.getDayOfWeek().getValue() - 1);
-        return workoutSessionRepository
-            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()))
-            .stream()
+        return mesoSessions.stream()
             .filter(s -> s.getTemplateSessionId() == null && dayLabel.equals(s.getDayLabel()))
             .findFirst();
     }
@@ -352,14 +376,12 @@ public class WorkoutService {
     /**
      * Every TEMPLATE day's exercises for the meso — the unit the weekly volume target is
      * distributed over (mezo-gbo7). Instances are excluded (they carry a templateSessionId);
-     * exercises hang off the template row, never off the instance.
+     * exercises hang off the template row, never off the instance. Takes the meso's already-fetched
+     * session list rather than re-querying it — {@code getToday} shares one fetch across this and
+     * {@link #findPlannedTemplateForDate(List, LocalDate)} (mezo-dz9c item 4).
      */
-    private List<ExerciseEntity> weekTemplateExercises(UUID createdBy, UUID mesocycleId) {
-        List<UUID> templateDayIds = workoutSessionRepository
-            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesocycleId)).stream()
-            .filter(s -> s.getTemplateSessionId() == null)
-            .map(WorkoutSessionEntity::getId)
-            .toList();
+    private List<ExerciseEntity> weekTemplateExercises(UUID createdBy, List<WorkoutSessionEntity> mesoSessions) {
+        List<UUID> templateDayIds = MesoTemplateDays.ids(mesoSessions);
         return templateDayIds.isEmpty()
             ? List.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateDayIds);

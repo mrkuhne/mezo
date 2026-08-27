@@ -49,4 +49,24 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
         where created_by = :createdBy and source_kind = 'extractor' and occurred_on = :occurredOn
         """, nativeQuery = true)
     long countExtractorNodesOnDay(@Param("createdBy") UUID createdBy, @Param("occurredOn") LocalDate occurredOn);
+
+    /**
+     * W5.3's per-quarter idempotence probe (mezo-b3pp.20) — the {@link #countExtractorNodesOnDay}
+     * idiom one rung up: has the quarterly pass ALREADY processed this quarter for this user?
+     * Deliberately native and deliberately blind to {@code is_deleted}, for the same reason: a
+     * season candidate the user REJECTED is soft-deleted, and a JPA finder (which
+     * {@code @SQLRestriction} filters) would report the quarter as unprocessed and resurrect the
+     * same rejected guess on the next run.
+     *
+     * <p>The literal {@code 'quarterly'} below MUST stay equal to {@code
+     * QuarterlyReviewService.SOURCE_QUARTERLY} — a native query cannot reference the Java
+     * constant, so a rename on one side silently breaks the gate on the other;
+     * {@code QuarterlyReviewServiceIT} pins the two together.
+     */
+    @Query(value = """
+        select count(*) from knowledge_node
+        where created_by = :createdBy and source_kind = 'quarterly' and occurred_on = :occurredOn
+        """, nativeQuery = true)
+    long countQuarterlyNodesOnQuarter(@Param("createdBy") UUID createdBy,
+        @Param("occurredOn") LocalDate occurredOn);
 }

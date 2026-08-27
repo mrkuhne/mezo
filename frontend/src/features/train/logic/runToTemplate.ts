@@ -50,6 +50,7 @@ export function runToTemplate(meso: Mesocycle): MesoTemplateUpsertRequest {
     shortTitle: meso.shortTitle || null,
     goal: meso.goal || null,
     goalPreset: meso.goalPreset ?? null,
+    musclePriorities: meso.musclePriorities ?? null,
     weeks: meso.weeks,
     split: meso.split || null,
     style: meso.style || null,

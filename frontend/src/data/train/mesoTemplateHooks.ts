@@ -12,7 +12,7 @@ import {
 } from '@/data/train/trainApi'
 import { toMesocycle } from '@/data/train/trainHooks'
 import { mesoTemplatesMock, mesocycles } from '@/data/train/train'
-import type { GymExercise, Mesocycle, MesoDay, MesoTemplate } from '@/data/types'
+import type { GymExercise, Mesocycle, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
 
 const TEMPLATES_KEY = ['train', 'mesoTemplates']
 const MESOS_KEY = ['train', 'mesocycles']
@@ -26,6 +26,7 @@ function toMesoTemplate(r: MesoTemplateResponse): MesoTemplate {
     shortTitle: r.shortTitle ?? null,
     goal: r.goal ?? null,
     goalPreset: r.goalPreset ?? null,
+    musclePriorities: (r.musclePriorities as MusclePriorities | null) ?? null,
     weeks: r.weeks,
     split: r.split ?? null,
     style: r.style ?? null,
@@ -151,6 +152,7 @@ function mockCreate(qc: QueryClient, input: MesoTemplateUpsertRequest): MesoTemp
     shortTitle: input.shortTitle ?? null,
     goal: input.goal ?? null,
     goalPreset: input.goalPreset ?? null,
+    musclePriorities: (input.musclePriorities as MusclePriorities | null) ?? null,
     weeks: input.weeks,
     split: input.split ?? null,
     style: input.style ?? null,
@@ -172,6 +174,7 @@ function mockUpdate(qc: QueryClient, id: string, input: MesoTemplateUpsertReques
     shortTitle: input.shortTitle ?? null,
     goal: input.goal ?? null,
     goalPreset: input.goalPreset ?? null,
+    musclePriorities: (input.musclePriorities as MusclePriorities | null) ?? null,
     weeks: input.weeks,
     split: input.split ?? null,
     style: input.style ?? null,
@@ -201,6 +204,7 @@ function mockStart(qc: QueryClient, id: string, body: MesoTemplateStartRequest):
     shortTitle: tpl?.shortTitle ?? tpl?.title ?? 'Mesociklus',
     goal: tpl?.goal ?? '',
     goalPreset: tpl?.goalPreset ?? null,
+    musclePriorities: tpl?.musclePriorities ?? null,
     startDate: huMonthDay(body.startDate),
     endDate: huMonthDay(addDays(body.startDate, weeks * 7 - 1)),
     weeks,
@@ -236,6 +240,7 @@ function mockRerun(qc: QueryClient, mesoId: string): MesoRerunResponse {
     shortTitle: meso?.shortTitle ?? null,
     goal: meso?.goal ?? null,
     goalPreset: meso?.goalPreset ?? null,
+    musclePriorities: meso?.musclePriorities ?? null,
     weeks: meso?.weeks ?? 1,
     split: meso?.split ?? null,
     style: meso?.style ?? null,

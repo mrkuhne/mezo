@@ -1,17 +1,23 @@
 // ============================================================
 // Mezo · SetBudgetCard — collapsible weekly per-muscle set-budget card for
 // the unified meso day editor (mezo-7rdg, spec 2026-08-01-set-budget-
-// unified-editor, composite-v2 mockup). Collapsed: a pill wrap, one per
-// muscle group, colored by budget level. Expanded: one row per group with
-// a rail + progress bar, plus warning lines for over-budget groups and
-// single-session cap breaches (sessionCapWarnings), and a discreet
-// direct-only counting footnote (ADR 0021).
+// unified-editor, composite-v2 mockup; pill/rows reframed against each
+// group's own tier target mezo-3m5m, spec GD5). Collapsed: a pill wrap, one
+// per muscle group, colored by budget level — non-Grow tiers name
+// themselves (`Hát · Emphasize · 84%`), target-less groups (traps/core)
+// show a plain set count (`Trapéz · 3 szett`). Expanded: one row per group
+// with a rail + progress bar scaled to the tier target, plus warning lines
+// for over-target groups and single-session cap breaches
+// (sessionCapWarnings), and a discreet direct-only counting footnote
+// (ADR 0021).
 // ============================================================
 import { useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { ZoneTrack } from '@/features/train/components/ZoneTrack'
 import type { MuscleBudgetRow, SessionCapWarning } from '@/features/train/logic/setBudget'
+import { TIER_LABELS } from '@/features/train/logic/musclePriorities'
+import type { MuscleTier } from '@/data/types'
 
 interface SetBudgetCardProps {
   budgets: MuscleBudgetRow[]
@@ -21,6 +27,19 @@ interface SetBudgetCardProps {
 
 function pct(budget: number): number {
   return Math.round(budget * 100)
+}
+
+// The landmark a tier's target IS — names the ceiling in the over-warning ("Emphasize plafon 22 (MRV)").
+const TIER_LANDMARK_ABBR: Record<MuscleTier, string> = { maintain: 'MEV', grow: 'MAV', emphasize: 'MRV' }
+
+// Collapsed pill body (AD1): `Hát · Emphasize · 84%` for non-Grow, compact `Mell 84%` for Grow,
+// `Trapéz · 3 szett` when the group carries no landmark (traps/core), `↓` prefix kept for under.
+function pillText(row: MuscleBudgetRow): string {
+  const tierSuffix = row.tier !== 'grow' ? ` · ${TIER_LABELS[row.tier]}` : ''
+  if (row.budget === null) return `${row.label}${tierSuffix} · ${row.workingSets} szett`
+  const dot = row.tier !== 'grow' ? '· ' : ''
+  const arrow = row.level === 'under' ? '↓' : ''
+  return `${row.label}${tierSuffix} ${dot}${arrow}${pct(row.budget)}%`
 }
 
 // "8🔥+8🌿" — omit whichever side is zero.
@@ -72,7 +91,7 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                   ...(colors.border ? { border: colors.border } : {}),
                 }}
               >
-                {row.label} {row.level === 'under' ? '↓' : ''}{pct(row.budget)}%
+                {pillText(row)}
               </span>
             )
           })}
@@ -83,7 +102,9 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
         <div className="col" style={{ gap: 12, marginTop: 14 }}>
           {budgets.map((row) => {
             const fam = muscleColor(row.colorMuscle)
-            const p = pct(row.budget)
+            const setsLabel = row.target !== null
+              ? `${row.workingSets}/${row.target} szett (${pct(row.budget ?? 0)}%)`
+              : `${row.workingSets} szett`
             return (
               <div key={row.group} className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ width: 5, height: 34, borderRadius: 2, background: fam.rail, flexShrink: 0 }} />
@@ -91,13 +112,13 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
                   <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span style={{ fontWeight: 700, fontSize: 13.5 }}>{row.label}</span>
                     <span className="label-mono" style={{ fontSize: 10.5 }}>
-                      {p}% · {setStyleSummary(row.failureSets, row.volumeSets)}
+                      {setsLabel} · {setStyleSummary(row.failureSets, row.volumeSets)}
                       {row.exemptSets > 0 && <span style={{ color: 'var(--text-tertiary)' }}> +{row.exemptSets} kiegészítő</span>}
                     </span>
                   </div>
                   <ZoneTrack
                     zoneStart={row.zoneStart}
-                    segments={[{ pct: Math.min(1, row.budget), kind: row.level === 'over' ? 'overflow' : 'solid' }]}
+                    segments={[{ pct: Math.min(1, row.budget ?? 0), kind: row.level === 'over' ? 'overflow' : 'solid' }]}
                     color={row.level === 'under'
                       ? { rail: 'var(--text-tertiary)', deep: 'var(--text-tertiary)' }
                       : { rail: fam.rail, deep: fam.deep }}
@@ -115,20 +136,19 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
 
           {overBudgets.length > 0 || capWarnings.length > 0 || underRows.length > 0 ? (
             <div className="col" style={{ gap: 8 }}>
-              {overBudgets.map((row) => {
-                const p = pct(row.budget)
-                return (
-                  <div
-                    key={row.group}
-                    style={{
-                      borderRadius: 12, padding: '9px 11px', fontSize: 11.5, lineHeight: 1.4,
-                      background: 'color-mix(in srgb, var(--error) 8%, transparent)', color: 'var(--error)',
-                    }}
-                  >
-                    ⚠ <strong>{row.label}: heti keret {p}%.</strong> A failure/volume kereten túl — a plusz szettek már alig hoznak növekedést.
-                  </div>
-                )
-              })}
+              {overBudgets.map((row) => (
+                <div
+                  key={row.group}
+                  style={{
+                    borderRadius: 12, padding: '9px 11px', fontSize: 11.5, lineHeight: 1.4,
+                    background: 'color-mix(in srgb, var(--error) 8%, transparent)', color: 'var(--error)',
+                  }}
+                >
+                  ⚠ <strong>
+                    {row.label}: {row.workingSets} szett — {TIER_LABELS[row.tier]} plafon {row.target} ({TIER_LANDMARK_ABBR[row.tier]}).
+                  </strong> A plafon fölött a plusz szettek már alig hoznak növekedést.
+                </div>
+              ))}
               {capWarnings.map((warning, i) => (
                 <div
                   key={`${warning.day}-${warning.group}-${i}`}
@@ -157,6 +177,7 @@ export function SetBudgetCard({ budgets, capWarnings, defaultOpen }: SetBudgetCa
 
           <div style={{ fontSize: 9.5, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
             Csak a fő izom szettjei számítanak — a szinergista munka (pl. fekvenyomás → tricepsz) nem.
+            A % az izom saját heti céljéhoz viszonyít (Maintain → MEV, Grow → MAV, Emphasize → MRV).
           </div>
         </div>
       )}

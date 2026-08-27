@@ -12,7 +12,8 @@ import { LifeEventCandidateCard } from '@/features/insights/components/LifeEvent
 import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
 import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
 import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
-import type { FactCategory, KnowledgeFact } from '@/data/types'
+import { CANDIDATE_COPY } from '@/data/insights/graph'
+import type { FactCategory, KnowledgeFact, LifeEventCandidate } from '@/data/types'
 
 export function KnowledgeListPage() {
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
@@ -24,7 +25,9 @@ export function KnowledgeListPage() {
   // Az elfogadott életesemény a szerver-listáról azonnal lekerül (query-invalidálás), ezért a
   // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9). Mock és real
   // módban azonos, hogy a mock-módú ellenőrzés a valós élményt mutassa.
-  const [acceptedEvents, setAcceptedEvents] = useState<{ id: string; title: string; edgeCount: number }[]>([])
+  const [acceptedEvents, setAcceptedEvents] = useState<
+    { id: string; kind: LifeEventCandidate['kind']; title: string; edgeCount: number }[]
+  >([])
 
   // A már elfogadott jelölt real módban a refetch megérkezéséig még a szerver-listában van —
   // enélkül egy pillanatra a jelölt-kártya ÉS a megerősítés is látszana.
@@ -114,36 +117,40 @@ export function KnowledgeListPage() {
         </div>
       )}
 
-      {(pendingLifeEvents.length > 0 || acceptedEvents.length > 0) && (
-        <div className="col gap-sm">
-          <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
-            {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül az utolsó elfogadás után
-                „Életesemény-jelöltek · 0" állna a megerősítő kártya fölött, real módban pedig a
-                refetch előtti ablakban az elfogadottat is beleszámolná. */}
-            {pendingLifeEvents.length > 0
-              ? `Életesemény-jelöltek · ${pendingLifeEvents.length}`
-              : 'Életesemények'}
-          </span>
-          {acceptedEvents.map((a) => (
-            <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
-          ))}
-          {pendingLifeEvents.map((c) => (
-            <LifeEventCandidateCard
-              key={c.id}
-              candidate={c}
-              onDecide={(decision) => {
-                if (decision === 'accept') {
-                  setAcceptedEvents((prev) => [
-                    ...prev,
-                    { id: c.id, title: c.title, edgeCount: c.proposedEdgeCount },
-                  ])
-                }
-                decideLifeEvent(c.id, decision)
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {(['LIFE_EVENT', 'SEASON'] as const).map((kind) => {
+        const pending = pendingLifeEvents.filter((c) => c.kind === kind)
+        const settled = acceptedEvents.filter((a) => a.kind === kind)
+        if (pending.length === 0 && settled.length === 0) return null
+        return (
+          <div key={kind} className="col gap-sm">
+            <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
+              {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül a csoport utolsó elfogadása
+                  után „…jelöltek · 0" állna a megerősítő kártya fölött. */}
+              {pending.length > 0
+                ? `${CANDIDATE_COPY[kind].eyebrow} · ${pending.length}`
+                : CANDIDATE_COPY[kind].settled}
+            </span>
+            {settled.map((a) => (
+              <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
+            ))}
+            {pending.map((c) => (
+              <LifeEventCandidateCard
+                key={c.id}
+                candidate={c}
+                onDecide={(decision) => {
+                  if (decision === 'accept') {
+                    setAcceptedEvents((prev) => [
+                      ...prev,
+                      { id: c.id, kind: c.kind, title: c.title, edgeCount: c.proposedEdgeCount },
+                    ])
+                  }
+                  decideLifeEvent(c.id, decision)
+                }}
+              />
+            ))}
+          </div>
+        )
+      })}
 
       {hasNoFacts ? (
         <div className="card" style={{ padding: 14 }}>

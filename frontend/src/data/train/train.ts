@@ -1,7 +1,7 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
   GoalPreset, SplitOption, MesoPhase, CustomWorkout, MesoVolumeArc, MuscleVolumeArc, VolumeArcWeek,
-  MesoTemplate,
+  MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
 
@@ -62,6 +62,11 @@ export const mesocycles: Mesocycle[] = [
     shortTitle: 'Hypertrophy 04',
     status: 'active',
     goal: 'Felsőtest hypertrophy · izomtömeg építés',
+    // Shoulder is tagged 'maintain' (mezo-3m5m) — narratively the same niggle the
+    // volumePerMuscle.shoulder adjustments below already talk about; the rest stay
+    // unset (grow default). Exercises both non-default tiers for the mock-arc ceiling
+    // parity pin (train.test.ts): grow -> MAV peak, maintain -> flat MEV.
+    musclePriorities: { shoulder: 'maintain' },
     startDate: 'Máj 1',
     endDate: 'Jún 12',
     weeks: 6,
@@ -244,6 +249,7 @@ export const mesocycles: Mesocycle[] = [
     shortTitle: 'Strength 02',
     status: 'planned',
     goal: 'Maximális erő · 1RM növelés Squat/Bench/Deadlift',
+    musclePriorities: null,
     startDate: 'Jún 16',
     endDate: 'Aug 4',
     weeks: 7,
@@ -259,6 +265,7 @@ export const mesocycles: Mesocycle[] = [
     shortTitle: 'Maintenance',
     status: 'planned',
     goal: 'Karbantartás · zsírvesztés-előkészítés',
+    musclePriorities: null,
     startDate: 'Aug 7',
     endDate: 'Aug 28',
     weeks: 3,
@@ -274,6 +281,7 @@ export const mesocycles: Mesocycle[] = [
     shortTitle: 'Recovery 03',
     status: 'archived',
     goal: 'Január niggle után · izolációs munka',
+    musclePriorities: null,
     startDate: 'Feb 12',
     endDate: 'Ápr 23',
     weeks: 8,
@@ -299,6 +307,7 @@ export const mesocycles: Mesocycle[] = [
     shortTitle: 'Hypertrophy 03',
     status: 'archived',
     goal: 'Felsőtest hypertrophy · magas volumen',
+    musclePriorities: null,
     startDate: 'Okt 2',
     endDate: 'Nov 13',
     weeks: 6,
@@ -320,6 +329,7 @@ export const mesocycles: Mesocycle[] = [
     shortTitle: 'Cut 02',
     status: 'archived',
     goal: 'Zsírvesztés · fenntartó erő',
+    musclePriorities: null,
     startDate: 'Jún 4',
     endDate: 'Júl 16',
     weeks: 6,
@@ -419,6 +429,9 @@ export const mesoTemplatesMock: MesoTemplate[] = [
     shortTitle: 'Power Block',
     goal: 'Erő + hypertrophy kombinált blokk',
     goalPreset: 'strength',
+    // Demonstrates carry in mock mode (mezo-3m5m): duplicating this template or starting a
+    // run from it must stamp `back: emphasize` onto the copy/run, not silently drop it.
+    musclePriorities: { back: 'emphasize' },
     weeks: 5,
     split: 'Upper / Lower · 4×/hét',
     style: 'Linear · 5 hét',
@@ -470,10 +483,11 @@ export const mesoTemplatesMock: MesoTemplate[] = [
   },
 ]
 
-// --- volume arc mock derivation (Phase B, Task B3) ---
+// --- volume arc mock derivation (Phase B, Task B3; tier ceiling mezo-3m5m/AD4) ---
 // Same planned-scaffold algorithm as the backend (VolumeArcService, spec DA7): week 1 starts
-// at MEV, deload weeks drop to round(mrv * MOCK_DELOAD_FRACTION) (ramp untouched), every other
-// week ramps by MOCK_STEP up to a ceiling of MRV.
+// at MEV, deload weeks drop to round(ceiling * MOCK_DELOAD_FRACTION) (ramp untouched), every
+// other week ramps by MOCK_STEP up to the muscle's TIER ceiling — Emphasize MRV / Grow MAV
+// (default) / Maintain MEV (flat) — mirrors the backend's PriorityTier.ceiling.
 const MOCK_STEP = 2
 const MOCK_DELOAD_FRACTION = 0.5
 
@@ -483,6 +497,20 @@ const MOCK_DELOAD_FRACTION = 0.5
 const MOCK_REGION_BY_MUSCLE: Record<string, string> = {
   chest: 'coral', back: 'sky', shoulder: 'lav', biceps: 'rose', triceps: 'rose',
   quad: 'sage', ham: 'sage', glute: 'sage', calf: 'sage', core: 'amber',
+}
+
+/** Sparse-map resolve: null map, absent key, or (defensively) unknown value all mean GROW. Mirrors the backend's `PriorityTier.of`. */
+function resolveMuscleTier(musclePriorities: MusclePriorities | null | undefined, muscle: string): MuscleTier {
+  return musclePriorities?.[muscle] ?? 'grow'
+}
+
+/** Which volume landmark is "100%" for a tier's weekly ramp. Mirrors the backend's `PriorityTier.ceiling`. */
+function tierCeiling(tier: MuscleTier, vp: { mev: number; mav: number; mrv: number }): number {
+  switch (tier) {
+    case 'emphasize': return vp.mrv
+    case 'maintain': return vp.mev
+    default: return vp.mav
+  }
 }
 
 // Derives a whole-mesocycle volume arc from the `mesocycles` fixture's `volumePerMuscle`
@@ -497,11 +525,13 @@ const MOCK_REGION_BY_MUSCLE: Record<string, string> = {
  */
 function mockMuscleArc(
   muscle: string,
-  vp: { mev: number; mrv: number; current: number },
+  vp: { mev: number; mav: number; mrv: number; current: number },
   phaseCurve: MesoPhase[],
   weeks: number,
   currentWeek: number,
+  tier: MuscleTier,
 ): MuscleVolumeArc {
+  const ceiling = tierCeiling(tier, vp)
   const weekList: VolumeArcWeek[] = []
   let ramp = vp.mev
   for (let w = 1; w <= weeks; w++) {
@@ -511,24 +541,26 @@ function mockMuscleArc(
       planned = vp.mev
       ramp = vp.mev
     } else if (phase === 'Deload') {
-      planned = Math.round(vp.mrv * MOCK_DELOAD_FRACTION)
+      planned = Math.round(ceiling * MOCK_DELOAD_FRACTION)
     } else {
-      ramp = Math.min(ramp + MOCK_STEP, vp.mrv)
+      ramp = Math.min(ramp + MOCK_STEP, ceiling)
       planned = ramp
     }
     const actual = w < currentWeek ? planned : w === currentWeek ? vp.current : null
     weekList.push({ week: w, phase, planned, actual, isCurrent: w === currentWeek })
   }
+  // The response's `mrv` caption stays the row's RAW mrv untouched — only the internal
+  // scaffold shifts with the tier (mirrors the backend's MuscleVolumeArc#getMrv() comment).
   return { muscle, region: MOCK_REGION_BY_MUSCLE[muscle] ?? 'neutral', mrv: vp.mrv, weeks: weekList }
 }
 
 export function mesoVolumeArcMock(id: string | null): MesoVolumeArc | null {
   const meso = mesocycles.find((m) => m.id === id)
   if (!meso || !meso.volumePerMuscle) return null
-  const { volumePerMuscle, phaseCurve, currentWeek, weeks } = meso
+  const { volumePerMuscle, phaseCurve, currentWeek, weeks, musclePriorities } = meso
 
   const muscles: MuscleVolumeArc[] = Object.entries(volumePerMuscle).map(([muscle, vp]) =>
-    mockMuscleArc(muscle, vp, phaseCurve, weeks, currentWeek),
+    mockMuscleArc(muscle, vp, phaseCurve, weeks, currentWeek, resolveMuscleTier(musclePriorities, muscle)),
   )
 
   return {
@@ -551,14 +583,18 @@ export function mesoVolumeArcMock(id: string | null): MesoVolumeArc | null {
 // close-time snapshot, never recomputed from the live fixtures.
 const REC03_PHASES: MesoPhase[] = ['MEV', 'MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload']
 // mev/mrv/current per muscle — `current` is the week-8 (Deload) actual, so the frozen arc
-// reads "hit the plan to the last week" rather than trailing off.
-const REC03_LANDMARKS: [string, { mev: number; mrv: number; current: number }][] = [
-  ['chest', { mev: 6, mrv: 16, current: 8 }],
-  ['back', { mev: 8, mrv: 20, current: 10 }],
-  ['shoulder', { mev: 6, mrv: 14, current: 7 }],
-  ['biceps', { mev: 6, mrv: 14, current: 7 }],
-  ['quad', { mev: 8, mrv: 18, current: 9 }],
-  ['ham', { mev: 6, mrv: 14, current: 7 }],
+// reads "hit the plan to the last week" rather than trailing off. `mav` is set equal to
+// `mrv` here on purpose: this is a FROZEN close-time snapshot predating the priority-tier
+// feature (mezo-3m5m) — the run itself carries no `musclePriorities`, so tier resolves to
+// the Grow default (ceiling = mav) and mav==mrv keeps this pinned snapshot's numbers
+// byte-identical to before the tier ceiling landed.
+const REC03_LANDMARKS: [string, { mev: number; mav: number; mrv: number; current: number }][] = [
+  ['chest', { mev: 6, mav: 16, mrv: 16, current: 8 }],
+  ['back', { mev: 8, mav: 20, mrv: 20, current: 10 }],
+  ['shoulder', { mev: 6, mav: 14, mrv: 14, current: 7 }],
+  ['biceps', { mev: 6, mav: 14, mrv: 14, current: 7 }],
+  ['quad', { mev: 8, mav: 18, mrv: 18, current: 9 }],
+  ['ham', { mev: 6, mav: 14, mrv: 14, current: 7 }],
 ]
 
 export const mesoReportMock = {
@@ -598,7 +634,7 @@ export const mesoReportMock = {
     endDate: '2026-04-23',
     status: 'archived',
     phaseCurve: REC03_PHASES,
-    muscles: REC03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, REC03_PHASES, 8, 8)),
+    muscles: REC03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, REC03_PHASES, 8, 8, 'grow')),
   },
   // Sorted the way the backend sorts: deltaPct (e1RM-based) descending, nulls last. The list
   // deliberately mixes every rendering case: a load+e1RM gain, a load-flat/reps-only e1RM gain,
@@ -693,13 +729,13 @@ export const mesoReportMock = {
 const HYP03_PHASES: MesoPhase[] = ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload']
 // Higher landmarks than rec-03's rebuild block, plus `triceps` (which rec-03 has no arc for)
 // and no `biceps`/`ham` (which it does) — so the compare grid's muscle union is genuinely
-// wider than either side.
-const HYP03_LANDMARKS: [string, { mev: number; mrv: number; current: number }][] = [
-  ['chest', { mev: 8, mrv: 20, current: 10 }],
-  ['back', { mev: 10, mrv: 22, current: 11 }],
-  ['shoulder', { mev: 8, mrv: 18, current: 9 }],
-  ['quad', { mev: 10, mrv: 20, current: 10 }],
-  ['triceps', { mev: 6, mrv: 16, current: 8 }],
+// wider than either side. `mav` == `mrv` for the same frozen-snapshot reason as REC03_LANDMARKS.
+const HYP03_LANDMARKS: [string, { mev: number; mav: number; mrv: number; current: number }][] = [
+  ['chest', { mev: 8, mav: 20, mrv: 20, current: 10 }],
+  ['back', { mev: 10, mav: 22, mrv: 22, current: 11 }],
+  ['shoulder', { mev: 8, mav: 18, mrv: 18, current: 9 }],
+  ['quad', { mev: 10, mav: 20, mrv: 20, current: 10 }],
+  ['triceps', { mev: 6, mav: 16, mrv: 16, current: 8 }],
 ]
 
 export const mesoReportHyp03Mock = {
@@ -729,7 +765,7 @@ export const mesoReportHyp03Mock = {
     endDate: '2025-11-13',
     status: 'archived',
     phaseCurve: HYP03_PHASES,
-    muscles: HYP03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, HYP03_PHASES, 6, 6)),
+    muscles: HYP03_LANDMARKS.map(([muscle, vp]) => mockMuscleArc(muscle, vp, HYP03_PHASES, 6, 6, 'grow')),
   },
   // Backend order: deltaPct (e1RM) descending, nulls last.
   strength: [

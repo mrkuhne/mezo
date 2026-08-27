@@ -15,7 +15,7 @@ import { budgetGroup } from '@/features/train/logic/setBudget'
  * type/muscle-group and its position among the day's earlier non-plyo
  * exercises of the same budget group:
  * - `type === 'plyo'`, or **bodyweight-ish** (`anchorWeightKg == null &&
- *   repMax >= 15`) → 0
+ *   repMin >= 15`) → 0
  * - unknown budget group (`budgetGroup` null, e.g. a sport row) → 0
  * - the first non-plyo `compound` opening its group → 3, but 2 when
  *   `anchorWeightKg != null && anchorWeightKg < 60` (a lighter compound
@@ -34,7 +34,12 @@ export function suggestedWarmupSets(day: MesoDay, exId: string): number {
   const ex = day.exercises[index]
 
   if (ex.type === 'plyo') return 0
-  if (ex.anchorWeightKg == null && ex.repMax >= 15) return 0
+  // Bodyweight-ish means the WHOLE rep range is high-rep, not just its ceiling —
+  // repMin (not repMax) is the gate. A cut-prep/recovery preset's weighted 12-15
+  // isolation (repMin 12) has no anchor yet on first add, but it's still a loaded
+  // lift that wants ramp-up; only a genuinely high-rep range (e.g. 15-20, repMin
+  // 15) is bodyweight-ish enough to skip warmups entirely (mezo-szsi item 2).
+  if (ex.anchorWeightKg == null && ex.repMin >= 15) return 0
 
   const group = budgetGroup(ex.muscle)
   if (!group) return 0

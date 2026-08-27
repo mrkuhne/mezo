@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
+import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.ProgressionSignal;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
@@ -9,10 +12,12 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -36,6 +41,7 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
     @Autowired WorkoutService workoutService;
     @Autowired TrainPopulator train;
     @Autowired MesocycleRepository mesocycleRepository;
+    @Autowired TrainService trainService;
 
     @Test
     void testGetToday_shouldDistributeEffectiveSets_whenChestVolumeLogExceedsTemplateSum() {
@@ -200,6 +206,67 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
         // back target lands on the one counting exercise.
         assertThat(byId(res, hang.getId()).getWorkingSets()).isEqualTo(2);
         assertThat(byId(res, row.getId()).getWorkingSets()).isEqualTo(10);
+    }
+
+    @Test
+    void testGetToday_shouldKeepTemplateSets_whenDayIsCustomNotMeso() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var mesoDay = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        ExerciseEntity mesoChest = train.createExercise(owner, mesoDay.getId(), "Fekvenyomás", "chest", "compound");
+        mesoChest.setWorkingSets(3);
+        train.save(mesoChest);
+        train.createVolumeLog(owner, meso.getId(), "chest", 10);
+
+        // A custom (saját) template — mesocycleId stays null (TrainService.createCustomWorkout never
+        // sets it), so it never enters weekTemplateExercises' candidate pool for ANY meso, even though
+        // it happens to share the same muscle group as a logged one.
+        CustomWorkoutResponse custom = trainService.createCustomWorkout(owner, CustomWorkoutUpsertRequest.builder()
+            .name("Pihenőnapi mell")
+            .exercises(List.of(GymExerciseInput.builder()
+                .name("Cable Flye").muscle("chest")
+                .warmupSets(1).workingSets(2).repMin(8).repMax(10).targetRIR(1)
+                .type(GymExerciseInput.TypeEnum.ISOLATION)
+                .build()))
+            .build());
+
+        // The meso day still absorbs the whole weekly target (unchanged Plan-1/2 behavior)...
+        WorkoutTodayResponse mesoRes = workoutService.getToday(owner, null);
+        assertThat(byId(mesoRes, mesoChest.getId()).getWorkingSets()).isEqualTo(10);
+
+        // ...while the custom day, resolved explicitly by templateSessionId (meso-independent —
+        // WorkoutService.getToday's day-resolution javadoc), keeps its OWN template count: it is
+        // never distributed across because it does not belong to the active meso (mezo-dz9c item 1).
+        WorkoutTodayResponse customRes = workoutService.getToday(owner, custom.getId());
+        assertThat(customRes.getExercises()).hasSize(1);
+        assertThat(customRes.getExercises().get(0).getWorkingSets()).isEqualTo(2);
+    }
+
+    @Test
+    void testGetToday_shouldOvershootWeeklyTarget_whenBase1FloorExceedsCurrentSets() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        // 5 counted chest exercises, each template workingSets(1) — the group's currentSets(4) sits
+        // BELOW the exercise count(5), so effectiveWorkingSets' degenerate branch
+        // (targetSets <= exerciseCount) hands every exercise its >=1 floor regardless: the weekly
+        // sum overshoots the target (5 != 4) rather than falling short of it (mezo-dz9c item 3).
+        List<ExerciseEntity> exercises = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            ExerciseEntity ex = train.createExercise(owner, day.getId(), "Chest " + i, "chest", "isolation");
+            ex.setWorkingSets(1);
+            train.save(ex);
+            exercises.add(ex);
+        }
+        train.createVolumeLog(owner, meso.getId(), "chest", 4);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        exercises.forEach(e -> assertThat(byId(res, e.getId()).getWorkingSets()).isEqualTo(1));
+        int total = exercises.stream().mapToInt(e -> byId(res, e.getId()).getWorkingSets()).sum();
+        assertThat(total).isEqualTo(5); // one each — the floor overshoots the weekly target(4)
     }
 
     /** An active meso whose rollover is a guaranteed no-op — see class javadoc. */

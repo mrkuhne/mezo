@@ -41,10 +41,11 @@ import org.springframework.transaction.annotation.Transactional;
  *       21-token zone to its coarse {@link MuscleGroup}, and derive per-group
  *       {@code loggedLastWeek} (count) + {@code grind} (any exercise finishing ≥ the configured
  *       RIR gap below its target — the recovery proxy, DA4).</li>
- *   <li>Run {@link VolumeDecider#decide} per volume-log row (bounded to
- *       {@code [MEV, MRV]}, deload-aware), persist the new {@code currentSets} + an appended
- *       provenance {@link ProvenanceEnvelope.Adjustment}, and advance the mesocycle's
- *       {@code currentWeek} + {@code volumeRecompute} audit.</li>
+ *   <li>Run {@link VolumeDecider#decide} per volume-log row, ramping toward the muscle's {@link
+ *       PriorityTier} ceiling ({@code musclePriorities}-driven: Emphasize -> MRV, Grow (default)
+ *       -> MAV, Maintain -> MEV and never ramps — mezo-3m5m, spec GD4), deload-aware; persist the
+ *       new {@code currentSets} + an appended provenance {@link ProvenanceEnvelope.Adjustment},
+ *       and advance the mesocycle's {@code currentWeek} + {@code volumeRecompute} audit.</li>
  * </ol>
  *
  * <p>A muscle with no volume-log row is simply absent from the loop (DA5) — never fabricated.
@@ -76,11 +77,8 @@ public class VolumeProgressionService {
      */
     @Transactional
     public void seedBaselines(UUID createdBy, UUID mesoId) {
-        List<UUID> templateIds = workoutSessionRepository
-            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)).stream()
-            .filter(s -> s.getTemplateSessionId() == null)
-            .map(WorkoutSessionEntity::getId)
-            .toList();
+        List<UUID> templateIds = MesoTemplateDays.ids(workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)));
         if (templateIds.isEmpty()) {
             return;
         }
@@ -137,11 +135,13 @@ public class VolumeProgressionService {
         List<VolumeRecomputeJson.Change> changes = new ArrayList<>();
         for (MuscleGroupVolumeLogEntity row : logs) {
             String muscle = row.getMuscle();
+            PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), muscle);
             VolumeDecider.Result result = VolumeDecider.decide(new VolumeDecider.Input(
                 calWeek, row.getCurrentSets(), row.getMev(), row.getMav(), row.getMrv(), deloadPhase,
                 signals.loggedLastWeek().getOrDefault(muscle, 0),
                 signals.grind().getOrDefault(muscle, false),
-                props.step(), props.deloadFraction()));
+                props.step(), props.deloadFraction(),
+                tier.ceiling(row.getMev(), row.getMav(), row.getMrv())));
 
             row.setCurrentSets(result.targetSets());
             row.setSource(withRolloverAdjustment(row.getSource(), calWeek, result));

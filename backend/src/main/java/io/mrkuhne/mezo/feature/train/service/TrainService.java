@@ -157,7 +157,8 @@ public class TrainService {
         String notes,
         String status,
         List<MesoDayInput> days,
-        Map<String, VolumeBaseline> volumePerMuscle
+        Map<String, VolumeBaseline> volumePerMuscle,
+        Map<String, String> musclePriorities
     ) {}
 
     /**
@@ -178,6 +179,9 @@ public class TrainService {
         m.setStatus(src.status());
         m.setGoal(src.goal());
         m.setGoalPreset(src.goalPreset());
+        // Defensive copy: the source map belongs to the template row — two managed entities must
+        // never share one jsonb map instance (same reason as the phaseCurve copy below).
+        m.setMusclePriorities(src.musclePriorities() != null ? Map.copyOf(src.musclePriorities()) : null);
         m.setStartDate(src.startDate());
         m.setEndDate(src.startDate().plusWeeks(src.weeks()));
         m.setWeeks(src.weeks());
@@ -242,6 +246,15 @@ public class TrainService {
             target.setCurrentWeek(MesoWeeks.clampWeek(target.getStartDate(), target.getWeeks()));
         }
         return assembleResponse(createdBy, target);
+    }
+
+    /** GD7: the map change is stored now, applied at the next weekly rollover — nothing rewritten retroactively. */
+    @Transactional
+    public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities) {
+        MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
+        Map<String, String> normalized = PriorityTier.normalize(priorities);
+        m.setMusclePriorities(normalized.isEmpty() ? null : Map.copyOf(normalized));
+        return assembleResponse(createdBy, m);
     }
 
     /**

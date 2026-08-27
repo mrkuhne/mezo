@@ -118,12 +118,24 @@ public class GraphService {
             .toList();
     }
 
-    /** W2.3 (spec §6.3): a LIFE_EVENT candidate the extractor proposed. Deliberately NOT an
-     *  upsert — extractor candidates carry {@code sourceId = null}, so {@code
-     *  uq_knowledge_node_source} does not apply and there is no key to update on; a later slice's
-     *  own day-scoped dedupe probe is what keeps a re-run from proposing the same night twice.
-     *  Status is {@code candidate}: IDENT-6 says nothing the AI derives becomes durable without
-     *  an explicit decision. */
+    /**
+     * W2.3 (spec §6.3): one AI-proposed candidate node, of whatever {@code kind} the caller
+     * proposes — kind-agnostic since W5.3 (mezo-b3pp.20), and two callers now write two different
+     * kinds through it: {@code LifeEventExtractionService} proposes {@code LIFE_EVENT} candidates
+     * off a day's texts, {@code QuarterlyReviewService.persistCandidates} proposes {@code SEASON}
+     * candidates off a finished quarter's month rungs. They differ only in what they pass; the
+     * write, the status and the inbox they land in are the same, which is why both are decided
+     * through the one kind-agnostic {@code LifeEventCandidateService.decide}.
+     *
+     * <p>Deliberately NOT an upsert — candidates carry {@code sourceId = null}, so {@code
+     * uq_knowledge_node_source} does not apply and there is no key to update on; each caller's own
+     * period-scoped dedupe probe ({@code countExtractorNodesOnDay} for a day,
+     * {@code countQuarterlyNodesOnQuarter} for a quarter) is what keeps a re-run from proposing
+     * the same period twice.
+     *
+     * <p>Status is {@code candidate}: IDENT-6 says nothing the AI derives becomes durable without
+     * an explicit decision.
+     */
     @Transactional
     public GraphNodeEntity createCandidate(UUID userId, String kind, String title, String summary,
             String sourceKind, LocalDate occurredOn, Map<String, Object> meta) {

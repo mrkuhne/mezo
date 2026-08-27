@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -57,16 +57,24 @@ async function runWizardToTerminalStep(user: ReturnType<typeof userEvent.setup>)
   await user.clear(dateInput)
   await user.type(dateInput, '2026-06-16')
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  // step 2 -> step 3 (Program — terminal step, save buttons live here)
+  // step 2 -> step 3 (Fókusz — always passable, no-touch walk-through)
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  // step 3: wait out the 600ms generate delay
+  // step 3 -> step 4 (Program — terminal step, save buttons live here)
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  // step 4: wait out the 600ms generate delay
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   return router
 }
 
 test('„Mentés sablonként" creates the template only and lands on the library', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  let postedTemplate: { title?: string; weeks?: number; days?: unknown[]; goalPreset?: string } | null = null
+  let postedTemplate: {
+    title?: string
+    weeks?: number
+    days?: unknown[]
+    goalPreset?: string
+    musclePriorities?: Record<string, string> | null
+  } | null = null
   let startCalls = 0
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
@@ -93,6 +101,7 @@ test('„Mentés sablonként" creates the template only and lands on the library
   expect(postedTemplate!.weeks).toBeGreaterThan(0)
   expect(postedTemplate!.days).toHaveLength(7) // all template days travel, rest days included
   expect(postedTemplate!.goalPreset).toBe('hypertrophy') // the chosen preset id travels with the template
+  expect(postedTemplate!.musclePriorities).toBeNull() // no-touch walk through Fókusz -> null, never {}
   expect(startCalls).toBe(0) // a template save never stamps a run
   // the planner also persists the standing gym schedule (mezo-4t43): one slot per selected day
   await waitFor(() => expect(putSpy).toHaveBeenCalled())
@@ -101,6 +110,50 @@ test('„Mentés sablonként" creates the template only and lands on the library
   expect(savedSlots.every((s) => /^\d{2}:\d{2}$/.test(s.time))).toBe(true)
   putSpy.mockRestore()
   await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles'))
+})
+
+test('emphasizing a muscle group on the Fókusz step travels with the saved template', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let postedTemplate: { musclePriorities?: Record<string, string> | null } | null = null
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+      postedTemplate = (await request.json()) as typeof postedTemplate
+      return HttpResponse.json(
+        { id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...postedTemplate, runCount: 0 },
+        { status: 201 },
+      )
+    }),
+  )
+  const user = userEvent.setup()
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/train/mesocycles/new']}>
+        <MesocyclePlannerPage />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
+  // step indicator: the new step lands at index 3 (4th, 1-indexed)
+  expect(screen.getByRole('button', { name: '4. lépés · Fókusz' })).toBeInTheDocument()
+  // RULING (mezo-ltk0): the chrome title is the short step name; the picker's own card
+  // header is the ONLY place asking the question — pin both so the duplicate can't creep back.
+  expect(screen.getByRole('heading', { name: 'Fókusz' })).toBeInTheDocument()
+  // getByText throws on >1 match — this pins the question renders exactly once.
+  expect(screen.getByText('Mire gyúr ez a blokk?')).toBeInTheDocument()
+  // emphasize the "back" group via the MusclePriorityPicker
+  await user.click(within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Emphasize' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+
+  await user.click(screen.getByRole('button', { name: /Mentés sablonként/i }))
+
+  await waitFor(() => expect(postedTemplate).not.toBeNull())
+  expect(postedTemplate!.musclePriorities).toEqual({ back: 'emphasize' })
 })
 
 test('„Mentés + indítás" creates the template, starts it active on the wizard date, lands on Gym', async () => {
@@ -248,6 +301,7 @@ test('the generated program lands on the selected weekdays', async () => {
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
   await user.click(screen.getByRole('button', { name: 'Pén' })) // off
   await user.click(screen.getByRole('button', { name: 'Vas' })) // on instead
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   // program generation has a 600ms delay; day tabs land once it resolves
   const vasTab = await screen.findByRole('button', { name: /Vas/ }, { timeout: 3000 })
@@ -264,6 +318,7 @@ test('day tabs switch between program days (replaces the old per-day accordion)'
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   // the first training day (Hét · Push) is active by default once the program lands
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
@@ -280,6 +335,7 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
   await user.click(screen.getByText('Custom split'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   // the first custom day (Body A) is active by default even though it has no exercises yet
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
@@ -327,6 +383,7 @@ test('program edits survive a step round-trip when inputs are unchanged', async 
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program (terminal)
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   // the active (first training) day's exercise rows are collapsed by default
@@ -339,7 +396,8 @@ test('program edits survive a step round-trip when inputs are unchanged', async 
   // back to step 2 (the Program step has no Vissza button — use the tappable
   // progress segment) and forward again — NO regeneration, edit preserved
   await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
   expect(rows()).toHaveLength(countBefore - 1)
 })
@@ -350,13 +408,15 @@ test('changing an input regenerates the program', async () => {
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
   // swap a weekday: Pén off, Szo on → signature changes
   await user.click(screen.getByRole('button', { name: 'Pén' }))
   await user.click(screen.getByRole('button', { name: 'Szo' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   expect(screen.getByText('A Mezo összerakja a programot…')).toBeInTheDocument()
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
 })
@@ -367,6 +427,7 @@ test('Program step: budget card + accordion recipe editing, edits survive the 3�
   await user.click(screen.getByText('Hypertrophy'))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program (terminal, merged review + tuning)
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   expect(screen.getByText('A programod · gyakorlatok + set & rep')).toBeInTheDocument()
@@ -386,7 +447,8 @@ test('Program step: budget card + accordion recipe editing, edits survive the 3�
   // round-trip back to Split + napok (via the progress segment — the terminal
   // step has no Vissza button) and forward: no regeneration, edit kept
   await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
-  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Fókusz
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Program
   expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
   expect(heroSets()).toBe(after)
 })

@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-08-24
+updated: 2026-08-27
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -301,7 +301,7 @@ Migration [`202608201200_mezo-b3pp.4_create_decision_entry.sql`](../../backend/s
 
 `DecisionEntryEntity` (`entity/DecisionEntryEntity.java`) `extends OwnedEntity`, `@SQLDelete`/
 `@SQLRestriction` soft delete, `@JdbcTypeCode(SqlTypes.JSON)` on `contextSnapshot`, `@Min(1)`/`@Max(5)`
-mirroring the DB CHECK. Repository (`repository/DecisionEntryRepository.java`) four finders: the
+mirroring the DB CHECK. Repository (`repository/DecisionEntryRepository.java`) five finders: the
 owned-lookup-or-404 idiom, newest-first list, a `review_due` finder `AnchorResolver` reads
 directly (§5, [`_platform-notifications.md`](_platform-notifications.md) §4), and — **added W4.3
 (`mezo-b3pp.17`)** — `findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(
@@ -310,6 +310,16 @@ Spring Data `Limit` rather than a `Pageable`/manual `LIMIT` (no need for a total
 pages — the caller decides the cap up front). This is a companion read, not a journal one: the
 W4.3 pragmatic-profile synthesis (`companion/profile/service/ProfileAssembler.rebuild`) reads
 reviewed decision text + outcome rating as one of its inputs directly off this repository (§5).
+**A fifth finder, added W5.3 (`mezo-b3pp.20`)** —
+`findByCreatedByAndReviewedAtGreaterThanEqualAndReviewedAtLessThanAndOutcomeRatingIsNotNullAndDeletedFalse(
+UUID, Instant from, Instant to)`: reviewed decisions inside a **half-open** `[from, to)` instant
+window. Deliberately not the entity's usual `Between` shape (inclusive at both ends) — an inclusive
+upper bound would put a decision reviewed at EXACTLY a calendar quarter's first instant into both
+that quarter's window and the previous quarter's (whose own inclusive upper bound is that same
+instant), double-counting one review into both means; found and fixed during this slice's review,
+pinned by
+`ProfileAssemblerIT.renderPayload_counts_a_decision_reviewed_at_the_exact_quarter_boundary_only_once`.
+Also a companion read, not a journal one (§5).
 
 ### Backend table — `gratitude_entry` (W1.3, `mezo-b3pp.3`)
 
@@ -469,6 +479,16 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   read and no dependency back. No new finder-shaped contract was needed because the read is
   read-only and journal-internal state (`reviewedAt`, `outcomeRating`, `outcomeText`) is exactly
   what the entity already exposes.
+  **A second, W5.3 (`mezo-b3pp.20`) read on the SAME repository, same one-way edge:** the same
+  `ProfileAssembler` now also calls the half-open-window finder above (§4) to build the
+  `DÖNTÉSI MINŐSÉG` payload section — the ANCHOR quarter's mean `outcome_rating` over reviewed
+  decisions against the previous quarter's, computed in pure code and appended to the weekly/
+  quarterly profile prose (the anchor is an explicit `ProfileAssembler.rebuild` argument: the
+  weekly job passes the quarter it is standing in, the quarterly job the one that just finished) (full mechanics, the two gates, and the cron:
+  [`companion.md`](companion.md) §4 "W5.3 quarterly deep pass"). **Honest absence carries over from
+  W4.3's own rule:** a quarter with nothing reviewed contributes no line, and with NOTHING reviewed
+  THIS quarter the whole section is omitted from the payload rather than rendering a bare `0,0/5` —
+  which would read to the model as terrible judgement, not as an absence of data.
 - **← Companion (context-snapshot read, wired, ADR 0029): the ONE place `feature/journal` needs
   something FROM the companion, kept one-way via a journal-owned port.** `DecisionService.create`
   needs the companion's rendered context-snapshot text at write time (§4's `context_snapshot`); a

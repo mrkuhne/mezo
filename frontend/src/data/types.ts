@@ -692,9 +692,14 @@ export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 
 /** W2.3 (mezo-b3pp.8): egy éjszakai kivonatoló által javasolt életesemény-jelölt (L2 inbox). */
 export interface LifeEventCandidate {
   id: string
+  /** W5.3 (mezo-b3pp.20): a jelölt fajtája — az éjszakai kiszűrő életeseményt, a negyedéves
+   *  mélyfutam szezont javasol. Ugyanaz az L2 inbox hordozza mindkettőt, de a copy nem közös. */
+  kind: 'LIFE_EVENT' | 'SEASON'
   title: string
   summary: string | null
-  /** A nap, amiről az esemény szól (ISO date). */
+  /** ISO date, kind-függő jelentéssel: LIFE_EVENT esetén a nap, amiről az esemény szól; SEASON
+   *  esetén a lefedett negyedév ELSŐ napja (nem egy konkrét nap) — a kártya ez utóbbit
+   *  negyedévként jeleníti meg, ld. `formatCandidateDate` a `data/insights/graph`-ban. */
   occurredOn: string | null
   /** Hány kapcsolat jönne létre, ha elfogadod. */
   proposedEdgeCount: number
@@ -1012,6 +1017,13 @@ export interface MesoVolumeArc {
   muscles: MuscleVolumeArc[]
 }
 
+// Per-coarse-muscle priority tier (mezo-3m5m, spec GD4): picks which volume landmark is
+// "100%" for the weekly ramp — emphasize -> MRV, grow (default/absent key) -> MAV,
+// maintain -> MEV (flat, no ramp). Mirrors the backend's PriorityTier enum.
+export type MuscleTier = 'emphasize' | 'grow' | 'maintain'
+// Sparse per-coarse-muscle map (absent key = grow); null/empty = all grow.
+export type MusclePriorities = Record<string, MuscleTier>
+
 export interface Mesocycle {
   id: string
   status: MesoStatus
@@ -1019,6 +1031,7 @@ export interface Mesocycle {
   shortTitle: string
   goal: string
   goalPreset?: string | null
+  musclePriorities?: MusclePriorities | null
   startDate: string
   endDate: string
   weeks: number
@@ -1046,6 +1059,7 @@ export interface MesoTemplate {
   shortTitle: string | null
   goal: string | null
   goalPreset?: string | null
+  musclePriorities?: MusclePriorities | null
   weeks: number
   split: string | null
   style: string | null

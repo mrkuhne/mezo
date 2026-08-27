@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-25
+updated: 2026-08-26
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -130,7 +130,10 @@ this redesign and remain as shipped.
     prompt/gather/emptiness-gate, but its `MAI BRIEFING (ne ismételd):` dedupe block is replaced by
     `earlierMessagesBlock` — now built from **any** earlier same-day `companion_message` row
     (morning/sleep/weight/midday), not just the briefing. Flat prose answer (no JSON), code-set
-    eyebrow (`Napközi jegyzet`/`Napzárás`), no refs.
+    eyebrow (`Napközi jegyzet`/`Napzárás`). Since mezo-106s the LLM call is tool-calling — the full
+    `CompanionToolRegistry` roster (14 tools) on the chat budget, the concrete 2–4-paragraph prompt,
+    and the tool-audit refs land in the envelope (`refs` no longer `[]`); the `morning`/`sleep`/
+    `weight` kinds keep the tool-free overload.
   - All four share `earlierMessagesBlock` (a "MAI KORÁBBI ÜZENETEK (ne ismételd):" block listing
     every already-persisted message of the day) — the heartbeat's dedupe idiom generalized from one
     source (briefing) to all of them.
@@ -704,10 +707,12 @@ generateWindow(userId, date, kind)                       @Transactional   kind =
   1. existing row (kind, date)? ⇒ return untouched
   2. gather: past-days summaries; empty ⇒ return null (same emptiness gate as morning)
        payload = render (FULL) + facts + latest daily_summary + earlierMessagesBlock + "ABLAK: …"
-  3. companionLlm.complete(WINDOW_PROMPT, payload)   ── flat prose answer, NO JSON parse
+  3. companionLlm.complete(WINDOW_PROMPT, payload, toolRegistry.callbacks(audit),
+       toolRegistry.toolContext(userId, audit))   ── tool-calling (mezo-106s), flat prose, NO JSON
   4. blank ⇒ return null
-  5. saveAndFlush {kind, content = Envelope(code-set eyebrow, [answer.strip()], NO refs)}
-       (eyebrow = "Napközi jegyzet"/"Napzárás" by kind — the heartbeat's flat-prose shape, ported)
+  5. saveAndFlush {kind, content = Envelope(code-set eyebrow, [answer.strip()], audit refs)}
+       (eyebrow = "Napközi jegyzet"/"Napzárás" by kind; refs = audit.toRefsEnvelope() →
+       Ref(kind, label=id) — empty list when no tool ran)
 ```
 
 All four share `earlierMessagesBlock(userId, date)`: a `"MAI KORÁBBI ÜZENETEK (ne ismételd):"` block
@@ -1513,9 +1518,10 @@ dual-mode.
   (keep each `*_MARKER` prefix + its `FakeCompanionLlm` literal mirror in sync — §9 gotcha a); the
   morning ref candidates are `MORNING_CANDIDATES` (Goal/Workout/FuelDay/Medication, deliberately no
   WeightTrend/Sleep) + the per-summary `Memory` refs in `gather`; `SLEEP_CANDIDATES`/
-  `WEIGHT_CANDIDATES` are the sleep/weight-kind lists; `midday`/`evening` carry no refs (the
-  retired-heartbeat precedent); the prediction/experiment carry pattern candidates — the prediction
-  resolves them to CONFIDENCE, the experiment only uses them for grounding.
+  `WEIGHT_CANDIDATES` are the sleep/weight-kind lists; `midday`/`evening` carry the tool-audit refs
+  (mezo-106s — the retired-heartbeat no-refs precedent is superseded); the prediction/experiment
+  carry pattern candidates — the prediction resolves them to CONFIDENCE, the experiment only
+  uses them for grounding.
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing

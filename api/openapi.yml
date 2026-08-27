@@ -413,6 +413,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/muscle-priorities':
+    put:
+      tags:
+        - Train
+      operationId: updateMesocycleMusclePriorities
+      summary: >-
+        Replace the run's muscle priority tier map — takes effect at the next
+        weekly rollover (mezo-3m5m)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusclePrioritiesUpdateRequest'
+      responses:
+        '200':
+          description: Updated mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/report':
     get:
       tags:
@@ -6954,8 +7000,9 @@ paths:
         - KnowledgeGraph
       operationId: listGraphCandidates
       summary: >-
-        Pending (undecided) LIFE_EVENT candidates from the nightly extractor,
-        newest first (W2.3)
+        Pending (undecided) graph candidates, newest first — LIFE_EVENT rows
+        from the nightly extractor (W2.3) and SEASON rows from the quarterly
+        deep pass (W5.3)
       responses:
         '200':
           description: Candidate nodes awaiting an explicit L2 decision
@@ -6977,9 +7024,9 @@ paths:
         - KnowledgeGraph
       operationId: decideGraphCandidate
       summary: >-
-        Decide a candidate (W2.3) — accept activates the node and creates its
-        proposed edges, reject soft-deletes it. One decision per candidate;
-        confirm is an explicit L2 action.
+        Decide a candidate (W2.3 life event / W5.3 season) — accept activates
+        the node and creates its proposed edges, reject soft-deletes it. One
+        decision per candidate; confirm is an explicit L2 action.
       parameters:
         - name: id
           in: path
@@ -7431,6 +7478,14 @@ components:
             Machine key of the wizard's goal choice
             (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null
             for legacy/edited goals (mezo-dq60)
+        musclePriorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-coarse-muscle priority tier map (emphasize/maintain;
+            absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
         startDate:
           type: string
           format: date
@@ -7506,6 +7561,14 @@ components:
             Machine key of the wizard's goal choice
             (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null
             for legacy/edited goals (mezo-dq60)
+        musclePriorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-coarse-muscle priority tier map (emphasize/maintain;
+            absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
         weeks:
           type: integer
           minimum: 1
@@ -7885,6 +7948,14 @@ components:
             Machine key of the wizard's goal choice
             (hypertrophy/strength/cut-prep/recovery/sport/erohipertrofia); null
             for legacy/edited goals (mezo-dq60)
+        musclePriorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-coarse-muscle priority tier map (emphasize/maintain;
+            absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
         weeks:
           type: integer
           minimum: 1
@@ -7932,6 +8003,17 @@ components:
           enum:
             - active
             - planned
+    MusclePrioritiesUpdateRequest:
+      type: object
+      properties:
+        musclePriorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-coarse-muscle priority tier map (emphasize/maintain;
+            absent key = grow); null/empty = all grow (mezo-3m5m)
+          additionalProperties:
+            type: string
     MesoRerunResponse:
       type: object
       required:

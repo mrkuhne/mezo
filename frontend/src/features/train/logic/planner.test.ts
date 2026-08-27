@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from 'vitest'
 import { GOAL_PRESETS, SPLITS } from '@/data/train/train'
 import { addWeeks, defaultWeekdays, generateProgram, getSeason, stepLabels } from '@/features/train/logic/planner'
 import { structureLint, type StructureFinding } from '@/features/train/logic/structureLint'
-import { BUDGET_GROUP_LABELS, GROUP_MEV, muscleBudgets } from '@/features/train/logic/setBudget'
+import { BUDGET_GROUP_LABELS, GROUP_MEV, budgetOf, muscleBudgets } from '@/features/train/logic/setBudget'
 import { FIT_CEILING } from '@/features/train/logic/programFit'
 
 describe('addWeeks', () => {
@@ -26,8 +26,8 @@ describe('getSeason', () => {
 })
 
 describe('stepLabels', () => {
-  test('is the verbatim 4-step label list', () => {
-    expect(stepLabels).toEqual(['Cél', 'Hossz + fázisok', 'Split + napok', 'Program'])
+  test('is the 5-step label list, Fókusz inserted before Program (mezo-3m5m)', () => {
+    expect(stepLabels).toEqual(['Cél', 'Hossz + fázisok', 'Split + napok', 'Fókusz', 'Program'])
   })
 })
 
@@ -231,9 +231,12 @@ describe('generateProgram · custom split', () => {
 //    (+rule+group) listed in STRUCTURAL_ALLOWED, with a comment naming the trade-off.
 //  - `sets ≥ GROUP_MEV[group]` may be waived ONLY via MEV_ALLOWED (arithmetic comment proving
 //    every slot of the group is already saturated at its SETS_PER_EXERCISE kind cap).
-//  - `budget ≤ 1.0` stays hard, unconditionally, for every group.
+//  - `budget ≤ 1.0` stays hard, unconditionally, for every group — the FATIGUE budget
+//    (`budgetOf(failureSets, volumeSets)`, the shared 12/20 caps programFit.ts itself targets),
+//    NOT `muscleBudgets`' row.budget (tier-relative since mezo-3m5m, spec GD5 — the budget CARD's
+//    scale, not the generator's).
 //  - The soft ceiling (`budget < FIT_CEILING`) keeps its own NEAR_ALLOWED (floor-arithmetic
-//    comment), unchanged in mechanism from the original design.
+//    comment), unchanged in mechanism from the original design — same fatigue-budget quantity.
 // ============================================================
 const HARD_CLEAN_RULES = new Set(['rep-zone', 'sets-per-exercise', 'session-size', 'session-length', 'exercises-per-muscle'])
 const STRUCTURAL_RULES = new Set(['frequency', 'variety', 'push-pull', 'ham-quad'])
@@ -369,7 +372,11 @@ function assertInvariants(
     structConsumed.add(key)
   }
   for (const row of muscleBudgets(prog)) {
-    expect(row.budget).toBeLessThanOrEqual(1)
+    // The oracle is the FATIGUE budget the generator (programFit.groupStats) itself targets —
+    // NOT row.budget, which is tier-relative since mezo-3m5m (spec GD5, the budget card's own
+    // scale). Recompute it directly from the row's own failure/volume split.
+    const fatigueBudget = budgetOf(row.failureSets, row.volumeSets)
+    expect(fatigueBudget).toBeLessThanOrEqual(1)
     const mev = GROUP_MEV[row.group]
     if (mev !== undefined) {
       const groupKey = `${goalId}|${splitLabel}|${d}|${row.group}`
@@ -378,7 +385,7 @@ function assertInvariants(
         mevCons.add(groupKey)
       }
       if (!nearAllowed.has(groupKey)) {
-        expect(row.budget).toBeLessThan(FIT_CEILING)
+        expect(fatigueBudget).toBeLessThan(FIT_CEILING)
       } else {
         nearCons.add(groupKey)
       }

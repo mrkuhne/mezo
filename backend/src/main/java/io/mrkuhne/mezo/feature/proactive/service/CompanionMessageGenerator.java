@@ -8,9 +8,12 @@ import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
+import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
@@ -118,13 +121,22 @@ public class CompanionMessageGenerator {
     public static final String WINDOW_MARKER = "NAPKOZBENI-JEGYZET-FELADAT";
 
     private static final String WINDOW_PROMPT = WINDOW_MARKER + "\n"
-            + "Írj rövid (2-3 mondatos), magyar napközbeni jegyzetet Danielnek társ-szemszögből, "
-            + "kizárólag a megadott mai állapotból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
-            + "déli (nudge) esetén a nap hátralévő részére adj egy konkrét, gyengéd fókuszt; esti "
-            + "(closing) esetén zárd a napot egy konkrét megfigyeléssel. Ha van MAI KORÁBBI "
-            + "ÜZENETEK blokk, annak tartalmát NE ismételd. Számot vagy adatot kitalálni tilos; gyógyszer "
-            + "adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi "
-            + "döntés. Sima folyószöveggel válaszolj, markdown és felsorolás nélkül.";
+            + "Írj magyar napközbeni jegyzetet Danielnek társ-szemszögből, 2-4 rövid bekezdésben, "
+            + "kizárólag a megadott tényadatokból és a te eszközeidből (tool-hívások) származó "
+            + "adatokból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
+            + "- déli (nudge): (1) a nap EDDIGI állapota konkrét számokkal (ami már történt: edzés, "
+            + "bevitel a célhoz képest, alvás ha van); (2) mi JÖN MÉG MA (edzés, étkezési keret); "
+            + "(3) 1-2 konkrét, cselekvési szintű fókuszpont a hátralévő időre. "
+            + "- esti (closing): zárd a napot 1-2 konkrét megfigyeléssel a mai tényleges adataiból "
+            + "(mit sikerült, miben maradt el a célhoz képest) + egy rövid tanulság a holnapi napra. "
+            + "Szabályok: "
+            + "- Konkrét számot CSAK akkor idézhetsz, ha az a megadott pillanatképből vagy egy "
+            + "tool-válaszból származik; kitalálni tilos. "
+            + "- Ha a pillanatkép egy adatpontot nem ad meg pontosan (pl. mai edzésterv, "
+            + "makró-maradék, alvási fázisok), hívd meg a megfelelő eszközt, mielőtt írsz. "
+            + "- Ha van MAI KORÁBBI ÜZENETEK blokk, annak tartalmát NE ismételd. "
+            + "- Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
+            + "- Sima folyószöveg, markdown és felsorolás nélkül.";
 
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
@@ -134,6 +146,7 @@ public class CompanionMessageGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final CompanionToolRegistry toolRegistry;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ProactiveProperties properties;
     private final ObjectMapper objectMapper;
@@ -336,18 +349,26 @@ public class CompanionMessageGenerator {
                 + earlierMessagesBlock(userId, date)
                 + "\n\nABLAK: " + window;
 
+        ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", kind, null, null),
-                () -> companionLlm.complete(WINDOW_PROMPT, payload));
+                () -> companionLlm.complete(WINDOW_PROMPT, payload,
+                        toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         if (answer == null || answer.isBlank()) {
             log.warn("Unusable {} answer for {} on {} — no row persisted", kind, userId, date);
             return null;
         }
+        RefsEnvelope toolRefs = audit.toRefsEnvelope();
+        List<CompanionMessageEnvelope.Ref> refs = toolRefs == null
+                ? List.of()
+                : toolRefs.refs().stream()
+                        .map(r -> new CompanionMessageEnvelope.Ref(r.kind(), r.id()))
+                        .toList();
         CompanionMessageEntity message = new CompanionMessageEntity();
         message.setCreatedBy(userId);
         message.setMessageDate(date);
         message.setKind(kind);
-        message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), List.of()));
+        message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), refs));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
     }

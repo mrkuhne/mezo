@@ -1,0 +1,1731 @@
+<style>
+  /* ===== prep ===== */
+  .prep-hero { padding: 12px 13px; }
+  .skillrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .skillrow .nm2 { font-size: 10px; font-weight: 600; width: 74px; flex: none; }
+  .skillrow .xg { font-size: 9px; font-weight: 700; color: #A8801F; flex: none; width: 34px; text-align: right; }
+  .skbar { flex: 1; height: 7px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; }
+  .skbar div { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #8FAF7E, #6E8B5E); }
+  .skbar div.lvl { background: linear-gradient(90deg, #E5C46B, #C9962E); }
+  .lvchip { font-size: 7.5px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.14); border-radius: 999px; padding: 2px 7px; flex: none; }
+  .buildchips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .buildchips span { border-radius: 999px; padding: 3.5px 10px; font-size: 9px; font-weight: 700; }
+    .ovchip { margin-top: 6px; font-size: 9px; font-weight: 700; color: #A84A26; background: rgba(255, 107, 74, 0.1); border-radius: 999px; padding: 5px 11px; text-align: center; }
+
+  .legend { display: flex; gap: 9px; flex-wrap: wrap; padding: 0 2px 8px; }
+  .legend span { display: flex; align-items: center; gap: 4px; font-size: 8px; font-weight: 700; color: #6E6257; }
+  .legend i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .legend i.zed { background: none; border: 1.5px dashed rgba(201, 150, 46, 0.7); }
+  .zrow3 { padding: 11px 2px 12px; }
+  .zrow3 + .zrow3 { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .zrow3 .rr { width: 32px; height: 32px; flex: none; }
+  .zrow3 .rr::after { width: 21px; height: 21px; }
+  .zsub { font-size: 8.5px; color: #6E6257; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .zchip { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 3.5px 9px; flex: none; }
+  .zbar2 { position: relative; height: 15px; border-radius: 8px; background: rgba(43, 33, 24, 0.05); margin-top: 9px; }
+  .zbar2 .zone { position: absolute; top: -3px; bottom: -3px; right: -2px; border: 1.5px dashed rgba(201, 150, 46, 0.65); border-radius: 10px; }
+  .zbar2 i { position: absolute; top: 2.5px; bottom: 2.5px; border-radius: 5px; transform: scaleX(0); transform-origin: left; }
+  .play .zbar2 i { animation: segf2 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d); }
+  @keyframes segf2 { to { transform: scaleX(1); } }
+
+  .nigcard { border-radius: 16px; background: linear-gradient(150deg, #FBEBCB, #FFFDF6); border-left: 3px solid #C9962E; padding: 11px 12px; margin-bottom: 10px;
+    box-shadow: 0 14px 26px -16px rgba(181, 126, 20, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+
+      .chcard { border-radius: 16px; background: #fff; padding: 11px 12px;
+    border: 0.5px solid rgba(43, 33, 24, 0.07); box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .chcard .tgt { font-size: 17px; font-weight: 200; letter-spacing: 0.01em; text-transform: uppercase; margin: 5px 0 2px; font-variant-numeric: tabular-nums; }
+  .risktag { font-size: 8px; font-weight: 700; color: #6E6257; background: rgba(43, 33, 24, 0.06); border-radius: 999px; padding: 3px 8px; flex: none; }
+  .reftag { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(43, 33, 24, 0.05); border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 2.5px 8px; }
+  .chbtns { display: flex; gap: 7px; margin-top: 9px; }
+  .chacc { flex: 1; border: none; border-radius: 999px; padding: 7px 0; font-family: inherit; font-size: 10px; font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); }
+  .chacc.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); box-shadow: 0 8px 16px -6px rgba(110, 139, 94, 0.55); }
+      
+  .zmini { display: grid; gap: 5px; width: 100%; padding: 0 4px; }
+  .zmini .zm { position: relative; height: 8px; border-radius: 4px; background: rgba(43, 33, 24, 0.06); overflow: hidden; }
+  .zmini .zm span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; }
+  #chstack .chcard { margin-bottom: 9px; }
+  .kdisc { width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center; flex: none; }
+  .confrow { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+  .confrow .rr { width: 18px; height: 18px; flex: none; }
+
+  .xrail { width: 4px; height: 30px; border-radius: 2px; flex: none; }
+  .xrm { display: flex; align-items: center; gap: 3px; font-size: 8px; font-weight: 700; color: #A8801F; flex: none; }
+
+  /* gyakorlat-csempe */
+  .extile { border-radius: 17px; padding: 11px 12px 12px; margin-bottom: 9px; position: relative; overflow: hidden;
+    background: linear-gradient(150deg, var(--fw), #FFFFFF 65%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px var(--fg), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .extile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--fr); }
+  .xchip { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(255, 255, 255, 0.78); border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 999px; padding: 2.5px 8px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 3px; }
+  .xchip.fam { color: var(--fd); }
+  .xstats { display: flex; gap: 14px; margin-top: 9px; }
+  .xstats small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
+  .xstats b { font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .xfoot { display: flex; align-items: flex-end; gap: 7px; margin-top: 10px; padding-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.09); flex-wrap: wrap; }
+  .xfoot small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
+  .xfoot b { font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .xfoot .arr { color: #A2958A; font-size: 11px; line-height: 1.1; }
+  .xfoot .dchip, .xfoot .xchip { margin-bottom: 0.5px; }
+  .mini-dots { display: flex; gap: 4px; margin-top: 9px; align-items: center; flex-wrap: wrap; }
+  .md { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.14); font-size: 6.5px; font-weight: 700; color: #A2958A; display: grid; place-items: center; background: rgba(255, 255, 255, 0.7); flex: none; }
+  .md.wu { border-style: dashed; border-color: rgba(201, 150, 46, 0.55); color: #A8801F; }
+  .md.wk { border-color: var(--fr); color: var(--fd); }
+  .mini-dots .zsub { margin-left: auto; }
+  .dchip { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2.5px 8px; flex: none; }
+  .dchip.up { color: #A84A26; background: rgba(255, 107, 74, 0.12); }
+  .dchip.rep { color: #4E6B42; background: rgba(143, 175, 126, 0.2); }
+  .dchip.hold { color: #A8801F; background: rgba(201, 150, 46, 0.16); }
+
+  .warmrow { display: flex; align-items: center; gap: 10px; padding: 8px 2px; }
+  .warmrow + .warmrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .warmrow .ix { font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
+
+        .mpill { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 8px; flex: none; }
+  .pillrow { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .pl { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 2.5px 7px; }
+  .pl.fam { color: var(--fd); background: var(--fw); }
+  .pl.up { color: #A84A26; background: rgba(255, 107, 74, 0.1); }
+  .pl.rep { color: #4E6B42; background: rgba(143, 175, 126, 0.18); }
+  .pl.hold { color: #A8801F; background: rgba(201, 150, 46, 0.14); }
+    
+  /* ===== active ===== */
+  .wk-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .cntbtn { flex: 1; min-width: 0; border: none; background: none; font-family: inherit; text-align: center; cursor: pointer; padding: 2px 0; }
+  .cntbtn .t1 { font-size: 12px; font-weight: 700; }
+  .cntbtn .t2 { font-size: 8.5px; font-weight: 600; color: #A2958A; }
+  .cntbtn:disabled, .menu3:disabled { opacity: 0.4; cursor: default; }
+  .menu3 { width: 30px; height: 30px; border-radius: 50%; border: none; flex: none; background: rgba(255, 255, 255, 0.75); font-family: inherit; cursor: pointer; font-size: 13px; color: #2B2118; box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
+  .exdots { display: flex; gap: 5px; justify-content: center; padding: 6px 0 0; }
+  .exdots button { width: 9px; height: 9px; border-radius: 50%; border: none; padding: 0; cursor: pointer; background: rgba(43, 33, 24, 0.15); }
+  .exdots button.don { background: #8FAF7E; }
+  .exdots button.cur { background: #C9962E; box-shadow: 0 0 0 2.5px rgba(201, 150, 46, 0.25); }
+  .exdots button.skp { background: none; border: 1.5px dashed rgba(43, 33, 24, 0.3); }
+  .sprog { display: flex; gap: 2px; height: 5px; padding: 7px 14px 0; }
+  .sprog i { border-radius: 3px; }
+  .nigstrip { margin: 8px 14px 0; border-radius: 11px; background: rgba(201, 150, 46, 0.13); color: #7E5C0D; font-size: 9px; font-weight: 600; padding: 6px 10px; }
+
+  .excard { margin: 9px 14px 0; border-radius: 20px; padding: 10px 12px 11px; position: relative; overflow: hidden; touch-action: pan-y;
+    background: linear-gradient(160deg, var(--fw) 0%, #FFFFFF 62%);
+    border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: 0 20px 36px -16px var(--fg), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .excard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--fr); }
+  .metaline { font-size: 9px; font-weight: 600; color: #6E6257; margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .metaline .hot { color: #A84A26; }
+  .metaline .cool { color: #4E6B42; }
+  .chmini { color: #A84A26; border: 1px dashed var(--fr); border-radius: 999px; padding: 1.5px 8px; font-size: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; background: rgba(255, 255, 255, 0.7); }
+  .notetoggle { border: none; background: none; font-family: inherit; font-size: 8.5px; font-weight: 600; color: #A2958A; padding: 7px 0 0; cursor: pointer; text-align: left; display: block; }
+  .mbtn { width: 26px; height: 26px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.85); display: grid; place-items: center; cursor: pointer; flex: none; padding: 0; font-family: inherit; font-size: 10px; color: #6E6257; }
+  .mbtn.on { border-color: var(--fr); background: #fff; box-shadow: 0 4px 10px -4px var(--fg); }
+  .logbox { margin-top: 8px; background: rgba(255, 255, 255, 0.88); border: 0.5px solid rgba(43, 33, 24, 0.07); border-radius: 16px; padding: 9px 11px 10px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 10px 20px -14px rgba(43, 33, 24, 0.3); }
+  .logbox .lgoal { font-size: 8.5px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .imghero { position: relative; margin-top: 8px; height: 96px; border-radius: 13px; overflow: hidden; background: var(--fw); }
+  .imghero .fr { position: absolute; inset: 0; display: grid; place-items: center; }
+  .imghero .fr small { position: absolute; bottom: 6px; right: 9px; font-size: 8px; font-weight: 700; color: #6E6257; background: rgba(255, 255, 255, 0.75); border-radius: 999px; padding: 2px 7px; }
+  .imghero .fr.f2 { opacity: 0; animation: xfade 2.4s ease-in-out infinite; }
+  @keyframes xfade { 0%, 42% { opacity: 0; } 55%, 88% { opacity: 1; } 100% { opacity: 0; } }
+  .vidbox { margin-top: 8px; aspect-ratio: 16/9; border-radius: 13px; background: #241C15; display: grid; place-items: center; text-align: center; color: #C4B6A5; font-size: 9px; font-weight: 600; }
+  .notepill { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; font-size: 9px; font-weight: 400; color: #6E6257; background: rgba(255, 255, 255, 0.7); border-left: 2.5px solid var(--fr); border-radius: 9px; padding: 6px 9px; }
+  .notepill .ntext { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-width: 0; }
+  .setdots { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .sd { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.16); display: grid; place-items: center; font-size: 8.5px; font-weight: 700; color: #A2958A; background: rgba(255, 255, 255, 0.7); }
+  .sd.don { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); color: #fff; }
+  .sd.cur { border-color: var(--fr); color: var(--fd); box-shadow: 0 0 0 3px var(--fw); }
+  .sd.wu { border-style: dashed; color: #A8801F; border-color: rgba(201, 150, 46, 0.55); }
+  .sd.ext { border-style: dashed; border-color: rgba(255, 107, 74, 0.55); }
+  .wunote { font-size: 8px; font-weight: 600; color: #A8801F; margin-left: 2px; }
+  .bigsteps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .bstep { background: rgba(43, 33, 24, 0.035); border-radius: 14px; padding: 8px 10px; border: 0.5px solid rgba(43, 33, 24, 0.05); min-width: 0; }
+  .bsrow { min-width: 0; }
+  .bstep small { font-size: 7.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; display: block; }
+  .bsrow { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; gap: 2px; }
+  .bsbtn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.15); background: #fff; font-family: inherit; font-size: 14px; color: #6E6257; cursor: pointer; padding: 0; line-height: 1; flex: none; }
+  .bsval { font-size: 16px; font-weight: 300; font-variant-numeric: tabular-nums; cursor: text; border: none; background: none; font-family: inherit; text-align: center; flex: 1; width: auto; min-width: 0; padding: 0; color: #2B2118; }
+  .rirrow, .siderow { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
+  .rirrow .lb, .siderow .lb { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; color: #A2958A; width: 26px; flex: none; }
+  .rbtn { width: 30px; height: 26px; border-radius: 9px; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.85); font-family: inherit; font-size: 10.5px; font-weight: 700; color: #6E6257; cursor: pointer; padding: 0; }
+  .rbtn.on { border-color: transparent; background: var(--fgrad); color: #fff; }
+  .rirhint { font-size: 8.5px; font-weight: 600; color: #6E6257; margin-left: 3px; }
+  .setnote { width: 100%; margin-top: 9px; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 10px; padding: 7px 10px; font-family: inherit; font-size: 9.5px; background: rgba(255, 255, 255, 0.85); }
+  .donebtn { width: 100%; margin-top: 10px; border: none; border-radius: 999px; padding: 11px 0; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #fff; cursor: pointer;
+    background: var(--fgrad); box-shadow: 0 10px 22px -8px var(--fg); }
+  .restbar { margin-top: 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.85); border: 0.5px solid rgba(43, 33, 24, 0.08); padding: 8px 10px; position: relative; overflow: hidden; }
+  .restbar .fillr { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255, 107, 74, 0.13); transition: width 0.2s linear; }
+  .restbar .rin { position: relative; display: flex; align-items: center; gap: 8px; }
+  .restbar b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rtbtn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit; font-size: 11px; cursor: pointer; padding: 0; flex: none; }
+
+  .colstrip { margin: 9px 14px 0; border-radius: 15px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07); box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.3); overflow: hidden; }
+  .colhead { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: none; font-family: inherit; padding: 9px 12px; cursor: pointer; text-align: left; }
+  .colhead .csum { margin-left: auto; font-size: 8.5px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .colhead .chev { color: #A2958A; font-size: 10px; transition: transform 0.2s ease; flex: none; }
+  .colstrip.open .colhead .chev { transform: rotate(180deg); }
+  .colbody { display: none; padding: 0 12px 11px; }
+  .colstrip.open .colbody { display: block; }
+  .pochip { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 2.5px 9px; flex: none; }
+  .pocells { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 10px; font-weight: 600; }
+  .pocells .arr { color: #A2958A; }
+  .aistrip { margin: 9px 14px 0; border-radius: 12px; background: rgba(201, 150, 46, 0.1); font-size: 9.5px; font-weight: 400; color: #7E5C0D; padding: 7px 11px; }
+  .pagerbar { display: flex; gap: 8px; margin: 9px 14px 0; }
+  .pgbtn { flex: 1; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 13px; background: rgba(255, 255, 255, 0.8); font-family: inherit; padding: 5px 10px; cursor: pointer; text-align: left; }
+  .pgbtn:disabled { opacity: 0.4; cursor: default; }
+  .pgbtn .d1 { font-size: 8px; font-weight: 700; color: #A2958A; letter-spacing: 0.1em; }
+  .pgbtn .d2 { font-size: 9.5px; font-weight: 600; color: #2B2118; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pgbtn.nx { text-align: right; }
+
+  .slist { margin: 0 14px 14px; }
+  .shead { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .goalpill { font-size: 8px; font-weight: 700; color: var(--fd); background: var(--fw); border-radius: 999px; padding: 3px 9px; }
+  .scols, .srow { display: grid; grid-template-columns: 30px 1fr 1fr 34px 62px; gap: 5px; align-items: center; }
+  .scols { font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; padding: 8px 2px 4px; }
+  .srow { width: 100%; border: none; background: none; font-family: inherit; padding: 6px 2px; border-top: 0.5px solid rgba(43, 33, 24, 0.07); cursor: pointer; text-align: left; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .srow:disabled { cursor: default; opacity: 0.55; }
+  .smark { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.16); display: grid; place-items: center; font-size: 8px; font-weight: 700; color: #A2958A; }
+  .smark.don { border-color: transparent; background: var(--fgrad); color: #fff; }
+  .smark.wu { border-style: dashed; color: #A8801F; border-color: rgba(201, 150, 46, 0.55); }
+  .smark.cur { border-color: var(--fr); color: var(--fd); box-shadow: 0 0 0 2.5px var(--fw); }
+  .ghosted { color: #A2958A; }
+  .sstat { font-size: 8px; font-weight: 700; display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+  .sstat.ok { color: #4E6B42; }
+  .sstat.und { color: #A8801F; }
+  .sstat.now { color: var(--fd); }
+  .sfoot { display: flex; justify-content: space-between; gap: 6px; border-top: 0.5px solid rgba(43, 33, 24, 0.1); margin-top: 4px; padding-top: 7px; font-size: 8.5px; font-weight: 600; color: #6E6257; }
+  .sfoot b { font-variant-numeric: tabular-nums; }
+
+  /* ===== sheets ===== */
+  .bsheet-back { position: absolute; inset: 0; z-index: 11; border-radius: 42px; background: rgba(29, 23, 18, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+  .bsheet-back.open { opacity: 1; pointer-events: auto; }
+  .bsheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 12; background: #FDFAF4; border-radius: 26px 26px 34px 34px; padding: 14px 14px 16px;
+    transform: translateY(112%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    box-shadow: 0 -12px 44px rgba(29, 23, 18, 0.3); max-height: 82%; overflow-y: auto; scrollbar-width: none; }
+  .bsheet::-webkit-scrollbar { display: none; }
+  .bsheet.open { transform: none; }
+  .bsheet textarea, .bsheet input[type=text] { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 8px 11px; font-family: inherit; font-size: 11px; background: #fff; resize: none; }
+  .actrow { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; font-family: inherit; padding: 10px 2px; cursor: pointer; font-size: 11.5px; font-weight: 600; color: #2B2118; text-align: left; }
+  .actrow + .actrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .actrow .ic { width: 26px; text-align: center; font-size: 13px; color: #6E6257; flex: none; }
+  .actrow small { display: block; font-size: 8.5px; font-weight: 400; color: #A2958A; }
+  .ud { display: flex; gap: 3px; flex: none; }
+  .ud button { width: 22px; height: 22px; border-radius: 7px; border: 1px solid rgba(43, 33, 24, 0.12); background: #fff; font-size: 9px; color: #6E6257; cursor: pointer; padding: 0; font-family: inherit; }
+  .ovrow { display: flex; align-items: center; gap: 9px; width: 100%; border: none; background: none; font-family: inherit; padding: 8px 4px; cursor: pointer; font-size: 11px; text-align: left; border-radius: 11px; }
+  .ovrow.curr { background: rgba(201, 150, 46, 0.1); }
+  .ovrow .gl { width: 20px; text-align: center; font-size: 11px; flex: none; }
+  .ovrow .strike { text-decoration: line-through; color: #A2958A; }
+  .fbchips { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .fbc { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit; border-radius: 999px; padding: 5px 12px; font-size: 9.5px; font-weight: 600; color: #6E6257; cursor: pointer; }
+  .fbc.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .sh-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .sh-title { font-size: 14px; font-weight: 700; margin: 2px 0 6px; }
+  .btn2 { display: flex; gap: 8px; margin-top: 12px; }
+  .btn2 .cta, .btn2 .ghost { flex: 1; padding: 9px 0; text-align: center; }
+
+  /* ===== medal toast ===== */
+  .medtoast { position: absolute; left: 16px; right: 16px; top: 48px; z-index: 13; border-radius: 16px; padding: 10px 12px;
+    background: linear-gradient(140deg, #FBEBCB, #FFF9EC); border: 0.5px solid rgba(201, 150, 46, 0.4);
+    box-shadow: 0 18px 36px -12px rgba(181, 126, 20, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    display: flex; gap: 9px; align-items: center;
+    opacity: 0; transform: translateY(-14px); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.3, 0.9, 0.4, 1.2); }
+  .medtoast.show { opacity: 1; transform: none; }
+  .medtoast .tt { font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A8801F; }
+  .medtoast .vv { font-size: 12.5px; font-weight: 700; }
+  .medtoast .pp { font-size: 8.5px; color: #6E6257; }
+
+  /* ===== summary ===== */
+  .page.p-sage { background: linear-gradient(180deg, #E4EDDC 0%, #FDFAF4 36%); }
+  .halo { position: relative; display: grid; justify-items: center; text-align: center; padding: 6px 14px 10px; }
+  .halo .ring { position: absolute; top: -8px; width: 150px; height: 150px; border-radius: 50%; filter: blur(22px); opacity: 0.5; z-index: 0;
+    background: radial-gradient(circle, #FF9A78 0%, #E5C46B 60%, transparent 72%); animation: halopulse 4s ease-in-out infinite; }
+  .halo.calm .ring { background: radial-gradient(circle, #B9D3A8 0%, #E5C46B 60%, transparent 72%); }
+  @keyframes halopulse { 0%, 100% { transform: scale(1); opacity: 0.45; } 50% { transform: scale(1.08); opacity: 0.6; } }
+  .halo > * { position: relative; z-index: 1; }
+  .musclepills { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+  .musclepills span { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
+  .musclepills span.off { text-decoration: line-through; opacity: 0.45; background: rgba(43, 33, 24, 0.06); color: #6E6257; }
+  .medcard { display: flex; gap: 9px; align-items: center; background: linear-gradient(140deg, #FBEBCB, #FFFDF6); border-radius: 14px; padding: 9px 11px; margin-bottom: 7px;
+    border: 0.5px solid rgba(201, 150, 46, 0.3); box-shadow: 0 12px 22px -14px rgba(181, 126, 20, 0.5); }
+  .tgrow { display: flex; align-items: center; gap: 8px; background: rgba(143, 175, 126, 0.14); border-radius: 12px; padding: 8px 11px; margin-bottom: 7px; font-size: 10px; font-weight: 600; color: #4E6B42; flex-wrap: wrap; }
+  .tgrow .xc { font-size: 8.5px; background: #fff; border-radius: 999px; padding: 2px 8px; color: #6E6257; font-weight: 600; }
+  .chres { display: flex; align-items: center; gap: 8px; padding: 7px 2px; font-size: 10px; }
+  .chres + .chres { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .chres .ro { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; flex: none; background: rgba(43, 33, 24, 0.07); color: #6E6257; }
+  .chres .ro.hit { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); color: #fff; }
+  .excmap { border-radius: 14px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07); border-left: 4px solid var(--fr, #A2958A); padding: 8px 11px; margin-bottom: 7px; box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3); }
+  .excmap.skp { opacity: 0.55; }
+  .setchips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .setchips span { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 2.5px 8px; font-variant-numeric: tabular-nums; }
+  .setchips span.top { color: var(--fd); background: var(--fw); }
+  .setchips span.med { color: #A8801F; background: rgba(201, 150, 46, 0.16); }
+  .setchips span.gho { border: 1px dashed rgba(43, 33, 24, 0.2); background: none; color: #A2958A; }
+
+  /* ===== level-up overlay ===== */
+  .lvlup { position: absolute; inset: 0; z-index: 15; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
+    background: linear-gradient(170deg, #2B2118 0%, #4A2E1D 100%); color: #FBF6EF; padding: 30px 22px; }
+  .lvlup.show { display: flex; }
+  .lvlup .xpnum { font-size: 46px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .lvlup .xplbl { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; color: #E5C46B; }
+  .lvring { width: 92px; height: 92px; border-radius: 50%; background: conic-gradient(#E5C46B calc(var(--v) * 1%), rgba(251, 246, 239, 0.14) 0); display: grid; place-items: center; }
+  .lvring .in { width: 74px; height: 74px; border-radius: 50%; background: #3A2A1C; display: grid; place-items: center; line-height: 1.15; }
+  .lvring b { font-size: 17px; display: block; }
+  .lvring small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; color: #C4B6A5; }
+  .lvgrid { display: flex; gap: 14px; }
+  .lvgrid .cell2 { font-size: 8.5px; color: #C4B6A5; }
+  .lvgrid .cell2 b { display: block; font-size: 11px; color: #FBF6EF; }
+  .lvchip2 { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; background: rgba(229, 196, 107, 0.16); color: #E5C46B; border-radius: 999px; padding: 4px 12px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .imghero .fr.f2 { animation: none; opacity: 1; }
+    .halo .ring { animation: none; }
+    .medtoast, .bsheet, .bsheet-back { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · 3. oldal</p>
+  <h1>Edzés-session · indítástól lezárásig</h1>
+  <p class="lede">A teljes gym-ív egyetlen flow-ban: <strong>felkészítő briefing</strong> (várható XP,
+  heti zóna-kontextus, kihívások), <strong>élő logolás</strong> (szettek, pihenő, áthelyezés, videó, jegyzetek),
+  <strong>debrief + összegzés + szintlépés</strong>. Minden meglévő funkció itt van — próbáld végig.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr">
+      <div class="isl"></div>
+      <div class="p-status"><span>12:58</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <!-- ================= PREP ================= -->
+        <div class="dp-panel on play" id="prepPanel">
+          <div class="mrow">
+            <button class="backbtn" id="prepBack">‹ Edzés</button>
+            <div class="grow"></div>
+            <div class="p-eyebrow">Szerda · W3 · MAV hét</div>
+          </div>
+
+          <div class="float3d prep-hero rise" style="--d:0ms;background:linear-gradient(140deg,#FFE7DC,#FFFFFF 70%);">
+            <div class="p-eyebrow" style="color:#A84A26;">Ma · 13:00 · Meso W3/5</div>
+            <span class="big" style="font-size:30px;">Pull A</span>
+            <div class="statstrip" style="margin-top:8px;">
+              <div class="statcell"><b style="color:#A84A26;">+240</b><small>várható XP</small></div>
+              <div class="statcell"><b>16</b><small>szett</small></div>
+              <div class="statcell"><b>~74′</b><small>idő</small></div>
+              <div class="statcell"><b>3</b><small>izomcsoport</small></div>
+            </div>
+            <button class="cta" id="startBtn" style="width:100%;margin-top:10px;padding:11px 0;font-size:12.5px;">⚡ Kezdjük el →</button>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-train rise" style="--d:70ms;" data-page="page-gyak" role="button" tabindex="0" aria-label="Gyakorlatok">
+              <div class="p-eyebrow" style="color:#A84A26;">Gyakorlatok</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">5 gyakorlat · 19 szett</div>
+            </div>
+            <div class="tile t-kreed rise" style="--d:100ms;" data-page="page-xp" role="button" tabindex="0" aria-label="Várható fejlődés">
+              <div class="p-eyebrow" style="color:#A84A26;">Fejlődés</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-growth"/></svg></div>
+              <div class="big" style="font-size:15px;text-align:center;">+240 XP</div>
+            </div>
+            <div class="tile t-vital rise" style="--d:130ms;" data-page="page-zona" role="button" tabindex="0" aria-label="Heti zóna">
+              <div class="p-eyebrow">Heti zóna</div>
+              <div class="spotwrap" style="width:100%;"><div class="zmini" id="zmini"></div></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">kész 2/4 edzés</div>
+            </div>
+            <div class="tile t-quest rise" style="--d:160ms;" data-page="page-kuld" role="button" tabindex="0" aria-label="A mai küldetések">
+              <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
+              <div class="spotwrap"><div class="anchor"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg><span class="badge" id="kuldBadge">1</span></div></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="kuldLine">1/4 elfogadva</div>
+            </div>
+            <div class="tile t-water rise" style="--d:190ms;" data-page="page-warm" role="button" tabindex="0" aria-label="Bemelegítés">
+              <div class="p-eyebrow" style="color:#3E7396;">Bemelegítés</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-lang"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">8 perc · 3 blokk</div>
+            </div>
+            <div class="tile rise" id="tile-niggle" style="--d:220ms;background:linear-gradient(150deg,#FBEBCB,#FFFDF6);box-shadow:0 14px 26px -14px rgba(181,126,20,0.4),0 2px 5px rgba(43,33,24,0.04),inset 0 1px 0 rgba(255,255,255,0.7);" data-page="page-niggle" role="button" tabindex="0" aria-label="Aktív niggle">
+              <div class="p-eyebrow" style="color:#A8801F;">Niggle</div>
+              <div class="spotwrap"><div class="anchor"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><span class="badge" id="nigBadge" style="background:linear-gradient(135deg,#E5C46B,#C9962E);box-shadow:0 3px 8px -2px rgba(201,150,46,0.6);">!</span></div></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="nigTileLine">Jobb váll · aktív</div>
+            </div>
+          </div>
+
+          <p class="habnote">Ha nincs adat, nincs szám: az XP-gyűrű, az 1RM-jelvény és az induló súly csak akkor jelenik meg, ha valós forrásból jön.</p>
+        </div>
+
+      </div>
+
+      <!-- ================= PREP TILE PAGES ================= -->
+      <div class="page p-coral" id="page-gyak">
+        <div class="page-head"><button class="backbtn" data-back="page-gyak">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="nm">Gyakorlatok</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="92" height="92" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+            <div class="bignum">5</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>19</b><small>szett</small></div>
+            <div class="statcell"><b>~74′</b><small>becsült idő</small></div>
+            <div class="statcell"><b>3</b><small>izomcsoport</small></div>
+            <div class="statcell"><b style="color:#A84A26;">3</b><small>progresszió</small></div>
+          </div>
+          <div id="gyakList"></div>
+          <p class="habnote">A sorrend a tervezett — élőben az Áthelyezéssel bármikor átrendezhető, a terv nem változik.</p>
+        </div>
+      </div>
+
+      <div class="page p-coral" id="page-xp">
+        <div class="page-head"><button class="backbtn" data-back="page-xp">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="nm">Várható XP</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-growth"/></svg>
+            <div class="bignum">+240</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>16</b><small>szett dolgozik</small></div>
+            <div class="statcell"><b>3</b><small>skill épül</small></div>
+            <div class="statcell"><b style="color:#A8801F;">1</b><small>szintlépés-esély</small></div>
+          </div>
+          <div class="legend rise" style="--d:60ms;">
+            <span><i style="background:#C9962E;"></i>most tartasz</span>
+            <span><i style="background:#C9962E;opacity:0.4;"></i>ma várható</span>
+          </div>
+          <div class="p-eyebrow rise" style="--d:80ms;padding:0 2px 6px;">Skillek · a mai edzés hatása</div>
+          <div class="vcard rise" style="--d:100ms;padding:2px 12px;">
+            <div class="zrow3 rise" style="--d:130ms;">
+              <div class="mrow" style="gap:9px;">
+                <span class="rr" style="--c:#C9962E;--v:74;"></span>
+                <div class="grow"><div style="font-size:12px;font-weight:700;">Húzás</div><div class="zsub">Lv 7 · 74% a szintig</div></div>
+                <span class="zchip" style="color:#A8801F;background:rgba(201,150,46,0.15);">▲ ma szintet léphetsz</span>
+              </div>
+              <div class="zbar2">
+                <i style="left:2.5px;width:74%;background:#C9962E;--d:190ms;"></i>
+                <i style="left:75%;width:23%;background:#C9962E;opacity:0.4;--d:270ms;"></i>
+              </div>
+            </div>
+            <div class="zrow3 rise" style="--d:220ms;">
+              <div class="mrow" style="gap:9px;">
+                <span class="rr" style="--c:#7FA06C;--v:44;"></span>
+                <div class="grow"><div style="font-size:12px;font-weight:700;">Fogóerő</div><div class="zsub">Lv 5 · 44% a szintig</div></div>
+                <span class="zchip" style="color:#A8801F;background:rgba(201,150,46,0.12);">+58 XP</span>
+              </div>
+              <div class="zbar2">
+                <i style="left:2.5px;width:44%;background:#7FA06C;--d:280ms;"></i>
+                <i style="left:45%;width:9%;background:#7FA06C;opacity:0.4;--d:360ms;"></i>
+              </div>
+            </div>
+            <div class="zrow3 rise" style="--d:310ms;">
+              <div class="mrow" style="gap:9px;">
+                <span class="rr" style="--c:#8A76CC;--v:37;"></span>
+                <div class="grow"><div style="font-size:12px;font-weight:700;">Kar</div><div class="zsub">Lv 6 · 37% a szintig</div></div>
+                <span class="zchip" style="color:#A8801F;background:rgba(201,150,46,0.12);">+52 XP</span>
+              </div>
+              <div class="zbar2">
+                <i style="left:2.5px;width:37%;background:#8A76CC;--d:370ms;"></i>
+                <i style="left:38%;width:8%;background:#8A76CC;opacity:0.4;--d:450ms;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:400ms;padding:6px 2px 6px;">Ma építed · izom-XP</div>
+          <div class="vcard rise" style="--d:420ms;padding:2px 12px;">
+            <div class="zrow3">
+              <div class="mrow" style="gap:9px;"><span class="xrail" style="background:#4E8FB8;height:24px;"></span><div class="grow" style="font-size:12px;font-weight:700;">Hát</div><span class="zchip" style="color:#33749C;background:#DFEDF5;">+96 XP</span></div>
+              <div class="zbar2" style="height:10px;"><i style="left:2.5px;width:58%;background:#4E8FB8;--d:470ms;top:2px;bottom:2px;"></i></div>
+            </div>
+            <div class="zrow3">
+              <div class="mrow" style="gap:9px;"><span class="xrail" style="background:#C46FA0;height:24px;"></span><div class="grow" style="font-size:12px;font-weight:700;">Bicepsz</div><span class="zchip" style="color:#8E3F6F;background:#FAE3ED;">+42 XP</span></div>
+              <div class="zbar2" style="height:10px;"><i style="left:2.5px;width:25%;background:#C46FA0;--d:540ms;top:2px;bottom:2px;"></i></div>
+            </div>
+            <div class="zrow3">
+              <div class="mrow" style="gap:9px;"><span class="xrail" style="background:#8A76CC;height:24px;"></span><div class="grow" style="font-size:12px;font-weight:700;">Váll</div><span class="zchip" style="color:#5D4FA0;background:#EBE6F8;">+28 XP</span></div>
+              <div class="zbar2" style="height:10px;"><i style="left:2.5px;width:17%;background:#8A76CC;--d:610ms;top:2px;bottom:2px;"></i></div>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:680ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-lang"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">⚡ Túlterhelés · 1× +súly · 2× +rep</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">Három gyakorlatnál lép ma a progresszió — ezek adják az XP-lökés nagyját.</div>
+              </div>
+            </div>
+          </div>
+          <p class="habnote">A becslés a valós skill-profilodból jön — profil nélkül ez az oldal üresen sosem jelenik meg.</p>
+        </div>
+      </div>
+
+      <div class="page p-gold" id="page-zona">
+        <div class="page-head"><button class="backbtn" data-back="page-zona">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="nm">Heti zóna</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#s-edzes"/></svg>
+            <div class="bignum">2/4</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>14</b><small>kész szett</small></div>
+            <div class="statcell"><b style="color:#A8801F;">+16</b><small>ma jön</small></div>
+            <div class="statcell"><b>32</b><small>heti terv</small></div>
+          </div>
+          <div class="legend rise" style="--d:70ms;">
+            <span><i style="background:#4E8FB8;"></i>kész</span>
+            <span><i style="background:#4E8FB8;opacity:0.45;"></i>ma</span>
+            <span><i style="background:#4E8FB8;opacity:0.18;"></i>terv</span>
+            <span><i class="zed"></i>cél-zóna</span>
+          </div>
+          <div class="vcard rise" style="--d:100ms;padding:2px 12px;" id="zonecard"></div>
+          <p class="habnote">A zóna sosem büntet: ami a sáv alatt van, az csak információ — a terv is tud alkalmazkodni.</p>
+        </div>
+      </div>
+
+      <div class="page p-coral" id="page-kuld">
+        <div class="page-head"><button class="backbtn" data-back="page-kuld">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="nm">A mai küldetések</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>
+            <div class="bignum" id="kuldHero">1/4</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>4</b><small>ajánlat ma</small></div>
+            <div class="statcell"><b style="color:#4E6B42;" id="kuldAccCell">1</b><small>elfogadva</small></div>
+            <div class="statcell"><b>0</b><small>kötelező</small></div>
+          </div>
+          <div id="chstack"></div>
+          <p class="habnote">Passzolni ér — a kihívás ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.</p>
+        </div>
+      </div>
+
+      <div class="page p-sky" id="page-warm">
+        <div class="page-head"><button class="backbtn" data-back="page-warm">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="nm">Bemelegítés</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-lang"/></svg>
+            <div class="bignum">8′</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>8′</b><small>összesen</small></div>
+            <div class="statcell"><b>3</b><small>blokk</small></div>
+            <div class="statcell"><b style="color:#A8801F;">✓</b><small>niggle-tudatos</small></div>
+          </div>
+          <div class="vcard rise" style="--d:60ms;padding:10px 12px;">
+            <div class="p-eyebrow" style="padding-bottom:2px;">Idő-ív · 8 perc</div>
+            <div class="zbar2">
+              <i style="left:2.5px;width:36%;background:#9CC4E0;--d:120ms;"></i>
+              <i style="left:39.5%;width:36%;background:#4E8FB8;--d:200ms;"></i>
+              <i style="left:76.5%;width:22%;background:#33749C;--d:280ms;"></i>
+            </div>
+            <div class="legend" style="padding:6px 0 0;">
+              <span><i style="background:#9CC4E0;"></i>stretching 3′</span>
+              <span><i style="background:#4E8FB8;"></i>cardio 3′</span>
+              <span><i style="background:#33749C;"></i>aktiváció 2′</span>
+            </div>
+          </div>
+          <div class="vcard rise" style="--d:120ms;padding:2px 12px;">
+            <div class="warmrow" style="padding:10px 2px;">
+              <span class="kdisc" style="background:#EFE8DD;"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-rend"/></svg></span>
+              <div class="grow"><div style="font-size:11px;font-weight:700;">Dinamikus stretching</div><div class="zsub">vállöv + csípő fókusz</div></div>
+              <span class="zchip" style="color:#3E7396;background:#DFEDF5;">3 perc</span>
+            </div>
+            <div class="warmrow" style="padding:10px 2px;">
+              <span class="kdisc" style="background:#DFEDF5;"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-futas"/></svg></span>
+              <div class="grow"><div style="font-size:11px;font-weight:700;">Cardio-lite · evezőpad</div><div class="zsub">könnyű tempó, pulzus-emelés</div></div>
+              <span class="zchip" style="color:#3E7396;background:#DFEDF5;">3 perc</span>
+            </div>
+            <div class="warmrow" style="padding:10px 2px;">
+              <span class="kdisc" style="background:#FFE7DC;"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></span>
+              <div class="grow"><div style="font-size:11px;font-weight:700;">Aktiváció · band pull-apart × 20</div><div class="zsub">lapocka + rotátorköpeny</div></div>
+              <span class="zchip" style="color:#3E7396;background:#DFEDF5;">2 perc</span>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:180ms;">
+            <div class="mrow" style="gap:9px;">
+              <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-eletjel"/></svg>
+              <div class="grow">
+                <div style="font-size:12px;font-weight:700;">A vállad miatt ma ez duplán számít</div>
+                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A band pull-apart készíti elő a jobb vállat — utána jöhet a B1 az evezésnél.</div>
+              </div>
+            </div>
+          </div>
+          <p class="habnote">Fix protokoll — a gyakorlat-szintű bemelegítő szettek (B1, B2) már az edzésben élnek.</p>
+        </div>
+      </div>
+
+      <div class="page p-gold" id="page-niggle">
+        <div class="page-head"><button class="backbtn" data-back="page-niggle">‹ Indítás</button></div>
+        <div class="page-hero">
+          <div class="mrow" style="justify-content:center;gap:10px;">
+            <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg>
+            <div class="nm" style="font-size:16px;">Jobb váll · aktív niggle</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="nigcard">
+            <div style="font-size:10.5px;font-weight:300;">A keddi röpin megint jelzett — a Face Pull könnyű súllyal, a pulldown pronált fogással menjen. Az aktív edzésben az első két gyakorlatnál emlékeztetünk.</div>
+            <div class="btn2" style="margin-top:9px;">
+              <button class="ghost" id="nigOk">Értem · jó így</button>
+              <button class="ghost" style="opacity:0.65;">Tudatosítsuk később</button>
+            </div>
+          </div>
+          <p class="habnote">A niggle sosem tilt — csak emlékeztet. Te döntesz, mi fér bele ma.</p>
+        </div>
+      </div>
+
+      <!-- ================= ACTIVE ================= -->
+      <div class="page" id="page-active">
+        <div class="wk-top">
+          <button class="backbtn" id="actBack">‹</button>
+          <button class="cntbtn" id="cntbtn"><div class="t1" id="cntT1">Pull A</div><div class="t2" id="cntT2"></div></button>
+          <button class="menu3" id="menubtn" aria-label="Gyakorlat műveletek">⋯</button>
+        </div>
+        <div class="exdots" id="exdots"></div>
+        <div class="sprog" id="sprog" aria-hidden="true"></div>
+        <div class="nigstrip" id="nigstrip"></div>
+        <div class="page-body" style="padding:0 0 16px;">
+          <div class="excard" id="excard"></div>
+          <div id="posig"></div>
+          <div class="pagerbar" id="pager"></div>
+          <div class="slist" id="slist"></div>
+        </div>
+      </div>
+
+      <!-- ================= SUMMARY ================= -->
+      <div class="page p-coral" id="page-summary">
+        <div class="page-head">
+          <button class="backbtn" id="sumClose">✕ Bezárás</button>
+        </div>
+        <div class="page-body" id="sumBody" style="padding-top:4px;"></div>
+      </div>
+
+      <!-- level-up overlay -->
+      <div class="lvlup" id="lvlup">
+        <div class="xplbl">MA SZEREZTED</div>
+        <div class="xpnum" id="lvXp">+0 XP</div>
+        <div class="lvring" style="--v:0;" id="lvring"><div class="in"><b>Lv 8</b><small>HÚZÁS</small></div></div>
+        <div style="font-size:13px;font-weight:700;">Szintet léptél: Húzás Lv 8</div>
+        <div class="lvgrid">
+          <div class="cell2"><b>+58</b>Fogóerő · Lv 5</div>
+          <div class="cell2"><b>+52</b>Kar · Lv 6</div>
+        </div>
+        <div class="lvchip2" id="lvchip">PULL A · 74′</div>
+        <button class="cta" id="lvOk" style="padding:9px 26px;">Tovább</button>
+      </div>
+
+      <!-- sheets -->
+      <div class="bsheet-back" id="sback"></div>
+      <div class="bsheet" id="sh-action"></div>
+      <div class="bsheet" id="sh-overview"></div>
+      <div class="bsheet" id="sh-edit"></div>
+      <div class="bsheet" id="sh-note"></div>
+      <div class="bsheet" id="sh-extra"></div>
+      <div class="bsheet" id="sh-fb"></div>
+
+      <div class="medtoast" id="medtoast"></div>
+
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>Mi van benne — a teljes feature-készlet</h2>
+        <ul>
+          <li><strong>Prep briefing — Huawei-módra</strong> — a hero egy adatot mond (várható XP) és az
+          <strong>indítás fold fölött van</strong>; alatta hat csempe, mind saját oldallal: Gyakorlatok,
+          Fejlődés (skill-sávok + „Ma építed"), Heti zóna (státusz-chipek), Küldetések (elfogad/passz,
+          conf% vagy <em>tanulom</em>), Bemelegítés, Niggle (badge, „Értem" után kezelve ✓).</li>
+          <li><strong>Gyakorlat-csempék</strong> — a Gyakorlatok oldalon minden gyakorlat maga is csempe:
+          családszín-mosás + sín, clay korong, <strong>címkézett oszlopok</strong> (Cél · Induló súly),
+          a szett-számot a mini pöttyök mondják (B szaggatott arany), 1RM-medál, és lábsor:
+          „múlt héten → progresszió" + kihívás-jelölő.</li>
+          <li><strong>Élő logolás</strong> — óriás stepperek (tap-to-edit értékkel), RIR 0–3 (bemelegítőn rejtve),
+          oldal L/B/R izolációnál, szett-jegyzet, Szett kész → pihenő-sáv (szünet/folytat/kihagy),
+          medál-toast, szabad navigáció 5 úton (lapozó, pöttyök, swipe, áttekintő lap, áthelyezés).</li>
+          <li><strong>⋯ műveletek</strong> — Áthelyezés (a MOST gyakorlat is mozgatható), Kihagyás, ＋Szett
+          („Csak ma / Minden hétre" terv-visszaírás), Jegyzet (tartós, sablonra), Edzés befejezése.</li>
+          <li><strong>Nyugodt alapállapot</strong> — élő nézetben csak a logoló-kártya látszik; a Progresszió
+          és a Szettek egy-egy vékony <strong>lenyitható sáv</strong> („⚡ Progresszió · +2,5 kg ▾",
+          „Szettek · 2/6 ✓ · 1 234 kg ▾") — minden ott van, de csak kérésre nyílik ki.</li>
+          <li><strong>Szett-lista</strong> (lenyitva) — ghost-célok, MOST ↑, ✓/▼ cél alatt/▲ cél felett, medál-chip,
+          láb: volumen · vs múlt hét · Ø RIR. Sorra koppintva szerkesztés/törlés (utolsó szett nem törölhető).</li>
+          <li><strong>Zárás</strong> — RP-debrief gyakorlatonként (pump/ízület/mennyiség), összegző: halo-hero,
+          izom-pillek, medálok + célszettek, kihívás-eredmények, gyakorlat-térkép chip-ekkel, jegyzet,
+          Edzés lezárása → szintlépés-képernyő.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Őszinteség-kapuk (megtartva)</h2>
+        <ul>
+          <li>Dead Hang (plyo): nincs súly-stepper, nincs induló-súly pill — nulla helyett semmi.</li>
+          <li>Kihívás conf nélkül: <em>„conf tanulom"</em>. Ø RIR adat nélkül: „–".</li>
+          <li>Kihagyott kihívás sosem piros: „◯ nem jött össze" tompított.</li>
+          <li>A „Tudatosítsuk később" és a „Passz" a mai appban is inert — itt is az.</li>
+        </ul>
+      </div>
+      <p class="note">A pihenő a prototípusban 10× sebességgel fut (a valós 2:30 / 1:30 számokat mutatja).
+      Élőben: compound 150 mp, egyéb 90 mp — konfigurálhatóság backlog.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- data ---------- */
+  var FAM = {
+    sky:  { rail: '#4E8FB8', wash: '#DFEDF5', deep: '#33749C', grad: 'linear-gradient(135deg,#6FA8CC,#33749C)', glow: 'rgba(78,143,184,0.42)' },
+    lav:  { rail: '#8A76CC', wash: '#EBE6F8', deep: '#5D4FA0', grad: 'linear-gradient(135deg,#9C8FD0,#6C5FA3)', glow: 'rgba(108,95,163,0.42)' },
+    rose: { rail: '#C46FA0', wash: '#FAE3ED', deep: '#8E3F6F', grad: 'linear-gradient(135deg,#D98BB8,#A85788)', glow: 'rgba(142,63,111,0.42)' }
+  };
+  var EX = [
+    { id: 'e1', name: 'Chest Supported Row', muscle: 'Hát', fam: 'sky', type: 'compound',
+      warm: 2, work: 4, repMin: 6, repMax: 10, rir: 1,
+      presc: [{ k: 'w', w: 52.5, r: 8 }, { k: 'w', w: 77.5, r: 3 }, { k: 'g', w: 105, r: 6 }, { k: 'g', w: 105, r: 6 }, { k: 'g', w: 105, r: 6 }, { k: 'g', w: 105, r: 6 }],
+      last: { w: 102.5, r: 8, rir: 1 }, oneRm: 106,
+      prog: { lever: 'weight', chip: '+2,5 kg ↑', tone: 'up', tw: '105 × 6', why: 'Múlt héten repMax fölé mentél tartalékkal — ma +2,5 kg, vissza 6 repre.' },
+      note: 'Mellkas a padon marad, lapocka hátra-le.', video: true, img: true },
+    { id: 'e2', name: 'Lat Pulldown', muscle: 'Hát', fam: 'sky', type: 'compound',
+      warm: 1, work: 4, repMin: 8, repMax: 12, rir: 2,
+      presc: [{ k: 'w', w: 57.5, r: 4 }, { k: 'g', w: 82.5, r: 10 }, { k: 'g', w: 82.5, r: 10 }, { k: 'g', w: 82.5, r: 10 }, { k: 'g', w: 82.5, r: 10 }],
+      last: { w: 82.5, r: 9, rir: 2 }, oneRm: null,
+      prog: { lever: 'rep', chip: '+1 rep ↑', tone: 'rep', tw: '82,5 × 10', why: 'A 9-es rep megvolt tartalékkal — ma +1 ismétlés a sávon belül.' },
+      note: '', video: true, img: true },
+    { id: 'e3', name: 'Face Pull', muscle: 'Váll', fam: 'lav', type: 'isolation',
+      warm: 0, work: 3, repMin: 12, repMax: 15, rir: 2,
+      presc: [{ k: 'g', w: 35, r: 13 }, { k: 'g', w: 35, r: 13 }, { k: 'g', w: 35, r: 13 }],
+      last: { w: 35, r: 13, rir: 0 }, oneRm: null,
+      prog: { lever: 'hold', chip: 'tartás', tone: 'hold', tw: '35 × 13', why: 'Múlt héten grind volt (RIR 0) — ma tartjuk, minőségre.' },
+      note: '', video: true, img: false },
+    { id: 'e4', name: 'Hammer Curl', muscle: 'Bicepsz', fam: 'rose', type: 'isolation',
+      warm: 0, work: 3, repMin: 10, repMax: 12, rir: 1,
+      presc: [{ k: 'g', w: 16, r: 11 }, { k: 'g', w: 16, r: 11 }, { k: 'g', w: 16, r: 11 }],
+      last: { w: 16, r: 10, rir: 1 }, oneRm: null,
+      prog: { lever: 'rep', chip: '+1 rep ↑', tone: 'rep', tw: '16 × 11', why: 'Stabil 10-es után jöhet a 11.' },
+      note: '', video: false, img: true },
+    { id: 'e5', name: 'Dead Hang', muscle: 'Hát', fam: 'sky', type: 'plyo',
+      warm: 0, work: 2, repMin: 45, repMax: 60, rir: null,
+      presc: [{ k: 'g', w: null, r: 50 }, { k: 'g', w: null, r: 50 }],
+      last: null, oneRm: null,
+      prog: null, ai: 'Fix-zárás blokk — váll-egészség, saját testsúllyal. A cél másodpercben értendő.',
+      note: '', video: false, img: false }
+  ];
+  var byId = {};
+  EX.forEach(function (e) { byId[e.id] = e; });
+
+  var CH = [
+    { id: 'ch1', type: 'PR-kísérlet', ex: 'e1', target: '107,5 kg × 8', conf: 'conf 72%', risk: 'alacsony kockázat',
+      why: 'Március óta 102,5 a stabil ablak, és a 7ó+ alvás mintád ma PR-ablakot nyit.',
+      refs: ['PR · Chest Row 105,8 · márc 4.', 'Minta · 7ó+ alvás → PR-ablak'],
+      glory: 'Új csúcs · 8 hét óta az első PR', acc: false,
+      test: function () { return anyWorking('e1', function (s) { return s.w >= 107.5 && s.r >= 8; }); } },
+    { id: 'chov', type: 'Túlterhelés', ex: 'e1', target: '105 kg × 6', conf: 'conf tanulom', risk: 'alacsony kockázat',
+      why: 'A progresszió-motor mai ajánlása — ez a hét lépcsője.',
+      refs: [], glory: 'Teljesítsd a mai ajánlott terhelést.', acc: true,
+      test: function () { return anyWorking('e1', function (s) { return s.w >= 105 && s.r >= 6; }); } },
+    { id: 'ch2', type: 'Mélység', ex: 'e3', target: 'Az utolsó szett RIR 0-ig', conf: 'conf 81%', risk: 'közép kockázat',
+      why: 'A Face Pull-nál stabil a formád — ma elmehet nulláig.',
+      refs: ['Múlt hét · RIR 0 gond nélkül'], glory: 'A mélység a legolcsóbb inger', acc: false,
+      test: function () { var l = S.logged.e3; if (!l.length) return null; var s = l[l.length - 1]; return s.rir === 0; } },
+    { id: 'ch3', type: 'Volumen', ex: 'e4', target: '+1 szett · 4×10–12', conf: 'conf 68%', risk: 'alacsony kockázat',
+      why: 'A bicepsz heti volumene a zóna alján — egy plusz szett pont befér.',
+      refs: ['Heti zóna · kar a sáv alatt'], glory: 'Zónába billen a kar', acc: false,
+      test: function () { var n = S.logged.e4.filter(function (s) { return !s.warm; }).length; return n >= 4; } }
+  ];
+
+  var ZONES = [
+    { g: 'Hát', fam: 'sky', done: 6, today: 10, plan: 16, solid: 30, tod: 45, gho: 14, zn: 48, ring: 38,
+      chip: '▲ ma zónába érsz', cc: '#A8801F', cb: 'rgba(201,150,46,0.15)' },
+    { g: 'Váll', fam: 'lav', done: 5, today: 3, plan: 8, solid: 38, tod: 14, gho: 10, zn: 70, ring: 63,
+      chip: '✓ zónában', cc: '#4E6B42', cb: 'rgba(143,175,126,0.2)' },
+    { g: 'Bicepsz', fam: 'rose', done: 3, today: 3, plan: 8, solid: 12, tod: 16, gho: 8, zn: 45, ring: 38,
+      chip: '↓ még 2 szett a zónáig', cc: '#A8801F', cb: 'rgba(201,150,46,0.15)' }
+  ];
+
+  /* ---------- state ---------- */
+  var S = {
+    order: ['e1', 'e2', 'e3', 'e4', 'e5'],
+    logged: { e1: [], e2: [], e3: [], e4: [], e5: [] },
+    extra: {}, removed: {}, skipped: [],
+    viewed: 'e1', debrief: null, debriefed: {},
+    noteLocal: {}, medals: [], feedback: {}
+  };
+  var UI = { inp: null, inpKey: '', note: '', imgOpen: false, vidOpen: false, nigDismissed: false, progOpen: false, slistOpen: false, noteOpen: false };
+  var rest = { status: 'idle', remain: 0, total: 0, timer: null };
+
+  function planned(id) { var e = byId[id]; return e.warm + e.work; }
+  function effective(id) { return Math.max(1, planned(id) + (S.extra[id] || 0) - (S.removed[id] || 0)); }
+  function cur(id) { return S.logged[id].length; }
+  function isSkipped(id) { return S.skipped.indexOf(id) !== -1; }
+  function isDone(id) { return cur(id) >= effective(id); }
+  function resolved(id) { return isSkipped(id) || isDone(id); }
+  function allResolved() { return S.order.every(resolved); }
+  function iOf(id) { return S.order.indexOf(id); }
+  function prescAt(id, i) {
+    var p = byId[id].presc;
+    if (i < p.length) return p[i];
+    var lastG = null;
+    for (var j = p.length - 1; j >= 0; j--) { if (p[j].k === 'g') { lastG = p[j]; break; } }
+    return lastG ? { k: 'g', w: lastG.w, r: lastG.r } : { k: 'g', w: null, r: byId[id].repMin };
+  }
+  function warmCount(id) {
+    var n = 0; byId[id].presc.forEach(function (p) { if (p.k === 'w') n++; }); return n;
+  }
+  function anyWorking(id, fn) {
+    var l = S.logged[id].filter(function (s) { return !s.warm; });
+    if (!l.length) return null;
+    return l.some(fn);
+  }
+  function nextUnfinishedAfter(id) {
+    var i = iOf(id);
+    for (var k = 1; k <= S.order.length; k++) {
+      var cand = S.order[(i + k) % S.order.length];
+      if (!resolved(cand)) return cand;
+    }
+    return null;
+  }
+  function fmtW(w) { return w == null ? '—' : ('' + w).replace('.', ','); }
+  function fmtT(sec) { var m = Math.floor(sec / 60), s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; }
+  function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  /* ---------- prep render ---------- */
+  var zonecard = document.getElementById('zonecard');
+  zonecard.innerHTML = ZONES.map(function (z, zi) {
+    var f = FAM[z.fam];
+    var d0 = 140 + zi * 90;
+    return '<div class="zrow3 rise" style="--d:' + d0 + 'ms;">' +
+      '<div class="mrow" style="gap:9px;">' +
+      '<span class="rr" style="--c:' + f.rail + ';--v:' + z.ring + ';"></span>' +
+      '<div class="grow"><div style="font-size:12px;font-weight:700;">' + z.g + '</div>' +
+      '<div class="zsub">kész ' + z.done + ' · ma +' + z.today + ' · terv ' + z.plan + '</div></div>' +
+      '<span class="zchip" style="color:' + z.cc + ';background:' + z.cb + ';">' + z.chip + '</span></div>' +
+      '<div class="zbar2"><span class="zone" style="left:' + z.zn + '%;"></span>' +
+      '<i style="left:2.5px;width:' + z.solid + '%;background:' + f.rail + ';--d:' + (d0 + 60) + 'ms;"></i>' +
+      '<i style="left:' + (z.solid + 1) + '%;width:' + z.tod + '%;background:' + f.rail + ';opacity:0.45;--d:' + (d0 + 140) + 'ms;"></i>' +
+      '<i style="left:' + (z.solid + z.tod + 2) + '%;width:' + z.gho + '%;background:' + f.rail + ';opacity:0.18;--d:' + (d0 + 220) + 'ms;"></i>' +
+      '</div></div>';
+  }).join('');
+
+  var chstack = document.getElementById('chstack');
+  var CHM = {
+    ch1: { icon: '#s-hegycel', deep: '#A8801F', wash: 'rgba(201,150,46,0.16)', confv: 72 },
+    chov: { icon: '#i-edzes', deep: '#A84A26', wash: 'rgba(255,107,74,0.13)', confv: null },
+    ch2: { icon: '#i-lang', deep: '#5D4FA0', wash: 'rgba(108,95,163,0.13)', confv: 81 },
+    ch3: { icon: '#i-meso', deep: '#4E6B42', wash: 'rgba(143,175,126,0.2)', confv: 68 }
+  };
+  function renderChallenges() {
+    chstack.innerHTML = CH.map(function (c, ci) {
+      var e = byId[c.ex], m = CHM[c.id];
+      return '<div class="chcard rise" style="--d:' + (60 + ci * 80) + 'ms;border-left:4px solid ' + m.deep + ';">' +
+        '<div class="mrow" style="gap:8px;">' +
+        '<span class="kdisc" style="background:' + m.wash + ';"><svg width="18" height="18" viewBox="0 0 100 100"><use href="' + m.icon + '"/></svg></span>' +
+        '<div class="grow"><div style="font-size:9.5px;font-weight:700;color:' + m.deep + ';">' + c.type + '</div>' +
+        '<div class="mut" style="font-size:8.5px;">' + e.name + '</div></div>' +
+        '<span class="risktag">' + c.risk + '</span></div>' +
+        '<div class="tgt">' + c.target + '</div>' +
+        (m.confv != null
+          ? '<div class="confrow"><span class="rr" style="--c:' + m.deep + ';--v:' + m.confv + ';"></span><span class="mut" style="font-size:8.5px;font-weight:700;">conf ' + m.confv + '%</span></div>'
+          : '<div class="mut" style="font-size:8.5px;font-weight:700;">conf tanulom</div>') +
+        '<div style="font-size:9.5px;font-weight:300;margin-top:5px;">' + c.why + ' <span style="color:' + m.deep + ';font-weight:600;">· ' + c.glory + '</span></div>' +
+        (c.refs.length ? '<div class="pillrow">' + c.refs.map(function (r) { return '<span class="reftag">' + r + '</span>'; }).join('') + '</div>' : '') +
+        '<div class="chbtns"><button class="chacc' + (c.acc ? ' on' : '') + '" data-ch="' + c.id + '" aria-pressed="' + c.acc + '">' + (c.acc ? '✓ Elfogadva' : 'Elfogadom') + '</button>' +
+        (c.acc ? '' : '<button class="ghost">Passz</button>') + '</div></div>';
+    }).join('');
+    var n = CH.filter(function (c) { return c.acc; }).length;
+    document.getElementById('kuldBadge').textContent = n;
+    document.getElementById('kuldBadge').style.display = n ? 'grid' : 'none';
+    document.getElementById('kuldLine').textContent = n + '/' + CH.length + ' elfogadva';
+    document.getElementById('kuldHero').textContent = n + '/' + CH.length;
+    var cell = document.getElementById('kuldAccCell');
+    if (cell) cell.textContent = n;
+    chstack.querySelectorAll('.chacc').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = CH.filter(function (x) { return x.id === b.getAttribute('data-ch'); })[0];
+        c.acc = !c.acc;
+        renderChallenges(); renderPrepList();
+      });
+    });
+  }
+
+  var gyakList = document.getElementById('gyakList');
+  function renderPrepList() {
+    var groups = [], seen = {};
+    S.order.forEach(function (id) {
+      var e = byId[id], key = e.muscle === 'Bicepsz' ? 'Kar' : e.muscle;
+      if (!seen[key]) { seen[key] = { label: key, fam: e.fam, items: [] }; groups.push(seen[key]); }
+      seen[key].items.push(e);
+    });
+    var gi = 0;
+    gyakList.innerHTML = groups.map(function (g) {
+      var fg = FAM[g.fam];
+      return '<div class="p-eyebrow rise" style="--d:' + (70 + gi * 60) + 'ms;padding:4px 2px 6px;color:' + fg.deep + ';">' + g.label + ' · ' + g.items.length + ' gyakorlat</div>' +
+        g.items.map(function (e) {
+          var f = FAM[e.fam];
+          var d = 90 + (gi++) * 70;
+          var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
+          var sw = null;
+          e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
+          var stats = '<div><small>Cél</small><b>' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir : '') + '</b></div>' +
+            (sw != null ? '<div><small>Induló súly</small><b>' + fmtW(sw) + ' kg</b></div>' : '');
+          var dots = '';
+          var wc2 = warmCount(e.id);
+          for (var i = 0; i < e.warm + e.work; i++) {
+            var pi = prescAt(e.id, i);
+            dots += '<span class="md ' + (pi.k === 'w' ? 'wu' : 'wk') + '">' + (pi.k === 'w' ? 'B' + (i + 1) : (i + 1 - wc2)) + '</span>';
+          }
+          var foot = '';
+          if (e.last || e.prog || acc) {
+            foot = '<div class="xfoot">' +
+              (e.last ? '<span><small>Múlt héten</small><b>' + fmtW(e.last.w) + ' × ' + e.last.r + ' @' + e.last.rir + '</b></span>' : '') +
+              (e.last && e.prog ? '<span class="arr">→</span>' : '') +
+              (e.prog ? '<span class="dchip ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>' : '') +
+              (acc ? '<span class="xchip" style="color:#A84A26;border-color:rgba(255,107,74,0.4);margin-left:auto;"><svg width="9" height="9" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>kihívás</span>' : '') +
+              '</div>';
+          }
+          return '<div class="extile rise" style="--d:' + d + 'ms;--fr:' + f.rail + ';--fw:' + f.wash + ';--fd:' + f.deep + ';--fg:' + f.glow + ';">' +
+            '<div class="mrow" style="gap:9px;align-items:flex-start;">' +
+            '<span class="kdisc" style="background:rgba(255,255,255,0.8);"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></span>' +
+            '<div class="grow">' +
+            '<div class="p-eyebrow" style="color:' + f.deep + ';">' + e.muscle + ' · ' + e.type + '</div>' +
+            '<div style="font-size:12.5px;font-weight:700;">' + e.name + '</div>' +
+            '</div>' +
+            (e.oneRm ? '<span class="xrm"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' + e.oneRm + ' kg · 1RM</span>' : '') +
+            '</div>' +
+            '<div class="xstats">' + stats + '</div>' +
+            '<div class="mini-dots">' + dots + '</div>' +
+            foot + '</div>';
+        }).join('');
+    }).join('');
+  }
+
+  var zmini = document.getElementById('zmini');
+  zmini.innerHTML = ZONES.map(function (z) {
+    var f = FAM[z.fam];
+    return '<div class="zm"><span style="width:' + (z.solid + z.tod) + '%;background:linear-gradient(90deg,' + f.rail + ' ' + Math.round(z.solid / (z.solid + z.tod) * 100) + '%,' + f.rail + '80);"></span></div>';
+  }).join('');
+
+  document.getElementById('nigOk').addEventListener('click', function () {
+    UI.nigDismissed = true;
+    document.getElementById('nigBadge').style.display = 'none';
+    document.getElementById('nigTileLine').textContent = 'Jobb váll · kezelve ✓';
+    closePage('page-niggle');
+  });
+  document.getElementById('prepBack').addEventListener('click', function () {});
+
+  /* tile → page bindings (prep) */
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+
+  /* ---------- pages ---------- */
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var b = pg.querySelector('.page-body'); if (b) b.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+
+  document.getElementById('startBtn').addEventListener('click', function () {
+    openPage('page-active'); renderActive();
+  });
+  document.getElementById('actBack').addEventListener('click', function () {
+    stopRest(); closePage('page-active');
+    var n = S.order.reduce(function (a, id) { return a + cur(id); }, 0);
+    var btn = document.getElementById('startBtn');
+    if (n > 0 && !allResolved()) btn.textContent = 'Folytassuk → · ' + n + ' szett kész';
+  });
+
+  /* ---------- rest timer (10× demo speed) ---------- */
+  function startRest(sec) {
+    stopRest();
+    rest.status = 'running'; rest.remain = sec; rest.total = sec;
+    rest.timer = setInterval(function () {
+      rest.remain--;
+      if (rest.remain <= 0) { stopRest(); renderActive(); return; }
+      updateRestBar();
+    }, 100);
+    renderActive();
+  }
+  function stopRest() { if (rest.timer) clearInterval(rest.timer); rest.timer = null; rest.status = 'idle'; }
+  function pauseRest() { if (rest.timer) clearInterval(rest.timer); rest.timer = null; rest.status = 'paused'; renderActive(); }
+  function resumeRest() {
+    rest.status = 'running';
+    rest.timer = setInterval(function () {
+      rest.remain--;
+      if (rest.remain <= 0) { stopRest(); renderActive(); return; }
+      updateRestBar();
+    }, 100);
+    renderActive();
+  }
+  function updateRestBar() {
+    var f = document.querySelector('#excard .restbar .fillr');
+    var t = document.querySelector('#excard .restbar b');
+    if (f) f.style.width = (rest.remain / rest.total * 100) + '%';
+    if (t) t.textContent = fmtT(rest.remain);
+  }
+
+  /* ---------- prefill ---------- */
+  function prefillFor(e) {
+    var c = cur(e.id), p = prescAt(e.id, c);
+    var lg = S.logged[e.id], prevW = null;
+    for (var i = lg.length - 1; i >= 0; i--) { if (!lg[i].warm) { prevW = lg[i]; break; } }
+    if (p.k === 'w') return { w: p.w, r: p.r, rir: 0, side: null };
+    return {
+      w: (prevW && prevW.w != null) ? prevW.w : (p.w != null ? p.w : (e.last ? e.last.w : 0)),
+      r: p.r != null ? p.r : (prevW ? prevW.r : (e.last ? e.last.r : (e.repMin || 10))),
+      rir: prevW && prevW.rir != null ? prevW.rir : (e.rir != null ? e.rir : 1),
+      side: null
+    };
+  }
+
+  /* ---------- active render ---------- */
+  function renderActive() {
+    var vid = S.debrief || S.viewed;
+    var e = byId[vid], f = FAM[e.fam];
+    var idx = iOf(vid), n = S.order.length;
+    var doneSets = S.order.reduce(function (a, id) { return a + cur(id); }, 0);
+    var totSets = S.order.reduce(function (a, id) { return a + effective(id); }, 0);
+    var c = cur(vid), eff = effective(vid);
+    var key = vid + ':' + c + ':' + eff;
+    if (UI.inpKey !== key) { UI.inp = prefillFor(e); UI.inpKey = key; UI.imgOpen = false; UI.vidOpen = false; UI.noteOpen = false; }
+
+    document.getElementById('cntT1').textContent = 'Pull A';
+    document.getElementById('cntT2').textContent = '▾ ' + (idx + 1) + '/' + n + ' gyakorlat · ' + doneSets + '/' + totSets + ' szett';
+    document.getElementById('cntbtn').disabled = !!S.debrief;
+    document.getElementById('menubtn').disabled = !!S.debrief;
+
+    document.getElementById('exdots').innerHTML = S.order.map(function (id, i2) {
+      var cls = isSkipped(id) ? 'skp' : (i2 === idx ? 'cur' : (isDone(id) ? 'don' : ''));
+      return '<button class="' + cls + '" data-jump="' + id + '" aria-label="Ugrás: ' + byId[id].name + '"></button>';
+    }).join('');
+    document.getElementById('exdots').querySelectorAll('[data-jump]').forEach(function (b) {
+      b.addEventListener('click', function () { jumpTo(b.getAttribute('data-jump')); });
+    });
+
+    document.getElementById('sprog').innerHTML = S.order.map(function (id, i2) {
+      var w = Math.max(1, planned(id));
+      var op = isDone(id) || isSkipped(id) ? 1 : (i2 === idx ? 0.45 : 0.22);
+      return '<i style="flex:' + w + ';background:' + FAM[byId[id].fam].rail + ';opacity:' + op + ';"></i>';
+    }).join('');
+
+    var nig = document.getElementById('nigstrip');
+    if (idx <= 1) {
+      nig.style.display = 'block';
+      nig.textContent = '⚠ Jobb váll aktív · ' + (idx === 1 ? 'pronált fogás' : 'óvatos, először warm-up');
+    } else nig.style.display = 'none';
+
+    renderExcard(e, f, idx, n, c, eff);
+    renderPoSig(e);
+    renderPager(idx);
+    renderSlist(e, f, c, eff);
+  }
+
+  function renderExcard(e, f, idx, n, c, eff) {
+    var card = document.getElementById('excard');
+    card.style.setProperty('--fr', f.rail); card.style.setProperty('--fw', f.wash);
+    card.style.setProperty('--fd', f.deep); card.style.setProperty('--fg', f.glow);
+    card.style.setProperty('--fgrad', f.grad);
+    var acc = CH.filter(function (ch) { return ch.acc && ch.ex === e.id; })[0];
+    var p = prescAt(e.id, c);
+    var isWu = p.k === 'w' && c < eff;
+    var wc = warmCount(e.id);
+    var doneG = S.logged[e.id].filter(function (s) { return !s.warm; }).length;
+    var effG = eff - wc;
+    var failure = e.rir != null && e.rir <= 1;
+
+    var h = '';
+    h += '<div class="mrow" style="align-items:flex-start;gap:7px;">' +
+      '<div class="grow">' +
+      '<div class="p-eyebrow" style="color:' + f.deep + ';">' + (idx + 1) + '/' + n + ' · ' + e.muscle + ' · ' + e.type + '</div>' +
+      '<div style="font-size:17px;font-weight:700;letter-spacing:-0.01em;">' + e.name + '</div>' +
+      '</div>' +
+      (e.img ? '<button class="mbtn' + (UI.imgOpen ? ' on' : '') + '" id="imgchip" aria-label="Kép" aria-expanded="' + UI.imgOpen + '">⛶</button>' : '') +
+      (e.video ? '<button class="mbtn' + (UI.vidOpen ? ' on' : '') + '" id="vidchip" aria-label="Demo videó" aria-expanded="' + UI.vidOpen + '"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-video"/></svg></button>' : '') +
+      '</div>';
+    h += '<div class="metaline">' +
+      '<span class="' + (failure ? 'hot' : 'cool') + '">' + (e.rir == null ? 'idő-alapú' : (failure ? '🔥 Failure' : '🌿 Volume')) + '</span>' +
+      '<span>· ' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + '</span>' +
+      (e.rir != null ? '<span>· RIR ' + e.rir + '</span>' : '') +
+      (acc ? '<span class="chmini"><svg width="9" height="9" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>' + acc.target + '</span>' : '') +
+      '</div>';
+    var note = S.noteLocal[e.id] !== undefined ? S.noteLocal[e.id] : e.note;
+    if (note) h += '<div class="notepill"><span style="flex:none;">✎</span><span class="ntext">' + esc(note) + '</span></div>';
+    var fw = null;
+    e.presc.forEach(function (pp) { if (fw == null && pp.k === 'g' && pp.w != null) fw = pp.w; });
+    if (UI.imgOpen) h += '<div class="imghero"><div class="fr"><svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-edzes"/></svg><small>indító</small></div><div class="fr f2" style="background:' + f.wash + ';"><svg width="44" height="44" viewBox="0 0 100 100" style="transform:scaleY(0.8);"><use href="#i-edzes"/></svg><small>záró</small></div></div>';
+    if (UI.vidOpen) h += '<div class="vidbox"><div><svg width="34" height="34" viewBox="0 0 100 100"><use href="#i-video"/></svg><div>YouTube demo · beágyazva<br><span style="font-weight:400;color:#8C7F72;">nocookie-embed, az appon belül</span></div></div></div>';
+
+    /* --- logoló panel: külön vizuális zóna --- */
+    var slotLbl;
+    if (c >= eff) slotLbl = 'Kész';
+    else if (p.k === 'w') slotLbl = 'Logolás · B' + (c + 1) + ' · cél ' + fmtW(p.w) + ' × ' + p.r;
+    else slotLbl = 'Logolás · ' + (c + 1 - wc) + '. working · cél ' + (p.w != null ? fmtW(p.w) + ' × ' : '') + p.r + (e.type === 'plyo' ? ' mp' : '');
+    h += '<div class="logbox">';
+    h += '<div class="mrow"><span class="p-eyebrow" style="color:' + f.deep + ';">' + slotLbl + '</span><span class="grow"></span><span class="lgoal">' + doneG + '/' + effG + ' szett</span></div>';
+
+    h += '<div class="setdots" style="margin-top:8px;">';
+    for (var i = 0; i < eff; i++) {
+      var pi = prescAt(e.id, i);
+      var cls = i < c ? 'sd don' : (i === c ? 'sd cur' : 'sd');
+      if (i >= c && pi.k === 'w') cls += ' wu';
+      if (i >= c && i >= planned(e.id)) cls += ' ext';
+      var lbl = i < c ? '✓' : (pi.k === 'w' ? 'B' + (i + 1) : (i + 1 - wc));
+      h += '<span class="' + cls + '">' + lbl + '</span>';
+    }
+    var lastWu = null;
+    S.logged[e.id].forEach(function (s) { if (s.warm) lastWu = s; });
+    if (lastWu && fw) h += '<span class="wunote">B = ' + Math.round(lastWu.w / fw * 100) + '% · ' + fmtW(lastWu.w) + ' ✓</span>';
+    h += '</div>';
+
+    if (c < eff) {
+      h += '<div class="bigsteps">';
+      if (e.type !== 'plyo') {
+        h += '<div class="bstep"><small>Súly · kg</small><div class="bsrow"><button class="bsbtn" data-st="w-">−</button><input class="bsval" id="wval" value="' + fmtW(UI.inp.w) + '" inputmode="decimal" aria-label="Súly pontos megadása"><button class="bsbtn" data-st="w+">＋</button></div></div>';
+      }
+      h += '<div class="bstep"' + (e.type === 'plyo' ? ' style="grid-column:1/-1;"' : '') + '><small>' + (e.type === 'plyo' ? 'Másodperc' : 'Ismétlés') + '</small><div class="bsrow"><button class="bsbtn" data-st="r-">−</button><input class="bsval" id="rval" value="' + UI.inp.r + '" inputmode="numeric" aria-label="Ismétlés pontos megadása"><button class="bsbtn" data-st="r+">＋</button></div></div>';
+      h += '</div>';
+      if (!isWu && e.rir != null) {
+        h += '<div class="rirrow"><span class="lb">RIR</span>';
+        for (var r2 = 0; r2 <= 3; r2++) h += '<button class="rbtn' + (UI.inp.rir === r2 ? ' on' : '') + '" data-rir="' + r2 + '" aria-pressed="' + (UI.inp.rir === r2) + '">' + r2 + '</button>';
+        h += '<span class="rirhint">' + (failure ? '🔥 bukásig!' : '🌿 hagyj ' + e.rir + ' rep tartalékot') + '</span></div>';
+      }
+      if (e.type === 'isolation') {
+        h += '<div class="siderow"><span class="lb">Oldal</span>';
+        ['L', 'B', 'R'].forEach(function (sd) {
+          h += '<button class="rbtn' + (UI.inp.side === sd ? ' on' : '') + '" data-side="' + sd + '">' + sd + '</button>';
+        });
+        h += '</div>';
+      }
+      if (UI.noteOpen || UI.note) {
+        h += '<input class="setnote" id="snote" maxlength="500" placeholder="Megjegyzés ehhez a szetthez (opcionális)" value="' + esc(UI.note) + '" aria-label="Szett megjegyzés">';
+      } else {
+        h += '<button class="notetoggle" id="noteToggle">＋ megjegyzés a szetthez</button>';
+      }
+    }
+
+    if (rest.status !== 'idle') {
+      h += '<div class="restbar"><div class="fillr" style="width:' + (rest.remain / rest.total * 100) + '%;"></div><div class="rin">' +
+        '<svg width="18" height="18" viewBox="0 0 100 100" style="flex:none;"><use href="#i-idozito"/></svg>' +
+        '<span class="grow" style="font-size:9px;font-weight:700;color:#6E6257;">' + (rest.status === 'paused' ? 'Szünetel' : 'Pihenő') + '</span>' +
+        '<b>' + fmtT(rest.remain) + '</b>' +
+        '<button class="rtbtn" id="restPp" aria-label="' + (rest.status === 'paused' ? 'Pihenő folytatása' : 'Pihenő szüneteltetése') + '">' + (rest.status === 'paused' ? '▶' : '⏸') + '</button>' +
+        '<button class="rtbtn" id="restSk" aria-label="Pihenő kihagyása">⏭</button></div></div>';
+    } else if (c < eff) {
+      h += '<button class="donebtn" id="doneBtn">Szett kész ✓</button>';
+    } else {
+      h += '<div style="margin-top:10px;text-align:center;font-size:10px;font-weight:600;color:#4E6B42;">✓ Minden szett megvan ennél a gyakorlatnál</div>';
+    }
+    h += '</div>';
+    card.innerHTML = h;
+
+    card.querySelectorAll('[data-st]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-st');
+        if (k === 'w-') UI.inp.w = Math.max(0, Math.round((UI.inp.w - 2.5) * 10) / 10);
+        if (k === 'w+') UI.inp.w = Math.min(999, Math.round((UI.inp.w + 2.5) * 10) / 10);
+        if (k === 'r-') UI.inp.r = Math.max(1, UI.inp.r - 1);
+        if (k === 'r+') UI.inp.r = Math.min(100, UI.inp.r + 1);
+        renderActive();
+      });
+    });
+    var wv = document.getElementById('wval');
+    if (wv) wv.addEventListener('change', function () {
+      var v = parseFloat(wv.value.replace(',', '.'));
+      if (!isNaN(v)) UI.inp.w = Math.min(999, Math.max(0, v));
+      renderActive();
+    });
+    var rv = document.getElementById('rval');
+    if (rv) rv.addEventListener('change', function () {
+      var v = parseInt(rv.value, 10);
+      if (!isNaN(v)) UI.inp.r = Math.min(100, Math.max(1, v));
+      renderActive();
+    });
+    card.querySelectorAll('[data-rir]').forEach(function (b) {
+      b.addEventListener('click', function () { UI.inp.rir = parseInt(b.getAttribute('data-rir'), 10); renderActive(); });
+    });
+    card.querySelectorAll('[data-side]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var sd = b.getAttribute('data-side');
+        UI.inp.side = UI.inp.side === sd ? null : sd; renderActive();
+      });
+    });
+    var sn = document.getElementById('snote');
+    if (sn) sn.addEventListener('input', function () { UI.note = sn.value; });
+    var nt = document.getElementById('noteToggle');
+    if (nt) nt.addEventListener('click', function () {
+      UI.noteOpen = true; renderActive();
+      var el2 = document.getElementById('snote'); if (el2) el2.focus();
+    });
+    var ic = document.getElementById('imgchip');
+    if (ic) ic.addEventListener('click', function () { UI.imgOpen = !UI.imgOpen; renderActive(); });
+    var vc = document.getElementById('vidchip');
+    if (vc) vc.addEventListener('click', function () { UI.vidOpen = !UI.vidOpen; renderActive(); });
+    var db = document.getElementById('doneBtn');
+    if (db) db.addEventListener('click', completeSet);
+    var pp = document.getElementById('restPp');
+    if (pp) pp.addEventListener('click', function () { rest.status === 'paused' ? resumeRest() : pauseRest(); });
+    var sk = document.getElementById('restSk');
+    if (sk) sk.addEventListener('click', function () { stopRest(); renderActive(); });
+
+    /* swipe */
+    var sx = null;
+    card.onpointerdown = function (ev) { sx = ev.clientX; };
+    card.onpointerup = function (ev) {
+      if (sx == null) return;
+      var dx = ev.clientX - sx; sx = null;
+      var i2 = iOf(S.viewed);
+      if (dx <= -60 && i2 < S.order.length - 1) jumpTo(S.order[i2 + 1]);
+      else if (dx >= 60 && i2 > 0) jumpTo(S.order[i2 - 1]);
+    };
+  }
+
+  function renderPoSig(e) {
+    var el = document.getElementById('posig');
+    if (e.prog) {
+      var toneBg = e.prog.tone === 'rep' ? 'rgba(143,175,126,0.18);color:#4E6B42' : e.prog.tone === 'hold' ? 'rgba(201,150,46,0.16);color:#A8801F' : 'rgba(255,107,74,0.12);color:#A84A26';
+      el.innerHTML = '<div class="colstrip' + (UI.progOpen ? ' open' : '') + '">' +
+        '<button class="colhead" id="progHead" aria-expanded="' + UI.progOpen + '">' +
+        '<span class="p-eyebrow" style="color:#A84A26;">⚡ Progresszió</span>' +
+        '<span class="pochip" style="background:' + toneBg + ';">' + e.prog.chip + '</span>' +
+        '<span class="csum"></span><span class="chev">▾</span></button>' +
+        '<div class="colbody">' +
+        '<div class="pocells" style="margin-top:0;"><span class="mut" style="font-size:9px;">Múlt hét</span><b>' + (e.last ? fmtW(e.last.w) + ' × ' + e.last.r + ' · RIR ' + e.last.rir : '—') + '</b><span class="arr">→</span><span class="mut" style="font-size:9px;">Ma a cél</span><b>' + e.prog.tw + '</b></div>' +
+        '<div class="mut" style="font-size:9px;font-weight:300;margin-top:5px;">' + e.prog.why + '</div>' +
+        '</div></div>';
+      var ph = document.getElementById('progHead');
+      ph.addEventListener('click', function () {
+        UI.progOpen = !UI.progOpen;
+        ph.parentNode.classList.toggle('open', UI.progOpen);
+        ph.setAttribute('aria-expanded', UI.progOpen);
+      });
+    } else if (e.ai) {
+      el.innerHTML = '<div class="aistrip">✨ ' + e.ai + '</div>';
+    } else el.innerHTML = '';
+  }
+
+  function renderPager(idx) {
+    var pg = document.getElementById('pager');
+    var pv = idx > 0 ? byId[S.order[idx - 1]] : null;
+    var nx = idx < S.order.length - 1 ? byId[S.order[idx + 1]] : null;
+    pg.innerHTML =
+      '<button class="pgbtn" id="pgPrev"' + (pv ? '' : ' disabled') + '><div class="d1">‹ ELŐZŐ</div><div class="d2">' + (pv ? pv.name + ' · ' + cur(pv.id) + '/' + effective(pv.id) : '—') + '</div></button>' +
+      '<button class="pgbtn nx" id="pgNext"' + (nx ? '' : ' disabled') + '><div class="d1">KÖVETKEZŐ ›</div><div class="d2">' + (nx ? nx.name + ' · ' + cur(nx.id) + '/' + effective(nx.id) : '—') + '</div></button>';
+    if (pv) document.getElementById('pgPrev').addEventListener('click', function () { jumpTo(pv.id); });
+    if (nx) document.getElementById('pgNext').addEventListener('click', function () { jumpTo(nx.id); });
+  }
+
+  function setStatus(e, s) {
+    if (s.warm) return { cls: 'ok', t: '✓' };
+    if (s.r < e.repMin) return { cls: 'und', t: '▼ cél alatt' };
+    if (s.r > e.repMax) return { cls: 'und', t: '▲ cél felett' };
+    return { cls: 'ok', t: '✓' };
+  }
+
+  function renderSlist(e, f, c, eff) {
+    var el = document.getElementById('slist');
+    el.style.setProperty('--fr', f.rail); el.style.setProperty('--fw', f.wash);
+    el.style.setProperty('--fd', f.deep); el.style.setProperty('--fgrad', f.grad);
+    var failure = e.rir != null && e.rir <= 1;
+    var wc = warmCount(e.id);
+    var h = '<div class="shead" style="margin-bottom:2px;"><span class="goalpill">cél: ' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir + ' ' + (failure ? '🔥' : '🌿') : '') + '</span><span class="mut" style="font-size:8px;">sorra koppintva szerkeszthető</span></div>';
+    h += '<div class="scols"><span>Szett</span><span>kg</span><span>' + (e.type === 'plyo' ? 'mp' : 'ism') + '</span><span>RIR</span><span></span></div>';
+    for (var i = 0; i < eff; i++) {
+      var p = prescAt(e.id, i), s = i < c ? S.logged[e.id][i] : null;
+      var mk = p.k === 'w' ? 'B' + (i + 1) : '' + (i + 1 - wc);
+      var mcls = 'smark' + (s ? ' don' : '') + (p.k === 'w' && !s ? ' wu' : '') + (i === c ? ' cur' : '');
+      var kg = s ? fmtW(s.w) : '<span class="ghosted">' + (p.k === 'w' ? fmtW(p.w) : (p.w != null ? fmtW(p.w) : '—')) + '</span>';
+      var ism = s ? s.r : '<span class="ghosted">' + (p.k === 'w' ? p.r : e.repMin + '–' + e.repMax) + '</span>';
+      var rr = s ? (s.rir != null ? s.rir : '–') : '<span class="ghosted">' + (p.k === 'w' ? '–' : (e.rir != null ? e.rir : '–')) + '</span>';
+      var st;
+      if (i === c) st = '<span class="sstat now">MOST ↑</span>';
+      else if (s) {
+        var x = setStatus(e, s);
+        st = '<span class="sstat ' + x.cls + '">' + x.t + (s.medal ? ' <svg width="11" height="11" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' : '') + '</span>';
+      } else st = '<span></span>';
+      h += '<button class="srow" data-si="' + i + '"><span class="' + mcls + '">' + (s ? '✓' : mk) + '</span><span>' + kg + '</span><span>' + ism + '</span><span>' + rr + '</span>' + st + '</button>';
+    }
+    var vol = 0, topW = null, rsum = 0, rn = 0;
+    S.logged[e.id].forEach(function (s2) {
+      vol += (s2.w || 0) * s2.r;
+      if (!s2.warm) {
+        if (topW == null || s2.w > topW) topW = s2.w;
+        if (s2.rir != null) { rsum += s2.rir; rn++; }
+      }
+    });
+    var dpct = (topW != null && e.last) ? Math.round((topW - e.last.w) / e.last.w * 100) : null;
+    h += '<div class="sfoot"><span>Volumen <b>' + vol.toLocaleString('hu-HU') + ' kg</b></span>' +
+      '<span>vs múlt hét <b style="color:' + (dpct == null ? '#A2958A' : dpct >= 0 ? '#4E6B42' : '#A8801F') + ';">' + (dpct == null ? '–' : (dpct >= 0 ? '+' : '') + dpct + '%') + '</b></span>' +
+      '<span>Átl. RIR <b>' + (rn ? (rsum / rn).toFixed(1).replace('.', ',') : '–') + '</b></span></div>';
+    el.innerHTML = '<div class="colstrip' + (UI.slistOpen ? ' open' : '') + '" style="margin:9px 0 0;">' +
+      '<button class="colhead" id="slistHead" aria-expanded="' + UI.slistOpen + '">' +
+      '<span class="p-eyebrow">Szettek</span>' +
+      '<span class="csum">' + c + '/' + eff + ' ✓' + (vol ? ' · ' + vol.toLocaleString('hu-HU') + ' kg' : '') + '</span>' +
+      '<span class="chev">▾</span></button>' +
+      '<div class="colbody">' + h + '</div></div>';
+    var sh = document.getElementById('slistHead');
+    sh.addEventListener('click', function () {
+      UI.slistOpen = !UI.slistOpen;
+      sh.parentNode.classList.toggle('open', UI.slistOpen);
+      sh.setAttribute('aria-expanded', UI.slistOpen);
+    });
+    el.querySelectorAll('[data-si]').forEach(function (b) {
+      b.addEventListener('click', function () { openEdit(e.id, parseInt(b.getAttribute('data-si'), 10)); });
+    });
+  }
+
+  /* ---------- actions ---------- */
+  function jumpTo(id) {
+    if (S.debrief) return;
+    S.viewed = id; renderActive();
+  }
+
+  function completeSet() {
+    var id = S.viewed, e = byId[id];
+    var c = cur(id), p = prescAt(id, c);
+    var entry = {
+      w: e.type === 'plyo' ? 0 : UI.inp.w, r: UI.inp.r,
+      rir: p.k === 'w' ? null : (e.rir == null ? null : UI.inp.rir),
+      side: UI.inp.side, note: UI.note || null, warm: p.k === 'w'
+    };
+    if (id === 'e1' && p.k === 'g' && entry.w >= 105 && !S.medals.some(function (m) { return m.ex === 'e1' && m.type === 'Súly-rekord'; })) {
+      entry.medal = true;
+      S.medals.push({ ex: 'e1', exn: e.name, type: 'Súly-rekord', value: fmtW(entry.w) + ' kg', prev: '102,5 kg · júl 30. óta állt' });
+      showMedal('ÚJ REKORD · SÚLY', e.name + ' · ' + fmtW(entry.w) + ' kg', 'Eddigi legjobbad 102,5 kg volt — júl 30. óta állt.');
+    }
+    S.logged[id].push(entry);
+    UI.note = '';
+    if (cur(id) >= effective(id)) {
+      openFeedback(id);
+    } else {
+      startRest(e.type === 'compound' ? 150 : 90);
+    }
+    renderActive();
+  }
+
+  var medTimer = null;
+  function showMedal(t, v, p) {
+    var el = document.getElementById('medtoast');
+    el.innerHTML = '<svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg><div><div class="tt">' + t + '</div><div class="vv">' + v + '</div><div class="pp">' + p + '</div></div>';
+    el.classList.add('show');
+    if (medTimer) clearTimeout(medTimer);
+    medTimer = setTimeout(function () { el.classList.remove('show'); }, 4500);
+  }
+
+  /* ---------- sheets plumbing ---------- */
+  var sback = document.getElementById('sback');
+  var openSheetId = null;
+  function openSheet(id) {
+    closeSheet();
+    openSheetId = id;
+    sback.classList.add('open');
+    document.getElementById(id).classList.add('open');
+  }
+  function closeSheet() {
+    if (!openSheetId) return;
+    document.getElementById(openSheetId).classList.remove('open');
+    sback.classList.remove('open');
+    openSheetId = null;
+  }
+  sback.addEventListener('click', function () {
+    if (openSheetId === 'sh-fb') { resolveFeedback(false); return; }
+    closeSheet();
+  });
+
+  /* ---------- action sheet ---------- */
+  document.getElementById('menubtn').addEventListener('click', function () { renderActionSheet(); openSheet('sh-action'); });
+  document.getElementById('cntbtn').addEventListener('click', function () { renderOverview(); openSheet('sh-overview'); });
+
+  function renderActionSheet() {
+    var e = byId[S.viewed];
+    var sh = document.getElementById('sh-action');
+    sh.innerHTML = '<div class="sh-eyebrow">Gyakorlat műveletek</div><div class="sh-title">' + e.name + '</div>' +
+      '<button class="actrow" id="acMove"><span class="ic">↕</span><span class="grow">Áthelyezés<small>a hátralévő sorrend átrendezése — a terv nem változik</small></span></button>' +
+      '<button class="actrow" id="acSkip"><span class="ic">⊘</span><span class="grow">Kihagyás<small>a már beírt szettek megmaradnak</small></span></button>' +
+      '<button class="actrow" id="acAdd"><span class="ic">＋</span><span class="grow">Szett hozzáadása<small>megkérdezzük: csak ma, vagy a tervbe is</small></span></button>' +
+      '<button class="actrow" id="acNote"><span class="ic">✎</span><span class="grow">' + ((S.noteLocal[e.id] !== undefined ? S.noteLocal[e.id] : e.note) ? 'Jegyzet szerkesztése' : 'Jegyzet') + '<small>tartós — a következő alkalommal is itt lesz</small></span></button>' +
+      '<button class="actrow" id="acEnd"><span class="ic">✓</span><span class="grow">Edzés befejezése…<small>összegzés a hátralévők nélkül is</small></span></button>';
+    document.getElementById('acMove').addEventListener('click', renderReorder);
+    document.getElementById('acSkip').addEventListener('click', function () {
+      closeSheet(); stopRest();
+      S.skipped.push(S.viewed);
+      if (allResolved()) { openSummary('closing'); }
+      else { S.viewed = nextUnfinishedAfter(S.viewed) || S.viewed; renderActive(); }
+    });
+    document.getElementById('acAdd').addEventListener('click', function () {
+      S.extra[S.viewed] = (S.extra[S.viewed] || 0) + 1;
+      renderExtraPrompt(); openSheet('sh-extra'); renderActive();
+    });
+    document.getElementById('acNote').addEventListener('click', function () { renderNoteSheet(); openSheet('sh-note'); });
+    document.getElementById('acEnd').addEventListener('click', function () { closeSheet(); stopRest(); openSummary('closing'); });
+  }
+
+  function renderReorder() {
+    var sh = document.getElementById('sh-action');
+    var from = iOf(S.viewed);
+    var seg = S.order.slice(from);
+    function paint() {
+      sh.innerHTML = '<div class="sh-eyebrow">Áthelyezés · hátralévő sorrend</div><div class="sh-title">Mi jöjjön most?</div>' +
+        seg.map(function (id, i) {
+          var e = byId[id];
+          return '<div class="mrow" style="padding:8px 2px;border-top:' + (i ? '0.5px solid rgba(43,33,24,0.08)' : 'none') + ';">' +
+            '<span class="grow" style="font-size:11px;font-weight:600;' + (isSkipped(id) ? 'text-decoration:line-through;color:#A2958A;' : '') + '">' + e.name +
+            (i === 0 ? ' <span style="font-size:7.5px;font-weight:700;color:#A84A26;background:rgba(255,107,74,0.1);border-radius:999px;padding:2px 7px;">MOST</span>' : '') + '</span>' +
+            '<span class="mut" style="font-size:8.5px;">' + cur(id) + '/' + effective(id) + '</span>' +
+            '<span class="ud"><button data-mv="' + i + ':-1"' + (i === 0 ? ' disabled' : '') + '>▲</button><button data-mv="' + i + ':1"' + (i === seg.length - 1 ? ' disabled' : '') + '>▼</button></span></div>';
+        }).join('') +
+        '<div class="btn2"><button class="cta" id="reorderDone">Kész</button></div>';
+      sh.querySelectorAll('[data-mv]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var pr = b.getAttribute('data-mv').split(':');
+          var i = +pr[0], d = +pr[1], j = i + d;
+          if (j < 0 || j >= seg.length) return;
+          var t = seg[i]; seg[i] = seg[j]; seg[j] = t;
+          paint();
+        });
+      });
+      document.getElementById('reorderDone').addEventListener('click', function () {
+        S.order = S.order.slice(0, from).concat(seg);
+        if (seg[0] !== S.viewed) {
+          var nv = null;
+          seg.forEach(function (id) { if (nv == null && !isSkipped(id) && !isDone(id)) nv = id; });
+          S.viewed = nv || seg[0];
+        }
+        closeSheet(); renderActive();
+      });
+    }
+    paint();
+  }
+
+  function renderExtraPrompt() {
+    var sh = document.getElementById('sh-extra');
+    sh.innerHTML = '<div class="sh-eyebrow">Extra szett hozzáadva</div><div class="sh-title">A tervbe is felvegyük?</div>' +
+      '<div class="mut" style="font-size:10px;font-weight:300;">Csak erre az alkalomra szól, vagy minden hétre — ilyenkor a mesociklus terve is eggyel több szettet ír elő ennél a gyakorlatnál.</div>' +
+      '<div class="btn2"><button class="ghost" id="exOnce">Csak ma</button><button class="cta" id="exAlways">Minden hétre</button></div>';
+    document.getElementById('exOnce').addEventListener('click', closeSheet);
+    document.getElementById('exAlways').addEventListener('click', closeSheet);
+  }
+
+  function renderNoteSheet() {
+    var e = byId[S.viewed];
+    var val = S.noteLocal[e.id] !== undefined ? S.noteLocal[e.id] : e.note;
+    var sh = document.getElementById('sh-note');
+    sh.innerHTML = '<div class="sh-eyebrow">Gyakorlat-jegyzet</div><div class="sh-title">Jegyzet a gyakorlathoz</div>' +
+      '<textarea id="noteTa" rows="4" maxlength="500" placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…">' + esc(val || '') + '</textarea>' +
+      '<div class="btn2"><button class="ghost" id="noteCancel">Mégse</button><button class="cta" id="noteSave">Mentés</button></div>';
+    document.getElementById('noteCancel').addEventListener('click', closeSheet);
+    document.getElementById('noteSave').addEventListener('click', function () {
+      S.noteLocal[e.id] = document.getElementById('noteTa').value.trim();
+      closeSheet(); renderActive();
+    });
+  }
+
+  function renderOverview() {
+    var sh = document.getElementById('sh-overview');
+    sh.innerHTML = '<div class="sh-eyebrow">Gyakorlatsor · tap = ugrás</div><div class="sh-title">Hol tartasz</div>' +
+      S.order.map(function (id) {
+        var e = byId[id];
+        var gl = isSkipped(id) ? '⊘' : (isDone(id) ? '✓' : (cur(id) > 0 ? '●' : '○'));
+        return '<button class="ovrow' + (id === S.viewed ? ' curr' : '') + '" data-ov="' + id + '">' +
+          '<span class="gl" style="color:' + (isDone(id) ? '#4E6B42' : '#A2958A') + ';">' + gl + '</span>' +
+          '<span class="grow' + (isSkipped(id) ? ' strike' : '') + '" style="font-weight:600;">' + e.name + '</span>' +
+          '<span class="mut" style="font-size:9px;">' + (isSkipped(id) ? 'kihagyva' : cur(id) + '/' + effective(id)) + '</span></button>';
+      }).join('');
+    sh.querySelectorAll('[data-ov]').forEach(function (b) {
+      b.addEventListener('click', function () { closeSheet(); jumpTo(b.getAttribute('data-ov')); });
+    });
+  }
+
+  /* ---------- set edit sheet ---------- */
+  function openEdit(exId, i) {
+    var e = byId[exId], p = prescAt(exId, i);
+    var loggedMode = i < cur(exId);
+    var s = loggedMode ? S.logged[exId][i] : null;
+    var wc = warmCount(exId);
+    var lbl = p.k === 'w' ? 'B' + (i + 1) + ' bemelegítő szett' : (i + 1 - wc) + '. working szett';
+    var ed = loggedMode ? { w: s.w, r: s.r, rir: s.rir, side: s.side, note: s.note || '' } : null;
+    var sh = document.getElementById('sh-edit');
+    function paint() {
+      var h = '<div class="sh-eyebrow">' + lbl + '</div><div class="sh-title">' + e.name + '</div>';
+      if (loggedMode) {
+        h += '<div class="bigsteps" style="margin-top:2px;">';
+        if (e.type !== 'plyo') h += '<div class="bstep"><small>Súly · kg</small><div class="bsrow"><button class="bsbtn" data-e="w-">−</button><span class="bsval" style="width:auto;">' + fmtW(ed.w) + '</span><button class="bsbtn" data-e="w+">＋</button></div></div>';
+        h += '<div class="bstep"' + (e.type === 'plyo' ? ' style="grid-column:1/-1;"' : '') + '><small>' + (e.type === 'plyo' ? 'Mp' : 'Ismétlés') + '</small><div class="bsrow"><button class="bsbtn" data-e="r-">−</button><span class="bsval" style="width:auto;">' + ed.r + '</span><button class="bsbtn" data-e="r+">＋</button></div></div></div>';
+        if (!s.warm && e.rir != null) {
+          h += '<div class="rirrow"><span class="lb">RIR</span>';
+          for (var r2 = 0; r2 <= 3; r2++) h += '<button class="rbtn' + (ed.rir === r2 ? ' on' : '') + '" data-erir="' + r2 + '" style="' + (ed.rir === r2 ? 'background:linear-gradient(135deg,#FF7A55,#FF5B36);border-color:transparent;color:#fff;' : '') + '">' + r2 + '</button>';
+          h += '</div>';
+        }
+        if (e.type === 'isolation') {
+          h += '<div class="siderow"><span class="lb">Oldal</span>';
+          ['L', 'B', 'R'].forEach(function (sd) {
+            h += '<button class="rbtn" data-eside="' + sd + '" style="' + (ed.side === sd ? 'background:linear-gradient(135deg,#FF7A55,#FF5B36);border-color:transparent;color:#fff;' : '') + '">' + sd + '</button>';
+          });
+          h += '</div>';
+        }
+        h += '<input type="text" id="editNote" maxlength="500" style="margin-top:9px;" placeholder="Megjegyzés (opcionális)" value="' + esc(ed.note) + '">';
+        h += '<div class="btn2"><button class="ghost" id="edDel">Szett törlése</button><button class="cta" id="edSave">Mentés ✓</button></div>';
+      } else {
+        h += '<div class="mut" style="font-size:10px;">Még nem logolt szett — a cél: <b>' + (p.w != null ? fmtW(p.w) + ' kg × ' : '') + (p.k === 'w' ? p.r : e.repMin + '–' + e.repMax) + (e.type === 'plyo' ? ' mp' : ' rep') + '</b></div>';
+        h += '<div class="btn2"><button class="ghost" id="edDel">Szett törlése</button></div>';
+      }
+      var canRemove = effective(exId) > 1;
+      if (!canRemove) h += '<div class="mut" style="font-size:8.5px;margin-top:7px;">Az utolsó szett nem törölhető — a gyakorlat kihagyásához használd a Kihagyás-t.</div>';
+      sh.innerHTML = h;
+
+      if (loggedMode) {
+        sh.querySelectorAll('[data-e]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var k = b.getAttribute('data-e');
+            if (k === 'w-') ed.w = Math.max(0, Math.round((ed.w - 2.5) * 10) / 10);
+            if (k === 'w+') ed.w = Math.min(999, Math.round((ed.w + 2.5) * 10) / 10);
+            if (k === 'r-') ed.r = Math.max(1, ed.r - 1);
+            if (k === 'r+') ed.r = Math.min(100, ed.r + 1);
+            paint();
+          });
+        });
+        sh.querySelectorAll('[data-erir]').forEach(function (b) {
+          b.addEventListener('click', function () { ed.rir = parseInt(b.getAttribute('data-erir'), 10); paint(); });
+        });
+        sh.querySelectorAll('[data-eside]').forEach(function (b) {
+          b.addEventListener('click', function () { var sd = b.getAttribute('data-eside'); ed.side = ed.side === sd ? null : sd; paint(); });
+        });
+        document.getElementById('edSave').addEventListener('click', function () {
+          var nt = document.getElementById('editNote').value;
+          S.logged[exId][i] = { w: ed.w, r: ed.r, rir: ed.rir, side: ed.side, note: nt || null, warm: s.warm };
+          clearExMedals(exId);
+          closeSheet(); renderActive();
+        });
+      }
+      var del = document.getElementById('edDel');
+      del.disabled = !canRemove;
+      if (!canRemove) del.style.opacity = '0.45';
+      del.addEventListener('click', function () {
+        if (!canRemove) return;
+        if (loggedMode) { S.logged[exId].splice(i, 1); stopRest(); clearExMedals(exId); }
+        S.removed[exId] = (S.removed[exId] || 0) + 1;
+        closeSheet();
+        if (isDone(exId) && !S.debriefed[exId]) { openFeedback(exId); }
+        renderActive();
+      });
+    }
+    paint();
+    openSheet('sh-edit');
+  }
+
+  function clearExMedals(exId) {
+    S.medals = S.medals.filter(function (m) { return m.ex !== exId; });
+    S.logged[exId].forEach(function (s) { delete s.medal; });
+  }
+
+  /* ---------- feedback ---------- */
+  var fb = null;
+  function openFeedback(exId) {
+    S.debrief = exId; S.debriefed[exId] = true;
+    fb = { pump: 2, joint: 0, load: 1 };
+    var e = byId[exId];
+    var others = S.order.every(function (id) { return id === exId || resolved(id); });
+    var sh = document.getElementById('sh-fb');
+    function paint() {
+      sh.innerHTML = '<div class="sh-eyebrow">Set debrief · RP feedback</div><div class="sh-title">' + e.name + '</div>' +
+        row('Pump · érzed?', ['Semmi', 'Enyhe', 'Jó', 'Brutális'], fb.pump, 'pump') +
+        row('Joint pain', ['Nincs', 'Enyhe', 'Erős'], fb.joint, 'joint') +
+        row('Akarunk még?', ['Kevés volt', 'Pont jó', 'Sok volt'], fb.load, 'load') +
+        '<div class="btn2"><button class="ghost" id="fbSkip">Hagyjuk</button><button class="cta" id="fbSave">' + (others ? 'Edzés vége →' : 'Mentés · tovább') + '</button></div>';
+      sh.querySelectorAll('[data-fb]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var pr = b.getAttribute('data-fb').split(':');
+          fb[pr[0]] = +pr[1]; paint();
+        });
+      });
+      document.getElementById('fbSkip').addEventListener('click', function () { resolveFeedback(false); });
+      document.getElementById('fbSave').addEventListener('click', function () { resolveFeedback(true); });
+    }
+    function row(lbl, opts, sel, key) {
+      return '<div class="p-eyebrow" style="margin-top:9px;">' + lbl + '</div><div class="fbchips">' +
+        opts.map(function (o, i) { return '<button class="fbc' + (i === sel ? ' on' : '') + '" data-fb="' + key + ':' + i + '">' + o + '</button>'; }).join('') + '</div>';
+    }
+    paint();
+    openSheet('sh-fb');
+    renderActive();
+  }
+  function resolveFeedback(save) {
+    var exId = S.debrief;
+    if (save && exId) S.feedback[exId] = fb;
+    S.debrief = null;
+    closeSheet();
+    if (allResolved()) { openSummary('closing'); }
+    else { S.viewed = nextUnfinishedAfter(exId) || S.viewed; renderActive(); }
+  }
+
+  /* ---------- summary ---------- */
+  var sumMode = 'closing';
+  function openSummary(mode) {
+    sumMode = mode;
+    stopRest();
+    renderSummary();
+    openPage('page-summary');
+  }
+  document.getElementById('sumClose').addEventListener('click', function () {
+    closePage('page-summary');
+    if (sumMode === 'closing') return;
+    closePage('page-active');
+  });
+
+  function challengeOutcome(c) {
+    if (!c.acc) return { k: 'skipped', t: '⊘ skippelted', ro: '⊘' };
+    var r = c.test();
+    if (r === null) return { k: 'inc', t: '◌ nem értékelhető', ro: '◌' };
+    return r ? { k: 'hit', t: '✓ megcsináltad', ro: '✓' } : { k: 'miss', t: '◯ nem jött össze', ro: '◯' };
+  }
+
+  function renderSummary() {
+    var doneSets = S.order.reduce(function (a, id) { return a + cur(id); }, 0);
+    var totSets = S.order.reduce(function (a, id) { return a + effective(id); }, 0);
+    var vol = 0, targetHits = 0, rsum = 0, rn = 0;
+    var perMuscle = { 'Hát': 0, 'Váll': 0, 'Kar': 0 };
+    S.order.forEach(function (id) {
+      var e = byId[id];
+      S.logged[id].forEach(function (s) {
+        vol += (s.w || 0) * s.r;
+        if (!s.warm) {
+          if (s.r >= e.repMin && s.r <= e.repMax) targetHits++;
+          if (s.rir != null) { rsum += s.rir; rn++; }
+          perMuscle[e.muscle === 'Bicepsz' ? 'Kar' : e.muscle] += 1;
+        }
+      });
+    });
+    if (sumMode === 'closing' && vol >= 9000 && !S.medals.some(function (m) { return m.type === 'Volumen-rekord'; })) { /* merged at finish in app */ }
+    var volT = (vol / 1000).toFixed(1).replace('.', ',');
+    var doneEx = S.order.filter(isDone).length;
+
+    var famOf = { 'Hát': 'sky', 'Váll': 'lav', 'Kar': 'rose' };
+    var pills = Object.keys(perMuscle).sort(function (a, b) { return perMuscle[b] - perMuscle[a]; }).map(function (m) {
+      var f = FAM[famOf[m]];
+      return perMuscle[m] > 0
+        ? '<span style="background:' + f.wash + ';color:' + f.deep + ';">' + m + ' · ' + perMuscle[m] + ' szett</span>'
+        : '<span class="off">' + m + '</span>';
+    }).join('');
+
+    var closing = sumMode === 'closing';
+    var pg = document.getElementById('page-summary');
+    pg.className = 'page open ' + (closing ? 'p-coral' : 'p-sage');
+    document.getElementById('sumClose').textContent = closing ? '✕ Bezárás' : '← Vissza';
+
+    var h = '<div class="halo' + (closing ? '' : ' calm') + '"><div class="ring"></div>' +
+      '<div class="p-eyebrow" style="color:' + (closing ? '#A84A26' : '#4E6B42') + ';">' + (closing ? 'Edzés vége' : 'Lezárva · ma') + '</div>' +
+      '<div style="font-size:17px;font-weight:700;">Pull A</div>' +
+      '<div class="big" style="font-size:38px;">' + doneSets + '/' + totSets + '</div>' +
+      '<div class="mut" style="font-size:10px;"><b>' + volT + ' t</b> összvolumen · <b>' + doneEx + '/' + S.order.length + '</b> gyakorlat · ~74 perc</div>' +
+      '<div class="musclepills">' + pills + '</div></div>';
+
+    h += '<div class="statstrip" style="margin-bottom:10px;">' +
+      '<div class="statcell"><b>' + volT + ' t</b><small>volumen</small></div>' +
+      '<div class="statcell"><b style="' + (S.medals.length ? 'color:#A8801F;' : '') + '">' + S.medals.length + '</b><small>rekord</small></div>' +
+      '<div class="statcell"><b style="' + (targetHits ? 'color:#4E6B42;' : '') + '">' + targetHits + ' ✓</b><small>célszett</small></div>' +
+      '<div class="statcell"><b>' + (rn ? (rsum / rn).toFixed(1).replace('.', ',') : '–') + '</b><small>Ø RIR</small></div></div>';
+
+    if (S.medals.length || targetHits) {
+      h += '<div class="p-eyebrow" style="padding:0 2px 6px;">Medálok · ' + S.medals.length + ' rekord · ' + targetHits + ' cél</div>';
+      S.medals.forEach(function (m) {
+        h += '<div class="medcard"><svg width="28" height="28" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>' +
+          '<div class="grow"><div style="font-size:10.5px;font-weight:700;">' + m.type + ' · ' + m.exn + '</div>' +
+          '<div class="mut" style="font-size:8.5px;">' + m.value + ' · előző: ' + m.prev + '</div></div><span class="qxp">REKORD</span></div>';
+      });
+      if (targetHits) h += '<div class="tgrow">✓ ' + targetHits + ' célszett teljesítve</div>';
+    }
+
+    h += '<div class="p-eyebrow" style="padding:6px 2px 6px;">Kihívások</div><div class="vcard" style="padding:6px 12px;">' +
+      CH.map(function (c) {
+        var o = challengeOutcome(c);
+        return '<div class="chres"><span class="ro' + (o.k === 'hit' ? ' hit' : '') + '">' + o.ro + '</span>' +
+          '<span class="grow"><b style="font-size:10px;">' + c.type + ' · ' + byId[c.ex].name + '</b><br><span class="mut" style="font-size:8.5px;">' + c.target + '</span></span>' +
+          '<span class="mut" style="font-size:8.5px;font-weight:600;">' + o.t + '</span></div>';
+      }).join('') + '</div>';
+
+    h += '<div class="p-eyebrow" style="padding:6px 2px 6px;">Gyakorlatonként</div>';
+    S.order.forEach(function (id) {
+      var e = byId[id], f = FAM[e.fam];
+      var lg = S.logged[id];
+      var skp = isSkipped(id);
+      var eff = effective(id);
+      var topI = -1, topW = -1;
+      lg.forEach(function (s, i) { if (!s.warm && (s.w > topW || (s.w === topW && s.r > lg[topI].r))) { topW = s.w; topI = i; } });
+      var chips = lg.map(function (s, i) {
+        var cls = s.medal ? 'med' : (i === topI ? 'top' : '');
+        return '<span class="' + cls + '">' + (s.warm ? 'B · ' : '') + fmtW(s.w) + ' × ' + s.r + (s.rir != null ? ' @' + s.rir : '') + '</span>';
+      }).join('');
+      var miss = eff - lg.length;
+      if (miss > 0 && !skp) chips += '<span class="gho">— kimaradt · ' + miss + '</span>';
+      h += '<div class="excmap' + (skp && !lg.length ? ' skp' : '') + '" style="--fr:' + f.rail + ';--fw:' + f.wash + ';--fd:' + f.deep + ';">' +
+        '<div class="mrow"><span class="grow" style="font-size:10.5px;font-weight:700;' + (skp && !lg.length ? 'text-decoration:line-through;' : '') + '">' + e.name + '</span>' +
+        '<span class="mpill" style="background:' + f.wash + ';color:' + f.deep + ';">' + e.muscle + '</span>' +
+        '<span class="mut" style="font-size:8.5px;">' + (skp ? (lg.length ? lg.length + '/' + eff + ' · kihagyva' : 'kihagyva') : lg.length + '/' + eff) + '</span></div>' +
+        (chips ? '<div class="setchips">' + chips + '</div>' : '') + '</div>';
+    });
+
+    if (closing) {
+      h += '<div class="p-eyebrow" style="padding:6px 2px 6px;">Edzés-jegyzet · opcionális</div>' +
+        '<textarea rows="2" style="width:100%;border:1px solid rgba(43,33,24,0.12);border-radius:12px;padding:9px 11px;font-family:inherit;font-size:10.5px;background:#fff;resize:none;" placeholder="Hogy ment ma? Bármi, amit a jövő magadnak üzennél…"></textarea>' +
+        '<button class="cta" id="finishBtn" style="width:100%;margin-top:10px;padding:11px 0;font-size:12px;">Edzés lezárása ✓</button>' +
+        '<button class="ghost" id="backToActive" style="width:100%;margin-top:7px;padding:9px 0;">← Vissza az edzéshez</button>';
+    }
+    h += '<p class="habnote">A riport sosem büntet: a kimaradt szett szellem-chip, a kihagyott kihívás tompított — piros nincs.</p>';
+
+    document.getElementById('sumBody').innerHTML = h;
+    if (closing) {
+      document.getElementById('finishBtn').addEventListener('click', finishAndCelebrate);
+      document.getElementById('backToActive').addEventListener('click', function () { closePage('page-summary'); renderActive(); });
+    }
+  }
+
+  /* ---------- finish + level-up ---------- */
+  function finishAndCelebrate() {
+    var lv = document.getElementById('lvlup');
+    lv.classList.add('show');
+    var xpEl = document.getElementById('lvXp');
+    var ring = document.getElementById('lvring');
+    var target = 240;
+    if (reduced) {
+      xpEl.textContent = '+' + target + ' XP';
+      ring.style.setProperty('--v', 100);
+    } else {
+      var t0 = null;
+      function tick(ts) {
+        if (!t0) t0 = ts;
+        var k = Math.min(1, (ts - t0) / 1400);
+        var ease = 1 - Math.pow(1 - k, 3);
+        xpEl.textContent = '+' + Math.round(target * ease) + ' XP';
+        ring.style.setProperty('--v', Math.round(100 * ease));
+        if (k < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+    sumMode = 'closed';
+  }
+  document.getElementById('lvOk').addEventListener('click', function () {
+    document.getElementById('lvlup').classList.remove('show');
+    renderSummary();
+  });
+
+  /* ---------- boot ---------- */
+  renderChallenges();
+  renderPrepList();
+})();
+</script>
