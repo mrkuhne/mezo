@@ -306,6 +306,23 @@ Locked patterns from the screen rounds (canonical for every further page):
   editor with day breakdown + session-cap 11 + StructureLint + PeakFit, searchable multi-add
   picker, ▲▼ reorder), start/close sheets (close → report, mirroring the real transaction),
   frozen report ("Heti szettek · a blokk íve" naming), Történet selection mode → A/B compare.
+- **Mezo tab designed at hub + chat + all-8-subpage depth** in `prototypes/mezo-tab.html`
+  (artifact `797270dd-…`), audited against the real `/insights` section
+  ([`2026-08-27-mezo-feature-audit.md`](2026-08-27-mezo-feature-audit.md) — part 1 chat,
+  part 2 the 7 other sub-tabs). In the live app the companion is the Chat sub-tab of Insights;
+  the redesign promotes it to a first-class Mezo tab. Hub: breathing orb hero (no number —
+  the relationship is the hero) + one proactive sentence, composer-shaped chat opener,
+  gold decision card (Megerősítem/Figyeljük/Elvetem, in sync with the Minták page and tile
+  counters), 6 tiles + full-width L0→L3 memory band. Chat: tool chips, human-labeled
+  `Hivatkozott · L3` refs (designed fix for the inert-refs gap), collapsed `Emlékek · N`,
+  👍/👎 + reason chips, live send with typing dots + streaming tool chip, mic → transcript
+  into input, Beszélgetések sheet. Subpages: Minták (lifecycle grid + confidence words,
+  never raw r/p), Heti (82/100 + delta + arrows + tervjavaslat), Memoár (Fraunces chapter
+  card), Tudástár (approval inbox + per-row toggles + top-10 section), Előrejelzések /
+  Kísérletek (*Hungarian status chips ◐ Folyamatban / ✓ Bevált / ◇ Javaslat — localizing the
+  real app's English ones*), Memória (Rétegek with pulsing connectors + human cron times /
+  Napló / Kereső with score-math chips / Audit). New sprite icons: `i-memoar`, `i-lombik`,
+  `i-kristaly`, `i-retegek`.
 - **Advisory signals are never red and never block; nulls are never zeros** — carried through
   every screen.
 - **Edzés-session fully specified** in its prototype (feature-audited against
@@ -331,9 +348,10 @@ Locked patterns from the screen rounds (canonical for every further page):
 **How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
 `docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
 Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel subpage deep
-rounds (Terv, Stack, Receptek, Kamra, Gyógyszer, Napló + their sheets — the hub is done), Mezo
-(chat) tab, Napzárás, Me/profil surfaces, and the Edzés review page (the live session flow is
-done — see Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
+rounds (Terv + Gyógyszer at sketch depth, recipe detail/editor + the sheets), Mezo-tab
+iteration rounds with Daniel (first ship is done — hub + chat + all 8 subpages), Napzárás,
+Me/profil surfaces, and the Edzés review page (the live session flow is done — see
+Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
 sprites first.
 
 **The task for this Claude Design session:** propose **2-3 distinct IA/navigation directions**

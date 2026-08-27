@@ -15,6 +15,7 @@ they inline come from `../assets/`.
 | `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
+| `mezo-tab.html` | https://claude.ai/code/artifact/797270dd-f1dc-4196-b492-aa4ffb22d2de |
 
 ## Workflow
 
@@ -177,3 +178,35 @@ are usable without a build step).
   rows edit/delete with one-slot floor. RP debrief per exercise, closing summary (halo hero,
   muscle pills, medals + target sets, challenge outcomes, per-exercise chip map, note),
   finish → level-up screen → closed mode.
+- **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
+  section (in the live app the companion is the Chat sub-tab of Insights; the redesign
+  promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,
+  the relationship is the hero: one proactive companion sentence + quiet status
+  (Gemini · élő · együtt 47 napja); a composer-shaped **chat opener** ("Mondj valamit…" +
+  mic + send) that opens the full-screen chat; the motor's single **decision card** in a gold
+  ring (Megerősítem / Figyeljük / Elvetem — deciding flips it to a sage acknowledgement and
+  live-updates the Minták tile, the lifecycle grid and the memory band); a 6-tile mosaic
+  (Minták, Heti, Memoár, Tudástár, Előrejelzések, Kísérletek) with live bottom lines; and a
+  full-width **memory band** L0→L3 (nyers napok › napló › ítélet › tény) opening the Memória
+  page. **Chat page**: the audited anatomy — Mezo eyebrow + timestamp, tool chips above the
+  answer, `Hivatkozott · L3` refs footer with *human labels instead of raw ids* (designed fix
+  for the real app's inert-refs gap), a collapsed `Emlékek · N` disclosure (date · source ·
+  similarity% + gist), 👍/👎 feedback with the four reason chips on 👎; live send: typing
+  dots → tool chip streams in → answer lands; mic records then transcribes into the input
+  (never auto-sends); Beszélgetések sheet (rows with orb variants, active row, Névtelen
+  beszélgetés fallback, ＋ Új) and an Új chat empty state. **Subpages**: Minták (motor prose
+  with three bold numbers, 3×2 lifecycle grid where "döntésre vár" glows gold, the same
+  decision card in sync with the hub, Megerősítve/Megfigyelés/Még gyűlik sections with
+  human confidence words — never raw r/p —, Adat-egészség coverage rings), Heti (82/100 hero
+  + delta chip, trend rows with ↗→↘ arrows, Mezo tervjavaslat with feedback chips, Growth
+  weekly block), Memoár (Fraunces-titled chapter card with a lavender glow, anchor chips,
+  anniversary card), Tudástár (approval inbox card — Elfogad moves the fact into the top
+  section and bumps every counter —, search + category chips, "Most ezeket kapja meg a
+  társ · 10" sage section with per-row toggles, kimarad/kikapcsolva sections with honest
+  footnotes), Előrejelzések and Kísérletek (*Hungarian status chips — ◐ Folyamatban /
+  ✓ Bevált / ◇ Javaslat — localizing the real app's English ones*; confidence bars, basis
+  prose, acceptable proposal card that flips to ◐ Aktív 0/7), Memória (4 segments: Rétegek —
+  L0→L3 layer cards joined by pulsing dashed connectors carrying human cron times; Napló —
+  nightly-written day cards with embedded dots; Kereső — match-ring result cards with the
+  score-math chips egyezés × frissesség = végső; Audit — cost hero, token columns,
+  fact-provenance groups).
