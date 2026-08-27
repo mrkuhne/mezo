@@ -58,7 +58,7 @@ class GraphPromotionServiceReconcileIsolationIT extends AbstractIntegrationTest 
         knowledgeFactRepository.saveAndFlush(manual);
         goalPopulator.createGoal(owner, "active");
 
-        int count = promotionService.reconcile(owner);
+        int count = promotionService.reconcile(owner).upserted();
 
         // the failing pattern contributes 0; the fact + the active goal still promote
         assertThat(count).isEqualTo(2);

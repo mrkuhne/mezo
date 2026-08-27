@@ -374,8 +374,8 @@ class GraphPromotionServiceIT extends AbstractIntegrationTest {
         goalPopulator.createGoal(owner, "active");
         goalPopulator.createGoal(owner, "planned");    // never promoted, not active — must stay skipped
 
-        int first = promotionService.reconcile(owner);
-        int second = promotionService.reconcile(owner);
+        int first = promotionService.reconcile(owner).upserted();
+        int second = promotionService.reconcile(owner).upserted();
 
         // confirmed pattern + manual fact + active goal = 3; the unconfirmed pattern, the
         // pattern-sourced fact, and the never-promoted planned goal are deliberately skipped

@@ -74,6 +74,14 @@ public class GraphPromotionService {
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PATTERN,
             truncateTitle(pattern.getTitle()), pattern.getMechanism(),
             SOURCE_PATTERN, pattern.getId(), null, patternMeta(pattern));
+        // Promotion is now two-way (mezo-b3pp.31): retractPattern archives this node when the
+        // user un-confirms. GraphService.upsertNode never touches `status`, so without this line
+        // a re-confirmed pattern would upsert into a node that stays `archived` forever and
+        // never returns to the traversal — archiving would be a one-way trip. syncGoal has
+        // always asserted its own status this way; the other two promoters now match it.
+        if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
+            node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
+        }
         if (isNew) {
             GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
             if (structurer != null) {
@@ -83,14 +91,21 @@ public class GraphPromotionService {
         return Optional.of(node);
     }
 
-    /** Active (non-pattern-sourced) knowledge fact -> PREFERENCE node. */
+    /** Active (non-pattern-sourced) knowledge fact -> PREFERENCE node. Re-promotion REVIVES an
+     *  archived node (mezo-b3pp.31) — see the note in {@link #promotePattern}. */
     @Transactional
     public Optional<GraphNodeEntity> promoteFact(UUID userId, UUID factId) {
         return knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
             .filter(f -> !KnowledgeFactEntity.SOURCE_PATTERN.equals(f.getSource()))
-            .map(f -> graphService.upsertNode(userId, GraphNodeEntity.KIND_PREFERENCE,
-                truncateTitle(f.getFactText()), f.getFactText(), SOURCE_FACT, f.getId(), null,
-                Map.of("category", f.getCategory(), "source", f.getSource())));
+            .map(f -> {
+                GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PREFERENCE,
+                    truncateTitle(f.getFactText()), f.getFactText(), SOURCE_FACT, f.getId(), null,
+                    Map.of("category", f.getCategory(), "source", f.getSource()));
+                if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
+                    node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
+                }
+                return node;
+            });
     }
 
     /** Goal -> GOAL node; a goal that is no longer active archives its node (the graph shadows, never forgets). */
@@ -113,6 +128,70 @@ public class GraphPromotionService {
             node.setStatus(status);
         }
         return Optional.of(node);
+    }
+
+    /**
+     * The mirror of {@link #promotePattern} (bd mezo-b3pp.31): a pattern that is no longer
+     * confirmed must stop asserting itself in the graph. Archives the node rather than deleting
+     * it — {@code status='archived'} keeps the row (and with it the
+     * {@code (createdBy, sourceKind, sourceId)} anchor, so a later re-confirm revives the SAME
+     * node and its edges instead of building a second one), while
+     * {@code GraphTraversalQuery}'s {@code status = 'active'} filter takes it out of the
+     * [Összefüggések] prompt block immediately.
+     *
+     * <p>Re-checks the pattern's status itself instead of trusting the caller, so
+     * {@code PatternService.decide} can publish the retraction event on ANY non-confirm branch
+     * without the listener having to reason about which transitions matter.
+     *
+     * @return the archived node, or empty when the pattern is still confirmed, was never
+     *         promoted, or the node is already archived (all no-ops)
+     */
+    @Transactional
+    public Optional<GraphNodeEntity> retractPattern(UUID userId, UUID patternId) {
+        boolean stillConfirmed = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+            .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()))
+            .isPresent();
+        if (stillConfirmed) {
+            return Optional.empty();
+        }
+        return archiveBySource(userId, SOURCE_PATTERN, patternId);
+    }
+
+    /** The mirror of {@link #syncGoal} for the DELETE path (bd mezo-b3pp.31). {@code syncGoal}
+     *  already demotes a goal that merely stops being active, but a soft-deleted goal is invisible
+     *  to it (its finder is {@code ...AndDeletedFalse}), so the delete needs its own retraction. */
+    @Transactional
+    public Optional<GraphNodeEntity> retractGoal(UUID userId, UUID goalId) {
+        boolean stillLive = goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, userId).isPresent();
+        if (stillLive) {
+            return Optional.empty();
+        }
+        return archiveBySource(userId, SOURCE_GOAL, goalId);
+    }
+
+    /** The mirror of {@link #promoteFact} (bd mezo-b3pp.31). No service in main source
+     *  soft-deletes a {@code knowledge_fact} today, so nothing publishes a fact-retraction event;
+     *  this exists for {@link #reconcile}'s sweep, and is ready for the day a delete surface
+     *  lands. */
+    @Transactional
+    public Optional<GraphNodeEntity> retractFact(UUID userId, UUID factId) {
+        boolean stillLive = knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+            .filter(f -> !KnowledgeFactEntity.SOURCE_PATTERN.equals(f.getSource()))
+            .isPresent();
+        if (stillLive) {
+            return Optional.empty();
+        }
+        return archiveBySource(userId, SOURCE_FACT, factId);
+    }
+
+    /** Archive the node behind one source row, if there is one and it is not archived already. */
+    private Optional<GraphNodeEntity> archiveBySource(UUID userId, String sourceKind, UUID sourceId) {
+        return graphService.findBySource(userId, sourceKind, sourceId)
+            .filter(n -> !GraphNodeEntity.STATUS_ARCHIVED.equals(n.getStatus()))
+            .map(n -> {
+                n.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
+                return n;
+            });
     }
 
     /**
@@ -156,9 +235,21 @@ public class GraphPromotionService {
      * once W2.5's {@code GraphMaintenanceJob} calls this nightly across every user: one corrupt
      * pattern must not silently stop that user's facts and goals from reconciling too.
      *
-     * @return how many nodes were upserted (created or updated) this run
+     * <p>After the three promotion loops, a fourth pass — the COMPLEMENT sweep (mezo-b3pp.31) —
+     * walks the user's ACTIVE nodes back to their source row and retracts (archives) every one
+     * whose source stopped qualifying. The three loops above only ever see rows that still
+     * qualify, so a row that LEFT a qualifying set (a pattern un-confirmed, a goal or fact
+     * soft-deleted) is invisible to them and its node would otherwise stay active forever. This
+     * is what heals a retraction that happened while the graph switch was off (no listener
+     * existed to hear the event), and it is the ONLY path that retracts a soft-deleted
+     * {@code knowledge_fact}, since nothing in main source deletes one and so no event is
+     * published for it.
+     *
+     * @return {@link GraphReconcileResult#upserted()} — nodes created or refreshed from a source
+     *         row that still qualifies — and {@link GraphReconcileResult#retracted()} — active
+     *         nodes archived because their source row no longer qualifies
      */
-    public int reconcile(UUID userId) {
+    public GraphReconcileResult reconcile(UUID userId) {
         GraphPromotionService proxy = self.getObject();
         int count = 0;
         int skipped = 0;
@@ -188,10 +279,37 @@ public class GraphPromotionService {
                 log.warn("Reconcile: goal {} sync failed for user {}", goal.getId(), userId, e);
             }
         }
+        // The COMPLEMENT sweep (mezo-b3pp.31). The three loops above only ever see rows that
+        // still qualify — confirmed patterns, non-deleted facts, non-deleted goals — so a row
+        // that LEAVES those sets is invisible to them and its node would stay active forever.
+        // This walks the other way round: from the user's active nodes back to their source row,
+        // archiving every node whose source stopped qualifying. It is what heals a retraction
+        // that happened while the graph switch was off (no listener existed to hear the event),
+        // and it is the ONLY path that retracts a soft-deleted knowledge_fact, since nothing in
+        // main source deletes one and so no event is published for it.
+        int retracted = 0;
+        for (GraphNodeEntity node : graphService.listActive(userId)) {
+            UUID sourceId = node.getSourceId();
+            if (sourceId == null) {
+                continue;   // extractor/quarterly/profile nodes own their own lifecycle
+            }
+            try {
+                boolean archived = switch (node.getSourceKind() == null ? "" : node.getSourceKind()) {
+                    case SOURCE_PATTERN -> proxy.retractPattern(userId, sourceId).isPresent();
+                    case SOURCE_FACT -> proxy.retractFact(userId, sourceId).isPresent();
+                    case SOURCE_GOAL -> proxy.retractGoal(userId, sourceId).isPresent();
+                    default -> false;
+                };
+                retracted += archived ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: node {} retraction check failed for user {}", node.getId(), userId, e);
+            }
+        }
         if (skipped > 0) {
             log.warn("Reconcile skipped {} row(s) for user {} due to per-row failures", skipped, userId);
         }
-        return count;
+        return new GraphReconcileResult(count, retracted);
     }
 
     /** {r, n, direction} — the spec's PATTERN meta envelope; direction is the sign of r, prompt-renderable. */
