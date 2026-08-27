@@ -112,6 +112,12 @@ tags:
       + day scores + weekly aggregates for one ISO-Monday week. Scores are
       code-computed (spec §2); missing data is null ("tanulom"), never
       fabricated.
+  - name: Character
+    description: >-
+      Karakter dossier (mezo-1gim) — the synthesized user profile: 7 CORE
+      dimensions + AI-opened chapters, confidence-carrying claims, expert
+      observations, and persisted konzílium transcripts. Slice 1 ships reads
+      over an honestly empty dossier.
 paths:
   /api/auth/login:
     post:
@@ -7245,6 +7251,151 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterOverview
+      summary: >-
+        The dossier overview — all dimensions with maturity, portrait and top
+        claims (lazily seeds the 7 CORE dimensions on first read)
+      responses:
+        '200':
+          description: >-
+            The dossier (CORE dimensions always present; portraits may be empty
+            — the honest pre-bootstrap state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterOverviewResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/dimension/{key}':
+    get:
+      tags:
+        - Character
+      operationId: getCharacterDimension
+      summary: >-
+        One dimension in full — portrait, ACTIVE claims with evidence refs,
+        recent revisions
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The dimension
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterDimensionResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such dimension key for this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character/feed:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterFeed
+      summary: >-
+        Recent expert observations + the latest conference outcome diff, merged
+        chronologically (empty array = honest empty state)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 30
+            maximum: 100
+      responses:
+        '200':
+          description: >-
+            Feed items, newest first (possibly empty — never a 404;
+            list-endpoint precedent)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterFeedItem'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character/conference:
+    get:
+      tags:
+        - Character
+      operationId: listCharacterConferences
+      summary: Konzílium list (summaries only — transcripts load per id)
+      responses:
+        '200':
+          description: 'Conference summaries, newest first (possibly empty)'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterConferenceSummary'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/conference/{conferenceId}':
+    get:
+      tags:
+        - Character
+      operationId: getCharacterConference
+      summary: >-
+        One konzílium with its full persisted transcript — the exchange as it
+        actually ran, never re-dramatized
+      parameters:
+        - name: conferenceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The conference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterConferenceResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such conference for this user
           content:
             application/json:
               schema:
@@ -16608,3 +16759,238 @@ components:
             $ref: '#/components/schemas/MeWeekDay'
         weekly:
           $ref: '#/components/schemas/MeWeekAggregates'
+    CharacterClaimDto:
+      type: object
+      required:
+        - id
+        - text
+        - confidence
+        - sensitive
+        - evidence
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        confidence:
+          type: number
+          description: >-
+            0–1; the FE renders human words, never the raw number (Minták
+            precedent)
+        sensitive:
+          type: boolean
+        proposedBy:
+          type: string
+          description: expert persona key
+        evidence:
+          type: array
+          items:
+            type: object
+            required:
+              - kind
+              - label
+            properties:
+              kind:
+                type: string
+              id:
+                type: string
+                nullable: true
+              label:
+                type: string
+    CharacterDimensionSummary:
+      type: object
+      required:
+        - key
+        - title
+        - kind
+        - maturity
+        - portrait
+        - topClaims
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        kind:
+          type: string
+          enum:
+            - CORE
+            - CHAPTER
+        expertKey:
+          type: string
+          nullable: true
+        maturity:
+          type: integer
+          description: 0–100; 0 = "tanulom"
+        portrait:
+          type: string
+          description: empty string until the first conference writes it
+        topClaims:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterClaimDto'
+    CharacterOverviewResponse:
+      type: object
+      required:
+        - dimensions
+      properties:
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterDimensionSummary'
+    CharacterPortraitRevisionDto:
+      type: object
+      required:
+        - version
+        - portrait
+        - createdAt
+      properties:
+        version:
+          type: integer
+        portrait:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CharacterDimensionResponse:
+      type: object
+      required:
+        - key
+        - title
+        - kind
+        - maturity
+        - portrait
+        - claims
+        - revisions
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        kind:
+          type: string
+          enum:
+            - CORE
+            - CHAPTER
+        expertKey:
+          type: string
+          nullable: true
+        maturity:
+          type: integer
+        portrait:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterClaimDto'
+        revisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterPortraitRevisionDto'
+    CharacterFeedItem:
+      type: object
+      required:
+        - kind
+        - at
+        - text
+      properties:
+        kind:
+          type: string
+          enum:
+            - OBSERVATION
+            - CONFERENCE_CHANGE
+        at:
+          type: string
+          format: date-time
+        expertKey:
+          type: string
+          nullable: true
+          description: null for CONFERENCE_CHANGE items
+        dimensionKeys:
+          type: array
+          items:
+            type: string
+        text:
+          type: string
+    CharacterConferenceSummary:
+      type: object
+      required:
+        - id
+        - kind
+        - generatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - BOOTSTRAP
+            - WEEKLY
+            - MONTHLY
+        weekStart:
+          type: string
+          format: date
+          nullable: true
+        generatedAt:
+          type: string
+          format: date-time
+    ConferenceTurn:
+      type: object
+      required:
+        - persona
+        - text
+      properties:
+        persona:
+          type: string
+        text:
+          type: string
+        refIds:
+          type: array
+          items:
+            type: string
+    CharacterConferenceResponse:
+      type: object
+      required:
+        - id
+        - kind
+        - generatedAt
+        - transcript
+        - changes
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - BOOTSTRAP
+            - WEEKLY
+            - MONTHLY
+        weekStart:
+          type: string
+          format: date
+          nullable: true
+        generatedAt:
+          type: string
+          format: date-time
+        transcript:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConferenceTurn'
+        changes:
+          type: array
+          items:
+            type: object
+            required:
+              - kind
+              - summary
+            properties:
+              kind:
+                type: string
+              dimensionKey:
+                type: string
+                nullable: true
+              summary:
+                type: string
