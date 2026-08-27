@@ -291,7 +291,12 @@ public class GraphPromotionService {
         for (GraphNodeEntity node : graphService.listActive(userId)) {
             UUID sourceId = node.getSourceId();
             if (sourceId == null) {
-                continue;   // extractor/quarterly/profile nodes own their own lifecycle
+                // extractor/quarterly nodes (LifeEventExtractionService/QuarterlyReviewService,
+                // via GraphService#createCandidate) never get a sourceId; they own their own
+                // lifecycle. The profile node DOES carry one (ProfileAssembler passes userId as
+                // sourceId with sourceKind="profile") and is instead caught by the switch's
+                // default branch below.
+                continue;
             }
             try {
                 boolean archived = switch (node.getSourceKind() == null ? "" : node.getSourceKind()) {
