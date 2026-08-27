@@ -11,6 +11,9 @@ const NODE = '/api/companion/graph/node'
 export function toLifeEventCandidate(n: GraphNodeResponse): LifeEventCandidate {
   return {
     id: n.id,
+    // A backend enum hat kind-ot ismer, de az L2 inboxba csak ez a kettő kerülhet (W2.3 + W5.3);
+    // bármi más ismeretlen jelölt volna, amire nincs őszinte copy — LIFE_EVENT a biztonságos default.
+    kind: n.kind === 'SEASON' ? 'SEASON' : 'LIFE_EVENT',
     title: n.title,
     summary: n.summary ?? null,
     occurredOn: n.occurredOn ?? null,

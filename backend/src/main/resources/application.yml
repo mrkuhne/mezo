@@ -290,7 +290,10 @@ mezo:
       # off = the FlagSweepJob bean does not exist (on-write evaluation still runs)
       flag-sweep-job:
         enabled: true
-      # W4.3 (mezo-b3pp.17): weekly pragmatic-profile synthesis (smart tier, one LLM call/user/week)
+      # W4.3 (mezo-b3pp.17): weekly pragmatic-profile synthesis (smart tier, one LLM call/user/week);
+      # off = the ProfileAssemblerJob bean does not exist AND the W5.3 quarterly job skips its own
+      # phase-2 profile rebuild (it reads this switch by that bean's presence), so an archived
+      # "Rólad tanultam" node is never resurrected behind the operator's back
       profile-assembler-job:
         enabled: true
       # W2.5 (mezo-b3pp.10) nightly graph maintenance: edge decay/prune + reinforcement, plus the
@@ -302,6 +305,13 @@ mezo:
       # (schedules: mezo.companion.consolidation.*-cron); off = the ConsolidationJob bean does not
       # exist (the ladder simply stops growing; nothing else changes, nothing is deleted)
       consolidation-job:
+        enabled: true
+      # W5.3 (mezo-b3pp.20) quarterly deep pass (schedule: mezo.companion.quarterly.cron);
+      # off = the QuarterlyReviewJob bean does not exist (no season candidates, no quarterly
+      # profile rerun; the weekly profile job is independent and unaffected).
+      # The reverse is NOT symmetric: this on + profile-assembler-job off = seasons still proposed
+      # (phase 1), profile rebuild skipped (phase 2)
+      quarterly-review-job:
         enabled: true
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
@@ -641,6 +651,19 @@ mezo:
       render-max-tokens: 400
       max-decisions: 10
       max-graph-nodes: 12
+    # W5.3 (mezo-b3pp.20, spec §9.3): the quarterly deep pass — season-over-season comparison.
+    quarterly:
+      # 04:00 on the 1st of Jan/Apr/Jul/Oct — after that dawn's 03:50 monthly consolidation rung
+      # (this job's input) and clear of every other dawn slot (02:20 summary, 02:40 patterns,
+      # 03:00 SUN hypotheses, 03:05 hourly flags, 03:10 feedback-learning, 03:20 graph,
+      # 03:30 MON weekly rung, 03:40 llm-log retention, 03:45 MON profile, 03:50 monthly rung).
+      cron: "0 0 4 1 1,4,7,10 *"
+      # Max SEASON candidates ONE run may propose into the L2 inbox (IDENT-6: proposals only).
+      max-candidates: 2
+      # Month rungs per side that enter the prompt — a quarter has 3; the cap is the flood guard.
+      max-period-lines: 6
+      # Per-rung character cap in the compare_periods tool output (a tool result is prompt budget).
+      render-max-chars: 400
     patterns:
       # V3.1 nightly Pearson correlation over the pair catalog — 02:40, after the summary job
       cron: "0 40 2 * * *"

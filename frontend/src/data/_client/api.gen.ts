@@ -3010,7 +3010,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Pending (undecided) LIFE_EVENT candidates from the nightly extractor, newest first (W2.3) */
+        /** Pending (undecided) graph candidates, newest first — LIFE_EVENT rows from the nightly extractor (W2.3) and SEASON rows from the quarterly deep pass (W5.3) */
         get: operations["listGraphCandidates"];
         put?: never;
         post?: never;
@@ -3029,7 +3029,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decide a candidate (W2.3) — accept activates the node and creates its proposed edges, reject soft-deletes it. One decision per candidate; confirm is an explicit L2 action. */
+        /** Decide a candidate (W2.3 life event / W5.3 season) — accept activates the node and creates its proposed edges, reject soft-deletes it. One decision per candidate; confirm is an explicit L2 action. */
         post: operations["decideGraphCandidate"];
         delete?: never;
         options?: never;

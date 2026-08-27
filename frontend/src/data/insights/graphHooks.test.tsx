@@ -49,6 +49,27 @@ describe('useLifeEventCandidates (real mode)', () => {
       id: 'n1', title: 'Új munkahely', occurredOn: '2026-08-21', proposedEdgeCount: 2,
     })
   })
+
+  it('a jelölt kind-ját átviszi a domain típusra (W5.3 szezon-jelöltek)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/graph/node/candidate`, () =>
+        HttpResponse.json([
+          {
+            id: 'n1', kind: 'LIFE_EVENT', title: 'Új munkahely', summary: 'Első hét.',
+            status: 'candidate', occurredOn: '2026-08-21', proposedEdgeCount: 1,
+            createdAt: '2026-08-22T03:20:00Z', updatedAt: '2026-08-22T03:20:00Z',
+          },
+          {
+            id: 'n2', kind: 'SEASON', title: 'Nyári alapozás', summary: 'A nyár a volumenről szólt.',
+            status: 'candidate', occurredOn: '2026-07-01', proposedEdgeCount: 0,
+            createdAt: '2026-10-01T04:00:00Z', updatedAt: '2026-10-01T04:00:00Z',
+          },
+        ])),
+    )
+    const { result } = renderHook(() => useLifeEventCandidates(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.candidates).toHaveLength(2))
+    expect(result.current.candidates.map((c) => c.kind)).toEqual(['LIFE_EVENT', 'SEASON'])
+  })
 })
 
 describe('useKnowledgeGraphNodes (mock mode)', () => {
