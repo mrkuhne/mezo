@@ -33,6 +33,11 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
     List<GraphNodeEntity> findByCreatedByAndStatusAndCreatedAtBeforeAndDeletedFalse(
         UUID createdBy, String status, Instant cutoff);
 
+    /** Weekly review gather (mezo-p2tr): active LIFE_EVENT nodes whose {@code occurredOn} falls
+     *  inside the review's week — the ÉLETESEMÉNYEK section's candidate source. */
+    List<GraphNodeEntity> findByCreatedByAndKindAndStatusAndOccurredOnBetweenAndDeletedFalse(
+        UUID createdBy, String kind, String status, LocalDate start, LocalDate end);
+
     /**
      * W2.3's per-day idempotence probe: has the extractor ALREADY processed this day for this
      * user? Deliberately native and deliberately blind to {@code is_deleted} — a candidate the

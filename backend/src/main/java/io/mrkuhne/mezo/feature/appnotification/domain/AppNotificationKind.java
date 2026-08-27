@@ -4,11 +4,12 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * The 12 AI-brain notification kinds (bd mezo-gzhp, spec 2026-08-18 §2) — the single source of
- * truth for kind key, push family (slice F3 maps it to a {@link NotificationCategory}), and the
- * deeplink base. {@code familyKey} is null ONLY for {@code memoir_ready}: the existing
- * {@code memoir} push category already pushes that event — a second category would double-notify.
- * Pattern-detail kinds interpolate {@code {pairKey}} into the deeplink at emit time.
+ * The AI-brain notification kinds (bd mezo-gzhp, spec 2026-08-18 §2; {@code weekly_review_ready}
+ * added mezo-p2tr) — the single source of truth for kind key, push family (slice F3 maps it to a
+ * {@link NotificationCategory}), and the deeplink base. {@code familyKey} is null for
+ * {@code memoir_ready} and {@code weekly_review_ready}: an existing push category already covers
+ * each of those events — a second category would double-notify. Pattern-detail kinds interpolate
+ * {@code {pairKey}} into the deeplink at emit time.
  */
 public enum AppNotificationKind {
 
@@ -23,7 +24,10 @@ public enum AppNotificationKind {
     EXPERIMENT_PROPOSED("experiment_proposed", "experiment", "/insights/experiments"),
     EXPERIMENT_CLOSED("experiment_closed", "experiment", "/insights/experiments"),
     CHALLENGE_EVENT("challenge_event", "challenge", "/train"),
-    MEMORY_NOTE("memory_note", "memory", "/insights/memoria");
+    MEMORY_NOTE("memory_note", "memory", "/insights/memoria"),
+    /** mezo-p2tr: familyKey null like {@code memoir_ready} — the Task 7 push category reads this
+     *  row itself, so a second family here would double-notify. */
+    WEEKLY_REVIEW_READY("weekly_review_ready", null, "/me/week");
 
     private final String key;
     private final String familyKey;

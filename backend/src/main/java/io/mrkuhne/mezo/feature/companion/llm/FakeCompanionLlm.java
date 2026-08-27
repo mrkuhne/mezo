@@ -190,6 +190,17 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEMOIR_SENTINEL =
             Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of WeeklyReviewGenerator.WEEKLY_REVIEW_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String WEEKLY_REVIEW_MARKER_MIRROR = "HETI-ELEMZES-FELADAT";
+
+    /** Scripted weekly review (mezo-p2tr): {@code [fake-review:{…}]} planted via a MEMOIR title
+     *  (the gather renders it exactly once, unlike pattern/fact/life-event labels which repeat in
+     *  the numbered HORGONY-JELÖLTEK listing — see WeeklyReviewGeneratorIT's class javadoc).
+     *  GREEDY — the payload {@code {"dayNotes":[…]}} nests objects, so the match must run to the
+     *  LAST brace. */
+    public static final Pattern WEEKLY_REVIEW_SENTINEL =
+            Pattern.compile("\\[fake-review:(\\{.*})]", Pattern.DOTALL);
+
     /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
 
@@ -396,6 +407,11 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = MEMOIR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
                     : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchorIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(WEEKLY_REVIEW_MARKER_MIRROR)) {
+            Matcher m = WEEKLY_REVIEW_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1)
+                    : "{\"summary\":\"FAKE-HETI-ELEMZES\",\"dayNotes\":[],\"anchorIndexes\":[]}";
         }
         if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
             // mezo-106s: run the scripted [fake-tool:…] sentinels for their audit side
