@@ -2406,8 +2406,13 @@ each row into `MemoryEmbeddingKindCount.builder().kind(row.getKind()).count((int
 row.getCount()).build()`; a kind with zero live vectors is simply never a row, so it is omitted
 from the array — the same "absence is zero" convention `MemoryOverviewL2.patterns` and
 `MemoryOverviewL3.facts` already use, now shared by all three. The `order by count desc, kind asc`
-is deliberate, not cosmetic: it is what makes an ordered-list assertion in
-`CompanionMemoryOverviewApiIT` legitimate instead of flaky. On the FE,
+is deliberate, not cosmetic: it makes the response order deterministic, which is a property the API
+promises its consumer — the FE renders one chip per array entry in wire order, with no client-side
+sort. `testOverview_shouldOrderKindsByCountThenKind_whenSeveralKindsArePopulated` in
+`CompanionMemoryOverviewApiIT` asserts that order with `containsExactly`, so it documents and locks
+the intent — but it is not a hard guard: at this row count Postgres' aggregate happens to return the
+same order even with the `order by` removed (verified by hand), so what actually backs the clause is
+the API's determinism promise, not the test. On the FE,
 `MemoryLayersPanel`'s `EMBEDDING_KIND_LABEL` map (`features/insights/components/
 MemoryLayersPanel.tsx`) renders one stat per array entry and falls back to the raw `kind` string
 (`EMBEDDING_KIND_LABEL[e.kind] ?? e.kind`) for a kind it has no Hungarian label for yet — without
