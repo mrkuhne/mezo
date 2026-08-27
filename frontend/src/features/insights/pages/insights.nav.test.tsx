@@ -20,17 +20,14 @@ describe('insights nav (real mode default)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('Insights opens on Minták; the dropdown reaches Heti / Memoár / Előrejelzések / Kísérletek', async () => {
+  test('Insights opens on Minták; the dropdown reaches Memoár / Előrejelzések / Kísérletek', async () => {
     renderApp('/insights')
     expect(screen.getByRole('button', { name: 'Minták' })).toHaveAttribute('aria-haspopup', 'menu')
     expect(await screen.findByText('A motor állapota')).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Minták' }))
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Heti' }))
-    expect(screen.getByRole('button', { name: 'Heti' })).toBeInTheDocument()
-
+    // Heti retired (mezo-p2tr) — the review moved to /me/week; the dropdown no longer lists it.
     // Memoár is un-ghosted at W2 — navigates to the honest placeholder.
-    await userEvent.click(screen.getByRole('button', { name: 'Heti' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Minták' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Memoár' }))
     expect(await screen.findByText('Az első memoár a hét zárásakor készül el.')).toBeInTheDocument()
 

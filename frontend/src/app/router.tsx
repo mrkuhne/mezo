@@ -35,7 +35,6 @@ import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { InsightsSection } from '@/features/insights/pages/InsightsSection'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
-import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
@@ -133,7 +132,10 @@ export const routes: RouteObject[] = [
         element: <InsightsSection />,
         children: [
           { index: true, element: <PatternsPage /> },
-          { path: 'weekly', element: <WeeklyPage /> },
+          // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
+          // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
+          // an honest redirect so any old bookmark/link still lands somewhere sensible.
+          { path: 'weekly', element: <Navigate to="/me/week" replace /> },
           { path: 'memoir', element: <MemoirPage /> },
           { path: 'knowledge', element: <KnowledgeListPage /> },
           { path: 'chat', element: <ChatPage /> },

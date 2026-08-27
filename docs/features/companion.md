@@ -3518,8 +3518,9 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   optimistic write + rollback, the 200-id cap keeping the NEWEST ids, empty-id-set = no request, a
   failing read degrading to "no verdicts"), `features/insights/components/FeedbackChips.test.tsx`
   (the reason row's reveal/retract branches, `aria-pressed`), plus per-surface cases in
-  `ChatPage`/`MemoirPage`/`WeeklyPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback`
-  tests — see [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
+  `ChatPage`/`MemoirPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback` tests (the
+  retired `WeeklyPage`'s case moved to `features/me/pages/WeekPage.test.tsx`, `mezo-p2tr`) — see
+  [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
 
 **W4.2 feedback-rollup test additions (`mezo-b3pp.16`) — all integration-first, no LLM in the path:**
 

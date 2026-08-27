@@ -22,10 +22,9 @@ import { weeklySuggestionApi, type WeeklySuggestion } from '@/data/insights/week
 import { weeklySuggestion as mockWeeklySuggestion, weeklySuggestionId as mockWeeklySuggestionId } from '@/data/insights/insights'
 import type { MeWeekAggregates } from '@/data/me/meWeek'
 
-/** The next-week card's source — the SAME W1 proactive suggestion `useWeekly` reads (unchanged
- *  endpoint, GET by the FE's local day, real-mode 404-tolerant). Deliberately NOT `useWeekly`
- *  itself (that hook composes a much larger real-mode read this page has no use for) — this is
- *  the isolated 404-tolerant fetch idiom (weeklyHooks.ts:198-210), copied rather than shared.
+/** The next-week card's source — the SAME W1 proactive suggestion the retired Insights `useWeekly`
+ *  used to read (unchanged endpoint, GET by the FE's local day, real-mode 404-tolerant). Its own
+ *  isolated 404-tolerant fetch idiom, copied rather than shared.
  *
  *  `enabled` gates the card to the CURRENT week only (review fix, mezo-p2tr round 1): the
  *  suggestion is always about "today's" week regardless of `startIso` (there is no per-week

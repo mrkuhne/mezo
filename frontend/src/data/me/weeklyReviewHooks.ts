@@ -2,7 +2,7 @@
 // plus the on-demand regenerate action. MOCK: the deterministic demo week's seed (re-dated per
 // startIso, null for the CURRENT week — see weeklyReviewMock.ts). REAL: 404 on the review GET is
 // the honest "not generated yet" state (`review: null`, never a thrown error — the
-// isSwitchedOff-style 404-tolerant fetch, weeklyHooks.ts:198-210); the digest GET never 404s.
+// isSwitchedOff-style 404-tolerant fetch idiom); the digest GET never 404s.
 import { useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/data/_client/api'

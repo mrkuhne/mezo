@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-26
+updated: 2026-08-27
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -217,7 +217,10 @@ this redesign and remain as shipped.
   404→null); the Weekly card renders the generated prose when present, else the D′ honest placeholder
   *"A társ heti tervjavaslata hamarosan."*; the inert **„Elfogad / Hangoljuk"** buttons are **hidden
   in live mode** (false affordance — §9 decision k), mock keeps them + byte-parity. Details:
-  [insights.md §2.2](insights.md).
+  [insights.md §2.2](insights.md). **As originally shipped at W1** — the Insights Weekly tab
+  (`useWeekly`/`WeeklyPage`) was retired outright at `mezo-p2tr`; the SAME suggestion endpoint is now
+  read directly by `/me/week`'s `WeekPage` (its own `useWeekNextSuggestion`, current-week-only) — see
+  [insights.md §2.2](insights.md) and [me.md](me.md).
 
 **W2 (`mezo-h4wp.4`) — weekly Memoir (the W stage closes):**
 
@@ -475,7 +478,7 @@ evaluator**. Design of record:
 | Event triggers (sleep/weight log → reaction message) | 🟢 `mezo-gst9` | `CompanionMessageEventListener` — `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent` (published by `SleepLogService`/`WeightLogService`); backfilled/old logs never trigger. **Replaces the retired sleep-triggered "regen" (`refreshIfStale`)** — see §9. |
 | Frontend (Today MezoChip thread) | 🟢 `mezo-gst9` | `useCompanionFeed()` (`['companionFeed', date]`, 60s poll real mode); `buildMezoMessages` maps the feed 1:1 to thread bubbles, prepending an honestly-labelled demo card only while no `morning` kind exists; the retired `CompanionNoteCard`/`useCompanionNote()` are gone. |
 | Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
-| Frontend (Insights Weekly card swap) | 🟢 W1 | `useWeekly().weeklySuggestion` real (404→null); the Weekly card renders the generated prose, else the honest placeholder; „Elfogad/Hangoljuk" hidden in live. |
+| Frontend (Insights Weekly card swap, shipped W1) | 🟢 → moved `mezo-p2tr` | `useWeekly().weeklySuggestion` real (404→null) on the retired `WeeklyPage`; the same endpoint is now read by `/me/week`'s `WeekPage` (`useWeekNextSuggestion`, current week only) — honest placeholder still applies. |
 | Memoir (table + generator + Sunday cron + lazy read) | 🟢 W2 | `memoir` table (ISO-Monday identity, partial unique, typed-jsonb `anchors`); smart-tier `MemoirGenerator` (gather = the week's OWN summaries + facts + patterns + numbered anchor candidates → ONE `completeSmart` call, model-selected anchors, honest-null); Sunday-19:00 `MemoirJob` (three-switch, no backfill); `GET /api/proactive/memoir` (no params; latest row else lazy-generate the LAST COMPLETED week; 404 = empty week). |
 | Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; anniversary/archive mock-only, and since **W4.1** (`mezo-b3pp.15`) a real 👍/👎 chip row in both modes replaces the retired mock reactions. |
 | Predictions (table + generator + validation + weekly/daily job + list read) | 🟢 P1 | `prediction` table (week_start idempotence probe, nullable confidence, CHECK-pinned direction/status); smart-tier `PredictionGenerator` (gather = snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog → ONE `completeSmart`, code-set windows, pattern-copied confidence, honest-empty); deterministic `PredictionValidationService` (window-vs-prior-7-days, no-data ⇒ stays pending); `PredictionJob` two crons (Mon 06:30 generate + daily 06:15 validate, three-switch); `GET /api/proactive/prediction` (list; lazy current-week; `[]` = honest empty, never 404). |
@@ -1291,17 +1294,22 @@ generic feedback label on `kind === 'intervention'` rows, still through the same
 ('feed_message')` chips every other persisted card uses — no new feedback machinery, W5.2 is a
 consumer of the existing W4.1 surface ([companion.md](companion.md) §5.7).
 
-### 5.5 Proactive → Insights Weekly FE (✅ W1 wired — real-only read)
-The Insights Weekly „Mezo · heti tervjavaslat" card ([insights.md §2.2](insights.md)) is the
-consumer. `useWeekly()` (`data/insights/weeklyHooks.ts`) fetches `GET /api/proactive/weekly-suggestion?date=<local>`
-via `weeklySuggestionApi.get` (`data/insights/weeklySuggestionApi.ts` — **since `mezo-b3pp.15` it
-returns `{id, prose}`, not a bare prose string**, so the card has an artifactId for its 👍/👎 chips;
-`useWeekly` splits it into `weeklySuggestion`/`weeklySuggestionId`, both null on the 404) in a
-real-only `useQuery` (`['weeklySuggestion', start]`, `enabled: !mock`, `retry: false`, 404→null) —
-the one bare `useQuery` in that otherwise-`useRealQuery` file (commented as such). `weeklySuggestion:
-string | null` joins the D′ `WeeklyView`; the card renders the prose or the honest placeholder, and
-the „Elfogad/Hangoljuk" buttons are hidden when `mode !== 'mock'`. Mock mode: `useWeekly` returns the
-seed prose synchronously (the query is disabled) ⇒ byte-parity.
+### 5.5 Proactive → Insights Weekly FE (✅ W1 wired — real-only read) — **consumer RETIRED, endpoint unaffected (`mezo-p2tr`)**
+**As originally shipped at W1:** the Insights Weekly „Mezo · heti tervjavaslat" card
+([insights.md §2.2](insights.md)) was the consumer — `useWeekly()` (`data/insights/weeklyHooks.ts`)
+fetched `GET /api/proactive/weekly-suggestion?date=<local>` via `weeklySuggestionApi.get`
+(`data/insights/weeklySuggestionApi.ts` — **since `mezo-b3pp.15` it returns `{id, prose}`, not a bare
+prose string**, so the card had an artifactId for its 👍/👎 chips; `useWeekly` split it into
+`weeklySuggestion`/`weeklySuggestionId`, both null on the 404) in a real-only `useQuery`
+(`['weeklySuggestion', start]`, `enabled: !mock`, `retry: false`, 404→null) — the one bare `useQuery`
+in that otherwise-`useRealQuery` file. The „Elfogad/Hangoljuk" buttons were hidden when `mode !==
+'mock'`; mock mode returned the seed prose synchronously (byte-parity).
+
+**Current state:** the Insights Weekly tab (`useWeekly`/`WeeklyPage`) is **retired outright**
+(`mezo-p2tr`) — this endpoint has **no dual-mode consumer left**. The SAME `weeklySuggestionApi.get`
+client is now called directly by **`/me/week`'s `WeekPage`** (its own `useWeekNextSuggestion` helper,
+current-week-only, mock branch returns the same `insights.ts` seed) — same wire contract, same
+404→honest-placeholder behavior, new home. See [insights.md §2.2](insights.md) and [me.md](me.md).
 
 ### 5.6 Proactive → Insights Memoir FE (✅ W2 wired — dual-mode read)
 The Insights Memoir tab ([insights.md §2.3](insights.md)) is the consumer. `useMemoir()`
@@ -1469,7 +1477,8 @@ dual-mode.
 - **W1 shipped (weekly generator + Monday cron + FE swap) — the smart-tier template:** `WeeklySuggestionGenerator`
   (pure-code `gather` at the smart tier, `completeSmart`, plain-prose output, honest-null),
   `WeeklySuggestionJob` (`@Scheduled`, three-switch, current-week-only, per-user isolation) and the
-  real-only `useWeekly().weeklySuggestion` swap are the working templates for W2/H/P. It is the
+  real-only FE swap (originally `useWeekly().weeklySuggestion`, now `/me/week`'s `useWeekNextSuggestion`
+  post-`mezo-p2tr`) are the working templates for W2/H/P. It is the
   briefing template minus the jsonb envelope/refs and minus any staleness machinery.
 - **W2 shipped (memoir generator + Sunday cron + FE un-ghost) — the structured smart-tier template:**
   `MemoirGenerator` (pure-code `gather` over the week's OWN summaries + facts + patterns + numbered
@@ -1668,7 +1677,8 @@ companion's own, [companion.md](companion.md) §8:**
 messages map 1:1 in order; the demo card prepends only when the feed has no `morning` kind; the demo
 card is absent once a real morning message exists; an empty feed with no demo briefing ⇒ `[]`
 (replaces the old briefing-only+heartbeat-note thread-building coverage — `CompanionNoteCard.test.tsx`
-is deleted, there is no separate card any more). **W1:**
+is deleted, there is no separate card any more). **W1 (as originally shipped — both files retired
+`mezo-p2tr` along with the Insights Weekly tab; the coverage lives on in `features/me/pages/WeekPage.test.tsx`, [me.md](me.md)):**
 `data/insights/weeklyHooks.test.tsx` (+2) — serves the generated prose when the GET succeeds; keeps
 `weeklySuggestion` null on the default 404; `features/insights/pages/WeeklyPage.test.tsx` (+1) —
 renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
@@ -1723,7 +1733,7 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
   / the challenge `{…proposals…}`) nest objects, so a non-greedy match would stop at the FIRST inner
   `}` and truncate the JSON. The morning/sleep/weight sentinels (`[fake-feed-morning:{…}]`/
   `[fake-feed-sleep:{…}]`/`[fake-feed-weight:{…}]`) are non-greedy (their JSON is flat, no nesting).
-- **(a2) The three read-only responses now expose their row `id` — because feedback needed it, not because the surface did (`mezo-b3pp.15`, Phase 5 W4.1).** `FeedMessageResponse`, `WeeklySuggestionResponse` and `MemoirResponse` were the last proactive reads with no id on the wire: their surfaces only render, never write back, so nothing had ever needed one. W4.1's 👍/👎 capture changed that — `message_feedback.artifact_id` IS that row id. The addition is **contract-only** (all three are MapStruct-mapped from entities that always had `id`) and **required, not optional** — a nullable id would push a "can this be voted on?" branch into every consumer for a case that cannot happen. Consequence worth knowing: the FE's `weeklySuggestionApi.get` stopped returning a bare prose string and now returns `{id, prose}`, so `useWeekly` grew `weeklySuggestionId` alongside `weeklySuggestion` (§5.5). **Proactive owns none of the feedback machinery** — the table, the `/api/companion/feedback` surface and the FE hook are all companion-side ([`companion.md` §4/§5.7](companion.md)); proactive's whole contribution is these three fields.
+- **(a2) The three read-only responses now expose their row `id` — because feedback needed it, not because the surface did (`mezo-b3pp.15`, Phase 5 W4.1).** `FeedMessageResponse`, `WeeklySuggestionResponse` and `MemoirResponse` were the last proactive reads with no id on the wire: their surfaces only render, never write back, so nothing had ever needed one. W4.1's 👍/👎 capture changed that — `message_feedback.artifact_id` IS that row id. The addition is **contract-only** (all three are MapStruct-mapped from entities that always had `id`) and **required, not optional** — a nullable id would push a "can this be voted on?" branch into every consumer for a case that cannot happen. Consequence worth knowing: the FE's `weeklySuggestionApi.get` stopped returning a bare prose string and now returns `{id, prose}`, so the consumer (originally `useWeekly`, now `/me/week`'s `useWeekNextSuggestion` post-`mezo-p2tr`) carries the id alongside the prose (§5.5). **Proactive owns none of the feedback machinery** — the table, the `/api/companion/feedback` surface and the FE hook are all companion-side ([`companion.md` §4/§5.7](companion.md)); proactive's whole contribution is these three fields.
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
@@ -1782,10 +1792,12 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
   and writes the suggestion FOR the current week (whose Monday is today). Monday-morning (not Sunday
   night) so the whole previous week is already summarized when it runs. Like the briefing cron it does
   **not** backfill — a past week's suggestion is never read (§9 decision f, same reasoning).
-- **(k) The „Elfogad / Hangoljuk" buttons are hidden in live mode (false affordance).** They never
-  had handlers — accept/tune interactivity is deferred (spec §5). Rather than show dead buttons on a
-  real generated suggestion, `WeeklyPage` renders them only when `mode === 'mock'`; live mode shows
-  the prose alone. (`WeeklyPage.test.tsx` pins their absence in real mode.)
+- **(k) The „Elfogad / Hangoljuk" buttons were hidden in live mode (false affordance), as originally
+  shipped.** They never had handlers — accept/tune interactivity is deferred (spec §5). `WeeklyPage`
+  rendered them only when `mode === 'mock'`; live mode showed the prose alone (`WeeklyPage.test.tsx`
+  pinned their absence in real mode). **Since `mezo-p2tr`** the successor, `/me/week`'s `WeekNextCard`,
+  drops the mock-only buttons entirely rather than carrying the conditional forward — the prose +
+  feedback chips render the same way in both modes now.
 - **(l) W2 memoir has NO staleness / regeneration path, and the Sunday-19:00 cron writes the week it
   is ENDING — YAGNI + old-journey 5.8.** Like the weekly suggestion (§9 decision i), a memoir is
   written once (at Sunday dusk, or lazily on first open) and stands — no `refreshIfStale`, no
@@ -2105,8 +2117,8 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
 
 **Frontend — Insights Weekly consumer (W1)**
 - `frontend/src/data/insights/weeklySuggestionApi.ts` — `weeklySuggestionApi.get(date)` (wire → `w.prose` string).
-- `frontend/src/data/insights/weeklyHooks.ts` — `useWeekly().weeklySuggestion` real-only `useQuery` (`['weeklySuggestion', start]`, `enabled:!mock`, `retry:false`, 404→null); the one bare `useQuery` in the file.
-- `frontend/src/features/insights/pages/WeeklyPage.tsx` — renders the prose or the honest placeholder; „Elfogad/Hangoljuk" hidden when `mode !== 'mock'` (§9 decision k).
+- **DELETED (`mezo-p2tr`):** `frontend/src/data/insights/weeklyHooks.ts`'s `useWeekly().weeklySuggestion` real-only `useQuery` and `frontend/src/features/insights/pages/WeeklyPage.tsx` (rendered the prose or the honest placeholder; „Elfogad/Hangoljuk" hidden when `mode !== 'mock'`, §9 decision k) — both retired with the Insights Weekly tab.
+- `frontend/src/features/me/pages/WeekPage.tsx` (`useWeekNextSuggestion`) + `frontend/src/features/me/components/WeekNextCard.tsx` — the **current** consumer of this endpoint, post-`mezo-p2tr` ([me.md](me.md)).
 
 **Frontend — Insights Memoir consumer (W2)**
 - `frontend/src/data/insights/memoirApi.ts` — `memoirApi.latest()` + `toMemoir` (wire → FE `Memoir`; the `Hét N · …` week label derives client-side via `isoWeekNumber`/`deriveWeekTitle`).
