@@ -268,6 +268,26 @@ Locked patterns from the screen rounds (canonical for every further page):
   pyramid sessions too (today a logged pyramid earns ~0 XP because `completedRounds` is
   sprint-only in the sheet while the scorer treats pyramid as sprint), and the Napló
   HR-recovery trend card (data exists in `hrRecoverySec`, no UI today).
+- **Fuel hub specified** in the new fuel-tab prototype (2026-08-27, feature-audited against
+  all real `/fuel` routes; see `prototypes/README.md`, and the **full audit** in
+  [`2026-08-27-fuel-feature-audit.md`](2026-08-27-fuel-feature-audit.md) — the per-subpage
+  deep rounds must consult it). Hub absorbs the old Mai page: keret-hero
+  (honest negative remaining-kcal, proportional done-window day-bar + gold now-marker, energy
+  chips that vanish on static energy, 5 rings with the water ring as a button), MOST-window
+  card (advances on log; all-done → standing log row, the real behavior), done capsule (only
+  when ≥1 done; AI-average from scored meals only; role tags; unscored ✨), 6 tiles → Terv /
+  Stack / Receptek / Kamra / Gyógyszer / Napló. Load-bearing behaviors carried: log sheet slot
+  defaults to the launching window's slotKey (the mezo-bnsf bug class), derived-until-touched
+  meal name, manual-ml-overrides-chip in the water sheet, zone anchor notes + pin/auto badge
+  precedence, NOVA hue never red (4 = terracotta), empty Terv sections stay hidden (real mode
+  ships them empty — mock over-designs them). Designed additions flagged for implementation:
+  **Napló trend page** (weekly API already returns 7-day series, FE collapses it to 3 scalars),
+  **Snack segment** on Receptek, **Gyógyszer segment** on Kamra, Terv rhythm-grid markers
+  derived from settings instead of the hardcoded 21:00/14:00, and a future add-medication path
+  (today none exists). Deeper rounds still to design per subpage: full LogMealSheet (overrides,
+  MealPicker), AiLogSheet 3 fázis, MealScoreSheet/ScoreBreakdown, recipe detail/editor, Kamra
+  detail + Import (OFF/link/fotó), StackItem/StackPicker sheets, FuelSlots editor + Tier-1/2
+  validation, EnergyBreakdownSheet. New sprite icon: `i-injekcio`.
 - **Mezociklus fully specified** in its prototype: hub (hero + Volumen/Történet/Sablonok/Új
   blokk tiles), MEV/MAV/MRV provenance bars with expandable 01→02→03 derivation, 5-step wizard
   (tappable phase curve + Mezo reset, Emphasize cap 2 with disabled-not-hidden buttons, program
@@ -298,7 +318,8 @@ Locked patterns from the screen rounds (canonical for every further page):
 
 **How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
 `docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
-Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel tab, Mezo
+Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel subpage deep
+rounds (Terv, Stack, Receptek, Kamra, Gyógyszer, Napló + their sheets — the hub is done), Mezo
 (chat) tab, Napzárás, Me/profil surfaces, and the Edzés review page (the live session flow is
 done — see Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
 sprites first.

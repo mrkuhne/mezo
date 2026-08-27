@@ -29,13 +29,20 @@ export const lifeEventCandidateSeed: LifeEventCandidate[] = [
  * két negyedév összevetéséből — közös kártya, de a provenienciát fajtánként kell kimondani
  * (IDENT-6: a megerősítés sosem néma, és sosem hazudik arról, honnan jött a javaslat).
  */
-export const CANDIDATE_COPY: Record<LifeEventCandidate['kind'], { eyebrow: string; provenance: string }> = {
+export const CANDIDATE_COPY: Record<
+  LifeEventCandidate['kind'],
+  { eyebrow: string; settled: string; provenance: string }
+> = {
   LIFE_EVENT: {
     eyebrow: 'Életesemény-jelöltek',
+    // `settled` akkor áll a csoport élén, ha már nincs döntésre váró jelölt, csak megerősítés
+    // (mezo-0ap9) — a darabszámos „…jelöltek · 0" ilyenkor hazudna.
+    settled: 'Életesemények',
     provenance: 'Ezt a napod szövegeiből szűrtem ki — csak akkor kerül a gráfba, ha elfogadod.',
   },
   SEASON: {
     eyebrow: 'Szezon-jelöltek',
+    settled: 'Szezonok',
     provenance: 'Ezt a negyedév és az előző negyedév összefoglalóiból olvastam ki — csak akkor '
       + 'kerül a gráfba, ha elfogadod.',
   },

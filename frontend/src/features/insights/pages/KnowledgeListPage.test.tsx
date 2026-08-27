@@ -1,13 +1,20 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
+import { MemoryRouter } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { candidateSeed } from '@/data/insights/knowledge'
 
-const renderPage = () => render(<KnowledgeListPage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <KnowledgeListPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 describe('KnowledgeListPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -18,6 +25,13 @@ describe('KnowledgeListPage (mock mode)', () => {
     // 15 seed, ebből 14 bekapcsolt → a top 10 megy a chatbe
     expect(screen.getByText('Tudástár · 15 tény')).toBeInTheDocument()
     expect(screen.getByText('10 megy a chatbe')).toBeInTheDocument()
+  })
+
+  test('a fejléc alatt kereszt-link mutat a Tudásgráfra', () => {
+    renderPage()
+    const link = screen.getByRole('link', { name: /Tudásgráf/ })
+    expect(link).toHaveAttribute('href', '/me/knowledge')
+    expect(screen.getByText(/kapcsolatok és életesemények/)).toBeInTheDocument()
   })
 
   test('a három prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
@@ -160,6 +174,46 @@ describe('KnowledgeListPage (mock mode)', () => {
     await userEvent.click(within(card).getByRole('button', { name: 'Elvet' }))
     await waitFor(() =>
       expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument())
+  })
+
+  it('egy élt nem javasló SEASON elfogadása a rövid megerősítést adja, saját csoportjában', async () => {
+    renderPage()
+    const card = (await screen.findByText('Nyári alapozás')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
+
+    const confirmed = (await screen.findByText('Nyári alapozás')).closest('.card') as HTMLElement
+    expect(within(confirmed).getByText('Bekerült a gráfba')).toBeInTheDocument()
+    // proposedEdgeCount === 0 → nincs „· N kapcsolattal" toldalék
+    expect(within(confirmed).queryByText(/kapcsolattal/)).not.toBeInTheDocument()
+    // a SEASON csoport fejléce vált, az életesemény-csoporté érintetlen marad
+    expect(screen.getByText('Szezonok')).toBeInTheDocument()
+    expect(screen.getByText(/Életesemény-jelöltek · 1/)).toBeInTheDocument()
+  })
+
+  it('az utolsó elfogadás után a fejléc „Életesemények", nem „…jelöltek · 0"', async () => {
+    renderPage()
+    const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
+
+    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
+    expect(screen.getByText('Életesemények')).toBeInTheDocument()
+    expect(screen.queryByText(/Életesemény-jelöltek/)).not.toBeInTheDocument()
+  })
+
+  it('elfogadás után megerősítő kártya marad a helyén, linkkel a Tudásgráfra', async () => {
+    renderPage()
+    const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
+
+    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
+    // a cím továbbra is olvasható, hogy tudd, MI került be
+    expect(screen.getByText('Új munkahely első hete')).toBeInTheDocument()
+    // a döntés gombjai eltűntek — a kártya már nem jelölt
+    expect(within(screen.getByText(/Bekerült a gráfba/).closest('.card') as HTMLElement)
+      .queryByRole('button', { name: 'Elfogad' })).not.toBeInTheDocument()
+    const acceptedCard = screen.getByText(/Bekerült a gráfba/).closest('.card') as HTMLElement
+    const link = within(acceptedCard).getByRole('link', { name: /Tudásgráf/ })
+    expect(link).toHaveAttribute('href', '/me/knowledge')
   })
 })
 

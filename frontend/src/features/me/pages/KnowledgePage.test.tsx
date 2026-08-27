@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 
@@ -9,7 +10,13 @@ import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-const renderPage = () => render(<KnowledgePage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <KnowledgePage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 test('renders the summary band with derived counts', () => {
   renderPage()
@@ -18,16 +25,17 @@ test('renders the summary band with derived counts', () => {
   expect(screen.getByText('15 tudás · 13 kapcsolat')).toBeInTheDocument()
 })
 
-test('renders category headers in order with counts', () => {
-  renderPage()
-  // V1.2 backend taxonomy: train 3 · fuel 5 · health 3 · life 4
-  expect(screen.getByText(/Étkezés · 5/)).toBeInTheDocument()
-  expect(screen.getByText(/Edzés · 3/)).toBeInTheDocument()
+test('a tényeket már nem listázza — azoknak a Tudástár a gazdája', () => {
+  const { container } = renderPage()
+  expect(container.querySelectorAll('[data-fact-card]')).toHaveLength(0)
+  expect(screen.queryByText('Kategóriánként')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Étkezés · 5/)).not.toBeInTheDocument()
 })
 
-test('renders 15 fact cards', () => {
-  const { container } = renderPage()
-  expect(container.querySelectorAll('[data-fact-card]')).toHaveLength(15)
+test('a Tudástárra mutató link ott van az összegző sáv alatt', () => {
+  renderPage()
+  const link = screen.getByRole('link', { name: /Tények kezelése/ })
+  expect(link).toHaveAttribute('href', '/insights/knowledge')
 })
 
 test('renders the Kapcsolatok section grouped by kind with strongest-edge lines', () => {

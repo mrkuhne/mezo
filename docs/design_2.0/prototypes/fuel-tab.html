@@ -1,0 +1,1897 @@
+<title>Fuel tab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; transition: background 0.6s ease;
+    background: linear-gradient(180deg, #FDFAF4 0%, #F8F1E6 100%);
+  }
+  .screen[data-dp="reggel"] { background: linear-gradient(180deg, #FEF5E8 0%, #FAEBD6 100%); }
+  .screen[data-dp="este"] { background: linear-gradient(180deg, #F0ECF8 0%, #E6E0F2 100%); }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-body { flex: 1; min-height: 0; overflow: hidden; padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  .float3d {
+    background: #FFFFFF; border-radius: 18px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(43, 33, 24, 0.32), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 6px 14px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .cta.lav { background: linear-gradient(135deg, #8A76CC, #6C5FA3); box-shadow: 0 8px 16px -6px rgba(108, 95, 163, 0.55); }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+
+  .avatar-ring {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
+    display: grid; place-items: center;
+  }
+  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+
+  /* daypart switch — pici gomb a fejlécben */
+  .dpwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpswitch {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; cursor: pointer;
+    display: grid; place-items: center; position: relative;
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.3);
+  }
+  .dpswitch:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .dpswitch > .most { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px #FDFAF4; display: none; }
+  .dpswitch.away > .most { display: block; }
+  .dpmenu {
+    position: absolute; right: 0; top: 40px; z-index: 7;
+    display: flex; gap: 2px; padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.95); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    border-radius: 999px; backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px -12px rgba(43, 33, 24, 0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.92); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .dpwrap.open .dpmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .dpmenu button {
+    width: 40px; height: 32px; border: none; background: none; font-family: inherit;
+    border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative;
+  }
+  .dpmenu button svg { filter: grayscale(1) brightness(1.04) opacity(0.45); }
+  .dpmenu button.on { background: rgba(255, 107, 74, 0.1); }
+  .dpmenu button.on svg { filter: none; }
+  .dpmenu button .most { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .dpmenu button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+
+  /* értesítés-harang + dropdown */
+  .ntfwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .badge.mini { min-width: 15px; height: 15px; font-size: 8.5px; top: -3px; right: -4px; }
+  .ntfmenu {
+    position: absolute; right: -46px; top: 40px; z-index: 8; width: 238px;
+    background: #FDFAF4; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 18px;
+    box-shadow: 0 20px 40px -14px rgba(29, 23, 18, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    padding: 12px 12px 6px;
+    opacity: 0; transform: translateY(-6px) scale(0.94); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .ntfwrap.open .ntfmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .ntfrow { display: flex; gap: 9px; padding: 8px 2px; align-items: flex-start; }
+  .ntfrow + .ntfrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ntfrow .t { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .ntfrow .x { font-size: 10px; font-weight: 300; margin-top: 1px; }
+  .ntffoot { text-align: center; font-size: 9.5px; font-weight: 600; color: #A84A26; padding: 8px 0 4px; cursor: pointer; }
+
+  /* mezo tile */
+  .mezotile {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    border-radius: 17px; padding: 10px 12px;
+    background: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .mezotile:active { transform: scale(0.97); }
+  .mezotile .txt { flex: 1; min-width: 0; font-size: 10.5px; font-weight: 300; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mezotile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; }
+  .mezotile .chev { color: #A2958A; font-size: 12px; flex: none; }
+
+  /* daypart panels */
+  .dp-panel { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 9px; overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+  .dp-panel::-webkit-scrollbar { display: none; }
+  .dp-panel.on { display: flex; }
+  .dp-panel > * { flex: none; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* keret hero */
+  .hero { padding: 12px 13px; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 70%); }
+  .hero.lavw { background: linear-gradient(140deg, #EDE9F8, #FFFFFF 70%); }
+  .hero.dusk { background: linear-gradient(140deg, #E4DDF4, #F7F4FD 75%); }
+  .daybar { display: flex; gap: 3px; margin-top: 8px; align-items: center; }
+  .daybar i { height: 5px; border-radius: 3px; flex: 1; background: #E8DFD1; transform: scaleX(0); transform-origin: left; }
+  .daybar i.f { background: #8FAF7E; }
+  .daybar i.now { background: #C9962E; }
+  .play .daybar i { animation: segf 0.4s ease-out forwards; animation-delay: var(--d); }
+  @keyframes segf { to { transform: scaleX(1); } }
+  .play .daybar i.now { animation: segf 0.4s ease-out forwards, nowpulse 2.6s ease-in-out 1.4s infinite; }
+  @keyframes nowpulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
+    50% { box-shadow: 0 0 0 3.5px rgba(201, 150, 46, 0.3); }
+  }
+
+  .nowcard {
+    padding: 11px 13px; border: 1px solid #FF6B4A; border-radius: 18px; background: #fff;
+    box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .tile {
+    border-radius: 17px; padding: 10px 11px; min-height: 88px;
+    display: flex; flex-direction: column;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer;
+  }
+  .tile:active { transform: scale(0.96); }
+  .t-train { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .t-vital { background: #FFFFFF; }
+  .t-water { background: linear-gradient(150deg, #DFEDF5, #F5FAFD); }
+  .t-stack { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .t-mezo { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-hab { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe .hd.f { background: #6C5FA3; }
+  .t-quest { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check .hd.f { background: #C46FA0; }
+  .t-kreed { background: linear-gradient(150deg, #FFF2EA, #FFFFFF); }
+  .t-most { border: 1px solid #FF6B4A; background: #FFFFFF; box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .t-minta { background: #F0EDF8; box-shadow: 0 14px 26px -14px rgba(108, 95, 163, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .tile-line { font-size: 9px; font-weight: 300; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile-more { font-size: 9.5px; font-weight: 600; }
+  .tile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+  .htick.sm { width: 30px; height: 30px; font-size: 13px; }
+  .spotwrap { flex: 1; display: grid; place-items: center; padding: 4px 0; }
+  .spotwrap .anchor { position: relative; display: grid; place-items: center; }
+  .badge {
+    position: absolute; top: -5px; right: -9px; min-width: 17px; height: 17px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    color: #fff; font-size: 9.5px; font-weight: 700;
+    display: grid; place-items: center; padding: 0 4px;
+    box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
+  }
+  .bigring { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; }
+  .bigring .hole { width: 40px; height: 40px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center; }
+  .bigdots .hd, .ckdots .hd { width: 11px; height: 11px; }
+  .digest {
+    border-radius: 15px; padding: 8px 12px; background: #F0EDF8;
+    border: 0.5px solid rgba(108, 95, 163, 0.14);
+    box-shadow: 0 10px 20px -12px rgba(108, 95, 163, 0.4);
+  }
+  .rr {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+    display: grid; place-items: center;
+  }
+  .rr::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; }
+  .rings6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 2px; justify-items: center; margin-top: 4px; }
+  .waterfill { height: 7px; border-radius: 4px; background: #D8E7F0; overflow: hidden; }
+  .waterfill div { width: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7FB6D9, #4E8FB8); transition: width 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s; }
+  .play .waterfill div { width: 43%; }
+  .stackdots { display: flex; gap: 4px; }
+  .stackdots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(43, 33, 24, 0.1); }
+  .stackdots i.f { background: #7FA06C; }
+
+  .coach {
+    font-weight: 300; font-size: 10.5px; color: #2B2118;
+    background: #FFF4EF; border-radius: 10px; padding: 7px 9px;
+    display: flex; gap: 7px; align-items: flex-start; margin-top: 7px;
+  }
+  .coach .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; margin-top: 1px; background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+
+  .kreed { padding: 11px 13px; border-radius: 18px; background: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%); }
+  .kreed .q { font-weight: 300; font-size: 11.5px; }
+  .foci { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .foci span { background: rgba(168, 74, 38, 0.08); color: #A84A26; border-radius: 999px; padding: 3px 10px; font-size: 9.5px; font-weight: 600; }
+
+  .statstrip { display: flex; gap: 9px; }
+  .statcell {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  }
+  .statcell b { font-size: 13px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+  .statcell small { font-size: 8.5px; color: #6E6257; }
+
+  /* habit tile */
+  .habtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 8px;
+    background: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .habtile:active { transform: scale(0.97); }
+  .habtile.eve {
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE);
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .habtile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .hprog { display: flex; gap: 4px; }
+  .hd { width: 8px; height: 8px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); }
+  .hd.f { background: #C9962E; }
+  .habtile.eve .hd.f { background: #6C5FA3; }
+  .htick {
+    width: 36px; height: 36px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 2px solid rgba(43, 33, 24, 0.18); background: rgba(255, 255, 255, 0.8);
+    display: grid; place-items: center; color: #fff; font-size: 16px; font-family: inherit; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .htick:active { transform: scale(0.88); }
+  .htick.f {
+    border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E);
+    box-shadow: 0 6px 12px -4px rgba(110, 139, 94, 0.6);
+    animation: tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  @keyframes tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  /* küldetés-csempe */
+  .qtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FDF0DA, #FFFCF5);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .qtile:active { transform: scale(0.97); }
+
+  /* check-in csempe */
+  .cktile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FAE3ED, #FEF8FB);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .cktile:active { transform: scale(0.97); }
+  .cktile .hd.f { background: #C46FA0; }
+  .ckslot-hot { background: rgba(196, 111, 160, 0.08); border-radius: 12px; margin: 2px -4px; padding: 9px 8px !important; border-top: none !important; }
+  .ckchip {
+    width: 26px; height: 26px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 1.5px solid rgba(196, 111, 160, 0.45); background: #fff; font-family: inherit;
+    font-size: 10px; font-weight: 700; color: #8E3F6F;
+    display: grid; place-items: center; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .ckchip:active { transform: scale(0.88); }
+
+  /* ============ DETAIL PAGES — Huawei-minta: csempe → saját oldal ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    padding-top: 34px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    background: #FDFAF4;
+  }
+  .page.open { transform: none; }
+  .page.p-coral { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 36%); }
+  .page.p-gold { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%); }
+  .page.p-lav { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%); }
+  .page.p-rose { background: linear-gradient(180deg, #F7E3ED 0%, #FDFAF4 36%); }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .backbtn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 14px 12px; }
+  .page-hero .bignum { font-weight: 200; font-size: 40px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .page-hero .nm { font-size: 15px; font-weight: 700; }
+  .page-hero .sb { font-size: 10px; color: #6E6257; }
+  .page-hero.orb svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  .qcard, .mz-msg {
+    background: #FFFFFF; border-radius: 16px; padding: 11px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .qcard.done { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .qxp { font-size: 9px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.12); border-radius: 999px; padding: 3px 9px; flex: none; }
+  .mz-msg .t { font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+  .mz-msg .txt { font-size: 11px; font-weight: 300; margin-top: 6px; }
+  .mz-cta { width: 100%; margin-top: 4px; padding: 9px 0; text-align: center; }
+
+  .vcard {
+    background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .vrow { display: flex; align-items: center; gap: 11px; padding: 9px 2px; }
+  .vrow + .vrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .vrow .rr { width: 34px; height: 34px; flex: none; }
+  .vrow .rr::after { width: 22px; height: 22px; }
+  .vrow.low { background: rgba(255, 107, 74, 0.07); border-radius: 12px; border-top: none; margin: 2px -4px; padding: 9px 8px; }
+  .vchip {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit;
+    border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #A84A26;
+    cursor: pointer; flex: none;
+  }
+
+  .habrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .habrow + .habrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .tick {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    border: 1.5px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+    font-size: 12px; color: #fff; background: transparent;
+  }
+  .tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .habrow .tick { padding: 0; cursor: pointer; font-family: inherit; }
+  .habrow .nm { font-size: 11.5px; font-weight: 600; }
+  .habrow .nm.done { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+  .hstr { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 4px; }
+  .hstr div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #E5C46B, #C9962E); }
+  .hpct { font-size: 9px; font-weight: 700; color: #A8801F; flex: none; width: 30px; text-align: right; }
+  .habnote { font-size: 9.5px; color: #A2958A; margin-top: 12px; font-weight: 300; }
+
+  .fbrow { display: flex; gap: 6px; margin-top: 7px; }
+  .fb {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+    border-radius: 999px; padding: 3.5px 11px; font-size: 9px; font-weight: 600; color: #6E6257; cursor: pointer;
+  }
+  .fb.sel { background: #EDE9F8; border-color: #6C5FA3; color: #5D4FA0; }
+
+  /* tab bar */
+  .tabbar {
+    margin: 4px 12px 12px; padding: 8px 16px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 24px -12px rgba(43, 33, 24, 0.3);
+  }
+  .mtab { text-align: center; font-size: 9.5px; font-weight: 600; color: #A2958A; display: grid; gap: 2px; justify-items: center; }
+  .mtab.on { color: #A84A26; }
+  .mtab.off svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+  .fab {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6);
+    animation: fabglow 3.2s ease-in-out 1.6s infinite;
+  }
+  @keyframes fabglow {
+    0%, 100% { box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6); }
+    50% { box-shadow: 0 8px 26px -3px rgba(255, 91, 54, 0.85); }
+  }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .daybar i, .play .daybar i { transform: scaleX(1); animation: none; }
+    .waterfill div, .play .waterfill div { width: 43%; transition: none; }
+    .fab, .play .daybar i.now { animation: none; }
+    .tile, .qtile, .habtile, .mezotile { transition: none; }
+    .screen { transition: none; }
+    .dpmenu { transition: none; }
+    .ntfmenu { transition: none; }
+    .page { transition: none; }
+    .htick.f { animation: none; }
+    .page-hero.orb svg { animation: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+  </defs>
+</svg>
+<style>
+  .page.p-sage { background: linear-gradient(180deg, #E4EEDD 0%, #FDFAF4 36%); }
+  .page.p-sky { background: linear-gradient(180deg, #DCEBF4 0%, #FDFAF4 36%); }
+  /* ===== keret hero ===== */
+  .kchips { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+  .kchips span { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: rgba(255, 255, 255, 0.75); border: 0.5px solid rgba(43, 33, 24, 0.08); color: #6E6257; font-variant-numeric: tabular-nums; }
+  .kchips span.goal { background: rgba(143, 175, 126, 0.18); color: #4E6B42; border-color: transparent; }
+  .kbarwrap { position: relative; margin-top: 8px; }
+  .kbar { display: flex; gap: 2px; height: 7px; border-radius: 4px; background: rgba(43, 33, 24, 0.07); overflow: hidden; }
+  .kbar i { height: 100%; background: #8FAF7E; border-radius: 4px; flex: none; }
+  .kbar i.alt { background: #A9C69A; }
+  .kmark { position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .frings { display: flex; gap: 4px; margin-top: 10px; }
+  .frings > * { flex: 1; display: grid; gap: 3px; justify-items: center; border: none; background: none; font-family: inherit; padding: 0; cursor: default; }
+  .frings > button { cursor: pointer; border-radius: 12px; }
+  .frings > button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .fring { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+  .fring::after { content: attr(data-pct); width: 25px; height: 25px; border-radius: 50%; background: #FFFDF8; display: grid; place-items: center; font-size: 7.5px; font-weight: 800; color: #2B2118; font-variant-numeric: tabular-nums; }
+  .frings small { font-size: 6.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6257; }
+  .frings .fv { font-size: 7px; color: #A2958A; font-variant-numeric: tabular-nums; }
+  /* ===== most-ablak kártya ===== */
+  .nw-meal { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .nw-meal .nm { font-size: 12.5px; font-weight: 700; }
+  .nw-meal .sb { font-size: 9px; color: #6E6257; }
+  .nw-fact { display: inline-flex; gap: 6px; align-items: center; margin-top: 7px; font-size: 8.5px; font-weight: 600; color: #4E6B42; background: rgba(143, 175, 126, 0.14); border-radius: 999px; padding: 3.5px 10px; font-variant-numeric: tabular-nums; }
+  .nw-acts { display: flex; gap: 7px; margin-top: 9px; align-items: center; }
+  .nw-next { font-size: 8.5px; color: #A2958A; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  /* ===== kész-kapszula ===== */
+  .dcap { border: none; width: 100%; text-align: left; font-family: inherit; cursor: pointer; border-radius: 15px; padding: 9px 12px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); display: flex; align-items: center; gap: 7px; font-size: 10px; color: #2B2118; }
+  .dcap .tick-ic { color: #4E6B42; font-weight: 800; }
+  .dcap b { font-variant-numeric: tabular-nums; }
+  .dcap .chev { margin-left: auto; color: #A2958A; }
+  .dcaprows { border-radius: 0 0 15px 15px; margin-top: -6px; padding: 10px 12px 6px; background: rgba(255, 255, 255, 0.72); display: none; }
+  .dcaprows.open { display: block; }
+  .dcrow { display: flex; align-items: center; gap: 7px; padding: 6px 0; font-size: 9.5px; }
+  .dcrow + .dcrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .dcrow .rolet { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #6E6257; background: rgba(43, 33, 24, 0.06); border-radius: 5px; padding: 1.5px 5px; flex: none; }
+  .dcrow .meta { color: #A2958A; font-size: 8.5px; margin-left: auto; font-variant-numeric: tabular-nums; flex: none; }
+  .scorech { font-size: 7.5px; font-weight: 800; border-radius: 999px; padding: 2px 7px; background: rgba(143, 175, 126, 0.18); color: #4E6B42; flex: none; font-variant-numeric: tabular-nums; }
+  .scorech.mid { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .scorech.pend { background: rgba(43, 33, 24, 0.06); color: #A2958A; }
+  /* ===== közös oldal-elemek ===== */
+  .pgact { margin-left: auto; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.72); border-radius: 999px; padding: 5px 12px; font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .pgact + .pgact { margin-left: 6px; }
+  .segtabs { display: flex; gap: 4px; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 3px; margin-bottom: 11px; }
+  .segtabs button { flex: 1; border: none; background: none; border-radius: 999px; padding: 6px 0; font-size: 8.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .segtabs button.on { background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.5); }
+  .segtabs button small { display: block; font-size: 6.5px; font-weight: 700; opacity: 0.75; }
+  .sfield { display: flex; align-items: center; gap: 7px; background: #fff; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 7px 12px; margin-bottom: 9px; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+  .sfield input { border: none; outline: none; background: none; font-family: inherit; font-size: 10.5px; color: #2B2118; width: 100%; padding: 0; }
+  .sfield input::placeholder { color: #A2958A; }
+  .chiprow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; cursor: pointer; font-family: inherit; }
+  .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .lsthead { display: flex; align-items: baseline; padding: 2px 2px 7px; }
+  .lsthead .cnt { margin-left: auto; font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .nohit { text-align: center; font-size: 10.5px; color: #6E6257; padding: 26px 10px; }
+  /* ===== Terv ===== */
+  .rhyrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .rhyrow + .rhyrow { border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+  .rhyrow .dl { width: 30px; flex: none; font-size: 8.5px; font-weight: 800; color: #6E6257; }
+  .rhyrow .dl .ma { display: block; font-size: 6px; font-weight: 800; letter-spacing: 0.12em; color: #A8801F; }
+  .rhytrack { flex: 1; position: relative; height: 14px; border-radius: 7px; background: rgba(43, 33, 24, 0.05); }
+  .rhytrack .blk { position: absolute; top: 2px; bottom: 2px; border-radius: 5px; }
+  .rhytrack .blk.gym { background: linear-gradient(135deg, #FF9A78, #E05535); }
+  .rhytrack .blk.vb { background: linear-gradient(135deg, #D98BB8, #C46FA0); }
+  .rhytrack .mk { position: absolute; top: -2px; bottom: -2px; width: 2px; border-radius: 2px; }
+  .rhytrack .mk.kc { background: rgba(110, 98, 87, 0.55); }
+  .rhytrack .mk.cf { background: rgba(201, 150, 46, 0.75); }
+  .rhyleg { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 7.5px; color: #6E6257; font-weight: 600; }
+  .rhyleg i { display: inline-block; width: 9px; height: 6px; border-radius: 3px; margin-right: 4px; vertical-align: 0.5px; }
+  .cyc { display: flex; gap: 4px; margin-top: 8px; }
+  .cyc span { flex: 1; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 8px; font-weight: 800; color: #6E6257; background: rgba(43, 33, 24, 0.05); position: relative; }
+  .cyc span.peak { background: rgba(196, 99, 75, 0.16); color: #A8462E; }
+  .cyc span.stab { background: rgba(143, 175, 126, 0.2); color: #4E6B42; }
+  .cyc span.trou { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .cyc span.cur { box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.5); }
+  .cyc span.cur::after { content: 'MA'; position: absolute; top: -11px; font-size: 5.5px; letter-spacing: 0.14em; color: #A8801F; }
+  /* ===== Stack ===== */
+  .zcardz { border-radius: 15px; padding: 9px 11px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .zhead { display: flex; align-items: baseline; gap: 7px; }
+  .zhead b { font-size: 10.5px; font-weight: 800; }
+  .zhead .zt { font-size: 9px; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .zhead .an { margin-left: auto; font-size: 7px; font-weight: 700; letter-spacing: 0.06em; color: #A2958A; }
+  .zitem { display: flex; align-items: center; gap: 9px; padding: 7px 0 2px; }
+  .zitem + .zitem { border-top: 0.5px solid rgba(43, 33, 24, 0.06); margin-top: 5px; }
+  .zitem .nm { font-size: 10.5px; font-weight: 600; }
+  .zitem .nm.tk { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+  .zitem .ds { font-size: 8px; color: #A2958A; }
+  .zbadge { margin-left: auto; flex: none; font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #A2958A; background: rgba(43, 33, 24, 0.05); border-radius: 5px; padding: 2px 6px; }
+  .zbadge.pin { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .mmrow { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; font-size: 9.5px; }
+  .mmrow + .mmrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .mmrow .ic { flex: none; font-weight: 800; }
+  .mmrow .ic.ok { color: #4E6B42; }
+  .mmrow .ic.warn { color: #A8801F; }
+  .mmrow .adv { font-size: 8.5px; color: #A8801F; margin-top: 2px; }
+  /* ===== Receptek ===== */
+  .rcpcard { border-radius: 17px; margin-bottom: 9px; overflow: hidden; background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 24px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+  .rcpband { position: relative; height: 52px; background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 7px, transparent 7px 14px), linear-gradient(135deg, var(--bw), var(--bd)); }
+  .rcpband .slotch { position: absolute; left: 8px; top: 8px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #2B2118; background: rgba(255, 255, 255, 0.85); border-radius: 6px; padding: 2px 7px; }
+  .rcpband .rolet2 { position: absolute; left: 8px; bottom: 8px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; color: #fff; background: rgba(43, 33, 24, 0.45); border-radius: 6px; padding: 2px 7px; }
+  .rcpband .star { position: absolute; right: 34px; top: 7px; font-size: 10px; color: #fff; text-shadow: 0 1px 3px rgba(43, 33, 24, 0.4); }
+  .rcpband .fitb { position: absolute; right: 8px; top: 8px; font-size: 7px; font-weight: 800; color: #4E6B42; background: rgba(255, 255, 255, 0.9); border-radius: 999px; padding: 2.5px 7px; font-variant-numeric: tabular-nums; }
+  .rcpband .fitb.pend { color: #A2958A; }
+  .rcpbody { padding: 8px 11px 9px; }
+  .rcpbody .nm { font-size: 11.5px; font-weight: 700; }
+  .rcpmacs { display: flex; gap: 10px; margin-top: 5px; font-size: 9px; font-variant-numeric: tabular-nums; color: #6E6257; }
+  .rcpmacs b { color: #2B2118; font-weight: 700; }
+  .rcpmeta { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 8px; color: #A2958A; }
+  .novadot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .novadot.n1 { background: #8FAF7E; }
+  .novadot.n2, .novadot.n3 { background: #C9962E; }
+  .novadot.n4 { background: #A8462E; }
+  /* ===== Kamra ===== */
+  .ksec { display: flex; align-items: center; gap: 6px; padding: 8px 2px 5px; }
+  .ksec i { width: 8px; height: 8px; border-radius: 3px; flex: none; }
+  .ksec .t { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #6E6257; }
+  .ksec .n { font-size: 8px; font-weight: 700; color: #A2958A; }
+  .kitem { display: flex; align-items: center; gap: 9px; border-radius: 13px; padding: 8px 11px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .kitem .nm { font-size: 11px; font-weight: 700; }
+  .kitem .sb { font-size: 8px; color: #A2958A; display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+  .kitem .sb .proto { font-style: italic; }
+  .kitem .rv { margin-left: auto; text-align: right; flex: none; }
+  .kitem .rv b { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kitem .rv small { font-size: 7px; color: #A2958A; display: block; }
+  /* ===== Gyógyszer ===== */
+  .medcard { border-radius: 16px; padding: 11px 12px 12px 15px; margin-bottom: 10px; position: relative; overflow: hidden; background: linear-gradient(135deg, #EBE6F8 0%, #FFFDF8 60%); box-shadow: 0 10px 22px -13px rgba(138, 118, 204, 0.45), 0 1.5px 4px rgba(43, 33, 24, 0.05); }
+  .medcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #8A76CC; }
+  .doserow { display: flex; align-items: baseline; gap: 8px; padding: 8px 2px; font-size: 10px; }
+  .doserow + .doserow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .doserow b { font-variant-numeric: tabular-nums; }
+  .doserow .nt { font-size: 8.5px; font-style: italic; color: #A2958A; }
+  .doserow .dd { margin-left: auto; font-size: 9px; font-weight: 700; color: #5D4FA0; font-variant-numeric: tabular-nums; }
+  /* ===== Napló ===== */
+  .trendcard { border-radius: 16px; padding: 10px 12px; margin-bottom: 9px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .trbars { display: flex; gap: 9px; align-items: flex-end; height: 56px; margin-top: 7px; }
+  .trbars > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+  .trbars b { width: 100%; border-radius: 6px 6px 3px 3px; min-height: 14%; background: linear-gradient(180deg, #A9C69A, #6E8B5E); }
+  .trbars b.hi { background: linear-gradient(180deg, #E5C46B, #C9962E); }
+  .trbars small { font-size: 6.5px; font-weight: 700; color: #A2958A; }
+  .trbars .rv { font-size: 7.5px; font-weight: 800; color: #4E6B42; font-variant-numeric: tabular-nums; }
+  .trnote { font-size: 8.5px; color: #6E6257; margin-top: 7px; }
+  /* ===== sheets ===== */
+  .bsheet-back { position: absolute; inset: 0; z-index: 11; border-radius: 42px; background: rgba(29, 23, 18, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+  .bsheet-back.open { opacity: 1; pointer-events: auto; }
+  .bsheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 12; background: #FDFAF4; border-radius: 26px 26px 34px 34px; padding: 14px 14px 16px;
+    transform: translateY(112%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    box-shadow: 0 -12px 44px rgba(29, 23, 18, 0.3); max-height: 84%; overflow-y: auto; scrollbar-width: none; }
+  .bsheet::-webkit-scrollbar { display: none; }
+  .bsheet.open { transform: none; }
+  .bsheet input[type=text] { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 8px 11px; font-family: inherit; font-size: 11px; background: #fff; }
+  .sh-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .sh-title { font-size: 14px; font-weight: 700; margin: 2px 0 6px; }
+  .seg4 { display: flex; gap: 5px; margin: 6px 0 2px; }
+  .seg4 button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 11px; padding: 6px 0; font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .seg4 button.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .mgroup { margin: 8px 0 2px; }
+  .mgroup .p-eyebrow { padding: 4px 2px 5px; }
+  .lineit { border-radius: 13px; padding: 8px 10px; margin-bottom: 7px; background: #fff; box-shadow: 0 1.5px 5px rgba(43, 33, 24, 0.05); border-left: 3px solid #FF6B4A; }
+  .lineit .l1 { display: flex; align-items: center; gap: 6px; }
+  .lineit .l1 .nm { font-size: 11px; font-weight: 700; }
+  .lineit .tag { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #A84A26; background: rgba(255, 107, 74, 0.1); border-radius: 5px; padding: 1.5px 6px; }
+  .lineit .macs { font-size: 8.5px; color: #6E6257; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stepin { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+  .stepin button { width: 24px; height: 24px; border-radius: 8px; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-size: 12px; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; }
+  .stepin b { min-width: 44px; text-align: center; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .totcard { border-radius: 14px; padding: 9px 11px; margin-top: 9px; background: linear-gradient(135deg, #E9F1E2, #FFFDF8); }
+  .ctxbar { display: flex; height: 6px; border-radius: 4px; overflow: hidden; background: rgba(43, 33, 24, 0.07); margin-top: 6px; }
+  .ctxbar .a { background: rgba(43, 33, 24, 0.22); }
+  .ctxbar .b { background: linear-gradient(90deg, #FF9A78, #E05535); }
+  .waterchips { display: flex; gap: 6px; margin: 8px 0; }
+  .waterchips button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 12px; padding: 9px 0; font-size: 10.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .waterchips button.on { border-color: #4E8FB8; background: #DFEDF5; color: #33749C; }
+  .shrow { display: flex; gap: 8px; margin-top: 12px; }
+  .shrow .ghost, .shrow .cta { flex: 1; padding: 9px 0; }
+  .cta[disabled] { opacity: 0.45; box-shadow: none; cursor: default; }
+  .addline { width: 100%; border: 1.2px dashed rgba(43, 33, 24, 0.2); background: none; border-radius: 10px; padding: 7px 0; font-size: 9px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; }
+  @media (prefers-reduced-motion: reduce) {
+    .bsheet, .bsheet-back { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · Fuel tab</p>
+  <h1>Fuel tab</h1>
+  <p class="lede">A Fuel hub a régi „Mai" oldal lényegét hordja: <strong>keret-hero</strong> (hátralévő kcal,
+  nap-sáv, energia-chipek, 5 gyűrű) + a <strong>MOST-ablak</strong> kártya, alatta a csempék az aloldalakra —
+  Terv, Stack, Receptek, Kamra, Gyógyszer és az új Napló. A valós <code>/fuel</code> kód auditja ellen épült.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr">
+      <div class="isl"></div>
+      <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+          <div class="ntfwrap" id="ntfwrap">
+            <button class="dpswitch" id="ntfbtn" aria-label="Értesítések" aria-expanded="false">
+              <svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+              <span class="badge mini" id="ntfbadge">1</span>
+            </button>
+            <div class="ntfmenu" role="menu">
+              <div class="p-eyebrow" style="padding:0 2px 6px;">Értesítések · ma</div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-stack"/></svg>
+                <div class="grow"><div class="t">16:45 · Stack</div><div class="x">Koffein 200 mg — 45 perccel az edzés előtt.</div></div>
+              </div>
+              <div class="ntffoot">Összes értesítés ›</div>
+            </div>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <div class="dp-panel on" data-dp="fuel" id="panel">
+
+          <!-- ===== KERET HERO ===== -->
+          <div class="float3d hero rise" style="--d:0ms;background:linear-gradient(140deg,#E9F1E2,#FFFFFF 70%);">
+            <div class="mrow">
+              <svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#4E6B42;">Ma · <span id="winCnt">2/5</span> ablak kész · edzés 17:30</div>
+                <div class="mrow" style="gap:6px;align-items:baseline;">
+                  <span class="big" style="font-size:32px;" id="kcalBig">1 240</span>
+                  <span class="mut" style="font-size:10px;">kcal hátra</span>
+                </div>
+                <div class="mut" style="font-size:9px;">eddig <b id="kcalSoFar" style="font-variant-numeric:tabular-nums;">1 010</b> / <b style="font-variant-numeric:tabular-nums;">2 250</b></div>
+              </div>
+            </div>
+            <div class="kbarwrap">
+              <div class="kbar" id="kbar"></div>
+              <i class="kmark" style="left:52%;" aria-hidden="true"></i>
+            </div>
+            <div class="kchips">
+              <span>Alap 1 980</span><span>Mozgás +420</span><span class="goal">Cél −150</span>
+            </div>
+            <div class="frings" id="frings"></div>
+            <div class="coach">
+              <span class="dot"></span>
+              <span>Az ebéd-ablakban járunk — a bowl 42 g fehérjét hoz, azzal 70%-on állunk. Kávé 14:00-ig fér bele.</span>
+            </div>
+          </div>
+
+          <!-- ===== MOST-ABLAK ===== -->
+          <div id="nowSlot" class="rise" style="--d:70ms;"></div>
+
+          <!-- ===== KÉSZ-KAPSZULA ===== -->
+          <div class="rise" style="--d:110ms;">
+            <button class="dcap" id="dcapBtn" aria-expanded="false">
+              <span class="tick-ic">✓</span>
+              <span><b id="doneN">2</b> kész ablak · <b id="doneKcal">1 010</b> kcal · AI-átlag <b id="doneAvg">87</b> p</span>
+              <span class="chev" id="dcapChev">›</span>
+            </button>
+            <div class="dcaprows" id="dcapRows"></div>
+          </div>
+
+          <!-- ===== MOZAIK ===== -->
+          <div class="mosaic">
+            <div class="tile t-vital rise" style="--d:150ms;" data-page="page-terv" role="button" tabindex="0" aria-label="Terv">
+              <div class="p-eyebrow">Terv</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-rend"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Protein 5/7 nap</div>
+            </div>
+            <div class="tile t-stack rise" style="--d:190ms;" data-page="page-stack" role="button" tabindex="0" aria-label="Stack">
+              <div class="p-eyebrow" style="color:#4E6B42;">Stack</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-stack"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="stackTileLine">4/8 ma · köv. 16:45</div>
+            </div>
+            <div class="tile t-kreed rise" style="--d:230ms;" data-page="page-recept" role="button" tabindex="0" aria-label="Receptek">
+              <div class="p-eyebrow" style="color:#A84A26;">Receptek</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-recept"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">24 · 6 csillagos</div>
+            </div>
+            <div class="tile t-quest rise" style="--d:270ms;" data-page="page-kamra" role="button" tabindex="0" aria-label="Kamra">
+              <div class="p-eyebrow" style="color:#A8801F;">Kamra</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-kamra"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">38 tétel</div>
+            </div>
+            <div class="tile t-habe rise" style="--d:310ms;" data-page="page-gyogyszer" role="button" tabindex="0" aria-label="Gyógyszer">
+              <div class="p-eyebrow" style="color:#5D4FA0;">Gyógyszer</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">D3 · stabil fázis</div>
+            </div>
+            <div class="tile t-water rise" style="--d:350ms;" data-page="page-naplo" role="button" tabindex="0" aria-label="Napló">
+              <div class="p-eyebrow" style="color:#3E7396;">Napló</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-naplo"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">AI-átlag 87 · ↗</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ TERV ============ -->
+      <div class="page p-sage" id="page-terv">
+        <div class="page-head"><button class="backbtn" data-back="page-terv">‹ Fuel</button></div>
+        <div class="page-hero">
+          <div class="nm">Terv</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-rend"/></svg>
+            <div class="bignum">5/7</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>2 180</b><small>kcal-átlag / 2 250</small></div>
+            <div class="statcell"><b>5/7</b><small>protein-nap</small></div>
+            <div class="statcell"><b>92%</b><small>stack</small></div>
+            <div class="statcell"><b>4+1</b><small>gym + sport</small></div>
+          </div>
+          <div class="qcard rise" style="--d:70ms;">
+            <div class="mrow"><div class="p-eyebrow" style="padding:0;">Heti ritmus · 06–22</div><span class="mut" style="margin-left:auto;font-size:8px;">Aug 24 – 30</span></div>
+            <div style="margin-top:4px;">
+              <div class="rhyrow"><span class="dl">H</span><div class="rhytrack"><i class="blk gym" style="left:72%;width:9%;"></i><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+              <div class="rhyrow"><span class="dl">K</span><div class="rhytrack"><i class="blk vb" style="left:81%;width:9%;"></i><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+              <div class="rhyrow"><span class="dl">Sze<span class="ma">MA</span></span><div class="rhytrack"><i class="blk gym" style="left:72%;width:9%;"></i><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+              <div class="rhyrow"><span class="dl">Cs</span><div class="rhytrack"><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+              <div class="rhyrow"><span class="dl">P</span><div class="rhytrack"><i class="blk gym" style="left:72%;width:9%;"></i><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+              <div class="rhyrow"><span class="dl">Szo</span><div class="rhytrack"><i class="blk gym" style="left:25%;width:9%;"></i><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+              <div class="rhyrow"><span class="dl">V</span><div class="rhytrack"><i class="mk cf" style="left:50%;"></i><i class="mk kc" style="left:97%;"></i></div></div>
+            </div>
+            <div class="rhyleg">
+              <span><i style="background:#E05535;"></i>gym</span>
+              <span><i style="background:#C46FA0;"></i>röpi</span>
+              <span><i style="background:rgba(110,98,87,0.55);width:3px;"></i>konyhazárás 21:30</span>
+              <span><i style="background:rgba(201,150,46,0.75);width:3px;"></i>koffein-cutoff 14:00 — a beállításaidból</span>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:110ms;">
+            <div class="mrow"><div class="p-eyebrow" style="padding:0;">Gyógyszer-ciklus · 7 nap</div><span class="mut" style="margin-left:auto;font-size:8px;">D3 · ma</span></div>
+            <div class="cyc">
+              <span class="peak">P</span><span class="peak">P</span><span class="stab cur">S</span><span class="stab">S</span><span class="stab">S</span><span class="trou">T</span><span class="trou">T</span>
+            </div>
+            <div class="mut" style="font-size:8.5px;margin-top:8px;">Csúcs → stabil → leszálló — a fázis a Mai ablak-étvágyat is jelzi.</div>
+          </div>
+          <p class="habnote">A Visszatérő minták és a Heti supplement-térkép szekció csak akkor jelenik meg, ha van adat — üresen nem foglal helyet.</p>
+        </div>
+      </div>
+
+      <!-- ============ STACK ============ -->
+      <div class="page p-sage" id="page-stack">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-stack">‹ Fuel</button>
+          <button class="pgact">＋ Kamrából</button>
+        </div>
+        <div class="page-hero">
+          <div class="nm">Stack</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-stack"/></svg>
+            <div class="bignum" id="stackBig">4/8</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="mut rise" style="--d:20ms;font-size:9px;padding:0 2px 9px;">Szerda · <b>edzésnap 17:30</b> · ébredés 06:45 · lefekvés 23:00 · 8 item, 1 📌</div>
+          <div id="zoneList"></div>
+          <div class="qcard rise" style="--d:60ms;">
+            <div class="p-eyebrow" style="padding:0 0 3px;">Étkezés-egyeztetés</div>
+            <div class="mmrow"><span class="ic ok">✓</span><div><b>Reggeli · Skyr-bowl</b> — zsír 16 g · a D3 felszívódik mellé.</div></div>
+            <div class="mmrow"><span class="ic warn">⚠</span><div><b>Ebéd-terv · rizs-bowl</b> — zsír 9 g.<div class="adv">Told az Omega-3-at a vacsorához — ott lazac lesz.</div></div></div>
+          </div>
+          <div class="qcard rise" style="--d:100ms;">
+            <div class="p-eyebrow" style="padding:0 0 3px;">Miért így</div>
+            <div class="mut" style="font-size:9.5px;line-height:1.55;">
+              · Koffein −45p: a csúcs-hatás a szett-munkára esik.<br>
+              · Whey +30p: a mozgás utáni ablakban a 30 g a leghasznosabb.<br>
+              · Magnézium lefekvés −30p: az alvás-latenciát segíti.
+            </div>
+          </div>
+          <p class="habnote">Pihenőnapon az edzés-zónák maguktól átköltöznek (reggeli / ebéd) — vagy kimaradnak, ha úgy állítottad.</p>
+        </div>
+      </div>
+
+      <!-- ============ RECEPTEK ============ -->
+      <div class="page p-coral" id="page-recept">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-recept">‹ Fuel</button>
+          <button class="pgact">＋ Új</button>
+        </div>
+        <div class="page-hero">
+          <div class="nm">Receptek</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-recept"/></svg>
+            <div class="bignum">24</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="segtabs rise" style="--d:30ms;" id="rcpTabs">
+            <button class="on" data-f="all">Mind<small>24</small></button>
+            <button data-f="breakfast">Reggeli<small>6</small></button>
+            <button data-f="lunch">Ebéd<small>8</small></button>
+            <button data-f="dinner">Vacsi<small>7</small></button>
+            <button data-f="snack">Snack<small>3</small></button>
+            <button data-f="star">★<small>6</small></button>
+          </div>
+          <div class="lsthead rise" style="--d:60ms;"><div class="p-eyebrow" style="padding:0;">Katalógus</div><span class="cnt" id="rcpCnt"></span></div>
+          <div id="rcpList"></div>
+          <p class="habnote">A Snack most saját fület kapott — ma csak a Mind alatt bújik meg. A fit-jelvény ✨, amíg a Mezo még nem pontozta.</p>
+        </div>
+      </div>
+
+      <!-- ============ KAMRA ============ -->
+      <div class="page p-gold" id="page-kamra">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-kamra">‹ Fuel</button>
+          <button class="pgact">🔍 Import</button>
+          <button class="pgact" style="margin-left:6px;">＋ Új tétel</button>
+        </div>
+        <div class="page-hero">
+          <div class="nm">Kamra</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-kamra"/></svg>
+            <div class="bignum">38</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="sfield rise" style="--d:30ms;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A2958A" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L20.5 20.5"/></svg>
+            <input type="text" id="kmSearch" aria-label="Keresés a kamrában" placeholder="Keress tétel, márka…">
+          </div>
+          <div class="chiprow rise" style="--d:60ms;" id="kmChips">
+            <button class="fchip on" data-k="all">Mind · 38</button>
+            <button class="fchip" data-k="food">Étel · 26</button>
+            <button class="fchip" data-k="supplement">Supp · 9</button>
+            <button class="fchip" data-k="stim">Stim · 2</button>
+            <button class="fchip" data-k="med">Gyógyszer · 1</button>
+          </div>
+          <div class="lsthead rise" style="--d:90ms;"><div class="p-eyebrow" style="padding:0;">Polc</div><span class="cnt" id="kmCnt"></span></div>
+          <div id="kmList"></div>
+          <p class="habnote">A készlet/lejárat réteg feature-flag mögött kész — ha bekapcsol, itt kap Lejár/Fogy cellát és borostyán figyelmeztetőt.</p>
+        </div>
+      </div>
+
+      <!-- ============ GYÓGYSZER ============ -->
+      <div class="page p-lav" id="page-gyogyszer">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-gyogyszer">‹ Fuel</button>
+          <button class="pgact">＋ Beadás</button>
+        </div>
+        <div class="page-hero">
+          <div class="nm">Gyógyszer</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg>
+            <div class="bignum">D3</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="medcard rise" style="--d:30ms;">
+            <div style="font-size:13px;font-weight:700;">Retatrutid</div>
+            <div class="mut" style="font-size:9.5px;">4 mg · subQ injekció · heti · hétfő</div>
+            <div class="cyc" style="margin-top:12px;">
+              <span class="peak">P</span><span class="peak">P</span><span class="stab cur">S</span><span class="stab">S</span><span class="stab">S</span><span class="trou">T</span><span class="trou">T</span>
+            </div>
+            <div class="mut" style="font-size:9px;margin-top:8px;">3. nap · <b>stabil fázis</b> · utolsó beadás 2 napja</div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:70ms;padding:2px 2px 6px;">Beadások</div>
+          <div class="qcard rise" style="--d:100ms;padding:4px 12px;">
+            <div class="doserow"><span>aug 25 · hétfő</span><span class="dd">4 mg</span></div>
+            <div class="doserow"><span>aug 18 · hétfő</span><span class="dd">4 mg</span></div>
+            <div class="doserow"><span>aug 11 · hétfő <span class="nt">„dózis-lépcső"</span></span><span class="dd">3,5 mg</span></div>
+          </div>
+          <p class="habnote">Ha nincs követett gyógyszer, az oldal őszinte üres állapotot mutat — és a felvételi út is innen nyílik majd (ma sehonnan nem elérhető).</p>
+        </div>
+      </div>
+
+      <!-- ============ NAPLÓ ============ -->
+      <div class="page p-sky" id="page-naplo">
+        <div class="page-head"><button class="backbtn" data-back="page-naplo">‹ Fuel</button></div>
+        <div class="page-hero">
+          <div class="nm">Napló</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-naplo"/></svg>
+            <div class="bignum">87</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="trendcard rise" style="--d:30ms;">
+            <div class="mrow"><div class="p-eyebrow" style="padding:0;">Kcal-átlag · 4 hét</div><span class="mut" style="margin-left:auto;font-size:8px;">cél 2 250</span></div>
+            <div class="trbars">
+              <div><span class="rv">2 340</span><b style="height:88%;"></b><small>aug 3</small></div>
+              <div><span class="rv">2 260</span><b style="height:78%;"></b><small>aug 10</small></div>
+              <div><span class="rv">2 210</span><b style="height:72%;"></b><small>aug 17</small></div>
+              <div><span class="rv">2 180</span><b class="hi" style="height:68%;"></b><small>e hét</small></div>
+            </div>
+            <div class="trnote">A heti átlag a cél körül leng be — nem büntetünk, csak mutatjuk.</div>
+          </div>
+          <div class="trendcard rise" style="--d:70ms;">
+            <div class="p-eyebrow" style="padding:0;">AI-átlag · 4 hét</div>
+            <div class="trbars">
+              <div><span class="rv">78</span><b style="height:58%;"></b><small>aug 3</small></div>
+              <div><span class="rv">81</span><b style="height:66%;"></b><small>aug 10</small></div>
+              <div><span class="rv">84</span><b style="height:74%;"></b><small>aug 17</small></div>
+              <div><span class="rv">87</span><b class="hi" style="height:82%;"></b><small>e hét</small></div>
+            </div>
+          </div>
+          <div class="trendcard rise" style="--d:110ms;">
+            <div class="p-eyebrow" style="padding:0;">Protein-napok · 4 hét</div>
+            <div class="trbars">
+              <div><span class="rv">3/7</span><b style="height:43%;"></b><small>aug 3</small></div>
+              <div><span class="rv">4/7</span><b style="height:57%;"></b><small>aug 10</small></div>
+              <div><span class="rv">5/7</span><b style="height:71%;"></b><small>aug 17</small></div>
+              <div><span class="rv">5/7</span><b class="hi" style="height:71%;"></b><small>e hét</small></div>
+            </div>
+          </div>
+          <p class="habnote">A heti API ma három számmá esik össze — ez az oldal a teljes 7 napos sort mutatná. Design-kiegészítés, implementálásra jelölve.</p>
+        </div>
+      </div>
+
+      <div class="bsheet-back" id="sback"></div>
+      <div class="bsheet" id="sh-log"></div>
+      <div class="bsheet" id="sh-water"></div>
+
+      <div class="tabbar">
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="fab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="mtab on"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>A Fuel hub felépítése</h2>
+        <ul>
+          <li><strong>Keret-hero</strong> — a régi KeretHero minden ténye: hátralévő kcal (őszinte
+          mínusszal túllépésnél), eddig / cél sor, ablak-számláló, arányos <strong>nap-sáv</strong>
+          a kész ablakok szegmenseivel + arany MOST-jelölő, energia-chipek (Alap / Mozgás / Cél —
+          statikus energiánál az egész sor eltűnik), és az <strong>5 gyűrű</strong>: Fehérje ·
+          Szénhidrát · Zsír · Rost · Víz. A víz-gyűrű gomb — logoló sheetet nyit.</li>
+          <li><strong>MOST-ablak kártya</strong> — a window-river lényege egy kártyában: ablak-idő,
+          terv-étel (kcal · g P), fehérje-ugrás tény-pill, Logold + ✨ AI, alatta a nap hátralévő
+          ablakai. Logolás után a következő ablakra vált; ha minden kész, csendes kész-állapot +
+          álló logoló-sor (a valós viselkedés).</li>
+          <li><strong>Kész-kapszula</strong> — csak akkor jelenik meg, ha van kész ablak: ✓ n ablak ·
+          kcal · AI-átlag (csak pontozott étkezésekből), lenyitva sorok szerep-címkével
+          (STANDARD / EDZÉS ELŐTTI / UTÁNI) és score-chippel; a még nem pontozott ✨.</li>
+          <li><strong>Terv</strong> — heti stat-sor (kcal-átlag, protein-napok, stack-adherence,
+          gym+sport), 24 órás heti ritmus-rács a gym/röpi sávokkal és a konyhazárás + koffein-cutoff
+          jelölőkkel (<em>a beállításokból számolva — a mai oldal hardcode-ját javítja</em>),
+          gyógyszer-ciklus csík. Az üres szekciók (minták, supplement-térkép) nem foglalnak helyet.</li>
+          <li><strong>Stack</strong> — zóna-kártyák idővel és horgony-jegyzettel (edzés −45p,
+          lefekvés −30p…), pipálható sorok (a hero és a csempe élőben számol), 📌 kézi rögzítés,
+          étkezés-egyeztetés (✓ / ⚠ borostyán tanáccsal), „Miért így" átláthatóság.</li>
+          <li><strong>Receptek</strong> — típus-szűrő élő darabszámmal (a Snack új fület kapott),
+          kártya: kép-sáv slot-chippel és szerep-címkével, név, makrók /adag, hozzávaló · perc ·
+          NOVA-pont (1 zsálya / 2–3 borostyán / 4 terrakotta), fit-jelvény vagy ✨ amíg pontozatlan.</li>
+          <li><strong>Kamra</strong> — kereső + típus-váltó darabszámmal (a Gyógyszer is fület kapott),
+          típus-csoportos lista (étel: makrók + NOVA + kcal; supp: protokoll-sor + dózis).</li>
+          <li><strong>Gyógyszer</strong> — készítmény-kártya ciklus-csíkkal (csúcs = terrakotta,
+          sosem piros), fázis-jegyzet, beadás-lista jegyzettel. Új ikon: <code>i-injekcio</code>.</li>
+          <li><strong>Napló</strong> — design-kiegészítés a „sehol egy trend" gapre: kcal-átlag,
+          AI-átlag és protein-napok 4 hetes oszlopai a heti API teljes sorából.</li>
+        </ul>
+      </div>
+      <p class="note">A hub a Mai oldal lelke: egy pillantás — mennyi fér még, mi a következő ablak,
+      mi van kipipálva. A mélyebb körök (log-sheet teljes köre, AI-napló, szerkesztők) oldalanként
+      készülnek tovább.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var panel = document.getElementById('panel');
+  void panel.offsetWidth;
+  panel.classList.add('play');
+
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+
+  var ntfwrap = document.getElementById('ntfwrap');
+  var ntfbtn = document.getElementById('ntfbtn');
+  ntfbtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = ntfwrap.classList.toggle('open');
+    ntfbtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { var b = document.getElementById('ntfbadge'); if (b) b.style.display = 'none'; }
+  });
+  document.addEventListener('click', function (e) {
+    if (!ntfwrap.contains(e.target)) {
+      ntfwrap.classList.remove('open');
+      ntfbtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();
+
+/* ===== Fuel hub: keret-állapot + MOST-ablak + sheetek ===== */
+(function () {
+  function huInt(n) {
+    var neg = n < 0 ? '−' : '';
+    return neg + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+  function hu1(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+
+  var T = { kcal: 2250, p: 165, c: 250, f: 70, fiber: 30, water: 3000 };
+  var C = { kcal: 1010, p: 74, c: 96, f: 31, fiber: 12, water: 1300 };
+  var done = [
+    { name: 'Skyr-bowl zabbal', role: 'STANDARD', time: '07:30', kcal: 420, p: 32, score: 88 },
+    { name: 'Tonhalas wrap', role: 'STANDARD', time: '10:30', kcal: 590, p: 42, score: 85 }
+  ];
+  var TOTAL_WIN = 5;
+  var QUEUE = [
+    { slot: 'Ebéd', slotLbl: 'EBÉD', win: '13:00–16:30', now: true, extra: ' · edzés 17:30',
+      meal: { name: 'Csirkés rizs-bowl', kcal: 640, p: 42, c: 68, f: 14, fiber: 6 },
+      fact: 'Fehérje-ugrás +42 g → 116 g · a céled 70%-a' },
+    { slot: 'Uzsonna', slotLbl: 'UZSONNA', win: '16:30–19:00', now: false, extra: '',
+      meal: { name: 'Proteinpalacsinta', kcal: 320, p: 24, c: 38, f: 8, fiber: 3 },
+      fact: 'Fehérje-ugrás +24 g → 140 g · a céled 85%-a' },
+    { slot: 'Vacsora', slotLbl: 'VACSORA', win: '19:00–21:30', now: false, extra: '',
+      meal: { name: 'Lazacos tészta', kcal: 610, p: 38, c: 64, f: 22, fiber: 7 },
+      fact: 'Fehérje-ugrás +38 g → 178 g · a céled 108%-a' }
+  ];
+  var qi = 0;
+
+  /* --- gyűrűk --- */
+  var RINGS = [
+    { key: 'p', lbl: 'Fehérje', c: '#E05535', val: function () { return C.p + '/' + T.p + ' g'; }, pct: function () { return Math.round(C.p / T.p * 100); } },
+    { key: 'c', lbl: 'Szénh.', c: '#C9962E', val: function () { return C.c + '/' + T.c + ' g'; }, pct: function () { return Math.round(C.c / T.c * 100); } },
+    { key: 'f', lbl: 'Zsír', c: '#8A76CC', val: function () { return C.f + '/' + T.f + ' g'; }, pct: function () { return Math.round(C.f / T.f * 100); } },
+    { key: 'fiber', lbl: 'Rost', c: '#8FAF7E', val: function () { return C.fiber + '/' + T.fiber + ' g'; }, pct: function () { return Math.round(C.fiber / T.fiber * 100); } },
+    { key: 'water', lbl: 'Víz', c: '#4E8FB8', val: function () { return hu1(C.water / 1000) + '/' + hu1(T.water / 1000) + ' l'; }, pct: function () { return Math.round(C.water / T.water * 100); } }
+  ];
+  var fringsEl = document.getElementById('frings');
+  function renderRings() {
+    var h = '';
+    RINGS.forEach(function (r) {
+      var pct = Math.min(100, r.pct());
+      var inner = '<span class="fring" style="--c:' + r.c + ';--v:' + pct + ';" data-pct="' + r.pct() + '"></span>' +
+        '<small>' + r.lbl + '</small><span class="fv">' + r.val() + '</span>';
+      if (r.key === 'water') {
+        h += '<button type="button" id="waterBtn" aria-label="Víz logolása · ' + hu1(C.water / 1000) + ' a ' + hu1(T.water / 1000) + ' literből">' + inner + '</button>';
+      } else {
+        h += '<div role="progressbar" aria-valuenow="' + r.pct() + '" aria-valuemin="0" aria-valuemax="100" aria-label="' + r.lbl + '">' + inner + '</div>';
+      }
+    });
+    fringsEl.innerHTML = h;
+    document.getElementById('waterBtn').addEventListener('click', openWater);
+  }
+
+  /* --- nap-sáv --- */
+  function renderKbar() {
+    var kb = document.getElementById('kbar');
+    kb.innerHTML = done.map(function (m, i) {
+      return '<i' + (i % 2 ? ' class="alt"' : '') + ' style="width:' + (m.kcal / T.kcal * 100).toFixed(1) + '%;"></i>';
+    }).join('');
+  }
+
+  /* --- hero számok --- */
+  function renderHero() {
+    document.getElementById('kcalBig').textContent = huInt(T.kcal - C.kcal);
+    document.getElementById('kcalSoFar').textContent = huInt(C.kcal);
+    document.getElementById('winCnt').textContent = done.length + '/' + TOTAL_WIN;
+    renderKbar();
+    renderRings();
+  }
+
+  /* --- kész-kapszula --- */
+  function renderDcap() {
+    document.getElementById('doneN').textContent = done.length;
+    document.getElementById('doneKcal').textContent = huInt(done.reduce(function (s, m) { return s + m.kcal; }, 0));
+    var scored = done.filter(function (m) { return m.score != null; });
+    var avgEl = document.getElementById('doneAvg');
+    avgEl.textContent = scored.length ? Math.round(scored.reduce(function (s, m) { return s + m.score; }, 0) / scored.length) : '—';
+    document.getElementById('dcapRows').innerHTML = done.map(function (m) {
+      var chip = m.score != null
+        ? '<span class="scorech' + (m.score < 90 ? ' mid' : '') + '">✨ ' + m.score + '</span>'
+        : '<span class="scorech pend">✨ folyamatban</span>';
+      return '<div class="dcrow"><b>' + m.name + '</b><span class="rolet">' + m.role + '</span>' + chip +
+        '<span class="meta">' + m.time + ' · ' + m.kcal + ' kcal · ' + m.p + ' g P</span></div>';
+    }).join('');
+  }
+  var dcapBtn = document.getElementById('dcapBtn');
+  dcapBtn.addEventListener('click', function () {
+    var open = document.getElementById('dcapRows').classList.toggle('open');
+    dcapBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.getElementById('dcapChev').textContent = open ? '˅' : '›';
+  });
+
+  /* --- MOST-ablak --- */
+  var nowSlot = document.getElementById('nowSlot');
+  function renderNow() {
+    if (qi >= QUEUE.length) {
+      nowSlot.innerHTML =
+        '<div class="qcard" style="margin-bottom:0;background:linear-gradient(150deg,#EFF3EA,#FBFDF9);">' +
+        '<div class="mrow" style="gap:9px;"><span style="font-size:16px;">✓</span><div class="grow">' +
+        '<div style="font-size:11.5px;font-weight:700;">Minden ablak kész</div>' +
+        '<div class="mut" style="font-size:9px;">Szép nap volt — a Napzárásban összegzünk.</div></div></div>' +
+        '<div class="nw-acts"><button class="cta" id="nwLog" style="flex:1;padding:8px 0;">＋ Logolás</button>' +
+        '<button class="ghost" style="flex:1;padding:8px 0;">✨ AI naplózás</button></div></div>';
+      document.getElementById('nwLog').addEventListener('click', function () { openLog(null); });
+      return;
+    }
+    var w = QUEUE[qi];
+    var rest = QUEUE.slice(qi + 1).map(function (x) { return x.slot + ' ' + x.win.split('–')[0]; }).join(' · ');
+    nowSlot.innerHTML =
+      '<div class="nowcard">' +
+      '<div class="p-eyebrow" style="color:#A84A26;">' + (w.now ? 'MOST' : 'KÖVETKEZŐ') + ' · ' + w.slotLbl + ' · ' + w.win + ' ablak' + w.extra + '</div>' +
+      '<div class="nw-meal"><svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#i-fuel"/></svg>' +
+      '<div class="grow"><div class="nm">' + w.meal.name + '</div>' +
+      '<div class="sb">a tervből · ' + w.meal.kcal + ' kcal · ' + w.meal.p + ' g P</div></div></div>' +
+      (w.fact ? '<span class="nw-fact">' + w.fact + '</span>' : '') +
+      '<div class="nw-acts"><button class="cta" id="nwLog" style="flex:1.4;padding:8px 0;">Logold</button>' +
+      '<button class="ghost" style="flex:1;padding:8px 0;">✨ AI</button></div>' +
+      (rest ? '<div class="nw-next">még ma · ' + rest + '</div>' : '') +
+      '</div>';
+    document.getElementById('nwLog').addEventListener('click', function () { openLog(w); });
+  }
+
+  /* --- sheet infra --- */
+  var sback = document.getElementById('sback');
+  var openSheetEl = null;
+  function openSheet(el) { openSheetEl = el; el.classList.add('open'); sback.classList.add('open'); }
+  function closeSheet() {
+    if (openSheetEl) openSheetEl.classList.remove('open');
+    openSheetEl = null;
+    sback.classList.remove('open');
+  }
+  sback.addEventListener('click', closeSheet);
+
+  /* --- log sheet --- */
+  var shLog = document.getElementById('sh-log');
+  function openLog(w) {
+    var slots = ['Reggeli', 'Ebéd', 'Vacsora', 'Snack'];
+    var sel = w ? (slots.indexOf(w.slot) >= 0 ? w.slot : 'Snack') : 'Snack';
+    var meal = w ? w.meal : null;
+    shLog.innerHTML =
+      '<div class="sh-eyebrow">Logolás · mai nap</div>' +
+      '<div class="sh-title">Mit ettél?</div>' +
+      '<div class="mgroup"><div class="p-eyebrow" style="padding:0 2px 4px;">Mikor</div>' +
+      '<div class="seg4" id="lgSeg">' + slots.map(function (s) {
+        return '<button' + (s === sel ? ' class="on"' : '') + '>' + s + '</button>';
+      }).join('') + '</div>' +
+      '<div class="mut" style="font-size:8.5px;padding:4px 2px 0;">ma · 13:30</div></div>' +
+      '<div class="mgroup"><div class="p-eyebrow" style="padding:0 2px 4px;">Név</div>' +
+      '<input type="text" aria-label="Étkezés neve" value="' + (meal ? meal.name : '') + '" placeholder="Étkezés neve"></div>' +
+      '<div class="mgroup"><div class="p-eyebrow" style="padding:0 2px 5px;">Tételek · ' + (meal ? 1 : 0) + '</div>' +
+      (meal
+        ? '<div class="lineit"><div class="l1"><span class="nm">' + meal.name + '</span><span class="tag">RECEPT</span>' +
+          '<span class="stepin"><button aria-label="Csökkentés">−</button><b>1 adag</b><button aria-label="Növelés">＋</button></span></div>' +
+          '<div class="macs">' + meal.kcal + ' kcal · P ' + meal.p + ' · C ' + meal.c + ' · F ' + meal.f + '</div></div>'
+        : '<div class="lineit" style="border-left-color:rgba(43,33,24,0.15);border-style:dashed;background:none;box-shadow:none;">' +
+          '<div class="mut" style="font-size:9px;">Még nincs tétel. Adj hozzá Receptből vagy a Kamrából.</div></div>') +
+      '<button class="addline">＋ Receptből / Kamrából hozzáad</button></div>' +
+      (meal
+        ? '<div class="totcard"><div class="mrow"><div class="p-eyebrow" style="padding:0;color:#4E6B42;">Ez az étkezés</div>' +
+          '<span class="mut" style="margin-left:auto;font-size:8px;">1 tétel</span></div>' +
+          '<div style="font-size:12px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;">' + meal.kcal + ' kcal · P ' + meal.p + ' · C ' + meal.c + ' · F ' + meal.f + '</div>' +
+          '<div class="mut" style="font-size:8.5px;margin-top:6px;">Mai nap eddig <b>' + huInt(C.kcal) + '</b> +' + meal.kcal + ' = <b>' + huInt(C.kcal + meal.kcal) + '</b> · cél <b>' + huInt(T.kcal) + '</b> kcal</div>' +
+          '<div class="ctxbar"><i class="a" style="width:' + (C.kcal / T.kcal * 100).toFixed(0) + '%;"></i><i class="b" style="width:' + (meal.kcal / T.kcal * 100).toFixed(0) + '%;"></i></div></div>'
+        : '') +
+      '<div class="shrow"><button class="ghost" id="lgCancel">Mégse</button>' +
+      '<button class="cta" id="lgSave"' + (meal ? '' : ' disabled') + '>✓ Logolás a mai naphoz</button></div>';
+    shLog.querySelectorAll('#lgSeg button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        shLog.querySelectorAll('#lgSeg button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      });
+    });
+    document.getElementById('lgCancel').addEventListener('click', closeSheet);
+    document.getElementById('lgSave').addEventListener('click', function () {
+      if (!meal) return;
+      C.kcal += meal.kcal; C.p += meal.p; C.c += meal.c; C.f += meal.f; C.fiber += meal.fiber;
+      done.push({ name: meal.name, role: 'STANDARD', time: '13:30', kcal: meal.kcal, p: meal.p, score: null });
+      qi += 1;
+      renderHero(); renderDcap(); renderNow();
+      closeSheet();
+    });
+    shLog.scrollTop = 0;
+    openSheet(shLog);
+  }
+
+  /* --- víz sheet --- */
+  var shWater = document.getElementById('sh-water');
+  function openWater() {
+    var picked = 0;
+    shWater.innerHTML =
+      '<div class="sh-eyebrow">💧 Víz logolása</div>' +
+      '<div class="sh-title">Mennyit ittál?</div>' +
+      '<div class="mut" style="font-size:9px;">ma eddig ' + hu1(C.water / 1000) + ' / ' + hu1(T.water / 1000) + ' l</div>' +
+      '<div class="waterchips" id="wChips"><button data-ml="250">250 ml</button><button data-ml="400">400 ml</button><button data-ml="500">500 ml</button></div>' +
+      '<div class="mrow" style="gap:7px;"><input type="text" id="wManual" inputmode="numeric" aria-label="Víz mennyisége kézzel (ml)" placeholder="ml kézzel · pl. 330" style="flex:1;"></div>' +
+      '<div class="shrow"><button class="ghost" id="wCancel">Mégse</button><button class="cta" id="wSave" disabled>✓ Mentés</button></div>';
+    var saveBtn = document.getElementById('wSave');
+    var manual = document.getElementById('wManual');
+    function val() {
+      var m = parseInt(manual.value, 10);
+      if (isFinite(m) && m > 0) return m;
+      return picked;
+    }
+    function sync() { saveBtn.disabled = !(val() > 0); }
+    shWater.querySelectorAll('#wChips button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var was = b.classList.contains('on');
+        shWater.querySelectorAll('#wChips button').forEach(function (x) { x.classList.remove('on'); });
+        picked = was ? 0 : parseInt(b.getAttribute('data-ml'), 10);
+        if (!was) b.classList.add('on');
+        manual.value = '';
+        sync();
+      });
+    });
+    manual.addEventListener('input', function () {
+      shWater.querySelectorAll('#wChips button').forEach(function (x) { x.classList.remove('on'); });
+      picked = 0;
+      sync();
+    });
+    document.getElementById('wCancel').addEventListener('click', closeSheet);
+    saveBtn.addEventListener('click', function () {
+      C.water += val();
+      renderHero();
+      closeSheet();
+    });
+    openSheet(shWater);
+  }
+
+  renderHero();
+  renderDcap();
+  renderNow();
+})();
+
+/* ===== Stack oldal ===== */
+(function () {
+  var ZONES = [
+    { z: 'Ébredés', t: '06:45', an: '', items: [
+      { n: 'D3 + K2', d: '4 000 NE · 1 csepp', taken: true },
+      { n: 'Omega-3', d: '1 600 mg EPA+DHA', taken: true }
+    ] },
+    { z: 'Reggeli', t: '07:30', an: 'étkezéshez kötve', items: [{ n: 'Kreatin', d: '5 g', taken: true }] },
+    { z: 'Ebéd', t: '13:00', an: 'étkezéshez kötve', items: [{ n: 'Multivitamin', d: '1 tabletta', taken: true }] },
+    { z: 'Edzés előtt', t: '16:45', an: 'edzés −45p', items: [{ n: 'Koffein', d: '200 mg', taken: false }] },
+    { z: 'Edzés után', t: '18:30', an: 'edzés +30p', items: [{ n: 'Whey', d: '30 g', taken: false }] },
+    { z: 'Este', t: '21:00', an: 'lefekvés −2h', items: [{ n: 'Ashwagandha', d: '300 mg', taken: false, pin: true }] },
+    { z: 'Lefekvés', t: '22:30', an: 'lefekvés −30p', items: [{ n: 'Magnézium', d: '400 mg', taken: false }] }
+  ];
+  var list = document.getElementById('zoneList');
+  function counts() {
+    var tot = 0, tk = 0;
+    ZONES.forEach(function (z) { z.items.forEach(function (i) { tot++; if (i.taken) tk++; }); });
+    return tk + '/' + tot;
+  }
+  function nextTime() {
+    for (var i = 0; i < ZONES.length; i++) {
+      for (var j = 0; j < ZONES[i].items.length; j++) {
+        if (!ZONES[i].items[j].taken) return ZONES[i].t;
+      }
+    }
+    return null;
+  }
+  function paintCounts() {
+    var c = counts();
+    document.getElementById('stackBig').textContent = c;
+    var nx = nextTime();
+    document.getElementById('stackTileLine').textContent = c + ' ma' + (nx ? ' · köv. ' + nx : ' · kész ✓');
+  }
+  function render() {
+    list.innerHTML = ZONES.map(function (z, zi) {
+      return '<div class="zcardz rise" style="--d:' + (30 + zi * 25) + 'ms;">' +
+        '<div class="zhead"><b>' + z.z + '</b><span class="zt">' + z.t + '</span>' + (z.an ? '<span class="an">' + z.an + '</span>' : '') + '</div>' +
+        z.items.map(function (it, ii) {
+          return '<div class="zitem">' +
+            '<button class="htick sm' + (it.taken ? ' f' : '') + '" data-z="' + zi + '" data-i="' + ii + '" aria-pressed="' + it.taken + '" aria-label="' + it.n + ' bevétel">' + (it.taken ? '✓' : '') + '</button>' +
+            '<div class="grow"><div class="nm' + (it.taken ? ' tk' : '') + '">' + it.n + '</div><div class="ds">' + it.d + '</div></div>' +
+            '<span class="zbadge' + (it.pin ? ' pin' : '') + '">' + (it.pin ? '📌' : 'auto') + '</span></div>';
+        }).join('') + '</div>';
+    }).join('');
+    list.querySelectorAll('button.htick').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var it = ZONES[+b.getAttribute('data-z')].items[+b.getAttribute('data-i')];
+        it.taken = !it.taken;
+        render();
+        paintCounts();
+      });
+    });
+  }
+  render();
+  paintCounts();
+})();
+
+/* ===== Receptek oldal ===== */
+(function () {
+  var R = [
+    { n: 'Csirkés rizs-bowl', cat: 'lunch', catL: 'EBÉD', role: 'Edzés utáni', star: true, fit: 91, nova: 1, kcal: 640, p: 42, c: 68, f: 14, ing: 7, min: 35, bw: '#FFE3D8', bd: '#E05535' },
+    { n: 'Skyr-bowl zabbal', cat: 'breakfast', catL: 'REGGELI', role: null, star: true, fit: 88, nova: 1, kcal: 420, p: 32, c: 52, f: 9, ing: 5, min: 10, bw: '#F6E7C6', bd: '#C9962E' },
+    { n: 'Tonhalas wrap', cat: 'lunch', catL: 'EBÉD', role: null, star: false, fit: 84, nova: 2, kcal: 590, p: 42, c: 55, f: 18, ing: 6, min: 15, bw: '#DFEDF5', bd: '#4E8FB8' },
+    { n: 'Lazacos tészta', cat: 'dinner', catL: 'VACSORA', role: null, star: true, fit: 86, nova: 2, kcal: 610, p: 38, c: 64, f: 22, ing: 8, min: 30, bw: '#FAE3ED', bd: '#C46FA0' },
+    { n: 'Proteinpalacsinta', cat: 'breakfast', catL: 'REGGELI', role: 'Edzés előtti', star: false, fit: null, nova: 1, kcal: 320, p: 24, c: 38, f: 8, ing: 4, min: 20, bw: '#F6E7C6', bd: '#C9962E' },
+    { n: 'Túrós keksztekercs', cat: 'snack', catL: 'SNACK', role: null, star: false, fit: 74, nova: 3, kcal: 280, p: 18, c: 32, f: 9, ing: 5, min: 15, bw: '#E4EEDD', bd: '#8FAF7E' },
+    { n: 'Marhapörkölt bulgurral', cat: 'dinner', catL: 'VACSORA', role: null, star: false, fit: 82, nova: 1, kcal: 680, p: 45, c: 58, f: 26, ing: 9, min: 90, bw: '#FAE3ED', bd: '#C46FA0' }
+  ];
+  var listEl = document.getElementById('rcpList');
+  var cntEl = document.getElementById('rcpCnt');
+  var cur = 'all';
+  function card(r, i) {
+    return '<div class="rcpcard rise" style="--d:' + (30 + i * 30) + 'ms;">' +
+      '<div class="rcpband" style="--bw:' + r.bw + ';--bd:' + r.bd + ';">' +
+      '<span class="slotch">' + r.catL + '</span>' +
+      (r.role ? '<span class="rolet2">' + r.role + '</span>' : '') +
+      (r.star ? '<span class="star">★</span>' : '') +
+      (r.fit != null ? '<span class="fitb">' + r.fit + ' fit</span>' : '<span class="fitb pend">✨ Mezo</span>') +
+      '</div><div class="rcpbody">' +
+      '<div class="nm">' + r.n + '</div>' +
+      '<div class="rcpmacs"><span><b>' + r.kcal + '</b> kcal</span><span>P <b>' + r.p + '</b></span><span>C <b>' + r.c + '</b></span><span>F <b>' + r.f + '</b></span><span class="mut">/adag</span></div>' +
+      '<div class="rcpmeta">' + r.ing + ' hozzávaló · ' + r.min + ' perc · <span class="novadot n' + r.nova + '"></span> NOVA ' + r.nova + '</div>' +
+      '</div></div>';
+  }
+  function render() {
+    var hits = R.filter(function (r) {
+      if (cur === 'all') return true;
+      if (cur === 'star') return r.star;
+      return r.cat === cur;
+    });
+    listEl.innerHTML = hits.length ? hits.map(card).join('') : '<div class="nohit">Nincs egyező recept.</div>';
+    cntEl.textContent = 'minta · ' + hits.length + ' / 7 a 24-ből';
+  }
+  document.querySelectorAll('#rcpTabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#rcpTabs button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      cur = b.getAttribute('data-f');
+      render();
+    });
+  });
+  render();
+})();
+
+/* ===== Kamra oldal ===== */
+(function () {
+  var K = [
+    { n: 'Skyr', b: 'Pilos', kind: 'food', nova: 1, kcal: 63 },
+    { n: 'Zabpehely', b: 'Alnatura', kind: 'food', nova: 1, kcal: 372 },
+    { n: 'Csirkemell', b: '', kind: 'food', nova: 1, kcal: 105 },
+    { n: 'Basmati rizs', b: '', kind: 'food', nova: 1, kcal: 350 },
+    { n: 'Tonhalkonzerv', b: 'Rio Mare', kind: 'food', nova: 3, kcal: 116 },
+    { n: 'Teljes kiőrlésű wrap', b: 'Santa Maria', kind: 'food', nova: 3, kcal: 290 },
+    { n: 'Kreatin', b: 'Builder', kind: 'supplement', proto: '5 g minden nap', dose: '5 g' },
+    { n: 'Omega-3', b: 'Now Foods', kind: 'supplement', proto: 'zsíros étkezéshez', dose: '2 caps' },
+    { n: 'D3 + K2', b: '', kind: 'supplement', proto: 'reggel, zsírral', dose: '1 csepp' },
+    { n: 'Koffein tabletta', b: '', kind: 'stim', proto: 'edzés előtt −45p', dose: '200 mg' },
+    { n: 'Retatrutid', b: '', kind: 'med', proto: 'heti subQ · hétfő', dose: '4 mg' }
+  ];
+  var SEC = [
+    ['food', 'Étel', '#8FAF7E'],
+    ['supplement', 'Supplement', '#4E8FB8'],
+    ['stim', 'Stimuláns', '#C9962E'],
+    ['med', 'Gyógyszer', '#A8462E']
+  ];
+  var listEl = document.getElementById('kmList');
+  var cntEl = document.getElementById('kmCnt');
+  var kind = 'all';
+  var q = '';
+  function row(it) {
+    var sb = it.kind === 'food'
+      ? (it.b ? it.b + ' · ' : '') + '<span class="novadot n' + it.nova + '"></span> NOVA ' + it.nova
+      : (it.b ? it.b + ' · ' : '') + '<span class="proto">' + it.proto + '</span>';
+    var rv = it.kind === 'food'
+      ? '<b>' + it.kcal + '</b><small>kcal /100 g</small>'
+      : '<b>' + it.dose + '</b><small>dózis</small>';
+    return '<div class="kitem"><div class="grow"><div class="nm">' + it.n + '</div><div class="sb">' + sb + '</div></div><div class="rv">' + rv + '</div></div>';
+  }
+  function render() {
+    var hits = K.filter(function (it) {
+      if (kind !== 'all' && it.kind !== kind) return false;
+      if (q && (it.n + ' ' + it.b).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    var h = '';
+    SEC.forEach(function (s) {
+      var g = hits.filter(function (it) { return it.kind === s[0]; });
+      if (!g.length) return;
+      h += '<div class="ksec"><i style="background:' + s[2] + ';"></i><span class="t">' + s[1] + '</span><span class="n">· ' + g.length + '</span></div>';
+      h += g.map(row).join('');
+    });
+    listEl.innerHTML = h || '<div class="nohit">Nincs egyező tétel.</div>';
+    cntEl.textContent = 'minta · ' + hits.length + ' / 11 a 38-ból';
+  }
+  document.querySelectorAll('#kmChips .fchip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#kmChips .fchip').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      kind = b.getAttribute('data-k');
+      render();
+    });
+  });
+  document.getElementById('kmSearch').addEventListener('input', function (e) {
+    q = e.target.value.trim().toLowerCase();
+    render();
+  });
+  render();
+})();
+</script>
