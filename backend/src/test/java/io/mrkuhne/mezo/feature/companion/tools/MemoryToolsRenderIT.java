@@ -102,15 +102,20 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
                 .contains("Augusztusban javult a helyzet.")
                 .contains("2026-Q2")
                 .contains("Áprilisban visszafogtam.");
+        // Review fix (mezo-b3pp.20 final review, F4): a month rung's provenance is a MONTH, so the
+        // ref is Időszak/2026-07 — never Memory/2026-07-01, which RefTag would render as a chip
+        // reading like one specific DAY. Asserting the kind AND the period-shaped id together is
+        // what stops a later "harmonise the ref kinds" change from quietly restoring the lie.
         assertThat(audit.toRefsEnvelope().refs())
                 .anySatisfy(ref -> {
-                    assertThat(ref.kind()).isEqualTo("Memory");
-                    assertThat(ref.id()).isEqualTo("2026-07-01");
+                    assertThat(ref.kind()).isEqualTo(MemoryTools.REF_KIND_PERIOD);
+                    assertThat(ref.id()).isEqualTo("2026-07");
                 })
                 .anySatisfy(ref -> {
-                    assertThat(ref.kind()).isEqualTo("Memory");
-                    assertThat(ref.id()).isEqualTo("2026-08-01");
-                });
+                    assertThat(ref.kind()).isEqualTo(MemoryTools.REF_KIND_PERIOD);
+                    assertThat(ref.id()).isEqualTo("2026-08");
+                })
+                .noneSatisfy(ref -> assertThat(ref.kind()).isEqualTo("Memory"));
     }
 
     @Test
@@ -156,8 +161,8 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
         assertThat(audit.toRefsEnvelope().refs())
                 .hasSize(1)
                 .anySatisfy(ref -> {
-                    assertThat(ref.kind()).isEqualTo("Memory");
-                    assertThat(ref.id()).isEqualTo("2026-07-01");
+                    assertThat(ref.kind()).isEqualTo(MemoryTools.REF_KIND_PERIOD);
+                    assertThat(ref.id()).isEqualTo("2026-07");
                 });
     }
 

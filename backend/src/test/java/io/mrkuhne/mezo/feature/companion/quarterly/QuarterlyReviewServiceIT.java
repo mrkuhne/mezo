@@ -78,7 +78,11 @@ class QuarterlyReviewServiceIT extends AbstractIntegrationTest {
         // seedBothQuarters plants its script in the APRIL rung — a PREVIOUS-quarter row. The
         // sentinel can only match if the gather actually rendered the previous quarter into the
         // user message, so a candidate here is proof the season-OVER-season comparison is real
-        // and not a single-quarter read. (Every other test in this class would pass either way.)
+        // and not a single-quarter read. Every OTHER seedBothQuarters test plants its script in
+        // that same April rung, so they all depend on the previous-quarter gather too and would
+        // ALL fail if it were dropped — this test is the one that says so in its NAME, which is
+        // what keeps the dependency from being rediscovered by accident (mezo-b3pp.20 final
+        // review, F7: the comment here used to claim the opposite).
         UUID owner = seedBothQuarters(
                 "[fake-season:[{\"title\":\"Elozobol jott\",\"summary\":\"Az elozo negyedev szovegebol.\"}]]");
 

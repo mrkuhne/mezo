@@ -66,6 +66,16 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     }
 
     /**
+     * The anchor the WEEKLY job passes — the quarter the clock is standing in. Every test below
+     * that is not about the anchor itself uses it, so those tests keep pinning exactly the
+     * behaviour they pinned before the anchor became an explicit {@link ProfileAssembler#rebuild}
+     * argument (mezo-b3pp.20 final review, F1).
+     */
+    private static LocalDate currentQuarter() {
+        return Quarters.startOf(LocalDate.now());
+    }
+
+    /**
      * Seeds one up verdict AND one down-with-reason verdict, then runs the REAL {@code
      * FeedbackLearningService} rollup job — the assembler reads {@code feedback_rollup}, never
      * {@code message_feedback} directly, so a test that only writes verdicts and skips this call
@@ -85,7 +95,7 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         UUID owner = seedOwner();
         seedSignal(owner);
 
-        Optional<UUID> nodeId = assembler.rebuild(owner);
+        Optional<UUID> nodeId = assembler.rebuild(owner, currentQuarter());
 
         assertThat(nodeId).isPresent();
         GraphNodeEntity node = nodeRepository.findById(nodeId.orElseThrow()).orElseThrow();
@@ -114,8 +124,8 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         UUID owner = seedOwner();
         seedSignal(owner);
 
-        UUID first = assembler.rebuild(owner).orElseThrow();
-        UUID second = assembler.rebuild(owner).orElseThrow();
+        UUID first = assembler.rebuild(owner, currentQuarter()).orElseThrow();
+        UUID second = assembler.rebuild(owner, currentQuarter()).orElseThrow();
 
         assertThat(second).isEqualTo(first);
         assertThat(nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
@@ -128,12 +138,12 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     void an_archived_profile_is_revived_by_the_next_run() {
         UUID owner = seedOwner();
         seedSignal(owner);
-        UUID nodeId = assembler.rebuild(owner).orElseThrow();
+        UUID nodeId = assembler.rebuild(owner, currentQuarter()).orElseThrow();
         GraphNodeEntity archived = nodeRepository.findById(nodeId).orElseThrow();
         archived.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
         nodeRepository.saveAndFlush(archived);
 
-        assembler.rebuild(owner);
+        assembler.rebuild(owner, currentQuarter());
 
         assertThat(nodeRepository.findById(nodeId).orElseThrow().getStatus())
                 .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
@@ -144,7 +154,7 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         UUID owner = seedOwner();
         long before = fakeCompanionLlm.completeCallCount();
 
-        assertThat(assembler.rebuild(owner)).isEmpty();
+        assertThat(assembler.rebuild(owner, currentQuarter())).isEmpty();
 
         assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(before);
         assertThat(nodeRepository.findByCreatedByAndSourceKindAndSourceIdAndDeletedFalse(
@@ -163,7 +173,7 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         UUID owner = seedOwner();
         seedSignal(owner);
 
-        UUID nodeId = assembler.rebuild(owner).orElseThrow();
+        UUID nodeId = assembler.rebuild(owner, currentQuarter()).orElseThrow();
 
         assertThat(nodeRepository.findById(nodeId).orElseThrow().getSummary().length())
                 .isLessThanOrEqualTo(400 * 3);
@@ -185,7 +195,7 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         UUID owner = seedOwner();
         seedSignal(owner);
 
-        UUID nodeId = assembler.rebuild(owner).orElseThrow();
+        UUID nodeId = assembler.rebuild(owner, currentQuarter()).orElseThrow();
 
         assertThat(nodeRepository.findById(nodeId).orElseThrow().getSummary())
                 .contains("rövid, konkrét reggeli üzenet válik be nálad");
@@ -205,7 +215,7 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         List<DecisionEntryEntity> decisions = decisionRepository
                 .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
 
-        String payload = assembler.renderPayload(owner, rollups, decisions, List.of());
+        String payload = assembler.renderPayload(owner, currentQuarter(), rollups, decisions, List.of());
 
         assertThat(payload).contains("VISSZAJELZÉSEK (utolsó 30 nap):");
         assertThat(payload).contains("surface:chat_message: 1 tetszik / 1 nem tetszik");
@@ -233,7 +243,7 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
         List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc(owner);
         List<DecisionEntryEntity> decisions = decisionRepository
                 .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
-        return assembler.renderPayload(owner, rollups, decisions, List.of());
+        return assembler.renderPayload(owner, currentQuarter(), rollups, decisions, List.of());
     }
 
     /**
@@ -299,6 +309,38 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
      * — that way this test fails under the old query on ANY day of the year, not only when run on a
      * real quarter start.
      */
+    /**
+     * Review fix (mezo-b3pp.20 final review, F1): the trend window follows the ANCHOR quarter
+     * handed to {@link ProfileAssembler#rebuild}/{@link ProfileAssembler#renderPayload}, NOT the
+     * calendar quarter the clock happens to be in.
+     *
+     * <p>This is the quarterly job's own case: it anchors on the quarter that JUST FINISHED, so
+     * "ez a negyedév" must name THAT quarter and "előző negyedév" the one before it. Everything
+     * seeded here sits in those two quarters and NOTHING in the quarter the clock is standing in,
+     * which is what makes this fail against the old now()-derived window on EVERY day of the year
+     * rather than only on a quarter boundary: with no reviewed decision in the current quarter,
+     * {@code decisionQuality}'s "a lone historical line is not a trend" rule dropped the whole
+     * {@code DÖNTÉSI MINŐSÉG} section — exactly the silent loss that hit the profile prose at
+     * 04:00 on Jan 1.
+     */
+    @Test
+    void renderPayload_windows_the_trend_on_the_anchor_quarter_not_on_todays_quarter() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate anchor = Quarters.previous(currentQuarter());          // a FINISHED quarter
+        reviewedDecision(owner, anchor.plusDays(10), (short) 5);
+        reviewedDecision(owner, anchor.plusDays(20), (short) 4);
+        reviewedDecision(owner, Quarters.previous(anchor).plusDays(10), (short) 1);
+
+        List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc(owner);
+        List<DecisionEntryEntity> decisions = decisionRepository
+                .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
+        String payload = assembler.renderPayload(owner, anchor, rollups, decisions, List.of());
+
+        assertThat(payload).contains("DÖNTÉSI MINŐSÉG:")
+                .contains("ez a negyedév: 4,5/5 (2 értékelt döntés)")
+                .contains("előző negyedév: 1,0/5 (1 értékelt döntés)");
+    }
+
     @Test
     void renderPayload_counts_a_decision_reviewed_at_the_exact_quarter_boundary_only_once() {
         UUID owner = userPopulator.createUser().getId();

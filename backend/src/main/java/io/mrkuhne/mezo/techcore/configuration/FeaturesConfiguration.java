@@ -34,7 +34,10 @@ public class FeaturesConfiguration {
     /** W5.1 (mezo-b3pp.18): hourly composite-flag sweep; off ⇒ the FlagSweepJob bean does not exist. */
     public static final String FLAG_SWEEP_JOB_SWITCH = "mezo.techcore.cron.flag-sweep-job.enabled";
 
-    /** Phase 5 W4.3 (mezo-b3pp.17) weekly profile assembler job — techcore cron zone. */
+    /** Phase 5 W4.3 (mezo-b3pp.17) weekly profile assembler job — techcore cron zone. Off ⇒ the
+     *  ProfileAssemblerJob bean does not exist, AND the W5.3 quarterly job skips its own phase-2
+     *  profile rebuild (it reads this switch by that bean's presence — see {@link
+     *  #QUARTERLY_REVIEW_JOB_SWITCH}), so an archived "Rólad tanultam" node stays archived. */
     public static final String PROFILE_ASSEMBLER_JOB_SWITCH = "mezo.techcore.cron.profile-assembler-job.enabled";
 
     /** V3.2 weekly hypothesis pipeline — techcore cron zone. */
@@ -204,7 +207,12 @@ public class FeaturesConfiguration {
 
     /** Phase 5 W5.3 (mezo-b3pp.20) quarterly deep pass — techcore cron zone. Off ⇒ the
      *  QuarterlyReviewJob bean does not exist; no season candidates, no quarterly profile rerun
-     *  (the WEEKLY profile job is independent and keeps running). */
+     *  (the WEEKLY profile job is independent and keeps running).
+     *
+     *  <p>The other direction holds too, and is NOT symmetric: with this switch ON but {@link
+     *  #PROFILE_ASSEMBLER_JOB_SWITCH} OFF, the quarterly job still proposes season candidates
+     *  (phase 1) but skips its profile rebuild (phase 2) — it reads that switch by ProfileAssemblerJob
+     *  bean presence, so switching the profile off is never silently undone four times a year. */
     public static final String QUARTERLY_REVIEW_JOB_SWITCH =
         "mezo.techcore.cron.quarterly-review-job.enabled";
 

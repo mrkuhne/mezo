@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.quarterly.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphProposedEdge;
@@ -168,9 +169,15 @@ public class QuarterlyReviewService {
             .toList();
     }
 
-    /** Pure-code gather — the two quarters side by side, then the feedback rollups. Honest about
-     *  absence: a quarter with no rungs renders the sentence rather than an empty heading. */
-    private String buildUserMessage(UUID userId, LocalDate quarterStart,
+    /**
+     * Pure-code gather — the two quarters side by side, then the feedback rollups. Honest about
+     * absence: a quarter with no rungs renders the sentence rather than an empty heading.
+     *
+     * <p>Package-private, not private, on purpose (the {@code ProfileAssembler#renderPayload}
+     * precedent): {@code QuarterlyReviewPayloadIT} asserts the rendered headings directly, so the
+     * prompt's own wording is pinned without a public seam existing only for tests.
+     */
+    String buildUserMessage(UUID userId, LocalDate quarterStart,
             List<PeriodSummaryEntity> current, List<PeriodSummaryEntity> previous) {
         LocalDate previousStart = Quarters.previous(quarterStart);
         StringBuilder sb = new StringBuilder();
@@ -182,16 +189,55 @@ public class QuarterlyReviewService {
         } else {
             appendRungs(sb, previous);
         }
-        List<String> feedback = feedbackRollupRepository
+        appendFeedback(sb, userId);
+        return sb.toString();
+    }
+
+    /**
+     * The feedback rollups, WITH THEIR WINDOW SPELLED OUT (mezo-b3pp.20 final review, F3).
+     *
+     * <p>Everything else in this payload is quarter-wide, and the prompt's own frame is "this
+     * quarter against the previous one" plus {@code Csak a megadott szövegekre támaszkodj} — so an
+     * undisclosed window here is read by the model as quarter-wide evidence. It is not:
+     * {@code feedback_rollup} rows are a TRAILING window (default {@code
+     * mezo.companion.feedback-learning.window-days: 30}) that the nightly job overwrites, so at
+     * 04:00 on the 1st they describe roughly the quarter's LAST MONTH. A quiet July and August
+     * followed by a rough September would otherwise be handed to the model as if September's 9
+     * 👎 characterised the whole quarter — and that reading would become a durable SEASON
+     * candidate. {@code ProfileAssembler.renderPayload} already discloses its window the same way
+     * ("VISSZAJELZÉSEK (utolsó 30 nap)"); this is the two payload builders agreeing again.
+     *
+     * <p>The number is RENDERED from {@code FeedbackRollupEntity.windowDays}, not hardcoded — the
+     * window is a config knob, and a heading that lies about it is the same class of bug. The rows
+     * are keyed by {@code (created_by, scope, window_days)}, so a window change can leave rows
+     * from two windows side by side; in that case the heading cannot name one window for all of
+     * them and each line carries its own instead.
+     */
+    private void appendFeedback(StringBuilder sb, UUID userId) {
+        List<FeedbackRollupEntity> rows = feedbackRollupRepository
             .findByCreatedByAndDeletedFalseOrderByScopeAsc(userId).stream()
             .filter(r -> r.getStats() != null && r.getStats().total() != null && r.getStats().total() > 0)
-            .map(r -> "- " + r.getScope() + ": " + r.getStats().up() + " tetszik / "
-                + r.getStats().down() + " nem tetszik")
             .toList();
-        if (!feedback.isEmpty()) {
-            sb.append("\nVISSZAJELZÉSEK AZ AI-FELÜLETEKRŐL:\n").append(String.join("\n", feedback)).append('\n');
+        if (rows.isEmpty()) {
+            return;
         }
-        return sb.toString();
+        List<Integer> windows = rows.stream()
+            .map(FeedbackRollupEntity::getWindowDays)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        boolean oneWindow = windows.size() == 1;
+        sb.append("\nVISSZAJELZÉSEK AZ AI-FELÜLETEKRŐL (")
+            .append(oneWindow ? "utolsó " + windows.getFirst() + " nap" : "gördülő ablak")
+            .append(", nem a teljes negyedév):\n");
+        for (FeedbackRollupEntity r : rows) {
+            sb.append("- ").append(r.getScope());
+            if (!oneWindow && r.getWindowDays() != null) {
+                sb.append(" (utolsó ").append(r.getWindowDays()).append(" nap)");
+            }
+            sb.append(": ").append(r.getStats().up()).append(" tetszik / ")
+                .append(r.getStats().down()).append(" nem tetszik\n");
+        }
     }
 
     private static void appendRungs(StringBuilder sb, List<PeriodSummaryEntity> rungs) {

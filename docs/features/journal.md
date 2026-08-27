@@ -481,9 +481,10 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   what the entity already exposes.
   **A second, W5.3 (`mezo-b3pp.20`) read on the SAME repository, same one-way edge:** the same
   `ProfileAssembler` now also calls the half-open-window finder above (§4) to build the
-  `DÖNTÉSI MINŐSÉG` payload section — this calendar quarter's mean `outcome_rating` over reviewed
+  `DÖNTÉSI MINŐSÉG` payload section — the ANCHOR quarter's mean `outcome_rating` over reviewed
   decisions against the previous quarter's, computed in pure code and appended to the weekly/
-  quarterly profile prose (full mechanics, the two gates, and the cron:
+  quarterly profile prose (the anchor is an explicit `ProfileAssembler.rebuild` argument: the
+  weekly job passes the quarter it is standing in, the quarterly job the one that just finished) (full mechanics, the two gates, and the cron:
   [`companion.md`](companion.md) §4 "W5.3 quarterly deep pass"). **Honest absence carries over from
   W4.3's own rule:** a quarter with nothing reviewed contributes no line, and with NOTHING reviewed
   THIS quarter the whole section is omitted from the payload rather than rendering a bare `0,0/5` —

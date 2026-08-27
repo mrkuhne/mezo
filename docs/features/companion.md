@@ -1821,7 +1821,7 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   not null and is_deleted = false`) — a null `source_id` would silently drop the DB-level singleton
   guarantee, letting a second profile row slip in. No migration; no API contract change
   (`GraphNodeResponse.sourceKind` already existed since W2.1).
-- **`ProfileAssembler.rebuild(userId)`** (`profile/service/`) gathers, in pure code: all 11 W4.2
+- **`ProfileAssembler.rebuild(userId, anchorQuarter)`** (`profile/service/`) gathers, in pure code: all 11 W4.2
   feedback-rollup scopes (`FeedbackRollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc`),
   the 👎-reason (style) histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
   reviewed `decision_entry` rows newest-review-first (`DecisionEntryRepository
@@ -1831,7 +1831,13 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   fourth gather joined this list**: two more `DecisionEntryRepository` calls, one per quarter,
   over the half-open `[quarterStart, quarterStart + 3 months)` window
   (`decisionQuality`/`quarterLine`), folded into the payload as the `DÖNTÉSI MINŐSÉG` section
-  — full mechanics in the W5.3 subsection below (§4). ONE smart-tier
+  — full mechanics in the W5.3 subsection below (§4). Those two quarters are
+  `anchorQuarter` and `Quarters.previous(anchorQuarter)`: **the anchor is a required argument, not
+  derived from `LocalDate.now()`** (final-review fix F1 — the two callers legitimately want
+  different anchors, and there is no defaulting overload for a third to get wrong). Because of
+  this gather, `renderPayload` is "pure code" only in the NFR-M-4 sense — no model is consulted
+  anywhere in the arithmetic — and NOT a pure function of its arguments: it cannot be called
+  without a DB. ONE smart-tier
   `CompanionLlm.completeSmart` call, tagged `LlmCallContext("companion_profile", "assemble", null,
   null)`, prompt marker `ROLAD-TANULTAM` (`FakeCompanionLlm` dispatch key in tests).
 - **Spec interpretation (recorded explicitly, not a silent deviation):** §8.3 asks the assembler to
@@ -1863,7 +1869,12 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   `mezo.techcore.cron.profile-assembler-job.enabled` (`PROFILE_ASSEMBLER_JOB_SWITCH`); per-user
   try/catch (the `GraphMaintenanceJob`/`DailySummaryJob` idiom — one bad user never kills the run).
   Direct injection of `ProfileAssembler` into the job is safe because the job requires the same two
-  feature switches the assembler does, plus its own cron switch.
+  feature switches the assembler does, plus its own cron switch. It anchors the rebuild on
+  `Quarters.startOf(LocalDate.now())` — the quarter it is standing in, which is exactly what the
+  assembler used to derive for itself, so this job's behaviour is unchanged by the W5.3
+  final-review anchor fix. **Its switch reaches further than this bean**: the W5.3 quarterly job
+  reads `PROFILE_ASSEMBLER_JOB_SWITCH` by THIS bean's presence and skips its own phase-2 rebuild
+  when it is absent (§4).
 - **`ProfilePromptAssembler.render(userId)`** — renders the `[Rólad tanultam]` block, positioned
   in the canonical prompt order right after the fact blocks (top-N facts + the pattern-facts
   acknowledgment) and BEFORE `[Emlékek]` — see the updated `assembleSystemPrompt` order in §3. Reads
@@ -1877,7 +1888,9 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   built from, so a surprising profile can be explained without re-running the job. Hand-rolled
   `toMeta()`/read-back under its own `META_KEY`, the `GraphProposedEdge` idiom.
 - **W5.3 (`mezo-b3pp.20`) calls `ProfileAssembler.rebuild` too**, after the quarterly pass — the
-  public method is deliberately reusable, not job-private.
+  public method is deliberately reusable, not job-private — passing the just-finished quarter as
+  the anchor, and only when `PROFILE_ASSEMBLER_JOB_SWITCH` is on (§4, "The anchor quarter" and
+  "Phase 2 also honours `PROFILE_ASSEMBLER_JOB_SWITCH`").
 
 ### Backend tables (W5.1 flag log, ✅ `mezo-b3pp.18`)
 
@@ -2004,6 +2017,22 @@ occurred_on=<quarter start>)`. **No edges are proposed** — `meta.proposedEdges
 (`GraphProposedEdge.META_KEY`): a season is a reading of a period, not a causal claim, so nothing
 this pass writes ever gets structurally linked to anything else.
 
+**The feedback rollups disclose their window (fixed in the final review, F3).** Everything else in
+this prompt is quarter-wide and the instruction is `Csak a megadott szövegekre támaszkodj, semmit
+ne találj ki`, so an undisclosed window here reads to the model as quarter-wide evidence — but
+`feedback_rollup` rows are a TRAILING window (`mezo.companion.feedback-learning.window-days`,
+default 30) that the nightly job overwrites, so at 04:00 on the 1st they cover roughly the
+quarter's LAST MONTH. The heading is therefore
+`VISSZAJELZÉSEK AZ AI-FELÜLETEKRŐL (utolsó 30 nap, nem a teljes negyedév):`, with the number
+**rendered from `FeedbackRollupEntity.windowDays`**, not hardcoded — the window is a config knob,
+and rows are keyed `(created_by, scope, window_days)`, so a window change can leave two windows'
+rows side by side; in that case the heading says `gördülő ablak` and each line carries its own
+`(utolsó N nap)`. This is the quarterly payload builder agreeing with
+`ProfileAssembler.renderPayload`, which already disclosed its own window
+(`VISSZAJELZÉSEK (utolsó 30 nap)`). Without it, a quiet July/August followed by a rough September
+hands the model September's 9 👎 as if they characterised the whole quarter — and that reading
+becomes a durable SEASON candidate.
+
 **Two gates, both before any spend.** (1) `GraphNodeRepository.countQuarterlyNodesOnQuarter` —
 native, `source_kind = 'quarterly' and occurred_on = :quarterStart`, deliberately blind to
 `is_deleted` (the W2.3 day-gate idiom one rung up) — a quarter already touched (accepted, still
@@ -2015,25 +2044,57 @@ call. **A missing PREVIOUS quarter is deliberately NOT a gate**: the first quart
 history still deserves a season reading, the prompt just states honestly that there is nothing to
 compare it against.
 
-**Phase 2 — profile refresh.** `QuarterlyReviewJob` re-runs `ProfileAssembler.rebuild(userId)`
-after the season pass, per user — and the two phases are separately try/caught, so a failed
-season pass for a user must not cost that same user their profile refresh, and vice versa (the
-`GraphMaintenanceJob` per-user-isolation idiom, one level deeper). **Why phase 2 runs at all is
-NOT that a season becomes profile input.** `ProfileAssembler.habitNodes` only ever reads ACTIVE
-`PATTERN`/`PREFERENCE` nodes — a freshly proposed `SEASON` candidate is neither of those kinds nor
-ever active while it sits pending, so it is invisible to the profile in EVERY status. Re-running
-the assembler right as the quarter turns over is what keeps the `DÖNTÉSI MINŐSÉG` trend (below)
-current: it is windowed off `LocalDate.now()`'s calendar quarter, so re-running the assembler the
-same dawn the quarter closes is what surfaces that quarter's number promptly instead of waiting
-for the next Monday's weekly run.
+**Phase 2 — profile refresh, anchored on the SAME finished quarter.** `QuarterlyReviewJob` re-runs
+`ProfileAssembler.rebuild(userId, quarter)` after the season pass, per user — and the two phases
+are separately try/caught, so a failed season pass for a user must not cost that same user their
+profile refresh, and vice versa (the `GraphMaintenanceJob` per-user-isolation idiom, one level
+deeper). **Why phase 2 runs at all is NOT that a season becomes profile input.**
+`ProfileAssembler.habitNodes` only ever reads ACTIVE `PATTERN`/`PREFERENCE` nodes — a freshly
+proposed `SEASON` candidate is neither of those kinds nor ever active while it sits pending, so it
+is invisible to the profile in EVERY status. Re-running the assembler right as the quarter turns
+over is what keeps the `DÖNTÉSI MINŐSÉG` trend (below) current — **and the anchor is what makes
+that true**.
+
+**The anchor quarter (fixed in the final review, F1).** `ProfileAssembler.rebuild` takes the
+anchor quarter as a REQUIRED argument: the quarter its trend calls *"ez a negyedév"*, with
+*"előző negyedév"* always `Quarters.previous(anchor)`. `ProfileAssemblerJob` (weekly, mid-quarter)
+passes `Quarters.startOf(LocalDate.now())`; `QuarterlyReviewJob` passes the just-finished
+`quarter` it already computed for phase 1, so the quarterly profile compares the quarter that
+closed against the one before it. Before the fix, `decisionQuality` derived its own window from
+`LocalDate.now()`: at 04:00 on Jan 1 that is the four-hour-old NEW quarter, which has nothing
+reviewed in it, so the "a lone historical line is not a trend" rule dropped the ENTIRE `DÖNTÉSI
+MINŐSÉG` section and the quarterly rebuild regenerated the profile prose from strictly LESS input
+than the previous Monday's weekly run had — the user-visible *Rólad tanultam* node lost its
+decision-quality observation on precisely the one day of the year the "quarterly deep pass" was
+meant to sharpen it. No IT caught it because every IT runs mid-quarter; `ProfileAssemblerIT
+.renderPayload_windows_the_trend_on_the_anchor_quarter_not_on_todays_quarter` now seeds both
+quarters *around* the clock's quarter, so it fails on any day of the year if the window goes back
+to `now()`. **There is deliberately no no-anchor overload** — a defaulting overload is exactly how
+a future caller would re-acquire the bug by omission.
+
+**Phase 2 also honours `PROFILE_ASSEMBLER_JOB_SWITCH` (fixed in the final review, F2).**
+`mezo.techcore.cron.profile-assembler-job.enabled=false` is a documented kill switch for the
+profile — no weekly rebuild, no smart-tier spend on it, and an archived *Rólad tanultam* node
+stays archived. Calling `ProfileAssembler.rebuild` unconditionally from here made it leaky: four
+times a year the quarterly cron would spend a smart-tier call per user anyway AND force the
+non-ACTIVE node back to ACTIVE (the assembler's deliberate "reset what you think of me" revival),
+resurrecting a profile the operator or the user had switched off. `@Value` is banned in this repo,
+so the switch is read the house way — **by bean presence**: `QuarterlyReviewJob` holds
+`ObjectProvider<ProfileAssemblerJob>`, and that bean's existence IS the switch (its own
+`@ConditionalOnProperty` says so). Absent ⇒ phase 2 is skipped, with an honest log line (IDENT-3),
+**while phase 1 keeps running** — proposing seasons is not the profile job, and switching the
+profile off must not silently switch the season reading off too.
+`QuarterlyReviewJobProfileSwitchOffIT` pins both halves (candidate written, no profile node; an
+archived profile still archived afterwards).
 
 **Decision-quality trend (`ProfileAssembler.decisionQuality`, folded into
 `ProfileAssembler.renderPayload`'s payload as a new `DÖNTÉSI MINŐSÉG` section — the LLM's
 INPUT, not the injected `[Rólad tanultam]` block, which carries only the model's output
 prose).** Pure code, no LLM anywhere in the arithmetic
-(NFR-M-4: the model gets the observation, never derives the number itself) — this calendar
-quarter's mean `outcome_rating` over reviewed decisions against the previous quarter's, one line
-each: `"- ez a negyedév: 4,5/5 (2 értékelt döntés)"`. **Honest absence, both halves**: a quarter
+(NFR-M-4: the model gets the observation, never derives the number itself) — the ANCHOR quarter's
+mean `outcome_rating` over reviewed decisions against the previous quarter's, one line
+each: `"- ez a negyedév: 4,5/5 (2 értékelt döntés)"`. The Hungarian labels are relative to the
+anchor, never to the wall clock (see "The anchor quarter" above). **Honest absence, both halves**: a quarter
 with nothing reviewed contributes no line at all, and with NOTHING reviewed THIS quarter the
 WHOLE section stays out of the payload — a lone historical line is not a trend, and a bare
 `"0,0/5"` would read as terrible judgement rather than as no data. **Half-open window, fixed in
@@ -2055,8 +2116,15 @@ accepting/rejecting a season needed nothing this slice didn't already have (FE s
 → compare_periods"`, `ChatService.SYSTEM_PROMPT`): `periodA`/`periodB` each spell either a quarter
 (`2026-Q3`) or a month (`2026-07`) — parsed by the shared `Quarters.parse`/`isQuarter` helper —
 and render side by side from the SAME `period_summary` MONTH rungs the quarterly job itself
-reads, per-rung capped at `quarterly.render-max-chars` and refed as `Memory`/date (the
-`find_similar_past_days` idiom). A period that resolves to no rungs renders the honest `nincs
+reads, per-rung capped at `quarterly.render-max-chars`. Each rendered rung adds a ref — but
+**`Időszak`/`2026-07`, deliberately NOT the `Memory`/ISO-date shape `find_similar_past_days`
+uses** (fixed in the final review, F4): `RefTag` renders every ref generically as `[kind] label`,
+so `Memory`/`2026-07-01` would put six chips reading like six specific DAYS under
+„Hivatkozott · L3" when the answer was built from six whole MONTHS — the very lie this same slice
+removed from the candidate card (`formatCandidateDate`, §2.4 of [`insights.md`](insights.md)),
+which the slice must not then re-introduce one surface over. The label uses the same `YYYY-MM`
+spelling `Quarters.parse` accepts, so a chip reads back as a period the tool understands; no FE
+change was needed. A period that resolves to no rungs renders the honest `nincs
 adat` rather than silence. **Deliberately excludes `feedback_rollup`** — see the decisions/gotchas
 entry below for the ambiguity this resolved and how.
 
@@ -2276,7 +2344,7 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 | `get_daily_practice(date)` (mezo-xixu) | `TodayQuestSource.todayStats` (port, read-only) → quest completed/total for the date; `HabitService.summary` (always "as of today", no `date` param) → perfect-chain-day counts + any habit with real 28-day signal; `IntentionService.getDay` → creed/foci/reflection for the date; `RitualService.getDay` → napzárás closed/open for the date; `TodayActivitySource.activitiesForDay` (2nd companion-owned port, impl `activity/service/DailyActivityAdapter`) → logged activities (text + XP), capped at 5. Active challenges NOT composed (`ProactiveChallengeService.getChallenges` write-transactional; a direct repository read would open a new companion→proactive cycle) | `Practice`/date |
 | `get_insights(scope)` (mezo-xixu) | scope=patterns (default, only live scope): `PatternService.list` (same `companion` slice, read-only) filtered to `PatternEntity.STATUS_CONFIRMED` → title + deterministic mechanism prose (direction/strength) + evidence chips (r/n/p), capped at 5. scope=predictions/experiments DEFERRED — `ProactivePredictionService.getPredictions`/`ProactiveExperimentService.getExperiments` (`feature.proactive.service`) lazily GENERATE on a miss (a write) and a direct import would open a new companion↔proactive cycle; both render "még nem elérhető" | `Insight`/pattern title (≤5); none for predictions/experiments |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
-| `compare_periods(periodA, periodB)` (W5.3, `mezo-b3pp.20`) | `Quarters.parse` reads each side as a quarter (`2026-Q3`) or a month (`2026-07`); `PeriodSummaryRepository`'s MONTH-granularity finder over `[periodStart, Quarters.endOf(periodStart)]` for a quarter (its 3 month rungs) or `[periodStart, periodStart]` for a month; per-rung capped at `quarterly.render-max-chars`. Deliberately does NOT read `feedback_rollup` (§9) | `Memory`/date (one per rendered rung; none for a period with no rungs) |
+| `compare_periods(periodA, periodB)` (W5.3, `mezo-b3pp.20`) | `Quarters.parse` reads each side as a quarter (`2026-Q3`) or a month (`2026-07`); `PeriodSummaryRepository`'s MONTH-granularity finder over `[periodStart, Quarters.endOf(periodStart)]` for a quarter (its 3 month rungs) or `[periodStart, periodStart]` for a month; per-rung capped at `quarterly.render-max-chars`. Deliberately does NOT read `feedback_rollup` (§9) | `Időszak`/`YYYY-MM` (one per rendered rung — a MONTH, never a day; none for a period with no rungs) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
 
@@ -2551,7 +2619,13 @@ another `CompanionProperties` nested component (§9).
 Job switch `mezo.techcore.cron.quarterly-review-job.enabled`
 (`FeaturesConfiguration.QUARTERLY_REVIEW_JOB_SWITCH`) — off ⇒ the `QuarterlyReviewJob` bean does
 not exist (no season candidates, no quarterly profile rerun; the weekly profile job is
-independent and unaffected). `QuarterlyPropertiesIT` pins all four shipped defaults.
+independent and unaffected). **The reverse is deliberately NOT symmetric** (final-review fix F2):
+this switch on + `mezo.techcore.cron.profile-assembler-job.enabled` off ⇒ phase 1 still proposes
+season candidates, phase 2 does not rebuild the profile — the quarterly job reads that switch by
+`ProfileAssemblerJob` bean presence (`@Value` is banned; §9), so switching the profile off is
+never silently undone four times a year, and an archived *Rólad tanultam* node stays archived.
+`QuarterlyPropertiesIT` pins all four shipped defaults; `QuarterlyReviewJobProfileSwitchOffIT`
+pins the asymmetry.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
@@ -3481,6 +3555,21 @@ consumer side, in `feature.proactive`, and the push-anchor side, in `feature.not
 - **`quarterly/QuarterlyReviewJobSwitchOffIT`** —
   `mezo.techcore.cron.quarterly-review-job.enabled=false` ⇒ no `QuarterlyReviewJob` bean (the
   house cron-switch idiom).
+- **`quarterly/service/QuarterlyReviewPayloadIT`** (final-review fix F3) — a DIRECT assertion on
+  the package-private `QuarterlyReviewService.buildUserMessage` (the `ProfileAssemblerIT
+  .renderPayload` precedent, hence the `...quarterly.service` package): the feedback heading reads
+  `VISSZAJELZÉSEK AZ AI-FELÜLETEKRŐL (utolsó 30 nap, nem a teljes negyedév):` with the 30 rendered
+  off a row the REAL `FeedbackLearningService.computeRollups` wrote, and the bare undisclosed
+  heading is asserted absent; with no verdicts at all the heading is omitted entirely. Going
+  through `runFor` could only ever show the fake's ANSWER, never the payload — and the defect was
+  in the payload's wording.
+- **`quarterly/QuarterlyReviewJobProfileSwitchOffIT`** (final-review fix F2) — the OTHER switch:
+  with `mezo.techcore.cron.profile-assembler-job.enabled=false` the quarterly cron still runs and
+  still writes its SEASON candidate, but writes NO profile node — and a pre-existing ARCHIVED
+  *Rólad tanultam* node is still archived, with its old summary intact, afterwards. The absent
+  `ProfileAssemblerJob` bean asserted in the first test is not setup but the mechanism itself
+  (bean presence IS the switch). Both tests seed the same reviewed decision `QuarterlyReviewJobIT`
+  uses to OPEN the assembler's honest-absence gate, so the missing profile can only be the switch.
 - **`profile/service/ProfileAssemblerIT`, extended** —
   `renderPayload_compares_this_quarter_against_the_previous_one_when_both_have_reviewed_decisions`
   (two ratings this quarter, mean 4.5, against one last quarter, 2.0 — the arithmetic AND the
@@ -3490,7 +3579,13 @@ consumer side, in `feature.proactive`, and the push-anchor side, in `feature.not
   honest absence); **`renderPayload_counts_a_decision_reviewed_at_the_exact_quarter_boundary_only_once`**
   — the review-fix regression guard: a decision reviewed at the EXACT quarter-start instant used
   to double-count under an inclusive `BETWEEN`; this pins it counting once, in the current
-  quarter's line only.
+  quarter's line only. **`renderPayload_windows_the_trend_on_the_anchor_quarter_not_on_todays_quarter`**
+  (final-review fix F1) — everything is seeded in the ANCHOR quarter and the one before it, i.e.
+  nothing in the quarter the clock is standing in, so the old `LocalDate.now()`-derived window
+  would omit the whole `DÖNTÉSI MINŐSÉG` section on ANY day of the year, not just on a quarter
+  boundary; the assertion is that "ez a negyedév" names the anchor and "előző negyedév" the one
+  before it. The class's other tests pass the current quarter through a `currentQuarter()` helper,
+  so they keep pinning exactly what they pinned before the anchor became explicit.
 - **`tools/MemoryToolsRenderIT`, extended** — `testComparePeriods_shouldRenderBothQuarters_whenRungsExist`
   (a quarter really is assembled from ALL its month rungs, not just the one `Quarters.parse`
   itself would resolve to);
@@ -3498,7 +3593,10 @@ consumer side, in `feature.proactive`, and the push-anchor side, in `feature.not
   enforced, not merely declared); `testComparePeriods_shouldAcceptMonths_whenSpelledAsYyyyMm`;
   **`testComparePeriods_shouldRenderHonestNoData_whenAPeriodHasNoRungs`** — the acceptance case: a
   period with nothing recorded renders `nincs adat`, and — asymmetrically — only the period that
-  DID produce data adds a `Memory` ref; `testComparePeriods_shouldRenderNoData_whenAnArgumentIsUnparseable`
+  DID produce data adds a ref; both ref assertions were retargeted in the final review (F4) onto
+  the `Időszak`/`YYYY-MM` shape, with an explicit `noneSatisfy(kind == "Memory")` on the
+  both-quarters case so a later "harmonise the ref kinds" change cannot quietly restore the
+  day-shaped chip; `testComparePeriods_shouldRenderNoData_whenAnArgumentIsUnparseable`
   (`null`/garbled arguments, never a `TOOL_FAILED` exception); `testComparePeriods_shouldEmitNoRefs_whenBothPeriodsParseButHaveNoRungs`;
   `testComparePeriods_shouldNotLeakAnotherUsersPeriods_whenOwnershipDiffers` (ownership-scoped
   like every other tool read).
@@ -4090,9 +4188,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   soft-deleted one are all equally invisible to the profile synthesis. This is easy to misread
   from `QuarterlyReviewJob`'s own two-phase shape: phase 2 (`ProfileAssembler.rebuild`) runs
   right after phase 1 (the season proposal), which looks like "the season feeds the profile." It
-  doesn't — phase 2 runs there because that is the moment `DÖNTÉSI MINŐSÉG`'s quarter-over-quarter
-  window flips over to the newly finished quarter (§4 above), a purely date-driven trigger that
-  would fire identically even if phase 1 proposed zero candidates every single quarter.
+  doesn't — phase 2 runs there because that is the moment the newly finished quarter becomes the
+  right ANCHOR for `DÖNTÉSI MINŐSÉG`'s quarter-over-quarter comparison (§4 above), a purely
+  date-driven trigger that would fire identically even if phase 1 proposed zero candidates every
+  single quarter.
 - **`compare_periods` deliberately excludes `feedback_rollup`, resolving an ambiguity in spec
   §9.3's own wording.** The spec describes the quarterly job's INPUT as "period_summaries +
   rollups" and was read, before this slice locked the tool's shape, as implying the
@@ -4124,6 +4223,23 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   `ProfileAssemblerIT.renderPayload_counts_a_decision_reviewed_at_the_exact_quarter_boundary_only_once`
   (§8 above), which seeds a second row in the previous quarter so the test fails under the old
   query on ANY day of the year, not only on a real quarter boundary.
+- **The profile rebuild takes an explicit ANCHOR quarter; it no longer derives one from
+  `LocalDate.now()` (final review, F1).** A job that runs AT a period boundary and a job that runs
+  inside a period cannot share a now()-derived window: the quarterly cron fires at 04:00 on the
+  1st and means the quarter that just CLOSED, while `LocalDate.now()` at that moment names a
+  four-hour-old quarter with nothing reviewed in it — so the honest-absence rule silently deleted
+  the whole trend section from the payload, and the quarterly rebuild rewrote the user-visible
+  *Rólad tanultam* prose from LESS input than the previous weekly run had. The general lesson,
+  worth keeping: **a derived time window belongs to the CALLER's intent, not to the callee's
+  clock**, and the way to make that safe is a required parameter with no defaulting overload.
+- **The quarterly job honours the PROFILE job's switch, but only for phase 2 (final review, F2).**
+  A cron that reuses another cron's service inherits that cron's kill switch as an obligation:
+  `mezo.techcore.cron.profile-assembler-job.enabled=false` promises no profile rebuild and no
+  profile spend, and a quarterly caller ignoring it makes the promise false four times a year —
+  including force-reviving an ARCHIVED profile node, which is a user-visible action taken against
+  an explicit user choice. Read by **bean presence** (`ObjectProvider<ProfileAssemblerJob>`), the
+  house alternative to the banned `@Value`. Phase 1 is deliberately NOT gated on it: the season
+  proposal is not the profile job, and one switch must not silently disable an unrelated feature.
 
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
@@ -4175,7 +4291,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/config/ProfileProperties.java` — the four `mezo.companion.profile.*` knobs (`cron`, `renderMaxTokens`, `maxDecisions`, `maxGraphNodes`), a feature-scoped record (`@ConfigurationPropertiesScan`) rather than another `CompanionProperties` nested component — the `FeedbackLearningProperties` precedent.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/entity/ProfileMetaEnvelope.java` — the profile node's typed `meta.profile` payload (`generatedAt`/`feedbackSignals`/`reviewedDecisions`/`graphNodes`), hand-rolled under its own `META_KEY` (the `GraphProposedEdge` idiom).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssembler.java` — `rebuild(userId)`: pure-code gather (feedback rollups, style histogram, reviewed decisions, active PATTERN/PREFERENCE titles) → ONE smart-tier `completeSmart` call → `GraphService.upsertNode` into the singleton `(kind=INSIGHT, source_kind='profile', source_id=userId)` row, explicitly re-activated after the upsert. Honest absence: no signal ⇒ `Optional.empty()`, no LLM call, no write.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssemblerJob.java` — the weekly sweep (Monday 03:45, after the 03:10 rollups and 03:30 consolidation rung), per-user try/catch, `PROFILE_ASSEMBLER_JOB_SWITCH`-gated. Calls `ProfileAssembler.rebuild` — which is what W5.3 (`mezo-b3pp.20`) reuses after the quarterly pass, per that class's own javadoc.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssemblerJob.java` — the weekly sweep (Monday 03:45, after the 03:10 rollups and 03:30 consolidation rung), per-user try/catch, `PROFILE_ASSEMBLER_JOB_SWITCH`-gated. Calls `ProfileAssembler.rebuild(userId, Quarters.startOf(LocalDate.now()))` — the same method W5.3 (`mezo-b3pp.20`) reuses after the quarterly pass with a DIFFERENT anchor, and the bean whose presence W5.3 reads as this switch (§4).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfilePromptAssembler.java` — the `[Rólad tanultam]` block: `render(userId)` reads the ACTIVE node, caps it again at render time, never throws (IDENT-3), `""` when the bean is absent or nothing is stored.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROFILE_ASSEMBLER_JOB_SWITCH` (`mezo.techcore.cron.profile-assembler-job.enabled`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
@@ -4214,7 +4330,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/Quarters.java` — the pure calendar helper (`startOf`/`previous`/`endOf`/`label`/`parse`/`isQuarter`), shared by the job, `ProfileAssembler` and `compare_periods`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/SeasonSuggestion.java` — the model's per-season `{title, summary}` answer shape, deserialized straight off the parsed JSON array.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewService.java` — `runFor(userId, quarterStart)`: the two spend gates, the season-over-season smart-tier call, and the self-injected-proxy `persistCandidates` transaction (§4 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewJob.java` — the cron: per-user AND per-phase try/catch around `QuarterlyReviewService.runFor` then `ProfileAssembler.rebuild` (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/service/QuarterlyReviewJob.java` — the cron: per-user AND per-phase try/catch around `QuarterlyReviewService.runFor` then `ProfileAssembler.rebuild(userId, quarter)` — the just-finished quarter as the trend anchor, and phase 2 skipped entirely when `ObjectProvider<ProfileAssemblerJob>` resolves to nothing (§4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/repository/GraphNodeRepository.java` — `countQuarterlyNodesOnQuarter`, the native per-quarter idempotence probe (the `countExtractorNodesOnDay` idiom one rung up; §4/§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssembler.java` — `decisionQuality`/`quarterLine`, the `DÖNTÉSI MINŐSÉG` payload section (§4/§9 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/MemoryTools.java` — `comparePeriods`, alongside the existing `findSimilarPastDays` (not a new file — the tool joins the existing V2.3 recall bean; §4 above).

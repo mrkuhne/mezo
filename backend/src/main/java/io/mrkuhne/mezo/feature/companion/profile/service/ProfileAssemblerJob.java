@@ -2,7 +2,9 @@ package io.mrkuhne.mezo.feature.companion.profile.service;
 
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,6 +20,13 @@ import org.springframework.stereotype.Component;
  * <p>Direct injection of {@link ProfileAssembler} is safe because this bean requires the same two
  * switches the assembler does, plus its own cron switch — whenever this bean exists, so does the
  * assembler's.
+ *
+ * <p><b>Anchor quarter (W5.3 review, mezo-b3pp.20 F1):</b> this weekly sweep runs mid-quarter and
+ * means the quarter it is standing in, so it anchors {@link ProfileAssembler#rebuild} on {@code
+ * Quarters.startOf(LocalDate.now())} — exactly the window the assembler used to derive for itself
+ * before the anchor became an explicit argument, so this job's behaviour is unchanged. The W5.3
+ * quarterly job passes a DIFFERENT anchor (the quarter that just finished), which is the whole
+ * reason the assembler no longer guesses.
  */
 @Slf4j
 @Component
@@ -33,9 +42,10 @@ public class ProfileAssemblerJob {
 
     @Scheduled(cron = "${mezo.companion.profile.cron}")
     public void run() {
+        LocalDate anchorQuarter = Quarters.startOf(LocalDate.now());
         for (AppUserEntity user : appUserRepository.findAll()) {
             try {
-                profileAssembler.rebuild(user.getId())
+                profileAssembler.rebuild(user.getId(), anchorQuarter)
                         .ifPresentOrElse(
                             id -> log.info("Profile rebuilt for user {} (node {})", user.getId(), id),
                             () -> log.info("No profile signal for user {} — skipped", user.getId()));

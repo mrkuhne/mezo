@@ -47,9 +47,12 @@ import org.springframework.transaction.annotation.Transactional;
  * knows about how he works, i.e. the active PATTERN/PREFERENCE titles (the profile node itself
  * excluded — it must never eat its own output).
  *
- * <p><b>Decision-quality trend (W5.3, mezo-b3pp.20, spec §9.3):</b> this calendar quarter's mean
- * reviewed outcome rating against the previous quarter's, computed quarter-over-quarter in pure
- * code — see {@link #decisionQuality}.
+ * <p><b>Decision-quality trend (W5.3, mezo-b3pp.20, spec §9.3):</b> the ANCHOR quarter's mean
+ * reviewed outcome rating against the quarter before it, computed quarter-over-quarter in pure
+ * code — see {@link #decisionQuality}. The anchor is a REQUIRED argument of {@link #rebuild}, not
+ * something this class derives from {@code LocalDate.now()}: the two callers legitimately want
+ * different anchors, and the class cannot guess which. See {@link #rebuild} for the failure that
+ * a self-derived anchor caused.
  *
  * <p><b>Honest absence:</b> with no feedback verdicts, no reviewed decisions and no graph nodes
  * there is nothing to learn from — no LLM call, no node, and any existing profile is left exactly
@@ -94,10 +97,26 @@ public class ProfileAssembler {
      * Rebuilds the profile for one user. Returns the node id, or empty when there was no signal
      * to learn from or the model came back blank (both honest no-ops, not failures).
      *
+     * <p><b>{@code anchorQuarter} is the quarter the {@code DÖNTÉSI MINŐSÉG} trend calls "ez a
+     * negyedév"</b> — the first day of a calendar quarter ({@link Quarters#startOf}); the "előző
+     * negyedév" line is always {@link Quarters#previous} of it. It is a REQUIRED parameter with no
+     * no-anchor overload, deliberately (mezo-b3pp.20 final review, F1): while {@code
+     * decisionQuality} derived its own window from {@code LocalDate.now()}, the two callers
+     * silently disagreed about which quarter was being profiled.
+     * {@link io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssemblerJob} runs mid-quarter
+     * and means the quarter in progress, but the W5.3 quarterly job runs at 04:00 ON the 1st of
+     * Jan/Apr/Jul/Oct and means the quarter that JUST FINISHED — and a now()-derived window handed
+     * it the four-hour-old new quarter instead, which has nothing reviewed in it yet, so
+     * {@code decisionQuality}'s "nothing this quarter" rule dropped the ENTIRE section and the
+     * quarterly rebuild regenerated the prose from a payload strictly POORER than the previous
+     * weekly run's. The one day of the year the trend is guaranteed missing was exactly the day
+     * the "quarterly deep pass" ran. An overload defaulting to now() would let a future caller
+     * walk straight back into that, so there is none: every caller states its anchor.
+     *
      * <p>W5.3 (mezo-b3pp.20) calls this too, after the quarterly pass.
      */
     @Transactional
-    public Optional<UUID> rebuild(UUID userId) {
+    public Optional<UUID> rebuild(UUID userId, LocalDate anchorQuarter) {
         List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc(userId);
         List<DecisionEntryEntity> decisions = decisionRepository
                 .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(
@@ -108,7 +127,7 @@ public class ProfileAssembler {
             log.debug("Profile skipped for user {} — no feedback, no reviewed decisions, no graph nodes", userId);
             return Optional.empty();
         }
-        String payload = renderPayload(userId, rollups, decisions, nodes);
+        String payload = renderPayload(userId, anchorQuarter, rollups, decisions, nodes);
         String prose = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_profile", "assemble", null, null),
                 () -> companionLlm.completeSmart(PROMPT, payload));
@@ -149,9 +168,22 @@ public class ProfileAssembler {
                 .sum();
     }
 
-    /** The LLM payload — pure code, honest about absence (a section with nothing stays out). */
-    String renderPayload(UUID userId, List<FeedbackRollupEntity> rollups, List<DecisionEntryEntity> decisions,
-            List<GraphNodeEntity> nodes) {
+    /**
+     * The LLM payload: no model is consulted anywhere in here — every number is arithmetic this
+     * method does itself (NFR-M-4, never derive and narrate in one step). That is what "pure code"
+     * means in this codebase's vocabulary, and it is the only sense in which this method is pure.
+     *
+     * <p>It is NOT a pure function of its arguments and cannot be called without a database: since
+     * W5.3 (mezo-b3pp.20) {@link #decisionQuality} issues two more {@code DecisionEntryRepository}
+     * round-trips of its own, keyed off {@code userId}/{@code anchorQuarter} rather than off the
+     * {@code decisions} list passed in (that list is review-time-ordered and capped, so it cannot
+     * answer a per-quarter question). Hence the {@code userId}/{@code anchorQuarter} parameters
+     * next to the already-gathered rows.
+     *
+     * <p>Honest about absence throughout: a section with nothing behind it stays out entirely.
+     */
+    String renderPayload(UUID userId, LocalDate anchorQuarter, List<FeedbackRollupEntity> rollups,
+            List<DecisionEntryEntity> decisions, List<GraphNodeEntity> nodes) {
         StringBuilder out = new StringBuilder();
         List<String> feedbackLines = rollups.stream()
                 .filter(r -> r.getStats() != null && r.getStats().total() != null && r.getStats().total() > 0)
@@ -184,7 +216,7 @@ public class ProfileAssembler {
                 out.append('\n');
             }
         }
-        String quality = decisionQuality(userId);
+        String quality = decisionQuality(userId, anchorQuarter);
         if (!quality.isEmpty()) {
             out.append("\nDÖNTÉSI MINŐSÉG:\n").append(quality).append('\n');
         }
@@ -198,20 +230,24 @@ public class ProfileAssembler {
     }
 
     /**
-     * W5.3 (mezo-b3pp.20, spec §9.3): the decision-quality trend — this calendar quarter's mean
-     * outcome rating against the previous quarter's, computed in PURE CODE (NFR-M-4: never derive
+     * W5.3 (mezo-b3pp.20, spec §9.3): the decision-quality trend — the ANCHOR quarter's mean
+     * outcome rating against the quarter before it, computed in PURE CODE (NFR-M-4: never derive
      * and narrate in one step; the model gets the observation, not the arithmetic).
+     *
+     * <p>The Hungarian labels are relative to the anchor, not to the wall clock: "ez a negyedév"
+     * IS {@code anchorQuarter} and "előző negyedév" is always {@link Quarters#previous} of it. So
+     * when the quarterly job anchors on the quarter that just finished, both lines name the two
+     * quarters it is actually comparing — see {@link #rebuild} for why the anchor is passed in.
      *
      * <p>Honest absence, both halves: a quarter with no reviewed decision contributes no line at
      * all, and with neither quarter present the whole section stays out of the payload rather
      * than telling the model "0,0/5", which would read as terrible judgement instead of no data.
      */
-    private String decisionQuality(UUID userId) {
-        LocalDate currentStart = Quarters.startOf(LocalDate.now());
-        String current = quarterLine("ez a negyedév", userId, currentStart);
-        String previous = quarterLine("előző negyedév", userId, Quarters.previous(currentStart));
+    private String decisionQuality(UUID userId, LocalDate anchorQuarter) {
+        String current = quarterLine("ez a negyedév", userId, anchorQuarter);
+        String previous = quarterLine("előző negyedév", userId, Quarters.previous(anchorQuarter));
         if (current.isEmpty()) {
-            return "";   // nothing reviewed this quarter — a lone historical line is not a trend
+            return "";   // nothing reviewed in the anchor quarter — a lone historical line is not a trend
         }
         return previous.isEmpty() ? current : current + "\n" + previous;
     }
