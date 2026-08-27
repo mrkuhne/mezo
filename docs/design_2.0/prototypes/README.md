@@ -41,13 +41,22 @@ are usable without a build step).
   searchable multi-add exercise picker, ▲▼ reorder), start/close sheets (close → report),
   frozen report, Történet selection mode → A/B compare page.
 - **edzes-session** — the full gym session flow (interactive state machine, feature-complete
-  against `frontend/src/features/train/pages/ActiveWorkoutPage.tsx`): prep briefing (XP ring +
-  skill bars + "Ma építed" chips, weekly zone-context with 4 status hints, niggle card, challenge
-  carousel with accept/pass + conf/"tanulom", warmup block, per-region exercise cards with 1RM
-  badge / start weight / progression delta), live logging (family-themed execution card, giant
-  steppers with tap-to-edit, RIR 0–3 hidden on warmups, L/B/R side row, per-set note, Kép/Demo
-  media chips, set dots with B-labels + warmup-% note, rest bar pause/skip at 10× demo speed,
-  medal toast, 5-way navigation, ⋯ sheet: reorder/skip/+szett with "Csak ma / Minden hétre"
-  prompt/durable note/early finish, tappable set table with edit/delete + one-slot floor),
-  RP debrief per exercise, closing summary (halo hero, muscle pills, medals + target sets,
-  challenge outcomes, per-exercise chip map, note), finish → level-up screen → closed mode.
+  against `frontend/src/features/train/pages/ActiveWorkoutPage.tsx`).
+  **Prep = Huawei tile IA**: hero (eyebrow + name + 4 mini stat cells: várható XP / szett / idő /
+  izomcsoport + CTA above the fold), then a 6-tile mosaic — Gyakorlatok, Fejlődés, Heti zóna,
+  Küldetések (badge), Bemelegítés, Niggle (badge; "Értem" → kezelve ✓) — each opening its own
+  page with a compact hero (title above an icon+number row, no subtitles) + stat strip +
+  animated bars/rings in the Heti zóna recipe. Gyakorlatok page: tile-styled exercise cards
+  (family wash + rail, clay disc, labeled columns Cél · Induló súly, mini set dots carry the
+  set count, 1RM medal, footer "múlt héten → progression chip" + challenge flag).
+  **Live logging = calm default**: only the execution card is expanded — single-line name +
+  small media icon buttons, muted metaline (🔥/🌿 · rep range · RIR · challenge chip),
+  one-line note pill, white Logolás panel (slot label with cél, set dots + warmup-% note,
+  flexible steppers, RIR 0–3 hidden on warmups, L/B/R for isolation, collapsed "＋ megjegyzés"
+  toggle, CTA / rest bar with pause/skip at 10× demo speed); Progresszió and Szettek are thin
+  collapsible strips with informative headers ("⚡ Progresszió · +2,5 kg ▾",
+  "Szettek · 2/6 ✓ · 1 234 kg ▾"); 5-way navigation, medal toast, ⋯ sheet
+  (reorder/skip/+szett with "Csak ma / Minden hétre"/durable note/early finish), set table
+  rows edit/delete with one-slot floor. RP debrief per exercise, closing summary (halo hero,
+  muscle pills, medals + target sets, challenge outcomes, per-exercise chip map, note),
+  finish → level-up screen → closed mode.

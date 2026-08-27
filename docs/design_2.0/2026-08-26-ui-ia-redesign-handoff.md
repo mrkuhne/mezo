@@ -241,14 +241,24 @@ Locked patterns from the screen rounds (canonical for every further page):
 - **Advisory signals are never red and never block; nulls are never zeros** — carried through
   every screen.
 - **Edzés-session fully specified** in its prototype (feature-audited against
-  `ActiveWorkoutPage.tsx` — see `prototypes/README.md` for the full list): prep briefing
-  (XP forecast ring + skill bars, weekly zone-context with the 4 status hints, niggle card,
-  challenge carousel with conf/"tanulom"), live logging (family-color-themed execution card,
-  warmup B-labels with no RIR, rest bar with pause/skip, medal toast, 5-way navigation,
-  ⋯ actions incl. reorder-with-handover and the "Csak ma / Minden hétre" extra-set prompt,
-  set table with edit/delete + one-slot floor), RP debrief, summary + level-up. New icons for
-  it: `i-video`, `i-idozito`, `i-kihivas`. Honesty gates deliberately preserved (no fabricated
-  numbers, misses never red, inert `Passz`/`Tudatosítsuk később` kept inert).
+  `ActiveWorkoutPage.tsx` — see `prototypes/README.md` for the current, detailed list):
+  prep = hero (4 mini stat cells + CTA above the fold) + 6-tile mosaic (Gyakorlatok, Fejlődés,
+  Heti zóna, Küldetések, Bemelegítés, Niggle), each tile → own page with compact hero
+  (title above icon+number row) + stat strip + animated bars/rings; Gyakorlatok page uses
+  tile-styled exercise cards (labeled columns, mini set dots, 1RM medal, múlt-hét → progression
+  footer). Live logging = calm default: only the execution card expanded; Progresszió and
+  Szettek are collapsible strips with informative headers; warmup B-labels with no RIR, rest
+  bar with pause/skip, medal toast, 5-way navigation, ⋯ actions incl. reorder-with-handover
+  and the "Csak ma / Minden hétre" extra-set prompt, set table edit/delete + one-slot floor;
+  RP debrief, summary + level-up. New icons for it: `i-video`, `i-idozito`, `i-kihivas`.
+  Honesty gates deliberately preserved (no fabricated numbers, misses never red, inert
+  `Passz`/`Tudatosítsuk később` kept inert).
+- **Interaction patterns locked in the session rounds (apply everywhere):** subpage hero =
+  title, then icon + big number in one row, no subtitle; reference content lives in thin
+  collapsible strips whose closed header already carries the summary; inputs live in ONE
+  clearly bounded panel ("a kártyán logolsz, a sávokban utánanézel"); labeled mini-columns
+  beat chip piles; a datum shown by a visual (set dots) is not repeated as text; the same
+  fact never appears twice on one screen.
 
 **How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
 `docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
