@@ -1114,6 +1114,21 @@
   .obscard { border-radius: 13px; padding: 9px 11px; background: linear-gradient(135deg, #FFE7DC, #FFFDF8); display: flex; gap: 8px; align-items: flex-start; }
   .obscard .dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #FF7A55, #FF5B36); flex: none; margin-top: 3px; }
   .obscard p { font-size: 9.5px; line-height: 1.5; color: #2B2118; }
+  /* — kamra-tétel részletoldal — */
+  .kihead { display: grid; justify-items: center; text-align: center; gap: 5px; padding: 4px 14px 12px; }
+  .kihead .kthumb { width: 54px; height: 54px; border-radius: 17px; font-size: 21px; }
+  .kihead .nm { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .kihead .sb { display: flex; align-items: center; gap: 5px; font-size: 8.5px; color: #A2958A; }
+  .srcbadge { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 5px; padding: 2px 6px; background: rgba(78, 143, 184, 0.14); color: #33749C; }
+  .ncells { display: flex; gap: 5px; }
+  .ncells span { flex: 1; border-radius: 11px; padding: 6px 2px 5px; text-align: center; background: rgba(255, 255, 255, 0.8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 5px rgba(43, 33, 24, 0.05); }
+  .ncells b { display: block; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ncells b.dash { color: #A2958A; font-weight: 500; }
+  .ncells small { font-size: 5.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; }
+  .rchips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .rchips span { font-size: 8.5px; font-weight: 600; color: #A84A26; background: rgba(255, 107, 74, 0.09); border-radius: 999px; padding: 3.5px 10px; }
+  .stkchip { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; font-size: 8.5px; font-weight: 700; color: #4E6B42; background: rgba(143, 175, 126, 0.14); border-radius: 999px; padding: 4px 11px; }
+  .delbtn { width: 100%; border: none; background: none; font-family: inherit; font-size: 10px; font-weight: 700; color: #A84A26; padding: 10px 0 2px; cursor: pointer; }
   .improw { display: flex; align-items: center; gap: 7px; padding: 7px 0; font-size: 9px; }
   .improw + .improw { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
   .improw .src { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 5px; padding: 2px 6px; background: rgba(78, 143, 184, 0.14); color: #33749C; flex: none; }
@@ -1405,13 +1420,13 @@
           <div class="nm">Kamra</div>
           <div class="mrow" style="justify-content:center;gap:14px;">
             <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-kamra"/></svg>
-            <div class="bignum">38</div>
+            <div class="bignum" id="kmBig">38</div>
           </div>
         </div>
         <div class="page-body">
           <div class="statstrip rise" style="--d:20ms;margin-bottom:10px;">
-            <div class="statcell"><b>38</b><small>tétel</small></div>
-            <div class="statcell"><b>26</b><small>étel</small></div>
+            <div class="statcell"><b id="kmStTotal">38</b><small>tétel</small></div>
+            <div class="statcell"><b id="kmStFood">26</b><small>étel</small></div>
             <div class="statcell"><b>12</b><small>protokollos</small></div>
             <div class="statcell"><b style="color:#33749C;">2</b><small>import e héten</small></div>
           </div>
@@ -1442,6 +1457,15 @@
           </div>
           <p class="habnote">A készlet/lejárat réteg feature-flag mögött kész — ha bekapcsol, itt kap Lejár/Fogy cellát és borostyán figyelmeztetőt. A javaslat- és import-szekció üresen nem foglal helyet.</p>
         </div>
+      </div>
+
+      <!-- ============ KAMRA-TÉTEL RÉSZLET ============ -->
+      <div class="page p-gold" id="page-kitem">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-kitem">‹ Kamra</button>
+          <button class="pgact">Szerkesztés</button>
+        </div>
+        <div class="page-body" id="kiBody" style="padding-top:2px;"></div>
       </div>
 
       <!-- ============ GYÓGYSZER ============ -->
@@ -1578,7 +1602,12 @@
           <strong>kind-színű wash-kártyákkal</strong>: rail + monogram-korong + márka · NOVA-pont
           (étel) vagy dőlt protokoll-sor (supp/stim/med), jobbra tintázott kcal- vagy
           dózis-cella. Alul ✨ Mezo-javaslat kártya (NOVA-csere tipp) és a Legutóbbi importok
-          (OFF / FOTÓ forrás-címke, borostyán „ellenőrzés" tag) — mindkettő üresen eltűnik.</li>
+          (OFF / FOTÓ forrás-címke, borostyán „ellenőrzés" tag) — mindkettő üresen eltűnik.
+          Tételre koppintva <strong>részletoldal</strong> nyílik: monogram-korong, forrás-badge +
+          márka + kategória + NOVA, makró mini-csempék és Tápanyag-cellák /100 g (— ahol nincs
+          adat), ár, <strong>Receptekben</strong> chipek (a sosem mutatott
+          <code>usedInRecipes</code> felülete), supp/stim tételnél dózis + „a stackben" 
+          keresztlink; ＋ Logolás a log-sheetbe KAMRA-tételként (100 g), Törlés két érintéssel.</li>
           <li><strong>Gyógyszer</strong> — készítmény-kártya ciklus-csíkkal (csúcs = terrakotta,
           sosem piros), fázis-jegyzet, beadás-lista jegyzettel. Új ikon: <code>i-injekcio</code>.</li>
           <li><strong>Napló</strong> — design-kiegészítés a „sehol egy trend" gapre: kcal-átlag,
@@ -1789,6 +1818,8 @@
     var slots = ['Reggeli', 'Ebéd', 'Vacsora', 'Snack'];
     var sel = w ? (slots.indexOf(w.slot) >= 0 ? w.slot : 'Snack') : 'Snack';
     var meal = w ? w.plan : null;
+    var tag = (w && w.external) ? 'KAMRA' : 'RECEPT';
+    var qty = (w && w.external) ? '100 g' : '1 adag';
     shLog.innerHTML =
       '<div class="sh-eyebrow">Logolás · mai nap</div>' +
       '<div class="sh-title">Mit ettél?</div>' +
@@ -1801,8 +1832,8 @@
       '<input type="text" aria-label="Étkezés neve" value="' + (meal ? meal.name : '') + '" placeholder="Étkezés neve"></div>' +
       '<div class="mgroup"><div class="p-eyebrow" style="padding:0 2px 5px;">Tételek · ' + (meal ? 1 : 0) + '</div>' +
       (meal
-        ? '<div class="lineit"><div class="l1"><span class="nm">' + meal.name + '</span><span class="tag">RECEPT</span>' +
-          '<span class="stepin"><button aria-label="Csökkentés">−</button><b>1 adag</b><button aria-label="Növelés">＋</button></span></div>' +
+        ? '<div class="lineit"><div class="l1"><span class="nm">' + meal.name + '</span><span class="tag">' + tag + '</span>' +
+          '<span class="stepin"><button aria-label="Csökkentés">−</button><b>' + qty + '</b><button aria-label="Növelés">＋</button></span></div>' +
           '<div class="macs">' + meal.kcal + ' kcal · P ' + meal.p + ' · C ' + meal.c + ' · F ' + meal.f + '</div></div>'
         : '<div class="lineit" style="border-left-color:rgba(43,33,24,0.15);border-style:dashed;background:none;box-shadow:none;">' +
           '<div class="mut" style="font-size:9px;">Még nincs tétel. Adj hozzá Receptből vagy a Kamrából.</div></div>') +
@@ -1826,8 +1857,11 @@
     document.getElementById('lgSave').addEventListener('click', function () {
       if (!meal || !w) return;
       C.kcal += meal.kcal; C.p += meal.p; C.c += meal.c; C.f += meal.f; C.fiber += meal.fiber;
-      w.state = 'done'; w.meal = meal; w.score = null; w.loggedTime = '13:30';
-      renderHero(); renderLane();
+      if (!w.external) {
+        w.state = 'done'; w.meal = meal; w.score = null; w.loggedTime = '13:30';
+        renderLane();
+      }
+      renderHero();
       closeSheet();
     });
     shLog.scrollTop = 0;
@@ -1876,6 +1910,11 @@
     });
     openSheet(shWater);
   }
+
+  /* híd a Kamra-részletoldal Logolás gombjának */
+  window.fuelLogPantry = function (meal) {
+    openLog({ slot: 'Snack', external: true, plan: meal });
+  };
 
   renderHero();
   renderLane();
@@ -2060,17 +2099,17 @@
 /* ===== Kamra oldal ===== */
 (function () {
   var K = [
-    { n: 'Skyr', b: 'Pilos', kind: 'food', nova: 1, kcal: 63 },
-    { n: 'Zabpehely', b: 'Alnatura', kind: 'food', nova: 1, kcal: 372 },
-    { n: 'Csirkemell', b: '', kind: 'food', nova: 1, kcal: 105 },
-    { n: 'Basmati rizs', b: '', kind: 'food', nova: 1, kcal: 350 },
-    { n: 'Tonhalkonzerv', b: 'Rio Mare', kind: 'food', nova: 3, kcal: 116 },
-    { n: 'Teljes kiőrlésű wrap', b: 'Santa Maria', kind: 'food', nova: 3, kcal: 290 },
-    { n: 'Kreatin', b: 'Builder', kind: 'supplement', proto: '5 g minden nap', dose: '5 g' },
-    { n: 'Omega-3', b: 'Now Foods', kind: 'supplement', proto: 'zsíros étkezéshez', dose: '2 caps' },
-    { n: 'D3 + K2', b: '', kind: 'supplement', proto: 'reggel, zsírral', dose: '1 csepp' },
-    { n: 'Koffein tabletta', b: '', kind: 'stim', proto: 'edzés előtt −45p', dose: '200 mg' },
-    { n: 'Retatrutid', b: '', kind: 'med', proto: 'heti subQ · hétfő', dose: '4 mg' }
+    { n: 'Skyr', b: 'Pilos', kind: 'food', nova: 1, kcal: 63, src: 'OFF', cat: 'tejtermék', m: { p: 9, c: 4, f: 0 }, nut: { rost: 0, cukor: 4, telzs: 0, so: 0 }, price: '599 Ft', rec: ['Skyr-bowl zabbal'] },
+    { n: 'Zabpehely', b: 'Alnatura', kind: 'food', nova: 1, kcal: 372, src: 'OFF', cat: 'gabona', m: { p: 13, c: 58, f: 7 }, nut: { rost: 10, cukor: 1, telzs: 1, so: 0 }, price: '899 Ft', rec: ['Skyr-bowl zabbal', 'Proteinpalacsinta'] },
+    { n: 'Csirkemell', b: '', kind: 'food', nova: 1, kcal: 105, src: 'kézi', cat: 'hús', m: { p: 23, c: 0, f: 2 }, nut: null, price: '2 590 Ft', rec: ['Csirkés rizs-bowl'] },
+    { n: 'Basmati rizs', b: '', kind: 'food', nova: 1, kcal: 350, src: 'kézi', cat: 'gabona', m: { p: 7, c: 78, f: 1 }, nut: { rost: 1, cukor: null, telzs: null, so: 0 }, price: '1 190 Ft', rec: ['Csirkés rizs-bowl'] },
+    { n: 'Tonhalkonzerv', b: 'Rio Mare', kind: 'food', nova: 3, kcal: 116, src: 'OFF', cat: 'hal', m: { p: 26, c: 0, f: 1 }, nut: { rost: 0, cukor: 0, telzs: 0, so: 1 }, price: '1 490 Ft', rec: ['Tonhalas wrap'] },
+    { n: 'Teljes kiőrlésű wrap', b: 'Santa Maria', kind: 'food', nova: 3, kcal: 290, src: 'FOTÓ', cat: 'pékáru', m: { p: 9, c: 45, f: 7 }, nut: { rost: 6, cukor: 3, telzs: 1, so: 1 }, price: '749 Ft', rec: ['Tonhalas wrap'] },
+    { n: 'Kreatin', b: 'Builder', kind: 'supplement', proto: '5 g minden nap', dose: '5 g', src: 'kézi', cat: 'supplement', price: '5 990 Ft', zone: 'Reggeli · 07:30', rec: [] },
+    { n: 'Omega-3', b: 'Now Foods', kind: 'supplement', proto: 'zsíros étkezéshez', dose: '2 caps', src: 'kézi', cat: 'supplement', price: '7 490 Ft', zone: 'Ébredés · 06:45', rec: [] },
+    { n: 'D3 + K2', b: '', kind: 'supplement', proto: 'reggel, zsírral', dose: '1 csepp', src: 'kézi', cat: 'supplement', price: '3 290 Ft', zone: 'Ébredés · 06:45', rec: [] },
+    { n: 'Koffein tabletta', b: '', kind: 'stim', proto: 'edzés előtt −45p', dose: '200 mg', src: 'kézi', cat: 'stimuláns', price: '1 990 Ft', zone: 'Edzés előtt · 16:45', rec: [] },
+    { n: 'Retatrutid', b: '', kind: 'med', proto: 'heti subQ · hétfő', dose: '4 mg', src: 'kézi', cat: 'gyógyszer', price: null, zone: null, rec: [] }
   ];
   var SEC = [
     ['food', 'Étel', '#8FAF7E'],
@@ -2114,7 +2153,82 @@
       h += g.map(row).join('');
     });
     listEl.innerHTML = h || '<div class="nohit">Nincs egyező tétel.</div>';
-    cntEl.textContent = 'minta · ' + hits.length + ' / 11 a 38-ból';
+    cntEl.textContent = 'minta · ' + hits.length + ' / ' + K.length + ' a ' + (27 + K.length) + '-ból';
+    listEl.querySelectorAll('.kitem').forEach(function (el) {
+      var it = K.filter(function (x) { return x.n === el.getAttribute('aria-label'); })[0];
+      function go() { if (it) openKitem(it); }
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    });
+  }
+  function paintTotals() {
+    document.getElementById('kmBig').textContent = 27 + K.length;
+    document.getElementById('kmStTotal').textContent = 27 + K.length;
+    document.getElementById('kmStFood').textContent = 20 + K.filter(function (x) { return x.kind === 'food'; }).length;
+  }
+  /* — részletoldal — */
+  function ncell(lbl, v) {
+    return '<span>' + (v == null ? '<b class="dash">—</b>' : '<b>' + v + ' g</b>') + '<small>' + lbl + '</small></span>';
+  }
+  function openKitem(it) {
+    var pal = KPAL[it.kind];
+    var body = document.getElementById('kiBody');
+    var h = '<div class="kihead">' +
+      '<span class="kthumb" style="--kd:' + pal.d + ';background:linear-gradient(135deg,' + pal.w + ',#FFFDF8);">' + it.n.charAt(0).toUpperCase() + '</span>' +
+      '<div class="nm">' + it.n + '</div>' +
+      '<div class="sb"><span class="srcbadge">' + it.src + '</span>' + (it.b ? '<span>' + it.b + '</span><span>·</span>' : '') +
+      '<span>' + it.cat + '</span>' + (it.nova ? '<span>·</span><span class="novadot n' + it.nova + '"></span><span>NOVA ' + it.nova + '</span>' : '') + '</div></div>';
+    if (it.m) {
+      h += '<div class="p-eyebrow" style="padding:2px 2px 5px;">Makrók · /100 g</div>' +
+        '<div class="mcells" style="margin:0 0 10px;">' +
+        '<span style="--mw:#E4EEDD;--md:#4E6B42;"><b>' + it.kcal + '</b><small>kcal</small></span>' +
+        '<span style="--mw:#FFE3D8;--md:#A84A26;"><b>' + it.m.p + ' g</b><small>fehérje</small></span>' +
+        '<span style="--mw:#F6E7C6;--md:#A8801F;"><b>' + it.m.c + ' g</b><small>szénh.</small></span>' +
+        '<span style="--mw:#EBE6F8;--md:#5D4FA0;"><b>' + it.m.f + ' g</b><small>zsír</small></span></div>';
+      h += '<div class="p-eyebrow" style="padding:2px 2px 5px;">Tápanyag · /100 g</div>' +
+        '<div class="ncells" style="margin-bottom:10px;">' +
+        ncell('rost', it.nut && it.nut.rost) + ncell('cukor', it.nut && it.nut.cukor) +
+        ncell('tel. zsír', it.nut && it.nut.telzs) + ncell('só', it.nut && it.nut.so) + '</div>';
+    } else {
+      h += '<div class="qcard"><div class="p-eyebrow" style="padding:0 0 4px;">Dózis · protokoll</div>' +
+        '<div class="mrow" style="gap:9px;"><div class="kcell" style="--kd:' + pal.d + ';margin-left:0;"><b>' + it.dose + '</b><small>dózis</small></div>' +
+        '<div class="mut" style="font-size:9.5px;font-style:italic;">' + it.proto + '</div></div>' +
+        (it.zone ? '<span class="stkchip">💊 a stackben · ' + it.zone + '</span>' : '') + '</div>';
+    }
+    h += '<div class="qcard" style="padding:8px 12px;"><div class="mrow" style="font-size:9.5px;">' +
+      '<span class="mut">Ár</span><b style="margin-left:auto;font-variant-numeric:tabular-nums;">' + (it.price || '—') + '</b></div></div>';
+    if (it.rec && it.rec.length) {
+      h += '<div class="p-eyebrow" style="padding:2px 2px 0;">Receptekben · ' + it.rec.length + '</div>' +
+        '<div class="rchips">' + it.rec.map(function (r) { return '<span>' + r + '</span>'; }).join('') + '</div>';
+    }
+    h += '<div style="margin-top:14px;">' +
+      (it.m ? '<button class="cta" id="kiLog" style="width:100%;padding:9px 0;">＋ Logolás · mai étkezésbe</button>' : '') +
+      '<button class="delbtn" id="kiDel">Törlés</button></div>' +
+      '<p class="habnote">A Szerkesztés az előtöltött felvevő sheetet nyitja; a törlés két lépés — véletlen ellen.</p>';
+    body.innerHTML = h;
+    body.scrollTop = 0;
+    if (it.m) {
+      document.getElementById('kiLog').addEventListener('click', function () {
+        window.fuelLogPantry({ name: it.n, kcal: it.kcal, p: it.m.p, c: it.m.c, f: it.m.f, fiber: (it.nut && it.nut.rost) || 0 });
+      });
+    }
+    var armed = false;
+    document.getElementById('kiDel').addEventListener('click', function () {
+      if (!armed) {
+        armed = true;
+        this.textContent = 'Biztos? Még egy érintés a törléshez';
+        return;
+      }
+      K.splice(K.indexOf(it), 1);
+      render();
+      paintTotals();
+      document.getElementById('page-kitem').classList.remove('open');
+    });
+    var pg = document.getElementById('page-kitem');
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    void pg.offsetWidth;
+    pg.classList.add('play');
   }
   document.querySelectorAll('#kmChips .fchip').forEach(function (b) {
     b.addEventListener('click', function () {

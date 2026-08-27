@@ -136,7 +136,13 @@ are usable without a build step).
   segment*; type-grouped list of kind-washed rail cards with monogram discs — food rows
   brand + NOVA dot + tinted kcal/100g cell, supp/stim/med rows italic protocol + tinted dose
   cell; a ✨ Mezo suggestion card and the Legutóbbi importok rows (OFF/FOTÓ source tags,
-  amber "ellenőrzés"), both hidden when empty; honest no-hit), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
+  amber "ellenőrzés"), both hidden when empty; honest no-hit; tapping a row opens the
+  **item detail page** — monogram disc, source badge + brand + category + NOVA, macro
+  mini-tiles and nutrient cells /100 g with honest `—` dashes, price row, "Receptekben"
+  chips surfacing the never-shown `usedInRecipes`, dose + "a stackben" cross-link for
+  supp/stim, ＋ Logolás bridging into the log sheet as a KAMRA line (100 g, hero updates
+  without touching a window — the real out-of-window semantics), and a two-tap Törlés
+  that removes the item and live-updates hero + stats + list), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
   note, dose list with note; new sprite icon `i-injekcio`), **Napló** (designed addition for
   the "no trends anywhere in Fuel" gap: 4-week kcal-average, AI-average and protein-days bars
   from the weekly API's full series).
