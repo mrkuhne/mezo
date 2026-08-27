@@ -9,7 +9,6 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -108,10 +107,18 @@ public class NoteEmbeddingCatchUp {
         // honesty beats throughput) — this must run before any budget check, not after it.
         int reaped = 0;
         if (!storedByRef.isEmpty()) {
-            Set<UUID> live = source.liveNotes(userId, storedByRef.keySet()).stream()
-                    .map(Note::id).collect(Collectors.toSet());
+            Map<UUID, Note> liveByRef = source.liveNotes(userId, storedByRef.keySet()).stream()
+                    .collect(Collectors.toMap(Note::id, note -> note));
             for (UUID refId : storedByRef.keySet()) {
-                if (live.contains(refId)) {
+                Note liveNote = liveByRef.get(refId);
+                // Orphaned (source row gone) OR live-but-BLANK (mezo-b3pp.26 fix): a cleared note
+                // is no longer substantive even though its row is still live, and nothing else
+                // ever notices — it fails the length-gated candidate finder, so syncNote never
+                // runs for it. Deliberately NOT the length gate itself (see class javadoc): blank
+                // is unambiguous, a length knob is not.
+                boolean stillSubstantive = liveNote != null
+                        && liveNote.text() != null && !liveNote.text().isBlank();
+                if (stillSubstantive) {
                     continue;
                 }
                 try {
@@ -141,8 +148,16 @@ public class NoteEmbeddingCatchUp {
                         userId, kind);
                 break;
             }
-            // Unchanged notes cost nothing and must not charge the budget — syncNote returns
-            // false for them, which is the whole reason it returns a boolean.
+            // Unchanged notes cost nothing and must not charge the budget. syncNote's own check
+            // is authoritative and cheap as a belt-and-braces double check, but calling it for
+            // EVERY candidate means a transaction + a findByKindAndRefId select for a corpus that
+            // never changes (mezo-b3pp.26 fix) — storedByRef is already loaded here, so compare
+            // it against the SAME capped text syncNote compares against (MemoryEmbeddingWriter#cap,
+            // package-visible for exactly this) and skip the call entirely when nothing drifted.
+            String stored = storedByRef.get(note.id());
+            if (stored != null && stored.equals(memoryEmbeddingWriter.cap(note.text()))) {
+                continue;
+            }
             try {
                 if (memoryEmbeddingWriter.syncNote(kind, note)) {
                     written++;

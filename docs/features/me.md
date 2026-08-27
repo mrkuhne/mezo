@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-08-24
+updated: 2026-08-27
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -387,16 +387,18 @@ The third seam out of the shared `feature/biometrics` package (§5.1 owns the pa
 sleep/weight → proactive events), and the only one with **no listener at all**: a `check_in.note`
 of at least `mezo.companion.embedding.note-min-chars` (80) characters becomes a
 `memory_embedding(kind=checkin_note)` vector, written by the **nightly `DailySummaryJob` note pass**
-(`NoteEmbeddingCatchUp` → `MemoryEmbeddingWriter.writeNote`), not by the check-in write path — so
-nothing in `feature/biometrics/checkin` changed, and neither `Súly`/`Alvás` nor any Me view renders
-anything from this seam. The candidate query is `CheckInRepository.findNoteCandidates`, read by
-`CheckInNoteSourceAdapter` — which lives in `feature/companion/embedding/`, **not** here, because
-implementing the companion-owned `NarrativeNoteSource` port from inside
-`biometrics/checkin/service` would close a new slice cycle
+(`NoteEmbeddingCatchUp` → `MemoryEmbeddingWriter.syncNote`, lifecycle-aware since `mezo-b3pp.26`:
+re-embeds in place on drift and reaps the vector when a live check-in row's note is overwritten
+down to blank), not by the check-in write path — so nothing in `feature/biometrics/checkin`
+changed, and neither `Súly`/`Alvás` nor any Me view renders anything from this seam. The candidate
+query is `CheckInRepository.findNoteCandidates`, read by `CheckInNoteSourceAdapter` — which lives in
+`feature/companion/embedding/`, **not** here, because implementing the companion-owned
+`NarrativeNoteSource` port from inside `biometrics/checkin/service` would close a new slice cycle
 (`ArchitectureTest.feature_slices_are_cycle_free`, the §5.10/ADR 0029 failure mode again), while a
 plain `companion → biometrics` read is safe. The pass carries no lower date bound, so its first run
 backfills existing check-in history; capture happens on **Today** ([`today.md`](today.md)), never
-here. Full seam + its two known gaps (write-once, no delete path): [`journal.md`](journal.md) §3/§9.
+here. Full seam + its one remaining known, bounded gap (a live note edited down BELOW
+`note-min-chars` but still non-blank): [`journal.md`](journal.md) §3/§9.
 
 ## 6. How to use it (consume)
 

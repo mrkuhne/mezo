@@ -241,8 +241,9 @@ DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAI
       for each NarrativeNoteSource bean (ObjectProvider<> injection):
         REAP first, always, outside the budget (mezo-b3pp.26):
           MemoryEmbeddingRepository.findRefContentByCreatedByAndKind(userId, kind)  ← stored (refId, content)
-          minus source.liveNotes(userId, storedRefIds)                              ← the port, NOT length-gated
-          each orphan → MemoryEmbeddingWriter.deleteNoteEmbedding(kind, refId)      (own @Transactional, soft delete)
+          source.liveNotes(userId, storedRefIds)                                    ← the port, NOT length-gated
+          each ref-id that is ORPHANED (absent from liveNotes) OR still live but BLANK text
+            → MemoryEmbeddingWriter.deleteNoteEmbedding(kind, refId)                (own @Transactional, soft delete)
         then, budget permitting:
           source.notesToEmbed(userId, through, note-min-chars)   ← the port, oldest first, length-gated
           each candidate → MemoryEmbeddingWriter.syncNote(kind, note)   (own @Transactional)
@@ -262,12 +263,18 @@ DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAI
   every live vector's `(refId, content)` for the kind — a projection, not the entity, so a
   768-float vector never travels through the sweep for a comparison it doesn't need — and
   `NarrativeNoteSource.liveNotes` (deliberately **not** length-gated, unlike `notesToEmbed`)
-  answers which of those ref-ids still have a live source row. Whatever is absent from that answer
-  gets `MemoryEmbeddingWriter.deleteNoteEmbedding`'d — a soft-delete of the VECTOR only, the source
-  row untouched. **This reap runs unconditionally, before any budget check** — a vector whose
-  source is gone must stop being recallable tonight even when this source's turn starts with the
-  run's budget already spent by an earlier source (IDENT-3 honesty beats throughput; a starved
-  source still logs its own line). Only THEN does the budget-gated half run: `notesToEmbed`'s
+  answers which of those ref-ids still have a live source row, WITH their current text. Whatever
+  is absent from that answer, **or present but blank/null**, gets
+  `MemoryEmbeddingWriter.deleteNoteEmbedding`'d — a soft-delete of the VECTOR only, the source row
+  untouched. The live-but-blank half closes a real user-reachable hole: `CheckInService.save`
+  upserts `(createdBy, date, slotTime)` and happily writes a cleared `note`, so a row can stay LIVE
+  while its text is gone — that row is never an `notesToEmbed` candidate again (it fails the
+  length gate), so without this the OLD vector would stay recallable forever. Blank is the trigger
+  here, deliberately **not** "below `note-min-chars`" — see the residue bullet below for why.
+  **This reap runs unconditionally, before any budget check** — a vector whose source is gone or
+  blank must stop being recallable tonight even when this source's turn starts with the run's
+  budget already spent by an earlier source (IDENT-3 honesty beats throughput; a starved source
+  still logs its own line). Only THEN does the budget-gated half run: `notesToEmbed`'s
   length-gated candidates each go through `MemoryEmbeddingWriter.syncNote`, which compares the
   note's text — capped to `embedding.embed-max-chars` first, because the CAPPED text is what
   actually gets stored — against the live vector's stored content. An unchanged note returns
@@ -293,15 +300,18 @@ DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAI
   pool**, consumed in `ObjectProvider#orderedStream()` order — that decides which KIND gets its
   drift healed FIRST on a busy night (the second source's re-embeds can be starved for several
   nights), never whether its reap runs; each starved source logs its own line.
-- **The one deliberate residue: a live note edited down BELOW `note-min-chars` is neither
-  re-embedded nor reaped.** It is still a LIVE row (`liveNotes` says so — liveness and
-  substantiveness are different questions), so the reap leaves it alone; but it also drops out of
-  `notesToEmbed`'s length-gated candidate set, so `syncNote` never gets a turn to notice its drift
-  either. Its old vector survives, describing text the note no longer has. Reaping on the length
-  gate instead was rejected: it would mean merely RAISING `note-min-chars` mass-deletes a user's
-  existing vectors on the next nightly run, which is a worse failure mode than one known-stale
-  vector. Recorded as a known, bounded gap — not silently accepted, not "fixed" into a shape that
-  creates a bigger one.
+- **The one deliberate residue: a live note edited down BELOW `note-min-chars` but still
+  NON-BLANK is neither re-embedded nor reaped.** It is still a LIVE row with substantive-looking
+  text (`liveNotes` says so — liveness and substantiveness are different questions, and the reap
+  only tests for BLANK, never for the length gate), so the reap leaves it alone; but it also drops
+  out of `notesToEmbed`'s length-gated candidate set, so `syncNote` never gets a turn to notice its
+  drift either. Its old vector survives, describing text the note no longer has. Reaping on the
+  length gate instead was rejected: it would mean merely RAISING `note-min-chars` mass-deletes a
+  user's existing vectors on the next nightly run, which is a worse failure mode than one
+  known-stale vector. Recorded as a known, bounded gap — not silently accepted, not "fixed" into a
+  shape that creates a bigger one. A note cleared all the way to BLANK is a DIFFERENT, unambiguous
+  case and IS reaped (the bullet above) — the residue is specifically the "shortened but still
+  something" middle ground.
 - **Per-row isolation:** `NoteEmbeddingCatchUp.run` is deliberately **not** `@Transactional`, so
   each `MemoryEmbeddingWriter.syncNote`/`deleteNoteEmbedding` call crosses the Spring proxy in its
   **own** transaction — one bad or racing row is logged (`warn`) and skipped, the rest of the run
@@ -317,7 +327,9 @@ DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAI
   the day an edit or delete surface lands. `check_in` has no delete, but `CheckInService.save`
   upserts on `(createdBy, date, slotTime)` and overwrites `note` in place — **that** is the live
   path that makes a stale `checkin_note` vector reachable today, and the one the reap/drift pass
-  was actually built to close.
+  was actually built to close, including the edge case where the overwrite CLEARS the note to
+  blank/null: the row stays live, so only the blank-aware reap (above) catches it — the row's
+  liveness alone was never enough.
 
 ## 4. Data model & API
 
@@ -957,18 +969,39 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   occupying its `(kind, ref_id)` slot, so a later revive must UPDATE that row back to life, not
   INSERT a colliding one (the `mezo-b3pp.2` trap, pinned by
   `NoteVectorLifecycleIT#testSyncNote_shouldReviveTheVector_whenItWasPreviouslyReaped`).
-- **Shipped (`mezo-b3pp.26`) — a source row no longer live gets its vector reaped, outside the
-  budget.** `NoteEmbeddingCatchUp.embed` now runs the reap FIRST and unconditionally, before any
-  budget check, for every kind on every user's turn: `NarrativeNoteSource.liveNotes` (deliberately
-  **not** length-gated) answers which stored ref-ids are still live, and whatever is absent gets
-  `MemoryEmbeddingWriter.deleteNoteEmbedding`'d — a soft-delete of the vector only, never the
-  source row. This closes the IDENT-3 honesty gap the write-once shape originally left: a vector
-  whose source is gone must stop being recallable tonight, even when a re-embed elsewhere has
-  already spent the run's whole budget. **A real bug caught in review on the way here:** the reap
-  originally sat behind the same `budget <= 0` early return as the re-embed loop, so a first
-  source consuming the whole run's budget silently starved the second source's reap for the night —
-  fixed by moving the reap ahead of that check, and pinned by
+- **Shipped (`mezo-b3pp.26`) — a source row no longer live, OR still live but cleared to blank,
+  gets its vector reaped, outside the budget.** `NoteEmbeddingCatchUp.embed` now runs the reap
+  FIRST and unconditionally, before any budget check, for every kind on every user's turn:
+  `NarrativeNoteSource.liveNotes` (deliberately **not** length-gated) answers which stored ref-ids
+  are still live, WITH their current text, and each ref-id that is either absent from that answer
+  or present with null/blank text gets `MemoryEmbeddingWriter.deleteNoteEmbedding`'d — a
+  soft-delete of the vector only, never the source row. This closes the IDENT-3 honesty gap the
+  write-once shape originally left, on BOTH its faces: a vector whose source is gone must stop
+  being recallable tonight even when a re-embed elsewhere has already spent the run's whole
+  budget, AND a vector whose row survives but whose note was cleared (the one live, user-reachable
+  path on `check_in` today — `CheckInService.save`'s upsert happily writes a blank `note`) must
+  stop being recallable too, even though `liveNotes` alone would call that row "still there"
+  (pinned by `NoteVectorLifecycleIT#testRun_shouldReapTheVector_whenALiveCheckInNoteWasClearedToBlank`).
+  Deliberately BLANK, never "below `note-min-chars`" — see the residue bullet below for why that
+  line is drawn there. **A real bug caught in review on the way here:** the reap originally sat
+  behind the same `budget <= 0` early return as the re-embed loop, so a first source consuming the
+  whole run's budget silently starved the second source's reap for the night — fixed by moving the
+  reap ahead of that check, and pinned by
   `NoteVectorLifecycleBudgetIT#testRun_shouldStillReapTheSecondSource_whenTheFirstSourceExhaustedTheBudget`.
+- **Shipped (`mezo-b3pp.26` final review) — an unchanged corpus no longer pays a transaction +
+  select per candidate.** The re-embed loop used to call `syncNote` for EVERY candidate every
+  night; `syncNote`'s own internal comparison already made that a no-op for unchanged notes, but
+  the CALL itself still crossed the Spring proxy (its own transaction) and ran
+  `findByKindAndRefId` — a corpus of ~2700 embedded notes paid ~2700 short transactions and
+  selects every night, forever, for text that never changes. `NoteEmbeddingCatchUp.embed` now
+  skips the call outright when `storedByRef`'s already-loaded content for that ref-id equals
+  `MemoryEmbeddingWriter.cap(note.text())` — the SAME capped text `syncNote` itself compares
+  against (`cap` is package-visible for exactly this, one definition instead of two rules that
+  could drift), so `syncNote` is only reached for genuine first-writes and drifts; its own check
+  stays as a cheap belt-and-braces double check. Pinned by
+  `NoteEmbeddingCatchUpIT#testRun_shouldNotCallSyncNote_whenTheCorpusIsUnchanged` (a
+  `@MockitoSpyBean` on `MemoryEmbeddingWriter`, since the pre-fix code already returned `written=0`
+  for an unchanged run — only a call-count assertion actually pins the cost, not the outcome).
 - **Known, bounded gap (`mezo-b3pp.26`) — a live note edited down BELOW `note-min-chars` is
   neither re-embedded nor reaped.** `liveNotes` says the row is still live, so the reap leaves it
   alone; but `notesToEmbed`'s length gate drops it from the embed-candidate set, so `syncNote`

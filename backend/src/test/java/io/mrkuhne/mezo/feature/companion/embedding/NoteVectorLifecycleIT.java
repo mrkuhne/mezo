@@ -204,6 +204,34 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRun_shouldReapTheVector_whenALiveCheckInNoteWasClearedToBlank() {
+        // FINDING 1: the row stays LIVE (still one row per slot), but the note is cleared, so it
+        // fails notesToEmbed's length gate and syncNote never runs for it. Without the reap-on-
+        // blank fix the stale vector for the ORIGINAL, now-deleted text would stay live forever —
+        // deleted content still reaching the prompt (the IDENT-3 honesty failure this slice exists
+        // to close).
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate day = LocalDate.now().minusDays(1);
+        CheckInEntity checkIn = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, LONG_NOTE);
+        noteEmbeddingCatchUp.run(owner, day);
+        assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
+                NarrativeNoteSource.CHECKIN_NOTE, checkIn.getId())).isTrue();
+
+        SaveCheckInRequest cleared = SaveCheckInRequest.builder()
+                .date(day).slotTime("18:00").state("done").energy(3).stress(4).note(null).build();
+        checkInService.save(owner, cleared);
+        noteEmbeddingCatchUp.run(owner, day);
+
+        // findByKindAndRefId cannot tell a soft delete from "never existed" — assert through the
+        // including-deleted finder per the brief.
+        assertThat(memoryEmbeddingRepository.findByKindAndRefId(
+                NarrativeNoteSource.CHECKIN_NOTE, checkIn.getId())).isEmpty();
+        assertThat(memoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted(
+                NarrativeNoteSource.CHECKIN_NOTE, checkIn.getId()))
+                .hasValueSatisfying(row -> assertThat(row.isDeleted()).isTrue());
+    }
+
+    @Test
     void testRun_shouldReapTheVector_whenTheSourceRowIsNoLongerLive() {
         // No service-level delete surface exists for either source today — the repository write
         // is the only way to reach this, and that is exactly why the sweep, not an event, is fix.

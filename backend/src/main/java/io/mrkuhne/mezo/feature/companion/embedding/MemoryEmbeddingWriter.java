@@ -307,7 +307,13 @@ public class MemoryEmbeddingWriter {
         memoryEmbeddingRepository.saveAndFlush(entity);
     }
 
-    private String cap(String content) {
+    /**
+     * Package-visible so {@link NoteEmbeddingCatchUp} can compare a candidate's capped text
+     * against {@code storedByRef} WITHOUT a per-row {@link #syncNote} transaction+query
+     * (mezo-b3pp.26 fix) — this is the SAME capping {@link #syncNote} itself compares against,
+     * kept as one definition instead of two rules that could drift apart.
+     */
+    String cap(String content) {
         int max = properties.embedding().embedMaxChars();
         return content.length() <= max ? content : content.substring(0, max);
     }
