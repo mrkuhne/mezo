@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.config;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -22,8 +24,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "mezo.companion.me-week")
 public record MeWeekProperties(
-    @DecimalMin("0.1") double sleepTargetH,
-    @DecimalMin("0.01") double kcalBand,
-    @Min(1) int xpBaseline
+    @DecimalMin("0.1") @DecimalMax("24.0") double sleepTargetH,
+    @DecimalMin("0.01") @DecimalMax("1.0") double kcalBand,
+    @Min(1) @Max(10000) int xpBaseline
 ) {
 }
