@@ -132,8 +132,13 @@ test('discoveries only render non-empty subsections, with pattern/fact/memoir li
   expect(screen.getByText('Nyaralás kezdete')).toBeInTheDocument()
 })
 
-test('the next-week card shows the weekly-suggestion prose under its eyebrow', () => {
+test('the next-week card shows the weekly-suggestion prose under its eyebrow, current week only', () => {
   renderPage()
   expect(screen.getByText('Mezo · a következő heted')).toBeInTheDocument()
   expect(screen.getByRole('group', { name: 'Visszajelzés a heti tervjavaslatról' })).toBeInTheDocument()
+})
+
+test('the next-week card is absent when browsing a past week — its content is unrelated to that week', () => {
+  renderPage(`/me/week?start=${mockMeWeekStart}`)
+  expect(screen.queryByText('Mezo · a következő heted')).not.toBeInTheDocument()
 })

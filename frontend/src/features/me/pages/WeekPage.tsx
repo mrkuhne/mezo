@@ -24,8 +24,14 @@ import type { MeWeekAggregates } from '@/data/me/meWeek'
 /** The next-week card's source — the SAME W1 proactive suggestion `useWeekly` reads (unchanged
  *  endpoint, GET by the FE's local day, real-mode 404-tolerant). Deliberately NOT `useWeekly`
  *  itself (that hook composes a much larger real-mode read this page has no use for) — this is
- *  the isolated 404-tolerant fetch idiom (weeklyHooks.ts:198-210), copied rather than shared. */
-function useWeekNextSuggestion(): WeeklySuggestion | null {
+ *  the isolated 404-tolerant fetch idiom (weeklyHooks.ts:198-210), copied rather than shared.
+ *
+ *  `enabled` gates the card to the CURRENT week only (review fix, mezo-p2tr round 1): the
+ *  suggestion is always about "today's" week regardless of `startIso` (there is no per-week
+ *  variant of this endpoint), so showing it while browsing a past/future week would put content
+ *  unrelated to that week under a "Mezo · a következő heted" label implying it belongs there.
+ *  Disabled skips the network fetch too, not just the render — `enabled: false` on the query. */
+function useWeekNextSuggestion(enabled: boolean): WeeklySuggestion | null {
   const mock = isMockMode()
   const { data } = useQuery<WeeklySuggestion | null>({
     queryKey: ['weeklySuggestion', localDateString()],
@@ -37,9 +43,10 @@ function useWeekNextSuggestion(): WeeklySuggestion | null {
         throw e
       }
     },
-    enabled: !mock,
+    enabled: enabled && !mock,
     retry: false,
   })
+  if (!enabled) return null
   if (mock) return { id: mockWeeklySuggestionId, prose: mockWeeklySuggestion }
   return data ?? null
 }
@@ -118,10 +125,10 @@ export function WeekPage() {
   const start = resolveStart(params.get('start'))
   const { week } = useMeWeek(start)
   const { review, digest, regenerate, regenerating } = useWeeklyReview(start)
-  const nextSuggestion = useWeekNextSuggestion()
+  const currentWeek = isCurrentWeek(start)
+  const nextSuggestion = useWeekNextSuggestion(currentWeek)
   const [expandedIso, setExpandedIso] = useState<string | null>(null)
   const todayIso = localDateString()
-  const currentWeek = isCurrentWeek(start)
   const dayNoteByDate = new Map((review?.dayNotes ?? []).map((n) => [n.date, n.note]))
 
   const goPrev = () => setParams({ start: prevMonday(start) }, { replace: true })
@@ -176,7 +183,7 @@ export function WeekPage() {
 
       <WeekReviewCard review={review} regenerate={regenerate} regenerating={regenerating} />
       <WeekDiscoveries digest={digest} />
-      <WeekNextCard suggestion={nextSuggestion} />
+      {currentWeek && <WeekNextCard suggestion={nextSuggestion} />}
     </>
   )
 }

@@ -3,6 +3,7 @@
 // artifact) and a "Frissítsd az elemzést" affordance when the underlying data outran the review.
 import { useFeedback } from '@/data/hooks'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { Spinner } from '@/shared/ui/Spinner'
 import type { WeeklyReview } from '@/data/me/weeklyReviewHooks'
 
 export function WeekReviewCard({
@@ -34,7 +35,12 @@ export function WeekReviewCard({
               disabled={regenerating}
               onClick={() => void regenerate()}
             >
-              {regenerating ? 'Frissítés…' : 'Frissítsd az elemzést'}
+              {regenerating ? (
+                <span className="row gap-xs" style={{ alignItems: 'center' }}>
+                  <Spinner size="sm" label="" />
+                  Frissítés…
+                </span>
+              ) : 'Frissítsd az elemzést'}
             </button>
           )}
           <div className="mt-md">
