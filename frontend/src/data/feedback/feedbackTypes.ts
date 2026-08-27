@@ -2,7 +2,13 @@
  *
  * The five kinds span five different backend tables — one verdict per
  * (user, artifactKind, artifactId), overwritten by a new verdict and removed by a retraction. */
-export type FeedbackArtifactKind = 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' | 'prediction'
+export type FeedbackArtifactKind =
+  | 'chat_message'
+  | 'feed_message'
+  | 'weekly_suggestion'
+  | 'memoir'
+  | 'prediction'
+  | 'weekly_review'
 
 export type FeedbackVerdict = 'up' | 'down'
 

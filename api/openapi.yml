@@ -6970,7 +6970,8 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+            pattern: >-
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$
         - name: ids
           in: query
           required: true
@@ -7054,7 +7055,8 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+            pattern: >-
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$
         - name: artifactId
           in: path
           required: true
@@ -16326,7 +16328,8 @@ components:
       properties:
         artifactKind:
           type: string
-          pattern: ^(chat_message|feed_message|weekly_suggestion|memoir|prediction)$
+          pattern: >-
+            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$
         artifactId:
           type: string
           format: uuid
@@ -16351,8 +16354,8 @@ components:
         artifactKind:
           type: string
           description: >-
-            'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' |
-            'prediction'
+            'chat_message' | 'feed_message' | 'weekly_suggestion' |
+            'weekly_review' | 'memoir' | 'prediction'
         artifactId:
           type: string
           format: uuid

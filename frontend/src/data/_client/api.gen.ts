@@ -6746,7 +6746,7 @@ export interface components {
             reason?: string | null;
         };
         MessageFeedbackResponse: {
-            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' | 'prediction' */
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' */
             artifactKind: string;
             /** Format: uuid */
             artifactId: string;

@@ -4,14 +4,45 @@
 // an invalid, non-Monday or absent value always falls back to the CURRENT week, never a stale one.
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useMeWeek } from '@/data/hooks'
+import { useQuery } from '@tanstack/react-query'
+import { useMeWeek, useWeeklyReview } from '@/data/hooks'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { localDateString } from '@/shared/lib/dates'
 import { prevMonday, nextMonday, isCurrentWeek } from '@/features/me/logic/weekNav'
 import { WeekDayCard } from '@/features/me/components/WeekDayCard'
 import { WeekScoreBars } from '@/features/me/components/WeekScoreBars'
+import { WeekReviewCard } from '@/features/me/components/WeekReviewCard'
+import { WeekDiscoveries } from '@/features/me/components/WeekDiscoveries'
+import { WeekNextCard } from '@/features/me/components/WeekNextCard'
 import { StatStrip } from '@/shared/ui/StatStrip'
+import { ApiError } from '@/data/_client/api'
+import { isMockMode } from '@/data/_client/mode'
+import { weeklySuggestionApi, type WeeklySuggestion } from '@/data/insights/weeklySuggestionApi'
+import { weeklySuggestion as mockWeeklySuggestion, weeklySuggestionId as mockWeeklySuggestionId } from '@/data/insights/insights'
 import type { MeWeekAggregates } from '@/data/me/meWeek'
+
+/** The next-week card's source — the SAME W1 proactive suggestion `useWeekly` reads (unchanged
+ *  endpoint, GET by the FE's local day, real-mode 404-tolerant). Deliberately NOT `useWeekly`
+ *  itself (that hook composes a much larger real-mode read this page has no use for) — this is
+ *  the isolated 404-tolerant fetch idiom (weeklyHooks.ts:198-210), copied rather than shared. */
+function useWeekNextSuggestion(): WeeklySuggestion | null {
+  const mock = isMockMode()
+  const { data } = useQuery<WeeklySuggestion | null>({
+    queryKey: ['weeklySuggestion', localDateString()],
+    queryFn: async () => {
+      try {
+        return await weeklySuggestionApi.get(localDateString())
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null
+        throw e
+      }
+    },
+    enabled: !mock,
+    retry: false,
+  })
+  if (mock) return { id: mockWeeklySuggestionId, prose: mockWeeklySuggestion }
+  return data ?? null
+}
 
 /** `?start=` -> a real ISO Monday, or the current week's when absent/invalid/not-a-Monday. */
 function resolveStart(raw: string | null): string {
@@ -86,9 +117,12 @@ export function WeekPage() {
   const [params, setParams] = useSearchParams()
   const start = resolveStart(params.get('start'))
   const { week } = useMeWeek(start)
+  const { review, digest, regenerate, regenerating } = useWeeklyReview(start)
+  const nextSuggestion = useWeekNextSuggestion()
   const [expandedIso, setExpandedIso] = useState<string | null>(null)
   const todayIso = localDateString()
   const currentWeek = isCurrentWeek(start)
+  const dayNoteByDate = new Map((review?.dayNotes ?? []).map((n) => [n.date, n.note]))
 
   const goPrev = () => setParams({ start: prevMonday(start) }, { replace: true })
   const goNext = () => setParams({ start: nextMonday(start) }, { replace: true })
@@ -133,11 +167,16 @@ export function WeekPage() {
                 future={future}
                 expanded={expandedIso === d.date}
                 onToggle={() => setExpandedIso((cur) => (cur === d.date ? null : d.date))}
+                dayNote={dayNoteByDate.get(d.date) ?? null}
               />
             )
           })}
         </div>
       )}
+
+      <WeekReviewCard review={review} regenerate={regenerate} regenerating={regenerating} />
+      <WeekDiscoveries digest={digest} />
+      <WeekNextCard suggestion={nextSuggestion} />
     </>
   )
 }

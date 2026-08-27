@@ -1364,4 +1364,34 @@ export const handlers = [
       },
     })
   }),
+
+  // Weekly review (mezo-p2tr) — 404-default GET (the weekly-suggestion idiom above: no row
+  // exists for most weeks until the WeeklyReviewJob writes one); tests that want a generated
+  // review override with server.use(). Regenerate always succeeds with a fresh row. The digest
+  // is contractually never a 404 — the default here is deliberately distinct from the mock seed
+  // (the me/week handler's precedent) so real-mode tests can tell "fetch resolved" apart from
+  // "the mock seed leaked".
+  http.get(`${API_BASE}/api/proactive/weekly-review/:start`, () => new HttpResponse(null, { status: 404 })),
+  http.post(`${API_BASE}/api/proactive/weekly-review/:start/regenerate`, ({ params }) => {
+    const start = params.start as string
+    return HttpResponse.json({
+      id: 'e2b1c3d4-5f6a-4b7c-8d9e-0a1b2c3d4e5f',
+      weekStart: start,
+      summary: 'Frissített elemzés: a hét adatai alapján ez a legutóbbi kiértékelés.',
+      dayNotes: [],
+      highlights: [],
+      generatedAt: '2026-08-27T06:00:00Z',
+      stale: false,
+    })
+  }),
+  http.get(`${API_BASE}/api/proactive/weekly-review/:start/digest`, ({ params }) => {
+    const start = params.start as string
+    return HttpResponse.json({
+      patterns: [{ pairKey: 'sleep_workout', title: 'Real-mode pattern', event: 'confirmed' }],
+      newFacts: [{ id: 'f1e2d3c4-b5a6-4978-8675-3021abcdef01', text: 'Real-mode fact.' }],
+      lifeEvents: [{ id: 'a1b2c3d4-e5f6-4708-9182-736455443322', title: 'Real-mode life event', occurredOn: start }],
+      memoir: true,
+      predictions: [{ id: '12345678-90ab-4cde-8f01-234567890abc', title: 'Real-mode prediction', status: 'pending' }],
+    })
+  }),
 ]
