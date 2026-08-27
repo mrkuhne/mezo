@@ -7,11 +7,19 @@ import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 // `useVoiceInput` talks to getUserMedia/MediaRecorder, neither of which exists under jsdom.
 // The stub exposes the transcript callback so the per-row target can be asserted directly —
 // which is the point of the extraction (the sheet used to append it to the wrong textarea).
+// `toggle` flips a real React state (via useState inside the mock, obeying rules of hooks the
+// same way the real hook does) so the recording-race regression test can observe `state`
+// actually flip to 'recording' and back, driving GratitudeRows' disabled-mic logic for real.
 const voice = vi.hoisted(() => ({ onTranscript: null as null | ((t: string) => void) }))
 vi.mock('@/features/insights/logic/useVoiceInput', () => ({
   useVoiceInput: (onTranscript: (t: string) => void) => {
     voice.onTranscript = onTranscript
-    return { state: 'idle' as const, error: null, toggle: vi.fn() }
+    const [state, setState] = useState<'idle' | 'recording'>('idle')
+    return {
+      state,
+      error: null,
+      toggle: vi.fn(() => setState((s) => (s === 'recording' ? 'idle' : 'recording'))),
+    }
   },
 }))
 
@@ -96,5 +104,27 @@ describe('GratitudeRows', () => {
     voice.onTranscript!('a teraszon')
 
     expect(onRows).toHaveBeenLastCalledWith(['Reggeli kávé a teraszon'])
+  })
+
+  test('locks the mic to the recording row — a tap on another row cannot steal the target', async () => {
+    const user = userEvent.setup()
+    const onRows = vi.fn()
+    render(<Harness max={3} onRows={onRows} />)
+    await user.click(screen.getByRole('button', { name: '+ Még egy' }))
+
+    // Start recording on row 1.
+    const mics = screen.getAllByRole('button', { name: 'Hangbevitel' })
+    await user.click(mics[0])
+
+    // Row 2's mic must be locked out while row 1 is recording — otherwise tapping it would
+    // stop row 1's in-flight recording but reassign the target to row 2 first.
+    const rowTwoMic = screen.getAllByRole('button', { name: /Hangbevitel|Felvétel leállítása/ })[1]
+    expect(rowTwoMic).toBeDisabled()
+
+    // A tap on the disabled mic must be a no-op — the target must stay on row 1.
+    await user.click(rowTwoMic)
+    voice.onTranscript!('Hívott anya')
+
+    expect(onRows).toHaveBeenLastCalledWith(['Hívott anya', ''])
   })
 })

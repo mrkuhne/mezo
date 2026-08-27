@@ -86,7 +86,11 @@ export function GratitudeRows({
                 : {}),
             }}
             onClick={() => { targetRef.current = i; setActiveRow(i); voice.toggle() }}
-            disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
+            disabled={
+              voice.state === 'unsupported' ||
+              voice.state === 'transcribing' ||
+              (recording && activeRow !== i)
+            }
             aria-label={recording && activeRow === i ? 'Felvétel leállítása' : 'Hangbevitel'}
             aria-pressed={recording && activeRow === i}
           >
