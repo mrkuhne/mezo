@@ -24,7 +24,10 @@ import org.springframework.stereotype.Service;
  * with the SAME {@link MeWeekService#renderDayLine} formatter the weekly-review generator uses,
  * so the two never drift), the weekly aggregates, and the week's own review summary/day-notes
  * when the {@link WeekReviewSource} port (implemented in {@code feature/proactive}) has found one.
- * {@code kind='day'} additionally calls out the anchored day with its own expanded line.
+ * {@code kind='day'} additionally calls out the anchored day with its own expanded line. A
+ * client-supplied {@code contextDate} that is not itself a Monday is normalized to its ISO Monday
+ * for BOTH kinds — {@code createConversation} accepts any date, so {@code kind='week'} must anchor
+ * the same way {@code kind='day'} always has, or a mid-week date would silently shift the window.
  *
  * <p>Failure honesty (the {@code GraphPromptAssembler} precedent, IDENT-3): never throws — any
  * failure (bad date, missing data source, …) logs a warn and degrades to {@code ""}, so a broken
@@ -46,9 +49,7 @@ public class WeekContextRenderer {
     public String render(UUID userId, String contextKind, LocalDate contextDate) {
         try {
             boolean day = "day".equals(contextKind);
-            LocalDate weekStart = day
-                    ? contextDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                    : contextDate;
+            LocalDate weekStart = contextDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             MeWeekResponse week = meWeekService.week(userId, weekStart);
 
             StringBuilder b = new StringBuilder(HEADER);

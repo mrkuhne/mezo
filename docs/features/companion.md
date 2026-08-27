@@ -1187,7 +1187,10 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   renders the **`[Heti adatok]`** block for an anchored conversation — every day of the anchored
   week via `MeWeekService.renderDayLine`, the weekly aggregates, and (when a `weekly_review` row
   exists for that week) the review's own summary + day-notes; `kind=day` additionally calls out the
-  anchored day with its own expanded line. **Prompt position:** right after the `[Profil]`/`[Cél]`/…
+  anchored day with its own expanded line. A client-supplied `contextDate` that isn't itself a
+  Monday is normalized to `previousOrSame(MONDAY)` for BOTH `kind`s — `kind=week` anchors this way
+  too, not just `kind=day`, so a mid-week `contextDate` can never silently shift the rendered
+  window off the ISO week it actually falls in. **Prompt position:** right after the `[Profil]`/`[Cél]`/…
   context snapshot (V0.3) and before the top-N facts block — `assembleSystemPrompt` now takes two
   extra parameters, `contextKind`/`contextDate` (both `null` for a plain conversation, in which case
   the block renders `""` and every other turn is byte-identical to before this slice). **Failure
