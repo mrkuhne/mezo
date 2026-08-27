@@ -57,12 +57,22 @@
   .confrow { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
   .confrow .rr { width: 18px; height: 18px; flex: none; }
 
-  .xrow { display: flex; align-items: center; gap: 9px; padding: 8px 2px; cursor: default; }
-  .xrow + .xrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
   .xrail { width: 4px; height: 30px; border-radius: 2px; flex: none; }
-  .xrow .nm3 { font-size: 11.5px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-  .xrow .sub3 { font-size: 8.5px; color: #6E6257; font-weight: 400; margin-top: 1px; font-variant-numeric: tabular-nums; }
   .xrm { display: flex; align-items: center; gap: 3px; font-size: 8px; font-weight: 700; color: #A8801F; flex: none; }
+
+  /* gyakorlat-csempe */
+  .extile { border-radius: 17px; padding: 11px 12px 12px; margin-bottom: 9px; position: relative; overflow: hidden;
+    background: linear-gradient(150deg, var(--fw), #FFFFFF 65%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px var(--fg), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .extile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--fr); }
+  .xchip { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(255, 255, 255, 0.78); border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 999px; padding: 2.5px 8px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 3px; }
+  .xchip.fam { color: var(--fd); }
+  .mini-dots { display: flex; gap: 4px; margin-top: 9px; align-items: center; flex-wrap: wrap; }
+  .md { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.14); font-size: 6.5px; font-weight: 700; color: #A2958A; display: grid; place-items: center; background: rgba(255, 255, 255, 0.7); flex: none; }
+  .md.wu { border-style: dashed; border-color: rgba(201, 150, 46, 0.55); color: #A8801F; }
+  .md.wk { border-color: var(--fr); color: var(--fd); }
+  .mini-dots .zsub { margin-left: auto; }
   .dchip { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2.5px 8px; flex: none; }
   .dchip.up { color: #A84A26; background: rgba(255, 107, 74, 0.12); }
   .dchip.rep { color: #4E6B42; background: rgba(143, 175, 126, 0.2); }
@@ -297,37 +307,38 @@
             <button class="cta" id="startBtn" style="width:100%;margin-top:10px;padding:11px 0;font-size:12.5px;">⚡ Kezdjük el →</button>
           </div>
 
-          <button class="nigstrip rise" id="nigstrip2" data-page="page-niggle" style="--d:60ms;margin:0;border:none;font-family:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px;">
-            <svg width="15" height="15" viewBox="0 0 100 100" style="flex:none;"><use href="#i-eletjel"/></svg>
-            <span class="grow">Jobb váll · aktív niggle — mire figyeljünk ma</span>
-            <span style="color:#A8801F;">›</span>
-          </button>
-
           <div class="mosaic">
-            <div class="tile t-train rise" style="--d:90ms;" data-page="page-xp" role="button" tabindex="0" aria-label="Várható fejlődés">
+            <div class="tile t-train rise" style="--d:70ms;" data-page="page-gyak" role="button" tabindex="0" aria-label="Gyakorlatok">
+              <div class="p-eyebrow" style="color:#A84A26;">Gyakorlatok</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">5 gyakorlat · 19 szett</div>
+            </div>
+            <div class="tile t-kreed rise" style="--d:100ms;" data-page="page-xp" role="button" tabindex="0" aria-label="Várható fejlődés">
               <div class="p-eyebrow" style="color:#A84A26;">Fejlődés</div>
               <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-growth"/></svg></div>
               <div class="big" style="font-size:15px;text-align:center;">+240 XP</div>
             </div>
-            <div class="tile t-vital rise" style="--d:120ms;" data-page="page-zona" role="button" tabindex="0" aria-label="Heti zóna">
+            <div class="tile t-vital rise" style="--d:130ms;" data-page="page-zona" role="button" tabindex="0" aria-label="Heti zóna">
               <div class="p-eyebrow">Heti zóna</div>
               <div class="spotwrap" style="width:100%;"><div class="zmini" id="zmini"></div></div>
               <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">kész 2/4 edzés</div>
             </div>
-            <div class="tile t-quest rise" style="--d:150ms;" data-page="page-kuld" role="button" tabindex="0" aria-label="A mai küldetések">
+            <div class="tile t-quest rise" style="--d:160ms;" data-page="page-kuld" role="button" tabindex="0" aria-label="A mai küldetések">
               <div class="p-eyebrow" style="color:#A8801F;">Küldetések</div>
               <div class="spotwrap"><div class="anchor"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg><span class="badge" id="kuldBadge">1</span></div></div>
               <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="kuldLine">1/4 elfogadva</div>
             </div>
-            <div class="tile t-water rise" style="--d:180ms;" data-page="page-warm" role="button" tabindex="0" aria-label="Bemelegítés">
+            <div class="tile t-water rise" style="--d:190ms;" data-page="page-warm" role="button" tabindex="0" aria-label="Bemelegítés">
               <div class="p-eyebrow" style="color:#3E7396;">Bemelegítés</div>
               <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-lang"/></svg></div>
               <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">8 perc · 3 blokk</div>
             </div>
+            <div class="tile rise" id="tile-niggle" style="--d:220ms;background:linear-gradient(150deg,#FBEBCB,#FFFDF6);box-shadow:0 14px 26px -14px rgba(181,126,20,0.4),0 2px 5px rgba(43,33,24,0.04),inset 0 1px 0 rgba(255,255,255,0.7);" data-page="page-niggle" role="button" tabindex="0" aria-label="Aktív niggle">
+              <div class="p-eyebrow" style="color:#A8801F;">Niggle</div>
+              <div class="spotwrap"><div class="anchor"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><span class="badge" id="nigBadge" style="background:linear-gradient(135deg,#E5C46B,#C9962E);box-shadow:0 3px 8px -2px rgba(201,150,46,0.6);">!</span></div></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="nigTileLine">Jobb váll · aktív</div>
+            </div>
           </div>
-
-          <div class="p-eyebrow rise" style="--d:220ms;padding:4px 2px 0;">Gyakorlatok · 5 · 19 szett</div>
-          <div id="prepList"></div>
 
           <p class="habnote">Ha nincs adat, nincs szám: az XP-gyűrű, az 1RM-jelvény és az induló súly csak akkor jelenik meg, ha valós forrásból jön.</p>
         </div>
@@ -335,6 +346,25 @@
       </div>
 
       <!-- ================= PREP TILE PAGES ================= -->
+      <div class="page p-coral" id="page-gyak">
+        <div class="page-head"><button class="backbtn" data-back="page-gyak">‹ Indítás</button></div>
+        <div class="page-hero">
+          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
+          <div class="bignum">5</div>
+          <div class="nm">Gyakorlatok</div>
+          <div class="sb">a mai Pull A terve · ~74 perc</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>19</b><small>szett</small></div>
+            <div class="statcell"><b>3</b><small>izomcsoport</small></div>
+            <div class="statcell"><b style="color:#A84A26;">3</b><small>progresszió ma</small></div>
+          </div>
+          <div id="gyakList"></div>
+          <p class="habnote">A sorrend a tervezett — élőben az Áthelyezéssel bármikor átrendezhető, a terv nem változik.</p>
+        </div>
+      </div>
+
       <div class="page p-coral" id="page-xp">
         <div class="page-head"><button class="backbtn" data-back="page-xp">‹ Indítás</button></div>
         <div class="page-hero">
@@ -594,10 +624,12 @@
         <h2>Mi van benne — a teljes feature-készlet</h2>
         <ul>
           <li><strong>Prep briefing — Huawei-módra</strong> — a hero egy adatot mond (várható XP) és az
-          <strong>indítás fold fölött van</strong>; minden más csempe → saját oldal: Fejlődés (skill-sávok +
-          „Ma építed"), Heti zóna (4 státusz-hint), Küldetések (elfogad/passz, conf% vagy <em>tanulom</em>),
-          Bemelegítés. A niggle vékony arany sáv — koppintásra nyílik. A gyakorlatok
-          <strong>karcsú sorok</strong>: szín-sín + név + egy tömör adatsor + 1RM + progresszió-chip.</li>
+          <strong>indítás fold fölött van</strong>; alatta hat csempe, mind saját oldallal: Gyakorlatok,
+          Fejlődés (skill-sávok + „Ma építed"), Heti zóna (státusz-chipek), Küldetések (elfogad/passz,
+          conf% vagy <em>tanulom</em>), Bemelegítés, Niggle (badge, „Értem" után kezelve ✓).</li>
+          <li><strong>Gyakorlat-csempék</strong> — a Gyakorlatok oldalon minden gyakorlat maga is csempe:
+          családszín-mosás + sín, clay korong, chip-sor (szett-bontás, rep-sáv, RIR, induló súly,
+          progresszió, kihívás-jelölő), mini szett-pöttyök (B szaggatott arany), 1RM-medál, múlt heti adat.</li>
           <li><strong>Élő logolás</strong> — óriás stepperek (tap-to-edit értékkel), RIR 0–3 (bemelegítőn rejtve),
           oldal L/B/R izolációnál, szett-jegyzet, Szett kész → pihenő-sáv (szünet/folytat/kihagy),
           medál-toast, szabad navigáció 5 úton (lapozó, pöttyök, swipe, áttekintő lap, áthelyezés).</li>
@@ -804,27 +836,52 @@
     });
   }
 
-  var prepList = document.getElementById('prepList');
+  var gyakList = document.getElementById('gyakList');
   function renderPrepList() {
-    prepList.innerHTML = '<div class="vcard rise" style="--d:240ms;padding:2px 12px;">' +
-      S.order.map(function (id) {
-        var e = byId[id], f = FAM[e.fam];
-        var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
-        var sw = null;
-        e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
-        var sub = [];
-        sub.push((e.warm ? e.warm + ' bem + ' : '') + e.work + '×' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ''));
-        if (e.rir != null) sub.push('RIR ' + e.rir);
-        if (sw != null) sub.push('↑ ' + fmtW(sw) + ' kg');
-        return '<div class="xrow">' +
-          '<span class="xrail" style="background:' + f.rail + ';"></span>' +
-          '<div class="grow"><div class="nm3">' + e.name +
-          (acc ? '<svg width="11" height="11" viewBox="0 0 100 100" style="flex:none;" aria-label="aktív kihívás"><use href="#i-kihivas"/></svg>' : '') +
-          '</div><div class="sub3">' + sub.join(' · ') + '</div></div>' +
-          (e.oneRm ? '<span class="xrm"><svg width="12" height="12" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' + e.oneRm + '</span>' : '') +
-          (e.prog ? '<span class="dchip ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>' : '') +
-          '</div>';
-      }).join('') + '</div>';
+    var groups = [], seen = {};
+    S.order.forEach(function (id) {
+      var e = byId[id], key = e.muscle === 'Bicepsz' ? 'Kar' : e.muscle;
+      if (!seen[key]) { seen[key] = { label: key, fam: e.fam, items: [] }; groups.push(seen[key]); }
+      seen[key].items.push(e);
+    });
+    var gi = 0;
+    gyakList.innerHTML = groups.map(function (g) {
+      var fg = FAM[g.fam];
+      return '<div class="p-eyebrow rise" style="--d:' + (70 + gi * 60) + 'ms;padding:4px 2px 6px;color:' + fg.deep + ';">' + g.label + ' · ' + g.items.length + ' gyakorlat</div>' +
+        g.items.map(function (e) {
+          var f = FAM[e.fam];
+          var d = 90 + (gi++) * 70;
+          var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
+          var sw = null;
+          e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
+          var chips = [];
+          chips.push('<span class="xchip fam">' + (e.warm ? e.warm + ' bem + ' : '') + e.work + ' work</span>');
+          chips.push('<span class="xchip">' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + '</span>');
+          if (e.rir != null) chips.push('<span class="xchip">RIR ' + e.rir + '</span>');
+          if (sw != null) chips.push('<span class="xchip">↑ ' + fmtW(sw) + ' kg</span>');
+          if (e.prog) chips.push('<span class="dchip ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>');
+          if (acc) chips.push('<span class="xchip" style="color:#A84A26;border-color:rgba(255,107,74,0.4);"><svg width="9" height="9" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>kihívás</span>');
+          var dots = '';
+          var wc2 = warmCount(e.id);
+          for (var i = 0; i < e.warm + e.work; i++) {
+            var pi = prescAt(e.id, i);
+            dots += '<span class="md ' + (pi.k === 'w' ? 'wu' : 'wk') + '">' + (pi.k === 'w' ? 'B' + (i + 1) : (i + 1 - wc2)) + '</span>';
+          }
+          return '<div class="extile rise" style="--d:' + d + 'ms;--fr:' + f.rail + ';--fw:' + f.wash + ';--fd:' + f.deep + ';--fg:' + f.glow + ';">' +
+            '<div class="mrow" style="gap:9px;align-items:flex-start;">' +
+            '<span class="kdisc" style="background:rgba(255,255,255,0.8);"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></span>' +
+            '<div class="grow">' +
+            '<div class="p-eyebrow" style="color:' + f.deep + ';">' + e.muscle + ' · ' + e.type + '</div>' +
+            '<div style="font-size:12.5px;font-weight:700;">' + e.name + '</div>' +
+            '</div>' +
+            (e.oneRm ? '<span class="xrm"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' + e.oneRm + ' kg · 1RM</span>' : '') +
+            '</div>' +
+            '<div class="pillrow" style="margin-top:7px;">' + chips.join('') + '</div>' +
+            '<div class="mini-dots">' + dots +
+            (e.last ? '<span class="zsub">múlt héten ' + fmtW(e.last.w) + ' × ' + e.last.r + ' @' + e.last.rir + '</span>' : '') +
+            '</div></div>';
+        }).join('');
+    }).join('');
   }
 
   var zmini = document.getElementById('zmini');
@@ -835,7 +892,8 @@
 
   document.getElementById('nigOk').addEventListener('click', function () {
     UI.nigDismissed = true;
-    document.getElementById('nigstrip2').style.display = 'none';
+    document.getElementById('nigBadge').style.display = 'none';
+    document.getElementById('nigTileLine').textContent = 'Jobb váll · kezelve ✓';
     closePage('page-niggle');
   });
   document.getElementById('prepBack').addEventListener('click', function () {});
