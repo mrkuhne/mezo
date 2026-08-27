@@ -399,8 +399,11 @@ Interventions are **config, not DB** (§9.2). Cooldowns derive from this log + `
   node titles list + the new pattern; output: typed edge suggestions with kind+confidence;
   suggestions below confidence floor dropped, others created at `weight = confidence × 0.5` —
   edges start humble, reinforcement raises them).
-- `knowledge_fact` (active) → `PREFERENCE` node; `goal` (active) → `GOAL` node (sync on the goal
-  service's write path + nightly reconciliation).
+- `knowledge_fact` (active AND prompt-included, i.e. `include_in_prompt=true` — `mezo-b3pp.30`
+  closed the open question of whether an opted-out fact should still shadow into the graph; it
+  must not, since `GraphPromptAssembler` renders graph nodes into the same system prompt the
+  `include_in_prompt` flag already gates) → `PREFERENCE` node; `goal` (active) → `GOAL` node (sync
+  on the goal service's write path + nightly reconciliation).
 - All UPSERT by `(created_by, source_kind, source_id)` (§4.2 unique index); re-promotion updates
   title/meta, never duplicates. Runs: hook on `PatternService.decide` confirm path +
   `FactCandidateService.promote` + nightly reconciler inside the graph maintenance job (W2.5).

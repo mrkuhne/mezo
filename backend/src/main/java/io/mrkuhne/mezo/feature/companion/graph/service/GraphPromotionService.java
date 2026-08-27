@@ -91,12 +91,20 @@ public class GraphPromotionService {
         return Optional.of(node);
     }
 
-    /** Active (non-pattern-sourced) knowledge fact -> PREFERENCE node. Re-promotion REVIVES an
-     *  archived node (mezo-b3pp.31) — see the note in {@link #promotePattern}. */
+    /** Active, prompt-included, non-pattern-sourced knowledge fact -> PREFERENCE node.
+     *  Re-promotion REVIVES an archived node (mezo-b3pp.31).
+     *
+     *  <p>{@code includeInPrompt} is filtered here (mezo-b3pp.30) because it is the user's
+     *  kill-switch for EVERY injection channel — the wording is
+     *  {@code KnowledgeFactService}'s own, where the same switch already gates the V1.1 facts
+     *  block and the V3.3 acknowledgment block — and the graph is one more channel into the SAME
+     *  system prompt: {@code GraphPromptAssembler} renders traversed nodes straight into it. A
+     *  fact the user opted out of must therefore never become, or stay, an active node. */
     @Transactional
     public Optional<GraphNodeEntity> promoteFact(UUID userId, UUID factId) {
         return knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
             .filter(f -> !KnowledgeFactEntity.SOURCE_PATTERN.equals(f.getSource()))
+            .filter(KnowledgeFactEntity::isIncludeInPrompt)
             .map(f -> {
                 GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PREFERENCE,
                     truncateTitle(f.getFactText()), f.getFactText(), SOURCE_FACT, f.getId(), null,
@@ -181,19 +189,47 @@ public class GraphPromotionService {
         return archiveBySource(userId, SOURCE_GOAL, goalId);
     }
 
-    /** The mirror of {@link #promoteFact} (bd mezo-b3pp.31). No service in main source
-     *  soft-deletes a {@code knowledge_fact} today, so nothing publishes a fact-retraction event;
-     *  this exists for {@link #reconcile}'s sweep, and is ready for the day a delete surface
-     *  lands. */
+    /** The mirror of {@link #promoteFact} (bd mezo-b3pp.31). A fact stops qualifying two ways:
+     *  it is soft-deleted, or the user opts it out ({@code includeInPrompt = false}, mezo-b3pp.30).
+     *  No service in main source soft-deletes a {@code knowledge_fact} today, so nothing publishes
+     *  a delete-triggered retraction event — the soft-delete half exists only for {@link
+     *  #reconcile}'s sweep, ready for the day a delete surface lands. The opt-out half DOES have
+     *  a live trigger: {@code KnowledgeFactService.update} publishes an event Task 2 wires to
+     *  {@link #syncFact}, so an opt-out takes effect on the next turn rather than waiting for the
+     *  nightly sweep. */
     @Transactional
     public Optional<GraphNodeEntity> retractFact(UUID userId, UUID factId) {
         boolean stillLive = knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
             .filter(f -> !KnowledgeFactEntity.SOURCE_PATTERN.equals(f.getSource()))
+            .filter(KnowledgeFactEntity::isIncludeInPrompt)
             .isPresent();
         if (stillLive) {
             return Optional.empty();
         }
         return archiveBySource(userId, SOURCE_FACT, factId);
+    }
+
+    /**
+     * Promote-or-archive in one call (mezo-b3pp.30) — the {@link #syncGoal} shape, for the one
+     * source whose qualifying condition the user can flip back and forth at will.
+     *
+     * <p>{@link #promoteFact} and {@link #retractFact} each answer only half the question, and a
+     * caller reacting to "this fact changed" cannot know which half it needs: the same
+     * {@code PUT} that opts a fact out can opt the next one back in. Routing both through here
+     * keeps the listener free of that decision and makes the toggle take effect on the next turn
+     * rather than at the nightly sweep.
+     *
+     * @return the promoted or archived node, or empty when there was nothing to do (an opted-out
+     *         fact that was never promoted, or a node already in the target state)
+     */
+    @Transactional
+    public Optional<GraphNodeEntity> syncFact(UUID userId, UUID factId) {
+        // Calling promoteFact/retractFact on `this` here is correct and deliberate: syncFact is
+        // already @Transactional, so the whole promote-or-archive decision belongs in ONE
+        // transaction — unlike reconcile()'s per-item proxy calls (see that javadoc for why
+        // THOSE must not share one).
+        Optional<GraphNodeEntity> promoted = promoteFact(userId, factId);
+        return promoted.isPresent() ? promoted : retractFact(userId, factId);
     }
 
     /** Archive the node behind one source row, if there is one and it is not archived already. */
@@ -220,8 +256,9 @@ public class GraphPromotionService {
      * (non-deleted) facts, and all (non-deleted) goals for the user, and lets each promote/sync
      * method's own filter decide whether a given row actually produces a node (unconfirmed
      * patterns are excluded at the query level since the repository already has a
-     * status-scoped finder; pattern-sourced facts and never-promoted/inactive goals are excluded
-     * by {@link #promoteFact} and {@link #syncGoal} respectively).
+     * status-scoped finder; pattern-sourced facts, opted-out facts (mezo-b3pp.30), and
+     * never-promoted/inactive goals are excluded by {@link #promoteFact} and {@link #syncGoal}
+     * respectively).
      *
      * <p><b>Deliberately NOT {@code @Transactional} itself.</b> Each promote/sync call below goes
      * through {@link #self}, the injected proxy, so it runs inside its OWN transaction — the one
@@ -251,7 +288,8 @@ public class GraphPromotionService {
      * walks the user's ACTIVE nodes back to their source row and retracts (archives) every one
      * whose source stopped qualifying. The three loops above only ever see rows that still
      * qualify, so a row that LEFT a qualifying set (a pattern un-confirmed, a goal or fact
-     * soft-deleted) is invisible to them and its node would otherwise stay active forever. This
+     * soft-deleted, or a fact opted out via {@code includeInPrompt = false}, mezo-b3pp.30) is
+     * invisible to them and its node would otherwise stay active forever. This
      * is what heals a retraction that happened while the graph switch was off (no listener
      * existed to hear the event), and it is the ONLY path that retracts a soft-deleted
      * {@code knowledge_fact}, since nothing in main source deletes one and so no event is
@@ -296,9 +334,12 @@ public class GraphPromotionService {
         // that LEAVES those sets is invisible to them and its node would stay active forever.
         // This walks the other way round: from the user's active nodes back to their source row,
         // archiving every node whose source stopped qualifying. It is what heals a retraction
-        // that happened while the graph switch was off (no listener existed to hear the event),
-        // and it is the ONLY path that retracts a soft-deleted knowledge_fact, since nothing in
-        // main source deletes one and so no event is published for it.
+        // that happened while the graph switch was off (no listener existed to hear the event).
+        // For the soft-delete half of a fact's retraction specifically, this sweep is the ONLY
+        // path: nothing in main source deletes a knowledge_fact today, so no event is published
+        // for it. The opt-out half is different — KnowledgeFactService.update already publishes
+        // a live event routed to syncFact (see retractFact's javadoc), so this sweep is only its
+        // fallback/healer, not its only path.
         int retracted = 0;
         for (GraphNodeEntity node : graphService.listActive(userId)) {
             UUID sourceId = node.getSourceId();
