@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.graph.service;
 
+import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactChangedEvent;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactPromotedEvent;
 import io.mrkuhne.mezo.feature.companion.service.PatternConfirmedEvent;
 import io.mrkuhne.mezo.feature.companion.service.PatternRetractedEvent;
@@ -44,9 +45,27 @@ public class GraphPromotionListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onKnowledgeFactPromoted(KnowledgeFactPromotedEvent event) {
         try {
-            promotionService.promoteFact(event.userId(), event.factId());
+            // syncFact, not promoteFact: a freshly promoted candidate that is somehow already
+            // opted out (mezo-b3pp.30) must not become an active node either.
+            promotionService.syncFact(event.userId(), event.factId());
         } catch (Exception e) {
             log.warn("Graph promotion failed for knowledge fact {}", event.factId(), e);
+        }
+    }
+
+    /**
+     * mezo-b3pp.30: a fact's text, category or {@code includeInPrompt} toggle changed — re-derive
+     * whether it still qualifies for the graph and promote or archive its node accordingly, so the
+     * user's opt-out (or opt-back-in) takes effect on the next turn rather than at the nightly
+     * {@code reconcile} sweep.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onKnowledgeFactChanged(KnowledgeFactChangedEvent event) {
+        try {
+            promotionService.syncFact(event.userId(), event.factId());
+        } catch (Exception e) {
+            log.warn("Graph fact sync failed for fact {}", event.factId(), e);
         }
     }
 

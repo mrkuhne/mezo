@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,7 @@ public class KnowledgeFactService {
     private final PatternRepository patternRepository;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
         // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
@@ -87,6 +89,13 @@ public class KnowledgeFactService {
         if (request.getIncludeInPrompt() != null) {
             fact.setIncludeInPrompt(request.getIncludeInPrompt());
         }
+        // mezo-b3pp.30: include_in_prompt is the user's kill-switch for EVERY injection channel,
+        // and the knowledge graph is one of them — GraphPromptAssembler renders traversed nodes
+        // into the same system prompt this fact's own block writes into. Published on every
+        // update, unconditionally: the consumer re-derives whether the fact still qualifies, and
+        // this service must not learn about the graph switch (with the graph off, no bean
+        // consumes this).
+        eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
         return mapper.toKnowledgeFactResponse(repository.save(fact));
     }
 

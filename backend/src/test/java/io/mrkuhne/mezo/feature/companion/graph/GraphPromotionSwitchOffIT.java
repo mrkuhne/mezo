@@ -3,7 +3,9 @@ package io.mrkuhne.mezo.feature.companion.graph;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
+import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionListener;
@@ -11,6 +13,7 @@ import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,9 @@ class GraphPromotionSwitchOffIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private GoalPopulator goalPopulator;
+    @Autowired private KnowledgeFactPopulator factPopulator;
+
+    private static final String FACTS = "/api/companion/fact";
 
     @Test
     void testGraphPromotionBeans_shouldNotExist_whenSwitchOff() {
@@ -83,6 +89,22 @@ class GraphPromotionSwitchOffIT extends ApiIntegrationTest {
         GoalEntity goal = goalPopulator.createGoal(owner, "active");
 
         deleteAndExpect("/api/goals/" + goal.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+
+        assertThat(nodeRepository.findAll()).isEmpty();
+    }
+
+    /**
+     * bd mezo-b3pp.30: {@code KnowledgeFactService.update} publishes {@code KnowledgeFactChangedEvent}
+     * unconditionally — with the graph switch off there is no {@code GraphPromotionListener} bean
+     * to consume it, so the PATCH must still succeed and write nothing to {@code knowledge_node}.
+     */
+    @Test
+    void testUpdateFact_shouldSucceedAndWriteNoGraphRow_whenSwitchOff() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        KnowledgeFactEntity fact = factPopulator.fact(owner, "Laktózérzékeny vagyok.", "health", 0);
+
+        patchForBody(FACTS + "/" + fact.getId(), UpdateFactRequest.builder().includeInPrompt(false).build(),
+            ownerAuthHeaders(), HttpStatus.OK, Object.class);
 
         assertThat(nodeRepository.findAll()).isEmpty();
     }
