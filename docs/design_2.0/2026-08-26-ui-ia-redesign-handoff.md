@@ -242,6 +242,18 @@ Locked patterns from the screen rounds (canonical for every further page):
   `editable`/`catalogId` (⋯ only on Saját, ▶ everywhere), `—` for null stats, sections that
   vanish instead of rendering empty, reduced-motion demo stills → manual ⇄ toggle, IG videos
   in 9:16, and the two-tap in-sheet delete.
+- **Sport page fully specified** in the edzes-tab prototype (2026-08-27, feature-audited
+  against the real `/train/sport` — `SportPage.tsx` + its three sheets; see
+  `prototypes/README.md` for the detailed list). Load-bearing behaviors carried over: the
+  3-segment structure (Heti terv | Napló | Cross-load) with the selected segment in primary
+  coral (rose stays on data/tags/rails only — ADR 0018 D5); multi-slot days; the one-off
+  `EGYSZERI` layer as a second model (own sheet, per-row delete, current-week merge into the
+  weekday, excluded from weekly hours); volleyball-only conditionals (edzés/meccs toggle,
+  setek vs körök, váll-skála, Mezo observation card); the live observation card's pre-save
+  coaching; planned-vs-logged as a hard distinction; RPE grading 7+ coral / 8+ amber, never
+  red; minibars/chips only when the value exists. Designed additions flagged for
+  implementation: notes input in the log sheet (contract field exists, UI missing) and the
+  Napló 4-week idő+RPE trend (needs a `from`/`to` on `GET /api/train/sport-sessions`).
 - **Mezociklus fully specified** in its prototype: hub (hero + Volumen/Történet/Sablonok/Új
   blokk tiles), MEV/MAV/MRV provenance bars with expandable 01→02→03 derivation, 5-step wizard
   (tappable phase curve + Mezo reset, Emphasize cap 2 with disabled-not-hidden buttons, program

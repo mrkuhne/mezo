@@ -996,6 +996,83 @@
   .shrow { display: flex; gap: 8px; margin-top: 12px; }
   .shrow .ghost, .shrow .cta { flex: 1; padding: 9px 0; }
   .delbtn { width: 100%; border: none; background: none; font-family: inherit; font-size: 10px; font-weight: 700; color: #A84A26; padding: 10px 0 2px; cursor: pointer; }
+  /* ===== Sport ===== */
+  .segtabs { display: flex; gap: 5px; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 3px; margin-bottom: 11px; }
+  .segtabs button { flex: 1; border: none; background: none; border-radius: 999px; padding: 6px 0; font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .segtabs button.on { background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.5); }
+  .stag { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; border-radius: 6px; padding: 2px 6px; color: #fff; background: var(--kc, #C46FA0); flex: none; }
+  .sday { position: relative; border-radius: 15px; padding: 8px 11px 8px 14px; margin-bottom: 7px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); overflow: hidden; display: flex; gap: 10px; align-items: flex-start; }
+  .sday .dlbl { width: 33px; flex: none; font-size: 9.5px; font-weight: 800; color: #6E6257; padding-top: 2px; }
+  .sday.has .dlbl { color: #8E3F6F; }
+  .sday.today { background: linear-gradient(135deg, #FAE3ED, #FFFDF8 60%); box-shadow: 0 10px 22px -13px rgba(196, 111, 160, 0.45), 0 1.5px 4px rgba(43, 33, 24, 0.05); }
+  .sday.today::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #C46FA0; }
+  .sday.empty { background: transparent; box-shadow: none; border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+  .sday.empty .mut { font-size: 9px; padding-top: 2px; }
+  .slotrow + .slotrow { margin-top: 7px; padding-top: 7px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .slotrow .l1 { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .slotrow .l1 b { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .slotrow .l2 { font-size: 8.5px; color: #A2958A; margin-top: 2px; }
+  .mastamp { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; color: #A8801F; background: rgba(201, 150, 46, 0.16); border-radius: 5px; padding: 1.5px 5px; }
+  .onestamp { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; color: #8E3F6F; background: rgba(196, 111, 160, 0.14); border-radius: 5px; padding: 1.5px 5px; }
+  .evrow { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
+  .evrow + .evrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .evrow .del { border: none; background: none; color: #A2958A; font-size: 12px; cursor: pointer; padding: 4px 6px; font-family: inherit; }
+  .sesscard { position: relative; border-radius: 16px; padding: 10px 12px 10px 15px; margin-bottom: 8px; overflow: hidden; background: linear-gradient(135deg, var(--cw) 0%, #FFFDF8 60%); box-shadow: 0 10px 22px -13px var(--cg), 0 1.5px 4px rgba(43, 33, 24, 0.05); }
+  .sesscard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cr); }
+  .sesscard .rpe { margin-left: auto; text-align: right; flex: none; }
+  .sesscard .rpe b { font-size: 20px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .sesscard .rpe small { font-size: 7px; font-weight: 700; letter-spacing: 0.1em; color: #A2958A; display: block; }
+  .sfacts { display: flex; gap: 12px; margin-top: 6px; }
+  .sfacts small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
+  .sfacts b { font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .minibar { display: flex; align-items: center; gap: 7px; margin-top: 6px; }
+  .minibar small { width: 62px; flex: none; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .minibar .tr { flex: 1; height: 7px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); position: relative; overflow: hidden; }
+  .minibar .tr i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--cr); }
+  .minibar .tr i.warn { background: #C9962E; }
+  .minibar b { width: 26px; text-align: right; font-size: 9.5px; font-variant-numeric: tabular-nums; }
+  .snote { font-size: 9.5px; font-style: italic; color: #6E6257; margin-top: 7px; padding-top: 7px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .trendcard { border-radius: 16px; padding: 10px 12px; margin-bottom: 9px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .trbars { display: flex; gap: 9px; align-items: flex-end; height: 56px; margin-top: 7px; }
+  .trbars > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+  .trbars b { width: 100%; border-radius: 6px 6px 3px 3px; min-height: 14%; background: linear-gradient(180deg, #D98BB8, #A85788); }
+  .trbars b.hi { background: linear-gradient(180deg, #E5C46B, #C9962E); }
+  .trbars small { font-size: 6.5px; font-weight: 700; color: #A2958A; }
+  .trbars .rv { font-size: 7.5px; font-weight: 800; color: #8E3F6F; font-variant-numeric: tabular-nums; }
+  .clrow { display: flex; gap: 9px; align-items: flex-start; border-radius: 14px; padding: 9px 11px; margin-bottom: 7px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); position: relative; overflow: hidden; }
+  .clrow.warn { background: linear-gradient(135deg, #FBEBCB, #FFFDF6); }
+  .clrow.warn::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #C9962E; }
+  .clrow .sys { font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .clrow .imp { font-size: 11px; font-weight: 700; margin: 1px 0 2px; }
+  .clrow .why { font-size: 8.5px; color: #6E6257; font-weight: 300; line-height: 1.45; }
+  .toolchips { display: flex; gap: 5px; flex-wrap: wrap; margin: 4px 0 8px; }
+  .toolchips span { font-size: 7px; font-weight: 600; color: #6E6257; background: rgba(255, 255, 255, 0.75); border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 2.5px 8px; font-variant-numeric: tabular-nums; }
+  .toolchips span b { color: #33749C; font-weight: 800; margin-right: 3px; }
+  .kindtiles { display: flex; gap: 6px; margin: 8px 0; }
+  .kindtiles button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 13px; padding: 8px 0 7px; font-family: inherit; cursor: pointer; display: grid; gap: 2px; justify-items: center; font-size: 10px; font-weight: 700; color: #6E6257; }
+  .kindtiles button.on { border-color: var(--kc); background: var(--kw); color: var(--kd); }
+  .scale10 { display: flex; gap: 3px; margin: 6px 0 2px; }
+  .scale10 button { flex: 1; height: 30px; border-radius: 8px; border: 1px solid rgba(43, 33, 24, 0.1); background: #fff; font-size: 8px; font-weight: 700; color: #A2958A; cursor: pointer; font-family: inherit; padding: 0; }
+  .scale10 button.f { background: #FFEDE5; border-color: rgba(255, 107, 74, 0.5); color: #A84A26; }
+  .scale10 button.f.warn { background: #FBEBCB; border-color: rgba(201, 150, 46, 0.55); color: #A8801F; }
+  .obscard { border-radius: 13px; padding: 9px 11px; margin-top: 9px; background: linear-gradient(135deg, #FFE7DC, #FFFDF8); display: flex; gap: 8px; align-items: flex-start; }
+  .obscard .dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #FF7A55, #FF5B36); flex: none; margin-top: 3px; }
+  .obscard p { font-size: 9.5px; line-height: 1.5; color: #2B2118; }
+  .schedday { border-radius: 13px; padding: 8px 10px; margin-bottom: 7px; background: #fff; box-shadow: 0 1.5px 5px rgba(43, 33, 24, 0.05); }
+  .schedday .dl { font-size: 9.5px; font-weight: 800; color: #6E6257; margin-bottom: 4px; }
+  .schedday.has .dl { color: #8E3F6F; }
+  .sslot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); padding: 7px 0 2px; }
+  .sslot .row1 { display: flex; align-items: center; gap: 5px; }
+  .sslot .row1 input[type=time] { border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 8px; padding: 3px 6px; font-family: inherit; font-size: 10px; background: #fff; }
+  .sslot .row2 { display: flex; align-items: center; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+  .sslot input[type=text] { flex: 1; min-width: 70px; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 8px; padding: 4px 8px; font-family: inherit; font-size: 9.5px; background: #fff; }
+  .kchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 3px 8px; font-size: 8px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; }
+  .kchip.on { border-color: var(--kc); background: var(--kw); color: var(--kd); }
+  .xdel { border: none; background: none; color: #A2958A; font-size: 11px; cursor: pointer; padding: 3px 5px; font-family: inherit; margin-left: auto; }
+  .addslot { width: 100%; border: 1.2px dashed rgba(43, 33, 24, 0.2); background: none; border-radius: 10px; padding: 5px 0; font-size: 8.5px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; margin-top: 6px; }
+  .durstep { display: inline-flex; align-items: center; gap: 4px; }
+  .durstep button { width: 22px; height: 22px; border-radius: 7px; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-size: 11px; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; }
+  .durstep b { min-width: 34px; text-align: center; font-size: 10px; font-variant-numeric: tabular-nums; }
   @media (prefers-reduced-motion: reduce) {
     .bsheet, .bsheet-back { transition: none; }
     .demo2 .frB { animation: none; }
@@ -1076,7 +1153,7 @@
             <div class="tile t-check rise" style="--d:150ms;" data-page="page-sport" role="button" tabindex="0" aria-label="Sport">
               <div class="p-eyebrow" style="color:#B0567E;">Sport</div>
               <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-sport"/></svg></div>
-              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Csüt · 19:00</div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Ma · TRX 18:00</div>
             </div>
 
             <div class="tile t-water rise" style="--d:190ms;" data-page="page-futas" role="button" tabindex="0" aria-label="Futás">
@@ -1250,42 +1327,25 @@
 
       <!-- ============ SPORT ============ -->
       <div class="page p-rose" id="page-sport">
-        <div class="page-head"><button class="backbtn" data-back="page-sport">‹ Edzés</button></div>
+        <div class="page-head">
+          <button class="backbtn" data-back="page-sport">‹ Edzés</button>
+          <button class="pgact" id="spLogBtn">＋ Log</button>
+        </div>
         <div class="page-hero">
-          <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-sport"/></svg>
-          <div class="bignum">2×</div>
-          <div class="nm">Röplabda · e hét</div>
+          <div class="nm">Sport</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-sport"/></svg>
+            <div class="bignum" id="spBig">2/4</div>
+          </div>
         </div>
         <div class="page-body">
-          <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;">
-            <div class="statcell"><b>3 ó</b><small>pályán e héten</small></div>
-            <div class="statcell"><b>7</b><small>RPE átlag</small></div>
-            <div class="statcell"><b>✓</b><small>váll rendben</small></div>
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;" id="spStats"></div>
+          <div class="segtabs rise" style="--d:60ms;" id="spTabs">
+            <button data-v="week" class="on" aria-pressed="true">Heti terv</button>
+            <button data-v="log" aria-pressed="false">Napló</button>
+            <button data-v="cross" aria-pressed="false">Cross-load</button>
           </div>
-          <div class="vcard rise" style="--d:100ms;">
-            <div class="vrow">
-              <span class="tick f">✓</span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Kedd · edzés</div><div class="mut" style="font-size:9px;">90 perc · RPE 7 · sok sáncolás</div></div>
-            </div>
-            <div class="vrow today">
-              <span class="tick"></span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#A8801F;">Csütörtök · edzés</div><div class="mut" style="font-size:9px;">19:00 · csarnok</div></div>
-              <button class="vchip">Logold ›</button>
-            </div>
-            <div class="vrow">
-              <span class="tick"></span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Vasárnap · meccs</div><div class="mut" style="font-size:9px;">10:00 · bajnoki · EGYSZERI</div></div>
-            </div>
-          </div>
-          <div class="qcard rise" style="--d:160ms;">
-            <div class="mrow" style="gap:9px;">
-              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>
-              <div class="grow">
-                <div style="font-size:12px;font-weight:700;">Cross-load</div>
-                <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">A keddi röpi vállterhelése miatt a mai Pull A vállvolumene −2 szett — a zóna-számításban már benne van.</div>
-              </div>
-            </div>
-          </div>
+          <div id="spView"></div>
         </div>
       </div>
 
@@ -1407,6 +1467,9 @@
       <div class="bsheet" id="sh-rec"></div>
       <div class="bsheet" id="sh-edit"></div>
       <div class="bsheet" id="sh-vid"></div>
+      <div class="bsheet" id="sh-slog"></div>
+      <div class="bsheet" id="sh-sched"></div>
+      <div class="bsheet" id="sh-sevent"></div>
 
       <div class="tabbar">
         <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
@@ -1424,7 +1487,19 @@
         <ul>
           <li><strong>Heti</strong> — stat-sor (szett/RPE/medál), napi lista medál-garnírunggal, és az <strong>izom-zóna kártya</strong> (régi Gym): szaggatott cél-zóna sáv + teli valóság-sáv, a Láb zóna alatt terrakottában.</li>
           <li><strong>Mesociklus</strong> — volumen-ív fázis-címkékkel (MOST/csúcs/deload), <strong>e1RM-trend sparkline</strong>, fázis-kártya, futam-történet riport-gombokkal, sablonok.</li>
-          <li><strong>Sport</strong> — heti stat-sor, slotok (ma kiemelve, Logold), cross-load kártya.</li>
+          <li><strong>Sport</strong> — teljes sport-felület, a valós <code>/train/sport</code> ellen auditálva:
+          kompakt hero + élő stat-sor (session/idő/RPE/váll/XP), három al-nézet szegmenssel.
+          <strong>Heti terv</strong>: 7 nap-kártya több slottal is naponta (kedden cross + röpi),
+          MA-kiemelés + Logold, EGYSZERI események külön szekcióban ✕ törléssel és saját sheettel;
+          <strong>Szerkesztés-sheet</strong> (sport-váltó Röpi/Cross/TRX, idő, edzés/meccs csak röpinél,
+          15 perces hossz-stepper, helyszín, intenzitás, + Sport hozzáadása naponta).
+          <strong>Napló</strong>: 4 heti idő+RPE trend-oszlopok, session-kártyák kind-helyes címkével,
+          RPE színfokozattal (7+ korall, 8+ borostyán — sosem piros), váll/intenzitás minibar,
+          ugrás-átlag chip, idézett jegyzet. <strong>Cross-load</strong>: rendszerenkénti sorok
+          (váll −2 MRV borostyán rail-lel), tool-chip átláthatóság.
+          <strong>Log-sheet</strong>: élő Mezo-megfigyelő kártya a csúszkákra reagálva,
+          setek/körök ág, váll-skála csak röpinél, jegyzet-mező (design-újdonság a contract
+          <code>notes</code> mezőjére).</li>
           <li><strong>Futás</strong> — blokk-ív égszínben, legutóbbi futás <strong>kör-idő oszlopokkal</strong> (1:32 átlag), következő sessionök.</li>
           <li><strong>Gyakorlatok</strong> — a teljes katalógus-oldal: kétszintű izomszűrő (régió → izomfej) + Plyo,
           <strong>kétmódú lista</strong> (alapból a rekordjaid rangsora, kereséskor teljes katalógus szaggatott
@@ -1895,6 +1970,405 @@
   }
 
   renderChips();
+  render();
+})();
+
+/* ===== Sport ===== */
+(function () {
+  var SP = {
+    ropi:  { tag: 'RÖPI', name: 'Röpi', full: 'Röplabda', c: '#C46FA0', w: '#FAE3ED', d: '#8E3F6F', g: 'rgba(196,111,160,0.4)' },
+    cross: { tag: 'CROSS', name: 'Cross', full: 'Cross', c: '#E05535', w: '#FFE3D8', d: '#A84A26', g: 'rgba(224,85,53,0.4)' },
+    trx:   { tag: 'TRX', name: 'TRX', full: 'TRX', c: '#8A76CC', w: '#EBE6F8', d: '#5D4FA0', g: 'rgba(138,118,204,0.4)' }
+  };
+  var DAYS = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'];
+  var TODAY = 2; // Szerda
+  var D = {
+    slots: [
+      { day: 1, sport: 'cross', time: '07:00', dur: 30, kind: 'training', court: 'otthon', role: '', intensity: 'könnyű' },
+      { day: 1, sport: 'ropi', time: '19:00', dur: 90, kind: 'training', court: 'Városi csarnok', role: 'center', intensity: 'közepes' },
+      { day: 2, sport: 'trx', time: '18:00', dur: 45, kind: 'training', court: 'otthon', role: '', intensity: 'core fókusz' },
+      { day: 3, sport: 'ropi', time: '19:00', dur: 90, kind: 'training', court: 'Városi csarnok', role: 'center', intensity: 'közepes' }
+    ],
+    events: [
+      { date: 'aug 30', dow: 6, time: '10:00', dur: 120, sport: 'ropi', kind: 'match', location: 'Bajnoki · Városi csarnok' }
+    ],
+    sessions: [
+      { wk: 0, sport: 'ropi', date: 'aug 25 · kedd', time: '21:04', dur: 95, rpe: 7, sets: 4, shoulder: 5, jump: 46, notes: 'Sok sáncolás, a nyitásfogadás ült.' },
+      { wk: 0, sport: 'cross', date: 'aug 25 · kedd', time: '07:41', dur: 30, rpe: 6, rounds: 5 },
+      { wk: 1, sport: 'ropi', date: 'aug 21 · csü', time: '20:52', dur: 90, rpe: 8, sets: 5, shoulder: 7, jump: 52, notes: 'Smashek tisztábbak, blokk-időzítés jobb — a váll estére érezhető volt.' },
+      { wk: 1, sport: 'trx', date: 'aug 19 · sze', time: '18:48', dur: 45, rpe: 6, rounds: 6 },
+      { wk: 2, sport: 'ropi', date: 'aug 16 · vas', time: '12:10', dur: 120, rpe: 9, sets: 5, shoulder: 6, jump: 61, intensity: 8, notes: 'Bajnoki — 3:2, végig pörgött.' }
+    ],
+    trend: [
+      { lbl: 'aug 3', h: 3.0, rpe: 6.8 }, { lbl: 'aug 10', h: 4.5, rpe: 7.4 },
+      { lbl: 'aug 17', h: 2.5, rpe: 6.2 }, { lbl: 'aug 24 · MOST', h: 2.1, rpe: 6.5, now: true }
+    ],
+    cross: [
+      { sys: 'Edzés · Quad', imp: 'MAV −2 szett', why: 'A heti röpi ugró-terhelés quad-stimulus — a mezo volumen-terv már beszámítja.' },
+      { sys: 'Edzés · Váll volumen', imp: '−2 szett MRV', why: 'A smashek heti váll-loadja miatt a Push napok plafonja lejjebb — Overhead Press helyett Cable variáns javasolt.', warn: true },
+      { sys: 'Étkezés', imp: 'Pre-session ablak · T−2h carb', why: 'Sportnap előtt két órával szénhidrát-fókuszú étkezés — a Fuel nap-terv automatikusan igazodik.' },
+      { sys: 'Alvás', imp: 'Post-session −24 perc', why: 'Esti session után átlagosan ennyivel kevesebb mélyalvás — a lefekvés-emlékeztető korábbra csúszik.' },
+      { sys: 'Súly', imp: 'Folyadék · kalibrálás', why: 'Session-napokon a reggeli súly torzít — a trend-számítás simítva kezeli.' },
+      { sys: 'Pattern engine', imp: 'Beépítve', why: 'A sport-load a heti mintázat-elemzés bemenete.' }
+    ]
+  };
+  var view = 'week';
+  var spView = document.getElementById('spView');
+  var spStats = document.getElementById('spStats');
+  var spBig = document.getElementById('spBig');
+  function d1(x) { return String(Math.round(x * 10) / 10).replace('.', ','); }
+  function kv(k) { var s = SP[k]; return '--kc:' + s.c + ';--kw:' + s.w + ';--kd:' + s.d + ';'; }
+  function cv(k) { var s = SP[k]; return '--cr:' + s.c + ';--cw:' + s.w + ';--cd:' + s.d + ';--cg:' + s.g + ';'; }
+
+  function renderStats() {
+    var done = D.sessions.filter(function (s) { return s.wk === 0; });
+    var mins = done.reduce(function (a, s) { return a + s.dur; }, 0);
+    var rpe = done.length ? done.reduce(function (a, s) { return a + s.rpe; }, 0) / done.length : null;
+    var sh = done.filter(function (s) { return s.shoulder != null; });
+    var shAvg = sh.length ? sh.reduce(function (a, s) { return a + s.shoulder; }, 0) / sh.length : null;
+    spBig.textContent = done.length + '/' + D.slots.length;
+    spStats.innerHTML =
+      '<div class="statcell"><b>' + d1(mins / 60) + ' ó</b><small>pályán e héten</small></div>' +
+      '<div class="statcell"><b>' + (rpe != null ? d1(rpe) : '—') + '</b><small>RPE átlag · 1–10</small></div>' +
+      '<div class="statcell"><b' + (shAvg != null && shAvg >= 7 ? ' style="color:#A8801F;"' : '') + '>' + (shAvg != null ? d1(shAvg) : '—') + '</b><small>váll-terhelés</small></div>' +
+      '<div class="statcell"><b style="color:#A84A26;">+' + (done.length * 30) + '</b><small>XP e héten</small></div>';
+  }
+
+  function slotRow(s, isToday, logged) {
+    var k = SP[s.sport];
+    var meta = [s.court, s.role, s.intensity].filter(Boolean).join(' · ');
+    return '<div class="slotrow">' +
+      '<div class="l1"><span class="stag" style="--kc:' + k.c + ';">' + k.tag + '</span><b>' + s.time + '</b><span class="mut" style="font-size:9px;">· ' + s.dur + 'p</span>' +
+      (s.kind === 'match' ? '<span class="mut" style="font-size:8.5px;font-weight:700;color:#8E3F6F;">meccs</span>' : '') +
+      (isToday ? '<span class="mastamp">MA</span>' : '') +
+      (s.oneOff ? '<span class="onestamp">EGYSZERI</span>' : '') +
+      (isToday && !logged ? '<button class="vchip" data-slog="' + s.sport + '" style="margin-left:auto;">Logold ›</button>' : '') +
+      '</div>' +
+      (meta ? '<div class="l2">' + meta + '</div>' : '') +
+      '</div>';
+  }
+  function renderWeek() {
+    var byDay = {};
+    D.slots.forEach(function (s) { (byDay[s.day] = byDay[s.day] || []).push(s); });
+    D.events.forEach(function (e) { (byDay[e.dow] = byDay[e.dow] || []).push({ day: e.dow, sport: e.sport, time: e.time, dur: e.dur, kind: e.kind, court: e.location, oneOff: true }); });
+    var hours = D.slots.reduce(function (a, s) { return a + s.dur; }, 0) / 60;
+    var h = '<div class="lsthead rise" style="--d:30ms;"><div class="p-eyebrow" style="padding:0;">Heti ritmus · ' + d1(hours) + ' ó</div>' +
+      '<button class="vchip" id="spEditBtn" style="margin-left:auto;">Szerkesztés</button></div>';
+    var di = 0;
+    h += DAYS.map(function (dl, i) {
+      var list = (byDay[i] || []).sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+      var d = 50 + (di++) * 40;
+      if (!list.length) return '<div class="sday empty rise" style="--d:' + d + 'ms;"><div class="dlbl">' + dl + '</div><span class="mut">nincs session</span></div>';
+      var isToday = i === TODAY;
+      return '<div class="sday has rise' + (isToday ? ' today' : '') + '" style="--d:' + d + 'ms;"><div class="dlbl">' + dl + '</div><div class="grow">' +
+        list.map(function (s) { return slotRow(s, isToday, false); }).join('') + '</div></div>';
+    }).join('');
+    h += '<div class="p-eyebrow rise" style="--d:340ms;padding:8px 2px 4px;">Egyszeri események</div>';
+    h += D.events.map(function (e, i) {
+      var k = SP[e.sport];
+      return '<div class="evrow rise" style="--d:370ms;"><span class="stag" style="--kc:' + k.c + ';">' + k.tag + '</span>' +
+        '<div class="grow"><div style="font-size:10.5px;font-weight:700;">' + e.date + ' · ' + DAYS[e.dow].toLowerCase() + ' · ' + e.time + '</div>' +
+        '<div class="mut" style="font-size:8.5px;">' + e.dur + 'p · ' + (e.kind === 'match' ? 'meccs' : 'edzés') + (e.location ? ' · ' + e.location : '') + '</div></div>' +
+        '<button class="del" data-evdel="' + i + '" aria-label="' + e.date + ' esemény törlése">✕</button></div>';
+    }).join('');
+    h += '<button class="addslot rise" style="--d:400ms;" id="spEventBtn">＋ Egyszeri esemény</button>';
+    h += '<p class="habnote">A heti ritmus független a mezociklustól — új blokk indításakor a sport cross-load automatikusan beépül a volumen-tervbe.</p>';
+    spView.innerHTML = h;
+  }
+
+  function sessCard(s, d) {
+    var k = SP[s.sport];
+    var rpeCol = s.rpe >= 8 ? '#A8801F' : s.rpe >= 7 ? '#A84A26' : '#6E6257';
+    var facts = '<div><small>Idő</small><b>' + s.dur + 'p</b></div>' +
+      (s.sport === 'ropi' ? '<div><small>Setek</small><b>' + (s.sets != null ? s.sets : '–') + '</b></div>'
+        : '<div><small>Körök</small><b>' + (s.rounds != null ? s.rounds : '–') + '</b></div>') +
+      (s.jump != null ? '<div><small>Ugrás</small><b>' + s.jump + '</b></div>' : '');
+    var bars = '';
+    if (s.intensity != null) bars += '<div class="minibar"><small>Intenzitás</small><span class="tr"><i style="width:' + (s.intensity * 10) + '%;"></i></span><b>' + s.intensity + '</b></div>';
+    if (s.shoulder != null) bars += '<div class="minibar"><small>Váll</small><span class="tr"><i class="' + (s.shoulder >= 7 ? 'warn' : '') + '" style="width:' + (s.shoulder * 10) + '%;"></i></span><b>' + s.shoulder + '</b></div>';
+    return '<div class="sesscard rise" style="--d:' + d + 'ms;' + cv(s.sport) + '">' +
+      '<div class="mrow" style="gap:7px;align-items:flex-start;">' +
+      '<span class="stag" style="--kc:' + k.c + ';">' + k.tag + '</span>' +
+      '<div class="mut" style="font-size:8.5px;padding-top:1px;">' + s.date + ' · ' + s.time + '</div>' +
+      '<div class="rpe"><b style="color:' + rpeCol + ';">' + s.rpe + '</b><small>RPE / 10</small></div></div>' +
+      '<div class="sfacts">' + facts + '</div>' + bars +
+      (s.notes ? '<div class="snote">„' + s.notes + '"</div>' : '') +
+      '</div>';
+  }
+  function renderLog() {
+    var jumps = D.sessions.filter(function (s) { return s.jump != null; });
+    var avgJ = jumps.length ? Math.round(jumps.reduce(function (a, s) { return a + s.jump; }, 0) / jumps.length) : null;
+    var mx = Math.max.apply(null, D.trend.map(function (t) { return t.h; }));
+    var h = '<div class="trendcard rise" style="--d:30ms;"><div class="p-eyebrow" style="padding:0 0 2px;">4 hét · pályán töltött idő</div>' +
+      '<div class="trbars">' + D.trend.map(function (t) {
+        return '<div><span class="rv">' + d1(t.rpe) + '</span><b' + (t.rpe >= 7 ? ' class="hi"' : '') + ' style="height:' + Math.max(14, Math.round(t.h / mx * 78)) + '%;"></b><small>' + t.lbl + '</small></div>';
+      }).join('') + '</div>' +
+      '<div class="mut" style="font-size:7.5px;margin-top:4px;">szám = heti RPE átlag · arany = 7 feletti terhelésű hét</div></div>';
+    h += '<div class="lsthead rise" style="--d:60ms;"><div class="p-eyebrow" style="padding:0;">Utolsó ' + D.sessions.length + ' session</div>' +
+      (avgJ != null ? '<span class="cnt">avg ' + avgJ + ' ugrás</span>' : '') + '</div>';
+    h += D.sessions.map(function (s, i) { return sessCard(s, 90 + i * 45); }).join('');
+    spView.innerHTML = h;
+  }
+
+  function renderCross() {
+    var h = '<div class="qcard rise" style="--d:30ms;"><div class="mrow" style="gap:9px;">' +
+      '<svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>' +
+      '<div class="grow"><div style="font-size:12px;font-weight:700;">A sport-load mindenhova beépül</div>' +
+      '<div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">Edzés-volumen, étkezés-ablakok, alvás, súly-trend, pattern engine — automatikusan, kérés nélkül.</div></div></div></div>';
+    h += '<div class="toolchips rise" style="--d:60ms;"><span><b>read</b>get_sport_load(28d)</span><span><b>compute</b>muscleLoadCarryover</span><span><b>compute</b>sportTransferRule</span><span><b>write</b>crossSystemTargets</span></div>';
+    h += D.cross.map(function (r, i) {
+      return '<div class="clrow' + (r.warn ? ' warn' : '') + ' rise" style="--d:' + (90 + i * 45) + 'ms;">' +
+        '<div class="grow"><div class="sys">' + r.sys + '</div><div class="imp">' + r.imp + '</div><div class="why">' + r.why + '</div></div></div>';
+    }).join('');
+    h += '<p class="habnote">A cross-load sosem büntet — plafont igazít és időzítést ajánl, döntést nem vesz el.</p>';
+    spView.innerHTML = h;
+  }
+
+  function render() {
+    renderStats();
+    if (view === 'week') renderWeek(); else if (view === 'log') renderLog(); else renderCross();
+  }
+  document.getElementById('spTabs').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-v]'); if (!b) return;
+    view = b.getAttribute('data-v');
+    document.querySelectorAll('#spTabs button').forEach(function (x) {
+      var on = x.getAttribute('data-v') === view;
+      x.classList.toggle('on', on); x.setAttribute('aria-pressed', on);
+    });
+    render();
+  });
+  spView.addEventListener('click', function (ev) {
+    var t;
+    if ((t = ev.target.closest('#spEditBtn'))) return openSched();
+    if ((t = ev.target.closest('#spEventBtn'))) return openEvent();
+    if ((t = ev.target.closest('[data-evdel]'))) { D.events.splice(Number(t.getAttribute('data-evdel')), 1); render(); return; }
+    if ((t = ev.target.closest('[data-slog]'))) return openLog(t.getAttribute('data-slog'));
+  });
+  document.getElementById('spLogBtn').addEventListener('click', function () { openLog('ropi'); });
+
+  /* — sheets (shared backdrop) — */
+  var sback = document.getElementById('sback');
+  var shLog = document.getElementById('sh-slog');
+  var shSched = document.getElementById('sh-sched');
+  var shEvent = document.getElementById('sh-sevent');
+  var openSh = null;
+  function openSheet(el) { closeSheet(); openSh = el; sback.classList.add('open'); el.classList.add('open'); el.scrollTop = 0; }
+  function closeSheet() { if (openSh) { openSh.classList.remove('open'); openSh = null; sback.classList.remove('open'); } }
+  sback.addEventListener('click', closeSheet);
+
+  function kindTiles(cur, id) {
+    return '<div class="kindtiles" id="' + id + '">' + Object.keys(SP).map(function (k) {
+      return '<button data-k="' + k + '" class="' + (cur === k ? 'on' : '') + '" style="' + kv(k) + '" aria-pressed="' + (cur === k) + '">' +
+        '<span class="stag" style="--kc:' + SP[k].c + ';">' + SP[k].tag + '</span>' + SP[k].full + '</button>';
+    }).join('') + '</div>';
+  }
+  function wireKind(box, cb) {
+    box.querySelectorAll('[data-k]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        box.querySelectorAll('[data-k]').forEach(function (x) {
+          var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on);
+        });
+        cb(b.getAttribute('data-k'));
+      });
+    });
+  }
+  function stepRow(label, sub, id, val) {
+    return '<div class="steprow"><span class="lbl">' + label + '<small>' + sub + '</small></span>' +
+      '<button data-sd="-1" data-for="' + id + '" aria-label="' + label + ' csökkentése">−</button><span class="v" id="' + id + '">' + val + '</span><button data-sd="1" data-for="' + id + '" aria-label="' + label + ' növelése">＋</button></div>';
+  }
+  function scale10(id, val, warn) {
+    var h = '<div class="scale10" id="' + id + '">';
+    for (var i = 1; i <= 10; i++) h += '<button data-s="' + i + '" class="' + (i <= val ? 'f' + (warn && val >= 7 ? ' warn' : '') : '') + '">' + i + '</button>';
+    return h + '</div>';
+  }
+
+  /* — log sheet — */
+  var L = null;
+  function obsText() {
+    if (L.kind === 'ropi' && L.shoulder >= 7) return 'A váll ma sokat dolgozott — a következő Push napon Overhead Press helyett Cable variánst javaslok.';
+    if (L.rpe >= 8) return 'Kemény session volt — holnap a Pull nap intenzitását lazítsuk RIR 2-re.';
+    if (L.rpe >= 7.5) return 'Rendes terhelés — ma 21:30 előtt zárjuk a vacsorát, hogy az alvás ne csússzon.';
+    return 'Átlagos session a heti ritmusban — jó volt, ennyi kellett ma.';
+  }
+  function paintScales() {
+    ['slRpe', 'slSh'].forEach(function (id) {
+      var box = document.getElementById(id); if (!box) return;
+      var val = id === 'slRpe' ? L.rpe : L.shoulder, warn = id === 'slSh';
+      box.querySelectorAll('[data-s]').forEach(function (b) {
+        var i = Number(b.getAttribute('data-s'));
+        b.className = i <= val ? ('f' + (warn && val >= 7 ? ' warn' : '')) : '';
+      });
+    });
+    var o = document.getElementById('slObs'); if (o) o.textContent = obsText();
+  }
+  function openLog(kind) {
+    L = { kind: kind, dur: 90, sets: 5, rounds: 6, rpe: 6, shoulder: 4, notes: '' };
+    buildLog(); openSheet(shLog);
+  }
+  function buildLog() {
+    var ropi = L.kind === 'ropi';
+    var h = '<div class="sh-eyebrow">Sport log · ' + SP[L.kind].name + '</div><div class="sh-title">Hogy ment?</div>' +
+      kindTiles(L.kind, 'slKind') +
+      stepRow('Idő · perc', '15-ös lépések · 15–600', 'slDur', L.dur) +
+      (ropi ? stepRow('Setek · összesen', '0–50', 'slSets', L.sets) : stepRow('Körök · összesen', '1–50', 'slRounds', L.rounds)) +
+      '<div class="sh-eyebrow" style="padding:6px 0 0;">RPE · összesített nehézség</div>' + scale10('slRpe', L.rpe) +
+      (ropi ? '<div class="sh-eyebrow" style="padding:8px 0 0;">Váll terhelés</div>' + scale10('slSh', L.shoulder, true) : '') +
+      '<div class="obscard" id="slObsWrap"><span class="dot"></span><p id="slObs">' + obsText() + '</p></div>' +
+      '<div style="margin-top:9px;"><div class="sh-eyebrow" style="padding-bottom:3px;">Megjegyzés</div>' +
+      '<input type="text" id="slNotes" placeholder="pl. Smashek tisztábbak…" value=""></div>' +
+      '<div class="shrow"><button class="ghost" id="slCancel">Mégse</button><button class="cta" id="slSave">Mentés · +30 XP</button></div>';
+    shLog.innerHTML = h;
+    wireKind(document.getElementById('slKind'), function (k) { L.kind = k; buildLog(); });
+    shLog.querySelectorAll('[data-sd]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var dir = Number(b.getAttribute('data-sd')), id = b.getAttribute('data-for');
+        if (id === 'slDur') L.dur = Math.min(600, Math.max(15, L.dur + 15 * dir));
+        if (id === 'slSets') L.sets = Math.min(50, Math.max(0, L.sets + dir));
+        if (id === 'slRounds') L.rounds = Math.min(50, Math.max(1, L.rounds + dir));
+        document.getElementById(id).textContent = id === 'slDur' ? L.dur : id === 'slSets' ? L.sets : L.rounds;
+      });
+    });
+    shLog.querySelectorAll('#slRpe [data-s]').forEach(function (b) {
+      b.addEventListener('click', function () { L.rpe = Number(b.getAttribute('data-s')); paintScales(); });
+    });
+    shLog.querySelectorAll('#slSh [data-s]').forEach(function (b) {
+      b.addEventListener('click', function () { L.shoulder = Number(b.getAttribute('data-s')); paintScales(); });
+    });
+    shLog.querySelector('#slCancel').addEventListener('click', closeSheet);
+    shLog.querySelector('#slSave').addEventListener('click', function () {
+      var s = { wk: 0, sport: L.kind, date: 'aug 26 · sze', time: '19:37', dur: L.dur, rpe: L.rpe, notes: shLog.querySelector('#slNotes').value.trim() || null };
+      if (L.kind === 'ropi') { s.sets = L.sets; s.shoulder = L.shoulder; } else { s.rounds = L.rounds; }
+      D.sessions.unshift(s);
+      view = 'log';
+      document.querySelectorAll('#spTabs button').forEach(function (x) {
+        var on = x.getAttribute('data-v') === 'log';
+        x.classList.toggle('on', on); x.setAttribute('aria-pressed', on);
+      });
+      render(); closeSheet();
+    });
+  }
+
+  /* — schedule editor — */
+  var SD = null;
+  function openSched() {
+    SD = D.slots.map(function (s) { return { day: s.day, sport: s.sport, time: s.time, dur: s.dur, kind: s.kind, court: s.court, role: s.role, intensity: s.intensity }; });
+    buildSched(); openSheet(shSched);
+  }
+  function buildSched() {
+    var h = '<div class="sh-eyebrow">Heti rend</div><div class="sh-title">Sport-tervezés</div>' +
+      '<div class="mut" style="font-size:9px;margin:-4px 0 8px;">Egy napra több sport is kerülhet — a mentés a teljes heti rendet cseréli.</div>';
+    DAYS.forEach(function (dl, day) {
+      var list = SD.map(function (s, i) { return { s: s, i: i }; }).filter(function (x) { return x.s.day === day; });
+      h += '<div class="schedday' + (list.length ? ' has' : '') + '"><div class="dl">' + dl + '</div>';
+      list.forEach(function (x) {
+        var s = x.s, i = x.i;
+        h += '<div class="sslot"><div class="row1">' +
+          Object.keys(SP).map(function (k) {
+            return '<button class="kchip' + (s.sport === k ? ' on' : '') + '" style="' + kv(k) + '" data-sp="' + i + ':' + k + '">' + SP[k].name + '</button>';
+          }).join('') +
+          '<button class="xdel" data-sdel="' + i + '" aria-label="' + dl + ' ' + s.time + ' törlése">✕</button></div>' +
+          '<div class="row1" style="margin-top:5px;"><input type="time" value="' + s.time + '" data-stime="' + i + '" aria-label="' + dl + ' időpont">' +
+          (s.sport === 'ropi'
+            ? '<button class="kchip' + (s.kind === 'training' ? ' on' : '') + '" style="--kc:#C46FA0;--kw:#FAE3ED;--kd:#8E3F6F;" data-skind="' + i + ':training">edzés</button>' +
+              '<button class="kchip' + (s.kind === 'match' ? ' on' : '') + '" style="--kc:#C46FA0;--kw:#FAE3ED;--kd:#8E3F6F;" data-skind="' + i + ':match">meccs</button>'
+            : '') +
+          '<span class="durstep" style="margin-left:auto;"><button data-sdur="' + i + ':-1" aria-label="rövidebb">−</button><b>' + s.dur + 'p</b><button data-sdur="' + i + ':1" aria-label="hosszabb">＋</button></span></div>' +
+          '<div class="row2"><input type="text" placeholder="Helyszín" value="' + (s.court || '') + '" data-scourt="' + i + '">' +
+          '<input type="text" placeholder="Intenzitás · pl. közepes" value="' + (s.intensity || '') + '" data-sint="' + i + '"></div></div>';
+      });
+      h += '<button class="addslot" data-sadd="' + day + '">＋ Sport hozzáadása</button></div>';
+    });
+    h += '<div class="shrow"><button class="ghost" id="sdCancel">Mégse</button><button class="cta" id="sdSave">Mentés</button></div>';
+    shSched.innerHTML = h;
+    shSched.querySelector('#sdCancel').addEventListener('click', closeSheet);
+    shSched.querySelector('#sdSave').addEventListener('click', function () {
+      shSched.querySelectorAll('[data-stime]').forEach(function (inp) { SD[Number(inp.getAttribute('data-stime'))].time = inp.value || '18:00'; });
+      shSched.querySelectorAll('[data-scourt]').forEach(function (inp) { SD[Number(inp.getAttribute('data-scourt'))].court = inp.value.trim(); });
+      shSched.querySelectorAll('[data-sint]').forEach(function (inp) { SD[Number(inp.getAttribute('data-sint'))].intensity = inp.value.trim(); });
+      D.slots = SD;
+      view = 'week'; render(); closeSheet();
+    });
+    shSched.removeEventListener('click', schedClick);
+    shSched.addEventListener('click', schedClick);
+  }
+  function schedClick(ev) {
+    var t, p;
+    if ((t = ev.target.closest('[data-sp]'))) {
+      p = t.getAttribute('data-sp').split(':'); SD[Number(p[0])].sport = p[1];
+      if (p[1] !== 'ropi') SD[Number(p[0])].kind = 'training';
+      keepInputsRebuild(); return;
+    }
+    if ((t = ev.target.closest('[data-skind]'))) {
+      p = t.getAttribute('data-skind').split(':'); SD[Number(p[0])].kind = p[1]; keepInputsRebuild(); return;
+    }
+    if ((t = ev.target.closest('[data-sdur]'))) {
+      p = t.getAttribute('data-sdur').split(':');
+      var s = SD[Number(p[0])];
+      s.dur = Math.min(360, Math.max(15, s.dur + 15 * Number(p[1])));
+      keepInputsRebuild(); return;
+    }
+    if ((t = ev.target.closest('[data-sdel]'))) { SD.splice(Number(t.getAttribute('data-sdel')), 1); keepInputsRebuild(); return; }
+    if ((t = ev.target.closest('[data-sadd]'))) {
+      SD.push({ day: Number(t.getAttribute('data-sadd')), sport: 'ropi', time: '18:00', dur: 90, kind: 'training', court: '', role: '', intensity: '' });
+      keepInputsRebuild(); return;
+    }
+  }
+  function keepInputsRebuild() {
+    shSched.querySelectorAll('[data-stime]').forEach(function (inp) { SD[Number(inp.getAttribute('data-stime'))].time = inp.value || '18:00'; });
+    shSched.querySelectorAll('[data-scourt]').forEach(function (inp) { SD[Number(inp.getAttribute('data-scourt'))].court = inp.value; });
+    shSched.querySelectorAll('[data-sint]').forEach(function (inp) { SD[Number(inp.getAttribute('data-sint'))].intensity = inp.value; });
+    shSched.removeEventListener('click', schedClick);
+    buildSched();
+  }
+
+  /* — one-off event sheet — */
+  var EV = null;
+  function openEvent() {
+    EV = { sport: 'ropi', date: '', time: '18:00', kind: 'match', dur: 90, location: '' };
+    buildEvent(); openSheet(shEvent);
+  }
+  function buildEvent() {
+    var ropi = EV.sport === 'ropi';
+    var h = '<div class="sh-eyebrow">Egyszeri esemény</div><div class="sh-title">Meccs vagy külön alkalom</div>' +
+      kindTiles(EV.sport, 'evKind') +
+      '<div class="row1" style="display:flex;gap:6px;margin:4px 0 2px;">' +
+      '<input type="date" id="evDate" value="2026-08-30" style="flex:1;border:1px solid rgba(43,33,24,0.12);border-radius:10px;padding:7px 10px;font-family:inherit;font-size:10.5px;background:#fff;" aria-label="Dátum">' +
+      '<input type="time" id="evTime" value="' + EV.time + '" style="border:1px solid rgba(43,33,24,0.12);border-radius:10px;padding:7px 10px;font-family:inherit;font-size:10.5px;background:#fff;" aria-label="Időpont"></div>' +
+      (ropi ? '<div style="display:flex;gap:5px;margin:6px 0;">' +
+        '<button class="kchip' + (EV.kind === 'match' ? ' on' : '') + '" style="--kc:#C46FA0;--kw:#FAE3ED;--kd:#8E3F6F;" data-ek="match">meccs</button>' +
+        '<button class="kchip' + (EV.kind === 'training' ? ' on' : '') + '" style="--kc:#C46FA0;--kw:#FAE3ED;--kd:#8E3F6F;" data-ek="training">edzés</button></div>' : '') +
+      stepRow('Hossz · perc', '15–360', 'evDur', EV.dur) +
+      '<div style="margin-top:4px;"><input type="text" id="evLoc" placeholder="Helyszín · pl. Bajnoki · Városi csarnok"></div>' +
+      '<div class="shrow"><button class="ghost" id="evCancel">Mégse</button><button class="cta" id="evSave">Mentés</button></div>';
+    shEvent.innerHTML = h;
+    wireKind(document.getElementById('evKind'), function (k) { EV.sport = k; if (k !== 'ropi') EV.kind = 'training'; buildEvent(); });
+    shEvent.querySelectorAll('[data-ek]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        EV.kind = b.getAttribute('data-ek');
+        shEvent.querySelectorAll('[data-ek]').forEach(function (x) { x.classList.toggle('on', x === b); });
+      });
+    });
+    shEvent.querySelectorAll('[data-sd]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        EV.dur = Math.min(360, Math.max(15, EV.dur + 15 * Number(b.getAttribute('data-sd'))));
+        document.getElementById('evDur').textContent = EV.dur;
+      });
+    });
+    shEvent.querySelector('#evCancel').addEventListener('click', closeSheet);
+    shEvent.querySelector('#evSave').addEventListener('click', function () {
+      var dv = shEvent.querySelector('#evDate').value;
+      if (!dv) return;
+      var dt = new Date(dv + 'T12:00:00');
+      var months = ['jan', 'feb', 'már', 'ápr', 'máj', 'jún', 'júl', 'aug', 'szep', 'okt', 'nov', 'dec'];
+      D.events.push({
+        date: months[dt.getMonth()] + ' ' + dt.getDate(), dow: (dt.getDay() + 6) % 7,
+        time: shEvent.querySelector('#evTime').value || '18:00', dur: EV.dur, sport: EV.sport, kind: EV.kind,
+        location: shEvent.querySelector('#evLoc').value.trim()
+      });
+      view = 'week'; render(); closeSheet();
+    });
+  }
+
   render();
 })();
 </script>

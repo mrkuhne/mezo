@@ -49,6 +49,27 @@ are usable without a build step).
   sheet (21 region-grouped muscle tokens, compound/isolation/plyo segmented, stim/fatigue
   0–1 steppers, video URL, CTA gated on name+muscle, two-tap delete); video sheet
   (Mentés + Eltávolítás when set).
+  **Sport page (full surface, audited against the real `/train/sport`)**: compact hero
+  (2/4 sessions) + live stat strip (idő/RPE/váll/XP — recomputed from the session list);
+  3 segment views (`Heti terv | Napló | Cross-load`, selected segment speaks primary coral,
+  never rose — ADR 0018 D5). **Heti terv**: 7 day cards stacking multiple slots per day
+  (Kedd = cross + röpi), MA highlight + inline `Logold ›` (preselects the slot's sport in
+  the log sheet), dashed empty days, one-offs merged into their weekday with an EGYSZERI
+  stamp; `Egyszeri események` section with per-row ✕ delete + own sheet (date/time,
+  meccs default, röpi-only kind toggle); `Szerkesztés` sheet = full-replace weekly editor
+  (per-slot sport switch Röpi/Cross/TRX, time input, edzés/meccs toggle **only** for röpi
+  — cross/TRX force training, 15-min duration stepper 15–360, helyszín + intenzitás,
+  `+ Sport hozzáadása` per day, slot ✕). **Napló**: 4-week idő+RPE trend bars (gold = 7+
+  RPE week; a designed answer to the "no trends" gap), session cards with kind-correct
+  tags (fixes the hardcoded RÖPI), big RPE readout graded 7+ coral / 8+ amber (never red),
+  Intenzitás/Váll minibars only when the value exists, `avg n ugrás` chip only when data
+  carries jumps, quoted notes. **Cross-load**: per-system rows (Edzés/Étkezés/Alvás/Súly/
+  Pattern), the váll −2 MRV row with amber rail, tool-transparency chips
+  (read/compute/write). **Log sheet**: kind tiles, Idő stepper (15–600), Setek (röpi,
+  0–50) vs Körök (cross/TRX, 1–50) branch, RPE 1–10 cumulative scale, Váll scale
+  röpi-only (amber ≥7), **live Mezo observation card** reacting to the sliders
+  (váll≥7 → Cable-variáns; RPE≥8 → holnap RIR 2; RPE≥7,5 → korai vacsora), notes input
+  (designed addition for the contract's unused `notes` field), Mentés · +30 XP.
 - **mezociklus** — full mesocycle functionality: hub (hero + Volumen/Történet/Sablonok/Új blokk
   tiles), MEV/MAV/MRV provenance bars with expandable derivation, 5-step wizard (tappable phase
   curve, Emphasize cap 2, program editor with day breakdown + session-cap 11 + Lint/PeakFit,
